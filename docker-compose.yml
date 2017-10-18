@@ -1,0 +1,8 @@
+version: '3'
+services:
+  service-provider-api:
+    build: service_provider/
+    image: service-provider-api:latest
+    container_name: service-provider-api
+    ports:
+     - "8080:8080"
