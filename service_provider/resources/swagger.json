@@ -17,8 +17,8 @@
     "basePath": "/v2",
     "tags": [
         {
-            "name": "user",
-            "description": "Operations about user",
+            "name": "users",
+            "description": "Operations about users",
             "externalDocs": {
                 "description": "Find out more about our store",
                 "url": "http://swagger.io"
@@ -29,10 +29,10 @@
         "http"
     ],
     "paths": {
-        "/user": {
+        "/users": {
             "post": {
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Create user",
                 "description": "This can only be done by the logged in user.",
@@ -58,10 +58,10 @@
                 }
             }
         },
-        "/user/{username}": {
+        "/users/{username}": {
             "get": {
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Get user by user name",
                 "description": "",
@@ -95,7 +95,7 @@
             },
             "put": {
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Updated user",
                 "description": "This can only be done by the logged in user.",
@@ -132,7 +132,7 @@
             },
             "delete": {
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Delete user",
                 "description": "This can only be done by the logged in user.",
@@ -164,17 +164,13 @@
         "User": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "integer",
-                    "format": "int64"
-                },
                 "username": {
                     "type": "string"
                 },
-                "firstName": {
+                "first_name": {
                     "type": "string"
                 },
-                "lastName": {
+                "last_name": {
                     "type": "string"
                 },
                 "email": {
@@ -185,11 +181,6 @@
                 },
                 "phone": {
                     "type": "string"
-                },
-                "userStatus": {
-                    "type": "integer",
-                    "format": "int32",
-                    "description": "User Status"
                 }
             },
             "xml": {

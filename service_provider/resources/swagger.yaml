@@ -12,18 +12,18 @@ info:
 host: "api.provider.dummy.io"
 basePath: "/v2"
 tags:
-- name: "user"
-  description: "Operations about user"
+- name: "users"
+  description: "Operations about users"
   externalDocs:
     description: "Find out more about our store"
     url: "http://swagger.io"
 schemes:
 - "http"
 paths:
-  /user:
+  /users:
     post:
       tags:
-      - "user"
+      - "users"
       summary: "Create user"
       description: "This can only be done by the logged in user."
       operationId: "createUser"
@@ -37,12 +37,16 @@ paths:
         schema:
           $ref: "#/definitions/User"
       responses:
-        default:
+        200:
           description: "successful operation"
-  /user/{username}:
+          schema:
+            $ref: "#/definitions/User"
+        400:
+          description: "Invalid user supplied"
+  /users/{username}:
     get:
       tags:
-      - "user"
+      - "users"
       summary: "Get user by user name"
       description: ""
       operationId: "getUserByName"
@@ -65,7 +69,7 @@ paths:
           description: "User not found"
     put:
       tags:
-      - "user"
+      - "users"
       summary: "Updated user"
       description: "This can only be done by the logged in user."
       operationId: "updateUser"
@@ -90,7 +94,7 @@ paths:
           description: "User not found"
     delete:
       tags:
-      - "user"
+      - "users"
       summary: "Delete user"
       description: "This can only be done by the logged in user."
       operationId: "deleteUser"
@@ -111,14 +115,11 @@ definitions:
   User:
     type: "object"
     properties:
-      id:
-        type: "integer"
-        format: "int64"
       username:
         type: "string"
-      firstName:
+      first_name:
         type: "string"
-      lastName:
+      last_name:
         type: "string"
       email:
         type: "string"
@@ -126,10 +127,6 @@ definitions:
         type: "string"
       phone:
         type: "string"
-      userStatus:
-        type: "integer"
-        format: "int32"
-        description: "User Status"
     xml:
       name: "User"
 externalDocs:

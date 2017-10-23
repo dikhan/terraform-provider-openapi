@@ -1,10 +1,10 @@
 package api
 
 import (
-	"net/http"
 	"fmt"
 	"github.com/gorilla/mux"
 	"io/ioutil"
+	"net/http"
 	"os"
 )
 
@@ -57,29 +57,28 @@ var routes = Routes{
 	Route{
 		"CreateUser",
 		"POST",
-		"/v2/user",
+		"/v2/users",
 		CreateUser,
 	},
 
 	Route{
 		"DeleteUser",
 		"DELETE",
-		"/v2/user/{username}",
+		"/v2/users/{username}",
 		DeleteUser,
 	},
 
 	Route{
 		"GetUserByName",
 		"GET",
-		"/v2/user/{username}",
+		"/v2/users/{username}",
 		GetUserByName,
 	},
 
 	Route{
 		"UpdateUser",
 		"PUT",
-		"/v2/user/{username}",
+		"/v2/users/{username}",
 		UpdateUser,
 	},
-
 }
