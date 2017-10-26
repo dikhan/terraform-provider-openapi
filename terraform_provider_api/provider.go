@@ -9,14 +9,12 @@ import (
 
 // ApiProvider returns a terraform.ResourceProvider.
 func ApiProvider() *schema.Provider {
-	d := &DynamicProviderFactory{
-		Name: getProviderName(),
+	apiDiscoveryUrl := os.Getenv("API_DISCOVERY_URL")
+	d := &ProviderFactory{
+		Name:            getProviderName(),
+		DiscoveryApiUrl: apiDiscoveryUrl,
 	}
-	return d.createProviderDynamically()
-}
-
-func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	return nil, nil
+	return d.createProvider()
 }
 
 func getProviderName() string {

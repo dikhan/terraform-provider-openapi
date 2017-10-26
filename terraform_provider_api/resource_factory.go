@@ -6,9 +6,7 @@ import (
 )
 
 type ResourceFactory struct {
-	Schema spec.Schema
-	Create spec.PathItem // Access to Create operation from root path
-	Rud    spec.PathItem // Access to Read, Update and Delete operations
+	ResourceInfo ResourceInfo
 }
 
 func (r ResourceFactory) createSchemaResource() *schema.Resource {
@@ -23,7 +21,7 @@ func (r ResourceFactory) createSchemaResource() *schema.Resource {
 
 func (r ResourceFactory) createSchema() map[string]*schema.Schema {
 	s := map[string]*schema.Schema{}
-	for propertyName, property := range r.Schema.Properties {
+	for propertyName, property := range r.ResourceInfo.SchemaDefinition.Properties {
 		s[propertyName] = &schema.Schema{
 			Type:     r.getType(property),
 			Optional: true,
