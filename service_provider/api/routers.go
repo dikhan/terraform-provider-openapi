@@ -2,10 +2,11 @@ package api
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
 )
 
 type Route struct {
@@ -48,37 +49,37 @@ func Discovery(w http.ResponseWriter, r *http.Request) {
 
 var routes = Routes{
 	Route{
-		"Index",
+		"ApiDiscovery",
 		"GET",
-		"/v2/",
+		"/swagger.json",
 		Discovery,
 	},
 
 	Route{
 		"CreateUser",
 		"POST",
-		"/v2/users",
+		"/users",
 		CreateUser,
 	},
 
 	Route{
 		"DeleteUser",
 		"DELETE",
-		"/v2/users/{username}",
+		"/users/{username}",
 		DeleteUser,
 	},
 
 	Route{
 		"GetUserByName",
 		"GET",
-		"/v2/users/{username}",
+		"/users/{username}",
 		GetUserByName,
 	},
 
 	Route{
 		"UpdateUser",
 		"PUT",
-		"/v2/users/{username}",
+		"/users/{username}",
 		UpdateUser,
 	},
 }

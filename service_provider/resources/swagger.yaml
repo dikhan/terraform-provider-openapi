@@ -1,25 +1,24 @@
 swagger: "2.0"
 info:
-  description: "This is a sample service provider api."
+  description: "This service provider allows the creation of fake 'user' resources"
   version: "1.0.0"
-  title: "Dummy Service Provider"
-  termsOfService: "http://swagger.io/terms/"
+  title: "Service Provider 2 (sp2)"
   contact:
     email: "apiteam@serviceprovider.io"
-  license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 host: "api.provider.dummy.io"
-basePath: "/v2"
 tags:
 - name: "users"
   description: "Operations about users"
-  externalDocs:
-    description: "Find out more about our store"
-    url: "http://swagger.io"
 schemes:
 - "http"
 paths:
+  /swagger.json:
+    get:
+      summary: "Api discovery endpoint"
+      operationId: "ApiDiscovery"
+      responses:
+        200:
+          description: "successful operation"
   /users:
     post:
       tags:
@@ -130,5 +129,5 @@ definitions:
     xml:
       name: "User"
 externalDocs:
-  description: "Find out more about Swagger"
-  url: "http://swagger.io"
+  description: "Find out more about our service"
+  url: "http://api.provider.dummy.io"

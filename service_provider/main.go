@@ -1,15 +1,16 @@
 package main
 
 import (
-	sw "github.com/dikhan/terraform-provider-api/service_provider/api"
 	"log"
 	"net/http"
+
+	sw "github.com/dikhan/terraform-provider-api/service_provider/api"
 )
 
 func main() {
 	log.Printf("Server started")
 
 	router := sw.NewRouter()
-	
-	log.Fatal(http.ListenAndServe(":8080", router))
+
+	log.Fatal(http.ListenAndServe(":80", router))
 }

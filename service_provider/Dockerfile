@@ -9,6 +9,6 @@ WORKDIR $WORK_DIR
 RUN go get
 RUN go build -o service-provider-api .
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["./service-provider-api"]
