@@ -1,20 +1,39 @@
 package terraform_provider_api
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"os"
 	"regexp"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // ApiProvider returns a terraform.ResourceProvider.
 func ApiProvider() *schema.Provider {
-	apiDiscoveryUrl := os.Getenv("API_DISCOVERY_URL")
+	apiDiscoveryUrl := getApiDiscoveryUrl()
 	d := &ProviderFactory{
 		Name:            getProviderName(),
 		DiscoveryApiUrl: apiDiscoveryUrl,
 	}
 	return d.createProvider()
+}
+
+// This function is implemented with temporary code thus it can serve as an example
+// on how the same code base can be used by binaries of this same provider named differently
+// but internally each will end up calling a different service provider's api
+func getApiDiscoveryUrl() string {
+	var apiDiscoveryUrl string
+	providerName := getProviderName()
+	if providerName != "sp1" && providerName != "sp2" {
+		log.Fatalf("%s provider not supported...", providerName)
+	}
+	if providerName == "sp1" {
+		apiDiscoveryUrl = "http://localhost:8080/swagger.json"
+	}
+	if providerName == "sp2" {
+		apiDiscoveryUrl = "http://localhost:8082/swagger.json"
+	}
+	return apiDiscoveryUrl
 }
 
 func getProviderName() string {

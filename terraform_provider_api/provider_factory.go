@@ -3,9 +3,10 @@ package terraform_provider_api
 import (
 	"errors"
 	"fmt"
+	"log"
+
 	"github.com/go-openapi/loads"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 type ProviderFactory struct {

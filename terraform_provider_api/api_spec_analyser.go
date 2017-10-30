@@ -2,14 +2,16 @@ package terraform_provider_api
 
 import (
 	"fmt"
-	"github.com/go-openapi/loads"
-	"github.com/go-openapi/spec"
 	"log"
 	"regexp"
 	"strings"
+
+	"github.com/go-openapi/loads"
+	"github.com/go-openapi/spec"
 )
 
-const RESTFUL_ENDPOINT_REGEX = "(/\\w*/)+{.*}"
+const RESOURCE_NAME_REGEX = "(/\\w*/)+{.*}"
+const RESTFUL_ENDPOINT_REGEX = "((?:.*)){.*}"
 
 type SpecAnalyser interface {
 }
@@ -24,16 +26,25 @@ func (a ApiSpecAnalyser) getCrudResources() CrudResourcesInfo {
 		if !a.isEndPointCrudCompliant(pathName, a.d.Spec().Paths.Paths) {
 			continue
 		}
-		resourceName := strings.TrimLeft(pathName, "/")
+		ref := a.d.Spec().Paths.Paths[a.findMatchingRootPath(pathName)].Post.Parameters[0].Schema.Ref.String()
+		resourceName := a.getResourceName(pathName)
 		r := ResourceInfo{
 			Name:             resourceName,
-			SchemaDefinition: a.d.Spec().Definitions["User"], // TODO: get key name from $ref object
+			SchemaDefinition: a.d.Spec().Definitions[a.getRefName(ref)],
 			PathInfo:         pathItem,
 			CreatePathInfo:   a.d.Spec().Paths.Paths[a.findMatchingRootPath(pathName)],
 		}
 		resources[resourceName] = r
 	}
 	return resources
+}
+
+func (a ApiSpecAnalyser) getRefName(ref string) string {
+	reg, err := regexp.Compile("(\\w+)[^//]*$")
+	if err != nil {
+		log.Fatalf("something really wrong happened if the ref reg can't be compiled...")
+	}
+	return reg.FindStringSubmatch(ref)[0]
 }
 
 // isEndPointCrudCompliant returns true only if the path given 'p' exposes all CRUD operations.
@@ -91,6 +102,15 @@ func (f ApiSpecAnalyser) restfulEndPointRegex() *regexp.Regexp {
 func (f ApiSpecAnalyser) isPotentialCrudEndPoint(p string) bool {
 	r := f.restfulEndPointRegex()
 	return r.MatchString(p)
+}
+
+// isPotentialCrudEndPoint checks if the given path is of form /resource/{id}
+func (f ApiSpecAnalyser) getResourceName(p string) string {
+	r, err := regexp.Compile(RESOURCE_NAME_REGEX)
+	if err != nil {
+		log.Fatalf("Something is really wrong with the resource name regex [%s] %s", RESOURCE_NAME_REGEX, err)
+	}
+	return strings.Replace(r.FindStringSubmatch(p)[1], "/", "", -1)
 }
 
 // findMatchingRootPath returns the corresponding root path for a given endpoint

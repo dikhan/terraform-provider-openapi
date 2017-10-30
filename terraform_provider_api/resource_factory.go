@@ -22,13 +22,39 @@ func (r ResourceFactory) createSchemaResource() *schema.Resource {
 func (r ResourceFactory) createSchema() map[string]*schema.Schema {
 	s := map[string]*schema.Schema{}
 	for propertyName, property := range r.ResourceInfo.SchemaDefinition.Properties {
-		s[propertyName] = &schema.Schema{
-			Type:     r.getType(property),
-			Optional: true,
+		s[propertyName] = r.createPropertySchema(propertyName, property, r.ResourceInfo.SchemaDefinition.Required)
+	}
+	return s
+}
+
+func (r ResourceFactory) createPropertySchema(propertyName string, property spec.Schema, requiredProps []string) *schema.Schema {
+	var propertySchema *schema.Schema
+	if property.Type.Contains("array") {
+		propertySchema = &schema.Schema{
+			Type: schema.TypeList,
+			Elem: &schema.Schema{Type: schema.TypeString},
+		}
+	} else {
+		propertySchema = &schema.Schema{
+			Type: schema.TypeString,
 		}
 	}
-	PrettyPrint(s)
-	return s
+	r.setPropertyToRequiredOrOptional(propertySchema, propertyName, requiredProps)
+	return propertySchema
+}
+
+func (r ResourceFactory) setPropertyToRequiredOrOptional(propertySchema *schema.Schema, propertyName string, requiredProps []string) {
+	var required bool = false
+	for _, f := range requiredProps {
+		if f == propertyName {
+			required = true
+		}
+	}
+	if required {
+		propertySchema.Required = true
+	} else {
+		propertySchema.Optional = true
+	}
 }
 
 func (r ResourceFactory) getType(property spec.Schema) schema.ValueType {
