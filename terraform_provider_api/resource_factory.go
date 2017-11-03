@@ -1,8 +1,11 @@
 package terraform_provider_api
 
 import (
+	"fmt"
+	httpGoClient "github.com/dikhan/http_goclient"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
+	"net/http"
 )
 
 type ResourceFactory struct {
@@ -12,7 +15,7 @@ type ResourceFactory struct {
 func (r ResourceFactory) createSchemaResource() *schema.Resource {
 	return &schema.Resource{
 		Schema: r.createSchema(),
-		Create: create,
+		Create: r.create,
 		Read:   read,
 		Delete: delete,
 		Update: update,
@@ -22,6 +25,9 @@ func (r ResourceFactory) createSchemaResource() *schema.Resource {
 func (r ResourceFactory) createSchema() map[string]*schema.Schema {
 	s := map[string]*schema.Schema{}
 	for propertyName, property := range r.ResourceInfo.SchemaDefinition.Properties {
+		if propertyName == "id" {
+			continue
+		}
 		s[propertyName] = r.createPropertySchema(propertyName, property, r.ResourceInfo.SchemaDefinition.Required)
 	}
 	return s
@@ -64,7 +70,22 @@ func (r ResourceFactory) getType(property spec.Schema) schema.ValueType {
 	return schema.TypeString
 }
 
-func create(data *schema.ResourceData, i interface{}) error {
+func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error {
+	input := map[string]string{}
+	output := map[string]string{}
+	for propertyName, _ := range r.ResourceInfo.SchemaDefinition.Properties {
+		if propertyName == "id" {
+			continue
+		}
+		input[propertyName] = data.Get(propertyName).(string)
+	}
+	httpClient := httpGoClient.HttpClient{&http.Client{}}
+	url := fmt.Sprintf("http://%s/%s", r.ResourceInfo.Host, r.ResourceInfo.Name)
+	_, err := httpClient.PostJson(url, nil, input, &output)
+	if err != nil {
+		return err
+	}
+	data.SetId(output["id"])
 	return nil
 }
 

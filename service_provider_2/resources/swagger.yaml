@@ -6,7 +6,7 @@ info:
   title: "Service Provider 2 (sp2)"
   contact:
     email: "apiteam@serviceprovider.io"
-host: "api.cdn-provider.io"
+host: "localhost:8080"
 tags:
 - name: "cdn"
   description: "Operations about users"

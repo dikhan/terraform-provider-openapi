@@ -5,7 +5,7 @@ info:
   title: "Service Provider 2 (sp2)"
   contact:
     email: "apiteam@serviceprovider.io"
-host: "api.provider.dummy.io"
+host: "localhost:8082"
 tags:
 - name: "users"
   description: "Operations about users"
@@ -114,6 +114,8 @@ definitions:
   User:
     type: "object"
     properties:
+      id:
+        type: "string"
       username:
         type: "string"
       first_name:

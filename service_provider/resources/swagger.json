@@ -8,7 +8,7 @@
             "email": "apiteam@serviceprovider.io"
         }
     },
-    "host": "api.provider.dummy.io",
+    "host": "localhost:8082",
     "tags": [
         {
             "name": "users",
@@ -171,6 +171,9 @@
         "User": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 },

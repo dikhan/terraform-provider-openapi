@@ -6,9 +6,10 @@ type CrudResourcesInfo map[string]ResourceInfo
 
 type ResourceInfo struct {
 	Name             string
+	Host             string
 	SchemaDefinition spec.Schema
-	// Path info contains info about /resource
-	CreatePathInfo   spec.PathItem
-	// Path info contains info about /resource/{id}
-	PathInfo         spec.PathItem
+	// CreatePathInfo contains info about /resource
+	CreatePathInfo spec.PathItem
+	// PathInfo contains info about /resource/{id}
+	PathInfo spec.PathItem
 }

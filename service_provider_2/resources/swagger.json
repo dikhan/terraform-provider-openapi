@@ -8,7 +8,7 @@
       "email": "apiteam@serviceprovider.io"
     }
   },
-  "host": "api.cdn-provider.io",
+  "host": "localhost:8080",
   "tags": [
     {
       "name": "cdn",

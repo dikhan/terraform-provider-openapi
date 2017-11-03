@@ -26,13 +26,15 @@ func (a ApiSpecAnalyser) getCrudResources() CrudResourcesInfo {
 		if !a.isEndPointCrudCompliant(pathName, a.d.Spec().Paths.Paths) {
 			continue
 		}
-		ref := a.d.Spec().Paths.Paths[a.findMatchingRootPath(pathName)].Post.Parameters[0].Schema.Ref.String()
+		rootPath := a.findMatchingRootPath(pathName)
+		ref := a.d.Spec().Paths.Paths[rootPath].Post.Parameters[0].Schema.Ref.String()
 		resourceName := a.getResourceName(pathName)
 		r := ResourceInfo{
 			Name:             resourceName,
+			Host:             a.d.Spec().Host,
 			SchemaDefinition: a.d.Spec().Definitions[a.getRefName(ref)],
+			CreatePathInfo:   a.d.Spec().Paths.Paths[rootPath],
 			PathInfo:         pathItem,
-			CreatePathInfo:   a.d.Spec().Paths.Paths[a.findMatchingRootPath(pathName)],
 		}
 		resources[resourceName] = r
 	}

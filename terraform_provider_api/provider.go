@@ -28,10 +28,10 @@ func getApiDiscoveryUrl() string {
 		log.Fatalf("%s provider not supported...", providerName)
 	}
 	if providerName == "sp1" {
-		apiDiscoveryUrl = "http://localhost:8080/swagger.json"
+		apiDiscoveryUrl = "http://localhost:8082/swagger.json"
 	}
 	if providerName == "sp2" {
-		apiDiscoveryUrl = "http://localhost:8082/swagger.json"
+		apiDiscoveryUrl = "http://localhost:8080/swagger.json"
 	}
 	return apiDiscoveryUrl
 }

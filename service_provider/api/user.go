@@ -9,6 +9,7 @@ import (
 )
 
 type User struct {
+	Id        string `json:"id"`
 	Username  string `json:"username"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
@@ -22,6 +23,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	u.Id = u.Username
 	sendResponse(w, u)
 }
 
