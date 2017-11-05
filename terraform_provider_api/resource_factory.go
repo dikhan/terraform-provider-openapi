@@ -10,6 +10,7 @@ import (
 )
 
 type ResourceFactory struct {
+	httpClient   *http.Client
 	ResourceInfo ResourceInfo
 }
 
@@ -17,9 +18,9 @@ func (r ResourceFactory) createSchemaResource() *schema.Resource {
 	return &schema.Resource{
 		Schema: r.createSchema(),
 		Create: r.create,
-		Read:   read,
-		Delete: delete,
-		Update: update,
+		Read:   r.read,
+		Delete: r.delete,
+		Update: r.update,
 	}
 }
 
@@ -84,8 +85,8 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 			input[propertyName] = data.Get(propertyName).(string)
 		}
 	}
-	httpClient := httpGoClient.HttpClient{&http.Client{}}
-	url := r.getServiceProviderUrl()
+	httpClient := httpGoClient.HttpClient{HttpClient: r.httpClient}
+	url := r.getResourceUrl()
 	_, err := httpClient.PostJson(url, nil, input, &output)
 	if err != nil {
 		return err
@@ -94,18 +95,28 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	return nil
 }
 
-func read(data *schema.ResourceData, i interface{}) error {
+func (r ResourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	return nil
 }
 
-func update(data *schema.ResourceData, i interface{}) error {
+func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	return nil
 }
 
-func delete(data *schema.ResourceData, i interface{}) error {
+func (r ResourceFactory) delete(data *schema.ResourceData, i interface{}) error {
+	httpClient := httpGoClient.HttpClient{HttpClient: r.httpClient}
+	url := r.getResourceIdUrl(data.Id())
+	_, err := httpClient.Delete(url, nil)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (r ResourceFactory) getServiceProviderUrl() string {
+func (r ResourceFactory) getResourceUrl() string {
 	return fmt.Sprintf("http://%s%s", r.ResourceInfo.Host, r.ResourceInfo.Path)
+}
+
+func (r ResourceFactory) getResourceIdUrl(id string) string {
+	return fmt.Sprintf("%s/%s", r.getResourceUrl(), id)
 }

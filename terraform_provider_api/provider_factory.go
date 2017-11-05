@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-openapi/loads"
 	"github.com/hashicorp/terraform/helper/schema"
+	"net/http"
 )
 
 type ProviderFactory struct {
@@ -46,6 +47,7 @@ func (p ProviderFactory) generateProviderFromApiSpec(apiSpecAnalyser *ApiSpecAna
 	resourceMap := map[string]*schema.Resource{}
 	for resourceName, resourceInfo := range apiSpecAnalyser.getCrudResources() {
 		r := ResourceFactory{
+			&http.Client{},
 			resourceInfo,
 		}
 		resource := r.createSchemaResource()
