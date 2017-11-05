@@ -7,9 +7,9 @@ resource "sp1_users" "my_user" {
   phone = "6049991234"
 }
 
-#resource "sp2_cdns" "my_cdn" {
-#  label = "label"
-#  ips = ["127.0.0.1"]
-#  hostnames = ["origin.com"]
-#}
+resource "sp2_cdns" "my_cdn" {
+  label = "label"
+  ips = ["127.0.0.1"]
+  hostnames = ["origin.com"]
+}
 

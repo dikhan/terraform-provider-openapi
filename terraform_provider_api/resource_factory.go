@@ -6,6 +6,7 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"net/http"
+	"reflect"
 )
 
 type ResourceFactory struct {
@@ -71,21 +72,25 @@ func (r ResourceFactory) getType(property spec.Schema) schema.ValueType {
 }
 
 func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error {
-	input := map[string]string{}
-	output := map[string]string{}
+	input := map[string]interface{}{}
+	output := map[string]interface{}{}
 	for propertyName, _ := range r.ResourceInfo.SchemaDefinition.Properties {
 		if propertyName == "id" {
 			continue
 		}
-		input[propertyName] = data.Get(propertyName).(string)
+		if reflect.TypeOf(data.Get(propertyName)).Kind() == reflect.Slice {
+			input[propertyName] = data.Get(propertyName).([]interface{})
+		} else {
+			input[propertyName] = data.Get(propertyName).(string)
+		}
 	}
 	httpClient := httpGoClient.HttpClient{&http.Client{}}
-	url := fmt.Sprintf("http://%s/%s", r.ResourceInfo.Host, r.ResourceInfo.Name)
+	url := r.getServiceProviderUrl()
 	_, err := httpClient.PostJson(url, nil, input, &output)
 	if err != nil {
 		return err
 	}
-	data.SetId(output["id"])
+	data.SetId(output["id"].(string))
 	return nil
 }
 
@@ -99,4 +104,8 @@ func update(data *schema.ResourceData, i interface{}) error {
 
 func delete(data *schema.ResourceData, i interface{}) error {
 	return nil
+}
+
+func (r ResourceFactory) getServiceProviderUrl() string {
+	return fmt.Sprintf("http://%s%s", r.ResourceInfo.Host, r.ResourceInfo.Path)
 }

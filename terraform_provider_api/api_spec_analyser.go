@@ -31,6 +31,7 @@ func (a ApiSpecAnalyser) getCrudResources() CrudResourcesInfo {
 		resourceName := a.getResourceName(pathName)
 		r := ResourceInfo{
 			Name:             resourceName,
+			Path:             rootPath,
 			Host:             a.d.Spec().Host,
 			SchemaDefinition: a.d.Spec().Definitions[a.getRefName(ref)],
 			CreatePathInfo:   a.d.Spec().Paths.Paths[rootPath],
