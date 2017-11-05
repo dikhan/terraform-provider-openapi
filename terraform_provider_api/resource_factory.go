@@ -96,6 +96,16 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r ResourceFactory) read(data *schema.ResourceData, i interface{}) error {
+	output := map[string]interface{}{}
+	httpClient := httpGoClient.HttpClient{HttpClient: r.httpClient}
+	url := r.getResourceIdUrl(data.Id())
+	_, err := httpClient.Get(url, nil, &output)
+	if err != nil {
+		return err
+	}
+	for propertyName, propertyValue := range output {
+		data.Set(propertyName, propertyValue)
+	}
 	return nil
 }
 
