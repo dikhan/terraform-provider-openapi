@@ -194,7 +194,7 @@
         "hostnames"
       ],
       "properties": {
-        "slug": {
+        "id": {
           "type": "string",
           "readOnly": true
         },

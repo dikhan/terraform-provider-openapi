@@ -133,7 +133,7 @@ definitions:
       - ips
       - hostnames
     properties:
-      slug:
+      id:
         type: "string"
         readOnly: true
       label:

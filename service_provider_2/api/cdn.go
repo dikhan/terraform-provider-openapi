@@ -11,7 +11,7 @@ import (
 )
 
 type ContentDeliveryNetwork struct {
-	Slug      string   `json:"slug"`
+	Id        string   `json:"id"`
 	Label     string   `json:"label"`
 	Ips       []string `json:"ips"`
 	Hostnames []string `json:"hostnames"`
@@ -25,8 +25,8 @@ func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
-	cdn.Slug = uuid.New()
-	db[cdn.Slug] = cdn
+	cdn.Id = uuid.New()
+	db[cdn.Id] = cdn
 	sendResponse(http.StatusCreated, w, cdn)
 }
 
@@ -50,8 +50,8 @@ func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
-	cdn.Slug = a.Slug
-	db[cdn.Slug] = cdn
+	cdn.Id = a.Id
+	db[cdn.Id] = cdn
 	sendResponse(http.StatusOK, w, cdn)
 }
 
@@ -61,7 +61,7 @@ func ContentDeliveryNetworkDeleteV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusNotFound, err.Error(), w)
 		return
 	}
-	delete(db, a.Slug)
+	delete(db, a.Id)
 	updateResponseHeaders(http.StatusOK, w)
 }
 
