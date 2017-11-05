@@ -18,7 +18,7 @@ docker-compose up --build --force-recreate
 
 Once the backend is up, the following command will read main.tf file and execute terraform plan:  
 ```
-go build -o terraform-provider-sp1 && go build -o terraform-provider-sp2 && terraform init && terraform plan
+go build -o terraform-provider-sp && terraform init && terraform plan
 ```
 
 The expected output would be:
@@ -31,23 +31,13 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  + sp1_cdns.my_cdn
+  + sp_cdns.my_cdn
       id:          <computed>
       hostnames.#: "1"
       hostnames.0: "origin.com"
       ips.#:       "1"
       ips.0:       "127.0.0.1"
       label:       "label"
-
-  + sp2_users.my_user
-      id:          <computed>
-      email:       "info@server.com"
-      first_name:  "Daniel"
-      last_name:   "Khan"
-      password:    "password1"
-      phone:       "6049991234"
-      username:    "dikhan"
-
 
 Plan: 2 to add, 0 to change, 0 to destroy.
 

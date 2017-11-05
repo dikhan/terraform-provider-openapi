@@ -24,13 +24,10 @@ func ApiProvider() *schema.Provider {
 func getApiDiscoveryUrl() string {
 	var apiDiscoveryUrl string
 	providerName := getProviderName()
-	if providerName != "sp1" && providerName != "sp2" {
+	if providerName != "sp" {
 		log.Fatalf("%s provider not supported...", providerName)
 	}
-	if providerName == "sp1" {
-		apiDiscoveryUrl = "http://localhost:8082/swagger.json"
-	}
-	if providerName == "sp2" {
+	if providerName == "sp" {
 		apiDiscoveryUrl = "http://localhost:8080/swagger.json"
 	}
 	return apiDiscoveryUrl

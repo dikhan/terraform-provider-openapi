@@ -1,35 +1,18 @@
 version: '2'
 services:
   cdn-service-provider-api:
-    build: service_provider_2/
+    build: service_provider_example/
     image: cdn-service-provider-api:latest
     container_name: cdn-service-provider-api
     ports:
      - "8080:80"
 
-  users-service-provider-api:
-    build: service_provider/
-    image: service-provider-api:latest
-    container_name: user-service-provider-api
-    ports:
-     - "8082:80"
-
   swagger-ui-cdn:
     image: swaggerapi/swagger-ui:latest
     container_name: swagger-ui-cdn
     ports:
-     - "8083:8080"
+     - "8082:8080"
     environment:
       - SWAGGER_JSON=/app/resources/swagger.yaml
     volumes:
-      - ./service_provider_2:/app
-
-  swagger-ui-users:
-    image: swaggerapi/swagger-ui:latest
-    container_name: swagger-ui-users
-    ports:
-     - "8084:8080"
-    environment:
-      - SWAGGER_JSON=/app/resources/swagger.yaml
-    volumes:
-      - ./service_provider:/app
+      - ./service_provider_example:/app

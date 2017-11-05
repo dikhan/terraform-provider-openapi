@@ -12,7 +12,7 @@ tags:
   description: "Operations about users"
   externalDocs:
     description: "Find out more about cdn api"
-    url: "https://github.com/dikhan/terraform-provider-api/service_provider_2"
+    url: "https://github.com/dikhan/terraform-provider-api/service_provider_example"
 schemes:
 - "http"
 
