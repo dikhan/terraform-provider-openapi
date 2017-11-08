@@ -1,13 +1,6 @@
 package main
 
 import (
-	// WARNING!
-	// Change this to a fully-qualified import path
-	// once you place this file into your project.
-	// For example,
-	//
-	//    sw "github.com/myname/myrepo/api"
-	//
 	"log"
 	"net/http"
 
@@ -15,9 +8,29 @@ import (
 )
 
 func main() {
-	log.Printf("Server started")
-
+	errs := make(chan error)
 	router := sw.NewRouter()
+	// Starting HTTP server
+	go func() {
+		addr := ":80"
+		log.Printf("Staring HTTP service on %s ...", addr)
+		if err := http.ListenAndServe(addr, router); err != nil {
+			errs <- err
+		}
+	}()
 
-	log.Fatal(http.ListenAndServe(":80", router))
+	// Starting HTTPS server
+	go func() {
+		sslAddr := ":443"
+		log.Printf("Staring HTTPS service on %s ...", sslAddr)
+		if err := http.ListenAndServeTLS(sslAddr, "ssl/certificate.crt", "ssl/privateKey.key", router); err != nil {
+			errs <- err
+		}
+	}()
+
+	// This will run forever until channel receives error
+	select {
+	case err := <-errs:
+		log.Printf("Could not start serving service due to (error: %s)", err)
+	}
 }

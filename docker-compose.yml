@@ -6,6 +6,7 @@ services:
     container_name: cdn-service-provider-api
     ports:
      - "8080:80"
+     - "8443:443"
 
   swagger-ui-cdn:
     image: swaggerapi/swagger-ui:latest

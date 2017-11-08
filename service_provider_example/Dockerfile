@@ -10,5 +10,6 @@ RUN go get
 RUN go build -o cdn-service-provider-api .
 
 EXPOSE 80
+EXPOSE 443
 
 CMD ["./cdn-service-provider-api"]
