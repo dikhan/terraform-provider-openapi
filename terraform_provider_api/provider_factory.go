@@ -1,13 +1,14 @@
-package terraform_provider_api
+package main
 
 import (
 	"errors"
 	"fmt"
 	"log"
 
+	"net/http"
+
 	"github.com/go-openapi/loads"
 	"github.com/hashicorp/terraform/helper/schema"
-	"net/http"
 )
 
 type ProviderFactory struct {
@@ -31,13 +32,9 @@ func (p ProviderFactory) createApiSpecAnalyser() (*ApiSpecAnalyser, error) {
 	if p.DiscoveryApiUrl == "" {
 		return nil, errors.New("required param 'apiUrl' missing")
 	}
-	apiSpecDoc, err := loads.JSONDoc(p.DiscoveryApiUrl)
+	apiSpec, err := loads.JSONSpec(p.DiscoveryApiUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred when retrieving api spec from %s. Error=%s", p.DiscoveryApiUrl, err)
-	}
-	apiSpec, err := loads.Analyzed(apiSpecDoc, "2.0")
-	if err != nil {
-		return nil, fmt.Errorf("could not load api spec from %s. Error=%s", p.DiscoveryApiUrl, err)
 	}
 	apiSpecAnalyser := &ApiSpecAnalyser{apiSpec}
 	return apiSpecAnalyser, nil

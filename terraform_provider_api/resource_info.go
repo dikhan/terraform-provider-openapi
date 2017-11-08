@@ -1,4 +1,4 @@
-package terraform_provider_api
+package main
 
 import (
 	"github.com/go-openapi/spec"

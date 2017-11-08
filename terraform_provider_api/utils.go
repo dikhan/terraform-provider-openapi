@@ -1,4 +1,4 @@
-package terraform_provider_api
+package main
 
 import (
 	"encoding/json"

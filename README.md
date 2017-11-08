@@ -57,14 +57,14 @@ run the following command from the root folder:
 docker-compose up --build --force-recreate
 ```
 
-Once docker-compose is done bringing up both services, the following command will read the sample [main.tf](main.tf) 
+Once docker-compose is done bringing up both services, the following command will read the sample [main.tf](terraform_provider_api/main.tf) 
 file and execute terraform plan:  
 ```
 go build -o terraform-provider-sp && terraform init && terraform plan
 ```
 
 Looking carefully at the above command, the binary is named as 'terraform-provider-sp'. The reason for this is so
-terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](main.tf) 
+terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](terraform_provider_api/main.tf) 
 file. 
 
 After executing terraform plan, the expected output should be:

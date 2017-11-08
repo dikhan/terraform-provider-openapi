@@ -1,11 +1,12 @@
-package terraform_provider_api
+package main
 
 import (
 	"fmt"
-	httpGoClient "github.com/dikhan/http_goclient"
-	"github.com/hashicorp/terraform/helper/schema"
 	"net/http"
 	"reflect"
+
+	httpGoClient "github.com/dikhan/http_goclient"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type ResourceFactory struct {

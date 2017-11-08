@@ -1,9 +1,13 @@
-package terraform_provider_api
+package main
 
 import (
 	"log"
 	"os"
 	"regexp"
+
+	"net/http"
+
+	"crypto/tls"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -28,7 +32,14 @@ func getApiDiscoveryUrl() string {
 		log.Fatalf("%s provider not supported...", providerName)
 	}
 	if providerName == "sp" {
-		apiDiscoveryUrl = "http://localhost:8080/swagger.json"
+		// This is a temporary solution to be able to test out the example 'sp' binary produced
+		// The reason why this is needed is because the http client library will reject the cert from the server
+		// as it's not signed by an ofitial CA, it's just a self signed cert
+		tr := http.DefaultTransport.(*http.Transport)
+		tr.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		apiDiscoveryUrl = "https://localhost:8443/swagger.json"
 	}
 	return apiDiscoveryUrl
 }
