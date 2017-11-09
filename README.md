@@ -81,7 +81,7 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  + sp_cdns.my_cdn
+  + sp_cdns_v1.my_cdn
       id:          <computed>
       hostnames.#: "1"
       hostnames.0: "origin.com"
@@ -116,13 +116,13 @@ should now work.
 If you ever set or change modules or backend configuration for Terraform,
 rerun this command to reinitialize your working directory. If you forget, other
 commands will detect it and remind you to do so if necessary.
-sp_cdns.my_cdn: Creating...
+sp_cdns_v1.my_cdn: Creating...
   hostnames.#: "0" => "1"
   hostnames.0: "" => "origin.com"
   ips.#:       "0" => "1"
   ips.0:       "" => "127.0.0.1"
   label:       "" => "label"
-sp_cdns.my_cdn: Creation complete after 0s (ID: 80514498-a4d0-44e6-ad0d-22ac1023fdae)
+sp_cdns_v1.my_cdn: Creation complete after 0s (ID: 80514498-a4d0-44e6-ad0d-22ac1023fdae)
 
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 ```
