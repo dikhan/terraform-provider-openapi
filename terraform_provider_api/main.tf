@@ -4,7 +4,7 @@ provider "sp" {
   api_key_header = "apiKeyValue"
 }
 
-resource "sp_cdns" "my_cdn" {
+resource "sp_cdns_v1" "my_cdn" {
   label = "label"
   ips = ["127.0.0.1"]
   hostnames = ["origin.com"]

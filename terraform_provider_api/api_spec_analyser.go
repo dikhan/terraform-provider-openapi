@@ -10,6 +10,7 @@ import (
 	"github.com/go-openapi/spec"
 )
 
+const RESOURCE_VERSION_REGEX = "(/v[0-9]*/)"
 const RESOURCE_NAME_REGEX = "(/\\w*/)+{.*}"
 const RESTFUL_ENDPOINT_REGEX = "((?:.*)){.*}"
 
@@ -110,11 +111,23 @@ func (f ApiSpecAnalyser) isPotentialCrudEndPoint(p string) bool {
 
 // isPotentialCrudEndPoint checks if the given path is of form /resource/{id}
 func (f ApiSpecAnalyser) getResourceName(p string) string {
-	r, err := regexp.Compile(RESOURCE_NAME_REGEX)
+	nameRegex, err := regexp.Compile(RESOURCE_NAME_REGEX)
 	if err != nil {
 		log.Fatalf("Something is really wrong with the resource name regex [%s] %s", RESOURCE_NAME_REGEX, err)
 	}
-	return strings.Replace(r.FindStringSubmatch(p)[1], "/", "", -1)
+	resourceName := strings.Replace(nameRegex.FindStringSubmatch(p)[1], "/", "", -1)
+
+	versionRegex, err := regexp.Compile(RESOURCE_VERSION_REGEX)
+	if err != nil {
+		log.Fatalf("Something is really wrong with the resource version regex [%s] %s", RESOURCE_VERSION_REGEX, err)
+	}
+	versionMatches := versionRegex.FindStringSubmatch(p)
+	if len(versionMatches) != 0 {
+		version := strings.Replace(versionRegex.FindStringSubmatch(p)[1], "/", "", -1)
+		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
+		return resourceNameWithVersion
+	}
+	return resourceName
 }
 
 // findMatchingRootPath returns the corresponding root path for a given endpoint

@@ -96,8 +96,6 @@ func (p ProviderFactory) createTerraformProviderSchema(securityDefinitions spec.
 			}
 		}
 	}
-	log.Println("PROVIDER SCHEMA", s)
-	PrettyPrint(s)
 	return s
 }
 
