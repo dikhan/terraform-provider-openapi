@@ -8,4 +8,8 @@ resource "sp_cdns_v1" "my_cdn" {
   label = "label"
   ips = ["127.0.0.1"]
   hostnames = ["origin.com"]
+
+  example_int = 12
+  example_number = 1.12
+  example_boolean = true
 }

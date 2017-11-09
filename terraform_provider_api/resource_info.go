@@ -10,7 +10,7 @@ import (
 type CrudResourcesInfo map[string]ResourceInfo
 
 type ResourceInfo struct {
-	Name             string
+	Name string
 	// Path contains relative path to the resource e,g: /v1/resource
 	Path             string
 	Host             string
@@ -56,24 +56,30 @@ func (r ResourceInfo) isRequired(propertyName string, requiredProps []string) bo
 
 func (r ResourceInfo) createBasicSchema(property spec.Schema) *schema.Schema {
 	var propertySchema *schema.Schema
+	// Arrays only support 'string' items at the moment
 	if property.Type.Contains("array") {
 		propertySchema = &schema.Schema{
 			Type: schema.TypeList,
 			Elem: &schema.Schema{Type: schema.TypeString},
 		}
-	} else {
+	} else if property.Type.Contains("string") {
 		propertySchema = &schema.Schema{
 			Type: schema.TypeString,
 		}
+	} else if property.Type.Contains("integer") {
+		propertySchema = &schema.Schema{
+			Type: schema.TypeInt,
+		}
+	} else if property.Type.Contains("number") {
+		propertySchema = &schema.Schema{
+			Type: schema.TypeFloat,
+		}
+	} else if property.Type.Contains("boolean") {
+		propertySchema = &schema.Schema{
+			Type: schema.TypeBool,
+		}
 	}
 	return propertySchema
-}
-
-func (r ResourceInfo) getType(property spec.Schema) schema.ValueType {
-	if property.Type.Contains("array") {
-		return schema.TypeList
-	}
-	return schema.TypeString
 }
 
 func (r ResourceInfo) getResourceUrl() string {

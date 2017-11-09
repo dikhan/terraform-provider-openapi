@@ -122,10 +122,17 @@ func (r ResourceFactory) getPayloadFromData(data *schema.ResourceData) map[strin
 		if propertyName == "id" {
 			continue
 		}
-		if reflect.TypeOf(data.Get(propertyName)).Kind() == reflect.Slice {
+		switch reflect.TypeOf(data.Get(propertyName)).Kind() {
+		case reflect.Slice:
 			input[propertyName] = data.Get(propertyName).([]interface{})
-		} else {
+		case reflect.String:
 			input[propertyName] = data.Get(propertyName).(string)
+		case reflect.Int:
+			input[propertyName] = data.Get(propertyName).(int)
+		case reflect.Float64:
+			input[propertyName] = data.Get(propertyName).(float64)
+		case reflect.Bool:
+			input[propertyName] = data.Get(propertyName).(bool)
 		}
 	}
 	return input

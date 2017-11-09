@@ -161,6 +161,12 @@ definitions:
         type: "array"
         items:
           type: "string"
+      example_int:
+        type: integer
+      example_number:
+        type: number
+      example_boolean:
+        type: boolean
     xml:
       name: "ContentDeliveryNetwork"
   error:
