@@ -52,6 +52,11 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkHttpStatusCode(res, http.StatusCreated); err != nil {
 		return fmt.Errorf("POST %s returned an error. Error = %s", url, err)
 	}
+
+	if output["id"] == nil {
+		return fmt.Errorf("object returned from api is missing mandatory property 'id'")
+	}
+
 	data.SetId(output["id"].(string))
 	return nil
 }
