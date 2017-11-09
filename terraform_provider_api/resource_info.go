@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -9,8 +11,10 @@ type CrudResourcesInfo map[string]ResourceInfo
 
 type ResourceInfo struct {
 	Name             string
+	// Path contains relative path to the resource e,g: /v1/resource
 	Path             string
 	Host             string
+	HttpSchemes      []string
 	SchemaDefinition spec.Schema
 	// CreatePathInfo contains info about /resource
 	CreatePathInfo spec.PathItem
@@ -70,4 +74,18 @@ func (r ResourceInfo) getType(property spec.Schema) schema.ValueType {
 		return schema.TypeList
 	}
 	return schema.TypeString
+}
+
+func (r ResourceInfo) getResourceUrl() string {
+	defaultScheme := "http"
+	for _, scheme := range r.HttpSchemes {
+		if scheme == "https" {
+			defaultScheme = "https"
+		}
+	}
+	return fmt.Sprintf("%s://%s%s", defaultScheme, r.Host, r.Path)
+}
+
+func (r ResourceInfo) getResourceIdUrl(id string) string {
+	return fmt.Sprintf("%s/%s", r.getResourceUrl(), id)
 }
