@@ -39,7 +39,7 @@ func getApiDiscoveryUrl() string {
 		tr.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
-		apiDiscoveryUrl = "https://localhost:8443/swagger.json"
+		apiDiscoveryUrl = "https://localhost:8443/swagger.yaml"
 	}
 	return apiDiscoveryUrl
 }
