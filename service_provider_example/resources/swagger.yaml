@@ -3,18 +3,19 @@ swagger: "2.0"
 info:
   description: "This service provider allows the creation of fake 'cdns' resources"
   version: "1.0.0"
-  title: "Service Provider 2 (sp2)"
+  title: "Service Provider (sp)"
   contact:
     email: "apiteam@serviceprovider.io"
-host: "localhost:8080"
+host: "localhost:8443"
 tags:
 - name: "cdn"
-  description: "Operations about users"
+  description: "Operations about cdns"
   externalDocs:
     description: "Find out more about cdn api"
     url: "https://github.com/dikhan/terraform-provider-api/service_provider_example"
 schemes:
 - "http"
+- "https"
 
 consumes:
 - "application/json"
@@ -58,6 +59,8 @@ paths:
           description: "generic error response"
           schema:
             $ref: "#/definitions/error"
+      security:
+        - apikey_auth: []
   /v1/cdns/{id}:
     get:
       tags:
@@ -80,6 +83,8 @@ paths:
           description: "Invalid cdn id supplied"
         404:
           description: "CDN not found"
+      security:
+        - apikey_auth: []
     put:
       tags:
       - "cdn"
@@ -106,6 +111,8 @@ paths:
           description: "Invalid cdn id supplied"
         404:
           description: "CDN not found"
+      security:
+        - apikey_auth: []
     delete:
       tags:
       - "cdn"
@@ -124,6 +131,14 @@ paths:
           description: "Invalid cdn id supplied"
         404:
           description: "cdn not found"
+      security:
+        - apikey_auth: []
+
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
 
 definitions:
   ContentDeliveryNetwork:

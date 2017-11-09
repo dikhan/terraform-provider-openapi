@@ -37,7 +37,7 @@ func NewRouter() *mux.Router {
 
 func Discovery(w http.ResponseWriter, r *http.Request) {
 	pwd, _ := os.Getwd()
-	b, err := ioutil.ReadFile(pwd + "/resources/swagger.json")
+	b, err := ioutil.ReadFile(pwd + "/resources/swagger.yaml")
 	if err != nil {
 		fmt.Print(err)
 		return
@@ -51,7 +51,7 @@ var routes = Routes{
 	Route{
 		"ApiDiscovery",
 		"GET",
-		"/swagger.json",
+		"/swagger.yaml",
 		Discovery,
 	},
 

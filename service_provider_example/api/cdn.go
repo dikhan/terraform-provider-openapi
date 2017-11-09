@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"errors"
+
 	"github.com/pborman/uuid"
 )
 
@@ -20,6 +22,9 @@ type ContentDeliveryNetwork struct {
 var db = map[string]*ContentDeliveryNetwork{}
 
 func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
+	if authenticateRequest(r, w) != nil {
+		return
+	}
 	cdn, err := readRequest(r)
 	if err != nil {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
@@ -31,6 +36,9 @@ func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
 }
 
 func ContentDeliveryNetworkGetV1(w http.ResponseWriter, r *http.Request) {
+	if authenticateRequest(r, w) != nil {
+		return
+	}
 	a, err := retrieveCdn(r)
 	if err != nil {
 		sendErrorResponse(http.StatusNotFound, err.Error(), w)
@@ -40,6 +48,9 @@ func ContentDeliveryNetworkGetV1(w http.ResponseWriter, r *http.Request) {
 }
 
 func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
+	if authenticateRequest(r, w) != nil {
+		return
+	}
 	a, err := retrieveCdn(r)
 	if err != nil {
 		sendErrorResponse(http.StatusNotFound, err.Error(), w)
@@ -56,13 +67,16 @@ func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
 }
 
 func ContentDeliveryNetworkDeleteV1(w http.ResponseWriter, r *http.Request) {
+	if authenticateRequest(r, w) != nil {
+		return
+	}
 	a, err := retrieveCdn(r)
 	if err != nil {
 		sendErrorResponse(http.StatusNotFound, err.Error(), w)
 		return
 	}
 	delete(db, a.Id)
-	updateResponseHeaders(http.StatusOK, w)
+	updateResponseHeaders(http.StatusNoContent, w)
 }
 
 func retrieveCdn(r *http.Request) (*ContentDeliveryNetwork, error) {
@@ -87,6 +101,16 @@ func readRequest(r *http.Request) (*ContentDeliveryNetwork, error) {
 		return nil, fmt.Errorf("payload does not match cdn spec - %s", err)
 	}
 	return cdn, nil
+}
+
+func authenticateRequest(r *http.Request, w http.ResponseWriter) error {
+	apiKey := r.Header.Get("Authorization")
+	if apiKey == "" || apiKey != "apiKeyValue" {
+		msg := fmt.Sprintf("unauthorized user")
+		sendErrorResponse(http.StatusUnauthorized, msg, w)
+		return errors.New(msg)
+	}
+	return nil
 }
 
 func sendResponse(httpResponseStatusCode int, w http.ResponseWriter, cdn *ContentDeliveryNetwork) {
