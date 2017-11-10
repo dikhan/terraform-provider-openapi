@@ -13,7 +13,7 @@ import (
 )
 
 type ResourceFactory struct {
-	httpClient   *http.Client
+	httpClient   httpGoClient.HttpClient
 	ResourceInfo ResourceInfo
 }
 
@@ -41,11 +41,9 @@ func (r ResourceFactory) checkHttpStatusCode(res *http.Response, expectedHttpSta
 func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
-	httpClient := httpGoClient.HttpClient{HttpClient: r.httpClient}
-	url := r.ResourceInfo.getResourceUrl()
 
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.CreatePathInfo.Post, i.(ProviderConfig), url)
-	res, err := httpClient.PostJson(url, headers, input, &output)
+	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.CreatePathInfo.Post, i.(ProviderConfig), r.ResourceInfo.getResourceUrl())
+	res, err := r.httpClient.PostJson(url, headers, input, &output)
 	if err != nil {
 		return err
 	}
@@ -63,11 +61,8 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 
 func (r ResourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	output := map[string]interface{}{}
-	httpClient := httpGoClient.HttpClient{HttpClient: r.httpClient}
-	url := r.ResourceInfo.getResourceIdUrl(data.Id())
-
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Get, i.(ProviderConfig), url)
-	res, err := httpClient.Get(url, headers, &output)
+	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Get, i.(ProviderConfig), r.ResourceInfo.getResourceIdUrl(data.Id()))
+	res, err := r.httpClient.Get(url, headers, &output)
 	if err != nil {
 		return err
 	}
@@ -82,11 +77,12 @@ func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
 
-	httpClient := httpGoClient.HttpClient{HttpClient: r.httpClient}
-	url := r.ResourceInfo.getResourceIdUrl(data.Id())
+	if err := r.checkImmutableFields(data, i); err != nil {
+		return err
+	}
 
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Put, i.(ProviderConfig), url)
-	res, err := httpClient.PutJson(url, headers, input, &output)
+	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Put, i.(ProviderConfig), r.ResourceInfo.getResourceIdUrl(data.Id()))
+	res, err := r.httpClient.PutJson(url, headers, input, &output)
 	if err != nil {
 		return err
 	}
@@ -98,16 +94,27 @@ func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r ResourceFactory) delete(data *schema.ResourceData, i interface{}) error {
-	httpClient := httpGoClient.HttpClient{HttpClient: r.httpClient}
-	url := r.ResourceInfo.getResourceIdUrl(data.Id())
-
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Delete, i.(ProviderConfig), url)
-	res, err := httpClient.Delete(url, headers)
+	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Delete, i.(ProviderConfig), r.ResourceInfo.getResourceIdUrl(data.Id()))
+	res, err := r.httpClient.Delete(url, headers)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHttpStatusCode(res, http.StatusNoContent); err != nil {
 		return fmt.Errorf("DELETE %s returned an error. Error = %s", url, err)
+	}
+	return nil
+}
+
+func (r ResourceFactory) checkImmutableFields(updated *schema.ResourceData, i interface{}) error {
+	remoteData := &schema.ResourceData{}
+	remoteData.SetId(updated.Id())
+	if err := r.read(remoteData, i); err != nil {
+		return err
+	}
+	for _, immutablePropertyName := range r.ResourceInfo.getImmutableProperties() {
+		if updated.Get(immutablePropertyName) != remoteData.Get(immutablePropertyName) {
+			return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
+		}
 	}
 	return nil
 }
@@ -123,8 +130,9 @@ func (r ResourceFactory) updateResourceState(input map[string]interface{}, data 
 
 func (r ResourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
-	for propertyName, _ := range r.ResourceInfo.SchemaDefinition.Properties {
-		if propertyName == "id" {
+	for propertyName, property := range r.ResourceInfo.SchemaDefinition.Properties {
+		// ReadOnly properties are not considered for the payload data
+		if propertyName == "id" || property.ReadOnly {
 			continue
 		}
 		switch reflect.TypeOf(data.Get(propertyName)).Kind() {

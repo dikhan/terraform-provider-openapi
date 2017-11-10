@@ -150,11 +150,13 @@ definitions:
     properties:
       id:
         type: "string"
-        readOnly: true
+        readOnly: true # this field will not be considered when updating the resource
       label:
         type: "string"
+        x-terraform-immutable: true
       ips:
         type: "array"
+        x-terraform-force-new: true # when this value changes terraform will force the creation of a new resource
         items:
           type: "string"
       hostnames:
@@ -167,8 +169,10 @@ definitions:
         type: number
       example_boolean:
         type: boolean
-    xml:
-      name: "ContentDeliveryNetwork"
+      example_computed:
+        type: boolean
+        readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
+                       # to be returned form the api, and will be saved as computed value in the terraform state file
   error:
     type: object
     required:

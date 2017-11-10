@@ -7,6 +7,7 @@ import (
 
 	"net/http"
 
+	httpGoClient "github.com/dikhan/http_goclient"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -62,7 +63,7 @@ func (p ProviderFactory) generateProviderFromApiSpec(apiSpecAnalyser *ApiSpecAna
 	resourceMap := map[string]*schema.Resource{}
 	for resourceName, resourceInfo := range apiSpecAnalyser.getCrudResources() {
 		r := ResourceFactory{
-			&http.Client{},
+			httpGoClient.HttpClient{HttpClient: &http.Client{}},
 			resourceInfo,
 		}
 		resource := r.createSchemaResource()
@@ -115,7 +116,6 @@ func (p ProviderFactory) configureProvider(securityDefinitions spec.SecurityDefi
 				config.SecuritySchemaDefinitions[secDefName] = securitySchemaDefinition
 			}
 		}
-		PrettyPrint(config.SecuritySchemaDefinitions)
 		return config, nil
 	}
 }
