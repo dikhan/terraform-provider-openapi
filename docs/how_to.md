@@ -8,7 +8,7 @@ are interpreted and translated into terraform idioms.
 
 ## What's supported?
 
-####<a name="swaggerVersion">Swagger Version</a>
+#### <a name="swaggerVersion">Swagger Version</a>
 
 - **Field Name:** swagger
 - **Type:** String
