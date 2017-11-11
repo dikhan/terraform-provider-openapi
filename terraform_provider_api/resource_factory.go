@@ -7,13 +7,13 @@ import (
 
 	"io/ioutil"
 
-	httpGoClient "github.com/dikhan/http_goclient"
+	"github.com/dikhan/http_goclient"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type ResourceFactory struct {
-	httpClient   httpGoClient.HttpClient
+	httpClient   http_goclient.HttpClient
 	ResourceInfo ResourceInfo
 }
 

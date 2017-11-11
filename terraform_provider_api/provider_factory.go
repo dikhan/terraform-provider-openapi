@@ -7,7 +7,7 @@ import (
 
 	"net/http"
 
-	httpGoClient "github.com/dikhan/http_goclient"
+	"github.com/dikhan/http_goclient"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -63,7 +63,7 @@ func (p ProviderFactory) generateProviderFromApiSpec(apiSpecAnalyser *ApiSpecAna
 	resourceMap := map[string]*schema.Resource{}
 	for resourceName, resourceInfo := range apiSpecAnalyser.getCrudResources() {
 		r := ResourceFactory{
-			httpGoClient.HttpClient{HttpClient: &http.Client{}},
+			http_goclient.HttpClient{HttpClient: &http.Client{}},
 			resourceInfo,
 		}
 		resource := r.createSchemaResource()
