@@ -2,7 +2,9 @@
 
 This document aims to provide more insight about the general functionality of this terraform provider.
   
-#### I am a service provider, does my API need to follow any specification to be able to integrate with this tool?
+  
+  
+####<a name="howToIntegrate">I am a service provider, does my API need to follow any specification to be able to integrate with this tool?</a> 
 
 Short answer, yes. 
 
@@ -17,7 +19,7 @@ Hence, for more information about currently supported features refer to
 Additionally, to achieve some consistency across multiple service providers in the way the APIs are structured, it is expected 
 the APIs to follow [Google APIs Design guidelines](https://cloud.google.com/apis/design/).
 
-#### I am service provider and need to upgrade my APIs...How will this provider handle new versions?
+####<a name="versioning">I am service provider and need to upgrade my APIs...How will this provider handle new versions?</a>
 
 The version topic among software engineers is rather conflicting and often involves endless discussions that most of 
 the times finish with a non deterministic conclusion. Not having an official guideline that expresses the best-practise 
@@ -85,7 +87,7 @@ definitions:
 The corresponding .tf resource definition would look like:
 
 ```
-resource "sp_v1cdns" "my_version1_cdn" {
+resource "sp_cdns_v1" "my_cdn_v1" {
   label = "label"
   ips = ["127.0.0.1"]
   hostnames = ["origin.com"]
@@ -138,13 +140,12 @@ definitions:
 And the corresponding .tf resource definition would look like:
 
 ```
-resource "sp_v2cdns" {
+resource "sp_cdns_v2" "my_cdn_v2"{
     proxy_dns = ""
 }    
 ```
 
-
-####  I am service provider and currently support multiple environments. How will this provider handle that?
+####<a name="multipleEnvironments">I am service provider and currently support multiple environments. How will this provider handle that?</a>
 
 To be decided...
 
