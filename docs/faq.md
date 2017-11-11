@@ -2,7 +2,7 @@
 
 This document aims to provide more insight about the general functionality of this terraform provider.
  
-#### <a name="howToIntegrate">I am a service provider, does my API need to follow any specification to be able to integrate with this tool?</a> 
+## <a name="howToIntegrate">I am a service provider, does my API need to follow any specification to be able to integrate with this tool?</a> 
 
 Short answer, yes. 
 
