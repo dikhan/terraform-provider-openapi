@@ -59,7 +59,7 @@ and what is currently supported.
 ## Contributing
 Please follow the guidelines from:
 
- - [Contributor Guidelines](./docs/contributing.md)
+ - [Contributor Guidelines](.github/CONTRIBUTING.md)
 
 ## FAQ
 
