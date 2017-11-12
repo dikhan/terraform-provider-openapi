@@ -47,23 +47,18 @@ rather than the tooling around it.
 -	[Docker](https://www.docker.com/) 17.09.0-ce (to run service provider example)
 -	[Docker-compose](https://docs.docker.com/compose/) 1.16.1 (to run service provider example)
 
-## Give it a try
 
-Refer to [How to set up the local environment](./docs/local_environment.md) to give it a try
+## How to use the provider
 
-## How to use it
-
-Refer to [How to](docs/how_to.md) to learn more about how to define the swagger file, good practises
-and what is currently supported.
+- [How to](docs/how_to.md) document contains information about how to define a swagger file following good practises that
+make it work seamlessly with this terraform provider. Additionally, learn more about what is currently supported.
+- [FAQ](./docs/faq.md) document answers for the most frequently asked questions.
 
 ## Contributing
 Please follow the guidelines from:
 
  - [Contributor Guidelines](.github/CONTRIBUTING.md)
-
-## FAQ
-
-Refer to [FAQ](./docs/faq.md) document to get answers for the most frequently asked questions.
+ - [How to set up the local environment?](./docs/local_environment.md)
 
 ## References
 
