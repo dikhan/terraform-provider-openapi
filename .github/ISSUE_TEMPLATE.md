@@ -1,11 +1,11 @@
-# Issue
+# New Issue
 
 Please check one of the options below and follow the instructions:
 
-- [ ] **Feature Request** fill out [feature request](#featureRequest) section and remove the rest
-- [ ] **Bug Found** fill out [bug section](#bugFound) and remove the rest
+- [ ] **Feature Request** fill out ['Feature Request'](#featureRequest) section and remove the rest
+- [ ] **Bug Found** fill out ['Bug Found'](#bugFound) and remove the rest
 
-*To tick the checkbox simply write an 'X' (e,g: [X]) in the middle of the square brackets and do not leave any white heading/trailing spaces.*
+*Please put an `x` (w/o heading/trailing white spaces) in the boxes that apply*
 
 ## <a name="featureRequest">Feature Request</a>
 
