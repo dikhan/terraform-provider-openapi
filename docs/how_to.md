@@ -5,6 +5,21 @@ provider. These guidelines not only aim to encourage service providers to follow
 exposing APIs but also and more importantly serve as a reference on how the different sections of a swagger file
 are interpreted and translated into terraform idioms.
 
+## Best Practises
+
+- Resource names should be plural as per [Google API Resource name Guidelines](https://cloud.google.com/apis/design/resource_names).
+This means that paths should try and keep their naming plural to refer to the collections. For instance, `/api/users` as opposed to
+`/api/user`.
+- Property names should be lower case and separated by underscore (e,g: my_property)
+- Swagger Tags should be used to group resources by name (several version can be under the same tag)
+
+Refer to [What's supported](#what's-supported?) section to learn more about specific best practises/requirements on
+the different OpenAPI Swagger spec fields in the root document. 
+
+## Versioning
+
+API Terraform provider supports resource path versioning, which means that terraform will treat each resource version as
+it was a different resource. Refer to the [FAQ](https://github.com/dikhan/terraform-provider-api/blob/master/docs/faq.md#versioning) to get more info about how versioning is handled
 
 ## What's supported?
 
@@ -113,6 +128,12 @@ paths:
   /resource:
     post:
       ...
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/resource"
+      ...
   /resource/{id}:
     get:
       ...
@@ -122,6 +143,17 @@ paths:
       ...                  
     
 ```
+
+When the terraform provider is reading the different paths, it will only consider those that match the following criteria:
+
+- In order for an endpoint to be considered as a terraform resource, it must expose a `POST /{resourceName}` and 
+`GET,PUT,DELETE /{resourceName}/{id}` operations as shown in the example above. Paths can also be versioned, refer
+to [versioning](#versioning) to learn more about it.
+
+- The schema object definition must be described on the root level [definitions](#swaggerDefinitions) section and must 
+not be embedded within the API definition. This is enforced to keep the swagger file well structured and to encourage
+object re-usability across the CRUD operations. Operations such as POST/GET/PUT are expected to have a 'schema' property
+with a link to the actual definition (e,g: `$ref: "#/definitions/resource`)
 
 #### <a name="swaggerDefinitions">Definitions</a>
 
@@ -274,18 +306,6 @@ provider "sp" {
   api_key_query = "apiKeyValue"
 }
 ```
-
-## Versioning
-
-API Terraform provider supports resource path versioning, which means that terraform will treat each resource version as
-it was a different resource. Refer to the [FAQ](https://github.com/dikhan/terraform-provider-api/blob/master/docs/faq.md#versioning) to get more info about how versioning is handled
-
-## Best Practises
-
-- Property names should be lower case and separated by underscore (e,g: my_property)
-- Resource names should be plural as per [Google API Resource name Guidelines](https://cloud.google.com/apis/design/resource_names) 
-- Version should be handled on the path level as per [Google API Versioning Guidelines](https://cloud.google.com/apis/design/versioning)
-- Swagger Tags should be used to group resources by name (several version can be under the same tag)
 
 ## What is not supported yet?
 
