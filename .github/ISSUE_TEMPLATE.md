@@ -1,5 +1,3 @@
-# New Issue
-
 Please check one of the options below and follow the instructions:
 
 - [ ] **Feature Request** fill out ['Feature Request'](#featureRequest) section and remove the rest
