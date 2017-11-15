@@ -1,9 +1,17 @@
-Please check one of the options below and follow the instructions:
+Please check one of the options below and follow the instructions: 
 
 - [ ] **Feature Request** fill out ['Feature Request'](#featureRequest) section and remove the rest
 - [ ] **Bug Found** fill out ['Bug Found'](#bugFound) and remove the rest
 
-*Please put an `x` (w/o heading/trailing white spaces) in the boxes that apply*
+*Please put an `x` (w/o heading/trailing white spaces) in the boxes that apply.*
+
+### Checklist
+
+**Don't forget to go through the checklist to make sure the issue is created properly**:
+
+- [ ] I have filled out the right section (feature request/bug) and added enough details.
+- [ ] I have added a corresponding label (feature request/bug) to the issue (right side menu)
+- [ ] I have added this issue to the 'API Terraform Provider' GitHub project (right side menu)
 
 ## <a name="featureRequest">Feature Request</a>
 
