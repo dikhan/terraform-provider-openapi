@@ -10,7 +10,6 @@ import (
 	"github.com/dikhan/http_goclient"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 type ResourceFactory struct {
@@ -30,11 +29,17 @@ func (r ResourceFactory) createSchemaResource() *schema.Resource {
 
 func (r ResourceFactory) checkHttpStatusCode(res *http.Response, expectedHttpStatusCode int) error {
 	if res.StatusCode != expectedHttpStatusCode {
-		b, _ := ioutil.ReadAll(res.Body)
-		if len(b) > 0 {
-			return fmt.Errorf("response status code %d not matching expected one %d. Error = %s", res.StatusCode, expectedHttpStatusCode, string(b))
+		switch res.StatusCode {
+		case http.StatusUnauthorized:
+			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials", res.StatusCode)
+		default:
+			b, _ := ioutil.ReadAll(res.Body)
+			if len(b) > 0 {
+				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %d. Error = %s", res.StatusCode, expectedHttpStatusCode, string(b))
+			}
+			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %d", res.StatusCode, expectedHttpStatusCode)
 		}
-		return fmt.Errorf("response status code %d not matching expected one %d", res.StatusCode, expectedHttpStatusCode)
+
 	}
 	return nil
 }
@@ -49,7 +54,7 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 	if err := r.checkHttpStatusCode(res, http.StatusCreated); err != nil {
-		return fmt.Errorf("POST %s returned an error. Error = %s", url, err)
+		return fmt.Errorf("POST %s failed: %s", url, err)
 	}
 
 	if output["id"] == nil {
@@ -76,7 +81,7 @@ func (r ResourceFactory) readRemote(id string, config ProviderConfig) (map[strin
 		return nil, err
 	}
 	if err := r.checkHttpStatusCode(res, http.StatusOK); err != nil {
-		return nil, fmt.Errorf("GET %s returned an error. Error = %s", url, err)
+		return nil, fmt.Errorf("GET %s failed: %s", url, err)
 	}
 	return output, nil
 }
@@ -95,7 +100,7 @@ func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 	if err := r.checkHttpStatusCode(res, http.StatusOK); err != nil {
-		return fmt.Errorf("UPDATE %s returned an error. Error = %s", url, err)
+		return fmt.Errorf("UPDATE %s failed: %s", url, err)
 	}
 	return r.updateResourceState(output, data)
 }
@@ -107,7 +112,7 @@ func (r ResourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 	if err := r.checkHttpStatusCode(res, http.StatusNoContent); err != nil {
-		return fmt.Errorf("DELETE %s returned an error. Error = %s", url, err)
+		return fmt.Errorf("DELETE %s failed: %s", url, err)
 	}
 	return nil
 }
@@ -119,7 +124,6 @@ func (r ResourceFactory) checkImmutableFields(updated *schema.ResourceData, i in
 		return err
 	}
 	for _, immutablePropertyName := range r.ResourceInfo.getImmutableProperties() {
-		log.Println(immutablePropertyName, "Updated:", updated.Get(immutablePropertyName), "remoteData:", remoteData[immutablePropertyName])
 		if updated.Get(immutablePropertyName) != remoteData[immutablePropertyName] {
 			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
 			// data inside the updated (*schema.ResourceData) in the state file
