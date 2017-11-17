@@ -10,6 +10,7 @@ import (
 	"github.com/dikhan/http_goclient"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
+	"log"
 )
 
 type ResourceFactory struct {
@@ -60,17 +61,24 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r ResourceFactory) read(data *schema.ResourceData, i interface{}) error {
-	output := map[string]interface{}{}
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Get, i.(ProviderConfig), r.ResourceInfo.getResourceIdUrl(data.Id()))
-	res, err := r.httpClient.Get(url, headers, &output)
+	output, err := r.readRemote(data.Id(), i.(ProviderConfig))
 	if err != nil {
 		return err
 	}
-	if err := r.checkHttpStatusCode(res, http.StatusOK); err != nil {
-		return fmt.Errorf("GET %s returned an error. Error = %s", url, err)
+	return r.updateResourceState(output, data)
+}
+
+func (r ResourceFactory) readRemote(id string, config ProviderConfig) (map[string]interface{}, error) {
+	output := map[string]interface{}{}
+	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Get, config, r.ResourceInfo.getResourceIdUrl(id))
+	res, err := r.httpClient.Get(url, headers, &output)
+	if err != nil {
+		return nil, err
 	}
-	r.updateResourceState(output, data)
-	return nil
+	if err := r.checkHttpStatusCode(res, http.StatusOK); err != nil {
+		return nil, fmt.Errorf("GET %s returned an error. Error = %s", url, err)
+	}
+	return output, nil
 }
 
 func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error {
@@ -89,8 +97,7 @@ func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkHttpStatusCode(res, http.StatusOK); err != nil {
 		return fmt.Errorf("UPDATE %s returned an error. Error = %s", url, err)
 	}
-	r.updateResourceState(output, data)
-	return nil
+	return r.updateResourceState(output, data)
 }
 
 func (r ResourceFactory) delete(data *schema.ResourceData, i interface{}) error {
@@ -106,26 +113,33 @@ func (r ResourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r ResourceFactory) checkImmutableFields(updated *schema.ResourceData, i interface{}) error {
-	remoteData := &schema.ResourceData{}
-	remoteData.SetId(updated.Id())
-	if err := r.read(remoteData, i); err != nil {
+	var remoteData map[string]interface{}
+	var err error
+	if remoteData, err = r.readRemote(updated.Id(), i.(ProviderConfig)); err != nil {
 		return err
 	}
 	for _, immutablePropertyName := range r.ResourceInfo.getImmutableProperties() {
-		if updated.Get(immutablePropertyName) != remoteData.Get(immutablePropertyName) {
+		log.Println(immutablePropertyName, "Updated:", updated.Get(immutablePropertyName), "remoteData:", remoteData[immutablePropertyName])
+		if updated.Get(immutablePropertyName) != remoteData[immutablePropertyName] {
+			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
+			// data inside the updated (*schema.ResourceData) in the state file
+			r.updateResourceState(remoteData, updated)
 			return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
 		}
 	}
 	return nil
 }
 
-func (r ResourceFactory) updateResourceState(input map[string]interface{}, data *schema.ResourceData) {
+func (r ResourceFactory) updateResourceState(input map[string]interface{}, data *schema.ResourceData) error {
 	for propertyName, propertyValue := range input {
 		if propertyName == "id" {
 			continue
 		}
-		data.Set(propertyName, propertyValue)
+		if err := data.Set(propertyName, propertyValue); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (r ResourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
