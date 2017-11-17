@@ -13,9 +13,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-const API_KEY_HEADER_NAME = "api_key_header"
-const API_KEY_QUERY_NAME = "api_key_query"
-
 type ProviderFactory struct {
 	Name            string
 	DiscoveryApiUrl string
@@ -82,16 +79,9 @@ func (p ProviderFactory) generateProviderFromApiSpec(apiSpecAnalyser *ApiSpecAna
 // be used as the authentication mechanism when making http requests to the service provider
 func (p ProviderFactory) createTerraformProviderSchema(securityDefinitions spec.SecurityDefinitions) map[string]*schema.Schema {
 	s := map[string]*schema.Schema{}
-	for _, secDef := range securityDefinitions {
+	for secDefName, secDef := range securityDefinitions {
 		if secDef.Type == "apiKey" {
-			var key string
-			switch secDef.In {
-			case "header":
-				key = API_KEY_HEADER_NAME
-			case "query":
-				key = API_KEY_QUERY_NAME
-			}
-			s[key] = &schema.Schema{
+			s[secDefName] = &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			}
@@ -109,9 +99,9 @@ func (p ProviderFactory) configureProvider(securityDefinitions spec.SecurityDefi
 				securitySchemaDefinition := SecuritySchemaDefinition{}
 				switch secDef.In {
 				case "header":
-					securitySchemaDefinition.ApiKeyHeader = ApiKey{secDef.Name, data.Get(API_KEY_HEADER_NAME).(string)}
+					securitySchemaDefinition.ApiKeyHeader = ApiKey{secDef.Name, data.Get(secDefName).(string)}
 				case "query":
-					securitySchemaDefinition.ApiKeyQuery = ApiKey{secDef.Name, data.Get(API_KEY_QUERY_NAME).(string)}
+					securitySchemaDefinition.ApiKeyQuery = ApiKey{secDef.Name, data.Get(secDefName).(string)}
 				}
 				config.SecuritySchemaDefinitions[secDefName] = securitySchemaDefinition
 			}

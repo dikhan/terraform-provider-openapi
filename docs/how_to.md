@@ -275,37 +275,33 @@ paths:
     post:
       ...
       security:
-        - api_key_auth: []
+        - apikey_auth: []
       ...          
 ```
 
 ```yml
 securityDefinitions:
-  api_key_auth:
+  apikey_auth:
     type: "apiKey"
     name: "Authorization"
     in: "header"
 ```
 
 The provider automatically identifies header/query based auth policies and exposes them as part of the provider
-TF configuration so the actual token can be injected. The following is an example on how a user would be able to
-configure the provider with the auth header key. Internally, the provider will use this value for every API that has
- the 'api_key_auth' attach to it. Moreover, the name of the header/query parameter will be the one specified in the 
- security definition, in the above example 'Authorization'.
+TF configuration so the actual token can be injected into the HTTP calls. The following is an example on how a user would 
+be able to configure the provider with the auth header key. Internally, the provider will use this value for every API that has
+ the 'apikey_auth' attach to it. Moreover, the name of the header/query parameter will be the one specified in the 
+ 'name' property of the security definition, in the above example 'Authorization'.
 
-Example of header based auth provider configuration:
+Below is the corresponding TF configuration, for a provider that has a header based authentication in the swagger file 
+(as the example above):
 ```
 provider "sp" {
-  api_key_header = "apiKeyValue"
+  apikey_auth = "apiKeyValue"
 }
 ```
-
-Example of query based auth provider configuration:
-```
-provider "sp" {
-  api_key_query = "apiKeyValue"
-}
-```
+Note that the TF property name inside the provider's configuration is exactly the same as the one configured in the swagger
+file.
 
 ## What is not supported yet?
 
