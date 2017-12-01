@@ -7,6 +7,8 @@ import (
 
 	"io/ioutil"
 
+	"strconv"
+
 	"github.com/dikhan/http_goclient"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -61,7 +63,16 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("object returned from api is missing mandatory property 'id'")
 	}
 
-	data.SetId(output["id"].(string))
+	switch output["id"].(type) {
+	case int:
+		data.SetId(strconv.Itoa(output["id"].(int)))
+	case float64:
+		data.SetId(strconv.Itoa(int(output["id"].(float64))))
+	default:
+		data.SetId(output["id"].(string))
+	}
+	r.updateResourceState(output, data)
+
 	return nil
 }
 
