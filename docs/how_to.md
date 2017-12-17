@@ -208,6 +208,7 @@ Attribute Name | Type | Description
 readOnly | boolean |  The field will not be considered when updating the resource
 x-terraform-immutable | boolean |  The field will be used to create a brand new resource; however it can not be updated. Attempts to update this value will result into terraform aborting the update.
 x-terraform-force-new | boolean |  If the value of this property is updated; terraform will delete the previously created resource and create a new one with this value
+x-terraform-sensitive | boolean |  If this meta attribute is present in an object definition property, it will be considered sensitive as far as terraform is concerned, meaning that its value will not be disclosed in the TF state file  
 default | primitive (int, bool, string) | Default value that will be applied to the property if value is not provided by the user (this attribute can not coexist with readOnly)
 ##### <a name="definitionExample">Full Example</a>
 
@@ -254,6 +255,10 @@ definitions:
       force_new_prop:
         type: number
         x-terraform-force-new: true
+
+      sensitive_prop:
+        type: string
+        x-terraform-sensitive: true        
 ```
 
 
