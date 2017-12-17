@@ -150,7 +150,8 @@ definitions:
     properties:
       id:
         type: "string"
-        readOnly: true # this field will not be considered when updating the resource
+        readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
+                       # to be returned from the api, and will be saved as computed value in the terraform state file
       label:
         type: "string"
         x-terraform-immutable: true
@@ -169,10 +170,6 @@ definitions:
         type: number
       example_boolean:
         type: boolean
-      example_computed:
-        type: boolean
-        readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
-                       # to be returned form the api, and will be saved as computed value in the terraform state file
   error:
     type: object
     required:
