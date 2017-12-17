@@ -10,6 +10,7 @@ import (
 
 const EXT_TF_IMMUTABLE = "x-terraform-immutable"
 const EXT_TF_FORCE_NEW = "x-terraform-force-new"
+const EXT_TF_SENSITIVE = "x-terraform-sensitive"
 
 type CrudResourcesInfo map[string]ResourceInfo
 
@@ -122,6 +123,12 @@ func (r ResourceInfo) createTerraformBasicSchema(propertyName string, property s
 	// it comes back from the api and is stored in the state. This properties are mostly informative.
 	if property.ReadOnly {
 		propertySchema.Computed = true
+	}
+
+	// A sensitive property means that the value will not be disclosed in the state file, preventing secrets from
+	// being leaked
+	if sensitive, ok := property.Extensions.GetBool(EXT_TF_SENSITIVE); ok && sensitive {
+		propertySchema.Sensitive = true
 	}
 
 	if property.Default != nil {
