@@ -19,14 +19,18 @@ type ResourceFactory struct {
 	ResourceInfo ResourceInfo
 }
 
-func (r ResourceFactory) createSchemaResource() *schema.Resource {
+func (r ResourceFactory) createSchemaResource() (*schema.Resource, error) {
+	s, err := r.ResourceInfo.createTerraformResourceSchema()
+	if err != nil {
+		return nil, err
+	}
 	return &schema.Resource{
-		Schema: r.ResourceInfo.createTerraformResourceSchema(),
+		Schema: s,
 		Create: r.create,
 		Read:   r.read,
 		Delete: r.delete,
 		Update: r.update,
-	}
+	}, nil
 }
 
 func (r ResourceFactory) checkHttpStatusCode(res *http.Response, expectedHttpStatusCode int) error {
