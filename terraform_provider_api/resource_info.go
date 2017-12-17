@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
+	"log"
 )
 
 const EXT_TF_IMMUTABLE = "x-terraform-immutable"
@@ -26,26 +27,53 @@ type ResourceInfo struct {
 	PathInfo spec.PathItem
 }
 
-func (r ResourceInfo) createTerraformResourceSchema() map[string]*schema.Schema {
+func (r ResourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 	for propertyName, property := range r.SchemaDefinition.Properties {
 		if propertyName == "id" {
 			continue
 		}
 		required := r.isRequired(propertyName, r.SchemaDefinition.Required)
-		s[propertyName] = r.createTerraformPropertySchema(propertyName, property, required)
+		schema, err := r.createTerraformPropertySchema(propertyName, property, required)
+		if err != nil {
+			return nil, err
+		}
+		s[propertyName] = schema
 	}
-	return s
+	return s, nil
 }
 
-func (r ResourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema, required bool) *schema.Schema {
-	propertySchema := r.createTerraformBasicSchema(property)
+func (r ResourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema, required bool) (*schema.Schema, error) {
+	propertySchema, err := r.createTerraformBasicSchema(propertyName, property)
+	if err != nil {
+		return nil, err
+	}
 	if required {
 		propertySchema.Required = true
 	} else {
 		propertySchema.Optional = true
 	}
-	return propertySchema
+	// ValidateFunc is not yet supported on lists or sets
+	if !r.isArrayProperty(property) {
+		propertySchema.ValidateFunc = r.validateFunc(propertyName, property)
+	}
+	return propertySchema, nil
+}
+
+func (r ResourceInfo) validateFunc(propertyName string, property spec.Schema) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		if property.Default != nil {
+			if property.ReadOnly {
+				err := fmt.Errorf(
+					"'%s.%s' is configured as 'readOnly' and can not have a default value. The value is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
+						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default value '%v' can be applied\n"+
+						"OR\n"+
+						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the value as specified by the 'readOnly' attribute\n", r.Name, k, k, property.Default, k)
+				errors = append(errors, err)
+			}
+		}
+		return
+	}
 }
 
 func (r ResourceInfo) isRequired(propertyName string, requiredProps []string) bool {
@@ -58,10 +86,10 @@ func (r ResourceInfo) isRequired(propertyName string, requiredProps []string) bo
 	return required
 }
 
-func (r ResourceInfo) createTerraformBasicSchema(property spec.Schema) *schema.Schema {
+func (r ResourceInfo) createTerraformBasicSchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
 	var propertySchema *schema.Schema
 	// Arrays only support 'string' items at the moment
-	if property.Type.Contains("array") {
+	if r.isArrayProperty(property) {
 		propertySchema = &schema.Schema{
 			Type: schema.TypeList,
 			Elem: &schema.Schema{Type: schema.TypeString},
@@ -96,7 +124,20 @@ func (r ResourceInfo) createTerraformBasicSchema(property spec.Schema) *schema.S
 		propertySchema.Computed = true
 	}
 
-	return propertySchema
+	if property.Default != nil {
+		if property.ReadOnly {
+			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
+			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
+			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API.", r.Name, propertyName)
+		} else {
+			propertySchema.Default = property.Default
+		}
+	}
+	return propertySchema, nil
+}
+
+func (r ResourceInfo) isArrayProperty(property spec.Schema) bool {
+	return property.Type.Contains("array")
 }
 
 func (r ResourceInfo) getImmutableProperties() []string {

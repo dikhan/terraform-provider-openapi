@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"regexp"
 
@@ -9,27 +8,39 @@ import (
 
 	"crypto/tls"
 
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
+	"log"
 )
 
 // ApiProvider returns a terraform.ResourceProvider.
-func ApiProvider() *schema.Provider {
-	apiDiscoveryUrl := getApiDiscoveryUrl()
+func ApiProvider() (*schema.Provider, error) {
+	providerName, apiDiscoveryUrl, err := getProviderNameAndApiDiscoveryUrl()
+	if err != nil {
+		return nil, fmt.Errorf("plugin init error: %s", err)
+	}
 	d := &ProviderFactory{
-		Name:            getProviderName(),
+		Name:            providerName,
 		DiscoveryApiUrl: apiDiscoveryUrl,
 	}
-	return d.createProvider()
+	provider, err := d.createProvider()
+	if err != nil {
+		return nil, fmt.Errorf("plugin terraform-provider-%s init error: %s", providerName, err)
+	}
+	return provider, nil
 }
 
 // This function is implemented with temporary code thus it can serve as an example
 // on how the same code base can be used by binaries of this same provider named differently
 // but internally each will end up calling a different service provider's api
-func getApiDiscoveryUrl() string {
+func getProviderNameAndApiDiscoveryUrl() (string, string, error) {
 	var apiDiscoveryUrl string
-	providerName := getProviderName()
+	providerName, err := getProviderName()
+	if err != nil {
+		return "", "", err
+	}
 	if providerName != "sp" {
-		log.Fatalf("%s provider not supported...", providerName)
+		return "", "", fmt.Errorf("%s provider not supported", providerName)
 	}
 	if providerName == "sp" {
 		// This is a temporary solution to be able to test out the example 'sp' binary produced
@@ -41,21 +52,22 @@ func getApiDiscoveryUrl() string {
 		}
 		apiDiscoveryUrl = "https://localhost:8443/swagger.yaml"
 	}
-	return apiDiscoveryUrl
+	log.Println("getProviderNameAndApiDiscoveryUrl", providerName, apiDiscoveryUrl)
+	return providerName, apiDiscoveryUrl, nil
 }
 
-func getProviderName() string {
+func getProviderName() (string, error) {
 	ex, err := os.Executable()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	r, err := regexp.Compile("(\\w+)[^-]*$")
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	match := r.FindStringSubmatch(ex)
 	if len(match) != 2 {
-		log.Fatalf("provider name does not match terraform naming convention 'terraform-provider-{name}', please rename the provider binary")
+		return "", fmt.Errorf("provider name (%s) does not match terraform naming convention 'terraform-provider-{name}', please rename the provider binary", ex)
 	}
-	return match[0]
+	return match[0], nil
 }

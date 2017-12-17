@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"net/http"
 
@@ -32,16 +31,16 @@ type ProviderConfig struct {
 	SecuritySchemaDefinitions map[string]SecuritySchemaDefinition
 }
 
-func (p ProviderFactory) createProvider() *schema.Provider {
+func (p ProviderFactory) createProvider() (*schema.Provider, error) {
 	apiSpecAnalyser, err := p.createApiSpecAnalyser()
 	if err != nil {
-		log.Fatalf("error occurred while retrieving api specification. Error=%s", err)
+		return nil, fmt.Errorf("error occurred while retrieving api specification. Error=%s", err)
 	}
 	provider, err := p.generateProviderFromApiSpec(apiSpecAnalyser)
 	if err != nil {
-		log.Fatalf("error occurred while creating schema provider. Error=%s", err)
+		return nil, fmt.Errorf("error occurred while creating schema provider. Error=%s", err)
 	}
-	return provider
+	return provider, nil
 }
 
 func (p ProviderFactory) createApiSpecAnalyser() (*ApiSpecAnalyser, error) {
@@ -63,7 +62,10 @@ func (p ProviderFactory) generateProviderFromApiSpec(apiSpecAnalyser *ApiSpecAna
 			http_goclient.HttpClient{HttpClient: &http.Client{}},
 			resourceInfo,
 		}
-		resource := r.createSchemaResource()
+		resource, err := r.createSchemaResource()
+		if err != nil {
+			return nil, err
+		}
 		resourceName := p.getProviderResourceName(resourceName)
 		resourceMap[resourceName] = resource
 	}
