@@ -6,6 +6,7 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
+	"strings"
 )
 
 const EXT_TF_IMMUTABLE = "x-terraform-immutable"
@@ -16,7 +17,8 @@ type CrudResourcesInfo map[string]ResourceInfo
 
 // ResourceInfo serves as translator between swagger definitions and terraform schemas
 type ResourceInfo struct {
-	Name string
+	Name     string
+	BasePath string
 	// Path contains relative path to the resource e,g: /v1/resource
 	Path             string
 	Host             string
@@ -165,6 +167,13 @@ func (r ResourceInfo) getResourceUrl() string {
 	for _, scheme := range r.HttpSchemes {
 		if scheme == "https" {
 			defaultScheme = "https"
+		}
+	}
+	if r.BasePath != "" && r.BasePath != "/" {
+		if strings.Index(r.BasePath, "/") == 0 {
+			return fmt.Sprintf("%s://%s%s%s", defaultScheme, r.Host, r.BasePath, r.Path)
+		} else {
+			return fmt.Sprintf("%s://%s/%s%s", defaultScheme, r.Host, r.BasePath, r.Path)
 		}
 	}
 	return fmt.Sprintf("%s://%s%s", defaultScheme, r.Host, r.Path)
