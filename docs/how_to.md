@@ -59,9 +59,6 @@ host: "api.server.com"
 - **Description:**  The base path on which the API is served, which is relative to the [`host`](#swaggerHost). 
 If it is not included, the API is served directly under the `host`. The value MUST start with a leading slash (`/`).
 
-*Base path is not supported at the moment. The terraform provider currently relies on the host and the individual API 
-paths to build up the url*
-
 ```yml
 basePath: "/"
 ```
