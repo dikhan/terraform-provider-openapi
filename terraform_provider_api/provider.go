@@ -9,8 +9,9 @@ import (
 	"crypto/tls"
 
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
 	"log"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // ApiProvider returns a terraform.ResourceProvider.
@@ -39,20 +40,20 @@ func getProviderNameAndApiDiscoveryUrl() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	if providerName != "sp" {
-		return "", "", fmt.Errorf("%s provider not supported", providerName)
+	apiDiscoveryUrl, err = GetServiceProviderSwaggerUrl(providerName)
+	if err != nil {
+		return "", "", err
 	}
 	if providerName == "sp" {
 		// This is a temporary solution to be able to test out the example 'sp' binary produced
 		// The reason why this is needed is because the http client library will reject the cert from the server
-		// as it's not signed by an ofitial CA, it's just a self signed cert
+		// as it's not signed by an official CA, it's just a self signed cert.
 		tr := http.DefaultTransport.(*http.Transport)
 		tr.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
-		apiDiscoveryUrl = "https://localhost:8443/swagger.yaml"
 	}
-	log.Println("getProviderNameAndApiDiscoveryUrl", providerName, apiDiscoveryUrl)
+	log.Printf("[INFO] Provider %s is using the following remote swagger URL: %s", providerName, apiDiscoveryUrl)
 	return providerName, apiDiscoveryUrl, nil
 }
 

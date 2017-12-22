@@ -1,9 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"github.com/hashicorp/terraform/plugin"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
 )
 
 func main() {
@@ -12,7 +13,7 @@ func main() {
 			ProviderFunc: func() terraform.ResourceProvider {
 				provider, err := ApiProvider()
 				if err != nil {
-					log.Printf("[ERROR] There was an error initialising the terraform provider: %s", err)
+					log.Fatalf("[ERROR] There was an error initialising the terraform provider: %s", err)
 				}
 				return provider
 			},

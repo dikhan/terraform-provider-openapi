@@ -11,9 +11,16 @@ docker-compose up --build --force-recreate
 Once docker-compose is done bringing up both services, the following command will read the sample [main.tf](terraform_provider_api/main.tf) 
 file and execute terraform plan:  
 ```
-cd terraform_provider_api
-go build -o terraform-provider-sp && terraform init && terraform plan
+$ cd terraform_provider_api
+$ go build -o terraform-provider-sp
+$ terraform init && OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 ```
+
+The OpenAPI terraform provider expects as input the URL where the service provider is exposing the swagger file. This
+can be passed in defining as an environment variable with a name tha follows "OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL" being '{PROVIDER_NAME}'
+the name of the provider specified in the binary when compiling the plugin - 'sp' in the example above.
+
+When defining the env variable, {PROVIDER_NAME} can be lower case or upper case.
 
 Looking carefully at the above command, the binary is named as 'terraform-provider-sp'. The reason for this is so
 terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](terraform_provider_api/main.tf) 
@@ -49,7 +56,7 @@ Plan: 1 to add, 0 to change, 0 to destroy.
 ```
 
 This means that the plugin was able to read the swagger file exposed by the service provider example, load it
-up and set up the terraform provider on the fly with the resources exposed by 'cdn-service-provider-api' being one of
+up and set up the terraform provider dinamically with the resources exposed by 'cdn-service-provider-api' being one of
 them 'cdns'.
 
 Now we can run apply to see the plugin do its magic:
