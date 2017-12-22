@@ -13,6 +13,15 @@ file and execute terraform plan:
 ```
 $ cd terraform_provider_api
 $ go build -o terraform-provider-sp
+```
+
+Looking carefully at the above command, the binary is named as 'terraform-provider-sp'. The reason for this is so
+terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](terraform_provider_api/main.tf) 
+file. 
+
+With the new provider binary in place, we can now execute terraform commands.
+
+```
 $ terraform init && OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 ```
 
@@ -22,16 +31,9 @@ the name of the provider specified in the binary when compiling the plugin - 'sp
 
 When defining the env variable, {PROVIDER_NAME} can be lower case or upper case.
 
-Looking carefully at the above command, the binary is named as 'terraform-provider-sp'. The reason for this is so
-terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](terraform_provider_api/main.tf) 
-file. 
-
 After executing terraform plan, the expected output should be:
 
 ```
-
-$ go build -o terraform-provider-sp && terraform init && terraform plan
-
 ....
 
 An execution plan has been generated and is shown below.

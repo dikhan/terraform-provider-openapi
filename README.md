@@ -50,6 +50,27 @@ rather than the tooling around it.
 
 ## How to use the provider
 
+First, you will need to compile the code and name the compiled binary following the terraform provider naming convention
+(terraform-provider-{PROVIDER_NAME}), being PROVIDER_NAME the name of your service provider. Note that this name will
+be used as identifier for the provider resource in the TF file as well as the expected "OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL"
+env variable when running terraform commands (e,g: plan/apply etc)
+
+```
+$ cd terraform_provider_api
+$ go build -o terraform-provider-{PROVIDER_NAME}
+```
+
+Once the terraform plugin binary is created, you can go ahead and define a tf file that has resources exposed
+by your service provider. This resources will have to be exposed in the swagger definition file that the
+input environment variable OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL will be pointing to
+
+```
+$ terraform init && OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL="https://some-domain/swagger.yaml" terraform plan
+```
+
+For more information refer to [How to set up the local environment?](./docs/local_environment.md) which explains in
+detail
+
 - [How to](docs/how_to.md) document contains information about how to define a swagger file following good practises that
 make it work seamlessly with this terraform provider. Additionally, learn more about what is currently supported.
 - [FAQ](./docs/faq.md) document answers for the most frequently asked questions.
