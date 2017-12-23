@@ -34,14 +34,14 @@ func (r ResourceFactory) createSchemaResource() (*schema.Resource, error) {
 }
 
 func (r ResourceFactory) checkHttpStatusCode(res *http.Response, expectedHttpStatusCodes []int) error {
-	if responseContainsExpectedStatus(expectedHttpStatusCodes, res.StatusCode) {
+	if !responseContainsExpectedStatus(expectedHttpStatusCodes, res.StatusCode) {
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
 			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials", res.StatusCode)
 		default:
 			b, _ := ioutil.ReadAll(res.Body)
 			if len(b) > 0 {
-				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v. Error = %s", res.StatusCode, expectedHttpStatusCodes, string(b))
+				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v. Response Body = %s", res.StatusCode, expectedHttpStatusCodes, string(b))
 			}
 			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v", res.StatusCode, expectedHttpStatusCodes)
 		}
@@ -102,6 +102,9 @@ func (r ResourceFactory) readRemote(id string, config ProviderConfig) (map[strin
 }
 
 func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error {
+	if r.ResourceInfo.PathInfo.Put == nil {
+		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.ResourceInfo.Name, r.ResourceInfo.Host)
+	}
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
 
@@ -121,6 +124,9 @@ func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r ResourceFactory) delete(data *schema.ResourceData, i interface{}) error {
+	if r.ResourceInfo.PathInfo.Delete == nil {
+		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.ResourceInfo.Name, r.ResourceInfo.Host)
+	}
 	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Delete, i.(ProviderConfig), r.ResourceInfo.getResourceIdUrl(data.Id()))
 	res, err := r.httpClient.Delete(url, headers)
 	if err != nil {

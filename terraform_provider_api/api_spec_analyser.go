@@ -24,7 +24,7 @@ type ApiSpecAnalyser struct {
 func (a ApiSpecAnalyser) getCrudResources() CrudResourcesInfo {
 	resources := CrudResourcesInfo{}
 	for pathName, pathItem := range a.d.Spec().Paths.Paths {
-		if !a.isEndPointCrudCompliant(pathName, a.d.Spec().Paths.Paths) {
+		if !a.isEndPointTerraformResourceCompliant(pathName, a.d.Spec().Paths.Paths) {
 			continue
 		}
 		rootPath := a.findMatchingRootPath(pathName)
@@ -53,20 +53,21 @@ func (a ApiSpecAnalyser) getRefName(ref string) string {
 	return reg.FindStringSubmatch(ref)[0]
 }
 
-// isEndPointCrudCompliant returns true only if the path given 'p' exposes all CRUD operations.
+// isEndPointTerraformResourceCompliant returns true only if the path given 'p' exposes POST and GET operations.
+// PUT and DELETE are optional operations.
 // For instance, if p was "/users/{username}" and paths contained the following entries and implementations:
 // - "/users"
 // 		- POST
 // - "/users/{username}"
 // 		- GET
-// 		- PUT
-// 		- DELETE
+// 		- PUT (optional)
+// 		- DELETE (optional)
 // then the expected returned value is true. Otherwise if the above criteria is not met, it is considered that
-// the path provided is not fully compliant.
-func (f ApiSpecAnalyser) isEndPointCrudCompliant(p string, paths map[string]spec.PathItem) bool {
-	if f.isPotentialCrudEndPoint(p) {
+// the path provided is not terraform resource compliant.
+func (f ApiSpecAnalyser) isEndPointTerraformResourceCompliant(p string, paths map[string]spec.PathItem) bool {
+	if f.isResourceInstanceEndPoint(p) {
 		endPoint := paths[p]
-		if endPoint.Get == nil || endPoint.Put == nil || endPoint.Delete == nil {
+		if endPoint.Get == nil {
 			return false
 		}
 		endPointRootPath := f.findMatchingRootPath(p)
@@ -104,13 +105,13 @@ func (f ApiSpecAnalyser) restfulEndPointRegex() *regexp.Regexp {
 	return r
 }
 
-// isPotentialCrudEndPoint checks if the given path is of form /resource/{id}
-func (f ApiSpecAnalyser) isPotentialCrudEndPoint(p string) bool {
+// isResourceInstanceEndPoint checks if the given path is of form /resource/{id}
+func (f ApiSpecAnalyser) isResourceInstanceEndPoint(p string) bool {
 	r := f.restfulEndPointRegex()
 	return r.MatchString(p)
 }
 
-// isPotentialCrudEndPoint checks if the given path is of form /resource/{id}
+// isResourceInstanceEndPoint checks if the given path is of form /resource/{id}
 func (f ApiSpecAnalyser) getResourceName(p string) string {
 	nameRegex, err := regexp.Compile(RESOURCE_NAME_REGEX)
 	if err != nil {
