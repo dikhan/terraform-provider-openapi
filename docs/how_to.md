@@ -114,10 +114,18 @@ produces:
 - **Required:** Yes
 - **Description:** The available paths and operations for the API.
 
-The API terraform provider currently only supports paths which have all the CRUD operations available. The following
-can be used as a reference to help understand the expected structure.
+The Open API terraform provider only considers as terraform resources, API resource paths that have both the Create (POST)
+and Read (GET) operations available in the form of:
+```
+POST /api/resource
+GET /api/resource/{id}
+```
+PUT and DELETE are optional operations.
 
-If a given resource is missing any of the CRUD operations, the resource will not be considered as a terraform resource.
+The following can be used as a reference to help understand the expected structure.
+
+If a given resource is missing any of the aforementioned required operations, the resource will not be available
+as a terraform resource.
 
 ```yml
 paths:
@@ -159,8 +167,9 @@ with a link to the actual definition (e,g: `$ref: "#/definitions/resource`)
 - **Required:** Yes
 - **Description:** An object to hold data types produced and consumed by operations.
 
-The API Terraform provider uses the object definition used to POST a resource as the primary object for the rest of the 
-CRUD operations. This means that, the same definitions will be used for all the CRUD operations.
+The API Terraform provider uses the object definition used to Create (POST) a resource as the object definition for the all the
+CRUD operations. This means that, it is expected that the rest of the operations Read (GET), Update (PUT) and Delete (DELETE)
+ will use the same payload and therefore they will all share the same object definition.
 
 ##### <a name="supportedTypes">Requirements</a>
 
