@@ -114,13 +114,13 @@ produces:
 - **Required:** Yes
 - **Description:** The available paths and operations for the API.
 
-The Open API terraform provider only considers as terraform resources, API resource paths that have both the Create (POST)
+The Open API terraform provider only considers as a terraform resource, API resource paths that have both the Create (POST)
 and Read (GET) operations available in the form of:
 ```
 POST /api/resource
 GET /api/resource/{id}
 ```
-PUT and DELETE are optional operations.
+Update (PUT) and Delete (DELETE) are optional operations.
 
 The following can be used as a reference to help understand the expected structure.
 
