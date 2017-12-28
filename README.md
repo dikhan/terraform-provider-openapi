@@ -68,7 +68,7 @@ input environment variable OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL will be pointing 
 $ terraform init && OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL="https://some-domain/swagger.yaml" terraform plan
 ```
 
-Additionally, a convenient [Makefile](terraform_provivider_api/Makefile) is provided allowing the user to execute
+Additionally, a convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/Makefile) is provided allowing the user to execute
 the above in just one command as follows:
 ```
 cd terraform_provider_api
