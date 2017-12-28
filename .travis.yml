@@ -1,0 +1,11 @@
+dist: trusty
+sudo: false
+language: go
+go:
+- 1.9.1
+
+install:
+
+script:
+- cd terraform_provider_api
+- make test
