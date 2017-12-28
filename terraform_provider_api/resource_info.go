@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/go-openapi/spec"
-	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"strings"
+
+	"github.com/go-openapi/spec"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 const EXT_TF_IMMUTABLE = "x-terraform-immutable"
@@ -55,10 +56,6 @@ func (r ResourceInfo) createTerraformPropertySchema(propertyName string, propert
 		propertySchema.Required = true
 	} else {
 		propertySchema.Optional = true
-		// Error: * resource neteng_subnet: aws_az: Default must be nil if computed
-		//if property.Default != nil {
-		//	propertySchema.Default = property.Default
-		//}
 	}
 	// ValidateFunc is not yet supported on lists or sets
 	if !r.isArrayProperty(property) {
@@ -73,7 +70,7 @@ func (r ResourceInfo) validateFunc(propertyName string, property spec.Schema) sc
 			if property.ReadOnly {
 				err := fmt.Errorf(
 					"'%s.%s' is configured as 'readOnly' and can not have a default value. The value is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
-						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default value '%v' can be applied\n"+
+						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default value '%v' can be applied. Default must be nil if computed\n"+
 						"OR\n"+
 						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the value as specified by the 'readOnly' attribute\n", r.Name, k, k, property.Default, k)
 				errors = append(errors, err)
