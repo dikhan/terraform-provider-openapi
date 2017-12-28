@@ -55,6 +55,10 @@ func (r ResourceInfo) createTerraformPropertySchema(propertyName string, propert
 		propertySchema.Required = true
 	} else {
 		propertySchema.Optional = true
+		// Error: * resource neteng_subnet: aws_az: Default must be nil if computed
+		//if property.Default != nil {
+		//	propertySchema.Default = property.Default
+		//}
 	}
 	// ValidateFunc is not yet supported on lists or sets
 	if !r.isArrayProperty(property) {

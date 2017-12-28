@@ -1,23 +1,39 @@
 # Setting up a local environment
 
-A [docker-compose](docker-compose.yml) file has been created to ease the execution of an example. In order to bring up 
-the service provider example and also render a UI from the swagger file that can be accessed from the browser, please 
-run the following command from the root folder:
+## Running docker compose
+
+A [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/docker-compose.yml) file has been created to ease the execution of an example. This will start up
+a server that exposes its APIs in a swagger file.
 
 ```
 docker-compose up --build --force-recreate
 ```
 
-Once docker-compose is done bringing up both services, the following command will read the sample [main.tf](terraform_provider_api/main.tf) 
-file and execute terraform plan:  
+In addition, it will also render a UI from the swagger file exposed by the API server that can be accessed from the
+browser at:
+
+```
+https://localhost:8443
+```
+
+The UI rendered feeds from the swagger file located at [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/service_provider_example/resources/swagger.yaml)
+
+## Trying out the service provider example
+
+### Building the terraform provider plugin binary
+
+Once docker-compose is done bringing up the API server, the following command will read the sample [main.tf](terraform_provider_api/main.tf)
+file and build the terraform provider plugin:
 ```
 $ cd terraform_provider_api
 $ go build -o terraform-provider-sp
 ```
 
 Looking carefully at the above command, the binary is named as 'terraform-provider-sp'. The reason for this is so
-terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](terraform_provider_api/main.tf) 
-file. 
+terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](terraform_provider_api/main.tf)
+file.
+
+### Running the terraform plan
 
 With the new provider binary in place, we can now execute terraform commands.
 
@@ -89,3 +105,18 @@ Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 ```
 
 And a 'terraform.tfstate' should have been created by terraform containing the state of the new resource created.
+
+
+## Using the Makefile
+
+A convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/Makefile)
+is provided allowing the user to execute the above in just one command as follows:
+```
+make run_terraform TF_CMD=plan
+```
+
+The above command will build the binary with a default value - terraform-provider-sp and then it will export the
+OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL with a default value pointing to the local example API server that should be
+running already after having run docker compose as specified. The value passed in to the TF_CMD parameter will be
+the command terraform will execute (e,g: apply/plan/refresh etc)
+
