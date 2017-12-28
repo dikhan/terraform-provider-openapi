@@ -22,7 +22,7 @@ The UI rendered feeds from the swagger file located at [docker-compose](https://
 
 ### Building the terraform provider plugin binary
 
-Once docker-compose is done bringing up the API server, the following command will read the sample [main.tf](terraform_provider_api/main.tf)
+Once docker-compose is done bringing up the API server, the following command will read the sample [main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/main.tf)
 file and build the terraform provider plugin:
 ```
 $ cd terraform_provider_api
@@ -30,7 +30,7 @@ $ go build -o terraform-provider-sp
 ```
 
 Looking carefully at the above command, the binary is named as 'terraform-provider-sp'. The reason for this is so
-terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](terraform_provider_api/main.tf)
+terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/main.tf)
 file.
 
 ### Running the terraform plan
