@@ -14,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-type ResourceFactory struct {
+type resourceFactory struct {
 	httpClient   http_goclient.HttpClient
-	ResourceInfo ResourceInfo
+	ResourceInfo resourceInfo
 }
 
-func (r ResourceFactory) createSchemaResource() (*schema.Resource, error) {
+func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 	s, err := r.ResourceInfo.createTerraformResourceSchema()
 	if err != nil {
 		return nil, err
@@ -33,33 +33,33 @@ func (r ResourceFactory) createSchemaResource() (*schema.Resource, error) {
 	}, nil
 }
 
-func (r ResourceFactory) checkHttpStatusCode(res *http.Response, expectedHttpStatusCodes []int) error {
-	if !responseContainsExpectedStatus(expectedHttpStatusCodes, res.StatusCode) {
+func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
+	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
 			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials", res.StatusCode)
 		default:
 			b, _ := ioutil.ReadAll(res.Body)
 			if len(b) > 0 {
-				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v. Response Body = %s", res.StatusCode, expectedHttpStatusCodes, string(b))
+				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v. Response Body = %s", res.StatusCode, expectedHTTPStatusCodes, string(b))
 			}
-			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v", res.StatusCode, expectedHttpStatusCodes)
+			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v", res.StatusCode, expectedHTTPStatusCodes)
 		}
 
 	}
 	return nil
 }
 
-func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
 
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.CreatePathInfo.Post, i.(ProviderConfig), r.ResourceInfo.getResourceUrl())
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.createPathInfo.Post, i.(providerConfig), r.ResourceInfo.getResourceURL())
 	res, err := r.httpClient.PostJson(url, headers, input, &output)
 	if err != nil {
 		return err
 	}
-	if err := r.checkHttpStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("POST %s failed: %s", url, err)
 	}
 
@@ -80,30 +80,30 @@ func (r ResourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	return nil
 }
 
-func (r ResourceFactory) read(data *schema.ResourceData, i interface{}) error {
-	output, err := r.readRemote(data.Id(), i.(ProviderConfig))
+func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
+	output, err := r.readRemote(data.Id(), i.(providerConfig))
 	if err != nil {
 		return err
 	}
 	return r.updateResourceState(output, data)
 }
 
-func (r ResourceFactory) readRemote(id string, config ProviderConfig) (map[string]interface{}, error) {
+func (r resourceFactory) readRemote(id string, config providerConfig) (map[string]interface{}, error) {
 	output := map[string]interface{}{}
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Get, config, r.ResourceInfo.getResourceIdUrl(id))
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Get, config, r.ResourceInfo.getResourceIDURL(id))
 	res, err := r.httpClient.Get(url, headers, &output)
 	if err != nil {
 		return nil, err
 	}
-	if err := r.checkHttpStatusCode(res, []int{http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
 		return nil, fmt.Errorf("GET %s failed: %s", url, err)
 	}
 	return output, nil
 }
 
-func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error {
-	if r.ResourceInfo.PathInfo.Put == nil {
-		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.ResourceInfo.Name, r.ResourceInfo.Host)
+func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
+	if r.ResourceInfo.pathInfo.Put == nil {
+		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.ResourceInfo.name, r.ResourceInfo.host)
 	}
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
@@ -112,36 +112,36 @@ func (r ResourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Put, i.(ProviderConfig), r.ResourceInfo.getResourceIdUrl(data.Id()))
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Put, i.(providerConfig), r.ResourceInfo.getResourceIDURL(data.Id()))
 	res, err := r.httpClient.PutJson(url, headers, input, &output)
 	if err != nil {
 		return err
 	}
-	if err := r.checkHttpStatusCode(res, []int{http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
 		return fmt.Errorf("UPDATE %s failed: %s", url, err)
 	}
 	return r.updateResourceState(output, data)
 }
 
-func (r ResourceFactory) delete(data *schema.ResourceData, i interface{}) error {
-	if r.ResourceInfo.PathInfo.Delete == nil {
-		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.ResourceInfo.Name, r.ResourceInfo.Host)
+func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
+	if r.ResourceInfo.pathInfo.Delete == nil {
+		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.ResourceInfo.name, r.ResourceInfo.host)
 	}
-	headers, url := r.prepareApiKeyAuthentication(r.ResourceInfo.PathInfo.Delete, i.(ProviderConfig), r.ResourceInfo.getResourceIdUrl(data.Id()))
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Delete, i.(providerConfig), r.ResourceInfo.getResourceIDURL(data.Id()))
 	res, err := r.httpClient.Delete(url, headers)
 	if err != nil {
 		return err
 	}
-	if err := r.checkHttpStatusCode(res, []int{http.StatusNoContent}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent}); err != nil {
 		return fmt.Errorf("DELETE %s failed: %s", url, err)
 	}
 	return nil
 }
 
-func (r ResourceFactory) checkImmutableFields(updated *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) checkImmutableFields(updated *schema.ResourceData, i interface{}) error {
 	var remoteData map[string]interface{}
 	var err error
-	if remoteData, err = r.readRemote(updated.Id(), i.(ProviderConfig)); err != nil {
+	if remoteData, err = r.readRemote(updated.Id(), i.(providerConfig)); err != nil {
 		return err
 	}
 	for _, immutablePropertyName := range r.ResourceInfo.getImmutableProperties() {
@@ -155,7 +155,7 @@ func (r ResourceFactory) checkImmutableFields(updated *schema.ResourceData, i in
 	return nil
 }
 
-func (r ResourceFactory) updateResourceState(input map[string]interface{}, data *schema.ResourceData) error {
+func (r resourceFactory) updateResourceState(input map[string]interface{}, data *schema.ResourceData) error {
 	for propertyName, propertyValue := range input {
 		if propertyName == "id" {
 			continue
@@ -167,9 +167,9 @@ func (r ResourceFactory) updateResourceState(input map[string]interface{}, data 
 	return nil
 }
 
-func (r ResourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
+func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
-	for propertyName, property := range r.ResourceInfo.SchemaDefinition.Properties {
+	for propertyName, property := range r.ResourceInfo.schemaDefinition.Properties {
 		// ReadOnly properties are not considered for the payload data
 		if propertyName == "id" || property.ReadOnly {
 			continue
@@ -190,10 +190,10 @@ func (r ResourceFactory) getPayloadFromData(data *schema.ResourceData) map[strin
 	return input
 }
 
-func (r ResourceFactory) authRequired(operation *spec.Operation, providerConfig ProviderConfig) (bool, string) {
+func (r resourceFactory) authRequired(operation *spec.Operation, providerConfig providerConfig) (bool, string) {
 	for _, operationSecurityPolicy := range operation.Security {
-		for operationSecurityDefName, _ := range operationSecurityPolicy {
-			for providerSecurityDefName, _ := range providerConfig.SecuritySchemaDefinitions {
+		for operationSecurityDefName := range operationSecurityPolicy {
+			for providerSecurityDefName := range providerConfig.SecuritySchemaDefinitions {
 				if operationSecurityDefName == providerSecurityDefName {
 					return true, operationSecurityDefName
 				}
@@ -203,15 +203,15 @@ func (r ResourceFactory) authRequired(operation *spec.Operation, providerConfig 
 	return false, ""
 }
 
-func (r ResourceFactory) prepareApiKeyAuthentication(operation *spec.Operation, providerConfig ProviderConfig, url string) (map[string]string, string) {
+func (r resourceFactory) prepareAPIKeyAuthentication(operation *spec.Operation, providerConfig providerConfig, url string) (map[string]string, string) {
 	if required, securityDefinitionName := r.authRequired(operation, providerConfig); required {
 		headers := map[string]string{}
 		if &providerConfig != nil {
 			securitySchemaDefinition := providerConfig.SecuritySchemaDefinitions[securityDefinitionName]
-			if &securitySchemaDefinition.ApiKeyHeader != nil {
-				headers[securitySchemaDefinition.ApiKeyHeader.Name] = securitySchemaDefinition.ApiKeyHeader.Value
-			} else if &securitySchemaDefinition.ApiKeyQuery != nil {
-				url = fmt.Sprintf("%s?%s=%s", url, securitySchemaDefinition.ApiKeyQuery.Name, securitySchemaDefinition.ApiKeyQuery.Value)
+			if &securitySchemaDefinition.apiKeyHeader != nil {
+				headers[securitySchemaDefinition.apiKeyHeader.name] = securitySchemaDefinition.apiKeyHeader.value
+			} else if &securitySchemaDefinition.apiKeyQuery != nil {
+				url = fmt.Sprintf("%s?%s=%s", url, securitySchemaDefinition.apiKeyQuery.name, securitySchemaDefinition.apiKeyQuery.value)
 			}
 		}
 		return headers, url
