@@ -38,6 +38,9 @@ and follow the below:
     - Bug fix: `git checkout -b **bugfix**/my-bug-fix`
     - Feature requests: `git checkout -b **feature**/my-new-feature`
 - Commit your changes: `git commit -am 'Add some feature'`
+- Execute ```make test``` from the terraform_provider_api directory and make sure the exit code is clean. This will
+make sure that the Pull Request will have a clean build. The [test target](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L31)
+in the Makefile will run gofmt, govet, golint and then it will run the unit tests.
 - Push to the branch: `git push origin <branch-name>`
 - Submit a pull request following the [Pull request guidelines](#pull-request-submissio)
 
@@ -67,6 +70,20 @@ it by reading the commit message - then write the commit message.
 
 ### Coding Standards
 
+The terraform provider OpenAPI uses the following coding standards to make sure the code is maintained clean and organised.
+
+- Go format [gofmt](https://golang.org/cmd/gofmt/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L15)
+```
+$ make fmt
+```
+- Go vet, simplified dead code detector [govet](https://golang.org/cmd/vet/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L19)
+```
+$ make vet
+```
+- Go lint, detects style mistakes [golint](https://github.com/golang/lint), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L26)
+ ```
+ $ make lint
+ ```
 - Follow the go coding standards as outlined in [Effective go](https://golang.org/doc/effective_go.html)
 
 ## Documentation
