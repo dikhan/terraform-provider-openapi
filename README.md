@@ -1,4 +1,4 @@
-# API Terraform Provider
+# Terraform Provider OpenAPI [![Build Status][travis-image]][travis-url]
 
 This terraform provider aims to minimise as much as possible the efforts needed from service providers to create and
 maintain custom terraform providers. This provider uses terraform as the engine that will orchestrate and manage the cycle
@@ -16,6 +16,10 @@ of the resources and depends on a swagger file (hosted on a remote endpoint) to 
       </tr>
     </table>
 </center>
+
+[![License][license-image]][license-url]  |
+[![version][maven-version]][maven-url]    |
+[![Build Status][travis-image]][travis-url]
 
 What are the main pain points that this terraform provider tries to tackle?
 
@@ -98,3 +102,7 @@ which offers a very convenient implementation to serialize and deserialize swagg
 - Daniel I. Khan Ramiro
 
 See also the list of [contributors](https://github.com/dikhan/terraform-provider-api/graphs/contributors) who participated in this project.
+
+
+[travis-url]: https://travis-ci.org/dikhan/terraform-provider-api
+[travis-image]: https://travis-ci.org/dikhan/terraform-provider-api.svg?branch=master
