@@ -14,15 +14,15 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// ApiProvider returns a terraform.ResourceProvider.
-func ApiProvider() (*schema.Provider, error) {
-	providerName, apiDiscoveryUrl, err := getProviderNameAndApiDiscoveryUrl()
+// APIProvider returns a terraform.ResourceProvider.
+func APIProvider() (*schema.Provider, error) {
+	providerName, apiDiscoveryURL, err := getProviderNameAndAPIDiscoveryURL()
 	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
-	d := &ProviderFactory{
-		Name:            providerName,
-		DiscoveryApiUrl: apiDiscoveryUrl,
+	d := &providerFactory{
+		name:            providerName,
+		discoveryAPIURL: apiDiscoveryURL,
 	}
 	provider, err := d.createProvider()
 	if err != nil {
@@ -34,13 +34,13 @@ func ApiProvider() (*schema.Provider, error) {
 // This function is implemented with temporary code thus it can serve as an example
 // on how the same code base can be used by binaries of this same provider named differently
 // but internally each will end up calling a different service provider's api
-func getProviderNameAndApiDiscoveryUrl() (string, string, error) {
-	var apiDiscoveryUrl string
+func getProviderNameAndAPIDiscoveryURL() (string, string, error) {
+	var apiDiscoveryURL string
 	providerName, err := getProviderName()
 	if err != nil {
 		return "", "", err
 	}
-	apiDiscoveryUrl, err = GetServiceProviderSwaggerUrl(providerName)
+	apiDiscoveryURL, err = getServiceProviderSwaggerURL(providerName)
 	if err != nil {
 		return "", "", err
 	}
@@ -53,8 +53,8 @@ func getProviderNameAndApiDiscoveryUrl() (string, string, error) {
 			InsecureSkipVerify: true,
 		}
 	}
-	log.Printf("[INFO] Provider %s is using the following remote swagger URL: %s", providerName, apiDiscoveryUrl)
-	return providerName, apiDiscoveryUrl, nil
+	log.Printf("[INFO] Provider %s is using the following remote swagger URL: %s", providerName, apiDiscoveryURL)
+	return providerName, apiDiscoveryURL, nil
 }
 
 func getProviderName() (string, error) {

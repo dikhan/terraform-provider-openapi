@@ -12,53 +12,53 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-type ProviderFactory struct {
-	Name            string
-	DiscoveryApiUrl string
+type providerFactory struct {
+	name            string
+	discoveryAPIURL string
 }
 
-type ApiKey struct {
-	Name  string
-	Value string
+type apiKey struct {
+	name  string
+	value string
 }
 
-type SecuritySchemaDefinition struct {
-	ApiKeyHeader ApiKey
-	ApiKeyQuery  ApiKey
+type securitySchemaDefinition struct {
+	apiKeyHeader apiKey
+	apiKeyQuery  apiKey
 }
 
-type ProviderConfig struct {
-	SecuritySchemaDefinitions map[string]SecuritySchemaDefinition
+type providerConfig struct {
+	SecuritySchemaDefinitions map[string]securitySchemaDefinition
 }
 
-func (p ProviderFactory) createProvider() (*schema.Provider, error) {
-	apiSpecAnalyser, err := p.createApiSpecAnalyser()
+func (p providerFactory) createProvider() (*schema.Provider, error) {
+	apiSpecAnalyser, err := p.createAPISpecAnalyser()
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while retrieving api specification. Error=%s", err)
 	}
-	provider, err := p.generateProviderFromApiSpec(apiSpecAnalyser)
+	provider, err := p.generateProviderFromAPISpec(apiSpecAnalyser)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating schema provider. Error=%s", err)
 	}
 	return provider, nil
 }
 
-func (p ProviderFactory) createApiSpecAnalyser() (*ApiSpecAnalyser, error) {
-	if p.DiscoveryApiUrl == "" {
+func (p providerFactory) createAPISpecAnalyser() (*apiSpecAnalyser, error) {
+	if p.discoveryAPIURL == "" {
 		return nil, errors.New("required param 'apiUrl' missing")
 	}
-	apiSpec, err := loads.JSONSpec(p.DiscoveryApiUrl)
+	apiSpec, err := loads.JSONSpec(p.discoveryAPIURL)
 	if err != nil {
-		return nil, fmt.Errorf("error occurred when retrieving api spec from %s. Error=%s", p.DiscoveryApiUrl, err)
+		return nil, fmt.Errorf("error occurred when retrieving api spec from %s. Error=%s", p.discoveryAPIURL, err)
 	}
-	apiSpecAnalyser := &ApiSpecAnalyser{apiSpec}
+	apiSpecAnalyser := &apiSpecAnalyser{apiSpec}
 	return apiSpecAnalyser, nil
 }
 
-func (p ProviderFactory) generateProviderFromApiSpec(apiSpecAnalyser *ApiSpecAnalyser) (*schema.Provider, error) {
+func (p providerFactory) generateProviderFromAPISpec(apiSpecAnalyser *apiSpecAnalyser) (*schema.Provider, error) {
 	resourceMap := map[string]*schema.Resource{}
 	for resourceName, resourceInfo := range apiSpecAnalyser.getCrudResources() {
-		r := ResourceFactory{
+		r := resourceFactory{
 			http_goclient.HttpClient{HttpClient: &http.Client{}},
 			resourceInfo,
 		}
@@ -79,7 +79,7 @@ func (p ProviderFactory) generateProviderFromApiSpec(apiSpecAnalyser *ApiSpecAna
 
 // createTerraformProviderSchema adds support for specific provider configuration such as api key which will
 // be used as the authentication mechanism when making http requests to the service provider
-func (p ProviderFactory) createTerraformProviderSchema(securityDefinitions spec.SecurityDefinitions) map[string]*schema.Schema {
+func (p providerFactory) createTerraformProviderSchema(securityDefinitions spec.SecurityDefinitions) map[string]*schema.Schema {
 	s := map[string]*schema.Schema{}
 	for secDefName, secDef := range securityDefinitions {
 		if secDef.Type == "apiKey" {
@@ -92,18 +92,18 @@ func (p ProviderFactory) createTerraformProviderSchema(securityDefinitions spec.
 	return s
 }
 
-func (p ProviderFactory) configureProvider(securityDefinitions spec.SecurityDefinitions) schema.ConfigureFunc {
+func (p providerFactory) configureProvider(securityDefinitions spec.SecurityDefinitions) schema.ConfigureFunc {
 	return func(data *schema.ResourceData) (interface{}, error) {
-		config := ProviderConfig{}
-		config.SecuritySchemaDefinitions = map[string]SecuritySchemaDefinition{}
+		config := providerConfig{}
+		config.SecuritySchemaDefinitions = map[string]securitySchemaDefinition{}
 		for secDefName, secDef := range securityDefinitions {
 			if secDef.Type == "apiKey" {
-				securitySchemaDefinition := SecuritySchemaDefinition{}
+				securitySchemaDefinition := securitySchemaDefinition{}
 				switch secDef.In {
 				case "header":
-					securitySchemaDefinition.ApiKeyHeader = ApiKey{secDef.Name, data.Get(secDefName).(string)}
+					securitySchemaDefinition.apiKeyHeader = apiKey{secDef.Name, data.Get(secDefName).(string)}
 				case "query":
-					securitySchemaDefinition.ApiKeyQuery = ApiKey{secDef.Name, data.Get(secDefName).(string)}
+					securitySchemaDefinition.apiKeyQuery = apiKey{secDef.Name, data.Get(secDefName).(string)}
 				}
 				config.SecuritySchemaDefinitions[secDefName] = securitySchemaDefinition
 			}
@@ -112,7 +112,7 @@ func (p ProviderFactory) configureProvider(securityDefinitions spec.SecurityDefi
 	}
 }
 
-func (p ProviderFactory) getProviderResourceName(resourceName string) string {
-	fullResourceName := fmt.Sprintf("%s_%s", p.Name, resourceName)
+func (p providerFactory) getProviderResourceName(resourceName string) string {
+	fullResourceName := fmt.Sprintf("%s_%s", p.name, resourceName)
 	return fullResourceName
 }

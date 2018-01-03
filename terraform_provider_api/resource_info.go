@@ -10,34 +10,34 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-const EXT_TF_IMMUTABLE = "x-terraform-immutable"
-const EXT_TF_FORCE_NEW = "x-terraform-force-new"
-const EXT_TF_SENSITIVE = "x-terraform-sensitive"
+const extTfImmutable = "x-terraform-immutable"
+const extTfForceNew = "x-terraform-force-new"
+const extTfSensitive = "x-terraform-sensitive"
 
-type CrudResourcesInfo map[string]ResourceInfo
+type crudResourcesInfo map[string]resourceInfo
 
-// ResourceInfo serves as translator between swagger definitions and terraform schemas
-type ResourceInfo struct {
-	Name     string
-	BasePath string
-	// Path contains relative path to the resource e,g: /v1/resource
-	Path             string
-	Host             string
-	HttpSchemes      []string
-	SchemaDefinition spec.Schema
-	// CreatePathInfo contains info about /resource
-	CreatePathInfo spec.PathItem
-	// PathInfo contains info about /resource/{id}
-	PathInfo spec.PathItem
+// resourceInfo serves as translator between swagger definitions and terraform schemas
+type resourceInfo struct {
+	name     string
+	basePath string
+	// path contains relative path to the resource e,g: /v1/resource
+	path             string
+	host             string
+	httpSchemes      []string
+	schemaDefinition spec.Schema
+	// createPathInfo contains info about /resource
+	createPathInfo spec.PathItem
+	// pathInfo contains info about /resource/{id}
+	pathInfo spec.PathItem
 }
 
-func (r ResourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
+func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
-	for propertyName, property := range r.SchemaDefinition.Properties {
+	for propertyName, property := range r.schemaDefinition.Properties {
 		if propertyName == "id" {
 			continue
 		}
-		required := r.isRequired(propertyName, r.SchemaDefinition.Required)
+		required := r.isRequired(propertyName, r.schemaDefinition.Required)
 		schema, err := r.createTerraformPropertySchema(propertyName, property, required)
 		if err != nil {
 			return nil, err
@@ -47,7 +47,7 @@ func (r ResourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema
 	return s, nil
 }
 
-func (r ResourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema, required bool) (*schema.Schema, error) {
+func (r resourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema, required bool) (*schema.Schema, error) {
 	propertySchema, err := r.createTerraformBasicSchema(propertyName, property)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (r ResourceInfo) createTerraformPropertySchema(propertyName string, propert
 	return propertySchema, nil
 }
 
-func (r ResourceInfo) validateFunc(propertyName string, property spec.Schema) schema.SchemaValidateFunc {
+func (r resourceInfo) validateFunc(propertyName string, property spec.Schema) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
 		if property.Default != nil {
 			if property.ReadOnly {
@@ -72,7 +72,7 @@ func (r ResourceInfo) validateFunc(propertyName string, property spec.Schema) sc
 					"'%s.%s' is configured as 'readOnly' and can not have a default value. The value is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
 						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default value '%v' can be applied. Default must be nil if computed\n"+
 						"OR\n"+
-						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the value as specified by the 'readOnly' attribute\n", r.Name, k, k, property.Default, k)
+						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the value as specified by the 'readOnly' attribute\n", r.name, k, k, property.Default, k)
 				errors = append(errors, err)
 			}
 		}
@@ -80,8 +80,8 @@ func (r ResourceInfo) validateFunc(propertyName string, property spec.Schema) sc
 	}
 }
 
-func (r ResourceInfo) isRequired(propertyName string, requiredProps []string) bool {
-	var required bool = false
+func (r resourceInfo) isRequired(propertyName string, requiredProps []string) bool {
+	var required = false
 	for _, f := range requiredProps {
 		if f == propertyName {
 			required = true
@@ -90,7 +90,7 @@ func (r ResourceInfo) isRequired(propertyName string, requiredProps []string) bo
 	return required
 }
 
-func (r ResourceInfo) createTerraformBasicSchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
+func (r resourceInfo) createTerraformBasicSchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
 	var propertySchema *schema.Schema
 	// Arrays only support 'string' items at the moment
 	if r.isArrayProperty(property) {
@@ -118,7 +118,7 @@ func (r ResourceInfo) createTerraformBasicSchema(propertyName string, property s
 
 	// If the value of the property is changed, it will force the deletion of the previous generated resource and
 	// a new resource with this new value will be created
-	if forceNew, ok := property.Extensions.GetBool(EXT_TF_FORCE_NEW); ok && forceNew {
+	if forceNew, ok := property.Extensions.GetBool(extTfForceNew); ok && forceNew {
 		propertySchema.ForceNew = true
 	}
 
@@ -130,7 +130,7 @@ func (r ResourceInfo) createTerraformBasicSchema(propertyName string, property s
 
 	// A sensitive property means that the value will not be disclosed in the state file, preventing secrets from
 	// being leaked
-	if sensitive, ok := property.Extensions.GetBool(EXT_TF_SENSITIVE); ok && sensitive {
+	if sensitive, ok := property.Extensions.GetBool(extTfSensitive); ok && sensitive {
 		propertySchema.Sensitive = true
 	}
 
@@ -138,7 +138,7 @@ func (r ResourceInfo) createTerraformBasicSchema(propertyName string, property s
 		if property.ReadOnly {
 			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
 			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
-			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API.", r.Name, propertyName)
+			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API.", r.name, propertyName)
 		} else {
 			propertySchema.Default = property.Default
 		}
@@ -146,40 +146,39 @@ func (r ResourceInfo) createTerraformBasicSchema(propertyName string, property s
 	return propertySchema, nil
 }
 
-func (r ResourceInfo) isArrayProperty(property spec.Schema) bool {
+func (r resourceInfo) isArrayProperty(property spec.Schema) bool {
 	return property.Type.Contains("array")
 }
 
-func (r ResourceInfo) getImmutableProperties() []string {
+func (r resourceInfo) getImmutableProperties() []string {
 	var immutableProperties []string
-	for propertyName, property := range r.SchemaDefinition.Properties {
+	for propertyName, property := range r.schemaDefinition.Properties {
 		if propertyName == "id" {
 			continue
 		}
-		if immutable, ok := property.Extensions.GetBool(EXT_TF_IMMUTABLE); ok && immutable {
+		if immutable, ok := property.Extensions.GetBool(extTfImmutable); ok && immutable {
 			immutableProperties = append(immutableProperties, propertyName)
 		}
 	}
 	return immutableProperties
 }
 
-func (r ResourceInfo) getResourceUrl() string {
+func (r resourceInfo) getResourceURL() string {
 	defaultScheme := "http"
-	for _, scheme := range r.HttpSchemes {
+	for _, scheme := range r.httpSchemes {
 		if scheme == "https" {
 			defaultScheme = "https"
 		}
 	}
-	if r.BasePath != "" && r.BasePath != "/" {
-		if strings.Index(r.BasePath, "/") == 0 {
-			return fmt.Sprintf("%s://%s%s%s", defaultScheme, r.Host, r.BasePath, r.Path)
-		} else {
-			return fmt.Sprintf("%s://%s/%s%s", defaultScheme, r.Host, r.BasePath, r.Path)
+	if r.basePath != "" && r.basePath != "/" {
+		if strings.Index(r.basePath, "/") == 0 {
+			return fmt.Sprintf("%s://%s%s%s", defaultScheme, r.host, r.basePath, r.path)
 		}
+		return fmt.Sprintf("%s://%s/%s%s", defaultScheme, r.host, r.basePath, r.path)
 	}
-	return fmt.Sprintf("%s://%s%s", defaultScheme, r.Host, r.Path)
+	return fmt.Sprintf("%s://%s%s", defaultScheme, r.host, r.path)
 }
 
-func (r ResourceInfo) getResourceIdUrl(id string) string {
-	return fmt.Sprintf("%s/%s", r.getResourceUrl(), id)
+func (r resourceInfo) getResourceIDURL(id string) string {
+	return fmt.Sprintf("%s/%s", r.getResourceURL(), id)
 }

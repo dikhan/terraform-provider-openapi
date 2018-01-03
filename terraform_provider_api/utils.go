@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func PrettyPrint(v interface{}) {
+func prettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	log.Printf(string(b))
 	log.Println()
