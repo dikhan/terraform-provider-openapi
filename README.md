@@ -17,10 +17,6 @@ of the resources and depends on a swagger file (hosted on a remote endpoint) to 
     </table>
 </center>
 
-[![License][license-image]][license-url]  |
-[![version][maven-version]][maven-url]    |
-[![Build Status][travis-image]][travis-url]
-
 What are the main pain points that this terraform provider tries to tackle?
 
 - As as service provider, you can focus on improving the service itself rather than the tooling around it.
