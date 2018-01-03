@@ -28,7 +28,7 @@ lint:
 	@go get -u github.com/golang/lint/golint
 	@golint -set_exit_status $(TEST_PACKAGES)
 
-test: fmt vet
+test: fmt vet lint
 	@echo "Testing terraform-provider-openapi"
 	go test -v -cover $(TEST_PACKAGES) || exit 1
 
