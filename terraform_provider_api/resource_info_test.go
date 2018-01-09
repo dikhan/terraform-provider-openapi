@@ -623,3 +623,54 @@ func TestIsArrayProperty(t *testing.T) {
 		})
 	})
 }
+
+func TestIsRequired(t *testing.T) {
+	Convey("Given a swagger schema definition that has a property 'string_prop' that is required", t, func() {
+		propSchema := spec.Schema{
+			VendorExtensible: spec.VendorExtensible{},
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"string"},
+			},
+		}
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": propSchema,
+					},
+					Required: []string{"string_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When isRequired method is called", func() {
+			isRequired := r.isRequired("string_prop", r.schemaDefinition.Required)
+			Convey("Then the returned value should be true", func() {
+				So(isRequired, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property 'string_prop' that is not required", t, func() {
+		propSchema := spec.Schema{
+			VendorExtensible: spec.VendorExtensible{},
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"string"},
+			},
+		}
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": propSchema,
+					},
+				},
+			},
+		}
+		Convey("When isRequired method is called", func() {
+			isRequired := r.isRequired("string_prop", r.schemaDefinition.Required)
+			Convey("Then the returned value should be false", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+}
