@@ -48,7 +48,7 @@ func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema
 }
 
 func (r resourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema, required bool) (*schema.Schema, error) {
-	propertySchema, err := r.createTerraformBasicSchema(propertyName, property)
+	propertySchema, err := r.createTerraformPropertyBasicSchema(propertyName, property)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (r resourceInfo) isRequired(propertyName string, requiredProps []string) bo
 	return required
 }
 
-func (r resourceInfo) createTerraformBasicSchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
+func (r resourceInfo) createTerraformPropertyBasicSchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
 	var propertySchema *schema.Schema
 	// Arrays only support 'string' items at the moment
 	if r.isArrayProperty(property) {
@@ -138,7 +138,7 @@ func (r resourceInfo) createTerraformBasicSchema(propertyName string, property s
 		if property.ReadOnly {
 			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
 			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
-			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API.", r.name, propertyName)
+			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", r.name, propertyName)
 		} else {
 			propertySchema.Default = property.Default
 		}
@@ -163,22 +163,33 @@ func (r resourceInfo) getImmutableProperties() []string {
 	return immutableProperties
 }
 
-func (r resourceInfo) getResourceURL() string {
+func (r resourceInfo) getResourceURL() (string, error) {
+	if r.host == "" || r.path == "" {
+		return "", fmt.Errorf("host and path are mandatory attributes to get the resource URL - host['%s'], path['%s']", r.host, r.path)
+	}
 	defaultScheme := "http"
 	for _, scheme := range r.httpSchemes {
 		if scheme == "https" {
 			defaultScheme = "https"
 		}
 	}
+	path := r.path
+	if strings.Index(r.path, "/") != 0 {
+		path = fmt.Sprintf("/%s", r.path)
+	}
 	if r.basePath != "" && r.basePath != "/" {
 		if strings.Index(r.basePath, "/") == 0 {
-			return fmt.Sprintf("%s://%s%s%s", defaultScheme, r.host, r.basePath, r.path)
+			return fmt.Sprintf("%s://%s%s%s", defaultScheme, r.host, r.basePath, path), nil
 		}
-		return fmt.Sprintf("%s://%s/%s%s", defaultScheme, r.host, r.basePath, r.path)
+		return fmt.Sprintf("%s://%s/%s%s", defaultScheme, r.host, r.basePath, path), nil
 	}
-	return fmt.Sprintf("%s://%s%s", defaultScheme, r.host, r.path)
+	return fmt.Sprintf("%s://%s%s", defaultScheme, r.host, path), nil
 }
 
-func (r resourceInfo) getResourceIDURL(id string) string {
-	return fmt.Sprintf("%s/%s", r.getResourceURL(), id)
+func (r resourceInfo) getResourceIDURL(id string) (string, error) {
+	url, err := r.getResourceURL()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s", url, id), nil
 }
