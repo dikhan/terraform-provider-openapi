@@ -54,7 +54,12 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
 
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.createPathInfo.Post, i.(providerConfig), r.ResourceInfo.getResourceURL())
+	resourceURL, err := r.ResourceInfo.getResourceURL()
+	if err != nil {
+		return err
+	}
+
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.createPathInfo.Post, i.(providerConfig), resourceURL)
 	res, err := r.httpClient.PostJson(url, headers, input, &output)
 	if err != nil {
 		return err
@@ -90,7 +95,11 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 
 func (r resourceFactory) readRemote(id string, config providerConfig) (map[string]interface{}, error) {
 	output := map[string]interface{}{}
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Get, config, r.ResourceInfo.getResourceIDURL(id))
+	resourceIDURL, err := r.ResourceInfo.getResourceIDURL(id)
+	if err != nil {
+		return nil, err
+	}
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Get, config, resourceIDURL)
 	res, err := r.httpClient.Get(url, headers, &output)
 	if err != nil {
 		return nil, err
@@ -112,7 +121,11 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Put, i.(providerConfig), r.ResourceInfo.getResourceIDURL(data.Id()))
+	resourceIDURL, err := r.ResourceInfo.getResourceIDURL(data.Id())
+	if err != nil {
+		return err
+	}
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Put, i.(providerConfig), resourceIDURL)
 	res, err := r.httpClient.PutJson(url, headers, input, &output)
 	if err != nil {
 		return err
@@ -127,7 +140,11 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if r.ResourceInfo.pathInfo.Delete == nil {
 		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.ResourceInfo.name, r.ResourceInfo.host)
 	}
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Delete, i.(providerConfig), r.ResourceInfo.getResourceIDURL(data.Id()))
+	resourceIDURL, err := r.ResourceInfo.getResourceIDURL(data.Id())
+	if err != nil {
+		return err
+	}
+	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Delete, i.(providerConfig), resourceIDURL)
 	res, err := r.httpClient.Delete(url, headers)
 	if err != nil {
 		return err
