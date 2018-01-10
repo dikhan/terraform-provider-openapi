@@ -37,11 +37,11 @@ func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema
 		if propertyName == "id" {
 			continue
 		}
-		schema, err := r.createTerraformPropertySchema(propertyName, property)
+		tfSchema, err := r.createTerraformPropertySchema(propertyName, property)
 		if err != nil {
 			return nil, err
 		}
-		s[propertyName] = schema
+		s[propertyName] = tfSchema
 	}
 	return s, nil
 }
