@@ -37,8 +37,7 @@ func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema
 		if propertyName == "id" {
 			continue
 		}
-		required := r.isRequired(propertyName, r.schemaDefinition.Required)
-		schema, err := r.createTerraformPropertySchema(propertyName, property, required)
+		schema, err := r.createTerraformPropertySchema(propertyName, property)
 		if err != nil {
 			return nil, err
 		}
@@ -47,15 +46,10 @@ func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema
 	return s, nil
 }
 
-func (r resourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema, required bool) (*schema.Schema, error) {
+func (r resourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
 	propertySchema, err := r.createTerraformPropertyBasicSchema(propertyName, property)
 	if err != nil {
 		return nil, err
-	}
-	if required {
-		propertySchema.Required = true
-	} else {
-		propertySchema.Optional = true
 	}
 	// ValidateFunc is not yet supported on lists or sets
 	if !r.isArrayProperty(property) {
@@ -114,6 +108,14 @@ func (r resourceInfo) createTerraformPropertyBasicSchema(propertyName string, pr
 		propertySchema = &schema.Schema{
 			Type: schema.TypeBool,
 		}
+	}
+
+	// Set the property as required or optional
+	required := r.isRequired(propertyName, r.schemaDefinition.Required)
+	if required {
+		propertySchema.Required = true
+	} else {
+		propertySchema.Optional = true
 	}
 
 	// If the value of the property is changed, it will force the deletion of the previous generated resource and
