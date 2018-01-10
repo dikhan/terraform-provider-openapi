@@ -415,7 +415,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"boolean_prop": spec.Schema{
+						"boolean_prop": {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"boolean"},
@@ -439,7 +439,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"array_prop": spec.Schema{
+						"array_prop": {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"array"},
@@ -479,10 +479,10 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			schema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"])
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"])
 			Convey("Then the returned value should be true", func() {
 				So(err, ShouldBeNil)
-				So(schema.Required, ShouldBeTrue)
+				So(tfPropSchema.Required, ShouldBeTrue)
 			})
 		})
 	})
