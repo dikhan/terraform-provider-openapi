@@ -822,3 +822,60 @@ func TestValidateFunc(t *testing.T) {
 		})
 	})
 }
+
+func TestCreateTerraformResourceSchema(t *testing.T) {
+	Convey("Given a swagger schema definition that has multiple properties - 'string_prop', 'int_prop', 'number_prop', 'bool_prop' and 'array_prop'", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						"int_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"integer"},
+							},
+						},
+						"number_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"number"},
+							},
+						},
+						"bool_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"boolean"},
+							},
+						},
+						"array_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			resourceSchema, err := r.createTerraformResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should match the swagger props - 'string_prop', 'int_prop', 'number_prop' and 'bool_prop' and 'array_prop', ", func() {
+				So(resourceSchema, ShouldNotBeNil)
+				So(resourceSchema, ShouldContainKey, "string_prop")
+				So(resourceSchema, ShouldContainKey, "int_prop")
+				So(resourceSchema, ShouldContainKey, "number_prop")
+				So(resourceSchema, ShouldContainKey, "bool_prop")
+				So(resourceSchema, ShouldContainKey, "array_prop")
+			})
+		})
+	})
+}
