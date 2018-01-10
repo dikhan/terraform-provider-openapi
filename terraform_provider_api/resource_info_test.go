@@ -335,7 +335,7 @@ func TestGetImmutableProperties(t *testing.T) {
 }
 
 func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
-	Convey("Given a swagger property schema of type 'string'", t, func() {
+	Convey("Given a swagger schema definition that has a property of type 'string'", t, func() {
 		propSchema := spec.Schema{
 			VendorExtensible: spec.VendorExtensible{},
 			SchemaProps: spec.SchemaProps{
@@ -360,7 +360,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger property schema of type 'integer'", t, func() {
+	Convey("Given a swagger schema definition that has a property of type 'integer'", t, func() {
 		propSchema := spec.Schema{
 			VendorExtensible: spec.VendorExtensible{},
 			SchemaProps: spec.SchemaProps{
@@ -385,7 +385,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger property schema of type 'number'", t, func() {
+	Convey("Given a swagger schema definition that has a property of type 'number'", t, func() {
 		propSchema := spec.Schema{
 			VendorExtensible: spec.VendorExtensible{},
 			SchemaProps: spec.SchemaProps{
@@ -410,24 +410,23 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger property schema of type 'boolean'", t, func() {
-		propSchema := spec.Schema{
-			VendorExtensible: spec.VendorExtensible{},
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"boolean"},
-			},
-		}
+	Convey("Given a swagger schema definition that has a property of type 'boolean'", t, func() {
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"boolean_prop": propSchema,
+						"boolean_prop": spec.Schema{
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"boolean"},
+							},
+						},
 					},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", r.schemaDefinition.Properties["boolean_prop"])
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeBool)
@@ -435,24 +434,23 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger property schema of type 'array'", t, func() {
-		propSchema := spec.Schema{
-			VendorExtensible: spec.VendorExtensible{},
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"array"},
-			},
-		}
+	Convey("Given a swagger schema definition that has a property of type 'array'", t, func() {
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"array_prop": propSchema,
+						"array_prop": spec.Schema{
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+							},
+						},
 					},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", r.schemaDefinition.Properties["array_prop"])
 			Convey("Then the resulted terraform property schema should be of type array too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
@@ -460,6 +458,31 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			Convey("And the array elements are of the default type string (only supported type for now)", func() {
 				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property 'string_prop' which is required", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+					Required: []string{"string_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+			schema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"])
+			Convey("Then the returned value should be true", func() {
+				So(err, ShouldBeNil)
+				So(schema.Required, ShouldBeTrue)
 			})
 		})
 	})
@@ -670,6 +693,131 @@ func TestIsRequired(t *testing.T) {
 			isRequired := r.isRequired("string_prop", r.schemaDefinition.Required)
 			Convey("Then the returned value should be false", func() {
 				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestCreateTerraformPropertySchema(t *testing.T) {
+	Convey("Given a swagger schema definition that has a property 'string_prop' of type string, required, sensitive and has a default value 'defaultValue'", t, func() {
+		expectedDefaultValue := "defaultValue"
+		extensions := spec.Extensions{}
+		extensions.Add("x-terraform-sensitive", true)
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type:    []string{"string"},
+								Default: expectedDefaultValue,
+							},
+						},
+					},
+					Required: []string{"string_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertySchema("string_prop", r.schemaDefinition.Properties["string_prop"])
+			Convey("Then the returned tf tfPropSchema should be of type string", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
+			})
+			Convey("And a validateFunc should be configured", func() {
+				So(tfPropSchema.ValidateFunc, ShouldNotBeNil)
+			})
+			Convey("And be configured as required, sensitive and the default value should match 'defaultValue'", func() {
+				So(tfPropSchema.Required, ShouldBeTrue)
+			})
+			Convey("And be configured as sensitive", func() {
+				So(tfPropSchema.Sensitive, ShouldBeTrue)
+			})
+			Convey("And the default value should match 'defaultValue'", func() {
+				So(tfPropSchema.Default, ShouldEqual, expectedDefaultValue)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property 'array_prop' of type array", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"array_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+							},
+						},
+					},
+					Required: []string{"array_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertySchema("array_prop", r.schemaDefinition.Properties["array_prop"])
+			Convey("Then the returned tf tfPropSchema should be of type array", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And there should not be any validation function attached to it", func() {
+				So(tfPropSchema.ValidateFunc, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestValidateFunc(t *testing.T) {
+	Convey("Given a swagger schema definition that has one property", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"array_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When validateFunc method is called", func() {
+			validateFunc := r.validateFunc("array_prop", r.schemaDefinition.Properties["array_prop"])
+			Convey("Then the returned validateFunc should not be nil", func() {
+				So(validateFunc, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property which is supposed to be computed but has a default value set", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"array_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type:    []string{"array"},
+								Default: "defaultValue",
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: true},
+						},
+					},
+				},
+			},
+		}
+		Convey("When validateFunc method is called", func() {
+			validateFunc := r.validateFunc("array_prop", r.schemaDefinition.Properties["array_prop"])
+			Convey("Then the returned validateFunc should not be nil", func() {
+				So(validateFunc, ShouldNotBeNil)
+			})
+			Convey("And when the function is executed it should return an error as computed properties can not have default values", func() {
+				_, errs := validateFunc("", "")
+				So(errs, ShouldNotBeEmpty)
 			})
 		})
 	})
