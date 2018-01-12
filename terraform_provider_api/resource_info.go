@@ -14,7 +14,7 @@ const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
 
-type crudResourcesInfo map[string]resourceInfo
+type resourcesInfo map[string]resourceInfo
 
 // resourceInfo serves as translator between swagger definitions and terraform schemas
 type resourceInfo struct {

@@ -12,47 +12,90 @@ import (
 
 const resourceVersionRegex = "(/v[0-9]*/)"
 const resourceNameRegex = "(/\\w*/)+{.*}"
-const restfulEndpointRegex = "((?:.*)){.*}"
+const resourceInstanceRegex = "((?:.*)){.*}"
+const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
+// apiSpecAnalyser analyses the swagger doc and provides helper methods to retrieve all the end points that can
+// be used as terraform resources. These endpoints have to meet certain criteria to be considered eligible resources
+// as explained below:
+// A resource is considered any end point that meets the following:
+// 	- POST operation on the root path (e,g: api/users)
+//	- GET operation on the instance path (e,g: api/users/{id}). Other operations like DELETE, PUT are optional
+// In the example above, the resource name would be 'users'.
+// Versioning is also supported, thus if the endpoint above had been api/v1/users the corresponding resouce name would
+// have been 'users_v1'
 type apiSpecAnalyser struct {
 	d *loads.Document
 }
 
-func (asa apiSpecAnalyser) getCrudResources() crudResourcesInfo {
-	resources := crudResourcesInfo{}
-	for pathName, pathItem := range asa.d.Spec().Paths.Paths {
-		if !asa.isEndPointTerraformResourceCompliant(pathName, asa.d.Spec().Paths.Paths) {
+func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
+	resources := resourcesInfo{}
+	for resourcePath, pathItem := range asa.d.Spec().Paths.Paths {
+		isEndPointTerraformResourceCompliant, err := asa.isEndPointTerraformResourceCompliant(resourcePath, asa.d.Spec().Paths.Paths)
+		if err != nil {
+			return resources, err
+		}
+		if !isEndPointTerraformResourceCompliant {
 			continue
 		}
-		rootPath := asa.findMatchingRootPath(pathName)
-		ref := asa.d.Spec().Paths.Paths[rootPath].Post.Parameters[0].Schema.Ref.String()
-		resourceName := asa.getResourceName(pathName)
+		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath)
+		resourceName, err := asa.getResourceName(resourcePath)
+		if err != nil {
+			return nil, err
+		}
+		resourcePayloadSchemaDef, err := asa.getResourcePayloadSchemaDef(resourceRootPath)
+		if err != nil {
+			return nil, err
+		}
 		r := resourceInfo{
 			name:             resourceName,
 			basePath:         asa.d.BasePath(),
-			path:             rootPath,
+			path:             resourceRootPath,
 			host:             asa.d.Spec().Host,
 			httpSchemes:      asa.d.Spec().Schemes,
-			schemaDefinition: asa.d.Spec().Definitions[asa.getRefName(ref)],
-			createPathInfo:   asa.d.Spec().Paths.Paths[rootPath],
+			schemaDefinition: *resourcePayloadSchemaDef,
+			createPathInfo:   asa.d.Spec().Paths.Paths[resourceRootPath],
 			pathInfo:         pathItem,
 		}
 		resources[resourceName] = r
 	}
-	return resources
+	return resources, nil
 }
 
-func (asa apiSpecAnalyser) getRefName(ref string) string {
-	reg, err := regexp.Compile("(\\w+)[^//]*$")
-	if err != nil {
-		log.Fatalf("something really wrong happened if the ref reg can't be compiled...")
+func (asa apiSpecAnalyser) getResourcePayloadSchemaDef(resourceRootPath string) (*spec.Schema, error) {
+	path, exist := asa.d.Spec().Paths.Paths[resourceRootPath]
+	if !exist {
+		return nil, fmt.Errorf("path %s does not exists in the swagger file", resourceRootPath)
 	}
-	return reg.FindStringSubmatch(ref)[0]
+	if path.Post == nil {
+		return nil, fmt.Errorf("path %s POST operation missing", resourceRootPath)
+	}
+	if len(path.Post.Parameters) <= 0 {
+		return nil, fmt.Errorf("path %s POST operation is missing paremeters", resourceRootPath)
+	}
+	payloadDefinitionSchemaRef := path.Post.Parameters[0].Schema
+	if payloadDefinitionSchemaRef == nil {
+		return nil, fmt.Errorf("resource %s POST operation is missing the ref to the schema definition", resourceRootPath)
+	}
+	ref := payloadDefinitionSchemaRef.Ref.String()
+	reg, err := regexp.Compile(swaggerResourcePayloadDefinitionRegex)
+	if err != nil {
+		return nil, fmt.Errorf("something really wrong happened if the ref reg can't be compiled")
+	}
+	payloadDefName := reg.FindStringSubmatch(ref)[0]
+	if payloadDefName == "" {
+		return nil, fmt.Errorf("could not find a submatch in the ref regex %s for the reference supplied %s", ref, swaggerResourcePayloadDefinitionRegex)
+	}
+	payloadDefinition, exists := asa.d.Spec().Definitions[payloadDefName]
+	if !exists {
+		return nil, fmt.Errorf("could not find any schema definition in the swagger file with the supplied ref %s", ref)
+	}
+	return &payloadDefinition, nil
 }
 
-// isEndPointTerraformResourceCompliant returns true only if the path given 'p' exposes POST and GET operations.
+// isEndPointTerraformResourceCompliant returns true only if the path given 'resourcePath' exposes POST and GET operations.
 // PUT and DELETE are optional operations.
-// For instance, if p was "/users/{username}" and paths contained the following entries and implementations:
+// For instance, if resourcePath was "/users/{username}" and paths contained the following entries and implementations:
 // - "/users"
 // 		- POST
 // - "/users/{username}"
@@ -60,83 +103,104 @@ func (asa apiSpecAnalyser) getRefName(ref string) string {
 // 		- PUT (optional)
 // 		- DELETE (optional)
 // then the expected returned value is true. Otherwise if the above criteria is not met, it is considered that
-// the path provided is not terraform resource compliant.
-func (asa apiSpecAnalyser) isEndPointTerraformResourceCompliant(p string, paths map[string]spec.PathItem) bool {
-	if asa.isResourceInstanceEndPoint(p) {
-		endPoint := paths[p]
+// the resourcePath provided is not terraform resource compliant.
+func (asa apiSpecAnalyser) isEndPointTerraformResourceCompliant(resourcePath string, paths map[string]spec.PathItem) (bool, error) {
+	isResourceInstance, err := asa.isResourceInstanceEndPoint(resourcePath)
+	if err != nil {
+		return false, err
+	}
+	if isResourceInstance {
+		endPoint := paths[resourcePath]
 		if endPoint.Get == nil {
-			return false
+			return false, nil
 		}
-		endPointRootPath := asa.findMatchingRootPath(p)
-		if endPointRootPath == "" {
-			log.Printf("could not find root path for end point - %+s", p)
-			return false
-		}
-		postExist, err := asa.postIsPresent(endPointRootPath, paths)
+		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath)
 		if err != nil {
-			log.Println(err)
-			return false
+			return false, err
 		}
-		return postExist
+		if resourceRootPath == "" {
+			log.Printf("[DEBUG] could not find root path for resource - %+s", resourcePath)
+			return false, nil
+		}
+		postExist := asa.postIsPresent(resourceRootPath, paths)
+		if !postExist {
+			log.Printf("[DEBUG] end point %s missing POST operation", resourceRootPath)
+		}
+		return postExist, nil
 	}
-	return false
+	return false, nil
 }
 
-// postIsPresent checks if a given path has a POST implementation. The given path
-func (asa apiSpecAnalyser) postIsPresent(p string, paths map[string]spec.PathItem) (bool, error) {
-	b := paths[p]
+// postIsPresent checks if the given resource has a POST implementation returning true if the path is found
+// in paths and the path exposes a POST operation
+func (asa apiSpecAnalyser) postIsPresent(resourceRootPath string, paths map[string]spec.PathItem) bool {
+	b := paths[resourceRootPath]
 	if &b == nil || b.Post == nil {
-		return false, fmt.Errorf("end point %s missing POST operation", p)
+		return false
 	}
-	return true, nil
+	return true
 }
 
-// restfulEndPointRegex loads up the regex specified in const restfulEndpointRegex
+// resourceInstanceRegex loads up the regex specified in const resourceInstanceRegex
 // If the regex is not able to compile the regular expression the function exists calling os.Exit(1) as
 // there is the regex is completely busted
-func (asa apiSpecAnalyser) restfulEndPointRegex() *regexp.Regexp {
-	r, err := regexp.Compile(restfulEndpointRegex)
+func (asa apiSpecAnalyser) resourceInstanceRegex() (*regexp.Regexp, error) {
+	r, err := regexp.Compile(resourceInstanceRegex)
 	if err != nil {
-		log.Fatalf("Something is really wrong with the resful endpoint regex [%s] %s", restfulEndpointRegex, err)
+		return nil, fmt.Errorf("[ERROR] the resful endpoint regex does not seem to be configured properly [%s] %s", resourceInstanceRegex, err)
 	}
-	return r
+	return r, nil
 }
 
 // isResourceInstanceEndPoint checks if the given path is of form /resource/{id}
-func (asa apiSpecAnalyser) isResourceInstanceEndPoint(p string) bool {
-	r := asa.restfulEndPointRegex()
-	return r.MatchString(p)
+func (asa apiSpecAnalyser) isResourceInstanceEndPoint(p string) (bool, error) {
+	r, err := asa.resourceInstanceRegex()
+	if err != nil {
+		return false, err
+	}
+	return r.MatchString(p), nil
 }
 
-// isResourceInstanceEndPoint checks if the given path is of form /resource/{id}
-func (asa apiSpecAnalyser) getResourceName(p string) string {
+// getResourceName gets the name of the resource from a path /resource/{id}
+func (asa apiSpecAnalyser) getResourceName(resourcePath string) (string, error) {
+	isResourceInstance, err := asa.isResourceInstanceEndPoint(resourcePath)
+	if err != nil {
+		return "", err
+	}
+	if !isResourceInstance {
+		return "", fmt.Errorf("resource names can only be extracted from valid resful resource instance paths, e,g: /resource_name/{id} - the path passed in %s was not valid", resourcePath)
+	}
+
 	nameRegex, err := regexp.Compile(resourceNameRegex)
 	if err != nil {
-		log.Fatalf("Something is really wrong with the resource name regex [%s] %s", resourceNameRegex, err)
+		return "", fmt.Errorf("[ERROR] something is really wrong with the resource name regex [%s] %s", resourceNameRegex, err)
 	}
-	resourceName := strings.Replace(nameRegex.FindStringSubmatch(p)[1], "/", "", -1)
+	resourceName := strings.Replace(nameRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
 
 	versionRegex, err := regexp.Compile(resourceVersionRegex)
 	if err != nil {
-		log.Fatalf("Something is really wrong with the resource version regex [%s] %s", resourceVersionRegex, err)
+		return "", fmt.Errorf("[ERROR] something is really wrong with the resource version regex [%s] %s", resourceVersionRegex, err)
 	}
-	versionMatches := versionRegex.FindStringSubmatch(p)
+	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
 	if len(versionMatches) != 0 {
-		version := strings.Replace(versionRegex.FindStringSubmatch(p)[1], "/", "", -1)
+		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
 		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
-		return resourceNameWithVersion
+		return resourceNameWithVersion, nil
 	}
-	return resourceName
+	return resourceName, nil
 }
 
-// findMatchingRootPath returns the corresponding root path for a given endpoint
-// Example: Given 'p' being "/users/{username}" the result will be "/users"
-// Otherwise an error is returned
-func (asa apiSpecAnalyser) findMatchingRootPath(p string) string {
-	r := asa.restfulEndPointRegex()
-	result := r.FindStringSubmatch(p)
-	if len(result) != 2 {
-		return ""
+// findMatchingResourceRootPath returns the corresponding root path for a given end point
+// Example: Given 'resourcePath' being "/users/{username}" the result will be "/users"
+// If there is no match the returned string will be empty
+func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string) (string, error) {
+	r, err := asa.resourceInstanceRegex()
+	if err != nil {
+		return "", err
 	}
-	return strings.TrimRight(result[1], "/")
+	result := r.FindStringSubmatch(resourcePath)
+	if len(result) != 2 {
+		return "", nil
+	}
+	return strings.TrimRight(result[1], "/"), nil
 }

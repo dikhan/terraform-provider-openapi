@@ -57,7 +57,11 @@ func (p providerFactory) createAPISpecAnalyser() (*apiSpecAnalyser, error) {
 
 func (p providerFactory) generateProviderFromAPISpec(apiSpecAnalyser *apiSpecAnalyser) (*schema.Provider, error) {
 	resourceMap := map[string]*schema.Resource{}
-	for resourceName, resourceInfo := range apiSpecAnalyser.getCrudResources() {
+	resourcesInfo, err := apiSpecAnalyser.getResourcesInfo()
+	if err != nil {
+		return nil, err
+	}
+	for resourceName, resourceInfo := range resourcesInfo {
 		r := resourceFactory{
 			http_goclient.HttpClient{HttpClient: &http.Client{}},
 			resourceInfo,
