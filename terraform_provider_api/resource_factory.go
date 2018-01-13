@@ -225,10 +225,8 @@ func (r resourceFactory) prepareAPIKeyAuthentication(operation *spec.Operation, 
 		headers := map[string]string{}
 		if &providerConfig != nil {
 			securitySchemaDefinition := providerConfig.SecuritySchemaDefinitions[securityDefinitionName]
-			if &securitySchemaDefinition.apiKeyHeader != nil {
-				headers[securitySchemaDefinition.apiKeyHeader.name] = securitySchemaDefinition.apiKeyHeader.value
-			} else if &securitySchemaDefinition.apiKeyQuery != nil {
-				url = fmt.Sprintf("%s?%s=%s", url, securitySchemaDefinition.apiKeyQuery.name, securitySchemaDefinition.apiKeyQuery.value)
+			if &securitySchemaDefinition != nil {
+				return securitySchemaDefinition.prepareAPIKeyAuthentication(url)
 			}
 		}
 		return headers, url

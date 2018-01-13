@@ -17,18 +17,8 @@ type providerFactory struct {
 	discoveryAPIURL string
 }
 
-type apiKey struct {
-	name  string
-	value string
-}
-
-type securitySchemaDefinition struct {
-	apiKeyHeader apiKey
-	apiKeyQuery  apiKey
-}
-
 type providerConfig struct {
-	SecuritySchemaDefinitions map[string]securitySchemaDefinition
+	SecuritySchemaDefinitions map[string]apiKeyAuthentication
 }
 
 func (p providerFactory) createProvider() (*schema.Provider, error) {
@@ -99,17 +89,10 @@ func (p providerFactory) createTerraformProviderSchema(securityDefinitions spec.
 func (p providerFactory) configureProvider(securityDefinitions spec.SecurityDefinitions) schema.ConfigureFunc {
 	return func(data *schema.ResourceData) (interface{}, error) {
 		config := providerConfig{}
-		config.SecuritySchemaDefinitions = map[string]securitySchemaDefinition{}
+		config.SecuritySchemaDefinitions = map[string]apiKeyAuthentication{}
 		for secDefName, secDef := range securityDefinitions {
 			if secDef.Type == "apiKey" {
-				securitySchemaDefinition := securitySchemaDefinition{}
-				switch secDef.In {
-				case "header":
-					securitySchemaDefinition.apiKeyHeader = apiKey{secDef.Name, data.Get(secDefName).(string)}
-				case "query":
-					securitySchemaDefinition.apiKeyQuery = apiKey{secDef.Name, data.Get(secDefName).(string)}
-				}
-				config.SecuritySchemaDefinitions[secDefName] = securitySchemaDefinition
+				config.SecuritySchemaDefinitions[secDefName] = createAPIKeyAuthenticator(secDef.In, secDef.Name, data.Get(secDefName).(string))
 			}
 		}
 		return config, nil
