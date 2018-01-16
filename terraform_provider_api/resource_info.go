@@ -13,6 +13,7 @@ import (
 const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
+const extTfID = "x-terraform-id"
 
 type resourcesInfo map[string]resourceInfo
 
@@ -194,4 +195,33 @@ func (r resourceInfo) getResourceIDURL(id string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%s/%s", url, id), nil
+}
+
+// getResourceIdentifier returns the property name that is supposed to be used as the identifier. The resource id
+// is selected as follows:
+// 1.If the given schema definition contains a property configured with metadata 'x-terraform-id' set to true, that property value
+// will be used to set the state ID of the resource. Additionally, the value will be used when performing GET/PUT/DELETE requests to
+// identify the resource in question.
+// 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
+// will have a property named 'id'
+// 3. If none of the above requirements is met, an error will be returned
+func (r resourceInfo) getResourceIdentifier() (string, error) {
+	isIDPropertyPresent := false
+	for propertyName, property := range r.schemaDefinition.Properties {
+		if propertyName == "id" {
+			isIDPropertyPresent = true
+			continue
+		}
+		// field with extTfID metadata takes preference over 'id' fields as the service provider is the one acknowledging
+		// the fact that this field should be used as identifier of the resource
+		if terraformID, ok := property.Extensions.GetBool(extTfID); ok && terraformID {
+			return propertyName, nil
+		}
+	}
+	// if the id field is missing and there isn't any properties set with extTfID, there is not way for the resource
+	// to be identified and therefore an error is returned
+	if !isIDPropertyPresent {
+		return "", fmt.Errorf("could not find any identifier property in the resource payload swagger definition. Please make sure the payload definition has either one property named 'id' or one property that contains %s metadata", extTfID)
+	}
+	return "id", nil
 }

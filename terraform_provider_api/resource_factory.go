@@ -33,23 +33,6 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 	}, nil
 }
 
-func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
-	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
-		switch res.StatusCode {
-		case http.StatusUnauthorized:
-			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials", res.StatusCode)
-		default:
-			b, _ := ioutil.ReadAll(res.Body)
-			if len(b) > 0 {
-				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v. Response Body = %s", res.StatusCode, expectedHTTPStatusCodes, string(b))
-			}
-			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v", res.StatusCode, expectedHTTPStatusCodes)
-		}
-
-	}
-	return nil
-}
-
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
@@ -67,22 +50,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("POST %s failed: %s", url, err)
 	}
-
-	if output["id"] == nil {
-		return fmt.Errorf("object returned from api is missing mandatory property 'id'")
-	}
-
-	switch output["id"].(type) {
-	case int:
-		data.SetId(strconv.Itoa(output["id"].(int)))
-	case float64:
-		data.SetId(strconv.Itoa(int(output["id"].(float64))))
-	default:
-		data.SetId(output["id"].(string))
-	}
-	r.updateResourceState(output, data)
-
-	return nil
+	return r.updateLocalState(data, output)
 }
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
@@ -90,7 +58,7 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.updateResourceState(output, data)
+	return r.updateStateWithPayloadData(output, data)
 }
 
 func (r resourceFactory) readRemote(id string, config providerConfig) (map[string]interface{}, error) {
@@ -133,7 +101,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
 		return fmt.Errorf("UPDATE %s failed: %s", url, err)
 	}
-	return r.updateResourceState(output, data)
+	return r.updateStateWithPayloadData(output, data)
 }
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
@@ -155,6 +123,54 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	return nil
 }
 
+// setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
+// r.ResourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
+func (r resourceFactory) setStateID(data *schema.ResourceData, payload map[string]interface{}) error {
+	identifierProperty, err := r.ResourceInfo.getResourceIdentifier()
+	if err != nil {
+		return err
+	}
+	if payload[identifierProperty] == nil {
+		return fmt.Errorf("response object returned from the API is missing mandatory identifier property '%s'", identifierProperty)
+	}
+
+	switch payload[identifierProperty].(type) {
+	case int:
+		data.SetId(strconv.Itoa(payload[identifierProperty].(int)))
+	case float64:
+		data.SetId(strconv.Itoa(int(payload[identifierProperty].(float64))))
+	default:
+		data.SetId(payload[identifierProperty].(string))
+	}
+	return nil
+}
+
+// updateLocalState populates the state of the schema resource data with the payload data received from the POST API request
+func (r resourceFactory) updateLocalState(data *schema.ResourceData, payload map[string]interface{}) error {
+	err := r.setStateID(data, payload)
+	if err != nil {
+		return err
+	}
+	return r.updateStateWithPayloadData(payload, data)
+}
+
+func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
+	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
+		switch res.StatusCode {
+		case http.StatusUnauthorized:
+			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials", res.StatusCode)
+		default:
+			b, _ := ioutil.ReadAll(res.Body)
+			if len(b) > 0 {
+				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v. Response Body = %s", res.StatusCode, expectedHTTPStatusCodes, string(b))
+			}
+			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v", res.StatusCode, expectedHTTPStatusCodes)
+		}
+
+	}
+	return nil
+}
+
 func (r resourceFactory) checkImmutableFields(updated *schema.ResourceData, i interface{}) error {
 	var remoteData map[string]interface{}
 	var err error
@@ -165,14 +181,14 @@ func (r resourceFactory) checkImmutableFields(updated *schema.ResourceData, i in
 		if updated.Get(immutablePropertyName) != remoteData[immutablePropertyName] {
 			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
 			// data inside the updated (*schema.ResourceData) in the state file
-			r.updateResourceState(remoteData, updated)
+			r.updateStateWithPayloadData(remoteData, updated)
 			return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
 		}
 	}
 	return nil
 }
 
-func (r resourceFactory) updateResourceState(input map[string]interface{}, data *schema.ResourceData) error {
+func (r resourceFactory) updateStateWithPayloadData(input map[string]interface{}, data *schema.ResourceData) error {
 	for propertyName, propertyValue := range input {
 		if propertyName == "id" {
 			continue
@@ -191,18 +207,21 @@ func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[strin
 		if propertyName == "id" || property.ReadOnly {
 			continue
 		}
-		switch reflect.TypeOf(data.Get(propertyName)).Kind() {
-		case reflect.Slice:
-			input[propertyName] = data.Get(propertyName).([]interface{})
-		case reflect.String:
-			input[propertyName] = data.Get(propertyName).(string)
-		case reflect.Int:
-			input[propertyName] = data.Get(propertyName).(int)
-		case reflect.Float64:
-			input[propertyName] = data.Get(propertyName).(float64)
-		case reflect.Bool:
-			input[propertyName] = data.Get(propertyName).(bool)
+		if dataValue, ok := data.GetOk(propertyName); ok {
+			switch reflect.TypeOf(dataValue).Kind() {
+			case reflect.Slice:
+				input[propertyName] = dataValue.([]interface{})
+			case reflect.String:
+				input[propertyName] = dataValue.(string)
+			case reflect.Int:
+				input[propertyName] = dataValue.(int)
+			case reflect.Float64:
+				input[propertyName] = dataValue.(float64)
+			case reflect.Bool:
+				input[propertyName] = dataValue.(bool)
+			}
 		}
+
 	}
 	return input
 }

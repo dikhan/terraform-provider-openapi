@@ -879,3 +879,147 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 		})
 	})
 }
+
+func TestGetResourceIdentifier(t *testing.T) {
+	Convey("Given a swagger schema definition that has an id property", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceIdentifier method is called", func() {
+			id, err := r.getResourceIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'id'", func() {
+				So(id, ShouldEqual, "id")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to TRUE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add("x-terraform-id", true)
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some-other-id": {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceIdentifier method is called", func() {
+			id, err := r.getResourceIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'some-other-id'", func() {
+				So(id, ShouldEqual, "some-other-id")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that HAS BOTH an 'id' property AND ALSO a property configured with x-terraform-id set to true", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add("x-terraform-id", true)
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						"some-other-id": {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceIdentifier method is called", func() {
+			id, err := r.getResourceIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'some-other-id' as it takes preference over the default 'id' property", func() {
+				So(id, ShouldEqual, "some-other-id")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to FALSE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add("x-terraform-id", false)
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some-other-id": {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceIdentifier method is called", func() {
+			_, err := r.getResourceIdentifier()
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that NEITHER HAS an 'id' property NOR a property configured with x-terraform-id set to true", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"prop-that-is-not-id": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						"prop-that-is-not-id-and-does-not-have-id-metadata": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceIdentifier method is called", func() {
+			_, err := r.getResourceIdentifier()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
