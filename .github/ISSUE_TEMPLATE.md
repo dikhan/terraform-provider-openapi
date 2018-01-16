@@ -23,7 +23,7 @@ Please add a detailed description of the feature request here.
 
 #### Acceptance criteria
 
-What's required to consider this feature request complete? Please provide 
+What's required to consider this feature request complete? Please provide details:
 
 
 ## <a name="bugFound">Bug Found</a>
