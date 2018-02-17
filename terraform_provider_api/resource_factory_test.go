@@ -109,15 +109,15 @@ func TestPrepareAPIKeyAuthentication(t *testing.T) {
 		url := "https://www.host.com/v1/resource"
 		Convey("When prepareAPIKeyAuthentication method is called with the operation, providerConfig and the service url", func() {
 			r := resourceFactory{}
-			headers, url := r.prepareAPIKeyAuthentication(operation, providerConfig, url)
+			headers, returnedURL := r.prepareAPIKeyAuthentication(operation, providerConfig, url)
 			Convey("Then one of the authentication mechanisms should be used with no preference, the option selected would be the first one found in the map", func() {
 				// Checking whether the apiKey query mechanism has been picked; otherwise apiKey header must be present - either or
 				if len(headers) == 0 {
-					So(headers, ShouldContainKey, "Authorization")
-					So(url, ShouldEqual, fmt.Sprintf("%s?Authorization=superSecretKeyInQuery", url))
+					So(returnedURL, ShouldEqual, fmt.Sprintf("%s?Authorization=superSecretKeyInQuery", url))
 				} else {
 					So(headers, ShouldContainKey, "Authorization")
 					So(headers["Authorization"], ShouldEqual, "superSecretKeyInHeader")
+					So(returnedURL, ShouldEqual, url)
 				}
 			})
 		})
