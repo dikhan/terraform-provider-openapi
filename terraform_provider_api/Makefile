@@ -10,7 +10,8 @@ default: build
 all: test build
 
 build: fmt
-	@go build -o terraform-provider-$(PROVIDER_NAME)
+	@go build -o terraform-provider
+	@ln -sF terraform-provider terraform-provider-$(PROVIDER_NAME)
 
 fmt:
 	@echo "Running gofmt on the current directory"
@@ -33,7 +34,7 @@ test: fmt vet lint
 	go test -v -cover $(TEST_PACKAGES) || exit 1
 
 run_terraform: build
-	@echo "Executing terraform ${TF_CMD}"
+	@echo "Executing OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD}"
 	@export OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && \
 	terraform init  && \
 	terraform ${TF_CMD}
