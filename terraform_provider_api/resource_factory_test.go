@@ -79,7 +79,7 @@ func TestPrepareAPIKeyAuthentication(t *testing.T) {
 		})
 	})
 
-	Convey("Given a provider configuration containing a multiple 'apiKey' type security definitions (apikey_header_auth and apikey_query_auth), an operation that requires either 'apikey_header_auth' or 'apikey_query_auth' authentication and the resource URL", t, func() {
+	Convey("Given a provider configuration containing multiple 'apiKey' type security definitions (apikey_header_auth and apikey_query_auth), an operation that requires either 'apikey_header_auth' or 'apikey_query_auth' authentication and the resource URL", t, func() {
 		providerConfig := providerConfig{
 			SecuritySchemaDefinitions: map[string]apiKeyAuthentication{
 				"apikey_header_auth": apiKeyHeader{
@@ -109,10 +109,16 @@ func TestPrepareAPIKeyAuthentication(t *testing.T) {
 		url := "https://www.host.com/v1/resource"
 		Convey("When prepareAPIKeyAuthentication method is called with the operation, providerConfig and the service url", func() {
 			r := resourceFactory{}
-			headers, _ := r.prepareAPIKeyAuthentication(operation, providerConfig, url)
-			Convey("Then one of the authentication mechanisms should be used - in this case due to the order of the keys injected in the map - apikey_header_auth will be used", func() {
-				So(headers, ShouldContainKey, "Authorization")
-				So(headers["Authorization"], ShouldEqual, "superSecretKeyInHeader")
+			headers, url := r.prepareAPIKeyAuthentication(operation, providerConfig, url)
+			Convey("Then one of the authentication mechanisms should be used with no preference, the option selected would be the first one found in the map", func() {
+				// Checking whether the apiKey query mechanism has been picked; otherwise apiKey header must be present - either or
+				if len(headers) == 0 {
+					So(headers, ShouldContainKey, "Authorization")
+					So(url, ShouldEqual, fmt.Sprintf("%s?Authorization=superSecretKeyInQuery", url))
+				} else {
+					So(headers, ShouldContainKey, "Authorization")
+					So(headers["Authorization"], ShouldEqual, "superSecretKeyInHeader")
+				}
 			})
 		})
 	})
