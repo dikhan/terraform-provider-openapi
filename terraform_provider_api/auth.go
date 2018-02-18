@@ -64,11 +64,13 @@ func (oa OperationAuthenticator) confirmOperationSecurityPoliciesAreDefined(oper
 func (oa OperationAuthenticator) prepareAuth(providerConfig providerConfig) (*authContext, error) {
 	if required, operationSecurityPolicies := oa.authRequired(); required {
 		if err := oa.confirmOperationSecurityPoliciesAreDefined(operationSecurityPolicies, providerConfig); err != nil {
-			return nil, err
+			return oa.authContext, err
 		}
 		for securitySchemaDefinitionName := range operationSecurityPolicies {
 			securitySchemaDefinition := providerConfig.SecuritySchemaDefinitions[securitySchemaDefinitionName]
-			securitySchemaDefinition.prepareAuth(oa.authContext)
+			if err := securitySchemaDefinition.prepareAuth(oa.authContext); err != nil {
+				return oa.authContext, err
+			}
 		}
 	}
 	return oa.authContext, nil
@@ -76,7 +78,7 @@ func (oa OperationAuthenticator) prepareAuth(providerConfig providerConfig) (*au
 
 type authenticator interface {
 	getContext() interface{}
-	prepareAuth(*authContext)
+	prepareAuth(*authContext) error
 	getType() authType
 }
 
@@ -100,9 +102,10 @@ func (a apiKeyHeader) getType() authType {
 
 // prepareAPIKeyAuthentication adds to the map the auth header required for apikey header authentication. The url
 // remains the same
-func (a apiKeyHeader) prepareAuth(authContext *authContext) {
+func (a apiKeyHeader) prepareAuth(authContext *authContext) error {
 	apiKey := a.getContext().(apiKey)
 	authContext.headers[apiKey.name] = apiKey.value
+	return nil
 }
 
 // Api Key Query Auth
@@ -121,9 +124,10 @@ func (a apiKeyQuery) getType() authType {
 // prepareAPIKeyAuthentication updates the url to insert the query api auth values. The map returned is not
 // populated in this case as the auth is done via query parameters. However, having the ability to return the map
 // provides the opportunity to inject some headers if needed.
-func (a apiKeyQuery) prepareAuth(authContext *authContext) {
+func (a apiKeyQuery) prepareAuth(authContext *authContext) error {
 	apiKey := a.getContext().(apiKey)
 	authContext.url = fmt.Sprintf("%s?%s=%s", authContext.url, apiKey.name, apiKey.value)
+	return nil
 }
 
 func createAPIKeyAuthenticator(apiKeyAuthType, name, value string) authenticator {
