@@ -72,8 +72,12 @@ Additionally, a convenient [Makefile](https://github.com/dikhan/terraform-provid
 the above in just one command as follows:
 ```
 $ cd terraform_provider_api
-$ make run_terraform PROVIDER_NAME="sp" OTF_VAR_SWAGGER_URL="https://some-domain/swagger.yaml" TF_CMD=plan
+$ PROVIDER_NAME="sp" OTF_VAR_SWAGGER_URL="https://some-domain/swagger.yaml" TF_CMD=plan make run_terraform
 ```
+
+*Note: If run_terraform target is executed without passing PROVIDER_NAME, OTF_VAR_SWAGGER_URL and TF_CMD, internally the 
+Makefile will default to the service_provider_example values - that being 'sp', 'https://localhost:8443/swagger.yaml' and
+'plan' respectively*
 
 For more information refer to [How to set up the local environment?](./docs/local_environment.md) which explains in
 detail

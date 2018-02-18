@@ -26,9 +26,9 @@ type resourceInfo struct {
 	host             string
 	httpSchemes      []string
 	schemaDefinition spec.Schema
-	// createPathInfo contains info about /resource
+	// createPathInfo contains info about /resource, including the POST operation
 	createPathInfo spec.PathItem
-	// pathInfo contains info about /resource/{id}
+	// pathInfo contains info about /resource/{id}, including GET, PUT and REMOVE operations if applicable
 	pathInfo spec.PathItem
 }
 
