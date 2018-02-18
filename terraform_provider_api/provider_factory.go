@@ -18,7 +18,7 @@ type providerFactory struct {
 }
 
 type providerConfig struct {
-	SecuritySchemaDefinitions map[string]apiKeyAuthentication
+	SecuritySchemaDefinitions map[string]authenticator
 }
 
 func (p providerFactory) createProvider() (*schema.Provider, error) {
@@ -89,7 +89,7 @@ func (p providerFactory) createTerraformProviderSchema(securityDefinitions spec.
 func (p providerFactory) configureProvider(securityDefinitions spec.SecurityDefinitions) schema.ConfigureFunc {
 	return func(data *schema.ResourceData) (interface{}, error) {
 		config := providerConfig{}
-		config.SecuritySchemaDefinitions = map[string]apiKeyAuthentication{}
+		config.SecuritySchemaDefinitions = map[string]authenticator{}
 		for secDefName, secDef := range securityDefinitions {
 			if secDef.Type == "apiKey" {
 				config.SecuritySchemaDefinitions[secDefName] = createAPIKeyAuthenticator(secDef.In, secDef.Name, data.Get(secDefName).(string))

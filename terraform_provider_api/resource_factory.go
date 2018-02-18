@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/dikhan/http_goclient"
-	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -42,13 +41,15 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.createPathInfo.Post, i.(providerConfig), resourceURL)
-	res, err := r.httpClient.PostJson(url, headers, input, &output)
+	authenticator := NewOperationAuthenticator(r.ResourceInfo.createPathInfo.Post, resourceURL)
+	authenticator.prepareAuth(i.(providerConfig))
+	res, err := r.httpClient.PostJson(authenticator.authContext.url, authenticator.authContext.headers, input, &output)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("POST %s failed: %s", url, err)
+		// TODO: need to make sure query tokens are not disclosed
+		return fmt.Errorf("POST %s failed: %s", authenticator.authContext.url, err)
 	}
 	return r.updateLocalState(data, output)
 }
@@ -67,13 +68,16 @@ func (r resourceFactory) readRemote(id string, config providerConfig) (map[strin
 	if err != nil {
 		return nil, err
 	}
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Get, config, resourceIDURL)
-	res, err := r.httpClient.Get(url, headers, &output)
+
+	authenticator := NewOperationAuthenticator(r.ResourceInfo.pathInfo.Get, resourceIDURL)
+	authenticator.prepareAuth(config)
+
+	res, err := r.httpClient.Get(authenticator.authContext.url, authenticator.authContext.headers, &output)
 	if err != nil {
 		return nil, err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
-		return nil, fmt.Errorf("GET %s failed: %s", url, err)
+		return nil, fmt.Errorf("GET %s failed: %s", authenticator.authContext.url, err)
 	}
 	return output, nil
 }
@@ -93,13 +97,16 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Put, i.(providerConfig), resourceIDURL)
-	res, err := r.httpClient.PutJson(url, headers, input, &output)
+
+	authenticator := NewOperationAuthenticator(r.ResourceInfo.pathInfo.Put, resourceIDURL)
+	authenticator.prepareAuth(i.(providerConfig))
+
+	res, err := r.httpClient.PutJson(authenticator.authContext.url, authenticator.authContext.headers, input, &output)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
-		return fmt.Errorf("UPDATE %s failed: %s", url, err)
+		return fmt.Errorf("UPDATE %s failed: %s", authenticator.authContext.url, err)
 	}
 	return r.updateStateWithPayloadData(output, data)
 }
@@ -112,13 +119,16 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	headers, url := r.prepareAPIKeyAuthentication(r.ResourceInfo.pathInfo.Delete, i.(providerConfig), resourceIDURL)
-	res, err := r.httpClient.Delete(url, headers)
+
+	authenticator := NewOperationAuthenticator(r.ResourceInfo.pathInfo.Delete, resourceIDURL)
+	authenticator.prepareAuth(i.(providerConfig))
+
+	res, err := r.httpClient.Delete(authenticator.authContext.url, authenticator.authContext.headers)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent}); err != nil {
-		return fmt.Errorf("DELETE %s failed: %s", url, err)
+		return fmt.Errorf("DELETE %s failed: %s", authenticator.authContext.url, err)
 	}
 	return nil
 }
@@ -224,31 +234,4 @@ func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[strin
 
 	}
 	return input
-}
-
-func (r resourceFactory) authRequired(operation *spec.Operation, providerConfig providerConfig) (bool, string) {
-	for _, operationSecurityPolicy := range operation.Security {
-		for operationSecurityDefName := range operationSecurityPolicy {
-			for providerSecurityDefName := range providerConfig.SecuritySchemaDefinitions {
-				if operationSecurityDefName == providerSecurityDefName {
-					return true, operationSecurityDefName
-				}
-			}
-		}
-	}
-	return false, ""
-}
-
-func (r resourceFactory) prepareAPIKeyAuthentication(operation *spec.Operation, providerConfig providerConfig, url string) (map[string]string, string) {
-	if required, securityDefinitionName := r.authRequired(operation, providerConfig); required {
-		headers := map[string]string{}
-		if &providerConfig != nil {
-			securitySchemaDefinition := providerConfig.SecuritySchemaDefinitions[securityDefinitionName]
-			if &securitySchemaDefinition != nil {
-				return securitySchemaDefinition.prepareAPIKeyAuthentication(url)
-			}
-		}
-		return headers, url
-	}
-	return nil, url
 }
