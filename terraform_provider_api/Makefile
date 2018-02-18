@@ -31,7 +31,10 @@ lint:
 
 test: fmt vet lint
 	@echo "[INFO] Testing terraform-provider-openapi"
-	go test -v -cover $(TEST_PACKAGES) || exit 1
+	@go test -v -cover $(TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
+		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
+		exit 1; \
+	fi
 
 run_terraform: build
 	@echo "[INFO] Performing sanity check against the service provider's swagger endpoint '$(OTF_VAR_SWAGGER_URL)'"
