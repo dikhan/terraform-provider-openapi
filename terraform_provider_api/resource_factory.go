@@ -73,7 +73,7 @@ func (r resourceFactory) readRemote(id string, config providerConfig) (map[strin
 		return nil, err
 	}
 
-	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Get.ID, resourceIDURL, r.resourceInfo.createPathInfo.Get.Security, config)
+	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Get.ID, resourceIDURL, r.resourceInfo.pathInfo.Get.Security, config)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Put.ID, resourceIDURL, r.resourceInfo.createPathInfo.Put.Security, i.(providerConfig))
+	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Put.ID, resourceIDURL, r.resourceInfo.pathInfo.Put.Security, i.(providerConfig))
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Delete.ID, resourceIDURL, r.resourceInfo.createPathInfo.Delete.Security, i.(providerConfig))
+	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Delete.ID, resourceIDURL, r.resourceInfo.pathInfo.Delete.Security, i.(providerConfig))
 	if err != nil {
 		return err
 	}
