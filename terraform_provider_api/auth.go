@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-openapi/spec"
 	"log"
 )
 
@@ -14,12 +13,20 @@ const ( // iota is reset to 0
 	authTypeAPIQuery
 )
 
-// OperationAuthenticator encapsulates both the operation for which the authenticator works as well
-// as the authContext which will keep the state of the authorization (e,g" new headers added, url changed with
-// query parameter containg a token, etc)
-type OperationAuthenticator struct {
-	authContext *authContext
-	operation   *spec.Operation
+type apiAuthenticator interface {
+	// prepareAuth generates an auth context with all the information regarding the authentication, including
+	// any metadata that should be passed in to the request when making the http call to get a resource (e,g: new headers
+	// with authentication details like access tokens, url with a query token, etc).
+	// The following parameters describe the operationId for which the authentication is being prepared, the url of
+	// the resource, the operation security schemes and the provider config containing the actual values like tokens,
+	// special headers, etc for each security schemes
+	prepareAuth(operationID, url string, operationSecuritySchemes []map[string][]string, providerConfig providerConfig) (*authContext, error)
+}
+
+// apiAuth is an implementation of apiAuthenticator encapsulating the general settings to be applied in case
+// an operation does not contain a security policy; otherwise the operation's security policies will be applied instead.
+type apiAuth struct {
+	globalSecuritySchemes []map[string][]string
 }
 
 type authContext struct {
@@ -27,31 +34,32 @@ type authContext struct {
 	url     string
 }
 
-// NewOperationAuthenticator allows for the creation of a new authenticator for a given operation
-func NewOperationAuthenticator(op *spec.Operation, url string) OperationAuthenticator {
-	return OperationAuthenticator{
-		authContext: &authContext{
-			headers: map[string]string{},
-			url:     url,
-		},
-		operation: op,
+// newAPIAuthenticator allows for the creation of a new authenticator for a given operation
+func newAPIAuthenticator(globalSecuritySchemes []map[string][]string) apiAuthenticator {
+	return apiAuth{
+		globalSecuritySchemes: globalSecuritySchemes,
 	}
 }
 
 // Check if the operation contains any security policy. In the case where the operation contains multiple security
 // policies, the first one found in the list will be the one returned.
 // For more information about multiple api keys refer to https://swagger.io/docs/specification/authentication/api-keys/#multiple
-func (oa OperationAuthenticator) authRequired() (bool, map[string][]string) {
-	if len(oa.operation.Security) != 0 {
-		log.Printf("operation %s contains security policies, selected the following based on order of appearance in the list %+v", oa.operation.ID, oa.operation.Security[0])
-		return true, oa.operation.Security[0]
+func (oa apiAuth) authRequired(operationID, url string, operationSecuritySchemes []map[string][]string) (bool, map[string][]string) {
+	if len(operationSecuritySchemes) != 0 {
+		log.Printf("operation %s [%s] contains security policies (overriding global security config if applicable), selected the following based on order of appearance in the list %+v", operationID, url, operationSecuritySchemes[0])
+		return true, operationSecuritySchemes[0]
+	}
+	log.Printf("operation %s [%s] is missing specific security scheme, falling back to global security schemes (if there's any)", operationID, url)
+	if len(oa.globalSecuritySchemes) != 0 {
+		log.Printf("the global configuration contains security schemes, selected the following based on order of appearance in the list %+v", oa.globalSecuritySchemes[0])
+		return true, oa.globalSecuritySchemes[0]
 	}
 	return false, nil
 }
 
-// Validate security policies. This function will perform two checks:
+// Validate security policies. This function will perform the following checks:
 // 1. Verify that the operation security schemes are defined as security definitions in the provider config
-func (oa OperationAuthenticator) confirmOperationSecurityPoliciesAreDefined(operationSecurityPolicies map[string][]string, providerConfig providerConfig) error {
+func (oa apiAuth) confirmOperationSecurityPoliciesAreDefined(operationSecurityPolicies map[string][]string, providerConfig providerConfig) error {
 	for operationSecurityDefName := range operationSecurityPolicies {
 		securityDefinition := providerConfig.SecuritySchemaDefinitions[operationSecurityDefName]
 		if securityDefinition == nil {
@@ -61,19 +69,23 @@ func (oa OperationAuthenticator) confirmOperationSecurityPoliciesAreDefined(oper
 	return nil
 }
 
-func (oa OperationAuthenticator) prepareAuth(providerConfig providerConfig) (*authContext, error) {
-	if required, operationSecurityPolicies := oa.authRequired(); required {
+func (oa apiAuth) prepareAuth(operationID, url string, operationSecuritySchemes []map[string][]string, providerConfig providerConfig) (*authContext, error) {
+	authContext := &authContext{
+		headers: map[string]string{},
+		url:     url,
+	}
+	if required, operationSecurityPolicies := oa.authRequired(operationID, url, operationSecuritySchemes); required {
 		if err := oa.confirmOperationSecurityPoliciesAreDefined(operationSecurityPolicies, providerConfig); err != nil {
-			return oa.authContext, err
+			return authContext, err
 		}
 		for securitySchemaDefinitionName := range operationSecurityPolicies {
 			securitySchemaDefinition := providerConfig.SecuritySchemaDefinitions[securitySchemaDefinitionName]
-			if err := securitySchemaDefinition.prepareAuth(oa.authContext); err != nil {
-				return oa.authContext, err
+			if err := securitySchemaDefinition.prepareAuth(authContext); err != nil {
+				return authContext, err
 			}
 		}
 	}
-	return oa.authContext, nil
+	return authContext, nil
 }
 
 type authenticator interface {

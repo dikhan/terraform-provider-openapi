@@ -23,6 +23,9 @@ consumes:
 produces:
 - "application/json"
 
+security:
+  - apikey_auth: []
+
 paths:
   /swagger.json:
     get:
@@ -60,8 +63,8 @@ paths:
           description: "generic error response"
           schema:
             $ref: "#/definitions/error"
-      security:
-        - apikey_auth: []
+      #security: For the sake of the example, this POST operation will use the global security schemes
+      #  - apikey_auth: []
   /v1/cdns/{id}:
     get:
       tags:

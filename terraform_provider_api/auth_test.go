@@ -30,9 +30,9 @@ func TestPrepareAuth(t *testing.T) {
 			},
 		}
 		url := "https://www.host.com/v1/resource"
-		oa := NewOperationAuthenticator(operation, url)
+		oa := newAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with a providerConfig", func() {
-			authContext, err := oa.prepareAuth(providerConfig)
+			authContext, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -70,9 +70,9 @@ func TestPrepareAuth(t *testing.T) {
 			},
 		}
 		url := "https://www.host.com/v1/resource"
-		oa := NewOperationAuthenticator(operation, url)
+		oa := newAPIAuthenticator(nil)
 		Convey("When prepareAPIKeyAuthentication method is called with the operation, providerConfig and the service url", func() {
-			authContext, err := oa.prepareAuth(providerConfig)
+			authContext, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -115,9 +115,9 @@ func TestPrepareAuth(t *testing.T) {
 			},
 		}
 		url := "https://www.host.com/v1/resource"
-		oa := NewOperationAuthenticator(operation, url)
+		oa := newAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with the providerConfig", func() {
-			authContext, err := oa.prepareAuth(providerConfig)
+			authContext, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -157,9 +157,9 @@ func TestPrepareAuth(t *testing.T) {
 			},
 		}
 		url := "https://www.host.com/v1/resource"
-		oa := NewOperationAuthenticator(operation, url)
+		oa := newAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with the providerConfig", func() {
-			authContext, err := oa.prepareAuth(providerConfig)
+			authContext, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -200,9 +200,9 @@ func TestPrepareAuth(t *testing.T) {
 			},
 		}
 		url := "https://www.host.com/v1/resource"
-		oa := NewOperationAuthenticator(operation, url)
+		oa := newAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with the providerConfig", func() {
-			authContext, err := oa.prepareAuth(providerConfig)
+			authContext, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -211,6 +211,121 @@ func TestPrepareAuth(t *testing.T) {
 				So(authContext.headers["X-API-KEY"], ShouldEqual, "superSecretKeyForApiKey")
 				So(authContext.headers["X-APP-ID"], ShouldEqual, "superSecretKeyForAppId")
 				So(authContext.url, ShouldEqual, url)
+			})
+		})
+	})
+
+	Convey("Given a provider configuration containing security definitions for the global security contains policies default and an operation that DOES NOT have any specific security scheme and the resource URL", t, func() {
+		providerConfig := providerConfig{
+			SecuritySchemaDefinitions: map[string]authenticator{
+				"apiKey": apiKeyHeader{
+					apiKey{
+						name:  "X-API-KEY",
+						value: "superSecretKeyForApiKey",
+					},
+				},
+			},
+		}
+		globalSecuritySchemes := []map[string][]string{
+			{
+				"apiKey": {},
+			},
+		}
+		operation := &spec.Operation{
+			OperationProps: spec.OperationProps{
+				Security: []map[string][]string{
+				// Operation DOES NOT have security schemes
+				},
+			},
+		}
+		url := "https://www.host.com/v1/resource"
+		oa := newAPIAuthenticator(globalSecuritySchemes)
+		Convey("When prepareAuth method is called with the providerConfig", func() {
+			authContext, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the global security should be applied even though the operation DOES NOT have a security scheme", func() {
+				So(authContext.headers["X-API-KEY"], ShouldEqual, "superSecretKeyForApiKey")
+				So(authContext.url, ShouldEqual, url)
+			})
+		})
+	})
+
+	Convey("Given a provider configuration containing security definitions for both global security schemes and operation overrides and the resource URL", t, func() {
+		providerConfig := providerConfig{
+			SecuritySchemaDefinitions: map[string]authenticator{
+				"apiKey": apiKeyHeader{
+					apiKey{
+						name:  "X-API-KEY",
+						value: "superSecretKeyForApiKey",
+					},
+				},
+				"apiKeyOverride": apiKeyHeader{
+					apiKey{
+						name:  "X-API-KEY_OVERRIDE",
+						value: "superSecretKeyForSpecialOperationApiKey",
+					},
+				},
+			},
+		}
+		globalSecuritySchemes := []map[string][]string{
+			{
+				"apiKey": {},
+			},
+		}
+		operation := &spec.Operation{
+			OperationProps: spec.OperationProps{
+				Security: []map[string][]string{
+					{
+						"apiKeyOverride": {},
+					},
+				},
+			},
+		}
+		url := "https://www.host.com/v1/resource"
+		oa := newAPIAuthenticator(globalSecuritySchemes)
+		Convey("When prepareAuth method is called with the providerConfig", func() {
+			authContext, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the global security should be applied even though the operation DOES NOT have a security scheme", func() {
+				So(authContext.headers["X-API-KEY_OVERRIDE"], ShouldEqual, "superSecretKeyForSpecialOperationApiKey")
+				So(authContext.url, ShouldEqual, url)
+			})
+		})
+	})
+
+	Convey("Given a global security setting containing schemes which are not defined in the provider security definitions, and an operation with NO security schemes; therefore global security is applied", t, func() {
+		providerConfig := providerConfig{
+			SecuritySchemaDefinitions: map[string]authenticator{
+				"apiKey": apiKeyHeader{
+					apiKey{
+						name:  "X-API-KEY",
+						value: "superSecretKeyForApiKey",
+					},
+				},
+			},
+		}
+		globalSecuritySchemes := []map[string][]string{
+			{
+				"not_defined_scheme": {},
+			},
+		}
+		operation := &spec.Operation{
+			OperationProps: spec.OperationProps{
+				Security: []map[string][]string{
+				// Operation DOES NOT have security schemes
+				},
+			},
+		}
+		url := "https://www.host.com/v1/resource"
+		oa := newAPIAuthenticator(globalSecuritySchemes)
+		Convey("When prepareAuth method is called with the providerConfig", func() {
+			_, err := oa.prepareAuth("CreateResourceV1", url, operation.Security, providerConfig)
+			Convey("Then err should NOT be nil as global schemes contain policies which are not defined", func() {
+				So(err, ShouldNotBeNil)
 			})
 		})
 	})
@@ -228,9 +343,10 @@ func TestAuthRequired(t *testing.T) {
 				},
 			},
 		}
-		oa := NewOperationAuthenticator(operation, "")
+		url := "https://www.host.com/v1/resource"
+		oa := apiAuth{}
 		Convey("When authRequired method is called", func() {
-			authRequired, operationSecurityPolicies := oa.authRequired()
+			authRequired, operationSecurityPolicies := oa.authRequired("CreateResourceV1", url, operation.Security)
 			Convey("Then the values returned should be true and the name of the security policy 'apikey_header_auth'", func() {
 				So(authRequired, ShouldBeTrue)
 				So(operationSecurityPolicies, ShouldContainKey, securityPolicyName)
@@ -246,9 +362,10 @@ func TestAuthRequired(t *testing.T) {
 				},
 			},
 		}
-		oa := NewOperationAuthenticator(operation, "")
+		url := "https://www.host.com/v1/resource"
+		oa := apiAuth{}
 		Convey("When authRequired method is called", func() {
-			authRequired, operationSecurityPolicies := oa.authRequired()
+			authRequired, operationSecurityPolicies := oa.authRequired("CreateResourceV1", url, operation.Security)
 			Convey("Then the values returned should be false and the name of the security policy should be empty", func() {
 				So(authRequired, ShouldBeFalse)
 				So(operationSecurityPolicies, ShouldBeEmpty)
@@ -279,7 +396,7 @@ func TestConfirmOperationSecurityPoliciesAreDefined(t *testing.T) {
 				},
 			},
 		}
-		oa := NewOperationAuthenticator(operation, "")
+		oa := apiAuth{}
 		Convey("When confirmOperationSecurityPoliciesAreDefined method with a security policy which is also defined in the security definitions", func() {
 			err := oa.confirmOperationSecurityPoliciesAreDefined(operation.Security[0], providerConfig)
 			Convey("Then the err returned should be nil", func() {
@@ -309,7 +426,7 @@ func TestConfirmOperationSecurityPoliciesAreDefined(t *testing.T) {
 				},
 			},
 		}
-		oa := NewOperationAuthenticator(operation, "")
+		oa := apiAuth{}
 		Convey("When confirmOperationSecurityPoliciesAreDefined method with a security policy which is NOT defined in the security definitions", func() {
 			err := oa.confirmOperationSecurityPoliciesAreDefined(operation.Security[0], providerConfig)
 			Convey("Then the err returned should not be nil", func() {

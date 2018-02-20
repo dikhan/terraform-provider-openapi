@@ -55,6 +55,7 @@ func (p providerFactory) generateProviderFromAPISpec(apiSpecAnalyser *apiSpecAna
 		r := resourceFactory{
 			http_goclient.HttpClient{HttpClient: &http.Client{}},
 			resourceInfo,
+			newAPIAuthenticator(apiSpecAnalyser.d.Spec().Security),
 		}
 		resource, err := r.createSchemaResource()
 		if err != nil {
