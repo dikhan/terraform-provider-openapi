@@ -14,12 +14,13 @@ import (
 )
 
 type resourceFactory struct {
-	httpClient   http_goclient.HttpClient
-	ResourceInfo resourceInfo
+	httpClient       http_goclient.HttpClient
+	resourceInfo     resourceInfo
+	apiAuthenticator apiAuthenticator
 }
 
 func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
-	s, err := r.ResourceInfo.createTerraformResourceSchema()
+	s, err := r.resourceInfo.createTerraformResourceSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -36,20 +37,22 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
 
-	resourceURL, err := r.ResourceInfo.getResourceURL()
+	resourceURL, err := r.resourceInfo.getResourceURL()
 	if err != nil {
 		return err
 	}
 
-	authenticator := NewOperationAuthenticator(r.ResourceInfo.createPathInfo.Post, resourceURL)
-	authenticator.prepareAuth(i.(providerConfig))
-	res, err := r.httpClient.PostJson(authenticator.authContext.url, authenticator.authContext.headers, input, &output)
+	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Post.ID, resourceURL, r.resourceInfo.createPathInfo.Post.Security, i.(providerConfig))
+	if err != nil {
+		return err
+	}
+
+	res, err := r.httpClient.PostJson(authContext.url, authContext.headers, input, &output)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
-		// TODO: need to make sure query tokens are not disclosed
-		return fmt.Errorf("POST %s failed: %s", authenticator.authContext.url, err)
+		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
 	}
 	return r.updateLocalState(data, output)
 }
@@ -63,28 +66,30 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 }
 
 func (r resourceFactory) readRemote(id string, config providerConfig) (map[string]interface{}, error) {
+	var err error
 	output := map[string]interface{}{}
-	resourceIDURL, err := r.ResourceInfo.getResourceIDURL(id)
+	resourceIDURL, err := r.resourceInfo.getResourceIDURL(id)
 	if err != nil {
 		return nil, err
 	}
 
-	authenticator := NewOperationAuthenticator(r.ResourceInfo.pathInfo.Get, resourceIDURL)
-	authenticator.prepareAuth(config)
-
-	res, err := r.httpClient.Get(authenticator.authContext.url, authenticator.authContext.headers, &output)
+	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Get.ID, resourceIDURL, r.resourceInfo.createPathInfo.Get.Security, config)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.httpClient.Get(authContext.url, authContext.headers, &output)
 	if err != nil {
 		return nil, err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
-		return nil, fmt.Errorf("GET %s failed: %s", authenticator.authContext.url, err)
+		return nil, fmt.Errorf("GET %s failed: %s", resourceIDURL, err)
 	}
 	return output, nil
 }
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
-	if r.ResourceInfo.pathInfo.Put == nil {
-		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.ResourceInfo.name, r.ResourceInfo.host)
+	if r.resourceInfo.pathInfo.Put == nil {
+		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
 	input := r.getPayloadFromData(data)
 	output := map[string]interface{}{}
@@ -93,50 +98,54 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	resourceIDURL, err := r.ResourceInfo.getResourceIDURL(data.Id())
+	resourceIDURL, err := r.resourceInfo.getResourceIDURL(data.Id())
 	if err != nil {
 		return err
 	}
 
-	authenticator := NewOperationAuthenticator(r.ResourceInfo.pathInfo.Put, resourceIDURL)
-	authenticator.prepareAuth(i.(providerConfig))
+	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Put.ID, resourceIDURL, r.resourceInfo.createPathInfo.Put.Security, i.(providerConfig))
+	if err != nil {
+		return err
+	}
 
-	res, err := r.httpClient.PutJson(authenticator.authContext.url, authenticator.authContext.headers, input, &output)
+	res, err := r.httpClient.PutJson(authContext.url, authContext.headers, input, &output)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
-		return fmt.Errorf("UPDATE %s failed: %s", authenticator.authContext.url, err)
+		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
 	}
 	return r.updateStateWithPayloadData(output, data)
 }
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
-	if r.ResourceInfo.pathInfo.Delete == nil {
-		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.ResourceInfo.name, r.ResourceInfo.host)
+	if r.resourceInfo.pathInfo.Delete == nil {
+		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
-	resourceIDURL, err := r.ResourceInfo.getResourceIDURL(data.Id())
+	resourceIDURL, err := r.resourceInfo.getResourceIDURL(data.Id())
 	if err != nil {
 		return err
 	}
 
-	authenticator := NewOperationAuthenticator(r.ResourceInfo.pathInfo.Delete, resourceIDURL)
-	authenticator.prepareAuth(i.(providerConfig))
+	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Delete.ID, resourceIDURL, r.resourceInfo.createPathInfo.Delete.Security, i.(providerConfig))
+	if err != nil {
+		return err
+	}
 
-	res, err := r.httpClient.Delete(authenticator.authContext.url, authenticator.authContext.headers)
+	res, err := r.httpClient.Delete(authContext.url, authContext.headers)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent}); err != nil {
-		return fmt.Errorf("DELETE %s failed: %s", authenticator.authContext.url, err)
+		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
 	return nil
 }
 
 // setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
-// r.ResourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
+// r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
 func (r resourceFactory) setStateID(data *schema.ResourceData, payload map[string]interface{}) error {
-	identifierProperty, err := r.ResourceInfo.getResourceIdentifier()
+	identifierProperty, err := r.resourceInfo.getResourceIdentifier()
 	if err != nil {
 		return err
 	}
@@ -187,7 +196,7 @@ func (r resourceFactory) checkImmutableFields(updated *schema.ResourceData, i in
 	if remoteData, err = r.readRemote(updated.Id(), i.(providerConfig)); err != nil {
 		return err
 	}
-	for _, immutablePropertyName := range r.ResourceInfo.getImmutableProperties() {
+	for _, immutablePropertyName := range r.resourceInfo.getImmutableProperties() {
 		if updated.Get(immutablePropertyName) != remoteData[immutablePropertyName] {
 			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
 			// data inside the updated (*schema.ResourceData) in the state file
@@ -212,7 +221,7 @@ func (r resourceFactory) updateStateWithPayloadData(input map[string]interface{}
 
 func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
-	for propertyName, property := range r.ResourceInfo.schemaDefinition.Properties {
+	for propertyName, property := range r.resourceInfo.schemaDefinition.Properties {
 		// ReadOnly properties are not considered for the payload data
 		if propertyName == "id" || property.ReadOnly {
 			continue
