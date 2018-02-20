@@ -77,6 +77,21 @@ schemes:
     - https
 ```
 
+#### <a name="globalSecuritySchemes">Global Security Schemes</a>
+
+- **Field Name:** schemes
+- **Type:** [string]
+- **Required:** No
+- **Description:** Applies the specified security schemes, corresponding to a security scheme defined in [securityDefinitions](#swaggerSecurityDefinitions)),
+globally to all API operations unless overridden on the operation level.
+
+Global security can be overridden in individual operations to use a different authentication type or no authentication at all:
+
+```yml
+security:
+  - apiKeyAuth: []
+```
+
 #### <a name="swaggerConsumes">Consumes</a>
 
 - **Field Name:** consumes
@@ -275,7 +290,9 @@ definitions:
 - **Field Name:** securityDefinitions
 - **Type:** [Security Definitions](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#securityDefinitionsObject)
 - **Required:** This configuration is up to the user
-- **Description:**  Security scheme definitions that can be used across the specification.
+- **Description:**  Security scheme definitions that can be used across the specification. After you have defined the 
+security schemes in securityDefinitions, you can apply them to the whole API or individual operations by adding the 
+security section on the root level (global security schemes) or operation level, respectively.
 
 The API terraform provider supports apiKey type authentication in the header as well as a query parameter.
 
