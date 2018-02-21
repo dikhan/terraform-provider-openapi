@@ -79,7 +79,7 @@ schemes:
 
 #### <a name="globalSecuritySchemes">Global Security Schemes</a>
 
-- **Field Name:** schemes
+- **Field Name:** security
 - **Type:** [string]
 - **Required:** No
 - **Description:** Applies the specified security schemes, corresponding to a security scheme defined in [securityDefinitions](#swaggerSecurityDefinitions)),
