@@ -234,7 +234,7 @@ func TestPrepareAuth(t *testing.T) {
 		operation := &spec.Operation{
 			OperationProps: spec.OperationProps{
 				Security: []map[string][]string{
-				// Operation DOES NOT have security schemes
+					// Operation DOES NOT have security schemes
 				},
 			},
 		}
@@ -316,7 +316,7 @@ func TestPrepareAuth(t *testing.T) {
 		operation := &spec.Operation{
 			OperationProps: spec.OperationProps{
 				Security: []map[string][]string{
-				// Operation DOES NOT have security schemes
+					// Operation DOES NOT have security schemes
 				},
 			},
 		}
@@ -358,7 +358,7 @@ func TestAuthRequired(t *testing.T) {
 		operation := &spec.Operation{
 			OperationProps: spec.OperationProps{
 				Security: []map[string][]string{
-				// No auth is required for this operation}
+					// No auth is required for this operation}
 				},
 			},
 		}
