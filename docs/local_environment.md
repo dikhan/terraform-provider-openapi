@@ -38,8 +38,13 @@ file.
 With the new provider binary in place, we can now execute terraform commands.
 
 ```
-$ terraform init && OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 ```
+
+Notice that OTF_INSECURE_SKIP_VERIFY="true" is passed in to the command, this is needed due to the fact that the server
+uses a self-signed cert. This will make the provider's internal http client skip the certificate verification. This is
+not recommended for regular use and this env variable OTF_INSECURE_SKIP_VERIFY should only be set when the server hosting
+the swagger file is known and trusted but does not have a cert signed by the usually trusted CAs. 
 
 The OpenAPI terraform provider expects as input the URL where the service provider is exposing the swagger file. This
 can be passed in defining as an environment variable with a name tha follows "OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL" being '{PROVIDER_NAME}'
@@ -119,4 +124,7 @@ The above command will build the binary with a default value - terraform-provide
 OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL with a default value pointing to the local example API server that should be
 running already after having run docker compose as specified. The value passed in to the TF_CMD parameter will be
 the command terraform will execute (e,g: apply/plan/refresh etc)
+
+Additionally, since the tests uses a server with a self-signed cert it will also export OTF_INSECURE_SKIP_VERIFY="true"
+env variable so the internal http client does try to verify the server's certificate CA.
 
