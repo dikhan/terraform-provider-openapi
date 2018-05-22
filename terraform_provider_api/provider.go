@@ -12,6 +12,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
+	"strconv"
 )
 
 // APIProvider returns a terraform.ResourceProvider.
@@ -44,13 +45,13 @@ func getProviderNameAndAPIDiscoveryURL() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	if providerName == "sp" {
-		// This is a temporary solution to be able to test out the example 'sp' binary produced
-		// The reason why this is needed is because the http client library will reject the cert from the server
-		// as it's not signed by an official CA, it's just a self signed cert.
-		tr := http.DefaultTransport.(*http.Transport)
-		tr.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
+	if skip, ok := os.LookupEnv("OTF_INSECURE_SKIP_VERIFY"); ok {
+		if skip, _ := strconv.ParseBool(skip); skip {
+			tr := http.DefaultTransport.(*http.Transport)
+			tr.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+			log.Printf("[WARN] Provider %s is using insecure skip verify for '%s'. Please make sure you trust the aforementioned server hosting the swagger file. Otherwise, it's highly recommended avoiding the use of OTF_INSECURE_SKIP_VERIFY env variable when executing this provider", providerName, apiDiscoveryURL)
 		}
 	}
 	log.Printf("[INFO] Provider %s is using the following remote swagger URL: %s", providerName, apiDiscoveryURL)

@@ -1,5 +1,6 @@
 PROVIDER_NAME?="sp"
 OTF_VAR_SWAGGER_URL?="https://localhost:8443/swagger.yaml"
+OTF_INSECURE_SKIP_VERIFY?="false"
 TF_CMD?="plan"
 
 TEST_PACKAGES?=$$(go list ./... | grep -v vendor/)
@@ -39,11 +40,14 @@ test: fmt vet lint
 run_terraform: build
 	@echo "[INFO] Performing sanity check against the service provider's swagger endpoint '$(OTF_VAR_SWAGGER_URL)'"
 	@$(eval SWAGGER_HTTP_STATUS := $(shell curl -s -o /dev/null -w '%{http_code}' $(OTF_VAR_SWAGGER_URL) -k))
-
+ifeq ($(PROVIDER_NAME),"sp")
+	echo "[INFO] Setting OTF_INSECURE_SKIP_VERIFY value to true as example server uses self-signed certificate"
+	$(eval override OTF_INSECURE_SKIP_VERIFY="true")
+endif
 	@if [ "$(SWAGGER_HTTP_STATUS)" = 200 ]; then\
         echo "[INFO] Service provider swagger end point '$(OTF_VAR_SWAGGER_URL)' is reachable";\
-        echo "[INFO] Executing TF command: OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD}";\
-        export OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init  && terraform ${TF_CMD};\
+        echo "[INFO] Executing TF command: OTF_INSECURE_SKIP_VERIFY=$(OTF_INSECURE_SKIP_VERIFY) OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD}";\
+        export OTF_INSECURE_SKIP_VERIFY="$(OTF_INSECURE_SKIP_VERIFY)" OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD};\
     else\
         echo "[ERROR] Sanity check against swagger endpoint[$(OTF_VAR_SWAGGER_URL)] failed...Please make sure the service provider API is up and running and exposes swagger APIs on '$(OTF_VAR_SWAGGER_URL)'";\
     fi
