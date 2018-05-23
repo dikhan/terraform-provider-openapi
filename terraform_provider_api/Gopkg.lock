@@ -73,7 +73,7 @@
   branch = "master"
   name = "github.com/dikhan/http_goclient"
   packages = ["."]
-  revision = "3ea611cd4f5179e87751a41100e5b0d1e034fa49"
+  revision = "48b9745bd4c94c312d8bf4560dfbb27dfe449041"
 
 [[projects]]
   name = "github.com/go-ini/ini"

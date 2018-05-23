@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"bytes"
 )
 
 // HttpClient represents an http wrapper which reduces the boiler plate needed to marshall/un-marshall request/response
@@ -186,17 +187,16 @@ func (httpClient *HttpClient) prepareRequest(method, url string, headers map[str
 
 func (httpClient *HttpClient) performRequest(req *http.Request, out interface{}) (*http.Response, error) {
 	resp, err := httpClient.HttpClient.Do(req)
-	defer resp.Body.Close()
-
 	if err != nil {
 		return nil, fmt.Errorf("request %s %s %s failed. Response Error [%s]: '%s'", req.Method, req.URL, req.Proto, resp.Status, err.Error())
 	}
-
 	if out != nil {
 		var body []byte
 		if body, err = ioutil.ReadAll(resp.Body); err != nil {
 			return nil, err
 		}
+		resp.Body.Close() // close stream so connection is closed gracefully
+		resp.Body = ioutil.NopCloser(bytes.NewReader(body)) // create a new reader from bytes read in the response and set the response body (allowing the client to still be able to do res.Body afterwards)
 		if len(body) > 0 {
 			if err = json.Unmarshal(body, &out); err != nil {
 				return nil, fmt.Errorf("unable to unmarshal response body ['%s'] for request = '%s %s %s'. Response = '%s'", err.Error(), req.Method, req.URL, req.Proto, resp.Status)
