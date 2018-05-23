@@ -5,12 +5,10 @@ import (
 	"net/http"
 	"reflect"
 
-	"io/ioutil"
-
-	"strconv"
-
 	"github.com/dikhan/http_goclient"
 	"github.com/hashicorp/terraform/helper/schema"
+	"io/ioutil"
+	"strconv"
 )
 
 type resourceFactory struct {
@@ -35,7 +33,7 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	input := r.getPayloadFromData(data)
-	output := map[string]interface{}{}
+	responsePayload := map[string]interface{}{}
 
 	resourceURL, err := r.resourceInfo.getResourceURL()
 	if err != nil {
@@ -47,14 +45,15 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	res, err := r.httpClient.PostJson(authContext.url, authContext.headers, input, &output)
+	res, err := r.httpClient.PostJson(authContext.url, authContext.headers, input, &responsePayload)
 	if err != nil {
 		return err
 	}
+
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
 	}
-	return r.updateLocalState(data, output)
+	return r.updateLocalState(data, responsePayload)
 }
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
@@ -67,7 +66,7 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 
 func (r resourceFactory) readRemote(id string, config providerConfig) (map[string]interface{}, error) {
 	var err error
-	output := map[string]interface{}{}
+	responsePayload := map[string]interface{}{}
 	resourceIDURL, err := r.resourceInfo.getResourceIDURL(id)
 	if err != nil {
 		return nil, err
@@ -77,14 +76,14 @@ func (r resourceFactory) readRemote(id string, config providerConfig) (map[strin
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.httpClient.Get(authContext.url, authContext.headers, &output)
+	res, err := r.httpClient.Get(authContext.url, authContext.headers, &responsePayload)
 	if err != nil {
 		return nil, err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
 		return nil, fmt.Errorf("GET %s failed: %s", resourceIDURL, err)
 	}
-	return output, nil
+	return responsePayload, nil
 }
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
@@ -92,7 +91,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
 	input := r.getPayloadFromData(data)
-	output := map[string]interface{}{}
+	responsePayload := map[string]interface{}{}
 
 	if err := r.checkImmutableFields(data, i); err != nil {
 		return err
@@ -108,14 +107,14 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	res, err := r.httpClient.PutJson(authContext.url, authContext.headers, input, &output)
+	res, err := r.httpClient.PutJson(authContext.url, authContext.headers, input, &responsePayload)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
 		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
 	}
-	return r.updateStateWithPayloadData(output, data)
+	return r.updateStateWithPayloadData(responsePayload, data)
 }
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
@@ -175,17 +174,20 @@ func (r resourceFactory) updateLocalState(data *schema.ResourceData, payload map
 
 func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
 	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
+		var resBody string
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", res.StatusCode, err)
+		}
+		if len(b) > 0 {
+			resBody = string(b)
+		}
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
-			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials", res.StatusCode)
+			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", res.StatusCode, resBody)
 		default:
-			b, _ := ioutil.ReadAll(res.Body)
-			if len(b) > 0 {
-				return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v. Response Body = %s", res.StatusCode, expectedHTTPStatusCodes, string(b))
-			}
-			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v", res.StatusCode, expectedHTTPStatusCodes)
+			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v (%s)", res.StatusCode, expectedHTTPStatusCodes, resBody)
 		}
-
 	}
 	return nil
 }
