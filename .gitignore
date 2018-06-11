@@ -15,3 +15,5 @@
 
 terraform-provider-sp
 /.terraform
+
+.idea/*
