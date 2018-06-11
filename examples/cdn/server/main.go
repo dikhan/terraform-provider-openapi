@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	sw "github.com/dikhan/terraform-provider-api/service_provider_example/api"
+	sw "github.com/dikhan/terraform-provider-openapi/examples/cdn/server/api"
 )
 
 func main() {

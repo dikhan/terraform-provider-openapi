@@ -1,0 +1,188 @@
+swagger: "2.0"
+
+info:
+  description: "This service provider allows the creation of fake 'cdns' resources"
+  version: "1.0.0"
+  title: "Service Provider (sp)"
+  contact:
+    email: "apiteam@serviceprovider.io"
+host: "localhost:8443"
+basePath: "/"
+tags:
+- name: "cdn"
+  description: "Operations about cdns"
+  externalDocs:
+    description: "Find out more about cdn api"
+    url: "https://github.com/dikhan/terraform-provider-api/service_provider_example"
+schemes:
+- "http"
+- "https"
+
+consumes:
+- "application/json"
+produces:
+- "application/json"
+
+security:
+  - apikey_auth: []
+
+paths:
+  /swagger.json:
+    get:
+      summary: "Api discovery endpoint"
+      operationId: "ApiDiscovery"
+      responses:
+        200:
+          description: "successful operation"
+  /version:
+    get:
+      summary: "Get api version"
+      operationId: "getVersion"
+      responses:
+        200:
+          description: "successful operation"
+  /v1/cdns:
+    post:
+      tags:
+      - "cdn"
+      summary: "Create cdn"
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+        default:
+          description: "generic error response"
+          schema:
+            $ref: "#/definitions/error"
+      #security: For the sake of the example, this POST operation will use the global security schemes
+      #  - apikey_auth: []
+  /v1/cdns/{id}:
+    get:
+      tags:
+      - "cdn"
+      summary: "Get cdn by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+        400:
+          description: "Invalid cdn id supplied"
+        404:
+          description: "CDN not found"
+      security:
+        - apikey_auth: []
+    put:
+      tags:
+      - "cdn"
+      summary: "Updated cdn"
+      operationId: "ContentDeliveryNetworkUpdateV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "cdn that needs to be updated"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Updated cdn object"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+        400:
+          description: "Invalid cdn id supplied"
+        404:
+          description: "CDN not found"
+      security:
+        - apikey_auth: []
+    delete:
+      tags:
+      - "cdn"
+      summary: "Delete cdn"
+      operationId: "ContentDeliveryNetworkDeleteV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn that needs to be deleted"
+        required: true
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+        400:
+          description: "Invalid cdn id supplied"
+        404:
+          description: "cdn not found"
+      security:
+        - apikey_auth: []
+
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    required:
+      - label
+      - ips
+      - hostnames
+    properties:
+      id:
+        type: "string"
+        readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
+                       # to be returned from the api, and will be saved as computed value in the terraform state file
+      label:
+        type: "string"
+        x-terraform-immutable: true
+      ips:
+        type: "array"
+        x-terraform-force-new: true # when this value changes terraform will force the creation of a new resource
+        items:
+          type: "string"
+      hostnames:
+        type: "array"
+        items:
+          type: "string"
+      example_int:
+        type: integer
+      example_number:
+        type: number
+      example_boolean:
+        type: boolean
+        readOnly: true
+  error:
+    type: object
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int64
+      message:
+        type: string
