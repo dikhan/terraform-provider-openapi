@@ -6,18 +6,20 @@ TF_EXAMPLE_CONFIGURATION_FILE?="$$(pwd)/examples/cdn"
 
 TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
-TEST_PACKAGES?=$$(go list ./... | grep -v vendor/)
-GOFMT_FILES?=$$(find . -name '*.go' | grep -v 'vendor')
+TEST_PACKAGES?=$$(go list ./... | grep -v "/examples\|/vendor")
+GOFMT_FILES?=$$(find . -name '*.go' | grep -v 'examples\|vendor')
 
-TF_PROVIDER_PLUGIN_NAME="terraform-provider-openapi"
+TF_PROVIDER_NAMING_CONVENTION="terraform-provider-"
+TF_OPENAPI_PROVIDER_PLUGIN_NAME="$(TF_PROVIDER_NAMING_CONVENTION)openapi"
+TF_PROVIDER_PLUGIN_NAME="$(TF_PROVIDER_NAMING_CONVENTION)$(PROVIDER_NAME)"
 
 default: build
 
 all: test build
 
 build:
-	@echo "[INFO] Building terraform-provider-openapi binary"
-	@go build -o $(TF_PROVIDER_PLUGIN_NAME)
+	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
+	@go build -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
 
 fmt:
 	@echo "[INFO] Running gofmt on the current directory"
@@ -36,7 +38,7 @@ lint:
 	@golint -set_exit_status $(TEST_PACKAGES)
 
 test: fmt vet lint
-	@echo "[INFO] Testing terraform-provider-openapi"
+	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
 		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
 		exit 1; \
@@ -47,9 +49,9 @@ pre-requirements:
 	@[ -d $(TF_INSTALLED_PLUGINS_PATH) ] || mkdir -p $(TF_INSTALLED_PLUGINS_PATH)
 
 install: build pre-requirements
-	@echo "[INFO] Installing terraform-provider-$(PROVIDER_NAME) binary in -> $(TF_INSTALLED_PLUGINS_PATH)"
-	@mv ./$(TF_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)
-	@ln -sF $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)/terraform-provider-$(PROVIDER_NAME)
+	@echo "[INFO] Installing $(TF_PROVIDER_PLUGIN_NAME) binary in -> $(TF_INSTALLED_PLUGINS_PATH)"
+	@mv ./$(TF_OPENAPI_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)
+	@ln -sF $(TF_INSTALLED_PLUGINS_PATH)/$(TF_OPENAPI_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)
 
 local-env-down: fmt
 	@echo "[INFO] Tearing down local environment (clean up task)"
