@@ -22,7 +22,7 @@ The UI rendered feeds from the swagger file located at [docker-compose](https://
 
 ## Trying out the service provider example
 
-### Building the terraform provider plugin binary
+### Installing the openapi terraform provider plugin binary
 
 Once docker-compose is done bringing up the example API server, the following command will install the openapi terraform provider
 binary in your ~/.terraform.d/plugin folder and create a corresponding symlink for the example pointing at the same binary:
@@ -46,15 +46,51 @@ faster in case multiple providers will end up using the same underlying binary '
 for this is so terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in 
 the .tf file.
 
-### Running the terraform plan
+### Running the openapi terraform provider
 
-With the new provider binary installed, we can now execute terraform commands. An example of a .tf file, 
+Having the openapi provider binary installed, we can now execute terraform commands.
+ 
+#### Executing terraform plan
+
+First we need to access the folder where the the .tf file is localted. An example of a .tf file, 
 [terraform-provider-openapi/examples/cdn/main.tf]([main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/cdn/main.tf)),
- is provided in the examples folder:
+is provided in the examples folder.
 
 ```
 $ cd ./examples/cdn
 $ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+
+....
+
+Initializing provider plugins...
+
+Terraform has been successfully initialized!
+
+------------------------------------------------------------------------
+
+An execution plan has been generated and is shown below.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  + sp_cdns_v1.my_cdn
+      id:              <computed>
+      example_boolean: "true"
+      example_int:     "12"
+      example_number:  "1.12"
+      hostnames.#:     "1"
+      hostnames.0:     "origin.com"
+      ips.#:           "1"
+      ips.0:           "127.0.0.1"
+      label:           "label"
+
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+------------------------------------------------------------------------
+
+...
 ```
 
 Notice that OTF_INSECURE_SKIP_VERIFY="true" is passed in to the command, this is needed due to the fact that the server
@@ -68,40 +104,16 @@ the name of the provider specified in the binary when compiling the plugin - 'sp
 
 When defining the env variable, {PROVIDER_NAME} can be lower case or upper case.
 
-After executing terraform plan, the expected output should be:
-
-```
-....
-
-An execution plan has been generated and is shown below.
-Resource actions are indicated with the following symbols:
-  + create
-
-Terraform will perform the following actions:
-
-  + sp_cdns_v1.my_cdn
-      id:          <computed>
-      hostnames.#: "1"
-      hostnames.0: "origin.com"
-      ips.#:       "1"
-      ips.0:       "127.0.0.1"
-      label:       "label"
-
-
-Plan: 1 to add, 0 to change, 0 to destroy.
-
-....
-
-```
-
 This means that the plugin was able to read the swagger file exposed by the service provider example, load it
 up and set up the terraform provider dynamically with the resources exposed by 'cdn-service-provider-api' being one of
 them 'cdns'.
 
-Now we can run apply to see the plugin do its magic:
+#### Executing terraform apply
+
+Now we can run terraform apply to see the plugin do its magic:
 
 ```
-$ go build -o terraform-provider-sp && terraform init && terraform apply
+$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform apply
 
 Initializing provider plugins...
 
@@ -114,21 +126,77 @@ should now work.
 If you ever set or change modules or backend configuration for Terraform,
 rerun this command to reinitialize your working directory. If you forget, other
 commands will detect it and remind you to do so if necessary.
+
+An execution plan has been generated and is shown below.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  + sp_cdns_v1.my_cdn
+      id:              <computed>
+      example_boolean: "true"
+      example_int:     "12"
+      example_number:  "1.12"
+      hostnames.#:     "1"
+      hostnames.0:     "origin.com"
+      ips.#:           "1"
+      ips.0:           "127.0.0.1"
+      label:           "label"
+
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
 sp_cdns_v1.my_cdn: Creating...
-  hostnames.#: "0" => "1"
-  hostnames.0: "" => "origin.com"
-  ips.#:       "0" => "1"
-  ips.0:       "" => "127.0.0.1"
-  label:       "" => "label"
-sp_cdns_v1.my_cdn: Creation complete after 0s (ID: 80514498-a4d0-44e6-ad0d-22ac1023fdae)
+  example_boolean: "" => "true"
+  example_int:     "" => "12"
+  example_number:  "" => "1.12"
+  hostnames.#:     "" => "1"
+  hostnames.0:     "" => "origin.com"
+  ips.#:           "" => "1"
+  ips.0:           "" => "127.0.0.1"
+  label:           "" => "label"
+sp_cdns_v1.my_cdn: Creation complete after 0s (ID: 488bb244-e63a-48b4-b03f-4fbff85331a0)
 
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 ```
 
 And a 'terraform.tfstate' should have been created by terraform containing the state of the new resource created.
 
+````
+            "resources": {
+                "sp_cdns_v1.my_cdn": {
+                    "type": "sp_cdns_v1",
+                    "depends_on": [],
+                    "primary": {
+                        "id": "488bb244-e63a-48b4-b03f-4fbff85331a0",
+                        "attributes": {
+                            "example_boolean": "true",
+                            "example_int": "12",
+                            "example_number": "1.12",
+                            "hostnames.#": "1",
+                            "hostnames.0": "origin.com",
+                            "id": "488bb244-e63a-48b4-b03f-4fbff85331a0",
+                            "ips.#": "1",
+                            "ips.0": "127.0.0.1",
+                            "label": "label"
+                        },
+                        "meta": {},
+                        "tainted": false
+                    },
+                    "deposed": [],
+                    "provider": "provider.sp"
+                }
+            },
+````
 
-## Using the Makefile
+## Running the example via Makefile
 
 A convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) is provided allowing 
 the user to execute the above in just one command as follows:
