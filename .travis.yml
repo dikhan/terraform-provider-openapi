@@ -7,5 +7,4 @@ go:
 install:
 
 script:
-- cd terraform_provider_api
 - make test
