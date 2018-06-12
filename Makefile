@@ -68,6 +68,7 @@ ifeq ($(PROVIDER_NAME),"sp")
 	echo "[INFO] Setting OTF_INSECURE_SKIP_VERIFY value to true as example server uses self-signed certificate"
 	$(eval override OTF_INSECURE_SKIP_VERIFY="true")
 endif
+	@rm -f ./examples/cdn/terraform.tfstate
 	@if [ "$(SWAGGER_HTTP_STATUS)" = 200 ]; then\
         echo "[INFO] Terraform Configuration file located at $(TF_EXAMPLE_CONFIGURATION_FILE)";\
         echo "[INFO] Executing TF command: OTF_INSECURE_SKIP_VERIFY=$(OTF_INSECURE_SKIP_VERIFY) OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD}";\
