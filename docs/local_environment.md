@@ -1,20 +1,22 @@
 # Setting up a local environment
 
-## Running docker compose
+The Makefile has some convenient targets configured to help you bring up/tear down the example API provided for development
+purposes.
 
-A [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/docker-compose.yml) file has been created to ease the execution of an example. This will start up
-a server that exposes its APIs in a swagger file.
+## Bringing up the example API server
 
-```
-docker-compose up --build --force-recreate
-```
-
-In addition, it will also render a UI from the swagger file exposed by the API server that can be accessed from the
-browser at:
+The following target can be executed to bring up the example API server:
 
 ```
-https://localhost:8443
+make local-env
 ```
+
+Internally, it uses the [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/build/docker-compose.yml) 
+file containing the service API example (CDN Service Provider API). This will start up a server that exposes its APIs doc 
+in a swagger file.
+
+Additionally, it will also render a UI from the swagger file exposed by the API server that can be accessed from the
+browser at ``https://localhost:8443``.
 
 The UI rendered feeds from the swagger file located at [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/service_provider_example/resources/swagger.yaml)
 
@@ -22,28 +24,42 @@ The UI rendered feeds from the swagger file located at [docker-compose](https://
 
 ### Building the terraform provider plugin binary
 
-Once docker-compose is done bringing up the API server, the following command will read the sample [main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/main.tf)
-file and build the terraform provider plugin:
+Once docker-compose is done bringing up the example API server, the following command will install the openapi terraform provider
+binary in your ~/.terraform.d/plugin folder and create a corresponding symlink for the example pointing at the same binary:
+
 ```
-$ cd terraform_provider_api
-$ go build -o terraform-provider-sp
+$ make install
 ```
 
-Looking carefully at the above command, the binary is named as 'terraform-provider-sp'. The reason for this is so
-terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in [main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/main.tf)
-file.
+Looking carefully at the above command, after its execution the ~/.terraform.d/plugin will have two new installed providers:
+```
+$ ➜  terraform-provider-openapi git:(master) ✗ ls -la ~/.terraform.d/plugins
+  total 44088
+  drwxr-xr-x  4 dikhan  staff       128 11 Jun 16:33 .
+  drwxr-xr-x  4 dikhan  staff       128 11 Jun 16:31 ..
+  -rwxr-xr-x  1 dikhan  staff  22244148 11 Jun 16:33 terraform-provider-openapi
+  lrwxr-xr-x  1 dikhan  staff        55 11 Jun 16:33 terraform-provider-sp -> ~/.terraform.d/plugins/terraform-provider-openapi
+```
+
+The terraform-provider-sp is just a symlink to the actual terraform-provider-openapi. This makes the installation easier and
+faster in case multiple providers will end up using the same underlying binary 'terraform-provider-openapi'. The reason 
+for this is so terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in 
+the .tf file.
 
 ### Running the terraform plan
 
-With the new provider binary in place, we can now execute terraform commands.
+With the new provider binary installed, we can now execute terraform commands. An example of a .tf file, 
+[terraform-provider-openapi/examples/cdn/main.tf]([main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/cdn/main.tf)),
+ is provided in the examples folder:
 
 ```
+$ cd ./examples/cdn
 $ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 ```
 
 Notice that OTF_INSECURE_SKIP_VERIFY="true" is passed in to the command, this is needed due to the fact that the server
 uses a self-signed cert. This will make the provider's internal http client skip the certificate verification. This is
-not recommended for regular use and this env variable OTF_INSECURE_SKIP_VERIFY should only be set when the server hosting
+**not recommended** for regular use and this env variable OTF_INSECURE_SKIP_VERIFY should only be set when the server hosting
 the swagger file is known and trusted but does not have a cert signed by the usually trusted CAs. 
 
 The OpenAPI terraform provider expects as input the URL where the service provider is exposing the swagger file. This
@@ -79,7 +95,7 @@ Plan: 1 to add, 0 to change, 0 to destroy.
 ```
 
 This means that the plugin was able to read the swagger file exposed by the service provider example, load it
-up and set up the terraform provider dinamically with the resources exposed by 'cdn-service-provider-api' being one of
+up and set up the terraform provider dynamically with the resources exposed by 'cdn-service-provider-api' being one of
 them 'cdns'.
 
 Now we can run apply to see the plugin do its magic:
@@ -114,17 +130,16 @@ And a 'terraform.tfstate' should have been created by terraform containing the s
 
 ## Using the Makefile
 
-A convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/Makefile)
-is provided allowing the user to execute the above in just one command as follows:
+A convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) is provided allowing 
+the user to execute the above in just one command as follows:
 ```
-make run_terraform TF_CMD=plan
+$ make local-env-down local-env run-terraform-example TF_CMD=plan
 ```
 
-The above command will build the binary with a default value - terraform-provider-sp and then it will export the
-OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL with a default value pointing to the local example API server that should be
-running already after having run docker compose as specified. The value passed in to the TF_CMD parameter will be
-the command terraform will execute (e,g: apply/plan/refresh etc)
+The above command will bring up the example server API and install the binary plugin in the terraform plugin folder. 
 
-Additionally, since the tests uses a server with a self-signed cert it will also export OTF_INSECURE_SKIP_VERIFY="true"
-env variable so the internal http client does try to verify the server's certificate CA.
+When calling terraform it will pass all the required environment variables mentioned above using the example values:
 
+````
+export OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" && terraform init && terraform plan
+````
