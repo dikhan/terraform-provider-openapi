@@ -53,34 +53,87 @@ rather than the tooling around it.
 First, you will need to compile the code and name the compiled binary following the terraform provider naming convention
 (terraform-provider-{PROVIDER_NAME}), being PROVIDER_NAME the name of your service provider. Note that this name will
 be used as identifier for the provider resource in the TF file as well as the expected "OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL"
-env variable when running terraform commands (e,g: plan/apply etc)
+env variable when running terraform commands (e,g: plan/apply etc).
+
+The make file has a target that simplifies this step in the following command:
+
+1. Install your openapi terraform provider running:
 
 ```
-$ cd terraform_provider_api
-$ go build -o terraform-provider-{PROVIDER_NAME}
+$ PROVIDER_NAME="sp" make install
+[INFO] Building terraform-provider-openapi binary
+[INFO] Creating /Users/dkhanram/.terraform.d/plugins if it does not exist
+[INFO] Installing terraform-provider-sp binary in -> /Users/dkhanram/.terraform.d/plugins
 ```
 
-Once the terraform plugin binary is created, you can go ahead and define a tf file that has resources exposed
-by your service provider. This resources will have to be exposed in the swagger definition file that the
-input environment variable OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL will be pointing to
+The above command will compile the code and name the compiled binary following the terraform provider naming convention
+(terraform-provider-{PROVIDER_NAME}) being PROVIDER_NAME the name of your service provider, and install the resulted binary
+in the terraform plugin folder so it's globally available.
+
+Once the terraform plugin binary is installed, you can go ahead and define a tf file that has resources exposed
+by your service provider. This resources will have to be documented in the swagger definition file that the
+input environment variable OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL is be pointing to.
 
 ```
-$ terraform init && OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL="https://some-domain/swagger.yaml" terraform plan
+$ terraform init && OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
 ```
 
-Additionally, a convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/terraform_provider_api/Makefile) is provided allowing the user to execute
-the above in just one command as follows:
-```
-$ cd terraform_provider_api
-$ PROVIDER_NAME="sp" OTF_VAR_SWAGGER_URL="https://some-domain/swagger.yaml" TF_CMD=plan make run_terraform
-```
+Below is an output of the execution using the example openapi terraform provider (named 'sp'). 
 
-*Note: If run_terraform target is executed without passing PROVIDER_NAME, OTF_VAR_SWAGGER_URL and TF_CMD, internally the 
-Makefile will default to the service_provider_example values - that being 'sp', 'https://localhost:8443/swagger.yaml' and
-'plan' respectively*
+````
 
-For more information refer to [How to set up the local environment?](./docs/local_environment.md) which explains in
-detail
+$ cd examples/cdn && terraform init && OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+
+Initializing provider plugins...
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Refreshing Terraform state in-memory prior to plan...
+The refreshed state will be used to calculate this plan, but will not be
+persisted to local or remote state storage.
+
+
+------------------------------------------------------------------------
+
+An execution plan has been generated and is shown below.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  + sp_cdns_v1.my_cdn
+      id:              <computed>
+      example_boolean: true
+      example_int:     "12"
+      example_number:  "1.12"
+      hostnames.#:     "1"
+      hostnames.0:     "origin.com"
+      ips.#:           "1"
+      ips.0:           "127.0.0.1"
+      label:           "label"
+
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+------------------------------------------------------------------------
+
+Note: You didn't specify an "-out" parameter to save this plan, so Terraform
+can't guarantee that exactly these actions will be performed if
+"terraform apply" is subsequently run.
+
+````
+
+For more information refer to [How to set up the local environment?](./docs/local_environment.md) which contains instructions
+for learning how to bring up the example API service and run terraform against it.
+
+Additionally, the following documents provide deep insight regarding OpenAPI and Terraform as well as frequently asked questions:
 
 - [How to](docs/how_to.md) document contains information about how to define a swagger file following good practises that
 make it work seamlessly with this terraform provider. Additionally, learn more about what is currently supported.
@@ -104,5 +157,5 @@ which offers a very convenient implementation to serialize and deserialize swagg
 See also the list of [contributors](https://github.com/dikhan/terraform-provider-api/graphs/contributors) who participated in this project.
 
 
-[travis-url]: https://travis-ci.org/dikhan/terraform-provider-api
-[travis-image]: https://travis-ci.org/dikhan/terraform-provider-api.svg?branch=master
+[travis-url]: https://travis-ci.org/dikhan/terraform-provider-openapi
+[travis-image]: https://travis-ci.org/dikhan/terraform-provider-openapi.svg?branch=master

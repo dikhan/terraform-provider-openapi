@@ -11,5 +11,5 @@ resource "sp_cdns_v1" "my_cdn" {
 
   example_int = 12
   example_number = 1.12
-  #example_boolean = true  this is a readOnly property - not setting a value as it's supposed to be computed by API
+  example_boolean = true
 }
