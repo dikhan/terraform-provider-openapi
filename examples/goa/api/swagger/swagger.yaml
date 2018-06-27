@@ -1,0 +1,179 @@
+consumes:
+- application/json
+- application/xml
+- application/gob
+- application/x-gob
+definitions:
+  BottlePayload:
+    description: BottlePayload is the type used to create bottles
+    example:
+      id: Enim sapiente expedita sit.
+      name: x
+      rating: 4
+      vintage: 2653
+    properties:
+      id:
+        description: Unique bottle ID
+        example: Enim sapiente expedita sit.
+        readOnly: true
+        type: string
+      name:
+        description: Name of bottle
+        example: x
+        minLength: 1
+        type: string
+      rating:
+        description: Rating of bottle
+        example: 4
+        maximum: 5
+        minimum: 1
+        type: integer
+      vintage:
+        description: Vintage of bottle
+        example: 2653
+        minimum: 1900
+        type: integer
+    required:
+    - name
+    - vintage
+    - rating
+    title: BottlePayload
+    type: object
+  bottle:
+    description: bottle media type (default view)
+    example:
+      id: Voluptates non excepturi.
+      name: krt
+      rating: 3
+      vintage: 1932
+    properties:
+      id:
+        description: Unique bottle ID
+        example: Voluptates non excepturi.
+        readOnly: true
+        type: string
+      name:
+        description: Name of bottle
+        example: krt
+        minLength: 1
+        type: string
+      rating:
+        description: Rating of bottle
+        example: 3
+        maximum: 5
+        minimum: 1
+        type: integer
+      vintage:
+        description: Vintage of bottle
+        example: 1932
+        minimum: 1900
+        type: integer
+    required:
+    - id
+    - name
+    - vintage
+    - rating
+    title: 'Mediatype identifier: application/vnd.gophercon.goa.bottle; view=default'
+    type: object
+  error:
+    description: Error response media type (default view)
+    example:
+      code: invalid_value
+      detail: Value of ID must be an integer
+      id: 3F1FKVRR
+      meta:
+        timestamp: 1.458609066e+09
+      status: "400"
+    properties:
+      code:
+        description: an application-specific error code, expressed as a string value.
+        example: invalid_value
+        type: string
+      detail:
+        description: a human-readable explanation specific to this occurrence of the
+          problem.
+        example: Value of ID must be an integer
+        type: string
+      id:
+        description: a unique identifier for this particular occurrence of the problem.
+        example: 3F1FKVRR
+        type: string
+      meta:
+        additionalProperties: true
+        description: a meta object containing non-standard meta-information about
+          the error.
+        example:
+          timestamp: 1.458609066e+09
+        type: object
+      status:
+        description: the HTTP status code applicable to this problem, expressed as
+          a string value.
+        example: "400"
+        type: string
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+host: localhost:9090
+info:
+  description: The wine review service
+  version: ""
+paths:
+  /bottles/:
+    post:
+      description: creates a bottle
+      operationId: bottle#create
+      parameters:
+      - description: BottlePayload is the type used to create bottles
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/BottlePayload'
+      produces:
+      - application/vnd.goa.error
+      - application/vnd.gophercon.goa.bottle
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/bottle'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/error'
+        "500":
+          description: Internal Server Error
+      summary: create bottle
+      tags:
+      - bottle
+  /bottles/{id}:
+    get:
+      description: shows a bottle
+      operationId: bottle#show
+      parameters:
+      - in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/vnd.gophercon.goa.bottle
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bottle'
+        "404":
+          description: Not Found
+      summary: show bottle
+      tags:
+      - bottle
+produces:
+- application/json
+- application/xml
+- application/gob
+- application/x-gob
+responses:
+  InternalServerError:
+    description: Internal Server Error
+  NotFound:
+    description: Not Found
+swagger: "2.0"
