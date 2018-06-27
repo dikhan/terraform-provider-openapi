@@ -74,3 +74,12 @@ var _ = Resource("bottle", func() {
 		Response(NotFound)
 	})
 })
+
+var _ = Resource("Spec", func() {
+	Origin("*", func() {
+		Methods("GET")
+	})
+	NoSecurity()
+	Files("/swagger/swagger.json", "/opt/goa/swagger/swagger.json")
+	Files("/swagger/swagger.yaml", "/opt/goa/swagger/swagger.yaml")
+})

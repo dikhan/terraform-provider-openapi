@@ -166,6 +166,24 @@ paths:
       summary: show bottle
       tags:
       - bottle
+  /swagger/swagger.json:
+    get:
+      operationId: Spec#/swagger/swagger.json
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      summary: Download /opt/goa/swagger/swagger.json
+  /swagger/swagger.yaml:
+    get:
+      operationId: Spec#/swagger/swagger.yaml
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      summary: Download /opt/goa/swagger/swagger.yaml
 produces:
 - application/json
 - application/xml

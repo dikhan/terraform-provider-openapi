@@ -13,6 +13,7 @@ package app
 import (
 	"context"
 	"github.com/goadesign/goa"
+	"github.com/goadesign/goa/cors"
 	"net/http"
 )
 
@@ -29,6 +30,54 @@ func initService(service *goa.Service) {
 	// Setup default encoder and decoder
 	service.Encoder.Register(goa.NewJSONEncoder, "*/*")
 	service.Decoder.Register(goa.NewJSONDecoder, "*/*")
+}
+
+// SpecController is the controller interface for the Spec actions.
+type SpecController interface {
+	goa.Muxer
+	goa.FileServer
+}
+
+// MountSpecController "mounts" a Spec resource controller on the given service.
+func MountSpecController(service *goa.Service, ctrl SpecController) {
+	initService(service)
+	var h goa.Handler
+	service.Mux.Handle("OPTIONS", "/swagger/swagger.json", ctrl.MuxHandler("preflight", handleSpecOrigin(cors.HandlePreflight()), nil))
+	service.Mux.Handle("OPTIONS", "/swagger/swagger.yaml", ctrl.MuxHandler("preflight", handleSpecOrigin(cors.HandlePreflight()), nil))
+
+	h = ctrl.FileHandler("/swagger/swagger.json", "/opt/goa/swagger/swagger.json")
+	h = handleSpecOrigin(h)
+	service.Mux.Handle("GET", "/swagger/swagger.json", ctrl.MuxHandler("serve", h, nil))
+	service.LogInfo("mount", "ctrl", "Spec", "files", "/opt/goa/swagger/swagger.json", "route", "GET /swagger/swagger.json")
+
+	h = ctrl.FileHandler("/swagger/swagger.yaml", "/opt/goa/swagger/swagger.yaml")
+	h = handleSpecOrigin(h)
+	service.Mux.Handle("GET", "/swagger/swagger.yaml", ctrl.MuxHandler("serve", h, nil))
+	service.LogInfo("mount", "ctrl", "Spec", "files", "/opt/goa/swagger/swagger.yaml", "route", "GET /swagger/swagger.yaml")
+}
+
+// handleSpecOrigin applies the CORS response headers corresponding to the origin.
+func handleSpecOrigin(h goa.Handler) goa.Handler {
+
+	return func(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
+		origin := req.Header.Get("Origin")
+		if origin == "" {
+			// Not a CORS request
+			return h(ctx, rw, req)
+		}
+		if cors.MatchOrigin(origin, "*") {
+			ctx = goa.WithLogContext(ctx, "origin", origin)
+			rw.Header().Set("Access-Control-Allow-Origin", origin)
+			rw.Header().Set("Access-Control-Allow-Credentials", "false")
+			if acrm := req.Header.Get("Access-Control-Request-Method"); acrm != "" {
+				// We are handling a preflight request
+				rw.Header().Set("Access-Control-Allow-Methods", "GET")
+			}
+			return h(ctx, rw, req)
+		}
+
+		return h(ctx, rw, req)
+	}
 }
 
 // BottleController is the controller interface for the Bottle actions.

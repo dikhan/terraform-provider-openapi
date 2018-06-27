@@ -6,6 +6,9 @@ RUN mkdir -p $WORK_DIR
 ADD . $WORK_DIR
 WORKDIR $WORK_DIR
 
+COPY swagger/swagger.json /opt/goa/swagger/
+COPY swagger/swagger.yaml /opt/goa/swagger/
+
 RUN go get
 RUN go build -o goa-service-provider .
 
