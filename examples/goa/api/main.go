@@ -22,6 +22,9 @@ func main() {
 	c := NewBottleController(service)
 	app.MountBottleController(service, c)
 
+	spec := NewSpecController(service)
+	app.MountSpecController(service, spec)
+
 	// Start service
 	if err := service.ListenAndServe(":9090"); err != nil {
 		service.LogError("startup", "err", err)
