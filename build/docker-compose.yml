@@ -17,3 +17,10 @@ services:
       - SWAGGER_JSON=/app/resources/swagger.yaml
     volumes:
       - ../examples/cdn/server/resources:/app
+
+  goa-service-provider-api:
+    build: ../examples/goa/api
+    image: goa-service-provider-api:latest
+    container_name: goa-service-provider-api
+    ports:
+     - "9090:9090"
