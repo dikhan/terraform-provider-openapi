@@ -27,6 +27,7 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 		ID: id,
 		Rating: ctx.Payload.Rating,
 		Name: ctx.Payload.Name,
+		Vintage: ctx.Payload.Vintage,
 	}
 	db[id] = response
 	return ctx.Created(response)
