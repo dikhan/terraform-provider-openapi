@@ -88,6 +88,22 @@ To run the container:
 docker run -p 9090:9090 goa-service-provider-api
 ````
 
+## Running terraform-provider-api against this API
+
+- Install terraform-provider-api and the symlink for 'goa' provider:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
+$ PROVIDER_NAME="goa" make install
+````
+
+- Execute terraform passing the following env variables:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/goa/api
+$ export OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" PROVIDER_NAME="goa" OTF_INSECURE_SKIP_VERIFY=true && terraform init && TF_LOG=ERROR terraform plan
+````
+
 ## Things to know when using goa and the terraform-provider-openapi
 
 goa handles media types in a particular way, having two models that describe the payload of the request and another model
