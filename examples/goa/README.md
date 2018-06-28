@@ -114,5 +114,103 @@ $ make run-terraform-example-goa
 
 ## Things to know when using goa and the terraform-provider-openapi
 
-goa handles media types in a particular way, having two models that describe the payload of the request and another model
-that describes the response. These are refer to in goa terms as Payload and MediaType respectively. 
+goa handles [data types](https://goa.design/design/types/) in a particular way, having two models that describe the request
+ and the responses respectively:
+
+- Payload: content posted as part of the request. The request payload describes the shape of the request body.
+- MediaType: content returned as part of the response. A response media type defines the shape of response bodies.
+ 
+This is a valid separation of concern when exposing the API models as requests body models are completely decoupled from
+response body models giving more flexibility on what is intended to be exposed for consumption as well as representation
+of the final object created. However, in order for terraform to know what values are computed and which ones are meant to be
+provided by the user when creating a resource, a readOnly flag needs to be attached to the attributes that are 
+computed as described below:
+
+````
+	Attribute("id", String, "Unique bottle ID", func() {
+		// This makes the id attribute read-only, this means that the value will be computed by the API and therefore parameter
+		// is not expected from the user when invoking the API
+		ReadOnly()
+	})
+````
+
+The above will end up being rendered when executing goagen into the following definition:
+
+````
+definitions:
+  BottlePayload:
+    description: BottlePayload is the type used to create bottles
+    example:
+      id: Enim sapiente expedita sit.
+      name: x
+      rating: 4
+      vintage: 2653
+    properties:
+      id:
+        description: Unique bottle ID
+        example: Enim sapiente expedita sit.
+        readOnly: true // <-- This is the important bit, here terraform-provider-openapi will understand that this value is computed
+        type: string
+````
+
+This way terraform will know how to differentiate between expected fields that should be populated by the user
+and expected fields that should be computed by the API, avoiding inecessary conflicts between the main.tf file and local 
+terraform state. 
+
+Since writing both Payload and MediaType might be a bit redundant, goa has a reference DSL that basically will inherit
+the attribute properties from the data type being referened:
+
+````
+Reference(BottlePayload)
+````
+
+Below is a full example on how both Payload and MediaType can be described reducing as much as possible the boiler
+plate needed:
+
+````
+var BottlePayload = Type("BottlePayload", func() {
+	Description("BottlePayload is the type used to create bottles")
+
+	Attribute("id", String, "Unique bottle ID", func() {
+		// This makes the id attribute read-only, this means that the value will be computed by the API and therefore parameter
+		// is not expected from the user when invoking the API
+		ReadOnly()
+	})
+
+	Attribute("name", String, "Name of bottle", func() {
+		MinLength(1)
+	})
+	Attribute("vintage", Integer, "Vintage of bottle", func() {
+		Minimum(1900)
+	})
+	Attribute("rating", Integer, "Rating of bottle", func() {
+		Minimum(1)
+		Maximum(5)
+	})
+	Required("name", "vintage", "rating")
+})
+
+var BottleMedia = MediaType("application/vnd.gophercon.goa.bottle", func() {
+	TypeName("bottle")
+	// Reusing BottlePayload reduces the boiler plate having to define attribute properties in one place only
+	Reference(BottlePayload)
+
+	Attributes(func() {
+		Attribute("id")
+		Attribute("name")
+		Attribute("vintage")
+		Attribute("rating")
+		Required("id", "name", "vintage", "rating")
+	})
+
+	View("default", func() {
+		Attribute("id")
+		Attribute("name")
+		Attribute("vintage")
+		Attribute("rating")
+	})
+})
+````
+
+The [design](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/goa/api/design/design.go) file 
+contains a fill example for the reference.
