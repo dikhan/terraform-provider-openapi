@@ -38,7 +38,7 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 		if !isEndPointTerraformResourceCompliant {
 			continue
 		}
-		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath)
+		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath, asa.d.Spec().Paths.Paths)
 		resourceName, err := asa.getResourceName(resourcePath)
 		if err != nil {
 			return nil, err
@@ -114,7 +114,7 @@ func (asa apiSpecAnalyser) isEndPointTerraformResourceCompliant(resourcePath str
 		if endPoint.Get == nil {
 			return false, nil
 		}
-		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath)
+		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath, paths)
 		if err != nil {
 			return false, err
 		}
@@ -193,7 +193,7 @@ func (asa apiSpecAnalyser) getResourceName(resourcePath string) (string, error) 
 // findMatchingResourceRootPath returns the corresponding root path for a given end point
 // Example: Given 'resourcePath' being "/users/{username}" the result will be "/users"
 // If there is no match the returned string will be empty
-func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string) (string, error) {
+func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string, paths map[string]spec.PathItem) (string, error) {
 	r, err := asa.resourceInstanceRegex()
 	if err != nil {
 		return "", err
@@ -202,5 +202,20 @@ func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string) (st
 	if len(result) != 2 {
 		return "", nil
 	}
-	return strings.TrimRight(result[1], "/"), nil
+
+	resourceRootPath := result[1]
+	b := paths[resourceRootPath]
+	if &b != nil && b.Post != nil {
+		log.Printf("[DEBUG] found resource root path with trailing '/' - %+s", resourceRootPath)
+		return resourceRootPath, nil
+	}
+
+	resourceRootPath = strings.TrimRight(result[1], "/")
+	b = paths[resourceRootPath]
+	if &b != nil && b.Post != nil {
+		log.Printf("[DEBUG] found resource root path without trailing '/' - %+s", resourceRootPath)
+		return resourceRootPath, nil
+	}
+
+	return "", nil
 }
