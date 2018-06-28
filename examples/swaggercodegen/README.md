@@ -15,14 +15,20 @@ To see how to make this your own, look here:
 - Build date: 2017-10-28T10:56:37.853-07:00
 
 
-### Running the server
-To run the server, follow these simple steps:
+## Running the example swaggercodegen API
 
-```
+A dockerfile is provided to run the example in a container.
+
+To build the container:
+````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api
-$ go run main.go
-```
+$ docker build -t swaggercodegen-service-provider-api .
+````
 
+To run the container:
+````
+docker run -p 8080:80 -p 8443:443 swaggercodegen-service-provider-api
+````
 
 ### Create swagger-ui
 
@@ -36,23 +42,46 @@ $ docker run -p 8082:8080 -e SWAGGER_JSON=/app/resources/swagger.yaml -v $(pwd):
 - Create new CDN
 
 ```
-$ curl -X POST http://localhost/v1/cdns -d '{"label":"label", "ips":["127.0.0.1"], "hostnames":["www.origin.com"]}'
+$ curl -X POST http://localhost:8080/v1/cdns -d '{"label":"label", "ips":["127.0.0.1"], "hostnames":["www.origin.com"]}'
 ```
 
 - Get info about previously created CDN
 
 ```
-$ curl http://localhost/v1/cdns/<CDN_ID>'
+$ curl http://localhost:8080/v1/cdns/<CDN_ID>'
 ```
 
 - Update CDN
 
 ```
-$ curl -X PUT http://localhost/v1/cdns/<CDN_ID> -d '{"label":"label updated", "ips":["127.0.0.1"], "hostnames":["www.origin.com"]}'
+$ curl -X PUT http://localhost:8080/v1/cdns/<CDN_ID> -d '{"label":"label updated", "ips":["127.0.0.1"], "hostnames":["www.origin.com"]}'
 ```
 
 - Delete exiting CDN
 
 ```
-$ curl -X DELETE http://localhost/v1/cdns/<CDN_ID>'
+$ curl -X DELETE http://localhost:8080/v1/cdns/<CDN_ID>'
 ```
+
+## Running terraform-provider-api against this API
+
+- Install terraform-provider-api and the symlink for 'swaggercodegen' provider:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
+$ PROVIDER_NAME="swaggercodegen" make install
+````
+
+- Execute terraform passing the following env variables:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api
+$ export OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" PROVIDER_NAME="swaggercodegen" OTF_INSECURE_SKIP_VERIFY=true && terraform init && terraform plan
+````
+
+Alternatively, a make target is also provided to achieve the same output but executing the following:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
+$ make local-env
+$ make run-terraform-example-swaggercodegen
