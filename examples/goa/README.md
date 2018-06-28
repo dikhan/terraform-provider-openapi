@@ -104,6 +104,14 @@ $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/goa/api
 $ export OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" PROVIDER_NAME="goa" OTF_INSECURE_SKIP_VERIFY=true && terraform init && TF_LOG=ERROR terraform plan
 ````
 
+Alternatively, a make target is alsi provided to achieve the same output but executing one command:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
+$ make local-env
+$ make run-terraform-example-goa
+````
+
 ## Things to know when using goa and the terraform-provider-openapi
 
 goa handles media types in a particular way, having two models that describe the payload of the request and another model
