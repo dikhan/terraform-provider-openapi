@@ -50,8 +50,25 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 func TestFindMatchingRootPath(t *testing.T) {
 	Convey("Given an apiSpecAnalyser", t, func() {
 		a := apiSpecAnalyser{}
-		Convey("When findMatchingResourceRootPath method is called with a valid resource path such as '/users/{id}'", func() {
-			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}")
+		Convey("When findMatchingResourceRootPath method is called with a valid resource path such as '/users/{id}' and paths containing that path with trailing slash", func() {
+			paths := map[string]spec.PathItem{}
+			pathItem := spec.PathItem{}
+			pathItem.Post = &spec.Operation{}
+			paths["/users/"] = pathItem
+			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}", paths)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be '/users/'", func() {
+				So(resourceRootPath, ShouldEqual, "/users/")
+			})
+		})
+		Convey("When findMatchingResourceRootPath method is called with a valid resource path such as '/users/{id}' and paths containing that path without a trailing slash", func() {
+			paths := map[string]spec.PathItem{}
+			pathItem := spec.PathItem{}
+			pathItem.Post = &spec.Operation{}
+			paths["/users"] = pathItem
+			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}", paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -59,8 +76,12 @@ func TestFindMatchingRootPath(t *testing.T) {
 				So(resourceRootPath, ShouldEqual, "/users")
 			})
 		})
-		Convey("When findMatchingResourceRootPath method is called with a valid resource path that is versioned such as '/v1/users/{id}'", func() {
-			resourceRootPath, err := a.findMatchingResourceRootPath("/v1/users/{id}")
+		Convey("When findMatchingResourceRootPath method is called with a valid resource path that is versioned such as '/v1/users/{id}' and paths containing that resource with version", func() {
+			paths := map[string]spec.PathItem{}
+			pathItem := spec.PathItem{}
+			pathItem.Post = &spec.Operation{}
+			paths["/v1/users"] = pathItem
+			resourceRootPath, err := a.findMatchingResourceRootPath("/v1/users/{id}", paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -69,7 +90,8 @@ func TestFindMatchingRootPath(t *testing.T) {
 			})
 		})
 		Convey("When findMatchingResourceRootPath method is called with an invalid resource path such as '/resource/not/instance/path'", func() {
-			resourceRootPath, err := a.findMatchingResourceRootPath("/resource/not/instance/path")
+			paths := map[string]spec.PathItem{}
+			resourceRootPath, err := a.findMatchingResourceRootPath("/resource/not/instance/path", paths) // instnace paths are of form */{id}
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
