@@ -104,7 +104,7 @@ $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/goa/api
 $ export OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" PROVIDER_NAME="goa" OTF_INSECURE_SKIP_VERIFY=true && terraform init && TF_LOG=ERROR terraform plan
 ````
 
-Alternatively, a make target is alsi provided to achieve the same output but executing one command:
+Alternatively, a make target is also provided to achieve the same output but executing the following:
 
 ````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
