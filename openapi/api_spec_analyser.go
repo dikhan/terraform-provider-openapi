@@ -119,14 +119,10 @@ func (asa apiSpecAnalyser) isEndPointTerraformResourceCompliant(resourcePath str
 			return false, err
 		}
 		if resourceRootPath == "" {
-			log.Printf("[DEBUG] could not find root path for resource - %+s", resourcePath)
+			log.Printf("[DEBUG] could not find root path for resource - %s", resourcePath)
 			return false, nil
 		}
-		postExist := asa.postIsPresent(resourceRootPath, paths)
-		if !postExist {
-			log.Printf("[DEBUG] end point %s missing POST operation", resourceRootPath)
-		}
-		return postExist, nil
+		return true, nil
 	}
 	return false, nil
 }
@@ -191,7 +187,8 @@ func (asa apiSpecAnalyser) getResourceName(resourcePath string) (string, error) 
 }
 
 // findMatchingResourceRootPath returns the corresponding root path for a given end point
-// Example: Given 'resourcePath' being "/users/{username}" the result will be "/users"
+// Example: Given 'resourcePath' being "/users/{username}" the result could be "/users" or "/users/" depending on
+// how the POST operation (resourceRootPath) of the given resource is defined in swagger.
 // If there is no match the returned string will be empty
 func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string, paths map[string]spec.PathItem) (string, error) {
 	r, err := asa.resourceInstanceRegex()
@@ -199,23 +196,28 @@ func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string, pat
 		return "", err
 	}
 	result := r.FindStringSubmatch(resourcePath)
+	log.Printf("[DEBUG] findMatchingResourceRootPath result - %s", result)
 	if len(result) != 2 {
 		return "", nil
 	}
 
-	resourceRootPath := result[1]
-	b := paths[resourceRootPath]
-	if &b != nil && b.Post != nil {
+	resourceRootPath := result[1] // e,g: /v1/cdns/{id} /v1/cdns/
+
+	// Handles the case where the swagger file root path has a trailing slash in the path
+	postExist := asa.postIsPresent(resourceRootPath, paths)
+	if postExist {
 		log.Printf("[DEBUG] found resource root path with trailing '/' - %+s", resourceRootPath)
 		return resourceRootPath, nil
 	}
 
-	resourceRootPath = strings.TrimRight(result[1], "/")
-	b = paths[resourceRootPath]
-	if &b != nil && b.Post != nil {
+	// Handles the case where the swagger file root path does not have a trailing slash in the path
+	resourceRootPath = strings.TrimRight(resourceRootPath, "/")
+	postExist = asa.postIsPresent(resourceRootPath, paths)
+	if postExist {
 		log.Printf("[DEBUG] found resource root path without trailing '/' - %+s", resourceRootPath)
 		return resourceRootPath, nil
 	}
 
+	log.Printf("[DEBUG] end point %s missing POST operation", resourceRootPath)
 	return "", nil
 }
