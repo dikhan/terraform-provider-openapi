@@ -13,4 +13,4 @@ archive:
     darwin: macOS
     linux: Tux
   files:
-    - terraform-provider-openapi.licence.txt
+    - LICENSE
