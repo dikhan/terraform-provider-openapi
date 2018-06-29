@@ -62,8 +62,8 @@ The make file has a target that simplifies this step in the following command:
 ```
 $ PROVIDER_NAME="sp" make install
 [INFO] Building terraform-provider-openapi binary
-[INFO] Creating /Users/dkhanram/.terraform.d/plugins if it does not exist
-[INFO] Installing terraform-provider-sp binary in -> /Users/dkhanram/.terraform.d/plugins
+[INFO] Creating /Users/dikhan/.terraform.d/plugins if it does not exist
+[INFO] Installing terraform-provider-sp binary in -> /Users/dikhan/.terraform.d/plugins
 ```
 
 The above command will compile the code and name the compiled binary following the terraform provider naming convention
@@ -82,7 +82,7 @@ Below is an output of the execution using the example openapi terraform provider
 
 ````
 
-$ cd examples/cdn && terraform init && OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+$ cd examples/swaggercodegen && terraform init && OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 
 Initializing provider plugins...
 
