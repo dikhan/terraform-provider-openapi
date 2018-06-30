@@ -61,6 +61,18 @@ run-terraform-example-swaggercodegen: build pre-requirements
 run-terraform-example-goa: build pre-requirements
 	$(call run_terraform_example,"http://localhost:9090/swagger/swagger.yaml",goa)
 
+latest-tag:
+	@echo "[INFO] Latest tag released..."
+	@git for-each-ref --format="%(refname:short)" --sort=-authordate --count=1 'v*' refs/tags
+
+release-version:
+	@echo "[INFO] Creating release tag"
+	@git tag -a $(RELEASE_TAG) -m $(RELEASE_MESSAGE)
+	@echo "[INFO] Pushing release tag"
+	@git push origin $(RELEASE_TAG)
+	@echo "[INFO] Performing release"
+	@GITHUB_TOKEN=$(GITHUB_TOKEN) goreleaser --rm-dist
+
 define install_plugin
     @$(eval TF_PROVIDER_PLUGIN_NAME := $(TF_PROVIDER_NAMING_CONVENTION)$(1))
 
