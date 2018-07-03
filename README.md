@@ -48,41 +48,100 @@ rather than the tooling around it.
 -	[Docker-compose](https://docs.docker.com/compose/) 1.16.1 (to run service provider example)
 
 
-## How to use the provider
+## How to use Terraform Provider OpenAPI
 
-First, you will need to compile the code and name the compiled binary following the terraform provider naming convention
-(terraform-provider-{PROVIDER_NAME}), being PROVIDER_NAME the name of your service provider. Note that this name will
-be used as identifier for the provider resource in the TF file as well as the expected "OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL"
-env variable when running terraform commands (e,g: plan/apply etc).
+### Things to know regarding custom terraform providers
+
+- Terraform expects Third-party providers to be manually installed in the sub-path .terraform.d/plugins in your user's home directory.
+- Terraform expects terraform provider names to follow a specific naming scheme. The naming scheme for plugins is 
+terraform-<type>-NAME_vX.Y.Z, where type is either provider or provisioner. 
+
+More information about how terraform discovers third-party terraform providers and naming conventions [here](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
+
+### OpenAPI Terraform provider installation
+
+ In order to simplify the installation process for this provider, a convenient install script is provided and can be used
+as follows:
+
+- Check out this repo and execute the install script:
+
+````
+$ git clone git@github.com:dikhan/terraform-provider-openapi.git
+$ cd ./scripts
+$ PROVIDER_NAME=goa ./install.sh --provider-name $PROVIDER_NAME
+````
+
+- Or directly by downloading the install script using curl:
+
+````
+$ export PROVIDER_NAME=goa && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME
+````
+
+The install script will download the most recent [terraform-provider-openapi release](https://github.com/dikhan/terraform-provider-openapi/releases) 
+and install it in the terraform plugins folder ````~/.terraform.d/plugins```` as described above. The terraform plugins 
+folder should contain both the terraform-provider-openapi provider and the provider's symlink pointing at it.
+
+````
+$ ls -la ~/.terraform.d/plugins
+total 29656
+drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
+drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
+-rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-openapi
+lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-goa -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
+````
+
+### OpenAPI Terraform provider 'manual' installation
+
+Alternatively, you can also follow a more manual approach and compile/install the provider yourself.
 
 The make file has a target that simplifies this step in the following command:
 
-1. Install your openapi terraform provider running:
-
 ```
-$ PROVIDER_NAME="sp" make install
+$ git clone git@github.com:dikhan/terraform-provider-openapi.git
+$ PROVIDER_NAME="goa" make install
 [INFO] Building terraform-provider-openapi binary
 [INFO] Creating /Users/dikhan/.terraform.d/plugins if it does not exist
-[INFO] Installing terraform-provider-sp binary in -> /Users/dikhan/.terraform.d/plugins
+[INFO] Installing terraform-provider-goa binary in -> /Users/dikhan/.terraform.d/plugins
 ```
 
-The above command will compile the code and name the compiled binary following the terraform provider naming convention
-(terraform-provider-{PROVIDER_NAME}) being PROVIDER_NAME the name of your service provider, and install the resulted binary
-in the terraform plugin folder so it's globally available.
+The above ```make install``` command will compile the provider from the source code, install the compiled binary terraform-provider-openapi 
+in the terraform plugin folder ````~/.terraform.d/plugins```` and create a symlink from terraform-provider-goa to the
+binary compiled. The reason why a symlink is created is so the same compiled binary can be reused by multiple openapi providers 
+and also reduces the number of providers to support.
 
-Once the terraform plugin binary is installed, you can go ahead and define a tf file that has resources exposed
-by your service provider. This resources will have to be documented in the swagger definition file that the
-input environment variable OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL is be pointing to.
+### Creating resources using the OpenAPI Terraform provider
+
+Once the OpenAPI terraform plugin is installed, you can go ahead and define a tf file that has resources exposed
+by your service provider. 
+
+The example below describes a resource of type bottle provided by the 'goa' service provider. For full details about this
+example refer to [goa example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/goa).
+
+````
+$ cat main.tf
+resource "goa_bottles" "my_bottle" {
+  name = "Name of bottle"
+  rating = 3
+  vintage = 2653
+}
+````
+
+The OpenAPI terraform provider relies on the swagger file exposed by the service provider. In this example, the 'goa' service 
+provider exposes an end point that returns the [swagger documentation](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/goa/api/swagger/swagger.yaml) 
+and exposes an API to manage resources of type 'bottles'.
+
+In order to run the OpenAPI terraform provider, simply pass in the OTF_VAR_```<provider_name>```_SWAGGER_URL environment variable
+to terraform pointing at the URL where the swagger doc is exposed. ```<provider_name>``` is your provider's name.
 
 ```
-$ terraform init && OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
+$ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
 ```
 
-Below is an output of the execution using the example openapi terraform provider (named 'sp'). 
+Below is an output of the execution using the example openapi terraform provider (named 'goa'). 
 
 ````
 
-$ cd examples/swaggercodegen && terraform init && OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+$ cd examples/goa && terraform init && OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" terraform plan
 
 Initializing provider plugins...
 
@@ -108,16 +167,11 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  + sp_cdns_v1.my_cdn
-      id:              <computed>
-      example_boolean: true
-      example_int:     "12"
-      example_number:  "1.12"
-      hostnames.#:     "1"
-      hostnames.0:     "origin.com"
-      ips.#:           "1"
-      ips.0:           "127.0.0.1"
-      label:           "label"
+  + goa_bottles.my_bottle
+      id:      <computed>
+      name:    "Name of bottle"
+      rating:  "3"
+      vintage: "2653"
 
 
 Plan: 1 to add, 0 to change, 0 to destroy.

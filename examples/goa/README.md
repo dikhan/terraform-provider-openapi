@@ -88,7 +88,7 @@ To run the container:
 docker run -p 9090:9090 goa-service-provider-api
 ````
 
-## Running terraform-provider-api against this API
+## Running terraform-provider-openapi against this API
 
 - Install terraform-provider-api and the symlink for 'goa' provider:
 
@@ -101,7 +101,7 @@ $ PROVIDER_NAME="goa" make install
 
 ````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/goa/api
-$ export OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" PROVIDER_NAME="goa" OTF_INSECURE_SKIP_VERIFY=true && terraform init && TF_LOG=ERROR terraform plan
+$ terraform init && OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" OTF_INSECURE_SKIP_VERIFY=true terraform plan
 ````
 
 Alternatively, a make target is also provided to achieve the same output but executing the following:
