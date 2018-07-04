@@ -33,8 +33,7 @@ a [Swagger](https://swagger.io/) specification file containing the definitions o
 this provider is what makes it very flexible and convenient for service providers as subsequent upgrades 
 to their APIs will not require new compilations of this provider. 
 The service provider APIs are discovered on the fly and therefore the service providers can focus on their services
-rather than the tooling around it.  
-
+rather than the tooling around it.
 
 ### Pre-requirements
 
@@ -60,8 +59,58 @@ More information about how terraform discovers third-party terraform providers a
 
 ### OpenAPI Terraform provider installation
 
- In order to simplify the installation process for this provider, a convenient install script is provided and can be used
-as follows:
+Installing the OpenAPI Terraform provider can be achieved in various ways, but for the sake of simplicity below are
+the suggested options:
+
+### OpenAPI Terraform provider 'manual' installation
+
+- Download most recent release for your architecture (macOS/Linux) from [release](https://github.com/dikhan/terraform-provider-openapi/releases) 
+page.
+- Extract contents of tar ball and copy the terraform-provider-openapi binary into your  ````~/.terraform.d/plugins````
+folder as described in the [Terraform documentation on how to install plugins](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
+- After installing the plugin, you have two options. Either:
+ 
+  - Rename the binary file to have your provider's name:
+ 
+    ````
+    $ cd ~/.terraform.d/plugins
+    $ mv terraform-provider-openapi terraform-provider-<your_provider_name>
+    $ ls -la 
+    total 29656
+    drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
+    drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
+    -rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<your_provider_name>
+    ````
+ 
+  - Create a symlink pointing at the terraform-provider-openapi binary. The latter is recommended so the same compiled binary 
+'terraform-provider-openapi' can be reused by multiple openapi providers and also reduces the number of providers to support.
+
+    ````
+    $ cd ~/.terraform.d/plugins
+    $ ln -sF terraform-provider-openapi terraform-provider-<your_provider_name>
+    $ ls -la 
+    total 29656
+    drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
+    drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
+    -rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-openapi
+    lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-<your_provider_name> -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
+    ````
+
+Where ````<your_provider_name>```` should be replaced with your provider's name. This is the name that will also be used
+in the Terraform tf files to refer to the provider resources. 
+
+````
+$ cat main.tf
+resource "<your_provider_name>_<resource_name>" "my_resource" {
+    ...
+    ...
+}
+````
+
+### OpenAPI Terraform provider 'script' installation
+
+In order to simplify the installation process for this provider, a convenient install script is provided and can also be 
+used as follows:
 
 - Check out this repo and execute the install script:
 
@@ -90,26 +139,7 @@ drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
 lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-goa -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
 ````
 
-### OpenAPI Terraform provider 'manual' installation
-
-Alternatively, you can also follow a more manual approach and compile/install the provider yourself.
-
-The make file has a target that simplifies this step in the following command:
-
-```
-$ git clone git@github.com:dikhan/terraform-provider-openapi.git
-$ PROVIDER_NAME="goa" make install
-[INFO] Building terraform-provider-openapi binary
-[INFO] Creating /Users/dikhan/.terraform.d/plugins if it does not exist
-[INFO] Installing terraform-provider-goa binary in -> /Users/dikhan/.terraform.d/plugins
-```
-
-The above ```make install``` command will compile the provider from the source code, install the compiled binary terraform-provider-openapi 
-in the terraform plugin folder ````~/.terraform.d/plugins```` and create a symlink from terraform-provider-goa to the
-binary compiled. The reason why a symlink is created is so the same compiled binary can be reused by multiple openapi providers 
-and also reduces the number of providers to support.
-
-### Creating resources using the OpenAPI Terraform provider
+### Using the OpenAPI Terraform provider
 
 Once the OpenAPI terraform plugin is installed, you can go ahead and define a tf file that has resources exposed
 by your service provider. 

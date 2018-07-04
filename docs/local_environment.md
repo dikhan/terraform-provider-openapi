@@ -24,27 +24,31 @@ The UI rendered feeds from the swagger file located at [docker-compose](https://
 
 ### Installing the openapi terraform provider plugin binary
 
-Once docker-compose is done bringing up the example API server, the following command will install the openapi terraform provider
-binary in your ~/.terraform.d/plugin folder and create a corresponding symlink for the example pointing at the same binary:
+Once docker-compose is done bringing up the example API server, the following command can be executed to compile and install 
+the openapi terraform provider binary:
 
 ```
-$ make install
+$ PROVIDER_NAME="<provider_name>" make install
+[INFO] Building terraform-provider-openapi binary
+[INFO] Creating /Users/dikhan/.terraform.d/plugins if it does not exist
+[INFO] Installing terraform-provider-<provider_name> binary in -> /Users/dikhan/.terraform.d/plugins
 ```
 
-Looking carefully at the above command, after its execution the ~/.terraform.d/plugin will have two new installed providers:
-```
-$ ➜  terraform-provider-openapi git:(master) ✗ ls -la ~/.terraform.d/plugins
-  total 44088
-  drwxr-xr-x  4 dikhan  staff       128 11 Jun 16:33 .
-  drwxr-xr-x  4 dikhan  staff       128 11 Jun 16:31 ..
-  -rwxr-xr-x  1 dikhan  staff  22244148 11 Jun 16:33 terraform-provider-openapi
-  lrwxr-xr-x  1 dikhan  staff        55 11 Jun 16:33 terraform-provider-sp -> ~/.terraform.d/plugins/terraform-provider-openapi
-```
+Where ````<your_provider_name>```` should be replaced with your provider's name.
 
-The terraform-provider-sp is just a symlink to the actual terraform-provider-openapi. This makes the installation easier and
-faster in case multiple providers will end up using the same underlying binary 'terraform-provider-openapi'. The reason 
-for this is so terraform knows what provider binary it should call when creating resources for 'sp' provider as defined in 
-the .tf file.
+The above ```make install``` command will compile the provider from the source code, install the compiled binary terraform-provider-openapi 
+in the terraform plugin folder ````~/.terraform.d/plugins```` and create a symlink from terraform-provider-goa to the
+binary compiled. The reason why a symlink is created is so the same compiled binary can be reused by multiple openapi providers 
+and also reduces the number of providers to support.
+
+````
+$ ls -la ~/.terraform.d/plugins
+total 29656
+drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
+drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
+-rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-openapi
+lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-<provider_name> -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
+````
 
 ### Running the openapi terraform provider
 
