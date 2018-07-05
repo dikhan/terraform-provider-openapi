@@ -20,6 +20,12 @@
   revision = "2bd8b58cf4275aeb086ade613de226773e29e853"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/armon/go-metrics"
+  packages = ["."]
+  revision = "58588f401c2cc130a7308a52ca3bc6c0a76db04b"
+
+[[projects]]
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
   revision = "521b25f4b05fd26bec69d9dedeb8f9c9a83939a8"
@@ -76,6 +82,18 @@
   revision = "48b9745bd4c94c312d8bf4560dfbb27dfe449041"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/dimfeld/httppath"
+  packages = ["."]
+  revision = "ee938bf735983d53694d79138ad9820efff94c92"
+
+[[projects]]
+  name = "github.com/dimfeld/httptreemux"
+  packages = ["."]
+  revision = "7f532489e7739b3d49df5c602bf63549881fe753"
+  version = "v5.0.1"
+
+[[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
   revision = "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
@@ -130,10 +148,38 @@
   revision = "cf0bdb963811675a4d7e74901cefc7411a1df939"
 
 [[projects]]
+  name = "github.com/goadesign/goa"
+  packages = [
+    ".",
+    "client",
+    "cors",
+    "design",
+    "design/apidsl",
+    "dslengine",
+    "goatest",
+    "middleware",
+    "uuid"
+  ]
+  revision = "fc29b77a218fb9e190849c81911ed12d25e771de"
+  version = "v1.3.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/gopherjs/gopherjs"
   packages = ["js"]
   revision = "444abdf920945de5d4a977b572bcc6c674d1e4eb"
+
+[[projects]]
+  name = "github.com/gorilla/context"
+  packages = ["."]
+  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
+  version = "v1.1.1"
+
+[[projects]]
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
+  version = "v1.6.2"
 
 [[projects]]
   branch = "master"
@@ -158,6 +204,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/go-immutable-radix"
+  packages = ["."]
+  revision = "7f3cd4390caab3250a57f30efdb2a65dd7649ecf"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/go-multierror"
   packages = ["."]
   revision = "b7773ae218740a7be65057fc60b366a49b538a44"
@@ -178,6 +230,12 @@
   name = "github.com/hashicorp/go-version"
   packages = ["."]
   revision = "4fe82ae3040f80a03d04d2cccb5606a626b8e1ee"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/golang-lru"
+  packages = ["simplelru"]
+  revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
 
 [[projects]]
   branch = "master"
@@ -233,6 +291,12 @@
   revision = "683f49123a33db61abfb241b7ac5e4af4dc54d55"
 
 [[projects]]
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   revision = "0b12d6b5"
@@ -252,6 +316,12 @@
     "jwriter"
   ]
   revision = "32fa128f234d041f196a9f3e0fea5ac9772c08e1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/manveru/faker"
+  packages = ["."]
+  revision = "9fbc68a78c4dbc7914e1a23f88f126bea4383b97"
 
 [[projects]]
   branch = "master"
@@ -290,6 +360,12 @@
   revision = "63d60e9d0dbc60cf9164e6510889b0db6683d98c"
 
 [[projects]]
+  name = "github.com/pborman/uuid"
+  packages = ["."]
+  revision = "e790cca94e6cc75c7064b1332e63811d4aae1a53"
+  version = "v1.1"
+
+[[projects]]
   name = "github.com/satori/go.uuid"
   packages = ["."]
   revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
@@ -316,6 +392,18 @@
   version = "1.6.3"
 
 [[projects]]
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
+
+[[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
+  version = "v1.0.1"
+
+[[projects]]
   name = "github.com/ulikunitz/xz"
   packages = [
     ".",
@@ -325,6 +413,12 @@
   ]
   revision = "0c6b41e72360850ca4f98dc341fd999726ea007f"
   version = "v0.5.4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/zach-klippenstein/goregen"
+  packages = ["."]
+  revision = "795b5e3961ea1912fde60af417ad85e86acc0d6a"
 
 [[projects]]
   branch = "master"
@@ -348,7 +442,8 @@
   packages = [
     "html",
     "html/atom",
-    "idna"
+    "idna",
+    "websocket"
   ]
   revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
@@ -392,6 +487,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "808516464dd9f096dd71ad7f501086eb9194ceca48dc5f829eedeba07c34b72b"
+  inputs-digest = "44ee0a3c97750539b03f16586b71ccbdb5f32371b530cd6676ec96c1b3e2f610"
   solver-name = "gps-cdcl"
   solver-version = 1

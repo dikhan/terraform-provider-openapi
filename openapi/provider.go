@@ -41,7 +41,11 @@ func getProviderNameAndAPIDiscoveryURL() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	apiDiscoveryURL, err = getServiceProviderSwaggerURL(providerName)
+	pluginConfiguration, err := NewPluginConfiguration(providerName)
+	if err != nil {
+		return "", "", err
+	}
+	apiDiscoveryURL, err = pluginConfiguration.getServiceProviderSwaggerURL()
 	if err != nil {
 		return "", "", err
 	}
