@@ -229,6 +229,7 @@ And a 'terraform.tfstate' should have been created by terraform containing the s
                         "meta": {},
                         "tainted": false
                     },
+                    },
                     "deposed": [],
                     "provider": "provider.swaggercodegen"
                 }
