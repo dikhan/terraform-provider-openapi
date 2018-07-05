@@ -75,6 +75,8 @@ map) so we are able to use the terraform-provider-openapi against the API and ma
 
 ## Running the example goa API
 
+### Building and running container 'manual approach'
+
 A dockerfile is provided to run the example in a container.
 
 To build the container:
@@ -87,6 +89,24 @@ To run the container:
 ````
 docker run -p 9090:9090 goa-service-provider-api
 ````
+
+Alternatively, a make target is provided to do both steps in one command:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi
+$ make local-env
+```` 
+
+### Building and running container via make target 'faster approach'
+
+Alternatively, a make target is provided to do the above in one command:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi
+$ make local-env
+```` 
+
+This command will bring up the example APIs provided for development purposes.
 
 ## Running terraform-provider-openapi against this API
 
@@ -111,6 +131,55 @@ $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
 $ make local-env
 $ make run-terraform-example-goa
 ````
+
+Below is an output of the terraform execution: 
+
+````
+
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/goa
+$ terraform init && OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" terraform plan
+
+Initializing provider plugins...
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Refreshing Terraform state in-memory prior to plan...
+The refreshed state will be used to calculate this plan, but will not be
+persisted to local or remote state storage.
+
+
+------------------------------------------------------------------------
+
+An execution plan has been generated and is shown below.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  + goa_bottles.my_bottle
+      id:      <computed>
+      name:    "Name of bottle"
+      rating:  "3"
+      vintage: "2653"
+
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+------------------------------------------------------------------------
+
+Note: You didn't specify an "-out" parameter to save this plan, so Terraform
+can't guarantee that exactly these actions will be performed if
+"terraform apply" is subsequently run.
+
+````
+
 
 ## Things to know when using goa and the terraform-provider-openapi
 

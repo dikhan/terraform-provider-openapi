@@ -1,22 +1,27 @@
 # Setting up a local environment
 
-The Makefile has some convenient targets configured to help you bring up/tear down the example API provided for development
-purposes.
+The Makefile has some convenient targets configured to help you bring up/tear down the two example APIs provided for 
+development purposes.
 
-## Bringing up the example API server
+## Bringing up the example API servers
 
-The following target can be executed to bring up the example API server:
+The following target can be executed to bring up the [example API services](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples)
+which expose their APIs documentation in a swagger file:
 
 ```
-make local-env
+$ make local-env
+...
+Successfully tagged goa-service-provider-api:latest
+Recreating goa-service-provider-api            ... done
+Recreating swagger-ui-swaggercodegen           ... done
+Recreating swaggercodegen-service-provider-api ... done
 ```
 
-Internally, it uses the [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/build/docker-compose.yml) 
-file containing the service API example (CDN Service Provider API). This will start up a server that exposes its APIs doc 
-in a swagger file.
+Internally, the make target 'local-env' uses the following [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/build/docker-compose.yml) 
+file that contains the definitions for the [example API services](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples). 
 
-Additionally, it will also render a UI from the swagger file exposed by the API server that can be accessed from the
-browser at ``https://localhost:8443``.
+Additionally, it will also render a UI from the swagger file exposed by the 'swaggercodegen-service-provider-api' API 
+server that can be accessed from the browser at ``https://localhost:8443``.
 
 The UI rendered feeds from the swagger file located at [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/service_provider_example/resources/swagger.yaml)
 
@@ -24,7 +29,7 @@ The UI rendered feeds from the swagger file located at [docker-compose](https://
 
 ### Installing the openapi terraform provider plugin binary
 
-Once docker-compose is done bringing up the example API server, the following command can be executed to compile and install 
+Once docker-compose is done bringing up the example API servers, the following command can be executed to compile and install 
 the openapi terraform provider binary:
 
 ```
@@ -50,19 +55,38 @@ drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
 lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-<provider_name> -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
 ````
 
+For the sake of the example, let's pick the swaggercodegen service example and install the plugin:
+
+````
+$ PROVIDER_NAME="swaggercodegen" make install
+[INFO] Building terraform-provider-openapi binary
+[INFO] Creating /Users/dkhanram/.terraform.d/plugins if it does not exist
+[INFO] Installing terraform-provider-swaggercodegen binary in -> /Users/dkhanram/.terraform.d/plugins
+````
+
+And now let's check that the binaries are indeed installed in the terraform plugins folder:
+
+````
+ls -la /Users/dikhan/.terraform.d/plugins
+total 44120
+drwxr-xr-x  5 dikhan  staff       160  5 Jul 16:02 .
+drwxr-xr-x  5 dikhan  staff       160  4 Jul 13:19 ..
+-rwxr-xr-x  1 dikhan  staff  22270452  5 Jul 16:01 terraform-provider-openapi
+lrwxr-xr-x  1 dikhan  staff        63  5 Jul 16:01 terraform-provider-swaggercodegen -> /Users/dkhanram/.terraform.d/plugins/terraform-provider-openapi
+````
+
 ### Running the openapi terraform provider
 
 Having the openapi provider binary installed, we can now execute terraform commands.
  
 #### Executing terraform plan
 
-First we need to access the folder where the the .tf file is localted. An example of a .tf file, 
-[terraform-provider-openapi/examples/cdn/main.tf]([main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/cdn/main.tf)),
-is provided in the examples folder.
+First we need to access the folder where the the .tf file is localed. An example of swaggercodegen [main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/swaggercodegen/main.tf)
+file is provided in the examples folder.
 
 ```
-$ cd ./examples/cdn
-$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen
+$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 
 ....
 
@@ -78,7 +102,7 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  + sp_cdns_v1.my_cdn
+  + swaggercodegen_cdns_v1.my_cdn
       id:              <computed>
       example_boolean: "true"
       example_int:     "12"
@@ -104,7 +128,7 @@ the swagger file is known and trusted but does not have a cert signed by the usu
 
 The OpenAPI terraform provider expects as input the URL where the service provider is exposing the swagger file. This
 can be passed in defining as an environment variable with a name tha follows "OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL" being '{PROVIDER_NAME}'
-the name of the provider specified in the binary when compiling the plugin - 'sp' in the example above.
+the name of the provider specified in the binary when compiling the plugin - 'swaggercodegen' in the example above.
 
 When defining the env variable, {PROVIDER_NAME} can be lower case or upper case.
 
@@ -117,7 +141,7 @@ them 'cdns'.
 Now we can run terraform apply to see the plugin do its magic:
 
 ```
-$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform apply
+$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_swaggercodegensp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform apply
 
 Initializing provider plugins...
 
@@ -137,7 +161,7 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  + sp_cdns_v1.my_cdn
+  + swaggercodegen_cdns_v1.my_cdn
       id:              <computed>
       example_boolean: "true"
       example_int:     "12"
@@ -157,7 +181,7 @@ Do you want to perform these actions?
 
   Enter a value: yes
 
-sp_cdns_v1.my_cdn: Creating...
+swaggercodegen_cdns_v1.my_cdn: Creating...
   example_boolean: "" => "true"
   example_int:     "" => "12"
   example_number:  "" => "1.12"
@@ -166,7 +190,7 @@ sp_cdns_v1.my_cdn: Creating...
   ips.#:           "" => "1"
   ips.0:           "" => "127.0.0.1"
   label:           "" => "label"
-sp_cdns_v1.my_cdn: Creation complete after 0s (ID: 488bb244-e63a-48b4-b03f-4fbff85331a0)
+swaggercodegen_cdns_v1.my_cdn: Creation complete after 0s (ID: 0d586a2b-f9d2-496d-a09d-a6ef06fca4a1)
 
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 ```
@@ -174,19 +198,30 @@ Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 And a 'terraform.tfstate' should have been created by terraform containing the state of the new resource created.
 
 ````
+{
+    "version": 3,
+    "terraform_version": "0.11.7",
+    "serial": 1,
+    "lineage": "dd9d43ed-6f85-e4b2-e9f3-e31bce86707d",
+    "modules": [
+        {
+            "path": [
+                "root"
+            ],
+            "outputs": {},
             "resources": {
-                "sp_cdns_v1.my_cdn": {
-                    "type": "sp_cdns_v1",
+                "swaggercodegen_cdns_v1.my_cdn": {
+                    "type": "swaggercodegen_cdns_v1",
                     "depends_on": [],
                     "primary": {
-                        "id": "488bb244-e63a-48b4-b03f-4fbff85331a0",
+                        "id": "0d586a2b-f9d2-496d-a09d-a6ef06fca4a1",
                         "attributes": {
                             "example_boolean": "true",
                             "example_int": "12",
                             "example_number": "1.12",
                             "hostnames.#": "1",
                             "hostnames.0": "origin.com",
-                            "id": "488bb244-e63a-48b4-b03f-4fbff85331a0",
+                            "id": "0d586a2b-f9d2-496d-a09d-a6ef06fca4a1",
                             "ips.#": "1",
                             "ips.0": "127.0.0.1",
                             "label": "label"
@@ -195,9 +230,13 @@ And a 'terraform.tfstate' should have been created by terraform containing the s
                         "tainted": false
                     },
                     "deposed": [],
-                    "provider": "provider.sp"
+                    "provider": "provider.swaggercodegen"
                 }
             },
+            "depends_on": []
+        }
+    ]
+}
 ````
 
 ## Running the example via Makefile
@@ -205,7 +244,7 @@ And a 'terraform.tfstate' should have been created by terraform containing the s
 A convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) is provided allowing 
 the user to execute the above in just one command as follows:
 ```
-$ make local-env-down local-env run-terraform-example TF_CMD=plan
+$ make local-env-down local-env run-terraform-example-swaggercodegen TF_CMD=plan
 ```
 
 The above command will bring up the example server API and install the binary plugin in the terraform plugin folder. 
@@ -213,5 +252,5 @@ The above command will bring up the example server API and install the binary pl
 When calling terraform it will pass all the required environment variables mentioned above using the example values:
 
 ````
-export OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" && terraform init && terraform plan
+terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 ````
