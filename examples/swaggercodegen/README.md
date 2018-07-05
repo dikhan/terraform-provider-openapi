@@ -17,6 +17,8 @@ To see how to make this your own, look here:
 
 ## Running the example swaggercodegen API
 
+### Building and running container 'manual approach'
+
 A dockerfile is provided to run the example in a container.
 
 To build the container:
@@ -30,14 +32,7 @@ To run the container:
 docker run -p 8080:80 -p 8443:443 swaggercodegen-service-provider-api
 ````
 
-### Create swagger-ui
-
-```
-$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api
-$ docker run -p 8082:8080 -e SWAGGER_JSON=/app/resources/swagger.yaml -v $(pwd):/app  swaggerapi/swagger-ui
-```
-
-### Curl commands
+#### Curl commands
 
 - Create new CDN
 
@@ -63,6 +58,24 @@ $ curl -X PUT http://localhost:8080/v1/cdns/<CDN_ID> -d '{"label":"label updated
 $ curl -X DELETE http://localhost:8080/v1/cdns/<CDN_ID>'
 ```
 
+### Create swagger-ui
+
+```
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api
+$ docker run -p 8082:8080 -e SWAGGER_JSON=/app/resources/swagger.yaml -v $(pwd):/app  swaggerapi/swagger-ui
+```
+
+### Building and running container via make target 'faster approach'
+
+Alternatively, a make target is provided to do the above in one command:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi
+$ make local-env
+```` 
+
+This command will bring up the example APIs provided for development purposes.
+
 ## Running terraform-provider-api against this API
 
 - Install terraform-provider-api and the symlink for 'swaggercodegen' provider:
@@ -85,3 +98,57 @@ Alternatively, a make target is also provided to achieve the same output but exe
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
 $ make local-env
 $ make run-terraform-example-swaggercodegen
+````
+
+Below is an output of the terraform execution: 
+
+````
+
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen
+$ terraform init && OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+
+Initializing provider plugins...
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Refreshing Terraform state in-memory prior to plan...
+The refreshed state will be used to calculate this plan, but will not be
+persisted to local or remote state storage.
+
+
+------------------------------------------------------------------------
+
+An execution plan has been generated and is shown below.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  + swaggercodegen_cdns_v1.my_cdn
+      id:              <computed>
+      example_boolean: "true"
+      example_int:     "12"
+      example_number:  "1.12"
+      hostnames.#:     "1"
+      hostnames.0:     "origin.com"
+      ips.#:           "1"
+      ips.0:           "127.0.0.1"
+      label:           "label"
+
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+------------------------------------------------------------------------
+
+Note: You didn't specify an "-out" parameter to save this plan, so Terraform
+can't guarantee that exactly these actions will be performed if
+"terraform apply" is subsequently run.
+
+````
