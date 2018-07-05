@@ -28,7 +28,7 @@ describing, producing, consuming, and visualizing RESTful Web services.
 
 ## Overview
 
-API terraform provider is a powerful full-fledged terraform provider that is able to configure itself on runtime based on 
+API terraform provider is a powerful full-fledged terraform provider that is able to configure itself at runtime based on 
 a [Swagger](https://swagger.io/) specification file containing the definitions of the APIs exposed. The dynamic nature of 
 this provider is what makes it very flexible and convenient for service providers as subsequent upgrades 
 to their APIs will not require new compilations of this provider. 
@@ -51,18 +51,18 @@ rather than the tooling around it.
 
 ### Things to know regarding custom terraform providers
 
-- Terraform expects Third-party providers to be manually installed in the sub-path .terraform.d/plugins in your user's home directory.
+- Terraform expects third party providers to be manually installed in the '.terraform.d/plugins' sub-path in your user's home directory.
 - Terraform expects terraform provider names to follow a specific naming scheme. The naming scheme for plugins is 
 terraform-<type>-NAME_vX.Y.Z, where type is either provider or provisioner. 
 
-More information about how terraform discovers third-party terraform providers and naming conventions [here](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
+More information about how terraform discovers third party terraform providers and naming conventions [here](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
 
 ### OpenAPI Terraform provider installation
 
 Installing the OpenAPI Terraform provider can be achieved in various ways, but for the sake of simplicity below are
 the suggested options:
 
-### OpenAPI Terraform provider 'manual' installation
+#### OpenAPI Terraform provider 'manual' installation
 
 - Download most recent release for your architecture (macOS/Linux) from [release](https://github.com/dikhan/terraform-provider-openapi/releases) 
 page.
@@ -107,7 +107,7 @@ resource "<your_provider_name>_<resource_name>" "my_resource" {
 }
 ````
 
-### OpenAPI Terraform provider 'script' installation
+#### OpenAPI Terraform provider 'script' installation
 
 In order to simplify the installation process for this provider, a convenient install script is provided and can also be 
 used as follows:
@@ -144,7 +144,7 @@ lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-goa -> /Us
 Once the OpenAPI terraform plugin is installed, you can go ahead and define a tf file that has resources exposed
 by your service provider. 
 
-The example below describes a resource of type bottle provided by the 'goa' service provider. For full details about this
+The example below describes a resource of type 'bottle' provided by the 'goa' service provider. For full details about this
 example refer to [goa example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/goa).
 
 ````
