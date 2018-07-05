@@ -53,42 +53,57 @@ func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 	}, nil
 }
 
-func (p *PluginConfiguration) getServiceProviderSwaggerURL() (string, error) {
-	otfVarSwaggerURLLC := fmt.Sprintf(otfVarSwaggerURL, p.ProviderName)
-	apiDiscoveryURL := os.Getenv(otfVarSwaggerURLLC)
+func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, error) {
+	var pluginConfig PluginConfigSchema
+	var pluginConfigV1 = &PluginConfigSchemaV1{}
+	var serviceConfig ServiceConfiguration
+	var err error
+
+	swaggerURLEnvVar := fmt.Sprintf(otfVarSwaggerURL, p.ProviderName)
+	apiDiscoveryURL := os.Getenv(swaggerURLEnvVar)
+	if apiDiscoveryURL == "" {
+		// Falling back to upper case check
+		swaggerURLEnvVar = fmt.Sprintf(otfVarSwaggerURL, strings.ToUpper(p.ProviderName))
+		apiDiscoveryURL = os.Getenv(swaggerURLEnvVar)
+	}
+
+	// Found OTF_VAR_%s_SWAGGER_URL env variable
 	if apiDiscoveryURL != "" {
-		log.Printf("[INFO] %s set with value %s", otfVarSwaggerURLLC, apiDiscoveryURL)
-		return apiDiscoveryURL, nil
+		log.Printf("[INFO] %s set with value %s", swaggerURLEnvVar, apiDiscoveryURL)
+		pluginConfigV1.Services = map[string]*ServiceConfigV1{}
+		pluginConfigV1.Services[p.ProviderName] = &ServiceConfigV1{SwaggerURL: apiDiscoveryURL}
+		serviceConfig, err = pluginConfigV1.GetServiceConfig(p.ProviderName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// Falling back to upper case check
-	otfVarSwaggerURLUC := fmt.Sprintf(otfVarSwaggerURL, strings.ToUpper(p.ProviderName))
-	apiDiscoveryURL = os.Getenv(otfVarSwaggerURLUC)
-	if apiDiscoveryURL == "" {
-		// Falling back to read from plugin configuration reader
-		if p.Configuration == nil {
-			return "", fmt.Errorf("swagger url not provided, please export %s or %s env variable with the URL where '%s' service provider is exposing the swagger file; or provide a %s configuration file with the provider swagger details", otfVarSwaggerURLUC, otfVarSwaggerURLLC, p.ProviderName, otfPluginConfigurationFileName)
+	// Falling back to read from plugin configuration reader
+	if serviceConfig == nil {
+		if p.Configuration != nil {
+			source, err := ioutil.ReadAll(p.Configuration)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read %s configuration file", otfPluginConfigurationFileName)
+			}
+			err = yaml.Unmarshal(source, pluginConfigV1)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshall %s configuration file - error = %s", otfPluginConfigurationFileName, err)
+			}
+			pluginConfig = PluginConfigSchema(pluginConfigV1)
+			if err = pluginConfig.Validate(); err != nil {
+				return nil, fmt.Errorf("error occurred while validating %s - error = %s", otfPluginConfigurationFileName, err)
+			}
+			serviceConfig, err = pluginConfig.GetServiceConfig(p.ProviderName)
+			if err != nil {
+				return nil, fmt.Errorf("error occurred when getting service configuration from plugin configuration file %s - error = %s", otfPluginConfigurationFileName, err)
+			}
 		}
-		source, err := ioutil.ReadAll(p.Configuration)
-		if err != nil {
-			return "", fmt.Errorf("failed to read %s configuration file", otfPluginConfigurationFileName)
-		}
-		var pluginConfigV1 = PluginConfigSchemaV1{}
-		err = yaml.Unmarshal(source, &pluginConfigV1)
-		if err != nil {
-			return "", fmt.Errorf("failed to unmarshall %s configuration file - error = %s", otfPluginConfigurationFileName, err)
-		}
-		pluginConfig := PluginConfigSchema(pluginConfigV1)
-		if err = pluginConfig.Validate(); err != nil {
-			return "", fmt.Errorf("error occurred while validating %s - error = %s", otfPluginConfigurationFileName, err)
-		}
-		apiDiscoveryURL, err = pluginConfig.GetProviderURL(p.ProviderName)
-		return apiDiscoveryURL, err
 	}
 
-	if apiDiscoveryURL == "" {
-		return "", fmt.Errorf("swagger url not provided, please export %s or %s env variable with the URL where '%s' service provider is exposing the swagger file", otfVarSwaggerURLUC, otfVarSwaggerURLLC, p.ProviderName)
+	if serviceConfig == nil || serviceConfig.GetSwaggerURL() == "" {
+		return nil, fmt.Errorf("swagger url not provided, please export OTF_VAR_<provider_name>_SWAGGER_URL env variable with the URL where '%s' service provider is exposing the swagger file OR create a plugin configuration file at ~/.terraform.d/plugins following the Plugin configuration schema specifications", p.ProviderName)
 	}
-	log.Printf("[INFO] %s set with value %s", otfVarSwaggerURLUC, apiDiscoveryURL)
-	return apiDiscoveryURL, nil
+
+	return serviceConfig, err
+
 }
