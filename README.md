@@ -156,66 +156,63 @@ resource "goa_bottles" "my_bottle" {
 }
 ````
 
-The OpenAPI terraform provider relies on the swagger file exposed by the service provider. In this example, the 'goa' service 
-provider exposes an end point that returns the [swagger documentation](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/goa/api/swagger/swagger.yaml) 
-and exposes an API to manage resources of type 'bottles'.
+The OpenAPI terraform provider relies on the swagger file exposed by the service provider. This information can be provided
+to the plugin in two different ways:
 
-In order to run the OpenAPI terraform provider, simply pass in the OTF_VAR_```<provider_name>```_SWAGGER_URL environment variable
-to terraform pointing at the URL where the swagger doc is exposed. ```<provider_name>``` is your provider's name.
+#### OTF_VAR_<provider_name>_SWAGGER_URL
 
-```
-$ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
-```
+Terraform will need to be executed passing in the OTF_VAR_<provider_name>_SWAGGER_URL environment variable pointing at the location 
+where the swagger file is hosted, where````<your_provider_name>```` should be replaced with your provider's name. 
 
-Below is an output of the execution using the example openapi terraform provider (named 'goa'). 
+    ```
+    $ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
+    ```
 
-````
+#### OpenAPI plugin configuration file
 
-$ cd examples/goa && terraform init && OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" terraform plan
+A configuration file will need to be created in terraform plugins folder ```~/.terraform.d/plugins``` following [OpenAPI v1 plugin configuration specification]().
+An example is described below:
 
-Initializing provider plugins...
+    ```
+    $ pwd
+    /Users/dikhan/.terraform.d/plugins
+    $ cat terraform-provider-openapi.yaml
+    version: '1'
+      services:
+        monitor:
+          swagger-url: http://monitor-api.com/swagger.json
+          insecure_skip_verify: true
+        cdn:
+          swagger-url: https://cdn-api.com/swagger.json
+        vm:
+          swagger-url: http://vm-api.com/swagger.json
+        goa: 
+          swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml 
+    ```
 
-Terraform has been successfully initialized!
+This option is the recommended one when the user is managing resources provided by multiple OpenAPI providers (e,g: goa and swaggercodegen),
+since it minimizes the configuration needed when calling terraform. Hence, terraform could be executed as usual without 
+having to pass in any special environment variables like OTF_VAR_<provider_name>_SWAGGER_URL:
 
-You may now begin working with Terraform. Try running "terraform plan" to see
-any changes that are required for your infrastructure. All Terraform commands
-should now work.
+    ```
+    $ terraform init && terraform plan
+    ```
 
-If you ever set or change modules or backend configuration for Terraform,
-rerun this command to reinitialize your working directory. If you forget, other
-commands will detect it and remind you to do so if necessary.
-Refreshing Terraform state in-memory prior to plan...
-The refreshed state will be used to calculate this plan, but will not be
-persisted to local or remote state storage.
+## Examples
 
+Two API examples compliant with terraform are provided to make it easier to play around with this terraform provider. This
+examples can be found in the [examples folder](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples) 
+and each of them provides details on how to bring up the service and run this provider against the APIs using terraform.
 
-------------------------------------------------------------------------
-
-An execution plan has been generated and is shown below.
-Resource actions are indicated with the following symbols:
-  + create
-
-Terraform will perform the following actions:
-
-  + goa_bottles.my_bottle
-      id:      <computed>
-      name:    "Name of bottle"
-      rating:  "3"
-      vintage: "2653"
-
-
-Plan: 1 to add, 0 to change, 0 to destroy.
-
-------------------------------------------------------------------------
-
-Note: You didn't specify an "-out" parameter to save this plan, so Terraform
-can't guarantee that exactly these actions will be performed if
-"terraform apply" is subsequently run.
-
-````
+- [goa](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/goa): Example created using goa framework. 
+This API exposes a resource called 'bottles'
+- [swaggercodegen](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen): Example 
+created using swaggercodegen. This API exposes a resource called 'cdns'
 
 For more information refer to [How to set up the local environment?](./docs/local_environment.md) which contains instructions
-for learning how to bring up the example API service and run terraform against it.
+for learning how to bring up the example APIs and run terraform against them.
+
+## References
 
 Additionally, the following documents provide deep insight regarding OpenAPI and Terraform as well as frequently asked questions:
 
