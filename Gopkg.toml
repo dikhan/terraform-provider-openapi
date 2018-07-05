@@ -45,3 +45,14 @@
 [[override]]
   name = "github.com/hashicorp/go-plugin"
   revision = "b7d6477501c13292d71fd3b8e688269e51b028ba"
+[[constraint]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+
+[[constraint]]
+  name = "github.com/asaskevich/govalidator"
+  version = "8.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/go-homedir"
