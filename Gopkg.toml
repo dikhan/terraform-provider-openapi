@@ -50,10 +50,6 @@
     name = "github.com/satori/go.uuid"
     revision = "master"
 
-#[[override]]
-#  name = "github.com/hashicorp/go-plugin"
-#  revision = "b7d6477501c13292d71fd3b8e688269e51b028ba"
-
 [[constraint]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
