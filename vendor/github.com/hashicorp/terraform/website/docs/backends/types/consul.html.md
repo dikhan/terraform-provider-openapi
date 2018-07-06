@@ -20,6 +20,7 @@ This backend supports [state locking](/docs/state/locking.html).
 terraform {
   backend "consul" {
     address = "demo.consul.io"
+    scheme  = "https"
     path    = "full/path"
   }
 }
@@ -55,3 +56,6 @@ The following configuration options / environment variables are supported:
    communicating with Consul, in the format of either `user` or `user:pass`.
  * `gzip` - (Optional) `true` to compress the state data using gzip, or `false` (the default) to leave it uncompressed.
  * `lock` - (Optional) `false` to disable locking. This defaults to true, but will require session permissions with Consul to perform locking.
+ * `ca_file` / `CONSUL_CAFILE` - (Optional) A path to a PEM-encoded certificate authority used to verify the remote agent's certificate.
+ * `cert_file` / `CONSUL_CLIENT_CERT` - (Optional) A path to a PEM-encoded certificate provided to the remote agent; requires use of `key_file`.
+ * `key_file` / `CONSUL_CLIENT_KEY` - (Optional) A path to a PEM-encoded private key, required if `cert_file` is specified.

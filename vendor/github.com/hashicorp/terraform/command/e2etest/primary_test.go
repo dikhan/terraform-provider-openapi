@@ -1,12 +1,14 @@
 package e2etest
 
 import (
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/hashicorp/terraform/e2e"
 )
 
 // The tests in this file are for the "primary workflow", which includes
@@ -24,7 +26,8 @@ func TestPrimarySeparatePlan(t *testing.T) {
 	// allowed.
 	skipIfCannotAccessNetwork(t)
 
-	tf := newTerraform("full-workflow-null")
+	fixturePath := filepath.Join("test-fixtures", "full-workflow-null")
+	tf := e2e.NewBinary(terraformBin, fixturePath)
 	defer tf.Close()
 
 	//// INIT
@@ -52,6 +55,13 @@ func TestPrimarySeparatePlan(t *testing.T) {
 
 	if !strings.Contains(stdout, "1 to add, 0 to change, 0 to destroy") {
 		t.Errorf("incorrect plan tally; want 1 to add:\n%s", stdout)
+	}
+
+	if !strings.Contains(stdout, "This plan was saved to: tfplan") {
+		t.Errorf("missing \"This plan was saved to...\" message in plan output\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "terraform apply \"tfplan\"") {
+		t.Errorf("missing next-step instruction in plan output\n%s", stdout)
 	}
 
 	plan, err := tf.Plan("tfplan")
@@ -101,13 +111,13 @@ func TestPrimarySeparatePlan(t *testing.T) {
 	}
 
 	//// DESTROY
-	stdout, stderr, err = tf.Run("destroy", "-force")
+	stdout, stderr, err = tf.Run("destroy", "-auto-approve")
 	if err != nil {
 		t.Fatalf("unexpected destroy error: %s\nstderr:\n%s", err, stderr)
 	}
 
-	if !strings.Contains(stdout, "Resources: 2 destroyed") {
-		t.Errorf("incorrect destroy tally; want 2 destroyed:\n%s", stdout)
+	if !strings.Contains(stdout, "Resources: 1 destroyed") {
+		t.Errorf("incorrect destroy tally; want 1 destroyed:\n%s", stdout)
 	}
 
 	state, err = tf.LocalState()

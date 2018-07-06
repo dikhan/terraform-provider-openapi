@@ -40,15 +40,20 @@
 # as described here: https://github.com/hashicorp/terraform/issues/15756
 [[constraint]]
   name = "github.com/hashicorp/terraform"
-  version = "=0.10.0"
+  branch = "master"
+#  version = "=0.10.0"
+
+[[override]]
+  name = "github.com/hashicorp/go-plugin"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/smartystreets/goconvey"
   version = "1.6.3"
 
-[[override]]
-    name = "github.com/satori/go.uuid"
-    revision = "master"
+#[[override]]
+#    name = "github.com/satori/go.uuid"
+#    revision = "master"
 
 [[constraint]]
   branch = "v2"

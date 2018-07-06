@@ -389,6 +389,46 @@ func TestTest_preCheck(t *testing.T) {
 	}
 }
 
+func TestTest_skipFunc(t *testing.T) {
+	preCheckCalled := false
+	skipped := false
+
+	mp := testProvider()
+	mp.ApplyReturn = &terraform.InstanceState{
+		ID: "foo",
+	}
+
+	checkStepFn := func(*terraform.State) error {
+		return fmt.Errorf("error")
+	}
+
+	mt := new(mockT)
+	Test(mt, TestCase{
+		Providers: map[string]terraform.ResourceProvider{
+			"test": mp,
+		},
+		PreCheck: func() { preCheckCalled = true },
+		Steps: []TestStep{
+			{
+				Config:   testConfigStr,
+				Check:    checkStepFn,
+				SkipFunc: func() (bool, error) { skipped = true; return true, nil },
+			},
+		},
+	})
+
+	if mt.failed() {
+		t.Fatal("Expected check to be skipped")
+	}
+
+	if !preCheckCalled {
+		t.Fatal("precheck should be called")
+	}
+	if !skipped {
+		t.Fatal("SkipFunc should be called")
+	}
+}
+
 func TestTest_stepError(t *testing.T) {
 	mp := testProvider()
 	mp.ApplyReturn = &terraform.InstanceState{
@@ -477,6 +517,99 @@ func TestTest_resetError(t *testing.T) {
 
 	if !mt.failed() {
 		t.Fatal("test should've failed")
+	}
+}
+
+func TestTest_expectError(t *testing.T) {
+	cases := []struct {
+		name     string
+		planErr  bool
+		applyErr bool
+		badErr   bool
+	}{
+		{
+			name:     "successful apply",
+			planErr:  false,
+			applyErr: false,
+		},
+		{
+			name:     "bad plan",
+			planErr:  true,
+			applyErr: false,
+		},
+		{
+			name:     "bad apply",
+			planErr:  false,
+			applyErr: true,
+		},
+		{
+			name:     "bad plan, bad err",
+			planErr:  true,
+			applyErr: false,
+			badErr:   true,
+		},
+		{
+			name:     "bad apply, bad err",
+			planErr:  false,
+			applyErr: true,
+			badErr:   true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mp := testProvider()
+			expectedText := "test provider error"
+			var errText string
+			if tc.badErr {
+				errText = "wrong provider error"
+			} else {
+				errText = expectedText
+			}
+			noErrText := "no error received, but expected a match to"
+			if tc.planErr {
+				mp.DiffReturnError = errors.New(errText)
+			}
+			if tc.applyErr {
+				mp.ApplyReturnError = errors.New(errText)
+			}
+			mt := new(mockT)
+			Test(mt, TestCase{
+				Providers: map[string]terraform.ResourceProvider{
+					"test": mp,
+				},
+				Steps: []TestStep{
+					TestStep{
+						Config:             testConfigStr,
+						ExpectError:        regexp.MustCompile(expectedText),
+						Check:              func(*terraform.State) error { return nil },
+						ExpectNonEmptyPlan: true,
+					},
+				},
+			},
+			)
+			if mt.FatalCalled {
+				t.Fatalf("fatal: %+v", mt.FatalArgs)
+			}
+			switch {
+			case len(mt.ErrorArgs) < 1 && !tc.planErr && !tc.applyErr:
+				t.Fatalf("expected error, got none")
+			case !tc.planErr && !tc.applyErr:
+				for _, e := range mt.ErrorArgs {
+					if regexp.MustCompile(noErrText).MatchString(fmt.Sprintf("%v", e)) {
+						return
+					}
+				}
+				t.Fatalf("expected error to match %s, got %+v", noErrText, mt.ErrorArgs)
+			case tc.badErr:
+				for _, e := range mt.ErrorArgs {
+					if regexp.MustCompile(expectedText).MatchString(fmt.Sprintf("%v", e)) {
+						return
+					}
+				}
+				t.Fatalf("expected error to match %s, got %+v", expectedText, mt.ErrorArgs)
+			}
+		})
 	}
 }
 
@@ -585,6 +718,10 @@ func (t *mockT) Skip(args ...interface{}) {
 	t.SkipCalled = true
 	t.SkipArgs = args
 	t.f = true
+}
+
+func (t *mockT) Name() string {
+	return "MockedName"
 }
 
 func (t *mockT) failed() bool {

@@ -46,7 +46,7 @@ return list elements by index: `${var.subnets[idx]}`.
 
 #### Attributes of your own resource
 
-The syntax is `self.ATTRIBUTE`. For example `${self.private_ip_address}`
+The syntax is `self.ATTRIBUTE`. For example `${self.private_ip}`
 will interpolate that resource's private IP address.
 
 -> **Note**: The `self.ATTRIBUTE` syntax is only allowed and valid within
@@ -116,7 +116,7 @@ access, a function call, or even another conditional. The true and false
 value can also be any valid interpolation syntax. The returned types by
 the true and false side must be the same.
 
-The support operators are:
+The supported operators are:
 
   * Equality: `==` and `!=`
   * Numerical comparison: `>`, `<`, `>=`, `<=`
@@ -141,9 +141,20 @@ Terraform ships with built-in functions. Functions are called with the
 syntax `name(arg, arg2, ...)`. For example, to read a file:
 `${file("path.txt")}`.
 
+~> **NOTE**: Proper escaping is required for JSON field values containing quotes
+(`"`) such as `environment` values. If directly setting the JSON, they should be
+escaped as `\"` in the JSON,  e.g. `"value": "I \"love\" escaped quotes"`. If
+using a Terraform variable value, they should be escaped as `\\\"` in the
+variable, e.g. `value = "I \\\"love\\\" escaped quotes"` in the variable and
+`"value": "${var.myvariable}"` in the JSON.
+
 ### Supported built-in functions
 
 The supported built-in functions are:
+
+  * `abs(float)` - Returns the absolute value of a given float.
+    Example: `abs(1)` returns `1`, and `abs(-1)` would also return `1`,
+    whereas `abs(-3.14)` would return `3.14`. See also the `signum` function.
 
   * `basename(path)` - Returns the last element of a path.
 
@@ -152,6 +163,11 @@ The supported built-in functions are:
 
   * `base64encode(string)` - Returns a base64-encoded representation of the
     given string.
+
+  * `base64gzip(string)` - Compresses the given string with gzip and then
+    encodes the result to base64. This can be used with certain resource
+    arguments that allow binary data to be passed with base64 encoding, since
+    Terraform strings are required to be valid UTF-8.
 
   * `base64sha256(string)` - Returns a base64-encoded representation of raw
     SHA-256 sum of the given string.
@@ -170,6 +186,11 @@ The supported built-in functions are:
       to the argument.
 
   * `chomp(string)` - Removes trailing newlines from the given string.
+
+  * `chunklist(list, size)` - Returns the `list` items chunked by `size`.
+    Examples:
+    * `chunklist(aws_subnet.foo.*.id, 1)`: will outputs `[["id1"], ["id2"], ["id3"]]`
+    * `chunklist(var.list_of_strings, 2)`: will outputs `[["id1", "id2"], ["id3", "id4"], ["id5"]]`
 
   * `cidrhost(iprange, hostnum)` - Takes an IP address range in CIDR notation
     and creates an IP address with the given host number. If given host
@@ -206,7 +227,7 @@ The supported built-in functions are:
      Example: `concat(aws_instance.db.*.tags.Name, aws_instance.web.*.tags.Name)`
 
   * `contains(list, element)` - Returns *true* if a list contains the given element
-     and returns *false* otherwise. Examples: `element(var.list_of_strings, "an_element")`
+     and returns *false* otherwise. Examples: `contains(var.list_of_strings, "an_element")`
 
   * `dirname(path)` - Returns all but the last element of path, typically the path's directory.
 
@@ -224,13 +245,17 @@ The supported built-in functions are:
   * `file(path)` - Reads the contents of a file into the string. Variables
       in this file are _not_ interpolated. The contents of the file are
       read as-is. The `path` is interpreted relative to the working directory.
-      [Path variables](#path-variables) can be used to reference paths relative
+      [Path variables](#path-information) can be used to reference paths relative
       to other base locations. For example, when using `file()` from inside a
       module, you generally want to make the path relative to the module base,
       like this: `file("${path.module}/file")`.
 
   * `floor(float)` - Returns the greatest integer value less than or equal to
       the argument.
+
+  * `flatten(list of lists)` - Flattens lists of lists down to a flat list of
+       primitive values, eliminating any nested lists recursively. Examples:
+       * `flatten(data.github_user.user.*.gpg_keys)`
 
   * `format(format, args, ...)` - Formats a string according to the given
       format. The syntax for the format is standard `sprintf` syntax.
@@ -248,6 +273,12 @@ The supported built-in functions are:
       `formatlist("instance %v has private ip %v", aws_instance.foo.*.id, aws_instance.foo.*.private_ip)`.
       Passing lists with different lengths to formatlist results in an error.
 
+  * `indent(numspaces, string)` - Prepends the specified number of spaces to all but the first
+      line of the given multi-line string. May be useful when inserting a multi-line string
+      into an already-indented context. The first line is not indented, to allow for the
+      indented string to be placed after some sort of already-indented preamble.
+      Example: `"    \"items\": ${ indent(4, "[\n    \"item1\"\n]") },"`
+
   * `index(list, elem)` - Finds the index of a given element in a list.
       This function only works on flat lists.
       Example: `index(aws_instance.foo.*.tags.Name, "foo-test")`
@@ -258,10 +289,9 @@ The supported built-in functions are:
       * `join(",", aws_instance.foo.*.id)`
       * `join(",", var.ami_list)`
 
-  * `jsonencode(item)` - Returns a JSON-encoded representation of the given
-    item, which may be a string, list of strings, or map from string to string.
-    Note that if the item is a string, the return value includes the double
-    quotes.
+  * `jsonencode(value)` - Returns a JSON-encoded representation of the given
+      value, which can contain arbitrarily-nested lists and maps. Note that if
+      the value is a string then its value will be placed in quotes.
 
   * `keys(map)` - Returns a lexically sorted list of the map keys.
 
@@ -332,6 +362,10 @@ The supported built-in functions are:
       `n` is the index or name of the subcapture. If using a regular expression,
       the syntax conforms to the [re2 regular expression syntax](https://github.com/google/re2/wiki/Syntax).
 
+  * `rsadecrypt(string, key)` - Decrypts `string` using RSA. The padding scheme
+    PKCS #1 v1.5 is used. The `string` must be base64-encoded. `key` must be an
+    RSA private key in PEM format. You may use `file()` to load it from a file.
+
   * `sha1(string)` - Returns a (conventional) hexadecimal representation of the
     SHA-1 hash of the given string.
     Example: `"${sha1("${aws_vpc.default.tags.customer}-s3-bucket")}"`
@@ -344,7 +378,7 @@ The supported built-in functions are:
     SHA-512 hash of the given string.
     Example: `"${sha512("${aws_vpc.default.tags.customer}-s3-bucket")}"`
 
-  * `signum(int)` - Returns `-1` for negative numbers, `0` for `0` and `1` for positive numbers.
+  * `signum(integer)` - Returns `-1` for negative numbers, `0` for `0` and `1` for positive numbers.
       This function is useful when you need to set a value for the first resource and
       a different value for the rest of the resources.
       Example: `element(split(",", var.r53_failover_policy), signum(count.index))`
@@ -372,11 +406,18 @@ The supported built-in functions are:
    invocation of the function, so in order to prevent diffs on every plan & apply, it must be used with the
    [`ignore_changes`](/docs/configuration/resources.html#ignore-changes) lifecycle attribute.
 
+  * `timeadd(time, duration)` - Returns a UTC timestamp string corresponding to adding a given `duration` to `time` in RFC 3339 format.      
+    For example, `timeadd("2017-11-22T00:00:00Z", "10m")` produces a value `"2017-11-22T00:10:00Z"`. 
+    
   * `title(string)` - Returns a copy of the string with the first characters of all the words capitalized.
+
+  * `transpose(map)` - Swaps the keys and list values in a map of lists of strings. For example, transpose(map("a", list("1", "2"), "b", list("2", "3")) produces a value equivalent to map("1", list("a"), "2", list("a", "b"), "3", list("b")).
 
   * `trimspace(string)` - Returns a copy of the string with all leading and trailing white spaces removed.
 
   * `upper(string)` - Returns a copy of the string with all Unicode letters mapped to their upper case.
+
+  * `urlencode(string)` - Returns an URL-safe copy of the string.
 
   * `uuid()` - Returns a UUID string in RFC 4122 v4 format. This string will change with every invocation of the function, so in order to prevent diffs on every plan & apply, it must be used with the [`ignore_changes`](/docs/configuration/resources.html#ignore-changes) lifecycle attribute.
 

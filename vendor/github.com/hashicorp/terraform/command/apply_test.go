@@ -35,6 +35,7 @@ func TestApply(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -72,6 +73,7 @@ func TestApply_lockedState(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code == 0 {
@@ -113,6 +115,7 @@ func TestApply_lockedStateWait(t *testing.T) {
 	args := []string{
 		"-state", statePath,
 		"-lock-timeout", "4s",
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -186,6 +189,7 @@ func TestApply_parallelism(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		fmt.Sprintf("-parallelism=%d", par),
 		testFixturePath("parallelism"),
 	}
@@ -239,6 +243,7 @@ func TestApply_configInvalid(t *testing.T) {
 
 	args := []string{
 		"-state", testTempFile(t),
+		"-auto-approve",
 		testFixturePath("apply-config-invalid"),
 	}
 	if code := c.Run(args); code != 1 {
@@ -247,10 +252,7 @@ func TestApply_configInvalid(t *testing.T) {
 }
 
 func TestApply_defaultState(t *testing.T) {
-	td, err := ioutil.TempDir("", "tf")
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
+	td := testTempDir(t)
 	statePath := filepath.Join(td, DefaultStateFilename)
 
 	// Change to the temporary directory
@@ -281,6 +283,7 @@ func TestApply_defaultState(t *testing.T) {
 	serial := localState.State().Serial
 
 	args := []string{
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -344,6 +347,7 @@ func TestApply_error(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply-error"),
 	}
 	if code := c.Run(args); code != 1 {
@@ -385,6 +389,7 @@ func TestApply_input(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply-input"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -420,6 +425,7 @@ func TestApply_inputPartial(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		"-var", "foo=foovalue",
 		testFixturePath("apply-input-partial"),
 	}
@@ -460,6 +466,7 @@ func TestApply_noArgs(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 	}
 	if code := c.Run(args); code != 0 {
 		t.Fatalf("bad: %d\n\n%s", code, ui.ErrorWriter.String())
@@ -725,10 +732,7 @@ func TestApply_planVars(t *testing.T) {
 // we should be able to apply a plan file with no other file dependencies
 func TestApply_planNoModuleFiles(t *testing.T) {
 	// temporary data directory which we can remove between commands
-	td, err := ioutil.TempDir("", "tf")
-	if err != nil {
-		t.Fatal(err)
-	}
+	td := testTempDir(t)
 	defer os.RemoveAll(td)
 
 	defer testChdir(t, td)()
@@ -783,6 +787,7 @@ func TestApply_refresh(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -813,22 +818,24 @@ func TestApply_refresh(t *testing.T) {
 }
 
 func TestApply_shutdown(t *testing.T) {
-	stopped := false
-	stopCh := make(chan struct{})
-	stopReplyCh := make(chan struct{})
+	cancelled := make(chan struct{})
+	shutdownCh := make(chan struct{})
 
 	statePath := testTempFile(t)
-
 	p := testProvider()
-	shutdownCh := make(chan struct{})
+
 	ui := new(cli.MockUi)
 	c := &ApplyCommand{
 		Meta: Meta{
 			testingOverrides: metaOverridesForProvider(p),
 			Ui:               ui,
+			ShutdownCh:       shutdownCh,
 		},
+	}
 
-		ShutdownCh: shutdownCh,
+	p.StopFn = func() error {
+		close(cancelled)
+		return nil
 	}
 
 	p.DiffFn = func(
@@ -843,15 +850,25 @@ func TestApply_shutdown(t *testing.T) {
 			},
 		}, nil
 	}
+
+	var once sync.Once
 	p.ApplyFn = func(
 		*terraform.InstanceInfo,
 		*terraform.InstanceState,
 		*terraform.InstanceDiff) (*terraform.InstanceState, error) {
-		if !stopped {
-			stopped = true
-			close(stopCh)
-			<-stopReplyCh
-		}
+
+		// only cancel once
+		once.Do(func() {
+			shutdownCh <- struct{}{}
+		})
+
+		// Because of the internal lock in the MockProvider, we can't
+		// coordiante directly with the calling of Stop, and making the
+		// MockProvider concurrent is disruptive to a lot of existing tests.
+		// Wait here a moment to help make sure the main goroutine gets to the
+		// Stop call before we exit, or the plan may finish before it can be
+		// canceled.
+		time.Sleep(200 * time.Millisecond)
 
 		return &terraform.InstanceState{
 			ID: "foo",
@@ -861,20 +878,9 @@ func TestApply_shutdown(t *testing.T) {
 		}, nil
 	}
 
-	go func() {
-		<-stopCh
-		shutdownCh <- struct{}{}
-
-		// This is really dirty, but we have no other way to assure that
-		// tf.Stop() has been called. This doesn't assure it either, but
-		// it makes it much more certain.
-		time.Sleep(50 * time.Millisecond)
-
-		close(stopReplyCh)
-	}()
-
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply-shutdown"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -885,13 +891,15 @@ func TestApply_shutdown(t *testing.T) {
 		t.Fatalf("err: %s", err)
 	}
 
+	select {
+	case <-cancelled:
+	default:
+		t.Fatal("command not cancelled")
+	}
+
 	state := testStateRead(t, statePath)
 	if state == nil {
 		t.Fatal("state should not be nil")
-	}
-
-	if len(state.RootModule().Resources) != 1 {
-		t.Fatalf("bad: %d", len(state.RootModule().Resources))
 	}
 }
 
@@ -934,6 +942,7 @@ func TestApply_state(t *testing.T) {
 	// Run the apply command pointing to our existing state
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -1008,6 +1017,7 @@ func TestApply_sensitiveOutput(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply-sensitive-output"),
 	}
 
@@ -1040,6 +1050,7 @@ func TestApply_stateFuture(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code == 0 {
@@ -1071,6 +1082,7 @@ func TestApply_statePast(t *testing.T) {
 
 	args := []string{
 		"-state", statePath,
+		"-auto-approve",
 		testFixturePath("apply"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -1103,6 +1115,7 @@ func TestApply_vars(t *testing.T) {
 	}
 
 	args := []string{
+		"-auto-approve",
 		"-var", "foo=bar",
 		"-state", statePath,
 		testFixturePath("apply-vars"),
@@ -1146,6 +1159,7 @@ func TestApply_varFile(t *testing.T) {
 	}
 
 	args := []string{
+		"-auto-approve",
 		"-var-file", varFilePath,
 		"-state", statePath,
 		testFixturePath("apply-vars"),
@@ -1199,6 +1213,7 @@ func TestApply_varFileDefault(t *testing.T) {
 	}
 
 	args := []string{
+		"-auto-approve",
 		"-state", statePath,
 		testFixturePath("apply-vars"),
 	}
@@ -1251,6 +1266,7 @@ func TestApply_varFileDefaultJSON(t *testing.T) {
 	}
 
 	args := []string{
+		"-auto-approve",
 		"-state", statePath,
 		testFixturePath("apply-vars"),
 	}
@@ -1303,6 +1319,7 @@ func TestApply_backup(t *testing.T) {
 
 	// Run the apply command pointing to our existing state
 	args := []string{
+		"-auto-approve",
 		"-state", statePath,
 		"-backup", backupPath,
 		testFixturePath("apply"),
@@ -1353,6 +1370,7 @@ func TestApply_disableBackup(t *testing.T) {
 
 	// Run the apply command pointing to our existing state
 	args := []string{
+		"-auto-approve",
 		"-state", statePath,
 		"-backup", "-",
 		testFixturePath("apply"),
@@ -1411,6 +1429,7 @@ func TestApply_terraformEnv(t *testing.T) {
 	}
 
 	args := []string{
+		"-auto-approve",
 		"-state", statePath,
 		testFixturePath("apply-terraform-env"),
 	}
@@ -1466,6 +1485,7 @@ func TestApply_terraformEnvNonDefault(t *testing.T) {
 	}
 
 	args := []string{
+		"-auto-approve",
 		testFixturePath("apply-terraform-env"),
 	}
 	if code := c.Run(args); code != 0 {

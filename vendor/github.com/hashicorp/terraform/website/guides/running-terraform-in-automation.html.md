@@ -74,6 +74,28 @@ and updated by subsequent runs. Selecting a backend that supports
 [state locking](/docs/state/locking.html) will additionally provide safety
 against race conditions that can be caused by concurrent Terraform runs.
 
+## Controlling Terraform Output in Automation
+
+By default, some Terraform commands conclude by presenting a description
+of a possible next step to the user, often including a specific command
+to run next.
+
+An automation tool will often abstract away the details of exactly which
+commands are being run, causing these messages to be confusing and
+un-actionable, and possibly harmful if they inadvertently encourage a user to
+bypass the automation tool entirely.
+
+When the environment variable `TF_IN_AUTOMATION` is set to any non-empty
+value, Terraform makes some minor adjustments to its output to de-emphasize
+specific commands to run. The specific changes made will vary over time,
+but generally-speaking Terraform will consider this variable to indicate that
+there is some wrapping application that will help the user with the next
+step.
+
+To reduce complexity, this feature is implemented primarily for the main
+workflow commands described above. Other ancillary commands may still produce
+command line suggestions, regardless of this setting.
+
 ## Plan and Apply on different machines
 
 When running in an orchestration tool, it can be difficult or impossible to
@@ -104,7 +126,7 @@ such an automation setup:
   and CPU architecture as where it was created. For example, this means that
   it is not possible to create a plan on a Windows computer and then apply it
   on a Linux server.
-* Terraform expects the provider plugins that were used used to produce a
+* Terraform expects the provider plugins that were used to produce a
   plan to be available and identical when the plan is applied, to ensure
   that the plan is interpreted correctly. An error will be produced if
   Terraform or any plugins are upgraded between creating and applying a plan.
@@ -152,15 +174,15 @@ Where manual approval is not required, a simpler sequence of commands
 can be used:
 
 * `terraform init -input=false`
-* `terraform apply -input=false -auto-approve=true`
+* `terraform apply -input=false -auto-approve`
 
 This variant of the `apply` command implicitly creates a new plan and then
-immediately applies it. The `-auto-approve=true` option tells Terraform not
+immediately applies it. The `-auto-approve` option tells Terraform not
 to require interactive approval of the plan before applying it.
 
 ~> When Terraform is empowered to make destructive changes to infrastructure,
 manual review of plans is always recommended unless downtime is tolerated
-in the event of unintended changes. Use automatic apply **only** with
+in the event of unintended changes. Use automatic approval **only** with
 non-critical infrastructure.
 
 ## Testing Pull Requests with `terraform plan`
@@ -281,6 +303,11 @@ control over the execution environment, but on the other hand it prevents
 use of newer plugin versions that have not yet been installed into the
 local plugin directory. Which approach is more appropriate will depend on
 unique constraints within each organization.
+
+Plugins can also be provided along with the configuration by creating a
+`terraform.d/plugins/OS_ARCH` directory, which will be searched before
+automatically downloading additional plugins. The `-get-plugins=false` flag can
+be used to prevent Terraform from automatically downloading additional plugins. 
 
 ## Terraform Enterprise
 

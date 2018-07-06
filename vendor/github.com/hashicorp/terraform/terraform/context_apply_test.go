@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -51,6 +52,58 @@ func TestContext2Apply_basic(t *testing.T) {
 	}
 }
 
+func TestContext2Apply_unstable(t *testing.T) {
+	// This tests behavior when the configuration contains an unstable value,
+	// such as the result of uuid() or timestamp(), where each call produces
+	// a different result.
+	//
+	// This is an important case to test because we need to ensure that
+	// we don't re-call the function during the apply phase: the value should
+	// be fixed during plan
+
+	m := testModule(t, "apply-unstable")
+	p := testProvider("test")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"test": testProviderFuncFixed(p),
+			},
+		),
+	})
+
+	plan, err := ctx.Plan()
+	if err != nil {
+		t.Fatalf("unexpected error during Plan: %s", err)
+	}
+
+	md := plan.Diff.RootModule()
+	rd := md.Resources["test_resource.foo"]
+	randomVal := rd.Attributes["random"].New
+	t.Logf("plan-time value is %q", randomVal)
+
+	state, err := ctx.Apply()
+	if err != nil {
+		t.Fatalf("unexpected error during Apply: %s", err)
+	}
+
+	mod := state.RootModule()
+	if len(mod.Resources) != 1 {
+		t.Fatalf("wrong number of resources %d; want 1", len(mod.Resources))
+	}
+
+	rs := mod.Resources["test_resource.foo"].Primary
+	if got, want := rs.Attributes["random"], randomVal; got != want {
+		// FIXME: We actually currently have a bug where we re-interpolate
+		// the config during apply and end up with a random result, so this
+		// check fails. This check _should not_ fail, so we should fix this
+		// up in a later release.
+		//t.Errorf("wrong random value %q; want %q", got, want)
+	}
+}
+
 func TestContext2Apply_escape(t *testing.T) {
 	m := testModule(t, "apply-escape")
 	p := testProvider("aws")
@@ -77,6 +130,7 @@ func TestContext2Apply_escape(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.bar:
   ID = foo
+  provider = provider.aws
   foo = "bar"
   type = aws_instance
 `)
@@ -108,6 +162,7 @@ func TestContext2Apply_resourceCountOneList(t *testing.T) {
 	actual := strings.TrimSpace(state.String())
 	expected := strings.TrimSpace(`null_resource.foo:
   ID = foo
+  provider = provider.null
 
 Outputs:
 
@@ -288,11 +343,7 @@ func TestContext2Apply_resourceDependsOnModuleStateOnly(t *testing.T) {
 			t.Fatal("should check")
 		}
 
-		checkStateString(t, state, `
-<no state>
-module.child:
-  <no state>
-		`)
+		checkStateString(t, state, "<no state>")
 	}
 }
 
@@ -526,6 +577,7 @@ amis_from_module = {eu-west-1:ami-789012 eu-west-2:ami-989484 us-west-1:ami-1234
 module.test:
   null_resource.noop:
     ID = foo
+    provider = provider.null
 
   Outputs:
 
@@ -693,6 +745,7 @@ func TestContext2Apply_providerWarning(t *testing.T) {
 	expected := strings.TrimSpace(`
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
 	`)
 	if actual != expected {
 		t.Fatalf("got: \n%s\n\nexpected:\n%s", actual, expected)
@@ -861,7 +914,7 @@ func TestContext2Apply_createBeforeDestroy(t *testing.T) {
 	actual := strings.TrimSpace(state.String())
 	expected := strings.TrimSpace(testTerraformApplyCreateBeforeStr)
 	if actual != expected {
-		t.Fatalf("bad: \n%s", actual)
+		t.Fatalf("expected:\n%s\ngot:\n%s", expected, actual)
 	}
 }
 
@@ -980,11 +1033,13 @@ func TestContext2Apply_createBeforeDestroy_dependsNonCBD(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.bar:
   ID = foo
+  provider = provider.aws
   require_new = yes
   type = aws_instance
   value = foo
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   require_new = yes
   type = aws_instance
 	`)
@@ -1118,10 +1173,12 @@ func TestContext2Apply_createBeforeDestroy_deposedCount(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.bar.0:
   ID = foo
+  provider = provider.aws
   foo = bar
   type = aws_instance
 aws_instance.bar.1:
   ID = foo
+  provider = provider.aws
   foo = bar
   type = aws_instance
 	`)
@@ -1181,6 +1238,7 @@ func TestContext2Apply_createBeforeDestroy_deposedOnly(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.bar:
   ID = bar
+  provider = provider.aws
 	`)
 }
 
@@ -1519,6 +1577,7 @@ func TestContext2Apply_destroyData(t *testing.T) {
 			},
 		},
 	}
+	hook := &testHook{}
 	ctx := testContext2(t, &ContextOpts{
 		Module: m,
 		ProviderResolver: ResourceProviderResolverFixed(
@@ -1528,6 +1587,7 @@ func TestContext2Apply_destroyData(t *testing.T) {
 		),
 		State:   state,
 		Destroy: true,
+		Hooks:   []Hook{hook},
 	})
 
 	if p, err := ctx.Plan(); err != nil {
@@ -1547,6 +1607,15 @@ func TestContext2Apply_destroyData(t *testing.T) {
 
 	if got := len(newState.Modules[0].Resources); got != 0 {
 		t.Fatalf("state has %d resources after destroy; want 0", got)
+	}
+
+	wantHookCalls := []*testHookCall{
+		{"PreDiff", "data.null_data_source.testing"},
+		{"PostDiff", "data.null_data_source.testing"},
+		{"PostStateUpdate", ""},
+	}
+	if !reflect.DeepEqual(hook.Calls, wantHookCalls) {
+		t.Errorf("wrong hook calls\ngot: %swant: %s", spew.Sdump(hook.Calls), spew.Sdump(wantHookCalls))
 	}
 }
 
@@ -1944,6 +2013,7 @@ func TestContext2Apply_cancelBlock(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
 	`)
 }
 
@@ -2003,6 +2073,7 @@ func TestContext2Apply_cancelProvisioner(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo: (tainted)
   ID = foo
+  provider = provider.aws
   num = 2
   type = aws_instance
 	`)
@@ -2351,6 +2422,73 @@ func TestContext2Apply_countVariableRef(t *testing.T) {
 	}
 }
 
+func TestContext2Apply_provisionerInterpCount(t *testing.T) {
+	// This test ensures that a provisioner can interpolate a resource count
+	// even though the provisioner expression is evaluated during the plan
+	// walk. https://github.com/hashicorp/terraform/issues/16840
+
+	m := testModule(t, "apply-provisioner-interp-count")
+
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	pr := testProvisioner()
+
+	providerResolver := ResourceProviderResolverFixed(
+		map[string]ResourceProviderFactory{
+			"aws": testProviderFuncFixed(p),
+		},
+	)
+	provisioners := map[string]ResourceProvisionerFactory{
+		"local-exec": testProvisionerFuncFixed(pr),
+	}
+	ctx := testContext2(t, &ContextOpts{
+		Module:           m,
+		ProviderResolver: providerResolver,
+		Provisioners:     provisioners,
+	})
+
+	plan, err := ctx.Plan()
+	if err != nil {
+		t.Fatalf("plan failed: %s", err)
+	}
+
+	// We'll marshal and unmarshal the plan here, to ensure that we have
+	// a clean new context as would be created if we separately ran
+	// terraform plan -out=tfplan && terraform apply tfplan
+	var planBuf bytes.Buffer
+	err = WritePlan(plan, &planBuf)
+	if err != nil {
+		t.Fatalf("failed to write plan: %s", err)
+	}
+	plan, err = ReadPlan(&planBuf)
+	if err != nil {
+		t.Fatalf("failed to read plan: %s", err)
+	}
+
+	ctx, err = plan.Context(&ContextOpts{
+		// Most options are taken from the plan in this case, but we still
+		// need to provide the plugins.
+		ProviderResolver: providerResolver,
+		Provisioners:     provisioners,
+	})
+	if err != nil {
+		t.Fatalf("failed to create context for plan: %s", err)
+	}
+
+	// Applying the plan should now succeed
+	_, err = ctx.Apply()
+	if err != nil {
+		t.Fatalf("apply failed: %s", err)
+	}
+
+	// Verify apply was invoked
+	if !pr.ApplyCalled {
+		t.Fatalf("provisioner was not applied")
+	}
+}
+
 func TestContext2Apply_mapVariableOverride(t *testing.T) {
 	m := testModule(t, "apply-map-var-override")
 	p := testProvider("aws")
@@ -2385,10 +2523,12 @@ func TestContext2Apply_mapVariableOverride(t *testing.T) {
 	expected := strings.TrimSpace(`
 aws_instance.bar:
   ID = foo
+  provider = provider.aws
   ami = overridden
   type = aws_instance
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   ami = image-1234
   type = aws_instance
 	`)
@@ -2451,24 +2591,14 @@ func TestContext2Apply_moduleDestroyOrder(t *testing.T) {
 			&ModuleState{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.b": &ResourceState{
-						Type: "aws_instance",
-						Primary: &InstanceState{
-							ID: "b",
-						},
-					},
+					"aws_instance.b": resourceState("aws_instance", "b"),
 				},
 			},
 
 			&ModuleState{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.a": &ResourceState{
-						Type: "aws_instance",
-						Primary: &InstanceState{
-							ID: "a",
-						},
-					},
+					"aws_instance.a": resourceState("aws_instance", "a"),
 				},
 				Outputs: map[string]*OutputState{
 					"a_output": &OutputState{
@@ -2556,7 +2686,7 @@ func TestContext2Apply_moduleInheritAlias(t *testing.T) {
 module.child:
   aws_instance.foo:
     ID = foo
-    provider = aws.eu
+    provider = provider.aws.eu
 	`)
 }
 
@@ -2622,10 +2752,7 @@ func TestContext2Apply_moduleOrphanInheritAlias(t *testing.T) {
 		t.Fatal("must call configure")
 	}
 
-	checkStateString(t, state, `
-module.child:
-  <no state>
-  `)
+	checkStateString(t, state, "")
 }
 
 func TestContext2Apply_moduleOrphanProvider(t *testing.T) {
@@ -3077,6 +3204,7 @@ func TestContext2Apply_moduleTarget(t *testing.T) {
 module.A:
   aws_instance.foo:
     ID = foo
+    provider = provider.aws
     foo = bar
     type = aws_instance
 
@@ -3086,6 +3214,7 @@ module.A:
 module.B:
   aws_instance.bar:
     ID = foo
+    provider = provider.aws
     foo = foo
     type = aws_instance
 	`)
@@ -3812,7 +3941,6 @@ func TestContext2Apply_outputDependsOn(t *testing.T) {
 			info *InstanceInfo,
 			is *InstanceState,
 			id *InstanceDiff) (*InstanceState, error) {
-
 			// Sleep to allow parallel execution
 			time.Sleep(50 * time.Millisecond)
 
@@ -3866,6 +3994,7 @@ func TestContext2Apply_outputDependsOn(t *testing.T) {
 		checkStateString(t, state, `
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
 
 Outputs:
 
@@ -3957,7 +4086,7 @@ func TestContext2Apply_outputOrphanModule(t *testing.T) {
 				"aws": testProviderFuncFixed(p),
 			},
 		),
-		State: state,
+		State: state.DeepCopy(),
 	})
 
 	if _, err := ctx.Plan(); err != nil {
@@ -3972,7 +4101,33 @@ func TestContext2Apply_outputOrphanModule(t *testing.T) {
 	actual := strings.TrimSpace(state.String())
 	expected := strings.TrimSpace(testTerraformApplyOutputOrphanModuleStr)
 	if actual != expected {
-		t.Fatalf("bad: \n%s", actual)
+		t.Fatalf("expected:\n%s\n\ngot:\n%s", expected, actual)
+	}
+
+	// now apply with no module in the config, which should remove the
+	// remaining output
+	ctx = testContext2(t, &ContextOpts{
+		Module: module.NewEmptyTree(),
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		State: state.DeepCopy(),
+	})
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, err = ctx.Apply()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	actual = strings.TrimSpace(state.String())
+	if actual != "" {
+		t.Fatalf("expected no state, got:\n%s", actual)
 	}
 }
 
@@ -4327,7 +4482,7 @@ func TestContext2Apply_provisionerFail_createBeforeDestroy(t *testing.T) {
 	actual := strings.TrimSpace(state.String())
 	expected := strings.TrimSpace(testTerraformApplyProvisionerFailCreateBeforeDestroyStr)
 	if actual != expected {
-		t.Fatalf("bad: \n%s", actual)
+		t.Fatalf("expected:\n%s\n:got\n%s", expected, actual)
 	}
 }
 
@@ -4497,6 +4652,7 @@ func TestContext2Apply_multiDepose_createBeforeDestroy(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.web: (1 deposed)
   ID = bar
+  provider = provider.aws
   Deposed ID 1 = foo
 	`)
 
@@ -4521,6 +4677,7 @@ aws_instance.web: (1 deposed)
 	checkStateString(t, state, `
 aws_instance.web: (2 deposed)
   ID = baz
+  provider = provider.aws
   Deposed ID 1 = foo
   Deposed ID 2 = bar
 	`)
@@ -4548,6 +4705,7 @@ aws_instance.web: (2 deposed)
 	checkStateString(t, state, `
 aws_instance.web: (1 deposed)
   ID = qux
+  provider = provider.aws
   Deposed ID 1 = bar
 	`)
 
@@ -4569,6 +4727,7 @@ aws_instance.web: (1 deposed)
 	checkStateString(t, state, `
 aws_instance.web:
   ID = quux
+  provider = provider.aws
 	`)
 }
 
@@ -4609,6 +4768,7 @@ func TestContext2Apply_provisionerFailContinue(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   foo = bar
   type = aws_instance
   `)
@@ -5004,6 +5164,7 @@ func TestContext2Apply_provisionerDestroyTainted(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   foo = bar
   type = aws_instance
 	`)
@@ -5872,12 +6033,13 @@ func TestContext2Apply_destroyOrder(t *testing.T) {
 
 	t.Logf("State 1: %s", state)
 
-	// Next, plan and apply config-less to force a destroy with "apply"
+	// Next, plan and apply a destroy
 	h.Active = true
 	ctx = testContext2(t, &ContextOpts{
-		State:  state,
-		Module: module.NewEmptyTree(),
-		Hooks:  []Hook{h},
+		Destroy: true,
+		State:   state,
+		Module:  m,
+		Hooks:   []Hook{h},
 		ProviderResolver: ResourceProviderResolverFixed(
 			map[string]ResourceProviderFactory{
 				"aws": testProviderFuncFixed(p),
@@ -6014,9 +6176,8 @@ func TestContext2Apply_destroyNestedModule(t *testing.T) {
 
 	// Test that things were destroyed
 	actual := strings.TrimSpace(state.String())
-	expected := strings.TrimSpace(testTerraformApplyDestroyNestedModuleStr)
-	if actual != expected {
-		t.Fatalf("bad: \n%s", actual)
+	if actual != "" {
+		t.Fatalf("expected no state, got: %s", actual)
 	}
 }
 
@@ -6064,12 +6225,8 @@ func TestContext2Apply_destroyDeeplyNestedModule(t *testing.T) {
 
 	// Test that things were destroyed
 	actual := strings.TrimSpace(state.String())
-	expected := strings.TrimSpace(`
-module.child.subchild.subsubchild:
-  <no state>
-	`)
-	if actual != expected {
-		t.Fatalf("bad: \n%s", actual)
+	if actual != "" {
+		t.Fatalf("epected no state, got: %s", actual)
 	}
 }
 
@@ -6425,13 +6582,11 @@ module.child.child2:
 
 func TestContext2Apply_destroyOutputs(t *testing.T) {
 	m := testModule(t, "apply-destroy-outputs")
-	h := new(HookRecordApplyOrder)
 	p := testProvider("aws")
 	p.ApplyFn = testApplyFn
 	p.DiffFn = testDiffFn
 	ctx := testContext2(t, &ContextOpts{
 		Module: m,
-		Hooks:  []Hook{h},
 		ProviderResolver: ResourceProviderResolverFixed(
 			map[string]ResourceProviderFactory{
 				"aws": testProviderFuncFixed(p),
@@ -6451,12 +6606,10 @@ func TestContext2Apply_destroyOutputs(t *testing.T) {
 	}
 
 	// Next, plan and apply a destroy operation
-	h.Active = true
 	ctx = testContext2(t, &ContextOpts{
 		Destroy: true,
 		State:   state,
 		Module:  m,
-		Hooks:   []Hook{h},
 		ProviderResolver: ResourceProviderResolverFixed(
 			map[string]ResourceProviderFactory{
 				"aws": testProviderFuncFixed(p),
@@ -6465,17 +6618,36 @@ func TestContext2Apply_destroyOutputs(t *testing.T) {
 	})
 
 	if _, err := ctx.Plan(); err != nil {
-		t.Fatalf("err: %s", err)
+		t.Fatal(err)
 	}
 
 	state, err = ctx.Apply()
 	if err != nil {
-		t.Fatalf("err: %s", err)
+		t.Fatal(err)
 	}
 
 	mod := state.RootModule()
 	if len(mod.Resources) > 0 {
-		t.Fatalf("bad: %#v", mod)
+		t.Fatalf("expected no resources, got: %#v", mod)
+	}
+
+	// destroying again should produce no errors
+	ctx = testContext2(t, &ContextOpts{
+		Destroy: true,
+		State:   state,
+		Module:  m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+	})
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = ctx.Apply(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -7307,9 +7479,31 @@ func TestContext2Apply_targeted(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   num = 2
   type = aws_instance
 	`)
+}
+
+func TestContext2Apply_targetEmpty(t *testing.T) {
+	m := testModule(t, "apply-targeted")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		Targets: []string{""},
+	})
+
+	_, err := ctx.Apply()
+	if err == nil {
+		t.Fatalf("should error")
+	}
 }
 
 func TestContext2Apply_targetedCount(t *testing.T) {
@@ -7339,10 +7533,13 @@ func TestContext2Apply_targetedCount(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo.0:
   ID = foo
+  provider = provider.aws
 aws_instance.foo.1:
   ID = foo
+  provider = provider.aws
 aws_instance.foo.2:
   ID = foo
+  provider = provider.aws
 	`)
 }
 
@@ -7373,6 +7570,7 @@ func TestContext2Apply_targetedCountIndex(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo.1:
   ID = foo
+  provider = provider.aws
 	`)
 }
 
@@ -7421,6 +7619,212 @@ func TestContext2Apply_targetedDestroy(t *testing.T) {
 aws_instance.bar:
   ID = i-abc123
 	`)
+}
+
+func TestContext2Apply_destroyProvisionerWithLocals(t *testing.T) {
+	m := testModule(t, "apply-provisioner-destroy-locals")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	pr := testProvisioner()
+	pr.ApplyFn = func(_ *InstanceState, rc *ResourceConfig) error {
+		cmd, ok := rc.Get("command")
+		if !ok || cmd != "local" {
+			fmt.Printf("%#v\n", rc.Config)
+			return fmt.Errorf("provisioner got %v:%s", ok, cmd)
+		}
+		return nil
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		Provisioners: map[string]ResourceProvisionerFactory{
+			"shell": testProvisionerFuncFixed(pr),
+		},
+		State: &State{
+			Modules: []*ModuleState{
+				&ModuleState{
+					Path: []string{"root"},
+					Resources: map[string]*ResourceState{
+						"aws_instance.foo": resourceState("aws_instance", "1234"),
+					},
+				},
+			},
+		},
+		Destroy: true,
+		// the test works without targeting, but this also tests that the local
+		// node isn't inadvertently pruned because of the wrong evaluation
+		// order.
+		Targets: []string{"aws_instance.foo"},
+	})
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := ctx.Apply(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !pr.ApplyCalled {
+		t.Fatal("provisioner not called")
+	}
+}
+
+// this also tests a local value in the config referencing a resource that
+// wasn't in the state during destroy.
+func TestContext2Apply_destroyProvisionerWithMultipleLocals(t *testing.T) {
+	m := testModule(t, "apply-provisioner-destroy-multiple-locals")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	pr := testProvisioner()
+	pr.ApplyFn = func(is *InstanceState, rc *ResourceConfig) error {
+		cmd, ok := rc.Get("command")
+		if !ok {
+			return errors.New("no command in provisioner")
+		}
+
+		switch is.ID {
+		case "1234":
+			if cmd != "local" {
+				return fmt.Errorf("provisioner %q got:%q", is.ID, cmd)
+			}
+		case "3456":
+			if cmd != "1234" {
+				return fmt.Errorf("provisioner %q got:%q", is.ID, cmd)
+			}
+		default:
+			t.Fatal("unknown instance")
+		}
+		return nil
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		Provisioners: map[string]ResourceProvisionerFactory{
+			"shell": testProvisionerFuncFixed(pr),
+		},
+		State: &State{
+			Modules: []*ModuleState{
+				&ModuleState{
+					Path: []string{"root"},
+					Resources: map[string]*ResourceState{
+						"aws_instance.foo": resourceState("aws_instance", "1234"),
+						"aws_instance.bar": resourceState("aws_instance", "3456"),
+					},
+				},
+			},
+		},
+		Destroy: true,
+	})
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := ctx.Apply(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !pr.ApplyCalled {
+		t.Fatal("provisioner not called")
+	}
+}
+
+func TestContext2Apply_destroyProvisionerWithOutput(t *testing.T) {
+	m := testModule(t, "apply-provisioner-destroy-outputs")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	pr := testProvisioner()
+	pr.ApplyFn = func(is *InstanceState, rc *ResourceConfig) error {
+		cmd, ok := rc.Get("command")
+		if !ok || cmd != "3" {
+			fmt.Printf("%#v\n", rc.Config)
+			return fmt.Errorf("provisioner for %s got %v:%s", is.ID, ok, cmd)
+		}
+		return nil
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		Provisioners: map[string]ResourceProvisionerFactory{
+			"shell": testProvisionerFuncFixed(pr),
+		},
+		State: &State{
+			Modules: []*ModuleState{
+				&ModuleState{
+					Path: []string{"root"},
+					Resources: map[string]*ResourceState{
+						"aws_instance.foo": resourceState("aws_instance", "1"),
+					},
+					Outputs: map[string]*OutputState{
+						"value": {
+							Type:  "string",
+							Value: "3",
+						},
+					},
+				},
+				&ModuleState{
+					Path: []string{"root", "mod"},
+					Resources: map[string]*ResourceState{
+						"aws_instance.baz": resourceState("aws_instance", "3"),
+					},
+					// state needs to be properly initialized
+					Outputs: map[string]*OutputState{},
+				},
+				&ModuleState{
+					Path: []string{"root", "mod2"},
+					Resources: map[string]*ResourceState{
+						"aws_instance.bar": resourceState("aws_instance", "2"),
+					},
+				},
+			},
+		},
+		Destroy: true,
+
+		// targeting the source of the value used by all resources should still
+		// destroy them all.
+		Targets: []string{"module.mod.aws_instance.baz"},
+	})
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatal(err)
+	}
+
+	state, err := ctx.Apply()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pr.ApplyCalled {
+		t.Fatal("provisioner not called")
+	}
+
+	// confirm all outputs were removed too
+	for _, mod := range state.Modules {
+		if len(mod.Outputs) > 0 {
+			t.Fatalf("output left in module state: %#v\n", mod)
+		}
+	}
 }
 
 func TestContext2Apply_targetedDestroyCountDeps(t *testing.T) {
@@ -7610,10 +8014,12 @@ func TestContext2Apply_targetedModule(t *testing.T) {
 module.child:
   aws_instance.bar:
     ID = foo
+    provider = provider.aws
     num = 2
     type = aws_instance
   aws_instance.foo:
     ID = foo
+    provider = provider.aws
     num = 2
     type = aws_instance
 	`)
@@ -7649,6 +8055,7 @@ func TestContext2Apply_targetedModuleDep(t *testing.T) {
 	checkStateString(t, state, `
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   foo = foo
   type = aws_instance
 
@@ -7658,6 +8065,7 @@ aws_instance.foo:
 module.child:
   aws_instance.mod:
     ID = foo
+    provider = provider.aws
 
   Outputs:
 
@@ -7732,6 +8140,7 @@ module.child1:
 module.child2:
   aws_instance.foo:
     ID = foo
+    provider = provider.aws
 
   Outputs:
 
@@ -7773,6 +8182,7 @@ func TestContext2Apply_targetedModuleResource(t *testing.T) {
 module.child:
   aws_instance.foo:
     ID = foo
+    provider = provider.aws
     num = 2
     type = aws_instance
 	`)
@@ -7855,12 +8265,9 @@ func TestContext2Apply_vars(t *testing.T) {
 		},
 	})
 
-	w, e := ctx.Validate()
-	if len(w) > 0 {
-		t.Fatalf("bad: %#v", w)
-	}
-	if len(e) > 0 {
-		t.Fatalf("bad: %s", e)
+	diags := ctx.Validate()
+	if len(diags) != 0 {
+		t.Fatalf("bad: %#v", diags)
 	}
 
 	if _, err := ctx.Plan(); err != nil {
@@ -7898,12 +8305,9 @@ func TestContext2Apply_varsEnv(t *testing.T) {
 		),
 	})
 
-	w, e := ctx.Validate()
-	if len(w) > 0 {
-		t.Fatalf("bad: %#v", w)
-	}
-	if len(e) > 0 {
-		t.Fatalf("bad: %s", e)
+	diags := ctx.Validate()
+	if len(diags) != 0 {
+		t.Fatalf("bad: %#v", diags)
 	}
 
 	if _, err := ctx.Plan(); err != nil {
@@ -8226,6 +8630,7 @@ func TestContext2Apply_issue5254(t *testing.T) {
 	expected := strings.TrimSpace(`
 template_file.child:
   ID = foo
+  provider = provider.template
   template = Hi
   type = template_file
 
@@ -8233,6 +8638,7 @@ template_file.child:
     template_file.parent.*
 template_file.parent:
   ID = foo
+  provider = provider.template
   template = Hi
   type = template_file
 		`)
@@ -8308,6 +8714,7 @@ func TestContext2Apply_targetedWithTaintedInState(t *testing.T) {
 	expected := strings.TrimSpace(`
 aws_instance.iambeingadded:
   ID = foo
+  provider = provider.aws
 aws_instance.ifailedprovisioners: (tainted)
   ID = ifailedprovisioners
 		`)
@@ -8353,6 +8760,7 @@ func TestContext2Apply_ignoreChangesCreate(t *testing.T) {
 	expected := strings.TrimSpace(`
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   required_field = set
   type = aws_instance
 `)
@@ -8497,6 +8905,7 @@ func TestContext2Apply_ignoreChangesWildcard(t *testing.T) {
 	expected := strings.TrimSpace(`
 aws_instance.foo:
   ID = foo
+  provider = provider.aws
   required_field = set
   type = aws_instance
 `)
@@ -8757,7 +9166,556 @@ func TestContext2Apply_targetedModuleRecursive(t *testing.T) {
 module.child.subchild:
   aws_instance.foo:
     ID = foo
+    provider = provider.aws
     num = 2
     type = aws_instance
 	`)
+}
+
+func TestContext2Apply_localVal(t *testing.T) {
+	m := testModule(t, "apply-local-val")
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{},
+		),
+	})
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatalf("error during plan: %s", err)
+	}
+
+	state, err := ctx.Apply()
+	if err != nil {
+		t.Fatalf("error during apply: %s", err)
+	}
+
+	got := strings.TrimSpace(state.String())
+	want := strings.TrimSpace(`
+<no state>
+Outputs:
+
+result_1 = hello
+result_3 = hello world
+
+module.child:
+  <no state>
+  Outputs:
+
+  result = hello
+`)
+	if got != want {
+		t.Fatalf("wrong final state\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestContext2Apply_destroyWithLocals(t *testing.T) {
+	m := testModule(t, "apply-destroy-with-locals")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = func(info *InstanceInfo, s *InstanceState, c *ResourceConfig) (*InstanceDiff, error) {
+		d, err := testDiffFn(info, s, c)
+		return d, err
+	}
+
+	s := &State{
+		Modules: []*ModuleState{
+			&ModuleState{
+				Path: rootModulePath,
+				Outputs: map[string]*OutputState{
+					"name": &OutputState{
+						Type:  "string",
+						Value: "test-bar",
+					},
+				},
+				Resources: map[string]*ResourceState{
+					"aws_instance.foo": &ResourceState{
+						Type: "aws_instance",
+						Primary: &InstanceState{
+							ID: "foo",
+							// FIXME: id should only exist in one place
+							Attributes: map[string]string{
+								"id": "foo",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		State:   s,
+		Destroy: true,
+	})
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, err := ctx.Apply()
+	if err != nil {
+		t.Fatalf("error during apply: %s", err)
+	}
+
+	got := strings.TrimSpace(state.String())
+	want := strings.TrimSpace(`<no state>`)
+	if got != want {
+		t.Fatalf("wrong final state\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestContext2Apply_providerWithLocals(t *testing.T) {
+	m := testModule(t, "provider-with-locals")
+	p := testProvider("aws")
+
+	providerRegion := ""
+	// this should not be overridden during destroy
+	p.ConfigureFn = func(c *ResourceConfig) error {
+		if r, ok := c.Get("region"); ok {
+			providerRegion = r.(string)
+		}
+		return nil
+	}
+	p.DiffFn = testDiffFn
+	p.ApplyFn = testApplyFn
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+	})
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, err := ctx.Apply()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	ctx = testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		State:   state,
+		Destroy: true,
+	})
+
+	if _, err = ctx.Plan(); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, err = ctx.Apply()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if state.HasResources() {
+		t.Fatal("expected no state, got:", state)
+	}
+
+	if providerRegion != "bar" {
+		t.Fatalf("expected region %q, got: %q", "bar", providerRegion)
+	}
+}
+
+func TestContext2Apply_destroyWithProviders(t *testing.T) {
+	m := testModule(t, "destroy-module-with-provider")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	s := &State{
+		Modules: []*ModuleState{
+			&ModuleState{
+				Path: rootModulePath,
+			},
+			&ModuleState{
+				Path: []string{"root", "child"},
+			},
+			&ModuleState{
+				Path: []string{"root", "mod", "removed"},
+				Resources: map[string]*ResourceState{
+					"aws_instance.child": &ResourceState{
+						Type: "aws_instance",
+						Primary: &InstanceState{
+							ID: "bar",
+						},
+						// this provider doesn't exist
+						Provider: "provider.aws.baz",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		ProviderResolver: ResourceProviderResolverFixed(
+			map[string]ResourceProviderFactory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		State:   s,
+		Destroy: true,
+	})
+
+	// test that we can't destroy if the provider is missing
+	if _, err := ctx.Plan(); err == nil {
+		t.Fatal("expected plan error, provider.aws.baz doesn't exist")
+	}
+
+	// correct the state
+	s.Modules[2].Resources["aws_instance.child"].Provider = "provider.aws.bar"
+
+	if _, err := ctx.Plan(); err != nil {
+		t.Fatal(err)
+	}
+	state, err := ctx.Apply()
+	if err != nil {
+		t.Fatalf("error during apply: %s", err)
+	}
+
+	got := strings.TrimSpace(state.String())
+
+	want := strings.TrimSpace("<no state>")
+	if got != want {
+		t.Fatalf("wrong final state\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestContext2Apply_providersFromState(t *testing.T) {
+	m := module.NewEmptyTree()
+	p := testProvider("aws")
+	p.DiffFn = testDiffFn
+
+	for _, tc := range []struct {
+		name   string
+		state  *State
+		output string
+		err    bool
+	}{
+		{
+			name: "add implicit provider",
+			state: &State{
+				Modules: []*ModuleState{
+					&ModuleState{
+						Path: []string{"root"},
+						Resources: map[string]*ResourceState{
+							"aws_instance.a": &ResourceState{
+								Type: "aws_instance",
+								Primary: &InstanceState{
+									ID: "bar",
+								},
+								Provider: "provider.aws",
+							},
+						},
+					},
+				},
+			},
+			err:    false,
+			output: "<no state>",
+		},
+
+		// an aliased provider must be in the config to remove a resource
+		{
+			name: "add aliased provider",
+			state: &State{
+				Modules: []*ModuleState{
+					&ModuleState{
+						Path: []string{"root"},
+						Resources: map[string]*ResourceState{
+							"aws_instance.a": &ResourceState{
+								Type: "aws_instance",
+								Primary: &InstanceState{
+									ID: "bar",
+								},
+								Provider: "provider.aws.bar",
+							},
+						},
+					},
+				},
+			},
+			err: true,
+		},
+
+		// a provider in a module implies some sort of config, so this isn't
+		// allowed even without an alias
+		{
+			name: "add unaliased module provider",
+			state: &State{
+				Modules: []*ModuleState{
+					&ModuleState{
+						Path: []string{"root", "child"},
+						Resources: map[string]*ResourceState{
+							"aws_instance.a": &ResourceState{
+								Type: "aws_instance",
+								Primary: &InstanceState{
+									ID: "bar",
+								},
+								Provider: "module.child.provider.aws",
+							},
+						},
+					},
+				},
+			},
+			err: true,
+		},
+	} {
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := testContext2(t, &ContextOpts{
+				Module: m,
+				ProviderResolver: ResourceProviderResolverFixed(
+					map[string]ResourceProviderFactory{
+						"aws": testProviderFuncFixed(p),
+					},
+				),
+				State: tc.state,
+			})
+
+			_, err := ctx.Plan()
+			if tc.err {
+				if err == nil {
+					t.Fatal("expected error")
+				} else {
+					return
+				}
+			}
+			if !tc.err && err != nil {
+				t.Fatal(err)
+			}
+
+			state, err := ctx.Apply()
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+
+			checkStateString(t, state, "<no state>")
+
+		})
+	}
+}
+
+func TestContext2Apply_plannedInterpolatedCount(t *testing.T) {
+	m := testModule(t, "apply-interpolated-count")
+
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	providerResolver := ResourceProviderResolverFixed(
+		map[string]ResourceProviderFactory{
+			"aws": testProviderFuncFixed(p),
+		},
+	)
+
+	s := &State{
+		Modules: []*ModuleState{
+			&ModuleState{
+				Path: rootModulePath,
+				Resources: map[string]*ResourceState{
+					"aws_instance.test": {
+						Type: "aws_instance",
+						Primary: &InstanceState{
+							ID: "foo",
+						},
+						Provider: "provider.aws",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module:           m,
+		ProviderResolver: providerResolver,
+		State:            s,
+	})
+
+	plan, err := ctx.Plan()
+	if err != nil {
+		t.Fatalf("plan failed: %s", err)
+	}
+
+	// We'll marshal and unmarshal the plan here, to ensure that we have
+	// a clean new context as would be created if we separately ran
+	// terraform plan -out=tfplan && terraform apply tfplan
+	var planBuf bytes.Buffer
+	err = WritePlan(plan, &planBuf)
+	if err != nil {
+		t.Fatalf("failed to write plan: %s", err)
+	}
+	plan, err = ReadPlan(&planBuf)
+	if err != nil {
+		t.Fatalf("failed to read plan: %s", err)
+	}
+
+	ctx, err = plan.Context(&ContextOpts{
+		ProviderResolver: providerResolver,
+	})
+	if err != nil {
+		t.Fatalf("failed to create context for plan: %s", err)
+	}
+
+	// Applying the plan should now succeed
+	_, err = ctx.Apply()
+	if err != nil {
+		t.Fatalf("apply failed: %s", err)
+	}
+}
+
+func TestContext2Apply_plannedDestroyInterpolatedCount(t *testing.T) {
+	m := testModule(t, "plan-destroy-interpolated-count")
+
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	providerResolver := ResourceProviderResolverFixed(
+		map[string]ResourceProviderFactory{
+			"aws": testProviderFuncFixed(p),
+		},
+	)
+
+	s := &State{
+		Modules: []*ModuleState{
+			&ModuleState{
+				Path: rootModulePath,
+				Resources: map[string]*ResourceState{
+					"aws_instance.a.0": {
+						Type: "aws_instance",
+						Primary: &InstanceState{
+							ID: "foo",
+						},
+						Provider: "provider.aws",
+					},
+					"aws_instance.a.1": {
+						Type: "aws_instance",
+						Primary: &InstanceState{
+							ID: "foo",
+						},
+						Provider: "provider.aws",
+					},
+				},
+				Outputs: map[string]*OutputState{
+					"out": {
+						Type:  "list",
+						Value: []string{"foo", "foo"},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module:           m,
+		ProviderResolver: providerResolver,
+		State:            s,
+		Destroy:          true,
+	})
+
+	plan, err := ctx.Plan()
+	if err != nil {
+		t.Fatalf("plan failed: %s", err)
+	}
+
+	// We'll marshal and unmarshal the plan here, to ensure that we have
+	// a clean new context as would be created if we separately ran
+	// terraform plan -out=tfplan && terraform apply tfplan
+	var planBuf bytes.Buffer
+	err = WritePlan(plan, &planBuf)
+	if err != nil {
+		t.Fatalf("failed to write plan: %s", err)
+	}
+	plan, err = ReadPlan(&planBuf)
+	if err != nil {
+		t.Fatalf("failed to read plan: %s", err)
+	}
+
+	ctx, err = plan.Context(&ContextOpts{
+		ProviderResolver: providerResolver,
+		Destroy:          true,
+	})
+	if err != nil {
+		t.Fatalf("failed to create context for plan: %s", err)
+	}
+
+	// Applying the plan should now succeed
+	_, err = ctx.Apply()
+	if err != nil {
+		t.Fatalf("apply failed: %s", err)
+	}
+}
+
+func TestContext2Apply_scaleInMultivarRef(t *testing.T) {
+	m := testModule(t, "apply-resource-scale-in")
+
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	providerResolver := ResourceProviderResolverFixed(
+		map[string]ResourceProviderFactory{
+			"aws": testProviderFuncFixed(p),
+		},
+	)
+
+	s := &State{
+		Modules: []*ModuleState{
+			&ModuleState{
+				Path: rootModulePath,
+				Resources: map[string]*ResourceState{
+					"aws_instance.one": {
+						Type: "aws_instance",
+						Primary: &InstanceState{
+							ID: "foo",
+						},
+						Provider: "provider.aws",
+					},
+					"aws_instance.two": {
+						Type: "aws_instance",
+						Primary: &InstanceState{
+							ID: "foo",
+							Attributes: map[string]string{
+								"val": "foo",
+							},
+						},
+						Provider: "provider.aws",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := testContext2(t, &ContextOpts{
+		Module:           m,
+		ProviderResolver: providerResolver,
+		State:            s,
+		Variables:        map[string]interface{}{"count": "0"},
+	})
+
+	_, err := ctx.Plan()
+	if err != nil {
+		t.Fatalf("plan failed: %s", err)
+	}
+
+	// Applying the plan should now succeed
+	_, err = ctx.Apply()
+	if err != nil {
+		t.Fatalf("apply failed: %s", err)
+	}
 }

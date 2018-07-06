@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform/backend"
-	"github.com/hashicorp/terraform/command/clistate"
 	"github.com/hashicorp/terraform/command/format"
 	"github.com/hashicorp/terraform/config/module"
 	"github.com/hashicorp/terraform/state"
@@ -19,7 +18,8 @@ import (
 )
 
 func (b *Local) opApply(
-	ctx context.Context,
+	stopCtx context.Context,
+	cancelCtx context.Context,
 	op *backend.Operation,
 	runningOp *backend.RunningOperation) {
 	log.Printf("[INFO] backend/local: starting Apply operation")
@@ -54,25 +54,6 @@ func (b *Local) opApply(
 		return
 	}
 
-	if op.LockState {
-		lockCtx, cancel := context.WithTimeout(ctx, op.StateLockTimeout)
-		defer cancel()
-
-		lockInfo := state.NewLockInfo()
-		lockInfo.Operation = op.Type.String()
-		lockID, err := clistate.Lock(lockCtx, opState, lockInfo, b.CLI, b.Colorize())
-		if err != nil {
-			runningOp.Err = errwrap.Wrapf("Error locking state: {{err}}", err)
-			return
-		}
-
-		defer func() {
-			if err := clistate.Unlock(opState, lockID, b.CLI, b.Colorize()); err != nil {
-				runningOp.Err = multierror.Append(runningOp.Err, err)
-			}
-		}()
-	}
-
 	// Setup the state
 	runningOp.State = tfCtx.State()
 
@@ -96,47 +77,34 @@ func (b *Local) opApply(
 			return
 		}
 
-		trivialPlan := plan.Diff == nil || plan.Diff.Empty()
+		dispPlan := format.NewPlan(plan)
+		trivialPlan := dispPlan.Empty()
 		hasUI := op.UIOut != nil && op.UIIn != nil
-		if hasUI && ((op.Destroy && !op.DestroyForce) ||
-			(!op.Destroy && !op.AutoApprove && !trivialPlan)) {
+		mustConfirm := hasUI && ((op.Destroy && (!op.DestroyForce && !op.AutoApprove)) || (!op.Destroy && !op.AutoApprove && !trivialPlan))
+		if mustConfirm {
 			var desc, query string
 			if op.Destroy {
-				// Default destroy message
-				desc = "Terraform will delete all your managed infrastructure, as shown above.\n" +
-					"There is no undo. Only 'yes' will be accepted to confirm."
-
-				// If targets are specified, list those to user
-				if op.Targets != nil {
-					var descBuffer bytes.Buffer
-					descBuffer.WriteString("Terraform will delete the following infrastructure:\n")
-					for _, target := range op.Targets {
-						descBuffer.WriteString("\t")
-						descBuffer.WriteString(target)
-						descBuffer.WriteString("\n")
-					}
-					descBuffer.WriteString("There is no undo. Only 'yes' will be accepted to confirm")
-					desc = descBuffer.String()
+				if op.Workspace != "default" {
+					query = "Do you really want to destroy all resources in workspace \"" + op.Workspace + "\"?"
+				} else {
+					query = "Do you really want to destroy all resources?"
 				}
-				query = "Do you really want to destroy?"
+				desc = "Terraform will destroy all your managed infrastructure, as shown above.\n" +
+					"There is no undo. Only 'yes' will be accepted to confirm."
 			} else {
-				desc = "Terraform will apply the changes described above.\n" +
+				if op.Workspace != "default" {
+					query = "Do you want to perform these actions in workspace \"" + op.Workspace + "\"?"
+				} else {
+					query = "Do you want to perform these actions?"
+				}
+				desc = "Terraform will perform the actions described above.\n" +
 					"Only 'yes' will be accepted to approve."
-				query = "Do you want to apply these changes?"
 			}
 
 			if !trivialPlan {
 				// Display the plan of what we are going to apply/destroy.
-				if op.Destroy {
-					op.UIOut.Output("\n" + strings.TrimSpace(approveDestroyPlanHeader) + "\n")
-				} else {
-					op.UIOut.Output("\n" + strings.TrimSpace(approvePlanHeader) + "\n")
-				}
-				op.UIOut.Output(format.Plan(&format.PlanOpts{
-					Plan:        plan,
-					Color:       b.Colorize(),
-					ModuleDepth: -1,
-				}))
+				b.renderPlan(dispPlan)
+				b.CLI.Output("")
 			}
 
 			v, err := op.UIIn.Input(&terraform.InputOpts{
@@ -171,42 +139,10 @@ func (b *Local) opApply(
 		_, applyErr = tfCtx.Apply()
 		// we always want the state, even if apply failed
 		applyState = tfCtx.State()
-
-		/*
-			// Record any shadow errors for later
-			if err := ctx.ShadowError(); err != nil {
-				shadowErr = multierror.Append(shadowErr, multierror.Prefix(
-					err, "apply operation:"))
-			}
-		*/
 	}()
 
-	// Wait for the apply to finish or for us to be interrupted so
-	// we can handle it properly.
-	err = nil
-	select {
-	case <-ctx.Done():
-		if b.CLI != nil {
-			b.CLI.Output("stopping apply operation...")
-		}
-
-		// try to force a PersistState just in case the process is terminated
-		// before we can complete.
-		if err := opState.PersistState(); err != nil {
-			// We can't error out from here, but warn the user if there was an error.
-			// If this isn't transient, we will catch it again below, and
-			// attempt to save the state another way.
-			if b.CLI != nil {
-				b.CLI.Error(fmt.Sprintf(earlyStateWriteErrorFmt, err))
-			}
-		}
-
-		// Stop execution
-		go tfCtx.Stop()
-
-		// Wait for completion still
-		<-doneCh
-	case <-doneCh:
+	if b.opWait(doneCh, stopCtx, cancelCtx, tfCtx, opState) {
+		return
 	}
 
 	// Store the final state
@@ -352,18 +288,4 @@ const earlyStateWriteErrorFmt = `Error saving current state: %s
 Terraform encountered an error attempting to save the state before canceling
 the current operation. Once the operation is complete another attempt will be
 made to save the final state.
-`
-
-const approvePlanHeader = `
-The Terraform execution plan has been generated and is shown below.
-Resources are shown in alphabetical order for quick scanning. Green resources
-will be created (or destroyed and then created if an existing resource
-exists), yellow resources are being changed in-place, and red resources
-will be destroyed. Cyan entries are data sources to be read.
-`
-
-const approveDestroyPlanHeader = `
-The Terraform destroy plan has been generated and is shown below.
-Resources are shown in alphabetical order for quick scanning.
-Resources shown in red will be destroyed.
 `

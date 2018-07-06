@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -96,6 +97,94 @@ func TestImport_providerConfig(t *testing.T) {
 	}
 	if code := c.Run(args); code != 0 {
 		t.Fatalf("bad: %d\n\n%s", code, ui.ErrorWriter.String())
+	}
+
+	// Verify that we were called
+	if !configured {
+		t.Fatal("Configure should be called")
+	}
+
+	if !p.ImportStateCalled {
+		t.Fatal("ImportState should be called")
+	}
+
+	testStateOutput(t, statePath, testImportStr)
+}
+
+// "remote" state provided by the "local" backend
+func TestImport_remoteState(t *testing.T) {
+	td := tempDir(t)
+	copy.CopyDir(testFixturePath("import-provider-remote-state"), td)
+	defer os.RemoveAll(td)
+	defer testChdir(t, td)()
+
+	statePath := "imported.tfstate"
+
+	// init our backend
+	ui := new(cli.MockUi)
+	m := Meta{
+		testingOverrides: metaOverridesForProvider(testProvider()),
+		Ui:               ui,
+	}
+
+	ic := &InitCommand{
+		Meta: m,
+		providerInstaller: &mockProviderInstaller{
+			Providers: map[string][]string{
+				"test": []string{"1.2.3"},
+			},
+
+			Dir: m.pluginDir(),
+		},
+	}
+
+	if code := ic.Run([]string{}); code != 0 {
+		t.Fatalf("bad: \n%s", ui.ErrorWriter)
+	}
+
+	p := testProvider()
+	ui = new(cli.MockUi)
+	c := &ImportCommand{
+		Meta: Meta{
+			testingOverrides: metaOverridesForProvider(p),
+			Ui:               ui,
+		},
+	}
+
+	p.ImportStateFn = nil
+	p.ImportStateReturn = []*terraform.InstanceState{
+		&terraform.InstanceState{
+			ID: "yay",
+			Ephemeral: terraform.EphemeralState{
+				Type: "test_instance",
+			},
+		},
+	}
+
+	configured := false
+	p.ConfigureFn = func(c *terraform.ResourceConfig) error {
+		configured = true
+
+		if v, ok := c.Get("foo"); !ok || v.(string) != "bar" {
+			return fmt.Errorf("bad value: %#v", v)
+		}
+
+		return nil
+	}
+
+	args := []string{
+		"test_instance.foo",
+		"bar",
+	}
+
+	if code := c.Run(args); code != 0 {
+		fmt.Println(ui.OutputWriter)
+		t.Fatalf("bad: %d\n\n%s", code, ui.ErrorWriter.String())
+	}
+
+	// verify that the local state was unlocked after import
+	if _, err := os.Stat(filepath.Join(td, fmt.Sprintf(".%s.lock.info", statePath))); !os.IsNotExist(err) {
+		t.Fatal("state left locked after import")
 	}
 
 	// Verify that we were called
@@ -321,6 +410,77 @@ func TestImport_customProvider(t *testing.T) {
 	testStateOutput(t, statePath, testImportCustomProviderStr)
 }
 
+func TestImport_allowMissingResourceConfig(t *testing.T) {
+	defer testChdir(t, testFixturePath("import-missing-resource-config"))()
+
+	statePath := testTempFile(t)
+
+	p := testProvider()
+	ui := new(cli.MockUi)
+	c := &ImportCommand{
+		Meta: Meta{
+			testingOverrides: metaOverridesForProvider(p),
+			Ui:               ui,
+		},
+	}
+
+	p.ImportStateFn = nil
+	p.ImportStateReturn = []*terraform.InstanceState{
+		{
+			ID: "yay",
+			Ephemeral: terraform.EphemeralState{
+				Type: "test_instance",
+			},
+		},
+	}
+
+	args := []string{
+		"-state", statePath,
+		"-allow-missing-config",
+		"test_instance.foo",
+		"bar",
+	}
+	if code := c.Run(args); code != 0 {
+		t.Fatalf("bad: %d\n\n%s", code, ui.ErrorWriter.String())
+	}
+
+	if !p.ImportStateCalled {
+		t.Fatal("ImportState should be called")
+	}
+
+	testStateOutput(t, statePath, testImportStr)
+}
+
+func TestImport_emptyConfig(t *testing.T) {
+	defer testChdir(t, testFixturePath("empty"))()
+
+	statePath := testTempFile(t)
+
+	p := testProvider()
+	ui := new(cli.MockUi)
+	c := &ImportCommand{
+		Meta: Meta{
+			testingOverrides: metaOverridesForProvider(p),
+			Ui:               ui,
+		},
+	}
+
+	args := []string{
+		"-state", statePath,
+		"test_instance.foo",
+		"bar",
+	}
+	code := c.Run(args)
+	if code != 1 {
+		t.Fatalf("import succeeded; expected failure")
+	}
+
+	msg := ui.ErrorWriter.String()
+	if want := `No Terraform configuration files`; !strings.Contains(msg, want) {
+		t.Errorf("incorrect message\nwant substring: %s\ngot:\n%s", want, msg)
+	}
+}
+
 func TestImport_missingResourceConfig(t *testing.T) {
 	defer testChdir(t, testFixturePath("import-missing-resource-config"))()
 
@@ -376,7 +536,7 @@ func TestImport_missingModuleConfig(t *testing.T) {
 	}
 
 	msg := ui.ErrorWriter.String()
-	if want := `module.baz does not exist in the configuration`; !strings.Contains(msg, want) {
+	if want := `module.baz is not defined in the configuration`; !strings.Contains(msg, want) {
 		t.Errorf("incorrect message\nwant substring: %s\ngot:\n%s", want, msg)
 	}
 }
@@ -540,11 +700,11 @@ func TestImport_pluginDir(t *testing.T) {
 const testImportStr = `
 test_instance.foo:
   ID = yay
-  provider = test
+  provider = provider.test
 `
 
 const testImportCustomProviderStr = `
 test_instance.foo:
   ID = yay
-  provider = test.alias
+  provider = provider.test.alias
 `

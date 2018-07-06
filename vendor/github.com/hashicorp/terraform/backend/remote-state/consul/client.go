@@ -32,6 +32,8 @@ const (
 	lockReacquireInterval = 2 * time.Second
 )
 
+var lostLockErr = errors.New("consul lock was lost")
+
 // RemoteClient is a remote client that stores data in Consul.
 type RemoteClient struct {
 	Client *consulapi.Client
@@ -228,6 +230,9 @@ func (c *RemoteClient) lock() (string, error) {
 		return "", err
 	}
 
+	// store the session ID for correlation with consul logs
+	c.info.Info = "consul session: " + lockSession
+
 	opts := &consulapi.LockOptions{
 		Key:     c.Path + lockSuffix,
 		Session: lockSession,
@@ -367,14 +372,7 @@ func (c *RemoteClient) createSession() (string, error) {
 	log.Println("[INFO] created consul lock session", id)
 
 	// keep the session renewed
-	// we need an adapter to convert the session Done() channel to a
-	// non-directional channel to satisfy the RenewPeriodic signature.
-	done := make(chan struct{})
-	go func() {
-		<-ctx.Done()
-		close(done)
-	}()
-	go session.RenewPeriodic(lockSessionTTL, id, nil, done)
+	go session.RenewPeriodic(lockSessionTTL, id, nil, ctx.Done())
 
 	return id, nil
 }
@@ -413,7 +411,7 @@ func (c *RemoteClient) unlock(id string) error {
 
 	select {
 	case <-c.lockCh:
-		return errors.New("consul lock was lost")
+		return lostLockErr
 	default:
 	}
 

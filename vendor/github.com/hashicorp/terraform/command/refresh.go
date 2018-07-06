@@ -1,13 +1,13 @@
 package command
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/hashicorp/terraform/backend"
 	"github.com/hashicorp/terraform/config"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform/tfdiags"
 )
 
 // RefreshCommand is a cli.Command implementation that refreshes the state
@@ -40,10 +40,12 @@ func (c *RefreshCommand) Run(args []string) int {
 		return 1
 	}
 
+	var diags tfdiags.Diagnostics
+
 	// Load the module
-	mod, err := c.Module(configPath)
-	if err != nil {
-		c.Ui.Error(fmt.Sprintf("Failed to load root config module: %s", err))
+	mod, diags := c.Module(configPath)
+	if diags.HasErrors() {
+		c.showDiagnostics(diags)
 		return 1
 	}
 
@@ -72,17 +74,13 @@ func (c *RefreshCommand) Run(args []string) int {
 	opReq.Type = backend.OperationTypeRefresh
 	opReq.Module = mod
 
-	// Perform the operation
-	op, err := b.Operation(context.Background(), opReq)
+	op, err := c.RunOperation(b, opReq)
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("Error starting operation: %s", err))
-		return 1
+		diags = diags.Append(err)
 	}
 
-	// Wait for the operation to complete
-	<-op.Done()
-	if err := op.Err; err != nil {
-		c.Ui.Error(err.Error())
+	c.showDiagnostics(diags)
+	if diags.HasErrors() {
 		return 1
 	}
 

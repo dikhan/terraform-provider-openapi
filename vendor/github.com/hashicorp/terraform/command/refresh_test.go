@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform/helper/copy"
 	"github.com/hashicorp/terraform/state"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform/version"
 	"github.com/mitchellh/cli"
 )
 
@@ -188,17 +189,17 @@ func TestRefresh_defaultState(t *testing.T) {
 
 	// Write the state file in a temporary directory with the
 	// default filename.
-	td, err := ioutil.TempDir("", "tf")
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	statePath := filepath.Join(td, DefaultStateFilename)
+	statePath := testStateFile(t, originalState)
 
 	localState := &state.LocalState{Path: statePath}
-	if err := localState.WriteState(originalState); err != nil {
+	if err := localState.RefreshState(); err != nil {
 		t.Fatal(err)
 	}
-	serial := localState.State().Serial
+	s := localState.State()
+	if s == nil {
+		t.Fatal("empty test state")
+	}
+	serial := s.Serial
 
 	// Change to that directory
 	cwd, err := os.Getwd()
@@ -223,6 +224,7 @@ func TestRefresh_defaultState(t *testing.T) {
 	p.RefreshReturn = newInstanceState("yes")
 
 	args := []string{
+		"-state", statePath,
 		testFixturePath("refresh"),
 	}
 	if code := c.Run(args); code != 0 {
@@ -353,7 +355,7 @@ func TestRefresh_pastState(t *testing.T) {
 		t.Fatalf("bad:\n\n%s", actual)
 	}
 
-	if newState.TFVersion != terraform.Version {
+	if newState.TFVersion != version.Version {
 		t.Fatalf("bad:\n\n%s", newState.TFVersion)
 	}
 }
@@ -363,7 +365,7 @@ func TestRefresh_outPath(t *testing.T) {
 	statePath := testStateFile(t, state)
 
 	// Output path
-	outf, err := ioutil.TempFile("", "tf")
+	outf, err := ioutil.TempFile(testingDir, "tf")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -584,7 +586,7 @@ func TestRefresh_backup(t *testing.T) {
 	statePath := testStateFile(t, state)
 
 	// Output path
-	outf, err := ioutil.TempFile("", "tf")
+	outf, err := ioutil.TempFile(testingDir, "tf")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -593,7 +595,7 @@ func TestRefresh_backup(t *testing.T) {
 	os.Remove(outPath)
 
 	// Backup path
-	backupf, err := ioutil.TempFile("", "tf")
+	backupf, err := ioutil.TempFile(testingDir, "tf")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -678,7 +680,7 @@ func TestRefresh_disableBackup(t *testing.T) {
 	statePath := testStateFile(t, state)
 
 	// Output path
-	outf, err := ioutil.TempFile("", "tf")
+	outf, err := ioutil.TempFile(testingDir, "tf")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -801,8 +803,10 @@ foo = "bar"
 const testRefreshStr = `
 test_instance.foo:
   ID = yes
+  provider = provider.test
 `
 const testRefreshCwdStr = `
 test_instance.foo:
   ID = yes
+  provider = provider.test
 `

@@ -3,7 +3,9 @@ package plugin
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/rpc"
@@ -11,7 +13,15 @@ import (
 	"os/exec"
 	"testing"
 	"time"
+
+	hclog "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin/test/grpc"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
+
+// Test that NetRPCUnsupportedPlugin implements the correct interfaces.
+var _ Plugin = new(NetRPCUnsupportedPlugin)
 
 // testAPIVersion is the ProtocolVersion we use for testing.
 var testHandshake = HandshakeConfig{
@@ -23,24 +33,66 @@ var testHandshake = HandshakeConfig{
 // testInterface is the test interface we use for plugins.
 type testInterface interface {
 	Double(int) int
+	PrintKV(string, interface{})
+	Bidirectional() error
+}
+
+// testStreamer is used to test the grpc streaming interface
+type testStreamer interface {
+	Stream(int32, int32) ([]int32, error)
 }
 
 // testInterfacePlugin is the implementation of Plugin to create
 // RPC client/server implementations for testInterface.
-type testInterfacePlugin struct{}
+type testInterfacePlugin struct {
+	Impl testInterface
+}
 
 func (p *testInterfacePlugin) Server(b *MuxBroker) (interface{}, error) {
-	return &testInterfaceServer{Impl: new(testInterfaceImpl)}, nil
+	return &testInterfaceServer{Impl: p.impl()}, nil
 }
 
 func (p *testInterfacePlugin) Client(b *MuxBroker, c *rpc.Client) (interface{}, error) {
 	return &testInterfaceClient{Client: c}, nil
 }
 
+func (p *testInterfacePlugin) GRPCServer(b *GRPCBroker, s *grpc.Server) error {
+	grpctest.RegisterTestServer(s, &testGRPCServer{broker: b, Impl: p.impl()})
+	return nil
+}
+
+func (p *testInterfacePlugin) GRPCClient(doneCtx context.Context, b *GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &testGRPCClient{broker: b, Client: grpctest.NewTestClient(c)}, nil
+}
+
+func (p *testInterfacePlugin) impl() testInterface {
+	if p.Impl != nil {
+		return p.Impl
+	}
+
+	return &testInterfaceImpl{
+		logger: hclog.New(&hclog.LoggerOptions{
+			Level:      hclog.Trace,
+			Output:     os.Stderr,
+			JSONFormat: true,
+		}),
+	}
+}
+
 // testInterfaceImpl implements testInterface concretely
-type testInterfaceImpl struct{}
+type testInterfaceImpl struct {
+	logger hclog.Logger
+}
 
 func (i *testInterfaceImpl) Double(v int) int { return v * 2 }
+
+func (i *testInterfaceImpl) PrintKV(key string, value interface{}) {
+	i.logger.Info("PrintKV called", key, value)
+}
+
+func (i *testInterfaceImpl) Bidirectional() error {
+	return nil
+}
 
 // testInterfaceClient implements testInterface to communicate over RPC
 type testInterfaceClient struct {
@@ -57,6 +109,20 @@ func (impl *testInterfaceClient) Double(v int) int {
 	return resp
 }
 
+func (impl *testInterfaceClient) PrintKV(key string, value interface{}) {
+	err := impl.Client.Call("Plugin.PrintKV", map[string]interface{}{
+		"key":   key,
+		"value": value,
+	}, &struct{}{})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (impl *testInterfaceClient) Bidirectional() error {
+	return nil
+}
+
 // testInterfaceServer is the RPC server for testInterfaceClient
 type testInterfaceServer struct {
 	Broker *MuxBroker
@@ -68,9 +134,202 @@ func (s *testInterfaceServer) Double(arg int, resp *int) error {
 	return nil
 }
 
+func (s *testInterfaceServer) PrintKV(args map[string]interface{}, _ *struct{}) error {
+	s.Impl.PrintKV(args["key"].(string), args["value"])
+	return nil
+}
+
 // testPluginMap can be used for tests as a plugin map
 var testPluginMap = map[string]Plugin{
 	"test": new(testInterfacePlugin),
+}
+
+// testGRPCServer is the implementation of our GRPC service.
+type testGRPCServer struct {
+	Impl   testInterface
+	broker *GRPCBroker
+}
+
+func (s *testGRPCServer) Double(
+	ctx context.Context,
+	req *grpctest.TestRequest) (*grpctest.TestResponse, error) {
+	return &grpctest.TestResponse{
+		Output: int32(s.Impl.Double(int(req.Input))),
+	}, nil
+}
+
+func (s *testGRPCServer) PrintKV(
+	ctx context.Context,
+	req *grpctest.PrintKVRequest) (*grpctest.PrintKVResponse, error) {
+	var v interface{}
+	switch rv := req.Value.(type) {
+	case *grpctest.PrintKVRequest_ValueString:
+		v = rv.ValueString
+
+	case *grpctest.PrintKVRequest_ValueInt:
+		v = rv.ValueInt
+
+	default:
+		panic(fmt.Sprintf("unknown value: %#v", req.Value))
+	}
+
+	s.Impl.PrintKV(req.Key, v)
+	return &grpctest.PrintKVResponse{}, nil
+}
+
+func (s *testGRPCServer) Bidirectional(ctx context.Context, req *grpctest.BidirectionalRequest) (*grpctest.BidirectionalResponse, error) {
+	conn, err := s.broker.Dial(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	pingPongClient := grpctest.NewPingPongClient(conn)
+	resp, err := pingPongClient.Ping(ctx, &grpctest.PingRequest{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.Msg != "pong" {
+		return nil, errors.New("Bad PingPong")
+	}
+
+	nextID := s.broker.NextId()
+	go s.broker.AcceptAndServe(nextID, func(opts []grpc.ServerOption) *grpc.Server {
+		s := grpc.NewServer(opts...)
+		grpctest.RegisterPingPongServer(s, &pingPongServer{})
+		return s
+	})
+
+	return &grpctest.BidirectionalResponse{
+		Id: nextID,
+	}, nil
+}
+
+type pingPongServer struct{}
+
+func (p *pingPongServer) Ping(ctx context.Context, req *grpctest.PingRequest) (*grpctest.PongResponse, error) {
+	return &grpctest.PongResponse{
+		Msg: "pong",
+	}, nil
+}
+
+func (s testGRPCServer) Stream(stream grpctest.Test_StreamServer) error {
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			return nil
+		}
+
+		if err := stream.Send(&grpctest.TestResponse{Output: req.Input}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// testGRPCClient is an implementation of TestInterface that communicates
+// over gRPC.
+type testGRPCClient struct {
+	Client grpctest.TestClient
+	broker *GRPCBroker
+}
+
+func (c *testGRPCClient) Double(v int) int {
+	resp, err := c.Client.Double(context.Background(), &grpctest.TestRequest{
+		Input: int32(v),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return int(resp.Output)
+}
+
+func (c *testGRPCClient) PrintKV(key string, value interface{}) {
+	req := &grpctest.PrintKVRequest{Key: key}
+	switch v := value.(type) {
+	case string:
+		req.Value = &grpctest.PrintKVRequest_ValueString{
+			ValueString: v,
+		}
+
+	case int:
+		req.Value = &grpctest.PrintKVRequest_ValueInt{
+			ValueInt: int32(v),
+		}
+
+	default:
+		panic(fmt.Sprintf("unknown type: %T", value))
+	}
+
+	_, err := c.Client.PrintKV(context.Background(), req)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *testGRPCClient) Bidirectional() error {
+	nextID := c.broker.NextId()
+	go c.broker.AcceptAndServe(nextID, func(opts []grpc.ServerOption) *grpc.Server {
+		s := grpc.NewServer(opts...)
+		grpctest.RegisterPingPongServer(s, &pingPongServer{})
+		return s
+	})
+
+	resp, err := c.Client.Bidirectional(context.Background(), &grpctest.BidirectionalRequest{
+		Id: nextID,
+	})
+	if err != nil {
+		return err
+	}
+
+	conn, err := c.broker.Dial(resp.Id)
+	if err != nil {
+		return err
+	}
+
+	pingPongClient := grpctest.NewPingPongClient(conn)
+	pResp, err := pingPongClient.Ping(context.Background(), &grpctest.PingRequest{})
+	if err != nil {
+		return err
+	}
+	if pResp.Msg != "pong" {
+		return errors.New("Bad PingPong")
+	}
+	return nil
+}
+
+// Stream sends a series of requests from [start, stop) using a bidirectional
+// streaming service, and returns the streamed responses.
+func (impl *testGRPCClient) Stream(start, stop int32) ([]int32, error) {
+	if stop <= start {
+		return nil, fmt.Errorf("invalid range [%d, %d)", start, stop)
+	}
+	streamClient, err := impl.Client.Stream(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []int32
+	for i := start; i < stop; i++ {
+		if err := streamClient.Send(&grpctest.TestRequest{i}); err != nil {
+			return resp, err
+		}
+
+		out, err := streamClient.Recv()
+		if err != nil {
+			return resp, err
+		}
+
+		resp = append(resp, out.Output)
+	}
+
+	streamClient.CloseSend()
+
+	return resp, nil
 }
 
 func helperProcess(s ...string) *exec.Cmd {
@@ -111,6 +370,22 @@ func TestHelperProcess(*testing.T) {
 		os.Exit(2)
 	}
 
+	// override testPluginMap with one that uses
+	// hclog logger on its implementation
+	pluginLogger := hclog.New(&hclog.LoggerOptions{
+		Level:      hclog.Trace,
+		Output:     os.Stderr,
+		JSONFormat: true,
+	})
+
+	testPlugin := &testInterfaceImpl{
+		logger: pluginLogger,
+	}
+
+	testPluginMap := map[string]Plugin{
+		"test": &testInterfacePlugin{Impl: testPlugin},
+	}
+
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "bad-version":
@@ -135,8 +410,13 @@ func TestHelperProcess(*testing.T) {
 		os.Exit(1)
 	case "stderr":
 		fmt.Printf("%d|%d|tcp|:1234\n", CoreProtocolVersion, testHandshake.ProtocolVersion)
-		log.Println("HELLO")
-		log.Println("WORLD")
+		os.Stderr.WriteString("HELLO\n")
+		os.Stderr.WriteString("WORLD\n")
+	case "stderr-json":
+		// write values that might be JSON, but aren't KVs
+		fmt.Printf("%d|%d|tcp|:1234\n", CoreProtocolVersion, testHandshake.ProtocolVersion)
+		os.Stderr.WriteString("[\"HELLO\"]\n")
+		os.Stderr.WriteString("12345\n")
 	case "stdin":
 		fmt.Printf("%d|%d|tcp|:1234\n", CoreProtocolVersion, testHandshake.ProtocolVersion)
 		data := make([]byte, 5)
@@ -168,12 +448,47 @@ func TestHelperProcess(*testing.T) {
 
 		// Exit
 		return
+	case "test-grpc":
+		Serve(&ServeConfig{
+			HandshakeConfig: testHandshake,
+			Plugins:         testPluginMap,
+			GRPCServer:      DefaultGRPCServer,
+		})
+
+		// Shouldn't reach here but make sure we exit anyways
+		os.Exit(0)
+	case "test-grpc-tls":
+		// Serve!
+		Serve(&ServeConfig{
+			HandshakeConfig: testHandshake,
+			Plugins:         testPluginMap,
+			GRPCServer:      DefaultGRPCServer,
+			TLSProvider:     helperTLSProvider,
+		})
+
+		// Shouldn't reach here but make sure we exit anyways
+		os.Exit(0)
 	case "test-interface":
 		Serve(&ServeConfig{
 			HandshakeConfig: testHandshake,
 			Plugins:         testPluginMap,
 		})
 
+		// Shouldn't reach here but make sure we exit anyways
+		os.Exit(0)
+	case "test-interface-logger-netrpc":
+		Serve(&ServeConfig{
+			HandshakeConfig: testHandshake,
+			Plugins:         testPluginMap,
+		})
+		// Shouldn't reach here but make sure we exit anyways
+		os.Exit(0)
+	case "test-interface-logger-grpc":
+		Serve(&ServeConfig{
+			HandshakeConfig: testHandshake,
+			Plugins:         testPluginMap,
+			GRPCServer:      DefaultGRPCServer,
+		})
 		// Shouldn't reach here but make sure we exit anyways
 		os.Exit(0)
 	case "test-interface-daemon":

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/terraform/backend"
+	"github.com/hashicorp/terraform/command/clistate"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/state"
 	"github.com/hashicorp/terraform/terraform"
@@ -23,7 +25,6 @@ const (
 	DefaultWorkspaceDir    = "terraform.tfstate.d"
 	DefaultWorkspaceFile   = "environment"
 	DefaultStateFilename   = "terraform.tfstate"
-	DefaultDataDir         = ".terraform"
 	DefaultBackupExtension = ".backup"
 )
 
@@ -78,6 +79,15 @@ type Local struct {
 	//
 	// If this is nil, local performs normal state loading and storage.
 	Backend backend.Backend
+
+	// RunningInAutomation indicates that commands are being run by an
+	// automated system rather than directly at a command prompt.
+	//
+	// This is a hint not to produce messages that expect that a user can
+	// run a follow-up command, perhaps because Terraform is running in
+	// some sort of workflow automation tool that abstracts away the
+	// exact commands that are being run.
+	RunningInAutomation bool
 
 	schema *schema.Backend
 	opLock sync.Mutex
@@ -172,28 +182,9 @@ func (b *Local) DeleteState(name string) error {
 func (b *Local) State(name string) (state.State, error) {
 	statePath, stateOutPath, backupPath := b.StatePaths(name)
 
-	// If we have a backend handling state, defer to that.
+	// If we have a backend handling state, delegate to that.
 	if b.Backend != nil {
-		s, err := b.Backend.State(name)
-		if err != nil {
-			return nil, err
-		}
-
-		// make sure we always have a backup state, unless it disabled
-		if backupPath == "" {
-			return s, nil
-		}
-
-		// see if the delegated backend returned a BackupState of its own
-		if s, ok := s.(*state.BackupState); ok {
-			return s, nil
-		}
-
-		s = &state.BackupState{
-			Real: s,
-			Path: backupPath,
-		}
-		return s, nil
+		return b.Backend.State(name)
 	}
 
 	if s, ok := b.states[name]; ok {
@@ -235,7 +226,7 @@ func (b *Local) State(name string) (state.State, error) {
 // name conflicts, assume that the field is overwritten if set.
 func (b *Local) Operation(ctx context.Context, op *backend.Operation) (*backend.RunningOperation, error) {
 	// Determine the function to call for our operation
-	var f func(context.Context, *backend.Operation, *backend.RunningOperation)
+	var f func(context.Context, context.Context, *backend.Operation, *backend.RunningOperation)
 	switch op.Type {
 	case backend.OperationTypeRefresh:
 		f = b.opRefresh
@@ -255,18 +246,92 @@ func (b *Local) Operation(ctx context.Context, op *backend.Operation) (*backend.
 	b.opLock.Lock()
 
 	// Build our running operation
-	runningCtx, runningCtxCancel := context.WithCancel(context.Background())
-	runningOp := &backend.RunningOperation{Context: runningCtx}
+	// the runninCtx is only used to block until the operation returns.
+	runningCtx, done := context.WithCancel(context.Background())
+	runningOp := &backend.RunningOperation{
+		Context: runningCtx,
+	}
+
+	// stopCtx wraps the context passed in, and is used to signal a graceful Stop.
+	stopCtx, stop := context.WithCancel(ctx)
+	runningOp.Stop = stop
+
+	// cancelCtx is used to cancel the operation immediately, usually
+	// indicating that the process is exiting.
+	cancelCtx, cancel := context.WithCancel(context.Background())
+	runningOp.Cancel = cancel
+
+	if op.LockState {
+		op.StateLocker = clistate.NewLocker(stopCtx, op.StateLockTimeout, b.CLI, b.Colorize())
+	} else {
+		op.StateLocker = clistate.NewNoopLocker()
+	}
 
 	// Do it
 	go func() {
+		defer done()
+		defer stop()
+		defer cancel()
+
+		// the state was locked during context creation, unlock the state when
+		// the operation completes
+		defer func() {
+			runningOp.Err = op.StateLocker.Unlock(runningOp.Err)
+		}()
+
 		defer b.opLock.Unlock()
-		defer runningCtxCancel()
-		f(ctx, op, runningOp)
+		f(stopCtx, cancelCtx, op, runningOp)
 	}()
 
 	// Return
 	return runningOp, nil
+}
+
+// opWait wats for the operation to complete, and a stop signal or a
+// cancelation signal.
+func (b *Local) opWait(
+	doneCh <-chan struct{},
+	stopCtx context.Context,
+	cancelCtx context.Context,
+	tfCtx *terraform.Context,
+	opState state.State) (canceled bool) {
+	// Wait for the operation to finish or for us to be interrupted so
+	// we can handle it properly.
+	select {
+	case <-stopCtx.Done():
+		if b.CLI != nil {
+			b.CLI.Output("stopping operation...")
+		}
+
+		// try to force a PersistState just in case the process is terminated
+		// before we can complete.
+		if err := opState.PersistState(); err != nil {
+			// We can't error out from here, but warn the user if there was an error.
+			// If this isn't transient, we will catch it again below, and
+			// attempt to save the state another way.
+			if b.CLI != nil {
+				b.CLI.Error(fmt.Sprintf(earlyStateWriteErrorFmt, err))
+			}
+		}
+
+		// Stop execution
+		go tfCtx.Stop()
+
+		select {
+		case <-cancelCtx.Done():
+			log.Println("[WARN] running operation canceled")
+			// if the operation was canceled, we need to return immediately
+			canceled = true
+		case <-doneCh:
+		}
+	case <-cancelCtx.Done():
+		// this should not be called without first attempting to stop the
+		// operation
+		log.Println("[ERROR] running operation canceled without Stop")
+		canceled = true
+	case <-doneCh:
+	}
+	return
 }
 
 // Colorize returns the Colorize structure that can be used for colorizing

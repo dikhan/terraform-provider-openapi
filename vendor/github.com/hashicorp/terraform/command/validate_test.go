@@ -1,9 +1,11 @@
 package command
 
 import (
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/copy"
 	"github.com/mitchellh/cli"
 )
 
@@ -25,6 +27,28 @@ func setupTest(fixturepath string, args ...string) (*cli.MockUi, int) {
 func TestValidateCommand(t *testing.T) {
 	if ui, code := setupTest("validate-valid"); code != 0 {
 		t.Fatalf("bad: %d\n\n%s", code, ui.ErrorWriter.String())
+	}
+}
+
+func TestValidateCommandWithTfvarsFile(t *testing.T) {
+	// Create a temporary working directory that is empty because this test
+	// requires scanning the current working directory by validate command.
+	td := tempDir(t)
+	copy.CopyDir(testFixturePath("validate-valid/with-tfvars-file"), td)
+	defer os.RemoveAll(td)
+	defer testChdir(t, td)()
+
+	ui := new(cli.MockUi)
+	c := &ValidateCommand{
+		Meta: Meta{
+			testingOverrides: metaOverridesForProvider(testProvider()),
+			Ui:               ui,
+		},
+	}
+
+	args := []string{}
+	if code := c.Run(args); code != 0 {
+		t.Fatalf("bad %d\n\n%s", code, ui.ErrorWriter.String())
 	}
 }
 
@@ -50,7 +74,7 @@ func TestValidateFailingCommandMissingVariable(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("Should have failed: %d\n\n%s", code, ui.ErrorWriter.String())
 	}
-	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "config: unknown variable referenced: 'description'. define it with 'variable' blocks") {
+	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "config: unknown variable referenced: 'description'; define it with a 'variable' block") {
 		t.Fatalf("Should have failed: %d\n\n'%s'", code, ui.ErrorWriter.String())
 	}
 }
@@ -60,7 +84,7 @@ func TestSameProviderMutipleTimesShouldFail(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("Should have failed: %d\n\n%s", code, ui.ErrorWriter.String())
 	}
-	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "provider.aws: declared multiple times, you can only declare a provider once") {
+	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "provider.aws: multiple configurations present; only one configuration is allowed per provider") {
 		t.Fatalf("Should have failed: %d\n\n'%s'", code, ui.ErrorWriter.String())
 	}
 }
@@ -70,7 +94,7 @@ func TestSameModuleMultipleTimesShouldFail(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("Should have failed: %d\n\n%s", code, ui.ErrorWriter.String())
 	}
-	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "multi_module: module repeated multiple times") {
+	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "module \"multi_module\": module repeated multiple times") {
 		t.Fatalf("Should have failed: %d\n\n'%s'", code, ui.ErrorWriter.String())
 	}
 }
@@ -90,7 +114,7 @@ func TestOutputWithoutValueShouldFail(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("Should have failed: %d\n\n%s", code, ui.ErrorWriter.String())
 	}
-	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "output is missing required 'value' key") {
+	if !strings.HasSuffix(strings.TrimSpace(ui.ErrorWriter.String()), "output \"myvalue\": missing required 'value' argument") {
 		t.Fatalf("Should have failed: %d\n\n'%s'", code, ui.ErrorWriter.String())
 	}
 }
@@ -101,7 +125,7 @@ func TestModuleWithIncorrectNameShouldFail(t *testing.T) {
 		t.Fatalf("Should have failed: %d\n\n%s", code, ui.ErrorWriter.String())
 	}
 
-	if !strings.Contains(ui.ErrorWriter.String(), "module name can only contain letters, numbers, dashes, and underscores") {
+	if !strings.Contains(ui.ErrorWriter.String(), "module name must be a letter or underscore followed by only letters, numbers, dashes, and underscores") {
 		t.Fatalf("Should have failed: %d\n\n'%s'", code, ui.ErrorWriter.String())
 	}
 	if !strings.Contains(ui.ErrorWriter.String(), "module source cannot contain interpolations") {
@@ -118,7 +142,7 @@ func TestWronglyUsedInterpolationShouldFail(t *testing.T) {
 	if !strings.Contains(ui.ErrorWriter.String(), "depends on value cannot contain interpolations") {
 		t.Fatalf("Should have failed: %d\n\n'%s'", code, ui.ErrorWriter.String())
 	}
-	if !strings.Contains(ui.ErrorWriter.String(), "Variable 'vairable_with_interpolation': cannot contain interpolations") {
+	if !strings.Contains(ui.ErrorWriter.String(), "variable \"vairable_with_interpolation\": default may not contain interpolations") {
 		t.Fatalf("Should have failed: %d\n\n'%s'", code, ui.ErrorWriter.String())
 	}
 }

@@ -51,6 +51,8 @@ resource "aws_instance" "web" {
     user_name       = "bork"
     user_key        = "${file("../bork.pem")}"
     version         = "12.4.1"
+    # If you have a self signed cert on your chef server change this to :verify_none
+    ssl_verify_mode = ":verify_peer"
   }
 }
 ```
@@ -62,6 +64,9 @@ The following arguments are supported:
 * `attributes_json (string)` - (Optional) A raw JSON string with initial node attributes
   for the new node. These can also be loaded from a file on disk using the [`file()`
   interpolation function](/docs/configuration/interpolation.html#file_path_).
+
+* `channel (string)` - (Optional) The Chef Client release channel to install from. If not
+  set, the `stable` channel will be used.
 
 * `client_options (array)` - (Optional) A list of optional Chef Client configuration
   options. See the [Chef Client ](https://docs.chef.io/config_rb_client.html) documentation
@@ -142,7 +147,7 @@ The following arguments are supported:
   provisioner.
 
 * `ssl_verify_mode (string)` - (Optional) Used to set the verify mode for Chef Client HTTPS
-  requests.
+  requests. The options are `:verify_none`, or `:verify_peer` which is default.
 
 * `user_name (string)` - (Required) The name of an existing Chef user to register
   the new Chef Client and optionally configure Chef Vaults.

@@ -2,11 +2,12 @@ package command
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/hashicorp/terraform/tfdiags"
 
 	"github.com/hashicorp/go-getter"
 	"github.com/hashicorp/terraform/backend"
@@ -23,9 +24,6 @@ type ApplyCommand struct {
 	// If true, then this apply command will become the "destroy"
 	// command. It is just like apply but only processes a destroy.
 	Destroy bool
-
-	// When this channel is closed, the apply will be cancelled.
-	ShutdownCh <-chan struct{}
 }
 
 func (c *ApplyCommand) Run(args []string) int {
@@ -41,13 +39,11 @@ func (c *ApplyCommand) Run(args []string) int {
 	}
 
 	cmdFlags := c.Meta.flagSet(cmdName)
+	cmdFlags.BoolVar(&autoApprove, "auto-approve", false, "skip interactive approval of plan before applying")
 	if c.Destroy {
-		cmdFlags.BoolVar(&destroyForce, "force", false, "force")
+		cmdFlags.BoolVar(&destroyForce, "force", false, "deprecated: same as auto-approve")
 	}
 	cmdFlags.BoolVar(&refresh, "refresh", true, "refresh")
-	if !c.Destroy {
-		cmdFlags.BoolVar(&autoApprove, "auto-approve", true, "skip interactive approval of plan before applying")
-	}
 	cmdFlags.IntVar(
 		&c.Meta.parallelism, "parallelism", DefaultParallelism, "parallelism")
 	cmdFlags.StringVar(&c.Meta.statePath, "state", "", "path")
@@ -118,36 +114,21 @@ func (c *ApplyCommand) Run(args []string) int {
 	if plan != nil {
 		// Reset the config path for backend loading
 		configPath = ""
-
-		if !autoApprove {
-			c.Ui.Error("Cannot combine -auto-approve=false with a plan file.")
-			return 1
-		}
 	}
+
+	var diags tfdiags.Diagnostics
 
 	// Load the module if we don't have one yet (not running from plan)
 	var mod *module.Tree
 	if plan == nil {
-		mod, err = c.Module(configPath)
-		if err != nil {
-			c.Ui.Error(fmt.Sprintf("Failed to load root config module: %s", err))
+		var modDiags tfdiags.Diagnostics
+		mod, modDiags = c.Module(configPath)
+		diags = diags.Append(modDiags)
+		if modDiags.HasErrors() {
+			c.showDiagnostics(diags)
 			return 1
 		}
 	}
-
-	/*
-		terraform.SetDebugInfo(DefaultDataDir)
-
-		// Check for the legacy graph
-		if experiment.Enabled(experiment.X_legacyGraph) {
-			c.Ui.Output(c.Colorize().Color(
-				"[reset][bold][yellow]" +
-					"Legacy graph enabled! This will use the graph from Terraform 0.7.x\n" +
-					"to execute this operation. This will be removed in the future so\n" +
-					"please report any issues causing you to use this to the Terraform\n" +
-					"project.\n\n"))
-		}
-	*/
 
 	var conf *config.Config
 	if mod != nil {
@@ -174,38 +155,14 @@ func (c *ApplyCommand) Run(args []string) int {
 	opReq.AutoApprove = autoApprove
 	opReq.DestroyForce = destroyForce
 
-	// Perform the operation
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
-	op, err := b.Operation(ctx, opReq)
+	op, err := c.RunOperation(b, opReq)
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("Error starting operation: %s", err))
-		return 1
+		diags = diags.Append(err)
 	}
 
-	// Wait for the operation to complete or an interrupt to occur
-	select {
-	case <-c.ShutdownCh:
-		// Cancel our context so we can start gracefully exiting
-		ctxCancel()
-
-		// Notify the user
-		c.Ui.Output(outputInterrupt)
-
-		// Still get the result, since there is still one
-		select {
-		case <-c.ShutdownCh:
-			c.Ui.Error(
-				"Two interrupts received. Exiting immediately. Note that data\n" +
-					"loss may have occurred.")
-			return 1
-		case <-op.Done():
-		}
-	case <-op.Done():
-		if err := op.Err; err != nil {
-			c.Ui.Error(err.Error())
-			return 1
-		}
+	c.showDiagnostics(diags)
+	if diags.HasErrors() {
+		return 1
 	}
 
 	if !c.Destroy {
@@ -251,25 +208,17 @@ Usage: terraform apply [options] [DIR-OR-PLAN]
   configuration or an execution plan can be provided. Execution plans can be
   used to only execute a pre-determined set of actions.
 
-  DIR can also be a SOURCE as given to the "init" command. In this case,
-  apply behaves as though "init" was called followed by "apply". This only
-  works for sources that aren't files, and only if the current working
-  directory is empty of Terraform files. This is a shortcut for getting
-  started.
-
 Options:
 
   -backup=path           Path to backup the existing state file before
                          modifying. Defaults to the "-state-out" path with
                          ".backup" extension. Set to "-" to disable backup.
 
+  -auto-approve          Skip interactive approval of plan before applying.
+
   -lock=true             Lock the state file when locking is supported.
 
   -lock-timeout=0s       Duration to retry a state lock.
-
-  -auto-approve=true     Skip interactive approval of plan before applying. In a
-                         future version of Terraform, this flag's default value
-                         will change to false.
 
   -input=true            Ask for input for variables if not directly set.
 
@@ -316,7 +265,9 @@ Options:
                          modifying. Defaults to the "-state-out" path with
                          ".backup" extension. Set to "-" to disable backup.
 
-  -force                 Don't ask for input for destroy confirmation.
+  -auto-approve          Skip interactive approval before destroying.
+
+  -force                 Deprecated: same as auto-approve.
 
   -lock=true             Lock the state file when locking is supported.
 

@@ -13,11 +13,7 @@ import (
 )
 
 func TestFmt_errorReporting(t *testing.T) {
-	tempDir, err := fmtFixtureWriteDir()
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := fmtFixtureWriteDir(t)
 
 	ui := new(cli.MockUi)
 	c := &FmtCommand{
@@ -63,11 +59,7 @@ func TestFmt_tooManyArgs(t *testing.T) {
 }
 
 func TestFmt_workingDirectory(t *testing.T) {
-	tempDir, err := fmtFixtureWriteDir()
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := fmtFixtureWriteDir(t)
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -99,11 +91,7 @@ func TestFmt_workingDirectory(t *testing.T) {
 }
 
 func TestFmt_directoryArg(t *testing.T) {
-	tempDir, err := fmtFixtureWriteDir()
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := fmtFixtureWriteDir(t)
 
 	ui := new(cli.MockUi)
 	c := &FmtCommand{
@@ -149,11 +137,7 @@ func TestFmt_stdinArg(t *testing.T) {
 }
 
 func TestFmt_nonDefaultOptions(t *testing.T) {
-	tempDir, err := fmtFixtureWriteDir()
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := fmtFixtureWriteDir(t)
 
 	ui := new(cli.MockUi)
 	c := &FmtCommand{
@@ -179,6 +163,56 @@ func TestFmt_nonDefaultOptions(t *testing.T) {
 	}
 }
 
+func TestFmt_check(t *testing.T) {
+	tempDir := fmtFixtureWriteDir(t)
+
+	ui := new(cli.MockUi)
+	c := &FmtCommand{
+		Meta: Meta{
+			testingOverrides: metaOverridesForProvider(testProvider()),
+			Ui:               ui,
+		},
+	}
+
+	args := []string{
+		"-check",
+		tempDir,
+	}
+	if code := c.Run(args); code != 3 {
+		t.Fatalf("wrong exit code. expected 3")
+	}
+
+	if actual := ui.OutputWriter.String(); !strings.Contains(actual, tempDir) {
+		t.Fatalf("expected:\n%s\n\nto include: %q", actual, tempDir)
+	}
+}
+
+func TestFmt_checkStdin(t *testing.T) {
+	input := new(bytes.Buffer)
+	input.Write(fmtFixture.input)
+
+	ui := new(cli.MockUi)
+	c := &FmtCommand{
+		Meta: Meta{
+			testingOverrides: metaOverridesForProvider(testProvider()),
+			Ui:               ui,
+		},
+		input: input,
+	}
+
+	args := []string{
+		"-check",
+		"-",
+	}
+	if code := c.Run(args); code != 3 {
+		t.Fatalf("wrong exit code. expected 3, got %d", code)
+	}
+
+	if ui.OutputWriter != nil {
+		t.Fatalf("expected no output, got: %q", ui.OutputWriter.String())
+	}
+}
+
 var fmtFixture = struct {
 	filename      string
 	input, golden []byte
@@ -190,17 +224,13 @@ var fmtFixture = struct {
 `),
 }
 
-func fmtFixtureWriteDir() (string, error) {
-	dir, err := ioutil.TempDir("", "tf")
+func fmtFixtureWriteDir(t *testing.T) string {
+	dir := testTempDir(t)
+
+	err := ioutil.WriteFile(filepath.Join(dir, fmtFixture.filename), fmtFixture.input, 0644)
 	if err != nil {
-		return "", err
+		t.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(dir, fmtFixture.filename), fmtFixture.input, 0644)
-	if err != nil {
-		os.RemoveAll(dir)
-		return "", err
-	}
-
-	return dir, nil
+	return dir
 }
