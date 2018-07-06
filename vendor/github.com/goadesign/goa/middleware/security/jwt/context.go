@@ -6,6 +6,12 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
+type contextKey int
+
+const (
+	jwtKey contextKey = iota + 1
+)
+
 // WithJWT creates a child context containing the given JWT.
 func WithJWT(ctx context.Context, t *jwt.Token) context.Context {
 	return context.WithValue(ctx, jwtKey, t)

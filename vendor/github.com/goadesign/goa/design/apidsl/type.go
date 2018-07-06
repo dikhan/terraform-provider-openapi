@@ -5,6 +5,8 @@ import (
 	"github.com/goadesign/goa/dslengine"
 )
 
+// Type is a top level DSL.
+//
 // Type implements the type definition dsl. A type definition describes a data structure consisting
 // of attributes. Each attribute has a type which can also refer to a type definition (or use a
 // primitive type or nested attibutes). The dsl syntax for define a type definition is the
@@ -14,11 +16,17 @@ import (
 // structure of a request payload. They can also be used by media type definitions as reference, see
 // Reference. Here is an example:
 //
-//	Type("createPayload", func() {
-//		Description("Type of create and upload action payloads")
-//		Attribute("name", String, "name of bottle")
+//	var UpdatePayload = Type("UpdatePayload", func() {
+//		Description("UpdatePayload describes the update action request bodies")
 //		Attribute("origin", Origin, "Details on wine origin")  // See Origin definition below
-//		Required("name")
+//	})
+//
+//	Type("CreatePayload", func() {
+//              Reference(UpdatePayload)
+//		Description("CreatePayload describes the create action request bodies")
+//		Attribute("name", String, "name of bottle")
+//		Attribute("origin") // Inherits description, type from UpdatePayload
+//		Required("name", "origin")
 //	})
 //
 //	var Origin = Type("origin", func() {

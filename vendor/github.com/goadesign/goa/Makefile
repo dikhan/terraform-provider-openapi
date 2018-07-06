@@ -20,7 +20,7 @@ DEPEND=\
 	github.com/goadesign/goa.design/tools/godoc2md \
 	github.com/goadesign/goa.design/tools/mdc \
 	github.com/golang/lint/golint \
-	github.com/on99/gocyclo \
+	github.com/fzipp/gocyclo \
 	github.com/onsi/ginkgo \
 	github.com/onsi/ginkgo/ginkgo \
 	github.com/onsi/gomega \
@@ -43,6 +43,7 @@ docs:
 	@rm -rf goa.design
 
 depend:
+	@mkdir -p $(GOPATH)/src/golang.org/x
 	@go get -v ./...
 	@go get -v $(DEPEND)
 
@@ -62,7 +63,7 @@ cyclo:
 	fi
 
 test:
-	@ginkgo -r --randomizeAllSpecs --failOnPending --randomizeSuites -skipPackage vendor
+	@ginkgo -r --randomizeAllSpecs --failOnPending --randomizeSuites -race -skipPackage vendor
 	go test ./_integration_tests
 
 goagen:

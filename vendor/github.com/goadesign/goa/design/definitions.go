@@ -158,7 +158,7 @@ type (
 		Methods []string
 		// List of headers exposed to clients
 		Exposed []string
-		// How long to cache a prefligh request response
+		// How long to cache a preflight request response
 		MaxAge uint
 		// Sets Access-Control-Allow-Credentials header
 		Credentials bool
@@ -245,6 +245,8 @@ type (
 		Payload *UserTypeDefinition
 		// PayloadOptional is true if the request payload is optional, false otherwise.
 		PayloadOptional bool
+		// PayloadOptional is true if the request payload is multipart, false otherwise.
+		PayloadMultipart bool
 		// Request headers that need to be made available to action
 		Headers *AttributeDefinition
 		// Metadata is a list of key/value pairs
@@ -614,15 +616,35 @@ func (a *APIDefinition) MediaTypeWithIdentifier(id string) *MediaTypeDefinition 
 // Iteration stops if an iterator returns an error and in this case IterateResources returns that
 // error.
 func (a *APIDefinition) IterateResources(it ResourceIterator) error {
-	names := make([]string, len(a.Resources))
+	res := make([]*ResourceDefinition, len(a.Resources))
 	i := 0
-	for n := range a.Resources {
-		names[i] = n
+	for _, r := range a.Resources {
+		res[i] = r
 		i++
 	}
-	sort.Strings(names)
-	for _, n := range names {
-		if err := it(a.Resources[n]); err != nil {
+	// Iterate parent resources first so that action parameters are
+	// finalized prior to child actions needing them.
+	isParent := func(p, c *ResourceDefinition) bool {
+		par := c.Parent()
+		for par != nil {
+			if par == p {
+				return true
+			}
+			par = par.Parent()
+		}
+		return false
+	}
+	sort.Slice(res, func(i, j int) bool {
+		if isParent(res[i], res[j]) {
+			return true
+		}
+		if isParent(res[j], res[i]) {
+			return false
+		}
+		return res[i].Name < res[j].Name
+	})
+	for _, r := range res {
+		if err := it(r); err != nil {
 			return err
 		}
 	}
@@ -1033,9 +1055,35 @@ func (a *AttributeDefinition) IsPrimitivePointer(attName string) bool {
 		return false
 	}
 	if att.Type.IsPrimitive() {
-		return !a.IsRequired(attName) && !a.HasDefaultValue(attName) && !a.IsNonZero(attName)
+		return (!a.IsRequired(attName) && !a.HasDefaultValue(attName) && !a.IsNonZero(attName) && !a.IsInterface(attName)) || a.IsFile(attName)
 	}
 	return false
+}
+
+// IsInterface returns true if the field generated for the given attribute has
+// an interface type that should not be referenced as a "*interface{}" pointer.
+// The target attribute must be an object.
+func (a *AttributeDefinition) IsInterface(attName string) bool {
+	if !a.Type.IsObject() {
+		panic("checking pointer field on non-object") // bug
+	}
+	att := a.Type.ToObject()[attName]
+	if att == nil {
+		return false
+	}
+	return att.Type.Kind() == AnyKind
+}
+
+// IsFile returns true if the attribute is of type File or if any its children attributes (if any) is.
+func (a *AttributeDefinition) IsFile(attName string) bool {
+	if !a.Type.IsObject() {
+		panic("checking pointer field on non-object") // bug
+	}
+	att := a.Type.ToObject()[attName]
+	if att == nil {
+		return false
+	}
+	return att.Type.Kind() == FileKind
 }
 
 // SetExample sets the custom example. SetExample also handles the case when the user doesn't
@@ -1098,6 +1146,22 @@ func (a *AttributeDefinition) GenerateExample(rand *RandomGenerator, seen []stri
 	}
 
 	return a.Example
+}
+
+// SetReadOnly sets the attribute's ReadOnly field as true.
+func (a *AttributeDefinition) SetReadOnly() {
+	if a.Metadata == nil {
+		a.Metadata = map[string][]string{}
+	}
+	a.Metadata["swagger:read-only"] = nil
+}
+
+// IsReadOnly returns true if attribute is read-only (set using SetReadOnly() method)
+func (a *AttributeDefinition) IsReadOnly() bool {
+	if _, readOnlyMetadataIsPresent := a.Metadata["swagger:read-only"]; readOnlyMetadataIsPresent {
+		return true
+	}
+	return false
 }
 
 func (a *AttributeDefinition) arrayExample(rand *RandomGenerator, seen []string) interface{} {
@@ -1256,6 +1320,18 @@ func (a *AttributeDefinition) inheritRecursive(parent *AttributeDefinition, seen
 			}
 			if att.Example == nil {
 				att.Example = patt.Example
+			}
+			if patt.Metadata != nil {
+				if att.Metadata == nil {
+					att.Metadata = patt.Metadata
+				} else {
+					// Copy all key/value pairs from parent to child that DO NOT exist in child; existing ones will remain with the same value
+					for k, v := range patt.Metadata {
+						if _, keyMetadataIsPresent := att.Metadata[k]; !keyMetadataIsPresent {
+							att.Metadata[k] = v
+						}
+					}
+				}
 			}
 		}
 	}

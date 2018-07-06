@@ -113,15 +113,15 @@ type (
 	// This struct is mainly intended for clients to decode error responses.
 	ErrorResponse struct {
 		// ID is the unique error instance identifier.
-		ID string `json:"id" xml:"id" form:"id"`
+		ID string `json:"id" yaml:"id" xml:"id" form:"id"`
 		// Code identifies the class of errors.
-		Code string `json:"code" xml:"code" form:"code"`
+		Code string `json:"code" yaml:"code" xml:"code" form:"code"`
 		// Status is the HTTP status code used by responses that cary the error.
-		Status int `json:"status" xml:"status" form:"status"`
+		Status int `json:"status" yaml:"status" xml:"status" form:"status"`
 		// Detail describes the specific error occurrence.
-		Detail string `json:"detail" xml:"detail" form:"detail"`
+		Detail string `json:"detail" yaml:"detail" xml:"detail" form:"detail"`
 		// Meta contains additional key/value pairs useful to clients.
-		Meta map[string]interface{} `json:"meta,omitempty" xml:"meta,omitempty" form:"meta,omitempty"`
+		Meta map[string]interface{} `json:"meta,omitempty" yaml:"meta,omitempty" xml:"meta,omitempty" form:"meta,omitempty"`
 	}
 )
 
@@ -279,7 +279,7 @@ func (e *ErrorResponse) Token() string { return e.ID }
 // ServiceError if not already one - producing an internal error in that case. The merge algorithm
 // is:
 //
-// * If any of e or other implements ServiceMergableError, it is handled by its Merge method.
+// * If any of e or other implements ServiceMergableError, it is handled by it's Merge method.
 //
 // * If any of e or other is an internal error then the result is an internal error
 //

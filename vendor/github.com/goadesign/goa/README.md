@@ -3,56 +3,69 @@
 goa is a framework for building micro-services and REST APIs in Go using a
 unique design-first approach.
 
+---
 [![Build Status](https://travis-ci.org/goadesign/goa.svg?branch=master)](https://travis-ci.org/goadesign/goa)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/vixp37loj5i6qmaf/branch/master?svg=true)](https://ci.appveyor.com/project/RaphaelSimon/goa-oqtis/branch/master)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/goadesign/goa/blob/master/LICENSE)
+[![Sourcegraph](https://sourcegraph.com/github.com/goadesign/goa/-/badge.svg)](https://sourcegraph.com/github.com/goadesign/goa?badge)
 [![Godoc](https://godoc.org/github.com/goadesign/goa?status.svg)](http://godoc.org/github.com/goadesign/goa)
 [![Slack](https://img.shields.io/badge/slack-gophers-orange.svg?style=flat)](https://gophers.slack.com/messages/goa/)
+
+## V2
+
+[goa v2](https://github.com/goadesign/goa/tree/v2) is currently in beta:
+it is robust enough to be used in production but there may still be breaking
+changes before the final release. If you're new to goa then you may want to
+consider starting with v2.
 
 ## Why goa?
 
 goa takes a different approach to building micro-services. Instead of focusing
 solely on helping with implementation, goa makes it possible to describe the
-*design* of an API using a simple DSL. goa then uses that description to provide
-specialized helper code to the implementation and to generate documentation, API
-clients, tests, even custom artifacts.
+*design* of your API using a simple Go DSL. goa then uses that description to
+generate specialized service helper code, documentation, API clients, tests and
+even custom artifacts via plugins.
 
-If DSLs are not your thing then consider this: you need to document your APIs so
-that clients (be it internal e.g. other services or external e.g. UIs) may
-consume them. Typically this requires maintaining a completely separate document
-(for example an OpenAPI specification). Making sure that the document stays
-up-to-date takes a lot of effort and at the end of the day you have to write
-that document - why not use a simple and clear Go DSL to do that instead?
+If DSLs or code generation are not your thing then consider this: APIs are meant
+to be consumed. This means that they need to come with accurate documentation
+that describes in details each of the API endpoints: their path, their
+parameters, their request and response payloads as well as any associated
+validation (which parameters are required, their maximum length etc.). Typically
+this requires maintaining a completely separate document (for example an OpenAPI
+specification). Making sure that the document stays up-to-date takes a lot of
+effort and quickly becomes impossible as the number of services and thus APIs
+grows. Starting from the design means a *single source of truth* for the
+implementations of the service and the client as well as for the documentation.
+Write the DSL once and reap the benefits multiple times over.
 
-Another aspect to consider is the need for properly designing APIs and making
-sure that the design choices remain consistent across the endpoints or even
-across multiple APIs. If the source code is the only place where design
-decisions are kept then not only is it impossible to maintain consistency it's
-also difficult to think about the design in the first place. The goa DSL makes
-it possible to think about the design explicitly and - since it's code - to
-re-use design elements for consistency.
+Another aspect to consider is the need for designing APIs. The API is the
+interface to your service and as such must be crafted carefully. Consistency is
+very important and details matter. If the source code is the only place where
+design decisions are kept then not only is it very hard to maintain consistency
+it's also difficult to think abstractly about the API in the first place. The
+goa DSL makes it possible to reason about and describe the design explicitly
+and - since it's code - to easily re-use design elements across the service
+endpoints or even across multiple services.
 
-The goa DSL allows writing self-explanatory code that describes the resources
-exposed by the API and for each resource the properties and actions. goa comes
-with the `goagen` tool which runs the DSL and generates various types of
-artifacts from the resulting data structures.
+## goagen
 
-One of the `goagen` output is glue code that binds your code with the underlying
-HTTP server. This code is specific to your API so that for example there is no
-need to cast or "bind" any handler argument prior to using them. Each generated
-handler has a signature that is specific to the corresponding resource action.
-It's not just the parameters though, each handler also has access to specific
-helper methods that generate the possible responses for that action. The DSL can
-also define validations in which case the generated code takes care of
-validating the incoming request parameters and payload prior to invoking the
-handler.
+[goagen](https://goa.design/implement/goagen/) is the code generation tool of
+goa. It accepts the design package where the DSL is written as input and
+produces various outputs. One of the outputs is the glue code that binds your
+code with the underlying HTTP server. This code is specific to your API so that
+for example there is no need to cast or "bind" any handler argument prior to
+using them. Each generated handler has a signature that is specific to the
+corresponding resource action. It's not just the parameters though, each handler
+also has access to specific helper methods that generate the possible responses
+for that action. The DSL can also define validations in which case the generated
+code takes care of validating the incoming request parameters and payload prior
+to invoking the handler.
 
 The end result is controller code that is terse and clean, the boilerplate is
 all gone. Another big benefit is the clean separation of concern between design
 and implementation: on bigger projects it's often the case that API design
-changes require careful review, being able to generate a new version of the
-documentation without having to write a single line of implementation is a big
-boon.
+changes require careful review. On such project being able to generate a new
+version of the documentation without having to write a single line of
+implementation is a big boon.
 
 This idea of separating design and implementation is not new, the
 excellent [Praxis](http://praxis-framework.io) framework from RightScale follows
@@ -62,7 +75,7 @@ the same pattern and was an inspiration to goa.
 
 Assuming you have a working [Go](https://golang.org) setup:
 ```
-go get github.com/goadesign/goa/...
+go get -u github.com/goadesign/goa/...
 ```
 
 ### Stable Versions
@@ -131,13 +144,13 @@ This produces the following outputs:
   the API with the given arguments and returns the `http.Response`.
 * a `tool` directory that contains the complete source for a client CLI tool.
 * a `swagger` package with implements the `GET /swagger.json` API endpoint. The response contains
-  the full Swagger specificiation of the API.
+  the full Swagger 2.0 specificiation of the API.
 
 ### 3. Run
 
 First let's implement the API - edit the file `operands.go` and replace the content of the `Add`
 function with:
-```
+```go
 // Add import for strconv
 import "strconv"
 
@@ -228,7 +241,7 @@ design.
 
 ### 4. Document
 
-The `swagger` directory contains the API Swagger (OpenAPI) specification in both
+The `swagger` directory contains the API Swagger (OpenAPI) version 2.0 specification in both
 YAML and JSON format.
 
 For open source projects hosted on

@@ -116,32 +116,9 @@ func (a *APIDefinition) Validate() error {
 		})
 		return nil
 	})
-	for _, route := range allRoutes {
-		for _, other := range allRoutes {
-			if route == other {
-				continue
-			}
-			if strings.HasPrefix(route.Key, other.Key) {
-				diffs := route.DifferentWildcards(other)
-				if len(diffs) > 0 {
-					var msg string
-					conflicts := make([]string, len(diffs))
-					for i, d := range diffs {
-						conflicts[i] = fmt.Sprintf(`"%s" from %s and "%s" from %s`, d[0].Name, d[0].Orig.Context(), d[1].Name, d[1].Orig.Context())
-					}
-					msg = fmt.Sprintf("%s", strings.Join(conflicts, ", "))
-					verr.Add(route.Action,
-						`route "%s" conflicts with route "%s" of %s action %s. Make sure wildcards at the same positions have the same name. Conflicting wildcards are %s.`,
-						route.Route.FullPath(),
-						other.Route.FullPath(),
-						other.Resource.Name,
-						other.Action.Name,
-						msg,
-					)
-				}
-			}
-		}
-	}
+
+	a.validateRoutes(verr, allRoutes)
+
 	a.IterateMediaTypes(func(mt *MediaTypeDefinition) error {
 		verr.Merge(mt.Validate())
 		return nil
@@ -167,6 +144,38 @@ func (a *APIDefinition) Validate() error {
 		return nil
 	}
 	return err
+}
+
+func (a *APIDefinition) validateRoutes(verr *dslengine.ValidationErrors, routes []*routeInfo) {
+	for _, route := range routes {
+		for _, other := range routes {
+			if route == other {
+				continue
+			}
+			if route.Route.Verb != other.Route.Verb {
+				continue
+			}
+			if strings.HasPrefix(route.Key, other.Key) {
+				diffs := route.DifferentWildcards(other)
+				if len(diffs) > 0 {
+					var msg string
+					conflicts := make([]string, len(diffs))
+					for i, d := range diffs {
+						conflicts[i] = fmt.Sprintf(`"%s" from %s and "%s" from %s`, d[0].Name, d[0].Orig.Context(), d[1].Name, d[1].Orig.Context())
+					}
+					msg = fmt.Sprintf("%s", strings.Join(conflicts, ", "))
+					verr.Add(route.Action,
+						`route "%s" conflicts with route "%s" of %s action %s. Make sure wildcards at the same positions have the same name. Conflicting wildcards are %s.`,
+						route.Route.FullPath(),
+						other.Route.FullPath(),
+						other.Resource.Name,
+						other.Action.Name,
+						msg,
+					)
+				}
+			}
+		}
+	}
 }
 
 func (a *APIDefinition) validateContact(verr *dslengine.ValidationErrors) {
@@ -327,10 +336,16 @@ func (a *ActionDefinition) Validate() *dslengine.ValidationErrors {
 			}
 		}
 		verr.Merge(r.Validate())
+		if HasFile(r.Type) {
+			verr.Add(a, "Response %s contains an invalid type, action responses cannot contain a file", i)
+		}
 	}
 	verr.Merge(a.ValidateParams())
 	if a.Payload != nil {
 		verr.Merge(a.Payload.Validate("action payload", a))
+		if HasFile(a.Payload.Type) && a.PayloadMultipart != true {
+			verr.Add(a, "Payload %s contains an invalid type, action payloads cannot contain a file", a.Payload.TypeName)
+		}
 	}
 	if a.Parent == nil {
 		verr.Add(a, "missing parent resource")
@@ -338,10 +353,16 @@ func (a *ActionDefinition) Validate() *dslengine.ValidationErrors {
 	if a.Params != nil {
 		for n, p := range a.Params.Type.ToObject() {
 			if p.Type.IsPrimitive() {
+				if HasFile(p.Type) {
+					verr.Add(a, "Param %s has an invalid type, action params cannot be a file", n)
+				}
 				continue
 			}
 			if p.Type.IsArray() {
 				if p.Type.ToArray().ElemType.Type.IsPrimitive() {
+					if HasFile(p.Type.ToArray().ElemType.Type) {
+						verr.Add(a, "Param %s has an invalid type, action params cannot be a file array", n)
+					}
 					continue
 				}
 			}

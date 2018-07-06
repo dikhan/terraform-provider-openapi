@@ -18,10 +18,10 @@ import (
 // scopes claim in the JWT and ensures goa-defined Security DSLs are properly validated.
 //
 // The steps taken by the middleware are:
-//
-//     1. Validate the "Bearer" token present in the "Authorization" header against the key(s)
+//     1. Extract the "Bearer" token from the Authorization header or query parameter
+//     2. Validate the "Bearer" token against the key(s)
 //        given to New
-//     2. If scopes are defined in the design for the action, validate them
+//     3. If scopes are defined in the design for the action, validate them
 //        against the scopes presented by the JWT in the claim "scope", or if
 //        that's not defined, "scopes".
 //
@@ -29,77 +29,88 @@ import (
 //
 // validationKeys can be one of these:
 //
-//     * a string (for HMAC)
-//     * a []byte (for HMAC)
-//     * an rsa.PublicKey
-//     * an ecdsa.PublicKey
+//     * []byte
+//     * string
+//     * an *rsa.PublicKey
+//     * an *ecdsa.PublicKey
 //     * a slice of any of the above
 //
-// The type of the keys determine the algorithm that will be used to do the check.  The goal of
-// having lists of keys is to allow for key rotation, still check the previous keys until rotation
-// has been completed.
+// Keys of type string or []byte are interpreted according to the signing method defined in the JWT
+// token's `typ` header element: `HS`, `RS`, `ES`, etc.
 //
 // You can define an optional function to do additional validations on the token once the signature
 // and the claims requirements are proven to be valid.  Example:
 //
-//    validationHandler, _ := goa.NewMiddleware(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-//        token := jwt.ContextJWT(ctx)
-//        if val, ok := token.Claims["is_uncle"].(string); !ok || val != "ben" {
-//            return jwt.ErrJWTError("you are not uncle ben's")
-//        }
-//    })
+//	validationHandler, _ := goa.NewMiddleware(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+//		token := jwt.ContextJWT(ctx)
+//		claims, ok := token.Claims.(jwtgo.MapClaims)
+//		if !ok {
+//			return jwt.ErrJWTError("unsupported claims shape")
+//		}
+//		if val, ok := claims["is_uncle"].(string); !ok || val != "ben" {
+//			return jwt.ErrJWTError("you are not uncle ben's")
+//		}
+//		return nil
+//	})
 //
 // Mount the middleware with the generated UseXX function where XX is the name of the scheme as
 // defined in the design, e.g.:
 //
-//    app.UseJWT(jwt.New("secret", validationHandler, app.NewJWTSecurity()))
+//    jwtResolver, _ := jwt.NewSimpleResolver("secret")
+//    app.UseJWT(jwt.New(jwtResolver, validationHandler, app.NewJWTSecurity()))
 //
-func New(validationKeys interface{}, validationFunc goa.Middleware, scheme *goa.JWTSecurity) goa.Middleware {
-	var rsaKeys []*rsa.PublicKey
-	var hmacKeys [][]byte
-
-	rsaKeys, ecdsaKeys, hmacKeys := partitionKeys(validationKeys)
-
+func New(resolver KeyResolver, validationFunc goa.Middleware, scheme *goa.JWTSecurity) goa.Middleware {
 	return func(nextHandler goa.Handler) goa.Handler {
 		return func(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
-			// TODO: implement the QUERY string handler too
-			if scheme.In != goa.LocHeader {
+			var (
+				incomingToken string
+				err           error
+			)
+
+			if scheme.In == goa.LocHeader {
+				incomingToken, err = extractTokenFromHeader(scheme.Name, req)
+				if err != nil {
+					return err
+				}
+			} else if scheme.In == goa.LocQuery {
+				incomingToken, err = extractTokenFromQueryParam(scheme.Name, req)
+				if err != nil {
+					return err
+				}
+			} else {
 				return fmt.Errorf("whoops, security scheme with location (in) %q not supported", scheme.In)
 			}
-			val := req.Header.Get(scheme.Name)
-			if val == "" {
-				return ErrJWTError(fmt.Sprintf("missing header %q", scheme.Name))
-			}
 
-			if !strings.HasPrefix(strings.ToLower(val), "bearer ") {
-				return ErrJWTError(fmt.Sprintf("invalid or malformed %q header, expected 'Authorization: Bearer JWT-token...'", val))
-			}
-
-			incomingToken := strings.Split(val, " ")[1]
+			rsaKeys, ecdsaKeys, hmacKeys := partitionKeys(resolver.SelectKeys(req))
 
 			var (
 				token     *jwt.Token
-				err       error
 				validated = false
 			)
 
 			if len(rsaKeys) > 0 {
 				token, err = validateRSAKeys(rsaKeys, "RS", incomingToken)
-				validated = err == nil
+				if err == nil {
+					validated = true
+				}
 			}
 
 			if !validated && len(ecdsaKeys) > 0 {
 				token, err = validateECDSAKeys(ecdsaKeys, "ES", incomingToken)
-				validated = err == nil
+				if err == nil {
+					validated = true
+				}
 			}
 
 			if !validated && len(hmacKeys) > 0 {
 				token, err = validateHMACKeys(hmacKeys, "HS", incomingToken)
-				//validated = err == nil
+				if err == nil {
+					validated = true
+				}
 			}
 
-			if err != nil {
-				return ErrJWTError(fmt.Sprintf("JWT validation failed: %s", err))
+			if !validated {
+				return ErrJWTError("JWT validation failed")
 			}
 
 			scopesInClaim, scopesInClaimList, err := parseClaimScopes(token)
@@ -126,6 +137,54 @@ func New(validationKeys interface{}, validationFunc goa.Middleware, scheme *goa.
 	}
 }
 
+func extractTokenFromHeader(schemeName string, req *http.Request) (string, error) {
+	val := req.Header.Get(schemeName)
+	if val == "" {
+		return "", ErrJWTError(fmt.Sprintf("missing header %q", schemeName))
+	}
+
+	if !strings.HasPrefix(strings.ToLower(val), "bearer ") {
+		return "", ErrJWTError(fmt.Sprintf("invalid or malformed %q header, expected 'Bearer JWT-token...'", val))
+	}
+
+	incomingToken := strings.Split(val, " ")[1]
+
+	return incomingToken, nil
+}
+
+func extractTokenFromQueryParam(schemeName string, req *http.Request) (string, error) {
+	incomingToken := req.URL.Query().Get(schemeName)
+	if incomingToken == "" {
+		return "", ErrJWTError(fmt.Sprintf("missing parameter %q", schemeName))
+	}
+
+	return incomingToken, nil
+}
+
+// partitionKeys sorts keys by their type.
+func partitionKeys(keys []Key) ([]*rsa.PublicKey, []*ecdsa.PublicKey, [][]byte) {
+	var (
+		rsaKeys   []*rsa.PublicKey
+		ecdsaKeys []*ecdsa.PublicKey
+		hmacKeys  [][]byte
+	)
+
+	for _, key := range keys {
+		switch k := key.(type) {
+		case *rsa.PublicKey:
+			rsaKeys = append(rsaKeys, k)
+		case *ecdsa.PublicKey:
+			ecdsaKeys = append(ecdsaKeys, k)
+		case []byte:
+			hmacKeys = append(hmacKeys, k)
+		case string:
+			hmacKeys = append(hmacKeys, []byte(k))
+		}
+	}
+
+	return rsaKeys, ecdsaKeys, hmacKeys
+}
+
 // validScopeClaimKeys are the claims under which scopes may be found in a token
 var validScopeClaimKeys = []string{"scope", "scopes"}
 
@@ -142,7 +201,7 @@ func parseClaimScopes(token *jwt.Token) (map[string]bool, []string, error) {
 	var scopesInClaimList []string
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, nil, fmt.Errorf("unsupport claims shape")
+		return nil, nil, fmt.Errorf("unsupported claims shape")
 	}
 	for _, k := range validScopeClaimKeys {
 		if rawscopes, ok := claims[k]; ok && rawscopes != nil {
@@ -167,48 +226,6 @@ func parseClaimScopes(token *jwt.Token) (map[string]bool, []string, error) {
 	}
 	sort.Strings(scopesInClaimList)
 	return scopesInClaim, scopesInClaimList, nil
-}
-
-// ErrJWTError is the error returned by this middleware when any sort of validation or assertion
-// fails during processing.
-var ErrJWTError = goa.NewErrorClass("jwt_security_error", 401)
-
-type contextKey int
-
-const (
-	jwtKey contextKey = iota + 1
-)
-
-// partitionKeys sorts keys by their type.
-func partitionKeys(k interface{}) ([]*rsa.PublicKey, []*ecdsa.PublicKey, [][]byte) {
-	var (
-		rsaKeys   []*rsa.PublicKey
-		ecdsaKeys []*ecdsa.PublicKey
-		hmacKeys  [][]byte
-	)
-
-	switch typed := k.(type) {
-	case []byte:
-		hmacKeys = append(hmacKeys, typed)
-	case [][]byte:
-		hmacKeys = typed
-	case string:
-		hmacKeys = append(hmacKeys, []byte(typed))
-	case []string:
-		for _, s := range typed {
-			hmacKeys = append(hmacKeys, []byte(s))
-		}
-	case *rsa.PublicKey:
-		rsaKeys = append(rsaKeys, typed)
-	case []*rsa.PublicKey:
-		rsaKeys = typed
-	case *ecdsa.PublicKey:
-		ecdsaKeys = append(ecdsaKeys, typed)
-	case []*ecdsa.PublicKey:
-		ecdsaKeys = typed
-	}
-
-	return rsaKeys, ecdsaKeys, hmacKeys
 }
 
 func validateRSAKeys(rsaKeys []*rsa.PublicKey, algo, incomingToken string) (token *jwt.Token, err error) {

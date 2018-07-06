@@ -281,6 +281,79 @@ var _ = Describe("New", func() {
 
 		})
 
+		Context("with multipart/form-data payload", func() {
+			BeforeEach(func() {
+				f := Type("MultipartPayload", func() {
+					Attribute("image", File, "Binary image data")
+				})
+				Resource("res", func() {
+					Action("act", func() {
+						Routing(
+							PUT("/"),
+						)
+						MultipartForm()
+						Payload(f)
+					})
+				})
+			})
+
+			It("does not modify the API level consumes", func() {
+				Ω(newErr).ShouldNot(HaveOccurred())
+				Ω(swagger.Consumes).Should(HaveLen(4))
+				Ω(swagger.Consumes).Should(ConsistOf("application/json", "application/xml", "application/gob", "application/x-gob"))
+			})
+
+			It("adds an Action level consumes for multipart/form-data", func() {
+				Ω(newErr).ShouldNot(HaveOccurred())
+				Ω(swagger.Paths).Should(HaveLen(1))
+				Ω(swagger.Paths["/"]).ShouldNot(BeNil())
+
+				a := swagger.Paths["/"].(*genswagger.Path)
+				Ω(a.Put).ShouldNot(BeNil())
+				cs := a.Put.Consumes
+				Ω(cs).Should(HaveLen(1))
+				Ω(cs[0]).Should(Equal("multipart/form-data"))
+			})
+
+			It("adds an File parameter", func() {
+				Ω(newErr).ShouldNot(HaveOccurred())
+				Ω(swagger.Paths).Should(HaveLen(1))
+				Ω(swagger.Paths["/"]).ShouldNot(BeNil())
+
+				a := swagger.Paths["/"].(*genswagger.Path)
+				Ω(a.Put).ShouldNot(BeNil())
+				ps := a.Put.Parameters
+				Ω(ps).Should(HaveLen(1))
+				Ω(ps[0]).Should(Equal(&genswagger.Parameter{In: "formData", Name: "image", Type: "file", Description: "Binary image data", Required: false}))
+			})
+
+			It("serializes into valid swagger JSON", func() { validateSwagger(swagger) })
+		})
+
+		Context("with recursive payload", func() {
+			BeforeEach(func() {
+				p := Type("RecursivePayload", func() {
+					Member("m1", "RecursivePayload")
+					Member("m2", ArrayOf("RecursivePayload"))
+					Member("m3", HashOf(String, "RecursivePayload"))
+					Member("m4", func() {
+						Member("m5", String)
+						Member("m6", "RecursivePayload")
+					})
+				})
+				Resource("res", func() {
+					Action("act", func() {
+						Routing(
+							PUT("/"),
+						)
+						Payload(p)
+					})
+				})
+			})
+
+			It("serializes into valid swagger JSON", func() { validateSwagger(swagger) })
+		})
+
 		Context("with zero value validations", func() {
 			const (
 				intParam = "intParam"
@@ -323,6 +396,72 @@ var _ = Describe("New", func() {
 					// param
 					[]byte(`"minimum":0`),
 					[]byte(`"maximum":0`),
+				})
+			})
+		})
+
+		Context("with minItems and maxItems validations in payload's attribute", func() {
+			const (
+				arrParam = "arrParam"
+				minVal   = 0
+				maxVal   = 42
+			)
+
+			BeforeEach(func() {
+				PayloadWithValidations := Type("Payload", func() {
+					Attribute(arrParam, ArrayOf(String), func() {
+						MinLength(minVal)
+						MaxLength(maxVal)
+					})
+				})
+				Resource("res", func() {
+					Action("act", func() {
+						Routing(
+							PUT("/"),
+						)
+						Payload(PayloadWithValidations)
+					})
+				})
+			})
+
+			It("serializes into valid swagger JSON", func() {
+				validateSwaggerWithFragments(swagger, [][]byte{
+					// payload
+					[]byte(`"minItems":0`),
+					[]byte(`"maxItems":42`),
+				})
+			})
+		})
+
+		Context("with minItems and maxItems validations in payload", func() {
+			const (
+				strParam = "strParam"
+				minVal   = 0
+				maxVal   = 42
+			)
+
+			BeforeEach(func() {
+				PayloadWithValidations := Type("Payload", func() {
+					Attribute(strParam, String)
+				})
+				Resource("res", func() {
+					Action("act", func() {
+						Routing(
+							PUT("/"),
+						)
+						Payload(ArrayOf(PayloadWithValidations), func() {
+							MinLength(minVal)
+							MaxLength(maxVal)
+						})
+					})
+				})
+			})
+
+			It("serializes into valid swagger JSON", func() {
+				validateSwaggerWithFragments(swagger, [][]byte{
+					// payload
+					[]byte(`"minItems":0`),
+					[]byte(`"maxItems":42`),
 				})
 			})
 		})
@@ -556,7 +695,7 @@ var _ = Describe("New", func() {
 				Ω(ps).Should(HaveLen(14))
 				// check Headers in detail
 				Ω(ps[3]).Should(Equal(&genswagger.Parameter{In: "header", Name: "Authorization", Type: "string", Required: true}))
-				Ω(ps[4]).Should(Equal(&genswagger.Parameter{In: "header", Name: "OptionalArray", Type: "array",
+				Ω(ps[4]).Should(Equal(&genswagger.Parameter{In: "header", Name: "OptionalArray", Type: "array", CollectionFormat: "multi",
 					Items: &genswagger.Items{Type: "string"}, MinItems: &minItems1, MaxItems: &maxItems5}))
 				Ω(ps[5]).Should(Equal(&genswagger.Parameter{In: "header", Name: "OptionalBoolWithDefault", Type: "boolean",
 					Description: "defaults true", Default: true}))

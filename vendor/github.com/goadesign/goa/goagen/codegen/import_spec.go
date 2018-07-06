@@ -30,7 +30,7 @@ func (s *ImportSpec) Code() string {
 	return fmt.Sprintf(`"%s"`, s.Path)
 }
 
-// AttributeImports constructs a new ImportsSpec slice from an existing slice and adds in imports specified in
+// AttributeImports will construct a new ImportsSpec slice from an existing slice and add in imports specified in
 // struct:field:type Metadata tags.
 func AttributeImports(att *design.AttributeDefinition, imports []*ImportSpec, seen []*design.AttributeDefinition) []*ImportSpec {
 

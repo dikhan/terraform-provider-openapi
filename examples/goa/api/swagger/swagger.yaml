@@ -82,7 +82,7 @@ definitions:
       detail: Value of ID must be an integer
       id: 3F1FKVRR
       meta:
-        timestamp: 1.458609066e+09
+        timestamp: 1.458609e+09
       status: "400"
     properties:
       code:
@@ -103,7 +103,7 @@ definitions:
         description: a meta object containing non-standard meta-information about
           the error.
         example:
-          timestamp: 1.458609066e+09
+          timestamp: 1.458609e+09
         type: object
       status:
         description: the HTTP status code applicable to this problem, expressed as

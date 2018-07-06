@@ -335,10 +335,12 @@ func (g *Generator) generateResourceClient(pkgDir string, res *design.ResourceDe
 		codegen.SimpleImport("fmt"),
 		codegen.SimpleImport("io"),
 		codegen.SimpleImport("io/ioutil"),
+		codegen.SimpleImport("mime/multipart"),
 		codegen.SimpleImport("net/http"),
 		codegen.SimpleImport("net/url"),
 		codegen.SimpleImport("os"),
 		codegen.SimpleImport("path"),
+		codegen.SimpleImport("path/filepath"),
 		codegen.SimpleImport("strconv"),
 		codegen.SimpleImport("strings"),
 		codegen.SimpleImport("time"),
@@ -495,6 +497,8 @@ func (g *Generator) generateActionClient(action *design.ActionDefinition, file *
 		ResourceName       string
 		Description        string
 		Routes             []*design.RouteDefinition
+		Payload            *design.UserTypeDefinition
+		PayloadMultipart   bool
 		HasPayload         bool
 		HasMultiContent    bool
 		DefaultContentType string
@@ -509,6 +513,8 @@ func (g *Generator) generateActionClient(action *design.ActionDefinition, file *
 		ResourceName:       action.Parent.Name,
 		Description:        action.Description,
 		Routes:             action.Routes,
+		Payload:            action.Payload,
+		PayloadMultipart:   action.PayloadMultipart,
 		HasPayload:         action.Payload != nil,
 		HasMultiContent:    len(design.Design.Consumes) > 1,
 		DefaultContentType: design.Design.Consumes[0].MIMETypes[0],
@@ -651,6 +657,12 @@ func (g *Generator) generateUserTypes(pkgDir string) (err error) {
 	}
 	g.genfiles = append(g.genfiles, utFile)
 	err = g.API.IterateUserTypes(func(t *design.UserTypeDefinition) error {
+		o := t.Type.ToObject()
+		for _, att := range o {
+			if att.Type.Kind() == design.FileKind {
+				att.Type = design.String
+			}
+		}
 		return utWr.Execute(t)
 	})
 	return
@@ -793,6 +805,8 @@ func toString(name, target string, att *design.AttributeDefinition) string {
 		case design.UUIDKind:
 			return fmt.Sprintf("%s := %s.String()", target, strings.Replace(name, "*", "", -1)) // remove pointer if present
 		case design.AnyKind:
+			return fmt.Sprintf("%s := fmt.Sprintf(\"%%v\", %s)", target, name)
+		case design.FileKind:
 			return fmt.Sprintf("%s := fmt.Sprintf(\"%%v\", %s)", target, name)
 		default:
 			panic("unknown primitive type")
@@ -1043,14 +1057,44 @@ func (c * Client) {{ .Name }}(ctx context.Context, {{ if .DirName }}filename, {{
 */}}// {{ $funcName }} create the request corresponding to the {{ .Name }} action endpoint of the {{ .ResourceName }} resource.
 func (c *Client) {{ $funcName }}(ctx context.Context, path string{{ if .Params }}, {{ .Params }}{{ end }}{{ if .HasPayload }}{{ if .HasMultiContent }}, contentType string{{ end }}{{ end }}) (*http.Request, error) {
 {{ if .HasPayload }}	var body bytes.Buffer
-{{ if .HasMultiContent }}	if contentType == "" {
+{{ if .PayloadMultipart }}	w := multipart.NewWriter(&body)
+{{ $o := .Payload.ToObject }}{{ range $name, $att := $o }}{{ if eq $att.Type.Kind 13 }}{{/*
+*/}}	{
+		_, file := filepath.Split({{ printf "payload.%s" (goify $name true) }})
+		fw, err := w.CreateFormFile("{{ $name }}", file)
+		if err != nil {
+			return nil, err
+		}
+		fh, err := os.Open({{ printf "payload.%s" (goify $name true) }})
+		if err != nil {
+			return nil, err
+		}
+		defer fh.Close()
+		if _, err := io.Copy(fw, fh); err != nil {
+			return nil, err
+		}
+	}
+{{ else }}	{
+		fw, err := w.CreateFormField("{{ $name }}")
+		if err != nil {
+			return nil, err
+		}
+		{{ toString (printf "payload.%s" (goify $name true)) "s" $att }}
+		if _, err := fw.Write([]byte(s)); err != nil {
+			return nil, err
+		}
+	}
+{{ end }}{{ end }}	if err := w.Close(); err != nil {
+		return nil, err
+	}
+{{ else }}{{ if .HasMultiContent }}	if contentType == "" {
 		contentType = "*/*" // Use default encoder
 	}
 {{ end }}	err := c.Encoder.Encode(payload, &body, {{ if .HasMultiContent }}contentType{{ else }}"*/*"{{ end }})
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode body: %s", err)
 	}
-{{ end }}	scheme := c.Scheme
+{{ end }}{{ end }}	scheme := c.Scheme
 	if scheme == "" {
 		scheme = "{{ .CanonicalScheme }}"
 	}
@@ -1084,13 +1128,14 @@ func (c *Client) {{ $funcName }}(ctx context.Context, path string{{ if .Params }
 		return nil, err
 	}
 {{ if or .HasPayload .Headers }}	header := req.Header
-{{ if .HasPayload }}{{ if .HasMultiContent }}	if contentType == "*/*" {
+{{ if .PayloadMultipart }}	header.Set("Content-Type", w.FormDataContentType())
+{{ else }}{{ if .HasPayload }}{{ if .HasMultiContent }}	if contentType == "*/*" {
 		header.Set("Content-Type", "{{ .DefaultContentType }}")
 	} else {
 		header.Set("Content-Type", contentType)
 	}
 {{ else }}	header.Set("Content-Type", "{{ .DefaultContentType }}")
-{{ end }}{{ end }}{{ range .Headers }}{{ if .CheckNil }}	if {{ .VarName }} != nil {
+{{ end }}{{ end }}{{ end }}{{ range .Headers }}{{ if .CheckNil }}	if {{ .VarName }} != nil {
 {{ end }}{{ if .MustToString }}{{ $tmp := tempvar }}	{{ toString .ValueName $tmp .Attribute }}
 	header.Set("{{ .Name }}", {{ $tmp }}){{ else }}
 	header.Set("{{ .Name }}", {{ .ValueName }})

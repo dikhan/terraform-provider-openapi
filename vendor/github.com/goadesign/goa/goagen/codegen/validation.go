@@ -91,6 +91,10 @@ func NewValidator() *Validator {
 
 // Code produces Go code that runs the validation checks recursively over the given attribute.
 func (v *Validator) Code(att *design.AttributeDefinition, nonzero, required, hasDefault bool, target, context string, depth int, private bool) string {
+	if _, ok := att.Metadata["struct:field:type"]; ok {
+		// Skip validation generation for attributes with custom types
+		return ""
+	}
 	buf := v.recurse(att, nonzero, required, hasDefault, target, context, depth, private)
 	return buf.String()
 }
@@ -448,6 +452,8 @@ func oneof(target string, vals []interface{}) string {
 // constant returns the Go constant name of the format with the given value.
 func constant(formatName string) string {
 	switch formatName {
+	case "date":
+		return "goa.FormatDate"
 	case "date-time":
 		return "goa.FormatDateTime"
 	case "email":
@@ -517,13 +523,13 @@ const (
 {{ if .isPointer }}{{ tabs $depth }}}
 {{ end }}{{ tabs .depth }}}`
 
-	lengthValTmpl = `{{$depth := or (and .isPointer (add .depth 1)) .depth}}{{/*
-*/}}{{$target := or (and (or (or .array .hash) .nonzero) .target) .targetVal}}{{/*
-*/}}{{if .isPointer}}{{tabs .depth}}if {{.target}} != nil {
-{{end}}{{tabs .depth}}	if {{if .string}}utf8.RuneCountInString({{$target}}){{else}}len({{$target}}){{end}} {{if .isMinLength}}<{{else}}>{{end}} {{if .isMinLength}}{{.minLength}}{{else}}{{.maxLength}}{{end}} {
-{{tabs $depth}}	err = goa.MergeErrors(err, goa.InvalidLengthError(` + "`" + `{{.context}}` + "`" + `, {{$target}}, {{if .string}}utf8.RuneCountInString({{$target}}){{else}}len({{$target}}){{end}}, {{if .isMinLength}}{{.minLength}}, true{{else}}{{.maxLength}}, false{{end}}))
-{{if .isPointer}}{{tabs $depth}}}
-{{end}}{{tabs .depth}}}`
+	lengthValTmpl = `{{ $depth := or (and .isPointer (add .depth 1)) .depth }}{{/*
+*/}}{{ $target := or (and (or (or .array .hash) .nonzero) .target) .targetVal }}{{/*
+*/}}{{ if .isPointer }}{{ tabs .depth }}if {{ .target }} != nil {
+{{ end }}{{ tabs .depth }}	if {{ if .string }}utf8.RuneCountInString({{ $target }}){{ else }}len({{ $target }}){{ end }} {{ if .isMinLength }}<{{ else }}>{{ end }} {{ if .isMinLength }}{{ .minLength }}{{ else }}{{ .maxLength }}{{ end }} {
+{{ tabs $depth }}	err = goa.MergeErrors(err, goa.InvalidLengthError(` + "`" + `{{ .context }}` + "`" + `, {{ $target }}, {{ if .string }}utf8.RuneCountInString({{ $target }}){{ else }}len({{ $target }}){{ end }}, {{ if .isMinLength }}{{ .minLength }}, true{{ else }}{{ .maxLength }}, false{{ end }}))
+{{ if .isPointer }}{{ tabs $depth }}}
+{{ end }}{{ tabs .depth }}}`
 
 	requiredValTmpl = `{{ $att := index $.attribute.Type.ToObject .required }}{{/*
 */}}{{ if and (not $.private) (eq $att.Type.Kind 4) }}{{ tabs $.depth }}if {{ $.target }}.{{ goifyAtt $att .required true }} == "" {

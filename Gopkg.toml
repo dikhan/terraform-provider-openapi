@@ -32,6 +32,10 @@
   branch = "master"
   name = "github.com/go-openapi/spec"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/goadesign/goa"
+
 # Pinning 'hashicorp/terraform' and 'hashicorp/go-plugin' to specific versions to avoid compatibility issues
 # as described here: https://github.com/hashicorp/terraform/issues/15756
 [[constraint]]
@@ -43,8 +47,13 @@
   version = "1.6.3"
 
 [[override]]
-  name = "github.com/hashicorp/go-plugin"
-  revision = "b7d6477501c13292d71fd3b8e688269e51b028ba"
+    name = "github.com/satori/go.uuid"
+    revision = "master"
+
+#[[override]]
+#  name = "github.com/hashicorp/go-plugin"
+#  revision = "b7d6477501c13292d71fd3b8e688269e51b028ba"
+
 [[constraint]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"

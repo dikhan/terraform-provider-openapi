@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,7 +20,15 @@ import (
 // This middleware is aware of the RequestID middleware and if registered after it leverages the
 // request ID for logging.
 // If verbose is true then the middlware logs the request and response bodies.
-func LogRequest(verbose bool) goa.Middleware {
+func LogRequest(verbose bool, sensitiveHeaders ...string) goa.Middleware {
+	var suppressed map[string]struct{}
+	if len(sensitiveHeaders) > 0 {
+		suppressed = make(map[string]struct{}, len(sensitiveHeaders))
+		for _, sh := range sensitiveHeaders {
+			suppressed[strings.ToLower(sh)] = struct{}{}
+		}
+	}
+
 	return func(h goa.Handler) goa.Handler {
 		return func(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
 			reqID := ctx.Value(reqIDKey)
@@ -35,9 +44,21 @@ func LogRequest(verbose bool) goa.Middleware {
 				if len(r.Header) > 0 {
 					logCtx := make([]interface{}, 2*len(r.Header))
 					i := 0
-					for k, v := range r.Header {
+					keys := make([]string, len(r.Header))
+					for k := range r.Header {
+						keys[i] = k
+						i++
+					}
+					sort.Strings(keys)
+					i = 0
+					for _, k := range keys {
+						v := r.Header[k]
 						logCtx[i] = k
-						logCtx[i+1] = interface{}(strings.Join(v, ", "))
+						if _, ok := suppressed[strings.ToLower(k)]; ok {
+							logCtx[i+1] = "<hidden>"
+						} else {
+							logCtx[i+1] = interface{}(strings.Join(v, ", "))
+						}
 						i = i + 2
 					}
 					goa.LogInfo(ctx, "headers", logCtx...)

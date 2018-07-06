@@ -333,6 +333,7 @@ func (w *ControllersWriter) Execute(data []*ControllerTemplateData) error {
 			}
 		}
 		fn := template.FuncMap{
+			"newCoerceData":  newCoerceData,
 			"finalizeCode":   w.Finalizer.Code,
 			"validationCode": w.Validator.Code,
 		}
@@ -530,7 +531,15 @@ type {{ .Name }} struct {
 */}}{{ if .Pointer }}{{ $tmp := tempvar }}{{ tabs .Depth }}{{ $tmp }} := interface{}(raw{{ goify .Name true }})
 {{ tabs .Depth }}{{ .Pkg }} = &{{ $tmp }}
 {{ else }}{{ tabs .Depth }}{{ .Pkg }} = raw{{ goify .Name true }}
-{{ end }}{{ end }}`
+{{ end }}{{ end }}{{ if eq .Attribute.Type.Kind 13 }}{{/*
+
+*/}}{{/* FileType */}}{{/*
+*/}}{{ tabs .Depth }}if err2 == nil {
+{{ tabs .Depth }}	{{ .Pkg }} = {{ printf "raw%s" (goify .VarName true) }}
+{{ tabs .Depth }}} else {
+{{ tabs .Depth }}	err = goa.MergeErrors(err, goa.InvalidParamTypeError("{{ .Name }}", "{{ .Name }}", "file"))
+{{ tabs .Depth }}}
+{{ end }}`
 
 	// ctxNewT generates the code for the context factory method.
 	// template input: *ContextTemplateData
@@ -583,9 +592,12 @@ func New{{ .Name }}(ctx context.Context, r *http.Request, service *goa.Service) 
 {{ end }}		{{ printf "rctx.%s" (goifyatt $att $name true) }} = params
 {{ else }}		raw{{ goify $name true}} := param{{ goify $name true}}[0]
 {{ template "Coerce" (newCoerceData $name $att ($.Params.IsPrimitivePointer $name) (printf "rctx.%s" (goifyatt $att $name true)) 2) }}{{ end }}{{/*
-*/}}{{ $validation := validationChecker $att ($.Params.IsNonZero $name) ($.Params.IsRequired $name) ($.Params.HasDefaultValue $name) (printf "rctx.%s" (goifyatt $att $name true)) $name 2 false }}{{/*
-*/}}{{ if $validation }}{{ $validation }}
-{{ end }}	}
+*/}}{{ if $att.Type.IsArray }}{{ $validation := validationChecker (arrayAttribute $att) true true false "param" (printf "%s[0]" $name) 2 false }}{{/*
+*/}}{{ if $validation }}for _, param := range {{ printf "rctx.%s" (goifyatt $att $name true) }} {
+	{{ $validation }}
+	}{{ end }}{{/*
+*/}}{{ else }}{{ $validation := validationChecker $att ($.Params.IsNonZero $name) ($.Params.IsRequired $name) ($.Params.HasDefaultValue $name) (printf "rctx.%s" (goifyatt $att $name true)) $name 2 false }}{{/*
+*/}}{{ if $validation }}{{ $validation }}{{ end }}{{ end }}	}
 {{ end }}{{ end }}{{/* if .Params */}}	return &rctx, err
 }
 `
@@ -768,17 +780,25 @@ func handle{{ .Resource }}Origin(h goa.Handler) goa.Handler {
 
 	// unmarshalT generates the code for an action payload unmarshal function.
 	// template input: *ControllerTemplateData
-	unmarshalT = `{{ range .Actions }}{{ if .Payload }}
+	unmarshalT = `{{ define "Coerce" }}` + coerceT + `{{ end }}` + `{{ range .Actions }}{{ if .Payload }}
 // {{ .Unmarshal }} unmarshals the request body into the context request data Payload field.
 func {{ .Unmarshal }}(ctx context.Context, service *goa.Service, req *http.Request) error {
-	{{ if .Payload.IsObject }}payload := &{{ gotypename .Payload nil 1 true }}{}
+	{{ if .PayloadMultipart}}var err error
+	var payload {{ gotypename .Payload nil 1 true }}
+	{{ $o := .Payload.ToObject }}{{ range $name, $att := $o -}}
+	{{ if eq $att.Type.Kind 13 }}_, raw{{ goify $name true }}, err2 := req.FormFile("{{ $name }}"){{ else }}{{/*
+*/}}	raw{{ goify $name true }} := req.FormValue("{{ $name }}"){{ end }}
+{{ template "Coerce" (newCoerceData $name $att true (printf "payload.%s" (goifyatt $att $name true)) 1) }}{{ end }}{{/*
+*/}}	if err != nil {
+		return err
+	}{{ else if .Payload.IsObject }}payload := &{{ gotypename .Payload nil 1 true }}{}
 	if err := service.DecodeRequest(req, payload); err != nil {
 		return err
 	}{{ $assignment := finalizeCode .Payload.AttributeDefinition "payload" 1 }}{{ if $assignment }}
 	payload.Finalize(){{ end }}{{ else }}var payload {{ gotypename .Payload nil 1 false }}
 	if err := service.DecodeRequest(req, &payload); err != nil {
 		return err
-	}{{ end }}{{ $validation := validationCode .Payload.AttributeDefinition false false false "payload" "raw" 1 false }}{{ if $validation }}
+	}{{ end }}{{ $validation := validationCode .Payload.AttributeDefinition false false false "payload" "raw" 1 true }}{{ if $validation }}
 	if err := payload.Validate(); err != nil {
 		// Initialize payload with private data structure so it can be logged
 		goa.ContextRequest(ctx).Payload = payload

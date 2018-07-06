@@ -116,7 +116,7 @@ func goTypeDefObject(obj design.Object, def *design.AttributeDefinition, tabs in
 		WriteTabs(&buffer, tabs+1)
 		field := obj[name]
 		typedef := GoTypeDef(field, tabs+1, jsonTags, private)
-		if (field.Type.IsPrimitive() && private) || field.Type.IsObject() || def.IsPrimitivePointer(name) {
+		if (private && field.Type.IsPrimitive() && !def.IsInterface(name)) || field.Type.IsObject() || def.IsPrimitivePointer(name) {
 			typedef = "*" + typedef
 		}
 		fname := GoifyAtt(field, name, true)
@@ -162,7 +162,8 @@ func attributeTags(parent, att *design.AttributeDefinition, name string, private
 	if private || (!parent.IsRequired(name) && !parent.HasDefaultValue(name)) {
 		omit = ",omitempty"
 	}
-	return fmt.Sprintf(" `form:\"%s%s\" json:\"%s%s\" xml:\"%s%s\"`", name, omit, name, omit, name, omit)
+	return fmt.Sprintf(" `form:\"%s%s\" json:\"%s%s\" yaml:\"%s%s\" xml:\"%s%s\"`",
+		name, omit, name, omit, name, omit, name, omit)
 }
 
 // GoTypeRef returns the Go code that refers to the Go type which matches the given data type
@@ -241,6 +242,8 @@ func GoNativeType(t design.DataType) string {
 			return "uuid.UUID"
 		case design.AnyKind:
 			return "interface{}"
+		case design.FileKind:
+			return "multipart.FileHeader"
 		default:
 			panic(fmt.Sprintf("goa bug: unknown primitive type %#v", actual))
 		}

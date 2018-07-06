@@ -113,24 +113,47 @@ var _ = Describe("Struct finalize code generation", func() {
 			}
 			target = "ut"
 		})
-		Context("given a datetime field", func() {
-			BeforeEach(func() {
-				att = &design.AttributeDefinition{
-					Type: &design.Object{
-						"foo": &design.AttributeDefinition{
-							Type:         design.DateTime,
-							DefaultValue: interface{}("1978-06-30T10:00:00+09:00"),
-						},
+		It("finalizes the hash fields", func() {
+			code := finalizer.Code(att, target, 0)
+			Ω(code).Should(Equal(hashAssignmentCode))
+		})
+	})
+
+	Context("given a datetime field", func() {
+		BeforeEach(func() {
+			att = &design.AttributeDefinition{
+				Type: &design.Object{
+					"foo": &design.AttributeDefinition{
+						Type:         design.DateTime,
+						DefaultValue: interface{}("1978-06-30T10:00:00+09:00"),
+					},
+				},
+			}
+			target = "ut"
+		})
+		It("finalizes the hash fields", func() {
+			code := finalizer.Code(att, target, 0)
+			Ω(code).Should(Equal(datetimeAssignmentCode))
+		})
+	})
+
+	Context("given a recursive user type", func() {
+		BeforeEach(func() {
+			var (
+				rt  = &design.UserTypeDefinition{TypeName: "recursive"}
+				obj = &design.Object{
+					"child": &design.AttributeDefinition{Type: rt},
+					"other": &design.AttributeDefinition{
+						Type:         design.String,
+						DefaultValue: "foo",
 					},
 				}
-				target = "ut"
-			})
-			It("finalizes the hash fields", func() {
-				code := finalizer.Code(att, target, 0)
-				Ω(code).Should(Equal(datetimeAssignmentCode))
-			})
-		})
+			)
+			rt.AttributeDefinition = &design.AttributeDefinition{Type: obj}
 
+			att = &design.AttributeDefinition{Type: rt}
+			target = "ut"
+		})
 		It("finalizes the recursive type fields", func() {
 			code := finalizer.Code(att, target, 0)
 			Ω(code).Should(Equal(recursiveAssignmentCodeA))
@@ -190,8 +213,15 @@ if ut.Foo == nil {
 	ut.Foo = &defaultFoo
 }`
 
-	recursiveAssignmentCodeA = `if ut.Foo == nil {
-	ut.Foo = map[string]string{"bar": "baz"}
+	recursiveAssignmentCodeA = `if ut.Child != nil {
+	var defaultOther = "foo"
+	if ut.Child.Other == nil {
+		ut.Child.Other = &defaultOther
+}
+}
+var defaultOther = "foo"
+if ut.Other == nil {
+	ut.Other = &defaultOther
 }`
 
 	recursiveAssignmentCodeB = `	for _, e := range ut.Elems {

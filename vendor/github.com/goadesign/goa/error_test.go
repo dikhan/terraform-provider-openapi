@@ -522,17 +522,6 @@ var _ = Describe("Merge", func() {
 							}
 						})
 					})
-
-					Context("with the second argument a MergeableError", func() {
-						BeforeEach(func() {
-							err2 = &MergeableErrorResponse{ErrorResponse: &ErrorResponse{Detail: detail}}
-						})
-
-						It("returns it", func() {
-							Ω(mErr).Should(BeAssignableToTypeOf(&MergeableErrorResponse{}))
-							Ω(err2.(*MergeableErrorResponse).MergeCalled).To(Equal(1))
-						})
-					})
 				})
 
 				Context("with metadata with a common key", func() {
@@ -591,7 +580,7 @@ var _ = Describe("Merge", func() {
 				})
 
 				It("calls user defined merge", func() {
-					Ω(err.(*MergeableErrorResponse).MergeCalled).Should(Equal(1))
+					Ω(mErr.(*MergeableErrorResponse).MergeCalled).Should(Equal(1))
 				})
 			})
 
@@ -605,7 +594,7 @@ var _ = Describe("Merge", func() {
 				})
 
 				It("calls user defined merge", func() {
-					Ω(err.(*MergeableErrorResponse).MergeCalled).Should(Equal(1))
+					Ω(mErr.(*MergeableErrorResponse).MergeCalled).Should(Equal(1))
 				})
 			})
 		})

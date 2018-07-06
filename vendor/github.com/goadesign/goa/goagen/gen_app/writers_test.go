@@ -994,6 +994,7 @@ var _ = Describe("ControllersWriter", func() {
 		})
 
 		Context("with data", func() {
+			var multipart bool
 			var actions, verbs, paths, contexts, unmarshals []string
 			var payloads []*design.UserTypeDefinition
 			var encoders, decoders []*genapp.EncoderTemplateData
@@ -1002,6 +1003,7 @@ var _ = Describe("ControllersWriter", func() {
 			var data []*genapp.ControllerTemplateData
 
 			BeforeEach(func() {
+				multipart = false
 				actions = nil
 				verbs = nil
 				paths = nil
@@ -1038,9 +1040,10 @@ var _ = Describe("ControllersWriter", func() {
 								Verb: verbs[i],
 								Path: paths[i],
 							}},
-						"Context":   contexts[i],
-						"Unmarshal": unmarshal,
-						"Payload":   payload,
+						"Context":          contexts[i],
+						"Unmarshal":        unmarshal,
+						"Payload":          payload,
+						"PayloadMultipart": multipart,
 					}
 				}
 				if len(as) > 0 {
@@ -1147,6 +1150,45 @@ var _ = Describe("ControllersWriter", func() {
 					Ω(err).ShouldNot(HaveOccurred())
 					written := string(b)
 					Ω(written).Should(ContainSubstring(payloadObjUnmarshal))
+				})
+			})
+
+			Context("with actions that take a multipart payload", func() {
+				BeforeEach(func() {
+					actions = []string{"list"}
+					required := &dslengine.ValidationDefinition{
+						Required: []string{"id"},
+					}
+					verbs = []string{"GET"}
+					paths = []string{"/accounts/:accountID/bottles"}
+					contexts = []string{"ListBottleContext"}
+					unmarshals = []string{"unmarshalListBottlePayload"}
+					payloads = []*design.UserTypeDefinition{
+						{
+							TypeName: "ListBottlePayload",
+							AttributeDefinition: &design.AttributeDefinition{
+								Type: design.Object{
+									"id": &design.AttributeDefinition{
+										Type: design.String,
+									},
+									"icon": &design.AttributeDefinition{
+										Type: design.File,
+									},
+								},
+								Validation: required,
+							},
+						},
+					}
+					multipart = true
+				})
+
+				It("writes the payload unmarshal function", func() {
+					err := writer.Execute(data)
+					Ω(err).ShouldNot(HaveOccurred())
+					b, err := ioutil.ReadFile(filename)
+					Ω(err).ShouldNot(HaveOccurred())
+					written := string(b)
+					Ω(written).Should(ContainSubstring(payloadMultipartObjUnmarshal))
 				})
 			})
 
@@ -2274,6 +2316,32 @@ func unmarshalListBottlePayload(ctx context.Context, service *goa.Service, req *
 	return nil
 }
 `
+
+	payloadMultipartObjUnmarshal = `
+func unmarshalListBottlePayload(ctx context.Context, service *goa.Service, req *http.Request) error {
+	var err error
+	var payload listBottlePayload
+	_, rawIcon, err2 := req.FormFile("icon")
+	if err2 == nil {
+		payload.Icon = rawIcon
+	} else {
+		err = goa.MergeErrors(err, goa.InvalidParamTypeError("icon", "icon", "file"))
+	}
+	rawID := req.FormValue("id")
+	payload.ID = &rawID
+	if err != nil {
+		return err
+	}
+	if err := payload.Validate(); err != nil {
+		// Initialize payload with private data structure so it can be logged
+		goa.ContextRequest(ctx).Payload = payload
+		return err
+	}
+	goa.ContextRequest(ctx).Payload = payload.Publicize()
+	return nil
+}
+`
+
 	payloadNoValidationsObjUnmarshal = `
 func unmarshalListBottlePayload(ctx context.Context, service *goa.Service, req *http.Request) error {
 	payload := &listBottlePayload{}
@@ -2486,7 +2554,7 @@ type BottlesController interface {
 
 	simpleUserType = `// simplePayload user type.
 type simplePayload struct {
-	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"` + "`" + `
+	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" yaml:"name,omitempty" xml:"name,omitempty"` + "`" + `
 }
 
 
@@ -2502,14 +2570,14 @@ func (ut *simplePayload) Publicize() *SimplePayload {
 
 // SimplePayload user type.
 type SimplePayload struct {
-	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"` + "`" + `
+	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" yaml:"name,omitempty" xml:"name,omitempty"` + "`" + `
 }
 `
 
 	userTypeIncludingHash = `// complexPayload user type.
 type complexPayload struct {
-	Misc map[int]*miscPayload ` + "`" + `form:"misc,omitempty" json:"misc,omitempty" xml:"misc,omitempty"` + "`" + `
-	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"` + "`" + `
+	Misc map[int]*miscPayload ` + "`" + `form:"misc,omitempty" json:"misc,omitempty" yaml:"misc,omitempty" xml:"misc,omitempty"` + "`" + `
+	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" yaml:"name,omitempty" xml:"name,omitempty"` + "`" + `
 }
 
 
@@ -2536,8 +2604,8 @@ func (ut *complexPayload) Publicize() *ComplexPayload {
 
 // ComplexPayload user type.
 type ComplexPayload struct {
-	Misc map[int]*MiscPayload ` + "`" + `form:"misc,omitempty" json:"misc,omitempty" xml:"misc,omitempty"` + "`" + `
-	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"` + "`" + `
+	Misc map[int]*MiscPayload ` + "`" + `form:"misc,omitempty" json:"misc,omitempty" yaml:"misc,omitempty" xml:"misc,omitempty"` + "`" + `
+	Name *string ` + "`" + `form:"name,omitempty" json:"name,omitempty" yaml:"name,omitempty" xml:"name,omitempty"` + "`" + `
 }
 `
 )

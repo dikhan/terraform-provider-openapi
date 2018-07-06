@@ -148,6 +148,7 @@
   revision = "cf0bdb963811675a4d7e74901cefc7411a1df939"
 
 [[projects]]
+  branch = "master"
   name = "github.com/goadesign/goa"
   packages = [
     ".",
@@ -160,8 +161,7 @@
     "middleware",
     "uuid"
   ]
-  revision = "fc29b77a218fb9e190849c81911ed12d25e771de"
-  version = "v1.3.1"
+  revision = "ed6ccb1eb93abc627ce6a94a9c869e4049fc40ec"
 
 [[projects]]
   branch = "master"
@@ -368,15 +368,15 @@
 [[projects]]
   name = "github.com/satori/go.uuid"
   packages = ["."]
-  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
-  version = "v1.1.0"
+  revision = "master"
 
 [[projects]]
   name = "github.com/smartystreets/assertions"
   packages = [
     ".",
     "internal/go-render/render",
-    "internal/oglematchers"
+    "internal/oglematchers",
+    "should"
   ]
   revision = "0b37b35ec7434b77e77a4bb29b79677cced992ea"
   version = "1.8.1"
@@ -487,6 +487,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "44ee0a3c97750539b03f16586b71ccbdb5f32371b530cd6676ec96c1b3e2f610"
+  inputs-digest = "e50a55983e0cc05ad15cd729b3d3167fe5d818544743df91fc592a1514c2c5ee"
   solver-name = "gps-cdcl"
   solver-version = 1
