@@ -170,7 +170,7 @@ where the swagger file is hosted, where````<your_provider_name>```` should be re
 
 #### OpenAPI plugin configuration file
 
-A configuration file will need to be created in terraform plugins folder ```~/.terraform.d/plugins``` following [OpenAPI v1 plugin configuration specification]().
+A configuration file will need to be created in terraform plugins folder ```~/.terraform.d/plugins``` following [OpenAPI v1 plugin configuration specification](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md).
 An example is described below:
 
     ```
