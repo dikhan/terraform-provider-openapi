@@ -18,3 +18,4 @@ examples/*/.terraform/*
 examples/*/terraform.tfstate*
 .idea/*
 terraform.tfstate
+dist
