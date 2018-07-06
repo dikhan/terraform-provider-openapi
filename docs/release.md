@@ -21,6 +21,14 @@ $ make latest-tag
 v0.1.0
 ````
 
+- Update [install script](https://github.com/dikhan/terraform-provider-openapi/blob/master/scripts/install.sh#L61) with the 
+latest version created, commit and push to origin:
+
+````
+# installation variables
+LATEST_RELEASE_VERSION=0.1.1
+````
+
 - Create a new tag that will be associated with the new release. Based on the tag version displayed from the previous
 command, depending on the type of release go ahead and change the major, minor or patch number. In this example, we are
 releasing a patch version, hence that last digit will be pumped up:
@@ -28,14 +36,6 @@ releasing a patch version, hence that last digit will be pumped up:
 ````
 $ git tag -a v0.1.1 -m "Release message"
 $ git push origin v0.1.1
-````
-
-- Update [install script](https://github.com/dikhan/terraform-provider-openapi/blob/master/scripts/install.sh#L61) with the 
-latest version created, commit and push to origin:
-
-````
-# installation variables
-LATEST_RELEASE_VERSION=0.1.1
 ````
 
 - Perform the release by running goreleaser:
