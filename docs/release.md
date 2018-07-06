@@ -30,6 +30,14 @@ $ git tag -a v0.1.1 -m "Release message"
 $ git push origin v0.1.1
 ````
 
+- Update [install script](https://github.com/dikhan/terraform-provider-openapi/blob/master/scripts/install.sh#L61) with the 
+latest version created, commit and push to origin:
+
+````
+# installation variables
+LATEST_RELEASE_VERSION=0.1.1
+````
+
 - Perform the release by running goreleaser:
 
 ````
