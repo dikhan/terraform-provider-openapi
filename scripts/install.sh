@@ -83,13 +83,13 @@ fi
 if [ "${ARCH}" == "Linux" ]; then
 	BIN_ARCH="linux"
 elif [ "${ARCH}" == "Darwin" ]; then
-	BIN_ARCH="macOS"
+	BIN_ARCH="darwin"
 else
 	echo "[ERROR] unsupported architecture: ${ARCH}, only architecture supported at the moment are Darwin and Linux"
 	exit 2
 fi
 
-FILE_NAME="${TF_OPENAPI_PROVIDER_PLUGIN_NAME}_${LATEST_RELEASE_VERSION}_${BIN_ARCH}_64-bit.tar.gz"
+FILE_NAME="${TF_OPENAPI_PROVIDER_PLUGIN_NAME}_${LATEST_RELEASE_VERSION}_${BIN_ARCH}_amd64.tar.gz"
 DOWNLOAD_URL="https://github.com/dikhan/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}/releases/download/v${LATEST_RELEASE_VERSION}/${FILE_NAME}"
 
 # verifying curl is available in the system
