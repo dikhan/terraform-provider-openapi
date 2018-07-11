@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
+	"gopkg.in/yaml.v2"
 )
 
 // ServiceConfigurations contains the map with all service configurations
@@ -18,6 +19,8 @@ type PluginConfigSchema interface {
 	GetAllServiceConfigurations() (ServiceConfigurations, error)
 	// GetVersion returns the plugin configuration version
 	GetVersion() (string, error)
+	// Marshal serializes the value provided into a YAML document
+	Marshal() ([]byte, error)
 }
 
 // PluginConfigSchemaV1 defines PluginConfigSchema version 1
@@ -81,4 +84,10 @@ func (p *PluginConfigSchemaV1) GetAllServiceConfigurations() (ServiceConfigurati
 		serviceConfigurations[k] = v
 	}
 	return serviceConfigurations, nil
+}
+
+// Marshal serializes the value provided into a YAML document
+func (p *PluginConfigSchemaV1) Marshal() ([]byte, error) {
+	out, err := yaml.Marshal(p)
+	return out, err
 }

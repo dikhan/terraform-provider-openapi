@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -148,7 +149,7 @@ func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 			},
 		}
 		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
-		Convey("When GetVersion method is called", func() {
+		Convey("When GetAllServiceConfigurations method is called", func() {
 			serviceConfigurations, err := pluginConfigSchema.GetAllServiceConfigurations()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
@@ -158,6 +159,38 @@ func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 			})
 			Convey("And the serviceConfigurations item should be test", func() {
 				So(serviceConfigurations[serviceConfigName], ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestPluginConfigSchemaV1Marshal(t *testing.T) {
+	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
+		var pluginConfigSchema PluginConfigSchema
+		version := "1"
+		expectedURL := "http://sevice-api.com/swagger.yaml"
+		serviceConfigName := "test"
+		expectedInscureSkipVerify := true
+		services := map[string]*ServiceConfigV1{
+			serviceConfigName: {
+				SwaggerURL:         expectedURL,
+				InsecureSkipVerify: expectedInscureSkipVerify,
+			},
+		}
+		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		Convey("When Marshal method is called", func() {
+			marshalConfig, err := pluginConfigSchema.Marshal()
+			Convey("Then the error returned should be nil as configuration is correct", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the marshalConfig should containt the right marshal configuration", func() {
+				expectedConfig := fmt.Sprintf(`version: "1"
+services:
+  test:
+    swagger-url: %s
+    insecure_skip_verify: %t
+`, expectedURL, expectedInscureSkipVerify)
+				So(string(marshalConfig), ShouldEqual, expectedConfig)
 			})
 		})
 	})
