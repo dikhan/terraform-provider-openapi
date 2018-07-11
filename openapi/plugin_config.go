@@ -12,8 +12,10 @@ import (
 	"strings"
 )
 
+// OpenAPIPluginConfigurationFileName defines the file name used for the OpenAPI plugin configuration
+const OpenAPIPluginConfigurationFileName = "terraform-provider-openapi.yaml"
+
 const tfPluginsFolder = ".terraform.d/plugins"
-const otfPluginConfigurationFileName = "terraform-provider-openapi.yaml"
 const otfVarSwaggerURL = "OTF_VAR_%s_SWAGGER_URL"
 
 // PluginConfiguration defines the OpenAPI plugin's configuration
@@ -36,7 +38,7 @@ func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 	if err != nil {
 		return nil, err
 	}
-	configurationFilePath := fmt.Sprintf("%s/%s/%s", homeDir, tfPluginsFolder, otfPluginConfigurationFileName)
+	configurationFilePath := fmt.Sprintf("%s/%s/%s", homeDir, tfPluginsFolder, OpenAPIPluginConfigurationFileName)
 	if _, err := os.Stat(configurationFilePath); os.IsNotExist(err) {
 		log.Printf("[INFO] open api plugin configuration not present at %s", configurationFilePath)
 	} else {
@@ -83,19 +85,19 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 		if p.Configuration != nil {
 			source, err := ioutil.ReadAll(p.Configuration)
 			if err != nil {
-				return nil, fmt.Errorf("failed to read %s configuration file", otfPluginConfigurationFileName)
+				return nil, fmt.Errorf("failed to read %s configuration file", OpenAPIPluginConfigurationFileName)
 			}
 			err = yaml.Unmarshal(source, pluginConfigV1)
 			if err != nil {
-				return nil, fmt.Errorf("failed to unmarshall %s configuration file - error = %s", otfPluginConfigurationFileName, err)
+				return nil, fmt.Errorf("failed to unmarshall %s configuration file - error = %s", OpenAPIPluginConfigurationFileName, err)
 			}
 			pluginConfig = PluginConfigSchema(pluginConfigV1)
 			if err = pluginConfig.Validate(); err != nil {
-				return nil, fmt.Errorf("error occurred while validating '%s' - error = %s", otfPluginConfigurationFileName, err)
+				return nil, fmt.Errorf("error occurred while validating '%s' - error = %s", OpenAPIPluginConfigurationFileName, err)
 			}
 			serviceConfig, err = pluginConfig.GetServiceConfig(p.ProviderName)
 			if err != nil {
-				return nil, fmt.Errorf("error occurred when getting service configuration from plugin configuration file %s - error = %s", otfPluginConfigurationFileName, err)
+				return nil, fmt.Errorf("error occurred when getting service configuration from plugin configuration file %s - error = %s", OpenAPIPluginConfigurationFileName, err)
 			}
 		}
 	}
