@@ -174,7 +174,7 @@ services:
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error should containg the following message", func() {
-				So(err.Error(), should.ContainSubstring, "error occurred while validating terraform-provider-openapi.yaml - error = provider configuration version not matching current implementation, please use version '1' of provider configuration specification")
+				So(err.Error(), should.ContainSubstring, "error occurred while validating 'terraform-provider-openapi.yaml' - error = provider configuration version not matching current implementation, please use version '1' of provider configuration specification")
 			})
 		})
 	})

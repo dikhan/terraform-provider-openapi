@@ -18,6 +18,20 @@ type ServiceConfigV1 struct {
 	InsecureSkipVerify bool `yaml:"insecure_skip_verify"`
 }
 
+// NewServiceConfigV1WithDefaults creates a new ServiceConfigV1 with the swaggerURL passed in and default configuration
+// for the rest of the struct fields
+func NewServiceConfigV1WithDefaults(swaggerURL string) *ServiceConfigV1 {
+	return NewServiceConfigV1(swaggerURL, false)
+}
+
+// NewServiceConfigV1 creates a new instance of NewServiceConfigV1 struct with the values provided
+func NewServiceConfigV1(swaggerURL string, insecureSkipVerifyEnabled bool) *ServiceConfigV1 {
+	return &ServiceConfigV1{
+		SwaggerURL:         swaggerURL,
+		InsecureSkipVerify: insecureSkipVerifyEnabled,
+	}
+}
+
 // GetSwaggerURL returns the URL where the service swagger doc is exposed
 func (s *ServiceConfigV1) GetSwaggerURL() string {
 	return s.SwaggerURL
