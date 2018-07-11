@@ -91,7 +91,7 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 			}
 			pluginConfig = PluginConfigSchema(pluginConfigV1)
 			if err = pluginConfig.Validate(); err != nil {
-				return nil, fmt.Errorf("error occurred while validating %s - error = %s", otfPluginConfigurationFileName, err)
+				return nil, fmt.Errorf("error occurred while validating the plugin confi file located at '%s' - error = %s", otfPluginConfigurationFileName, err)
 			}
 			serviceConfig, err = pluginConfig.GetServiceConfig(p.ProviderName)
 			if err != nil {

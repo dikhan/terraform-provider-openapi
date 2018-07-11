@@ -8,7 +8,6 @@ import (
 
 func TestNewPluginConfigSchemaV1(t *testing.T) {
 	Convey("Given a schema version and a map of services and their swagger URLs", t, func() {
-		version := "1"
 		services := map[string]*ServiceConfigV1{
 			"test": {
 				SwaggerURL:         "http://sevice-api.com/swagger.yaml",
@@ -16,7 +15,7 @@ func TestNewPluginConfigSchemaV1(t *testing.T) {
 			},
 		}
 		Convey("When NewPluginConfigSchemaV1 method is called", func() {
-			pluginConfigSchemaV1 := NewPluginConfigSchemaV1(version, services)
+			pluginConfigSchemaV1 := NewPluginConfigSchemaV1(services)
 			Convey("And the pluginConfigSchema returned should implement PluginConfigSchema interface", func() {
 				var _ PluginConfigSchema = pluginConfigSchemaV1
 			})
@@ -27,14 +26,13 @@ func TestNewPluginConfigSchemaV1(t *testing.T) {
 func TestPluginConfigSchemaV1Validate(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
 		var pluginConfigSchema PluginConfigSchema
-		version := "1"
 		services := map[string]*ServiceConfigV1{
 			"test": {
 				SwaggerURL:         "http://sevice-api.com/swagger.yaml",
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When Validate method is called", func() {
 			err := pluginConfigSchema.Validate()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -51,29 +49,37 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		pluginConfigSchema = &PluginConfigSchemaV1{
+			version,
+			services,
+		}
 		Convey("When Validate method is called", func() {
 			err := pluginConfigSchema.Validate()
 			Convey("Then the error returned should NOT be nil as version is not supported", func() {
 				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error returned be equal to", func() {
+				So(err.Error(), ShouldEqual, "provider configuration version not matching current implementation, please use version '1' of provider configuration specification")
 			})
 		})
 	})
 
 	Convey("Given a PluginConfigSchemaV1 containing a version that is supported but some services contain NON valid URLs", t, func() {
 		var pluginConfigSchema PluginConfigSchema
-		version := "2"
 		services := map[string]*ServiceConfigV1{
 			"test": {
 				SwaggerURL:         "htpt:/non-valid-url",
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When Validate method is called", func() {
 			err := pluginConfigSchema.Validate()
 			Convey("Then the error returned should NOT be nil as service URL is not correct", func() {
 				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error returned be equal to", func() {
+				So(err.Error(), ShouldEqual, "service 'test' found in the provider configuration does not contain a valid URL value 'htpt:/non-valid-url'")
 			})
 		})
 	})
@@ -82,7 +88,6 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 func TestPluginConfigSchemaV1GetServiceConfig(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
 		var pluginConfigSchema PluginConfigSchema
-		version := "1"
 		expectedURL := "http://sevice-api.com/swagger.yaml"
 		services := map[string]*ServiceConfigV1{
 			"test": {
@@ -90,7 +95,7 @@ func TestPluginConfigSchemaV1GetServiceConfig(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When GetServiceConfig method is called with a service described in the configuration", func() {
 			serviceConfig, err := pluginConfigSchema.GetServiceConfig("test")
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -115,7 +120,6 @@ func TestPluginConfigSchemaV1GetServiceConfig(t *testing.T) {
 func TestPluginConfigSchemaV1GetVersion(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
 		var pluginConfigSchema PluginConfigSchema
-		version := "1"
 		expectedURL := "http://sevice-api.com/swagger.yaml"
 		services := map[string]*ServiceConfigV1{
 			"test": {
@@ -123,7 +127,7 @@ func TestPluginConfigSchemaV1GetVersion(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When GetVersion method is called", func() {
 			configVersion, err := pluginConfigSchema.GetVersion()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -139,7 +143,6 @@ func TestPluginConfigSchemaV1GetVersion(t *testing.T) {
 func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
 		var pluginConfigSchema PluginConfigSchema
-		version := "1"
 		expectedURL := "http://sevice-api.com/swagger.yaml"
 		serviceConfigName := "test"
 		services := map[string]*ServiceConfigV1{
@@ -148,7 +151,7 @@ func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When GetAllServiceConfigurations method is called", func() {
 			serviceConfigurations, err := pluginConfigSchema.GetAllServiceConfigurations()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -167,7 +170,6 @@ func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
 		var pluginConfigSchema PluginConfigSchema
-		version := "1"
 		expectedURL := "http://sevice-api.com/swagger.yaml"
 		serviceConfigName := "test"
 		expectedInscureSkipVerify := true
@@ -177,7 +179,7 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 				InsecureSkipVerify: expectedInscureSkipVerify,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When Marshal method is called", func() {
 			marshalConfig, err := pluginConfigSchema.Marshal()
 			Convey("Then the error returned should be nil as configuration is correct", func() {

@@ -40,9 +40,9 @@ type PluginConfigSchemaV1 struct {
 }
 
 // NewPluginConfigSchemaV1 creates a new PluginConfigSchemaV1 that implements PluginConfigSchema interface
-func NewPluginConfigSchemaV1(version string, services map[string]*ServiceConfigV1) *PluginConfigSchemaV1 {
+func NewPluginConfigSchemaV1(services map[string]*ServiceConfigV1) *PluginConfigSchemaV1 {
 	return &PluginConfigSchemaV1{
-		Version:  version,
+		Version:  "1",
 		Services: services,
 	}
 }
