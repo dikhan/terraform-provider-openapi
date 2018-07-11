@@ -89,8 +89,31 @@ Global security can be overridden in individual operations to use a different au
 
 ```yml
 security:
-  - apiKeyAuth: []
+  - api_key_auth: []
 ```
+
+If multiple authentication is required, that can be achieved as follows:
+
+```yml
+security:
+  - api_key_auth: []
+    api_key_auth2: []
+```
+
+The above means that **both** authentication schemes, ```api_key_auth``` and ```api_key_auth2``` will be used when calling 
+the APIs.
+
+Alternatively, the example below means that **either** of the authentication schemes defined will be used. By default, the
+OpenAPI Terraform provider picks the first one in the list by order of appearance, in this case ```api_key_auth``` will be
+used as the global authentication mechanism.
+
+```yml
+security:
+  - api_key_auth: []
+  - api_key_auth2: []
+```
+
+More information about multiple API keys can be found [here](https://swagger.io/docs/specification/authentication/api-keys/#multiple).
 
 #### <a name="swaggerConsumes">Consumes</a>
 
@@ -311,7 +334,7 @@ paths:
 
 ```yml
 securityDefinitions:
-  apikey_auth:
+  api_key_auth:
     type: "apiKey"
     name: "Authorization"
     in: "header"
