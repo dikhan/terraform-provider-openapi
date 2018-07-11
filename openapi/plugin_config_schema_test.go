@@ -78,7 +78,7 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 	})
 }
 
-func TestPluginConfigSchemaV1GetProviderURL(t *testing.T) {
+func TestPluginConfigSchemaV1GetServiceConfig(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
 		var pluginConfigSchema PluginConfigSchema
 		version := "1"
@@ -106,6 +106,58 @@ func TestPluginConfigSchemaV1GetProviderURL(t *testing.T) {
 			_, err := pluginConfigSchema.GetServiceConfig("non-existing-service")
 			Convey("Then the error returned should not be nil as provider specified does not exist in configuration file", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestPluginConfigSchemaV1GetVersion(t *testing.T) {
+	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
+		var pluginConfigSchema PluginConfigSchema
+		version := "1"
+		expectedURL := "http://sevice-api.com/swagger.yaml"
+		services := map[string]*ServiceConfigV1{
+			"test": {
+				SwaggerURL:         expectedURL,
+				InsecureSkipVerify: true,
+			},
+		}
+		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		Convey("When GetVersion method is called", func() {
+			configVersion, err := pluginConfigSchema.GetVersion()
+			Convey("Then the error returned should be nil as configuration is correct", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the serviceConfig should not be nil", func() {
+				So(configVersion, ShouldEqual, "1")
+			})
+		})
+	})
+}
+
+func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
+	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
+		var pluginConfigSchema PluginConfigSchema
+		version := "1"
+		expectedURL := "http://sevice-api.com/swagger.yaml"
+		serviceConfigName := "test"
+		services := map[string]*ServiceConfigV1{
+			serviceConfigName: {
+				SwaggerURL:         expectedURL,
+				InsecureSkipVerify: true,
+			},
+		}
+		pluginConfigSchema = NewPluginConfigSchemaV1(version, services)
+		Convey("When GetVersion method is called", func() {
+			serviceConfigurations, err := pluginConfigSchema.GetAllServiceConfigurations()
+			Convey("Then the error returned should be nil as configuration is correct", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the serviceConfigurations contain 1 configuration", func() {
+				So(len(serviceConfigurations), ShouldEqual, 1)
+			})
+			Convey("And the serviceConfigurations item should be test", func() {
+				So(serviceConfigurations[serviceConfigName], ShouldNotBeNil)
 			})
 		})
 	})

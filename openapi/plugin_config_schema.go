@@ -5,12 +5,19 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
+// ServiceConfigurations contains the map with all service configurations
+type ServiceConfigurations map[string]ServiceConfiguration
+
 // PluginConfigSchema defines the interface/expected behaviour for PluginConfigSchema implementations.
 type PluginConfigSchema interface {
 	// Validate performs a check to confirm that the schema content is correct
 	Validate() error
 	// GetServiceConfig returns the service configuration for a given provider name
 	GetServiceConfig(providerName string) (ServiceConfiguration, error)
+	// GetAllServiceConfigurations returns all the service configuration
+	GetAllServiceConfigurations() (ServiceConfigurations, error)
+	// GetVersion returns the plugin configuration version
+	GetVersion() (string, error)
 }
 
 // PluginConfigSchemaV1 defines PluginConfigSchema version 1
@@ -60,4 +67,18 @@ func (p *PluginConfigSchemaV1) GetServiceConfig(providerName string) (ServiceCon
 		return nil, fmt.Errorf("'%s' not found in provider's services configuration", providerName)
 	}
 	return serviceConfig, nil
+}
+
+// GetVersion returns the plugin configuration version
+func (p *PluginConfigSchemaV1) GetVersion() (string, error) {
+	return p.Version, nil
+}
+
+// GetAllServiceConfigurations returns all the service configuration
+func (p *PluginConfigSchemaV1) GetAllServiceConfigurations() (ServiceConfigurations, error) {
+	serviceConfigurations := ServiceConfigurations{}
+	for k, v := range p.Services {
+		serviceConfigurations[k] = v
+	}
+	return serviceConfigurations, nil
 }
