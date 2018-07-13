@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -33,7 +34,8 @@ type PluginConfiguration struct {
 // NewPluginConfiguration creates a new PluginConfiguration
 func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 	var configurationFile io.Reader
-	expandedTerraformVendorDir, err := terraformutils.GetTerraformPluginsVendorDir()
+	terraformUtils := terraformutils.TerraformUtils{Runtime: runtime.GOOS}
+	expandedTerraformVendorDir, err := terraformUtils.GetTerraformPluginsVendorDir()
 	if err != nil {
 		return nil, err
 	}

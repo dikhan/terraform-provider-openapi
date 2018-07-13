@@ -4,15 +4,19 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"log"
-	"runtime"
 )
 
 const terraformPluginVendorDir = "terraform.d/plugins"
 
+// TerraformUtils defines a struct that exposes some handy terraform utils functions
+type TerraformUtils struct {
+	Runtime string
+}
+
 // GetTerraformPluginsVendorDir returns Terraform's global plugin vendor directory where Terraform suggests installing
 // custom plugins such as the OopenAPI Terraform provider. This function supports the most used platforms including
 // windows, darwin and linux
-func GetTerraformPluginsVendorDir() (string, error) {
+func (t *TerraformUtils) GetTerraformPluginsVendorDir() (string, error) {
 	var terraformPluginsFolder string
 	homeDir, err := homedir.Dir()
 	if err != nil {
@@ -22,7 +26,7 @@ func GetTerraformPluginsVendorDir() (string, error) {
 	// On all other systems, in the sub-path .terraform.d/plugins in your user's home directory.
 	terraformPluginsFolder = fmt.Sprintf("%s/.%s", homeDir, terraformPluginVendorDir)
 	// On Windows, in the sub-path terraform.d/plugins beneath your user's "Application Data" directory.
-	if runtime.GOOS == "windows" {
+	if t.Runtime == "windows" {
 		terraformPluginsFolder = fmt.Sprintf("%s/%s", homeDir, terraformPluginVendorDir)
 	}
 	return terraformPluginsFolder, nil
