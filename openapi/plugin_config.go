@@ -10,12 +10,13 @@ import (
 	"log"
 	"os"
 	"strings"
+	"runtime"
 )
 
 // OpenAPIPluginConfigurationFileName defines the file name used for the OpenAPI plugin configuration
 const OpenAPIPluginConfigurationFileName = "terraform-provider-openapi.yaml"
 
-const tfPluginsFolder = ".terraform.d/plugins"
+const terraformPluginVendorDir = "terraform.d/plugins"
 const otfVarSwaggerURL = "OTF_VAR_%s_SWAGGER_URL"
 
 // PluginConfiguration defines the OpenAPI plugin's configuration
@@ -34,11 +35,11 @@ type PluginConfiguration struct {
 // NewPluginConfiguration creates a new PluginConfiguration
 func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 	var configurationFile io.Reader
-	homeDir, err := homedir.Dir()
+	expandedTerraformVendorDir, err := getTerraformPluginsVendorDir()
 	if err != nil {
 		return nil, err
 	}
-	configurationFilePath := fmt.Sprintf("%s/%s/%s", homeDir, tfPluginsFolder, OpenAPIPluginConfigurationFileName)
+	configurationFilePath := fmt.Sprintf("%s/%s", expandedTerraformVendorDir, OpenAPIPluginConfigurationFileName)
 	if _, err := os.Stat(configurationFilePath); os.IsNotExist(err) {
 		log.Printf("[INFO] open api plugin configuration not present at %s", configurationFilePath)
 	} else {
@@ -53,6 +54,22 @@ func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 		ProviderName:  providerName,
 		Configuration: configurationFile,
 	}, nil
+}
+
+func getTerraformPluginsVendorDir() (string, error) {
+	var terraformPluginsFolder string
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		log.Printf("[ERROR] A failure occurred when getting the user's home directory. Error = %s", err)
+		return "", err
+	}
+	// On all other systems, in the sub-path .terraform.d/plugins in your user's home directory.
+	terraformPluginsFolder = fmt.Sprintf("%s/.%s", homeDir, terraformPluginVendorDir)
+	// On Windows, in the sub-path terraform.d/plugins beneath your user's "Application Data" directory.
+	if runtime.GOOS == "windows" {
+		terraformPluginsFolder = fmt.Sprintf("%s/%s", homeDir, terraformPluginVendorDir)
+	}
+	return terraformPluginsFolder, nil
 }
 
 func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, error) {
