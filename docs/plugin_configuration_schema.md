@@ -61,7 +61,7 @@ Describes the configurations available on a single service.
 
 Field Name | Type | Description
 ---|:---:|---
-swagger-url | `string` | **Required.** Defines the url where the swagger documented is hosted
+swagger-url | `string` | **Required.** Defines the location where the swagger document is hosted. The value must be either a valid formatted URL or a path to a swagger file stored in the disk 
 insecure_skip_verify | `string` | Defines whether a certificate verification should be performed when retrieving ```swagger-url``` from the server. This is **not recommended** for regular use and should only be set when the server hosting the swagger file is known and trusted but does not have a cert signed by the usually trusted CAs.
 
 #### Example
@@ -73,7 +73,7 @@ version: '1'
       swagger-url: http://monitor-api.com/swagger.json
       insecure_skip_verify: true
     cdn:
-      swagger-url: https://cdn-api.com/swagger.json
+      swagger-url: /Users/user/go/src/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/resources/swagger.yaml
     vm:
       swagger-url: http://vm-api.com/swagger.json
     goa: 

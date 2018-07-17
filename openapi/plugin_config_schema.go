@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v2"
+	"os"
 )
 
 // ServiceConfigurations contains the map with all service configurations
@@ -54,7 +55,10 @@ func (p *PluginConfigSchemaV1) Validate() error {
 	}
 	for k, v := range p.Services {
 		if !govalidator.IsURL(v.SwaggerURL) {
-			return fmt.Errorf("service '%s' found in the provider configuration does not contain a valid URL value '%s'", k, v.SwaggerURL)
+			// fall back to try to load the swagger file from disk in case the path provided is a path to a file on disk
+			if _, err := os.Stat(v.SwaggerURL); os.IsNotExist(err) {
+				return fmt.Errorf("service '%s' found in the provider configuration does not contain a valid SwaggerURL value ('%s'). URL must be either a valid formed URL or a path to an existing swagger file stored in the disk", k, v.SwaggerURL)
+			}
 		}
 	}
 	return nil
