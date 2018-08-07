@@ -15,7 +15,7 @@ all: test build
 
 build:
 	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
-	@go build -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
+	@go build -ldflags="-s -w" -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
 
 fmt:
 	@echo "[INFO] Running gofmt on the current directory"
