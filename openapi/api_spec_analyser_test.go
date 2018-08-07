@@ -647,4 +647,128 @@ func TestGetResourcesInfo(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has a POST operation with multiple parameters", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               },
+               {
+                  "in":"header",
+                  "name":"X-Request-ID",
+                  "type": "string",
+				  "required": true
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		spec, _ := loads.Analyzed(json.RawMessage([]byte(swaggerJSON)), "2.0")
+		a := apiSpecAnalyser{
+			d: spec,
+		}
+		Convey("When getResourcesInfo method is called ", func() {
+			_, err := a.getResourcesInfo()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a potential compliant terraform resource that has a POST operation with multiple 'body' type parameters", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               },
+               {
+                  "in":"body",
+                  "name":"body2",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		spec, _ := loads.Analyzed(json.RawMessage([]byte(swaggerJSON)), "2.0")
+		a := apiSpecAnalyser{
+			d: spec,
+		}
+		Convey("When getResourcesInfo method is called ", func() {
+			_, err := a.getResourcesInfo()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
 }

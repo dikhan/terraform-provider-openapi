@@ -54,6 +54,10 @@ paths:
         required: true
         schema:
           $ref: "#/definitions/ContentDeliveryNetwork"
+      - in: "header"
+        name: "X-Request-ID"
+        type: "string"
+        required: true
       responses:
         201:
           description: "successful operation"

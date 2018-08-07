@@ -63,34 +63,66 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 }
 
 func (asa apiSpecAnalyser) getResourcePayloadSchemaDef(resourceRootPath string) (*spec.Schema, error) {
-	path, exist := asa.d.Spec().Paths.Paths[resourceRootPath]
-	if !exist {
-		return nil, fmt.Errorf("path %s does not exists in the swagger file", resourceRootPath)
-	}
-	if path.Post == nil {
-		return nil, fmt.Errorf("path %s POST operation missing", resourceRootPath)
-	}
-	if len(path.Post.Parameters) <= 0 {
-		return nil, fmt.Errorf("path %s POST operation is missing paremeters", resourceRootPath)
-	}
-	payloadDefinitionSchemaRef := path.Post.Parameters[0].Schema
-	if payloadDefinitionSchemaRef == nil {
-		return nil, fmt.Errorf("resource %s POST operation is missing the ref to the schema definition", resourceRootPath)
-	}
-	ref := payloadDefinitionSchemaRef.Ref.String()
-	reg, err := regexp.Compile(swaggerResourcePayloadDefinitionRegex)
+	ref, err := asa.getResourcePayloadSchemaRef(resourceRootPath)
 	if err != nil {
-		return nil, fmt.Errorf("something really wrong happened if the ref reg can't be compiled")
+		return nil, err
 	}
-	payloadDefName := reg.FindStringSubmatch(ref)[0]
-	if payloadDefName == "" {
-		return nil, fmt.Errorf("could not find a submatch in the ref regex %s for the reference supplied %s", ref, swaggerResourcePayloadDefinitionRegex)
+	payloadDefName, err := asa.getPayloadDefName(ref)
+	if err != nil {
+		return nil, err
 	}
 	payloadDefinition, exists := asa.d.Spec().Definitions[payloadDefName]
 	if !exists {
 		return nil, fmt.Errorf("could not find any schema definition in the swagger file with the supplied ref %s", ref)
 	}
 	return &payloadDefinition, nil
+}
+
+func (asa apiSpecAnalyser) getResourcePayloadSchemaRef(resourceRootPath string) (string, error) {
+	path, exist := asa.d.Spec().Paths.Paths[resourceRootPath]
+	if !exist {
+		return "", fmt.Errorf("path %s does not exists in the swagger file", resourceRootPath)
+	}
+	if path.Post == nil {
+		return "", fmt.Errorf("path %s POST operation missing", resourceRootPath)
+	}
+
+	if len(path.Post.Parameters) <= 0 {
+		return "", fmt.Errorf("path %s POST operation is missing paremeters", resourceRootPath)
+	}
+
+	// A given operation might have multiple parameters, looking for 'body' type here
+	var bodyParameter spec.Parameter
+	var bodyParamCounter int
+	for _, parameter := range path.Post.Parameters {
+		if parameter.In == "body" {
+			bodyParamCounter++
+			bodyParameter = parameter
+		}
+	}
+	if &bodyParameter == nil {
+		return "", fmt.Errorf("resource %s POST operation is missing a 'body' parameter", resourceRootPath)
+	}
+	if bodyParamCounter > 1 {
+		return "", fmt.Errorf("resource %s POST operation contains multiple 'body' parameters", resourceRootPath)
+	}
+	payloadDefinitionSchemaRef := bodyParameter.Schema
+	if payloadDefinitionSchemaRef == nil {
+		return "", fmt.Errorf("resource %s POST operation is missing the ref to the schema definition", resourceRootPath)
+	}
+	return payloadDefinitionSchemaRef.Ref.String(), nil
+}
+
+func (asa apiSpecAnalyser) getPayloadDefName(ref string) (string, error) {
+	reg, err := regexp.Compile(swaggerResourcePayloadDefinitionRegex)
+	if err != nil {
+		return "", fmt.Errorf("something really wrong happened if the ref reg can't be compiled")
+	}
+	payloadDefName := reg.FindStringSubmatch(ref)[0]
+	if payloadDefName == "" {
+		return "", fmt.Errorf("could not find a submatch in the ref regex %s for the reference supplied %s", ref, swaggerResourcePayloadDefinitionRegex)
+	}
+	return payloadDefName, nil
 }
 
 // isEndPointTerraformResourceCompliant returns true only if the path given 'resourcePath' exposes POST and GET operations.
