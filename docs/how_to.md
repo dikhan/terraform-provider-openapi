@@ -176,6 +176,11 @@ paths:
         required: true
         schema:
           $ref: "#/definitions/resource"
+      - in: "header"
+        x-terraform-header: x_request_id
+        name: "X-Request-ID"
+        type: "string"
+        required: false          
       ...
   /resource/{id}:
     get:
@@ -197,6 +202,26 @@ to [versioning](#versioning) to learn more about it.
 not be embedded within the API definition. This is enforced to keep the swagger file well structured and to encourage
 object re-usability across the CRUD operations. Operations such as POST/GET/PUT are expected to have a 'schema' property
 with a link to the actual definition (e,g: `$ref: "#/definitions/resource`)
+
+- Certain operations may specify other type of parameters besides a 'body' type parameter which defines the payload expected 
+by the API. Additionally, 'header' type parameters are also supported by the openapi terraform provider, meaning that when
+a request is performed against an operation that requires headers, these will be sent along the payload. In the previous
+example, a body payload (defined at #/definitions/resource) along with the header 'X-Request-ID' will be sent when performing
+the POST request. The value of the header will be defined by the end user in the terraform configuration file as follows:
+
+````
+provider "swaggercodegen" {
+  x_request_id = "request header value for POST /resource"
+}
+````
+
+The field name ```x_request_id``` is defined by the extension property ```x-terraform-header: x_request_id``` when defining
+the header parameter; however, if the extension is not present the terraform provider will fall back to its default behaviour
+and will convert the name of the header into a field name that is terraform compliant (Field name may only contain lowercase 
+alphanumeric characters & underscores.). Hence, the result in this case will be the same ```x_request_id```. The value of 
+the header will be the one specified in the terraform configuration ```request header value for POST /resource```.
+
+*Note: Currently, parameters of type 'header' are only supported on an operation level*
 
 #### <a name="swaggerDefinitions">Definitions</a>
 
@@ -255,6 +280,7 @@ x-terraform-immutable | boolean |  The field will be used to create a brand new 
 x-terraform-force-new | boolean |  If the value of this property is updated; terraform will delete the previously created resource and create a new one with this value
 x-terraform-sensitive | boolean |  If this meta attribute is present in an object definition property, it will be considered sensitive as far as terraform is concerned, meaning that its value will not be disclosed in the TF state file
 x-terraform-id | boolean | If this meta attribute is present in an object definition property, the value will be used as the resource identifier when performing the read, update and delete API operations. The value will also be stored in the ID field of the local state file.
+x-terraform-header | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
 
 ##### <a name="definitionExample">Full Example</a>
 
