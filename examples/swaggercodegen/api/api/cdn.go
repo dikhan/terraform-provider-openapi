@@ -10,6 +10,7 @@ import (
 	"errors"
 
 	"github.com/pborman/uuid"
+	"log"
 )
 
 type ContentDeliveryNetwork struct {
@@ -25,6 +26,8 @@ func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
 	if authenticateRequest(r, w) != nil {
 		return
 	}
+	xRequestID := r.Header.Get("X-Request-ID")
+	log.Printf("Header [X-Request-ID]: %s", xRequestID)
 	cdn, err := readRequest(r)
 	if err != nil {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
