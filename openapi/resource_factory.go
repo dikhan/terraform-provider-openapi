@@ -6,6 +6,8 @@ import (
 	"reflect"
 
 	"github.com/dikhan/http_goclient"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"strconv"
@@ -32,6 +34,7 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 }
 
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
+	providerConfig := i.(providerConfig)
 	input := r.getPayloadFromData(data)
 	responsePayload := map[string]interface{}{}
 
@@ -40,12 +43,14 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Post.ID, resourceURL, r.resourceInfo.createPathInfo.Post.Security, i.(providerConfig))
+	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Post.ID, resourceURL, r.resourceInfo.createPathInfo.Post.Security, providerConfig)
 	if err != nil {
 		return err
 	}
 
-	res, err := r.httpClient.PostJson(authContext.url, authContext.headers, input, &responsePayload)
+	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+
+	res, err := r.httpClient.PostJson(reqContext.url, reqContext.headers, input, &responsePayload)
 	if err != nil {
 		return err
 	}
@@ -57,14 +62,15 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
-	output, err := r.readRemote(data.Id(), i.(providerConfig))
+	providerConfig := i.(providerConfig)
+	output, err := r.readRemote(data.Id(), providerConfig)
 	if err != nil {
 		return err
 	}
 	return r.updateStateWithPayloadData(output, data)
 }
 
-func (r resourceFactory) readRemote(id string, config providerConfig) (map[string]interface{}, error) {
+func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
 	resourceIDURL, err := r.resourceInfo.getResourceIDURL(id)
@@ -72,11 +78,14 @@ func (r resourceFactory) readRemote(id string, config providerConfig) (map[strin
 		return nil, err
 	}
 
-	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Get.ID, resourceIDURL, r.resourceInfo.pathInfo.Get.Security, config)
+	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Get.ID, resourceIDURL, r.resourceInfo.pathInfo.Get.Security, providerConfig)
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.httpClient.Get(authContext.url, authContext.headers, &responsePayload)
+
+	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+
+	res, err := r.httpClient.Get(reqContext.url, reqContext.headers, &responsePayload)
 	if err != nil {
 		return nil, err
 	}
@@ -87,13 +96,14 @@ func (r resourceFactory) readRemote(id string, config providerConfig) (map[strin
 }
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
+	providerConfig := i.(providerConfig)
 	if r.resourceInfo.pathInfo.Put == nil {
 		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
 	input := r.getPayloadFromData(data)
 	responsePayload := map[string]interface{}{}
 
-	if err := r.checkImmutableFields(data, i); err != nil {
+	if err := r.checkImmutableFields(data, providerConfig); err != nil {
 		return err
 	}
 
@@ -102,12 +112,14 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Put.ID, resourceIDURL, r.resourceInfo.pathInfo.Put.Security, i.(providerConfig))
+	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Put.ID, resourceIDURL, r.resourceInfo.pathInfo.Put.Security, providerConfig)
 	if err != nil {
 		return err
 	}
 
-	res, err := r.httpClient.PutJson(authContext.url, authContext.headers, input, &responsePayload)
+	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+
+	res, err := r.httpClient.PutJson(reqContext.url, reqContext.headers, input, &responsePayload)
 	if err != nil {
 		return err
 	}
@@ -118,6 +130,8 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
+	providerConfig := i.(providerConfig)
+
 	if r.resourceInfo.pathInfo.Delete == nil {
 		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
@@ -126,12 +140,13 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	authContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Delete.ID, resourceIDURL, r.resourceInfo.pathInfo.Delete.Security, i.(providerConfig))
+	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Delete.ID, resourceIDURL, r.resourceInfo.pathInfo.Delete.Security, providerConfig)
 	if err != nil {
 		return err
 	}
 
-	res, err := r.httpClient.Delete(authContext.url, authContext.headers)
+	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+	res, err := r.httpClient.Delete(reqContext.url, reqContext.headers)
 	if err != nil {
 		return err
 	}
@@ -139,6 +154,17 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
 	return nil
+}
+
+// appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
+// are retrieved from the provider configuration.
+func (r resourceFactory) appendOperationHeaders(operation *spec.Operation, providerConfig providerConfig, headers map[string]string) map[string]string {
+	headerConfigProps := openapiutils.GetHeaderConfigurations(operation.Parameters)
+	for headerConfigProp, headerConfiguration := range headerConfigProps {
+		// Setting the actual name of the header with the value coming from the provider configuration
+		headers[headerConfiguration.Name] = providerConfig.Headers[headerConfigProp]
+	}
+	return headers
 }
 
 // setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
@@ -192,10 +218,10 @@ func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPSta
 	return nil
 }
 
-func (r resourceFactory) checkImmutableFields(updated *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) checkImmutableFields(updated *schema.ResourceData, providerConfig providerConfig) error {
 	var remoteData map[string]interface{}
 	var err error
-	if remoteData, err = r.readRemote(updated.Id(), i.(providerConfig)); err != nil {
+	if remoteData, err = r.readRemote(updated.Id(), providerConfig); err != nil {
 		return err
 	}
 	for _, immutablePropertyName := range r.resourceInfo.getImmutableProperties() {

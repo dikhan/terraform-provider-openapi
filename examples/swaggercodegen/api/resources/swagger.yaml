@@ -55,6 +55,7 @@ paths:
         schema:
           $ref: "#/definitions/ContentDeliveryNetwork"
       - in: "header"
+        x-terraform-header: x_request_id
         name: "X-Request-ID"
         type: "string"
         required: true
