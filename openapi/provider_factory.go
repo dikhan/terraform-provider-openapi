@@ -28,6 +28,10 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while retrieving api specification. Error=%s", err)
 	}
+	// If host is not specified, it is assumed to be the same host where the API documentation is being served.
+	if apiSpecAnalyser.d.Spec().Host == "" {
+		apiSpecAnalyser.d.Spec().Host = openapiutils.GetHostFromURL(p.discoveryAPIURL)
+	}
 	provider, err := p.generateProviderFromAPISpec(apiSpecAnalyser)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating schema provider. Error=%s", err)
