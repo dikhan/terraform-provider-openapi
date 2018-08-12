@@ -63,7 +63,7 @@ run-terraform-example-goa: build pre-requirements
 
 latest-tag:
 	@echo "[INFO] Latest tag released..."
-	@git for-each-ref --format="%(refname:short)" --sort=-authordate --count=1 'v*' refs/tags
+	@git for-each-ref --sort=-taggerdate --count=1 --format '%(tag)' 'v*' refs/tags
 
 release-version:
 	@echo "[INFO] Creating release tag"
