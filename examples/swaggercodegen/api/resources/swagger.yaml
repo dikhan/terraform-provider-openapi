@@ -3,10 +3,10 @@ swagger: "2.0"
 info:
   description: "This service provider allows the creation of fake 'cdns' resources"
   version: "1.0.0"
-  title: "Service Provider (sp)"
+  title: "Service Provider (swaggercodegen)"
   contact:
     email: "apiteam@serviceprovider.io"
-host: "localhost:8443"
+#host: "localhost:8443" If host is not specified, it is assumed to be the same host where the API documentation is being served.
 basePath: "/"
 tags:
 - name: "cdn"
