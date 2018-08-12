@@ -16,7 +16,7 @@ services:
     environment:
       - SWAGGER_JSON=/app/resources/swagger.yaml
     volumes:
-      - ../examples/swaggercodegen/api/resources:/app
+      - ../examples/swaggercodegen/api/resources:/app/resources
 
   goa-service-provider-api:
     build: ../examples/goa/api
