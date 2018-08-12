@@ -13,14 +13,17 @@ default: build
 
 all: test build
 
+# make build
 build:
 	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
 	@go build -ldflags="-s -w" -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
 
+# make fmt
 fmt:
 	@echo "[INFO] Running gofmt on the current directory"
 	gofmt -w $(GOFMT_FILES)
 
+# make vet
 vet:
 	@echo "[INFO] Running go vet on the current directory"
 	@go vet $(TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
@@ -28,11 +31,13 @@ vet:
 		exit 1; \
 	fi
 
+# make lint
 lint:
 	@echo "[INFO] Running golint on the current directory"
 	@go get -u github.com/golang/lint/golint
 	@golint -set_exit_status $(TEST_PACKAGES)
 
+# make test
 test: fmt vet lint
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
@@ -44,29 +49,42 @@ pre-requirements:
 	@echo "[INFO] Creating $(TF_INSTALLED_PLUGINS_PATH) if it does not exist"
 	@[ -d $(TF_INSTALLED_PLUGINS_PATH) ] || mkdir -p $(TF_INSTALLED_PLUGINS_PATH)
 
+# make install
 install: build pre-requirements
 	$(call install_plugin,$(PROVIDER_NAME))
 
+# make local-env-down
 local-env-down: fmt
 	@echo "[INFO] Tearing down local environment (clean up task)"
 	@docker-compose -f ./build/docker-compose.yml down
 
+# make local-env
 local-env: fmt
 	@echo "[INFO] Bringing up local environment"
 	@docker-compose -f ./build/docker-compose.yml up --detach --build --force-recreate
 
+# [TF_CMD=apply] make run-terraform-example-swaggercodegen
 run-terraform-example-swaggercodegen: build pre-requirements
 	$(call run_terraform_example,"https://localhost:8443/swagger.yaml",swaggercodegen)
 
+# [TF_CMD=apply] make run-terraform-example-goa
 run-terraform-example-goa: build pre-requirements
 	$(call run_terraform_example,"http://localhost:9090/swagger/swagger.yaml",goa)
 
+# make latest-tag
 latest-tag:
 	@echo "[INFO] Latest tag released..."
 	@git for-each-ref --sort=-taggerdate --count=1 --format '%(tag)' 'v*' refs/tags
 
+# RELEASE_TAG=v.0.1.5 make delete-tag
+delete-tag:
+	@echo "[INFO] Deleting tag specified $(RELEASE_TAG) (local and remote)..."
+	@git tag -d $(RELEASE_TAG) | echo
+	@git push origin :refs/tags/$(RELEASE_TAG) | echo
+
+# RELEASE_TAG="v0.1.1" RELEASE_MESSAGE="v0.1.1" GITHUB_TOKEN="PERSONAL_TOKEN" make release-version
 release-version:
-	@echo "[INFO] Creating release tag"
+	@echo "[INFO] Creating release tag $(RELEASE_TAG)"
 	@git tag -a $(RELEASE_TAG) -m $(RELEASE_MESSAGE)
 	@echo "[INFO] Pushing release tag"
 	@git push origin $(RELEASE_TAG)

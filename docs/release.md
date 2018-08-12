@@ -53,3 +53,10 @@ Alternately, you can run the following command to perform the release in one lin
 ````
 RELEASE_TAG="v0.1.1" RELEASE_MESSAGE="Release message" GITHUB_TOKEN="YOUR_TOKEN" make release-version
 ````
+
+If the command above fails for some reason most likely the new tag would have been created and pushed. Hence in order to run
+the command again the latest tag would need to be cleaned up as follows:
+
+````
+RELEASE_TAG=v0.1.1 make delete-tag
+````
