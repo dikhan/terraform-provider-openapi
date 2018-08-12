@@ -43,8 +43,7 @@ swagger: '2.0'
 - **Type:** String
 - **Required:** False
 - **Description:**  The host (name or ip) serving the API. This MUST be the host only and does not include the scheme nor sub-paths. 
-It may include the port number if different from the scheme’s default port (80 for HTTP and 443 for HTTPS). The OpenAPI 
-terraform provider will always pick HTTPS over HTTP if both are present.
+It may include the port number if different from the scheme’s default port (80 for HTTP and 443 for HTTPS).
 
 **Note:** FQDNs using non standard HTTP ports (e,g: api.server.com:8080) is currently not supported, it is assumed that
 FQDNs will use standard ports. However, if localhost is present in the host value it may contain non standard ports 
@@ -82,7 +81,7 @@ basePath: "/"
 - **Type:** [string]
 - **Required:** Yes
 - **Description:**  The transfer protocol of the API. Values MUST be from the list: `"http"`, `"https"`. 
-If both are present, default value is set to https
+If both are present, the OpenAPI Terraform provider will always use HTTPs as default scheme for API calls.
 
 ```yml
 schemes:
