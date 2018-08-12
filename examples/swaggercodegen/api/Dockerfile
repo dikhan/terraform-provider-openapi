@@ -1,12 +1,11 @@
 FROM golang:latest
 
-ENV WORK_DIR "$GOPATH/src/github.com/dikhan/terraform-provider-openapi/examples/cdn/server"
+ENV WORK_DIR "$GOPATH/src/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api"
 
 RUN mkdir -p $WORK_DIR
 ADD . $WORK_DIR
 WORKDIR $WORK_DIR
 
-RUN go get
 RUN go build -o cdn-service-provider-api .
 
 EXPOSE 80

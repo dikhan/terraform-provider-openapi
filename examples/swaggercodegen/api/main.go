@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	sw "github.com/dikhan/terraform-provider-openapi/examples/cdn/server/api"
+	sw "github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
 )
 
 func main() {
