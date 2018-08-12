@@ -41,15 +41,28 @@ swagger: '2.0'
 
 - **Field Name:** host
 - **Type:** String
-- **Required:** True
+- **Required:** False
 - **Description:**  The host (name or ip) serving the API. This MUST be the host only and does not include the scheme nor sub-paths. 
-It MAY include a port. 
+It may include the port number if different from the scheme’s default port (80 for HTTP and 443 for HTTPS). The OpenAPI 
+terraform provider will always pick HTTPS over HTTP if both are present.
+
+**Note:** FQDNs using non standard HTTP ports (e,g: api.server.com:8080) is currently not supported, it is assumed that
+FQDNs will use standard ports. However, if localhost is present in the host value it may contain non standard ports 
+(e,g: localhost:8080). Keep in mind which schemes (http/https) are in use though as the host field can only specify
+specific port for either or not both.
 
 The terraform provider uses the host value to configure the internal http/s client used for the CRUD operations.
 
 ```yml
 host: "api.server.com"
 ```
+
+If host is not specified, it is assumed to be the same host where the API documentation is being served. This is handy
+when multiple environments are supported (e,g: dev, stage and prod) and all of them share the same swagger file. If the
+host field was present, then one swagger file will be required per environment supported pointing at the specific env
+domain where the file is hosted. However, not having the host field specified will simplify that setup allowing service
+provider to just have one swagger file to maintain. At runtime, API calls will be make against the FQDN where the swagger
+file is hosted.
 
 #### <a name="swaggerBasePath">Base Path</a>
 
