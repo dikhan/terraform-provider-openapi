@@ -2,7 +2,7 @@
 
 This terraform provider aims to minimise as much as possible the efforts needed from service providers to create and
 maintain custom terraform providers. This provider uses terraform as the engine that will orchestrate and manage the cycle
-of the resources and depends on a swagger file (hosted on a remote endpoint) to successfully configure itself dynamically.
+of the resources and depends on a swagger file (hosted on a remote endpoint) to successfully configure itself dynamically at runtime.
 
 <center>
     <table cellspacing="0" cellpadding="0" style="width:100%; border: none;">
