@@ -7,12 +7,12 @@ of the resources and depends on a swagger file (hosted on a remote endpoint) to 
 <center>
     <table cellspacing="0" cellpadding="0" style="width:100%; border: none;">
       <tr>
-        <th align="center"><img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="600px"></th>
-        <th align="center"><img src="https://goo.gl/QUpyCh" width="150px"></th> 
+        <th align="center"><img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px"></th>
+        <th align="center"><img src="https://www.openapis.org/wp-content/uploads/sites/3/2018/02/OpenAPI_Logo_Pantone-1.png" width="400px"></th> 
       </tr>
       <tr>
         <td align="center"><p>Powered by <a href="https://www.terraform.io">https://www.terraform.io</a></p></td>
-        <td align="center"><p>Powered by <a href="swagger.io">swagger.io</a></td> 
+        <td align="center"><p>Following <a href="https://github.com/OAI/OpenAPI-Specification">The OpenAPI Specification</a></td> 
       </tr>
     </table>
 </center>
