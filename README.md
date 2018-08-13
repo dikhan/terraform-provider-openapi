@@ -21,8 +21,7 @@ What are the main pain points that this terraform provider tries to tackle?
 
 - As as service provider, you can focus on improving the service itself rather than the tooling around it.
 - Due to the dynamic nature of this terraform provider, the service provider can continue expanding the functionality
-of the different APIs by introducing new versions, and this terraform provider will do the rest configuring the
-resources based on the resources exposed and their corresponding versions.
+of the different APIs by introducing new versions, and this terraform provider will be able to discover the new resource versions automatically without the need to add support for those as you would when mantining your own custom Terraform provider.
 - Find consistency across APIs provided by different teams encouraging the adoption of OpenAPI specification for
 describing, producing, consuming, and visualizing RESTful Web services.
 
