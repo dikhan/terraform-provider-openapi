@@ -10,6 +10,7 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
+	"log"
 	"strconv"
 )
 
@@ -43,12 +44,14 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.createPathInfo.Post.ID, resourceURL, r.resourceInfo.createPathInfo.Post.Security, providerConfig)
+	operation := r.resourceInfo.createPathInfo.Post
+
+	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceURL, operation.Security, providerConfig)
 	if err != nil {
 		return err
 	}
 
-	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
 
 	res, err := r.httpClient.PostJson(reqContext.url, reqContext.headers, input, &responsePayload)
 	if err != nil {
@@ -78,12 +81,14 @@ func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (m
 		return nil, err
 	}
 
-	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Get.ID, resourceIDURL, r.resourceInfo.pathInfo.Get.Security, providerConfig)
+	operation := r.resourceInfo.pathInfo.Get
+
+	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
 
 	res, err := r.httpClient.Get(reqContext.url, reqContext.headers, &responsePayload)
 	if err != nil {
@@ -97,7 +102,8 @@ func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (m
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
-	if r.resourceInfo.pathInfo.Put == nil {
+	operation := r.resourceInfo.pathInfo.Put
+	if operation == nil {
 		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
 	input := r.getPayloadFromData(data)
@@ -112,12 +118,12 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Put.ID, resourceIDURL, r.resourceInfo.pathInfo.Put.Security, providerConfig)
+	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
 	if err != nil {
 		return err
 	}
 
-	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
 
 	res, err := r.httpClient.PutJson(reqContext.url, reqContext.headers, input, &responsePayload)
 	if err != nil {
@@ -131,8 +137,8 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
-
-	if r.resourceInfo.pathInfo.Delete == nil {
+	operation := r.resourceInfo.pathInfo.Delete
+	if operation == nil {
 		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
 	resourceIDURL, err := r.resourceInfo.getResourceIDURL(data.Id())
@@ -140,12 +146,12 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	reqContext, err := r.apiAuthenticator.prepareAuth(r.resourceInfo.pathInfo.Delete.ID, resourceIDURL, r.resourceInfo.pathInfo.Delete.Security, providerConfig)
+	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
 	if err != nil {
 		return err
 	}
 
-	reqContext.headers = r.appendOperationHeaders(r.resourceInfo.createPathInfo.Post, providerConfig, reqContext.headers)
+	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
 	res, err := r.httpClient.Delete(reqContext.url, reqContext.headers)
 	if err != nil {
 		return err
@@ -159,10 +165,12 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 // appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
 // are retrieved from the provider configuration.
 func (r resourceFactory) appendOperationHeaders(operation *spec.Operation, providerConfig providerConfig, headers map[string]string) map[string]string {
-	headerConfigProps := openapiutils.GetHeaderConfigurations(operation.Parameters)
-	for headerConfigProp, headerConfiguration := range headerConfigProps {
-		// Setting the actual name of the header with the value coming from the provider configuration
-		headers[headerConfiguration.Name] = providerConfig.Headers[headerConfigProp]
+	if operation != nil {
+		headerConfigProps := openapiutils.GetHeaderConfigurations(operation.Parameters)
+		for headerConfigProp, headerConfiguration := range headerConfigProps {
+			// Setting the actual name of the header with the value coming from the provider configuration
+			headers[headerConfiguration.Name] = providerConfig.Headers[headerConfigProp]
+		}
 	}
 	return headers
 }
@@ -267,8 +275,31 @@ func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[strin
 			case reflect.Bool:
 				input[propertyName] = dataValue.(bool)
 			}
+		} else {
+			// Special case to handle changes for integer properties that are set to 0 when creating a resource or are updated to 0 value
+			// (d *ResourceData) GetOk(key string) terraform function ignores integer properties
+			old, new := data.GetChange(propertyName)
+			switch reflect.TypeOf(dataValue).Kind() {
+			case reflect.String:
+				if new == "" {
+					input[propertyName] = new.(string)
+				}
+			case reflect.Int:
+				if new == 0 {
+					input[propertyName] = new.(int)
+				}
+			case reflect.Float64:
+				if new == 0.0 {
+					input[propertyName] = new.(float64)
+				}
+			case reflect.Bool:
+				if new == false {
+					input[propertyName] = new.(bool)
+				}
+			}
+			log.Printf("[DEBUG] getPayloadFromData [%s] - oldvalue[%+v]", propertyName, old)
 		}
-
+		log.Printf("[DEBUG] getPayloadFromData [%s] - newValue[%+v]", propertyName, input[propertyName])
 	}
 	return input
 }
