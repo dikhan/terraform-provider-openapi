@@ -2,11 +2,10 @@ package api
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
+	"strings"
 )
 
 type Route struct {
@@ -35,57 +34,86 @@ func NewRouter() *mux.Router {
 	return router
 }
 
-func Discovery(w http.ResponseWriter, r *http.Request) {
-	pwd, _ := os.Getwd()
-	b, err := ioutil.ReadFile(pwd + "/resources/swagger.yaml")
-	if err != nil {
-		fmt.Print(err)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(b)
+
+
+func Index(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello World!")
 }
 
 var routes = Routes{
 	Route{
-		"ApiDiscovery",
+		"Index",
 		"GET",
-		"/swagger.yaml",
-		Discovery,
+		"/",
+		Index,
 	},
 
 	Route{
 		"ContentDeliveryNetworkCreateV1",
-		"POST",
+		strings.ToUpper("Post"),
 		"/v1/cdns",
 		ContentDeliveryNetworkCreateV1,
 	},
 
 	Route{
 		"ContentDeliveryNetworkDeleteV1",
-		"DELETE",
+		strings.ToUpper("Delete"),
 		"/v1/cdns/{id}",
 		ContentDeliveryNetworkDeleteV1,
 	},
 
 	Route{
 		"ContentDeliveryNetworkGetV1",
-		"GET",
+		strings.ToUpper("Get"),
 		"/v1/cdns/{id}",
 		ContentDeliveryNetworkGetV1,
 	},
 
 	Route{
 		"ContentDeliveryNetworkUpdateV1",
-		"PUT",
+		strings.ToUpper("Put"),
 		"/v1/cdns/{id}",
 		ContentDeliveryNetworkUpdateV1,
 	},
 
 	Route{
+		"LBCreateV1",
+		strings.ToUpper("Post"),
+		"/v1/lbs",
+		LBCreateV1,
+	},
+
+	Route{
+		"LBDeleteV1",
+		strings.ToUpper("Delete"),
+		"/v1/lbs/{id}",
+		LBDeleteV1,
+	},
+
+	Route{
+		"LBGetV1",
+		strings.ToUpper("Get"),
+		"/v1/lbs/{id}",
+		LBGetV1,
+	},
+
+	Route{
+		"LBUpdateV1",
+		strings.ToUpper("Put"),
+		"/v1/lbs/{id}",
+		LBUpdateV1,
+	},
+
+	Route{
+		"ApiDiscovery",
+		strings.ToUpper("Get"),
+		"/swagger.yaml",
+		ApiDiscovery,
+	},
+
+	Route{
 		"GetVersion",
-		"GET",
+		strings.ToUpper("Get"),
 		"/version",
 		GetVersion,
 	},
