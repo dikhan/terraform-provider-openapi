@@ -38,7 +38,7 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 		if !isEndPointTerraformResourceCompliant {
 			continue
 		}
-		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath, asa.d.Spec().Paths.Paths)
+		resourceRootPath, resourceRoot, err := asa.findMatchingResourceRoot(resourcePath, asa.d.Spec().Paths.Paths)
 		resourceName, err := asa.getResourceName(resourcePath)
 		if err != nil {
 			return nil, err
@@ -54,10 +54,12 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 			host:             asa.d.Spec().Host,
 			httpSchemes:      asa.d.Spec().Schemes,
 			schemaDefinition: *resourcePayloadSchemaDef,
-			createPathInfo:   asa.d.Spec().Paths.Paths[resourceRootPath],
+			createPathInfo:   resourceRoot,
 			pathInfo:         pathItem,
 		}
-		resources[resourceName] = r
+		if !r.shouldIgnoreResource() {
+			resources[resourceName] = r
+		}
 	}
 	return resources, nil
 }
@@ -146,7 +148,7 @@ func (asa apiSpecAnalyser) isEndPointTerraformResourceCompliant(resourcePath str
 		if endPoint.Get == nil {
 			return false, nil
 		}
-		resourceRootPath, err := asa.findMatchingResourceRootPath(resourcePath, paths)
+		resourceRootPath, _, err := asa.findMatchingResourceRoot(resourcePath, paths)
 		if err != nil {
 			return false, err
 		}
@@ -218,19 +220,19 @@ func (asa apiSpecAnalyser) getResourceName(resourcePath string) (string, error) 
 	return resourceName, nil
 }
 
-// findMatchingResourceRootPath returns the corresponding root path for a given end point
+// findMatchingResourceRoot returns the corresponding POST root and path for a given end point
 // Example: Given 'resourcePath' being "/users/{username}" the result could be "/users" or "/users/" depending on
 // how the POST operation (resourceRootPath) of the given resource is defined in swagger.
 // If there is no match the returned string will be empty
-func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string, paths map[string]spec.PathItem) (string, error) {
+func (asa apiSpecAnalyser) findMatchingResourceRoot(resourcePath string, paths map[string]spec.PathItem) (string, spec.PathItem, error) {
 	r, err := asa.resourceInstanceRegex()
 	if err != nil {
-		return "", err
+		return "", spec.PathItem{}, err
 	}
 	result := r.FindStringSubmatch(resourcePath)
-	log.Printf("[DEBUG] findMatchingResourceRootPath result - %s", result)
+	log.Printf("[DEBUG] findMatchingResourceRoot result - %s", result)
 	if len(result) != 2 {
-		return "", nil
+		return "", spec.PathItem{}, nil
 	}
 
 	resourceRootPath := result[1] // e,g: /v1/cdns/{id} /v1/cdns/
@@ -239,7 +241,7 @@ func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string, pat
 	postExist := asa.postIsPresent(resourceRootPath, paths)
 	if postExist {
 		log.Printf("[DEBUG] found resource root path with trailing '/' - %+s", resourceRootPath)
-		return resourceRootPath, nil
+		return resourceRootPath, paths[resourceRootPath], nil
 	}
 
 	// Handles the case where the swagger file root path does not have a trailing slash in the path
@@ -247,9 +249,9 @@ func (asa apiSpecAnalyser) findMatchingResourceRootPath(resourcePath string, pat
 	postExist = asa.postIsPresent(resourceRootPath, paths)
 	if postExist {
 		log.Printf("[DEBUG] found resource root path without trailing '/' - %+s", resourceRootPath)
-		return resourceRootPath, nil
+		return resourceRootPath, paths[resourceRootPath], nil
 	}
 
 	log.Printf("[DEBUG] end point %s missing POST operation", resourceRootPath)
-	return "", nil
+	return "", spec.PathItem{}, nil
 }

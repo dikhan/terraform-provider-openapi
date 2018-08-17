@@ -50,12 +50,12 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 func TestFindMatchingRootPath(t *testing.T) {
 	Convey("Given an apiSpecAnalyser", t, func() {
 		a := apiSpecAnalyser{}
-		Convey("When findMatchingResourceRootPath method is called with a valid resource path such as '/users/{id}' and paths containing that path with trailing slash", func() {
+		Convey("When findMatchingResourceRoot method is called with a valid resource path such as '/users/{id}' and paths containing that path with trailing slash", func() {
 			paths := map[string]spec.PathItem{}
 			pathItem := spec.PathItem{}
 			pathItem.Post = &spec.Operation{}
 			paths["/users/"] = pathItem
-			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}", paths)
+			resourceRootPath, _, err := a.findMatchingResourceRoot("/users/{id}", paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -63,12 +63,12 @@ func TestFindMatchingRootPath(t *testing.T) {
 				So(resourceRootPath, ShouldEqual, "/users/")
 			})
 		})
-		Convey("When findMatchingResourceRootPath method is called with a valid resource path such as '/users/{id}' and paths containing that path without a trailing slash", func() {
+		Convey("When findMatchingResourceRoot method is called with a valid resource path such as '/users/{id}' and paths containing that path without a trailing slash", func() {
 			paths := map[string]spec.PathItem{}
 			pathItem := spec.PathItem{}
 			pathItem.Post = &spec.Operation{}
 			paths["/users"] = pathItem
-			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}", paths)
+			resourceRootPath, _, err := a.findMatchingResourceRoot("/users/{id}", paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -76,12 +76,12 @@ func TestFindMatchingRootPath(t *testing.T) {
 				So(resourceRootPath, ShouldEqual, "/users")
 			})
 		})
-		Convey("When findMatchingResourceRootPath method is called with a valid resource path that is versioned such as '/v1/users/{id}' and paths containing that resource with version", func() {
+		Convey("When findMatchingResourceRoot method is called with a valid resource path that is versioned such as '/v1/users/{id}' and paths containing that resource with version", func() {
 			paths := map[string]spec.PathItem{}
 			pathItem := spec.PathItem{}
 			pathItem.Post = &spec.Operation{}
 			paths["/v1/users"] = pathItem
-			resourceRootPath, err := a.findMatchingResourceRootPath("/v1/users/{id}", paths)
+			resourceRootPath, _, err := a.findMatchingResourceRoot("/v1/users/{id}", paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -89,9 +89,9 @@ func TestFindMatchingRootPath(t *testing.T) {
 				So(resourceRootPath, ShouldEqual, "/v1/users")
 			})
 		})
-		Convey("When findMatchingResourceRootPath method is called with an invalid resource path such as '/resource/not/instance/path'", func() {
+		Convey("When findMatchingResourceRoot method is called with an invalid resource path such as '/resource/not/instance/path'", func() {
 			paths := map[string]spec.PathItem{}
-			resourceRootPath, err := a.findMatchingResourceRootPath("/resource/not/instance/path", paths) // instnace paths are of form */{id}
+			resourceRootPath, _, err := a.findMatchingResourceRoot("/resource/not/instance/path", paths) // instnace paths are of form */{id}
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -768,6 +768,66 @@ func TestGetResourcesInfo(t *testing.T) {
 			_, err := a.getResourcesInfo()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+
+	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-exclude-resource": true,
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		spec, _ := loads.Analyzed(json.RawMessage([]byte(swaggerJSON)), "2.0")
+		a := apiSpecAnalyser{
+			d: spec,
+		}
+		Convey("When getResourcesInfo method is called ", func() {
+			resourceInfo, err := a.getResourcesInfo()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resourceInfo map should be empty as the resource was meant to be excluded", func() {
+				So(resourceInfo, ShouldBeEmpty)
 			})
 		})
 	})

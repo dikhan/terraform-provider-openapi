@@ -13,6 +13,7 @@ import (
 const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
+const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfID = "x-terraform-id"
 
 type resourcesInfo map[string]resourceInfo
@@ -224,4 +225,14 @@ func (r resourceInfo) getResourceIdentifier() (string, error) {
 		return "", fmt.Errorf("could not find any identifier property in the resource payload swagger definition. Please make sure the payload definition has either one property named 'id' or one property that contains %s metadata", extTfID)
 	}
 	return "id", nil
+}
+
+// shouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
+// defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provder; otherwise it will
+// be exposed and users will be able to manage such resource via terraform.
+func (r resourceInfo) shouldIgnoreResource() bool {
+	if extensionExists, ignoreResource := r.createPathInfo.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
+		return true
+	}
+	return false
 }

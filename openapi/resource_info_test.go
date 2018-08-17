@@ -1023,3 +1023,67 @@ func TestGetResourceIdentifier(t *testing.T) {
 		})
 	})
 }
+
+func TestShouldIgnoreResource(t *testing.T) {
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-exclude-resource with value true", t, func() {
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-terraform-exclude-resource": true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource method is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the value returned should be true", func() {
+				So(shouldIgnoreResource, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-exclude-resource with value false", t, func() {
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-terraform-exclude-resource": false,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource method is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the value returned should be true", func() {
+				So(shouldIgnoreResource, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a terraform compliant resource that has a POST operation that DOES NOT contain the x-terraform-exclude-resource extension", t, func() {
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{},
+						},
+					},
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource method is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the value returned should be true", func() {
+				So(shouldIgnoreResource, ShouldBeFalse)
+			})
+		})
+	})
+}
