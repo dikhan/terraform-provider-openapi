@@ -204,6 +204,8 @@ paths:
     
 ```
 
+##### Terraform compliant resource requirements
+
 When the terraform provider is reading the different paths, it will only consider those that match the following criteria:
 
 - In order for an endpoint to be considered as a terraform resource, it must expose a `POST /{resourceName}` and 
@@ -215,8 +217,41 @@ not be embedded within the API definition. This is enforced to keep the swagger 
 object re-usability across the CRUD operations. Operations such as POST/GET/PUT are expected to have a 'schema' property
 with a link to the actual definition (e,g: `$ref: "#/definitions/resource`)
 
+##### Extensions
+
+The following extensions can be used in path operations. Read the according extension section for more information
+Extension Name | Type | Description
+---|:---:|---
+[x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
+[x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
+
+###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a> 
+- Service providers might not want to expose certain resources to Terraform (e,g: admin resources). This can be achieved 
+by adding the following swagger extension to the resource root POST operation (in the example below ```/v1/resource:```):
+
+````
+paths:
+  /v1/resource:
+    post:
+      ...
+      x-terraform-exclude-resource: true
+      ...
+  /v1/resource/{id}:
+    get:
+      ...     
+````
+
+The resource root POST operation is a mandatory operation for a resource to be terraform compliant; hence if the resource
+is deemed Terraform compliant an extra validation is performed to check if the resource is meant to be exposed by checking
+this extension. If the extension is not present or has value 'false' then the resource will be exposed as usual.
+
+*Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
+above example*
+
+###### <a name="xTerraformHeader">x-terraform-header</a>  
+
 - Certain operations may specify other type of parameters besides a 'body' type parameter which defines the payload expected 
-by the API. Additionally, 'header' type parameters are also supported by the openapi terraform provider, meaning that when
+by the API. One example is 'header' type parameters which are also supported by the openapi terraform provider, meaning that when
 a request is performed against an operation that requires headers, these will be sent along the payload. In the previous
 example, a body payload (defined at #/definitions/resource) along with the header 'X-Request-ID' will be sent when performing
 the POST request. The value of the header will be defined by the end user in the terraform configuration file as follows:
@@ -232,6 +267,26 @@ the header parameter; however, if the extension is not present the terraform pro
 and will convert the name of the header into a field name that is terraform compliant (Field name may only contain lowercase 
 alphanumeric characters & underscores.). Hence, the result in this case will be the same ```x_request_id```. The value of 
 the header will be the one specified in the terraform configuration ```request header value for POST /resource```.
+
+Example: 
+
+````
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      - in: "header"
+        x-terraform-header: x_request_id
+        name: "X-Request-ID"
+        type: "string"
+        required: true
+````
 
 *Note: Currently, parameters of type 'header' are only supported on an operation level*
 
@@ -292,7 +347,6 @@ x-terraform-immutable | boolean |  The field will be used to create a brand new 
 x-terraform-force-new | boolean |  If the value of this property is updated; terraform will delete the previously created resource and create a new one with this value
 x-terraform-sensitive | boolean |  If this meta attribute is present in an object definition property, it will be considered sensitive as far as terraform is concerned, meaning that its value will not be disclosed in the TF state file
 x-terraform-id | boolean | If this meta attribute is present in an object definition property, the value will be used as the resource identifier when performing the read, update and delete API operations. The value will also be stored in the ID field of the local state file.
-x-terraform-header | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
 
 ##### <a name="definitionExample">Full Example</a>
 
