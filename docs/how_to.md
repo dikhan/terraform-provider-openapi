@@ -220,6 +220,7 @@ with a link to the actual definition (e,g: `$ref: "#/definitions/resource`)
 ##### Extensions
 
 The following extensions can be used in path operations. Read the according extension section for more information
+
 Extension Name | Type | Description
 ---|:---:|---
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
