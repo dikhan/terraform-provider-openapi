@@ -5,12 +5,13 @@ provider. These guidelines not only aim to encourage service providers to follow
 exposing APIs but also and more importantly serve as a reference on how the different sections of a swagger file
 are interpreted and translated into terraform idioms.
 
+
 ## Best Practises
 
 - Resource names should be plural as per [Google API Resource name Guidelines](https://cloud.google.com/apis/design/resource_names).
 This means that paths should try and keep their naming plural to refer to the collections. For instance, `/api/users` as opposed to
-`/api/user`.
-- Property names should be lower case and separated by underscore (e,g: my_property)
+`/api/user`. More granular access to the resource should be permitted exposing /resource/{id} endpoints.
+
 - Swagger Tags should be used to group resources by name (several version can be under the same tag)
 
 Refer to [What's supported](#what's-supported?) section to learn more about specific best practises/requirements on
@@ -19,7 +20,8 @@ the different OpenAPI Swagger spec fields in the root document.
 ## Versioning
 
 API Terraform provider supports resource path versioning, which means that terraform will treat each resource version as
-it was a different resource. Refer to the [FAQ](https://github.com/dikhan/terraform-provider-api/blob/master/docs/faq.md#versioning) to get more info about how versioning is handled
+it was a different resource. Refer to the [FAQ](https://github.com/dikhan/terraform-provider-api/blob/master/docs/faq.md#versioning) 
+to get more info about how versioning is handled.
 
 ## What's supported?
 
@@ -164,22 +166,10 @@ produces:
 - **Required:** Yes
 - **Description:** The available paths and operations for the API.
 
-The Open API terraform provider only considers as a terraform resource, API resource paths that have both the Create (POST)
-and Read (GET) operations available in the form of:
-```
-POST /api/resource
-GET /api/resource/{id}
-```
-Update (PUT) and Delete (DELETE) are optional operations.
-
 The following can be used as a reference to help understand the expected structure.
-
-If a given resource is missing any of the aforementioned required operations, the resource will not be available
-as a terraform resource.
 
 ```yml
 paths:
-
   /resource:
     post:
       ...
@@ -187,12 +177,7 @@ paths:
         name: "body"
         required: true
         schema:
-          $ref: "#/definitions/resource"
-      - in: "header"
-        x-terraform-header: x_request_id
-        name: "X-Request-ID"
-        type: "string"
-        required: false          
+          $ref: "#/definitions/resource"       
       ...
   /resource/{id}:
     get:
@@ -200,22 +185,75 @@ paths:
     put:
       ...
     delete:
-      ...                  
-    
+      ...
 ```
 
 ##### Terraform compliant resource requirements
 
-When the terraform provider is reading the different paths, it will only consider those that match the following criteria:
+A resource to be considered terraform compliant must meet the following criteria:
 
-- In order for an endpoint to be considered as a terraform resource, it must expose a `POST /{resourceName}` and 
-`GET,PUT,DELETE /{resourceName}/{id}` operations as shown in the example above. Paths can also be versioned, refer
-to [versioning](#versioning) to learn more about it.
+- The resource must have at least a POST and a GET operations defined as shown in the example below. Update (PUT) and 
+Delete (DELETE) operations are optional.
+
+```
+paths:
+  /{resourceName}:
+    post:
+      ...
+  /resource/{id}:    
+    get:
+      ...
+```
+
+If a given resource is missing any of the aforementioned required operations, the resource will not be available
+as a terraform resource.
+
+- Paths should be versioned as described in the [versioning](#versioning) document following ‘/v{number}/resource’ pattern 
+(e,g: ‘/v1/resource’). A version upgrade (e,g: v1 -> v2) will be needed when the interface of the resource changes, hence 
+the new version is non backwards compatible. See that only the 'Major' version is considered in the path, this is recommended 
+as the service provider will have less paths to maintain overall. if there are minor/patches applied to the backend that 
+should not affect the way consumer interacts with the APIs whatsoever and the namespace should remain as is.
+
+- POST operation should have a body payload referencing a schema object (see example below) defined at the root level 
+[definitions](#swaggerDefinitions) section. Payload schema should not be defined inside the path’s configuration. This 
+is so the same definition can be shared across different operations for a given version (e,g: $ref: "#/definitions/resource) 
+and consistency in terms of data model for a given resource version is maintained throughout all the operations. 
+This helps keeping the swagger file well structured and encourages object definition re-usability. 
+Different end point versions should their own payload definitions as the example below, path ```/v1/resource``` has a corresponding
+```resourceV1``` definition object:
+
+````
+  /v1/resource:
+    post:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/resourceV1"    
+          
+definitions:   
+  resourceV1:     
+    type: object    
+    required:       
+      - name    
+    properties:
+      id:         
+        type: string        
+        readOnly: true
+      name:         
+        type: string        
+````
+
+Refer to [readOnly](#attributeDetails) attributes to learn more about how to define an object that has computed properties 
+(value auto-generated by the API).
 
 - The schema object definition must be described on the root level [definitions](#swaggerDefinitions) section and must 
 not be embedded within the API definition. This is enforced to keep the swagger file well structured and to encourage
 object re-usability across the CRUD operations. Operations such as POST/GET/PUT are expected to have a 'schema' property
 with a link to the actual definition (e,g: `$ref: "#/definitions/resource`)
+
+- The schema object must have a property that uniquely identifies the resource instance. This can be done by either
+having a computed property (readOnly) called ```id``` or by adding the ```x-terraform-id``` extension to one of the
+existing properties. Read 
 
 ##### Extensions
 
@@ -226,8 +264,9 @@ Extension Name | Type | Description
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
 
-###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a> 
-- Service providers might not want to expose certain resources to Terraform (e,g: admin resources). This can be achieved 
+###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
+ 
+Service providers might not want to expose certain resources to Terraform (e,g: admin resources). This can be achieved 
 by adding the following swagger extension to the resource root POST operation (in the example below ```/v1/resource:```):
 
 ````
@@ -251,11 +290,33 @@ above example*
 
 ###### <a name="xTerraformHeader">x-terraform-header</a>  
 
-- Certain operations may specify other type of parameters besides a 'body' type parameter which defines the payload expected 
+Certain operations may specify other type of parameters besides a 'body' type parameter which defines the payload expected 
 by the API. One example is 'header' type parameters which are also supported by the openapi terraform provider, meaning that when
-a request is performed against an operation that requires headers, these will be sent along the payload. In the previous
+a request is performed against an operation that requires headers, these will be sent along the payload. In the following
 example, a body payload (defined at #/definitions/resource) along with the header 'X-Request-ID' will be sent when performing
-the POST request. The value of the header will be defined by the end user in the terraform configuration file as follows:
+the POST request. 
+
+````
+paths:    
+/resource:     
+  post:       
+  ...      
+  - in: "body"        
+    name: "body"        
+    required: true        
+    schema:           
+      $ref: "#/definitions/resource"
+    responses:
+      ...
+  - in: "header"            
+    name: "X-Request-ID" # This header will be send along with the request when making the POST request against the '/resource' API            
+    required: true            
+    x-terraform-header: x_request_id 
+    ...         
+  ...  
+````
+
+The value of the header will be defined by the end user in the terraform configuration file as follows:
 
 ````
 provider "swaggercodegen" {
@@ -268,26 +329,6 @@ the header parameter; however, if the extension is not present the terraform pro
 and will convert the name of the header into a field name that is terraform compliant (Field name may only contain lowercase 
 alphanumeric characters & underscores.). Hence, the result in this case will be the same ```x_request_id```. The value of 
 the header will be the one specified in the terraform configuration ```request header value for POST /resource```.
-
-Example: 
-
-````
-paths:
-  /v1/cdns:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Created CDN"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
-      - in: "header"
-        x-terraform-header: x_request_id
-        name: "X-Request-ID"
-        type: "string"
-        required: true
-````
 
 *Note: Currently, parameters of type 'header' are only supported on an operation level*
 
@@ -302,11 +343,15 @@ The API Terraform provider uses the object definition used to Create (POST) a re
 CRUD operations. This means that, it is expected that the rest of the operations Read (GET), Update (PUT) and Delete (DELETE)
  will use the same payload and therefore they will all share the same object definition.
 
-##### <a name="supportedTypes">Requirements</a>
+##### <a name="definitionRequirements">Requirements</a>
 
-The following properties are mandatory when defining the object schema:
-
-- **id**: Object schemas must contain a property called Id which will be used internally to uniquely identify the resource. 
+- Terraform requires field names to be lower case and follow the snake_case pattern (my_property). Thus, definition object 
+fields must follow this naming convention.
+  
+- Object schemas must contain a property called ```id``` which will be used internally to uniquely identify the resource. If
+the object schema does not have a property called ```id```, then at least one property should have the ```x-terraform-id``` extension 
+so the OpenAPI Terraform provider knows which property should be used to unique identifier instead. This property must
+have the readOnly attribute present with value equal to true.
 
 ```yml
       id:
@@ -314,6 +359,7 @@ The following properties are mandatory when defining the object schema:
         readOnly: true
 ```
 *Refer to [Attribute details](#attributeDetails) for more info about readOnly properties*
+
 
 ##### <a name="supportedTypes">Supported types</a>
 
@@ -342,7 +388,7 @@ The following is a list of attributes that can be added to each property to defi
 
 Attribute Name | Type | Description
 ---|:---:|---
-readOnly | boolean |  The field will not be considered when updating the resource
+readOnly | boolean |  A property with this attribute enabled will be considered a computed property. Hence, it will not be expected from the consumer of the API when posting the resource. However; it will be expected that the API will return tthe property with the computed value in the response payload.
 default | primitive (int, bool, string) | Default value that will be applied to the property if value is not provided by the user (this attribute can not coexist with readOnly)
 x-terraform-immutable | boolean |  The field will be used to create a brand new resource; however it can not be updated. Attempts to update this value will result into terraform aborting the update.
 x-terraform-force-new | boolean |  If the value of this property is updated; terraform will delete the previously created resource and create a new one with this value
@@ -427,7 +473,7 @@ paths:
 
 ```yml
 securityDefinitions:
-  api_key_auth:
+  apikey_auth:
     type: "apiKey"
     name: "Authorization"
     in: "header"
@@ -448,6 +494,11 @@ provider "sp" {
 ```
 Note that the TF property name inside the provider's configuration is exactly the same as the one configured in the swagger
 file.
+
+##### <a name="swaggerSecurityDefinitionsRequirements">Requirements</a>
+
+- Terraform requires field names to be lower case and follow the snake_case pattern (my_sec_definition). Thus, security definitions 
+ must follow this naming convention.
 
 ## What is not supported yet?
 
