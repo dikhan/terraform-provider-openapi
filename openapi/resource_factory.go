@@ -249,7 +249,9 @@ func (r resourceFactory) updateStateWithPayloadData(input map[string]interface{}
 		if propertyName == "id" {
 			continue
 		}
-		if err := data.Set(propertyName, propertyValue); err != nil {
+		// Use terraform field name conversion to save compliant names into the state
+		dataPropertyName := terraformutils.ConvertToTerraformCompliantName(propertyName)
+		if err := data.Set(dataPropertyName, propertyValue); err != nil {
 			return err
 		}
 	}
@@ -259,14 +261,13 @@ func (r resourceFactory) updateStateWithPayloadData(input map[string]interface{}
 func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
 	for propertyName, property := range r.resourceInfo.schemaDefinition.Properties {
-		// Convert property name to terraform compliant name as at creation time the same conversion was performed. This makes
-		// sure the returned pay
-		propertyName = terraformutils.ConvertToTerraformCompliantName(propertyName)
 		// ReadOnly properties are not considered for the payload data
 		if propertyName == "id" || property.ReadOnly {
 			continue
 		}
-		if dataValue, ok := data.GetOk(propertyName); ok {
+		// Use terraform field name conversion used when saving fields in data object to look up the state values
+		dataPropertyName := terraformutils.ConvertToTerraformCompliantName(propertyName)
+		if dataValue, ok := data.GetOk(dataPropertyName); ok {
 			switch reflect.TypeOf(dataValue).Kind() {
 			case reflect.Slice:
 				input[propertyName] = dataValue.([]interface{})
