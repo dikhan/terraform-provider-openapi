@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"log"
+	"github.com/iancoleman/strcase"
 )
 
 const terraformPluginVendorDir = "terraform.d/plugins"
@@ -30,4 +31,12 @@ func (t *TerraformUtils) GetTerraformPluginsVendorDir() (string, error) {
 		terraformPluginsFolder = fmt.Sprintf("%s/%s", homeDir, terraformPluginVendorDir)
 	}
 	return terraformPluginsFolder, nil
+}
+
+// ConvertToTerraformCompliantName will convert the input string into a terraform compatible field name following
+// Terraform's snake case field name convention (lower case and snake case).
+func ConvertToTerraformCompliantName(name string) string {
+	compliantName := strcase.ToSnake(name)
+	log.Printf("[DEBUG] ConvertToTerraformCompliantName - originalName = %s; compliantName = %s)", name, compliantName)
+	return compliantName
 }
