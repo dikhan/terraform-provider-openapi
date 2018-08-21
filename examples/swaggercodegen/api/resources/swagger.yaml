@@ -169,11 +169,14 @@ definitions:
         x-terraform-force-new: true # when this value changes terraform will force the creation of a new resource
         items:
           type: "string"
+      nameInfo: # name_info
+        type: "string"
+        x-terraform-field-name: name_info # overriding nameInfo with a different name
       hostnames:
         type: "array"
         items:
           type: "string"
-      example_int:
+      exampleInt: # this name is not terraform name compliant; the provider will do a translation on the fly to make it terraform name compliant - the result will be example_int
         type: integer
       example_number:
         type: number

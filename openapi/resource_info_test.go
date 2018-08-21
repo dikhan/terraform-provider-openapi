@@ -835,14 +835,18 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 								Type: []string{"string"},
 							},
 						},
-						"int_prop": {
+						"intProp": { // This prop does not have a terraform compliant name; however an automatic translation is performed behind the scenes to make it compliant
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"integer"},
 							},
 						},
 						"number_prop": {
-							VendorExtensible: spec.VendorExtensible{},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									"x-terraform-field-name": "numberProp", // making use of specific extension to override field name; but the new field name is not terrafrom name compliant - hence an automatic translation is performed behind the scenes to make it compliant
+								},
+							},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"number"},
 							},
@@ -853,7 +857,7 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 								Type: []string{"boolean"},
 							},
 						},
-						"array_prop": {
+						"arrayProp": {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"array"},
@@ -875,6 +879,113 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 				So(resourceSchema, ShouldContainKey, "number_prop")
 				So(resourceSchema, ShouldContainKey, "bool_prop")
 				So(resourceSchema, ShouldContainKey, "array_prop")
+			})
+		})
+	})
+}
+
+func TestConvertToTerraformCompliantFieldName(t *testing.T) {
+	Convey("Given a property with a name that is terraform field name compliant", t, func() {
+		propertyName := "some_prop_name_that_is_terraform_field_name_compliant"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						propertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When convertToTerraformCompliantFieldName method is called", func() {
+			fieldName := r.convertToTerraformCompliantFieldName(propertyName, r.schemaDefinition.Properties[propertyName])
+			Convey("And string return is terraform field name compliant, ", func() {
+				So(fieldName, ShouldEqual, propertyName)
+			})
+		})
+	})
+
+	Convey("Given a property with a name that is NOT terraform field name compliant", t, func() {
+		propertyName := "thisPropIsNotTerraformField_Compliant"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						propertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When convertToTerraformCompliantFieldName method is called", func() {
+			fieldName := r.convertToTerraformCompliantFieldName(propertyName, r.schemaDefinition.Properties[propertyName])
+			Convey("And string return is terraform field name compliant, ", func() {
+				So(fieldName, ShouldEqual, "this_prop_is_not_terraform_field_compliant")
+			})
+		})
+	})
+
+	Convey("Given a property with a name that is NOT terraform field name compliant but has an extension that overrides it", t, func() {
+		propertyName := "thisPropIsNotTerraformField_Compliant"
+		expectedPropertyName := "this_property_is_now_terraform_field_compliant"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						propertyName: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: expectedPropertyName,
+								},
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When convertToTerraformCompliantFieldName method is called", func() {
+			fieldName := r.convertToTerraformCompliantFieldName(propertyName, r.schemaDefinition.Properties[propertyName])
+			Convey("And string return is terraform field name compliant, ", func() {
+				So(fieldName, ShouldEqual, expectedPropertyName)
+			})
+		})
+	})
+
+	Convey("Given a property with a name that is NOT terraform field name compliant but has an extension that overrides it which in turn is also not terraform name compliant", t, func() {
+		propertyName := "thisPropIsNotTerraformField_Compliant"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						propertyName: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "thisPropIsAlsoNotTerraformField_Compliant",
+								},
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When convertToTerraformCompliantFieldName method is called", func() {
+			fieldName := r.convertToTerraformCompliantFieldName(propertyName, r.schemaDefinition.Properties[propertyName])
+			Convey("And string return is terraform field name compliant, ", func() {
+				So(fieldName, ShouldEqual, "this_prop_is_also_not_terraform_field_compliant")
 			})
 		})
 	})

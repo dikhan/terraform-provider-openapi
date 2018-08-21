@@ -8,12 +8,14 @@ import (
 
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 )
 
 const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
 const extTfExcludeResource = "x-terraform-exclude-resource"
+const extTfFieldName = "x-terraform-field-name"
 const extTfID = "x-terraform-id"
 
 type resourcesInfo map[string]resourceInfo
@@ -43,9 +45,16 @@ func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema
 		if err != nil {
 			return nil, err
 		}
-		s[propertyName] = tfSchema
+		s[r.convertToTerraformCompliantFieldName(propertyName, property)] = tfSchema
 	}
 	return s, nil
+}
+
+func (r resourceInfo) convertToTerraformCompliantFieldName(propertyName string, property spec.Schema) string {
+	if preferredPropertyName, exists := property.Extensions.GetString(extTfFieldName); exists {
+		return terraformutils.ConvertToTerraformCompliantName(preferredPropertyName)
+	}
+	return terraformutils.ConvertToTerraformCompliantName(propertyName)
 }
 
 func (r resourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
