@@ -6,9 +6,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 )
 
 const extTfImmutable = "x-terraform-immutable"

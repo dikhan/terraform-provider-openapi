@@ -2,9 +2,9 @@ package terraformutils
 
 import (
 	"fmt"
+	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/go-homedir"
 	"log"
-	"github.com/iancoleman/strcase"
 )
 
 const terraformPluginVendorDir = "terraform.d/plugins"
