@@ -33,7 +33,6 @@ func TestTerraformUtilsGetTerraformPluginsVendorDir(t *testing.T) {
 	})
 }
 
-
 func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a name that is terraform name compliant", t, func() {
 		propertyName := "some_prop_name_that_is_terraform_field_name_compliant"

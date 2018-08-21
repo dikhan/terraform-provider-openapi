@@ -1,9 +1,9 @@
 package openapiutils
 
 import (
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"regexp"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 )
 
 const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-Z]{2,63})?|localhost(?:[:]\d+)?\b`

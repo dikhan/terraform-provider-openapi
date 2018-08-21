@@ -7,6 +7,7 @@ import (
 
 	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
@@ -258,6 +259,9 @@ func (r resourceFactory) updateStateWithPayloadData(input map[string]interface{}
 func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
 	for propertyName, property := range r.resourceInfo.schemaDefinition.Properties {
+		// Convert property name to terraform compliant name as at creation time the same conversion was performed. This makes
+		// sure the returned pay
+		propertyName = terraformutils.ConvertToTerraformCompliantName(propertyName)
 		// ReadOnly properties are not considered for the payload data
 		if propertyName == "id" || property.ReadOnly {
 			continue

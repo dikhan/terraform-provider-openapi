@@ -772,7 +772,6 @@ func TestGetResourcesInfo(t *testing.T) {
 		})
 	})
 
-
 	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
 		var swaggerJSON = `
 {

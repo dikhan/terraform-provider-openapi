@@ -8,10 +8,10 @@ import (
 
 	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 )
 
 type providerFactory struct {
