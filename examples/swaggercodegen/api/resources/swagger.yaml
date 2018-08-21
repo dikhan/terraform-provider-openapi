@@ -1,19 +1,19 @@
 swagger: "2.0"
 
 info:
-  description: "This service provider allows the creation of fake 'cdns' resources"
+  description: "This service provider allows the creation of fake 'cdns' and 'lbs' resources"
   version: "1.0.0"
-  title: "Service Provider (swaggercodegen)"
+  title: "Dummy Service Provider generated using 'swaggercodegen' that has two resources 'cdns' and 'lbs' which are terraform compliant"
   contact:
     email: "apiteam@serviceprovider.io"
 #host: "localhost:8443" If host is not specified, it is assumed to be the same host where the API documentation is being served.
-basePath: "/"
+#basePath: ""
 tags:
 - name: "cdn"
   description: "Operations about cdns"
   externalDocs:
     description: "Find out more about cdn api"
-    url: "https://github.com/dikhan/terraform-provider-api/service_provider_example"
+    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
 schemes:
 - "http"
 - "https"
@@ -41,6 +41,11 @@ paths:
       responses:
         200:
           description: "successful operation"
+
+  ######################
+  #### CDN Resource ####
+  ######################
+
   /v1/cdns:
     post:
       tags:
@@ -53,7 +58,7 @@ paths:
         description: "Created CDN"
         required: true
         schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
       - in: "header"
         x-terraform-header: x_request_id
         name: "X-Request-ID"
@@ -63,11 +68,11 @@ paths:
         201:
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
         default:
           description: "generic error response"
           schema:
-            $ref: "#/definitions/error"
+            $ref: "#/definitions/Error"
       #security: For the sake of the example, this POST operation will use the global security schemes
       #  - apikey_auth: []
   /v1/cdns/{id}:
@@ -87,7 +92,7 @@ paths:
         200:
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
         400:
           description: "Invalid cdn id supplied"
         404:
@@ -110,12 +115,12 @@ paths:
         description: "Updated cdn object"
         required: true
         schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
       responses:
         200:
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
         400:
           description: "Invalid cdn id supplied"
         404:
@@ -137,9 +142,9 @@ paths:
         204:
           description: "successful operation, no content is returned"
         400:
-          description: "Invalid cdn id supplied"
+          $ref: "#/responses/Unauthorized"
         404:
-          description: "cdn not found"
+          $ref: "#/responses/NotFound"
       security:
         - apikey_auth: []
 
@@ -150,7 +155,7 @@ securityDefinitions:
     in: "header"
 
 definitions:
-  ContentDeliveryNetwork:
+  ContentDeliveryNetworkV1:
     type: "object"
     required:
       - label
@@ -169,27 +174,37 @@ definitions:
         x-terraform-force-new: true # when this value changes terraform will force the creation of a new resource
         items:
           type: "string"
-      nameInfo: # name_info
-        type: "string"
-        x-terraform-field-name: name_info # overriding nameInfo with a different name
       hostnames:
         type: "array"
         items:
           type: "string"
       exampleInt: # this name is not terraform name compliant; the provider will do a translation on the fly to make it terraform name compliant - the result will be example_int
         type: integer
-      example_number:
+      exampleNumber:
         type: number
+        x-terraform-field-name: example_number  # overriding exampleNumber with a different name
       example_boolean:
         type: boolean
-  error:
+
+  # Schema for error response body
+  Error:
     type: object
     required:
       - code
       - message
     properties:
       code:
-        type: integer
-        format: int64
+        type: string
       message:
         type: string
+
+# Descriptions of common responses
+responses:
+  NotFound:
+    description: The specified resource was not found
+    schema:
+      $ref: "#/definitions/Error"
+  Unauthorized:
+    description: Unauthorized
+    schema:
+      $ref: "#/definitions/Error"
