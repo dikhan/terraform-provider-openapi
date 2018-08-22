@@ -59,7 +59,7 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 		return err
 	}
 
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
 	}
 	return r.updateLocalState(resourceLocalData, responsePayload)
@@ -130,7 +130,7 @@ func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interf
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
 	}
 	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
@@ -157,7 +157,7 @@ func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interf
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
 	return nil
