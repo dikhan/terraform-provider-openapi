@@ -38,7 +38,7 @@ type resourceInfo struct {
 func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 	for propertyName, property := range r.schemaDefinition.Properties {
-		if propertyName == "id" {
+		if r.isIDProperty(propertyName) {
 			continue
 		}
 		tfSchema, err := r.createTerraformPropertySchema(propertyName, property)
@@ -166,7 +166,7 @@ func (r resourceInfo) isArrayProperty(property spec.Schema) bool {
 func (r resourceInfo) getImmutableProperties() []string {
 	var immutableProperties []string
 	for propertyName, property := range r.schemaDefinition.Properties {
-		if propertyName == "id" {
+		if r.isIDProperty(propertyName) {
 			continue
 		}
 		if immutable, ok := property.Extensions.GetBool(extTfImmutable); ok && immutable {
@@ -216,24 +216,25 @@ func (r resourceInfo) getResourceIDURL(id string) (string, error) {
 // will have a property named 'id'
 // 3. If none of the above requirements is met, an error will be returned
 func (r resourceInfo) getResourceIdentifier() (string, error) {
-	isIDPropertyPresent := false
+	identifierProperty := ""
 	for propertyName, property := range r.schemaDefinition.Properties {
-		if propertyName == "id" {
-			isIDPropertyPresent = true
+		if r.isIDProperty(propertyName) {
+			identifierProperty = propertyName
 			continue
 		}
 		// field with extTfID metadata takes preference over 'id' fields as the service provider is the one acknowledging
 		// the fact that this field should be used as identifier of the resource
 		if terraformID, ok := property.Extensions.GetBool(extTfID); ok && terraformID {
-			return propertyName, nil
+			identifierProperty = propertyName
+			break
 		}
 	}
 	// if the id field is missing and there isn't any properties set with extTfID, there is not way for the resource
 	// to be identified and therefore an error is returned
-	if !isIDPropertyPresent {
+	if identifierProperty == "" {
 		return "", fmt.Errorf("could not find any identifier property in the resource payload swagger definition. Please make sure the payload definition has either one property named 'id' or one property that contains %s metadata", extTfID)
 	}
-	return "id", nil
+	return identifierProperty, nil
 }
 
 // shouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
@@ -244,4 +245,8 @@ func (r resourceInfo) shouldIgnoreResource() bool {
 		return true
 	}
 	return false
+}
+
+func (r resourceInfo) isIDProperty(propertyName string) bool {
+	return terraformutils.ConvertToTerraformCompliantName(propertyName) == "id"
 }
