@@ -32,3 +32,25 @@ func TestTerraformUtilsGetTerraformPluginsVendorDir(t *testing.T) {
 		})
 	})
 }
+
+func TestConvertToTerraformCompliantFieldName(t *testing.T) {
+	Convey("Given a name that is terraform name compliant", t, func() {
+		propertyName := "some_prop_name_that_is_terraform_field_name_compliant"
+		Convey("When ConvertToTerraformCompliantName method is called", func() {
+			fieldName := ConvertToTerraformCompliantName(propertyName)
+			Convey("And string return is terraform field name compliant, ", func() {
+				So(fieldName, ShouldEqual, propertyName)
+			})
+		})
+	})
+
+	Convey("Given a name that is NOT terraform name compliant", t, func() {
+		propertyName := "thisIsACamelCaseNameWhichIsNotTerraformNameCompliant"
+		Convey("When ConvertToTerraformCompliantName method is called", func() {
+			fieldName := ConvertToTerraformCompliantName(propertyName)
+			Convey("And string return is terraform field name compliant, ", func() {
+				So(fieldName, ShouldEqual, "this_is_a_camel_case_name_which_is_not_terraform_name_compliant")
+			})
+		})
+	})
+}

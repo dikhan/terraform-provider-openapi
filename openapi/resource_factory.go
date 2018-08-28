@@ -7,6 +7,7 @@ import (
 
 	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
@@ -34,9 +35,9 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 	}, nil
 }
 
-func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
-	input := r.getPayloadFromData(data)
+	input := r.createPayloadFromLocalStateData(resourceLocalData)
 	responsePayload := map[string]interface{}{}
 
 	resourceURL, err := r.resourceInfo.getResourceURL()
@@ -58,19 +59,19 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
 	}
-	return r.updateLocalState(data, responsePayload)
+	return r.updateLocalState(resourceLocalData, responsePayload)
 }
 
-func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
-	output, err := r.readRemote(data.Id(), providerConfig)
+	remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
 	if err != nil {
 		return err
 	}
-	return r.updateStateWithPayloadData(output, data)
+	return r.updateStateWithPayloadData(remoteData, resourceLocalData)
 }
 
 func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (map[string]interface{}, error) {
@@ -100,20 +101,20 @@ func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (m
 	return responsePayload, nil
 }
 
-func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
 	operation := r.resourceInfo.pathInfo.Put
 	if operation == nil {
 		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
-	input := r.getPayloadFromData(data)
+	input := r.createPayloadFromLocalStateData(resourceLocalData)
 	responsePayload := map[string]interface{}{}
 
-	if err := r.checkImmutableFields(data, providerConfig); err != nil {
+	if err := r.checkImmutableFields(resourceLocalData, providerConfig); err != nil {
 		return err
 	}
 
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(data.Id())
+	resourceIDURL, err := r.resourceInfo.getResourceIDURL(resourceLocalData.Id())
 	if err != nil {
 		return err
 	}
@@ -129,19 +130,19 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
 	}
-	return r.updateStateWithPayloadData(responsePayload, data)
+	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
 }
 
-func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
 	operation := r.resourceInfo.pathInfo.Delete
 	if operation == nil {
 		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
 	}
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(data.Id())
+	resourceIDURL, err := r.resourceInfo.getResourceIDURL(resourceLocalData.Id())
 	if err != nil {
 		return err
 	}
@@ -156,7 +157,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
 	return nil
@@ -177,7 +178,7 @@ func (r resourceFactory) appendOperationHeaders(operation *spec.Operation, provi
 
 // setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
 // r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
-func (r resourceFactory) setStateID(data *schema.ResourceData, payload map[string]interface{}) error {
+func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
 	identifierProperty, err := r.resourceInfo.getResourceIdentifier()
 	if err != nil {
 		return err
@@ -188,22 +189,22 @@ func (r resourceFactory) setStateID(data *schema.ResourceData, payload map[strin
 
 	switch payload[identifierProperty].(type) {
 	case int:
-		data.SetId(strconv.Itoa(payload[identifierProperty].(int)))
+		resourceLocalData.SetId(strconv.Itoa(payload[identifierProperty].(int)))
 	case float64:
-		data.SetId(strconv.Itoa(int(payload[identifierProperty].(float64))))
+		resourceLocalData.SetId(strconv.Itoa(int(payload[identifierProperty].(float64))))
 	default:
-		data.SetId(payload[identifierProperty].(string))
+		resourceLocalData.SetId(payload[identifierProperty].(string))
 	}
 	return nil
 }
 
 // updateLocalState populates the state of the schema resource data with the payload data received from the POST API request
-func (r resourceFactory) updateLocalState(data *schema.ResourceData, payload map[string]interface{}) error {
-	err := r.setStateID(data, payload)
+func (r resourceFactory) updateLocalState(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
+	err := r.setStateID(resourceLocalData, payload)
 	if err != nil {
 		return err
 	}
-	return r.updateStateWithPayloadData(payload, data)
+	return r.updateStateWithPayloadData(payload, resourceLocalData)
 }
 
 func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
@@ -226,43 +227,50 @@ func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPSta
 	return nil
 }
 
-func (r resourceFactory) checkImmutableFields(updated *schema.ResourceData, providerConfig providerConfig) error {
+func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, providerConfig providerConfig) error {
 	var remoteData map[string]interface{}
 	var err error
-	if remoteData, err = r.readRemote(updated.Id(), providerConfig); err != nil {
+	if remoteData, err = r.readRemote(updatedResourceLocalData.Id(), providerConfig); err != nil {
 		return err
 	}
 	for _, immutablePropertyName := range r.resourceInfo.getImmutableProperties() {
-		if updated.Get(immutablePropertyName) != remoteData[immutablePropertyName] {
+		if r.getResourceDataValue(immutablePropertyName, updatedResourceLocalData) != remoteData[immutablePropertyName] {
 			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
 			// data inside the updated (*schema.ResourceData) in the state file
-			r.updateStateWithPayloadData(remoteData, updated)
+			r.updateStateWithPayloadData(remoteData, updatedResourceLocalData)
 			return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
 		}
 	}
 	return nil
 }
 
-func (r resourceFactory) updateStateWithPayloadData(input map[string]interface{}, data *schema.ResourceData) error {
-	for propertyName, propertyValue := range input {
-		if propertyName == "id" {
+// updateStateWithPayloadData is in charge of saving the given payload into the state file. The property names are
+// converted into compliant terraform names if needed.
+func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
+	for propertyName, propertyValue := range remoteData {
+		if r.resourceInfo.isIDProperty(propertyName) {
 			continue
 		}
-		if err := data.Set(propertyName, propertyValue); err != nil {
+		if err := r.setResourceDataProperty(propertyName, propertyValue, resourceLocalData); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[string]interface{} {
+// createPayloadFromLocalStateData is in charge of translating the values saved in the local state into a payload that can be posted/put
+// to the API. Note that when reading the properties from the schema definition, there's a conversion to a compliant
+// will automatically translate names into terraform compatible names that can be saved in the state file; otherwise
+// terraform name so the look up in the local state operation works properly. The property names saved in the local state
+// are alaways converted to terraform compatible names
+func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
 	for propertyName, property := range r.resourceInfo.schemaDefinition.Properties {
 		// ReadOnly properties are not considered for the payload data
-		if propertyName == "id" || property.ReadOnly {
+		if r.resourceInfo.isIDProperty(propertyName) || property.ReadOnly {
 			continue
 		}
-		if dataValue, ok := data.GetOk(propertyName); ok {
+		if dataValue, ok := r.getResourceDataOK(propertyName, resourceLocalData); ok {
 			switch reflect.TypeOf(dataValue).Kind() {
 			case reflect.Slice:
 				input[propertyName] = dataValue.([]interface{})
@@ -278,7 +286,7 @@ func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[strin
 		} else {
 			// Special case to handle changes for integer properties that are set to 0 when creating a resource or are updated to 0 value
 			// (d *ResourceData) GetOk(key string) terraform function ignores integer properties
-			old, new := data.GetChange(propertyName)
+			old, new := r.getResourceDataChange(propertyName, resourceLocalData)
 			switch reflect.TypeOf(dataValue).Kind() {
 			case reflect.String:
 				if new == "" {
@@ -297,9 +305,33 @@ func (r resourceFactory) getPayloadFromData(data *schema.ResourceData) map[strin
 					input[propertyName] = new.(bool)
 				}
 			}
-			log.Printf("[DEBUG] getPayloadFromData [%s] - oldvalue[%+v]", propertyName, old)
+			log.Printf("[DEBUG] createPayloadFromLocalStateData [%s] - oldvalue[%+v]", propertyName, old)
 		}
-		log.Printf("[DEBUG] getPayloadFromData [%s] - newValue[%+v]", propertyName, input[propertyName])
+		log.Printf("[DEBUG] createPayloadFromLocalStateData [%s] - newValue[%+v]", propertyName, input[propertyName])
 	}
 	return input
+}
+
+// getResourceDataValue returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
+func (r resourceFactory) getResourceDataValue(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) interface{} {
+	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
+	return resourceLocalData.Get(dataPropertyName)
+}
+
+// getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
+func (r resourceFactory) getResourceDataOK(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
+	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
+	return resourceLocalData.GetOk(dataPropertyName)
+}
+
+// getResourceDataChange returns the old and new value for a given schemaDefinitionPropertyName using the terraform compliant property name
+func (r resourceFactory) getResourceDataChange(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, interface{}) {
+	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
+	return resourceLocalData.GetChange(dataPropertyName)
+}
+
+// setResourceDataProperty sets the value for the given schemaDefinitionPropertyName using the terraform compliant property name
+func (r resourceFactory) setResourceDataProperty(schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
+	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
+	return resourceLocalData.Set(dataPropertyName, value)
 }

@@ -77,6 +77,13 @@ var routes = Routes{
 	},
 
 	Route{
+		"ApiDiscovery",
+		strings.ToUpper("Get"),
+		"/swagger.yaml",
+		ApiDiscovery,
+	},
+
+	Route{
 		"LBCreateV1",
 		strings.ToUpper("Post"),
 		"/v1/lbs",

@@ -131,8 +131,8 @@ func TestGetHeaderConfigurations(t *testing.T) {
 			Convey("Then the header configs returned should contain 'x_request_id'", func() {
 				So(headerConfigProps, ShouldContainKey, "x_request_id")
 			})
-			Convey("Then the header configs returned should contain 'x_request_id2'", func() {
-				So(headerConfigProps, ShouldContainKey, "x_request_id2")
+			Convey("Then the header configs returned should contain 'x_request_id_2'", func() {
+				So(headerConfigProps, ShouldContainKey, "x_request_id_2")
 			})
 		})
 	})

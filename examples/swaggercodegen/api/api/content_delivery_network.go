@@ -20,9 +20,9 @@ type ContentDeliveryNetwork struct {
 
 	Hostnames []string `json:"hostnames"`
 
-	ExampleInt int32 `json:"example_int,omitempty"`
+	ExampleInt int32 `json:"exampleInt,omitempty"`
 
-	ExampleNumber float32 `json:"example_number,omitempty"`
+	ExampleNumber float32 `json:"exampleNumber,omitempty"`
 
 	ExampleBoolean bool `json:"example_boolean,omitempty"`
 }

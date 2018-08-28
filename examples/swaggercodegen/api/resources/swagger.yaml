@@ -14,11 +14,6 @@ tags:
   externalDocs:
     description: "Find out more about cdn api"
     url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
-- name: "lb"
-  description: "Operations about lbs"
-  externalDocs:
-    description: "Find out more about lb api"
-    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
 schemes:
 - "http"
 - "https"
@@ -276,10 +271,11 @@ definitions:
         type: "array"
         items:
           type: "string"
-      example_int:
+      exampleInt: # this name is not terraform name compliant; the provider will do a translation on the fly to make it terraform name compliant - the result will be example_int
         type: integer
-      example_number:
+      exampleNumber:
         type: number
+        x-terraform-field-name: example_number  # overriding exampleNumber with a different name
       example_boolean:
         type: boolean
 

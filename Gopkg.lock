@@ -103,7 +103,7 @@
   branch = "master"
   name = "github.com/dikhan/http_goclient"
   packages = ["."]
-  revision = "48b9745bd4c94c312d8bf4560dfbb27dfe449041"
+  revision = "121a189e1ef74dc945eb3e1299c4c24a544e3c5f"
 
 [[projects]]
   branch = "master"
@@ -263,7 +263,6 @@
   revision = "b7773ae218740a7be65057fc60b366a49b538a44"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hashicorp/go-plugin"
   packages = ["."]
   revision = "e8d22c780116115ae5624720c9af0c97afe4f551"
@@ -327,7 +326,6 @@
   revision = "fa9f258a92500514cc8e9c67020487709df92432"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hashicorp/terraform"
   packages = [
     "config",
@@ -353,13 +351,20 @@
     "tfdiags",
     "version"
   ]
-  revision = "d1a4d4316706782d65b3c3f9d240124da74ad3ee"
+  revision = "6dfc4d748de9cda23835bc5704307ed45e839622"
+  version = "v0.11.8"
 
 [[projects]]
   branch = "master"
   name = "github.com/hashicorp/yamux"
   packages = ["."]
   revision = "683f49123a33db61abfb241b7ac5e4af4dc54d55"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/iancoleman/strcase"
+  packages = ["."]
+  revision = "3605ed457bf7f8caa1371b4fafadadc026673479"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -419,7 +424,6 @@
   revision = "d23ffcb85de31694d6ccaa23ccb4a03e55c1303f"
 
 [[projects]]
-  branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
   revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
@@ -665,6 +669,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6654266d6cf37d013e6952ec4c696bbb5d3787cfa83969afdc7b8047d6b3c527"
+  inputs-digest = "7ef5221e2869a4ab9782908fa3914192148adc21f31562551b15a2c703902224"
   solver-name = "gps-cdcl"
   solver-version = 1

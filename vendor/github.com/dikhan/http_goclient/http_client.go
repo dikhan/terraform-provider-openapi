@@ -188,7 +188,7 @@ func (httpClient *HttpClient) prepareRequest(method, url string, headers map[str
 func (httpClient *HttpClient) performRequest(req *http.Request, out interface{}) (*http.Response, error) {
 	resp, err := httpClient.HttpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("request %s %s %s failed. Response Error [%s]: '%s'", req.Method, req.URL, req.Proto, resp.Status, err.Error())
+		return nil, fmt.Errorf("request %s %s %s failed. Response Error: '%s'", req.Method, req.URL, req.Proto, err.Error())
 	}
 	if out != nil {
 		var body []byte

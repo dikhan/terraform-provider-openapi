@@ -1,9 +1,9 @@
 package openapiutils
 
 import (
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"regexp"
-	"strings"
 )
 
 const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-Z]{2,63})?|localhost(?:[:]\d+)?\b`
@@ -30,9 +30,9 @@ func GetHeaderConfigurationsForParameterGroups(parametersGroup parameterGroups) 
 			switch parameter.In {
 			case "header":
 				if headerConfigProp, exists := parameter.Extensions.GetString(extTfHeader); exists {
-					headerConfigProps[convertToTerraformCompliantFieldName(headerConfigProp)] = parameter
+					headerConfigProps[terraformutils.ConvertToTerraformCompliantName(headerConfigProp)] = parameter
 				} else {
-					headerConfigProps[convertToTerraformCompliantFieldName(parameter.Name)] = parameter
+					headerConfigProps[terraformutils.ConvertToTerraformCompliantName(parameter.Name)] = parameter
 				}
 			}
 		}
@@ -71,13 +71,6 @@ func GetAllHeaderParameters(spec *spec.Swagger) HeaderConfigurations {
 func GetHostFromURL(url string) string {
 	re := regexp.MustCompile(fqdnInURLRegex)
 	return re.FindString(url)
-}
-
-func convertToTerraformCompliantFieldName(name string) string {
-	// lowering the case of the name for name consistency reasons
-	lowerCaseName := strings.ToLower(name)
-	// replace non terraform field compliant characters
-	return strings.Replace(lowerCaseName, "-", "_", -1)
 }
 
 // getPathHeaderParams aggregates all header type parameters found in the given path and returns the corresponding

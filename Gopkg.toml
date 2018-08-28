@@ -40,12 +40,13 @@
 # as described here: https://github.com/hashicorp/terraform/issues/15756
 [[constraint]]
   name = "github.com/hashicorp/terraform"
-  branch = "master"
-#  version = "=0.10.0"
+#  branch = "master"
+  version = "v0.11.8"
 
 [[override]]
   name = "github.com/hashicorp/go-plugin"
-  branch = "master"
+#  branch = "master"
+  revision = "e8d22c780116115ae5624720c9af0c97afe4f551"
 
 [[constraint]]
   name = "github.com/smartystreets/goconvey"
@@ -64,5 +65,10 @@
   version = "8.0.0"
 
 [[constraint]]
-  branch = "master"
+#  branch = "master"
   name = "github.com/mitchellh/go-homedir"
+  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/iancoleman/strcase"

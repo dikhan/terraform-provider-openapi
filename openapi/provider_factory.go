@@ -8,6 +8,7 @@ import (
 
 	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -84,7 +85,7 @@ func (p providerFactory) createTerraformProviderSchema(spec *spec.Swagger) map[s
 	s := map[string]*schema.Schema{}
 	for secDefName, secDef := range spec.SecurityDefinitions {
 		if secDef.Type == "apiKey" {
-			s[secDefName] = &schema.Schema{
+			s[terraformutils.ConvertToTerraformCompliantName(secDefName)] = &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			}
