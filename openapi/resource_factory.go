@@ -7,7 +7,6 @@ import (
 
 	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
@@ -234,11 +233,13 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 		return err
 	}
 	for _, immutablePropertyName := range r.resourceInfo.getImmutableProperties() {
-		if r.getResourceDataValue(immutablePropertyName, updatedResourceLocalData) != remoteData[immutablePropertyName] {
-			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
-			// data inside the updated (*schema.ResourceData) in the state file
-			r.updateStateWithPayloadData(remoteData, updatedResourceLocalData)
-			return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
+		if localValue, exists := r.getResourceDataOKExists(immutablePropertyName, updatedResourceLocalData); exists {
+			if localValue != remoteData[immutablePropertyName] {
+				// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
+				// data inside the updated (*schema.ResourceData) in the state file
+				r.updateStateWithPayloadData(remoteData, updatedResourceLocalData)
+				return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
+			}
 		}
 	}
 	return nil
@@ -270,7 +271,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 		if r.resourceInfo.isIDProperty(propertyName) || property.ReadOnly {
 			continue
 		}
-		if dataValue, ok := r.getResourceDataOK(propertyName, resourceLocalData); ok {
+		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 			switch reflect.TypeOf(dataValue).Kind() {
 			case reflect.Slice:
 				input[propertyName] = dataValue.([]interface{})
@@ -283,55 +284,22 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			case reflect.Bool:
 				input[propertyName] = dataValue.(bool)
 			}
-		} else {
-			// Special case to handle changes for integer properties that are set to 0 when creating a resource or are updated to 0 value
-			// (d *ResourceData) GetOk(key string) terraform function ignores integer properties
-			old, new := r.getResourceDataChange(propertyName, resourceLocalData)
-			switch reflect.TypeOf(dataValue).Kind() {
-			case reflect.String:
-				if new == "" {
-					input[propertyName] = new.(string)
-				}
-			case reflect.Int:
-				if new == 0 {
-					input[propertyName] = new.(int)
-				}
-			case reflect.Float64:
-				if new == 0.0 {
-					input[propertyName] = new.(float64)
-				}
-			case reflect.Bool:
-				if new == false {
-					input[propertyName] = new.(bool)
-				}
-			}
-			log.Printf("[DEBUG] createPayloadFromLocalStateData [%s] - oldvalue[%+v]", propertyName, old)
 		}
 		log.Printf("[DEBUG] createPayloadFromLocalStateData [%s] - newValue[%+v]", propertyName, input[propertyName])
 	}
 	return input
 }
 
-// getResourceDataValue returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
-func (r resourceFactory) getResourceDataValue(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) interface{} {
-	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
-	return resourceLocalData.Get(dataPropertyName)
-}
-
 // getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
-func (r resourceFactory) getResourceDataOK(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
-	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
-	return resourceLocalData.GetOk(dataPropertyName)
-}
-
-// getResourceDataChange returns the old and new value for a given schemaDefinitionPropertyName using the terraform compliant property name
-func (r resourceFactory) getResourceDataChange(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, interface{}) {
-	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
-	return resourceLocalData.GetChange(dataPropertyName)
+func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
+	schemaDefinitionProperty := r.resourceInfo.schemaDefinition.Properties[schemaDefinitionPropertyName]
+	dataPropertyName := r.resourceInfo.convertToTerraformCompliantFieldName(schemaDefinitionPropertyName, schemaDefinitionProperty)
+	return resourceLocalData.GetOkExists(dataPropertyName)
 }
 
 // setResourceDataProperty sets the value for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) setResourceDataProperty(schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
-	dataPropertyName := terraformutils.ConvertToTerraformCompliantName(schemaDefinitionPropertyName)
+	schemaDefinitionProperty := r.resourceInfo.schemaDefinition.Properties[schemaDefinitionPropertyName]
+	dataPropertyName := r.resourceInfo.convertToTerraformCompliantFieldName(schemaDefinitionPropertyName, schemaDefinitionProperty)
 	return resourceLocalData.Set(dataPropertyName, value)
 }
