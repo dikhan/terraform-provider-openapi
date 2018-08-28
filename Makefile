@@ -109,7 +109,6 @@ define run_terraform_example
 
 	@echo "[INFO] Performing sanity check against the service provider's swagger endpoint '$(OTF_VAR_SWAGGER_URL)'"
 	@$(eval SWAGGER_HTTP_STATUS := $(shell curl -s -o /dev/null -w '%{http_code}' $(OTF_VAR_SWAGGER_URL) -k))
-	@rm -f ./examples/$(PROVIDER_NAME)/terraform.tfstate
 	@if [ "$(SWAGGER_HTTP_STATUS)" = 200 ]; then\
         echo "[INFO] Terraform Configuration file located at $(TF_EXAMPLE_FOLDER)";\
         echo "[INFO] Executing TF command: OTF_INSECURE_SKIP_VERIFY=true OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD}";\

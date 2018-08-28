@@ -11,6 +11,6 @@ resource "swaggercodegen_cdns_v1" "my_cdn" {
   hostnames = ["origin.com"]
 
   example_int = 12
-  example_number = 1.12
+  better_example_number_field_name = 1.12
   example_boolean = true
 }
