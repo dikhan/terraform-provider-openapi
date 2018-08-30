@@ -177,16 +177,16 @@ An example is described below:
     /Users/dikhan/.terraform.d/plugins
     $ cat terraform-provider-openapi.yaml
     version: '1'
-      services:
+    services:
         monitor:
           swagger-url: http://monitor-api.com/swagger.json
           insecure_skip_verify: true
         cdn:
-          swagger-url: https://cdn-api.com/swagger.json
+          swagger-url: /Users/user/go/src/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/resources/swagger.yaml
         vm:
           swagger-url: http://vm-api.com/swagger.json
         goa: 
-          swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml 
+          swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml
     ```
 
 This option is the recommended one when the user is managing resources provided by multiple OpenAPI providers (e,g: goa and swaggercodegen),
