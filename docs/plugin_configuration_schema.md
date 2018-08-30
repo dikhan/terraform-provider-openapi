@@ -68,7 +68,7 @@ insecure_skip_verify | `string` | Defines whether a certificate verification sho
 
 ````
 version: '1'
-  services:
+services:
     monitor:
       swagger-url: http://monitor-api.com/swagger.json
       insecure_skip_verify: true
@@ -77,5 +77,5 @@ version: '1'
     vm:
       swagger-url: http://vm-api.com/swagger.json
     goa: 
-      swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml 
+      swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml
 ````
