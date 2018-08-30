@@ -165,8 +165,16 @@ paths:
         required: true
         schema:
           $ref: "#/definitions/LBV1"
+      x-terraform-resource-timeout: "30s" # The amount of time to wait before timeout (applicable to both sync and async operations)
       responses:
-        202:
+        202: # Accepted
+          x-terraform-resource-poll-enabled: true # [type (bool)] - this flags the response as trully async. Some resources might be async too but may require manual intervention from operators to complete the creation workflow. This flag will be used by the OpenAPI Service provider to detect whether the polling mechanism should be used or not. The flags below will only be applicable if this one is present with value 'true'
+          x-terraform-resource-poll-delay: "30s" # [type (string)] - Wait this time before quering the resource state
+          x-terraform-resource-poll-min-timeout: "10s" # [type (string)] - Smallest time to wait before refreshes
+          x-terraform-resource-poll-poll-interval: "60s" # [type (string)] - Override MinTimeout/backoff and only poll this often
+          x-terraform-resource-poll-not-found-checks: 2 # [type (int)] - Number of times to allow not found
+          x-terraform-resource-poll-target-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
+          x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying
           description: "this operation is asynchronous, to check the status of the deployment call GET operation and check the status field returned in the payload"
           schema:
             $ref: "#/definitions/LBV1"
@@ -296,6 +304,19 @@ definitions:
         x-terraform-force-new: true # when this value changes terraform will force the creation of a new resource
         items:
           type: "string"
+      status:
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        description: lb resource status
+        type: string
+        enum:
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted
 
   # Schema for error response body
   Error:
