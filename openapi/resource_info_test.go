@@ -997,7 +997,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": {
+						idDefaultPropertyName: {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
@@ -1013,14 +1013,14 @@ func TestGetResourceIdentifier(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the value returned should be 'id'", func() {
-				So(id, ShouldEqual, "id")
+				So(id, ShouldEqual, idDefaultPropertyName)
 			})
 		})
 	})
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to TRUE", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", true)
+		extensions.Add(extTfID, true)
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1048,7 +1048,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that HAS BOTH an 'id' property AND ALSO a property configured with x-terraform-id set to true", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", true)
+		extensions.Add(extTfID, true)
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1082,7 +1082,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to FALSE", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", false)
+		extensions.Add(extTfID, false)
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1130,6 +1130,213 @@ func TestGetResourceIdentifier(t *testing.T) {
 			_, err := r.getResourceIdentifier()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestGetStatusIdentifier(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						statusDefaultPropertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			status, err := r.getStatusIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'status'", func() {
+				So(status, ShouldEqual, statusDefaultPropertyName)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with x-terraform-field-status set to TRUE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			id, err := r.getStatusIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'some-other-property-holding-status'", func() {
+				So(id, ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that HAS BOTH an 'status' property AND ALSO a property configured with 'x-terraform-field-status' set to true", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			id, err := r.getStatusIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'some-other-property-holding-status' as it takes preference over the default 'status' property", func() {
+				So(id, ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with 'x-terraform-field-status' set to FALSE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, false)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier()
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that NEITHER HAS an 'status' property NOR a property configured with 'x-terraform-field-status' set to true", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"prop-that-is-not-status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						"prop-that-is-not-status-and-does-not-have-status-metadata-either": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestIsIDProperty(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When isIDProperty method is called with property named 'id'", func() {
+			isIDProperty := r.isIDProperty("id")
+			Convey("Then the error returned should be nil", func() {
+				So(isIDProperty, ShouldBeTrue)
+			})
+		})
+		Convey("When isIDProperty method is called with property NOT named 'id'", func() {
+			isIDProperty := r.isIDProperty("something_not_id")
+			Convey("Then the error returned should be nil", func() {
+				So(isIDProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsStatusProperty(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When isStatusProperty method is called with property named 'status'", func() {
+			isStatusProperty := r.isStatusProperty("status")
+			Convey("Then the error returned should be nil", func() {
+				So(isStatusProperty, ShouldBeTrue)
+			})
+		})
+		Convey("When isStatusProperty method is called with property NOT named 'status'", func() {
+			isStatusProperty := r.isStatusProperty("something_not_status")
+			Convey("Then the error returned should be nil", func() {
+				So(isStatusProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestPropertyNameMatchesDefaultName(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When propertyNameMatchesDefaultName method is called with property named 'status' and an expected name matching the property property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("status", "status")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeTrue)
+			})
+		})
+		Convey("When propertyNameMatchesDefaultName method is called with property named 'ID' which is not terraform compliant name and an expected property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("ID", "id")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeTrue)
+			})
+		})
+		Convey("When propertyNameMatchesDefaultName method is called with property NOT matching the expected property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("something_not_status", "")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeFalse)
 			})
 		})
 	})
