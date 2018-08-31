@@ -12,24 +12,74 @@ package api
 
 import (
 	"net/http"
+	"github.com/pborman/uuid"
+	"log"
+	"strings"
+	"fmt"
 )
 
+var lbsDB = map[string]*Lbv1{}
+
 func LBCreateV1(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	lb := &Lbv1{}
+	err := readRequest(r, lb)
+	if err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
+	lb.Id = uuid.New()
+	lbsDB[lb.Id] = lb
+	log.Printf("POST [%+v\n]", lb)
+	sendResponse(http.StatusCreated, w, lb)
 }
 
 func LBDeleteV1(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	lb, err := retrieveLB(r)
+	if err != nil {
+		sendErrorResponse(http.StatusNotFound, err.Error(), w)
+		return
+	}
+	delete(db, lb.Id)
+	log.Printf("DELETE [%s]", lb.Id)
+	sendResponse(http.StatusNoContent, w, nil)
 }
 
 func LBGetV1(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	lb, err := retrieveLB(r)
+	log.Printf("GET [%+v\n]", lb)
+	if err != nil {
+		sendErrorResponse(http.StatusNotFound, err.Error(), w)
+		return
+	}
+	sendResponse(http.StatusOK, w, lb)
 }
 
 func LBUpdateV1(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	lb, err := retrieveLB(r)
+	if err != nil {
+		sendErrorResponse(http.StatusNotFound, err.Error(), w)
+		return
+	}
+	newLB := &Lbv1{}
+	err = readRequest(r, newLB)
+	if err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
+	log.Printf("UPDATE [%+v\n]", newLB)
+	lb.Id = lb.Id
+	lbsDB[lb.Id] = newLB
+	sendResponse(http.StatusOK, w, newLB)
+}
+
+func retrieveLB(r *http.Request) (*Lbv1, error) {
+	id := strings.TrimPrefix(r.URL.Path, "/v1/lbs/")
+	if id == "" {
+		return nil, fmt.Errorf("lb id path param not provided")
+	}
+	lb := lbsDB[id]
+	if lb == nil {
+		return nil, fmt.Errorf("lb id '%s' not found", id)
+	}
+	return lb, nil
 }

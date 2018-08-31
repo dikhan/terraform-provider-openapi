@@ -74,7 +74,7 @@ func ContentDeliveryNetworkDeleteV1(w http.ResponseWriter, r *http.Request) {
 	}
 	delete(db, cdn.Id)
 	log.Printf("DELETE [%s]", cdn.Id)
-	updateResponseHeaders(http.StatusNoContent, w)
+	sendResponse(http.StatusNoContent, w, nil)
 }
 
 func retrieveCdn(r *http.Request) (*ContentDeliveryNetwork, error) {

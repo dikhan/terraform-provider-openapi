@@ -17,4 +17,9 @@ type Lbv1 struct {
 	Name string `json:"name"`
 
 	Backends []string `json:"backends"`
+
+	TimeToProcess int32 `json:"timeToProcess"`
+
+	// lb resource status
+	Status string `json:"status,omitempty"`
 }

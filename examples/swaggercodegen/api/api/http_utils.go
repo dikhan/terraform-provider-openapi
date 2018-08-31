@@ -21,12 +21,16 @@ func readRequest(r *http.Request, in interface{}) error {
 func sendResponse(httpResponseStatusCode int, w http.ResponseWriter, out interface{}) {
 	var resBody []byte
 	var err error
-	if resBody, err = json.Marshal(out); err != nil {
-		msg := fmt.Sprintf("internal server error - %s", err)
-		sendErrorResponse(http.StatusInternalServerError, msg, w)
+	if out != nil {
+		if resBody, err = json.Marshal(out); err != nil {
+			msg := fmt.Sprintf("internal server error - %s", err)
+			sendErrorResponse(http.StatusInternalServerError, msg, w)
+		}
 	}
-	w.WriteHeader(httpResponseStatusCode)
-	w.Write(resBody)
+	updateResponseHeaders(httpResponseStatusCode, w)
+	if len(resBody) > 0 {
+		w.Write(resBody)
+	}
 }
 
 func sendErrorResponse(httpStatusCode int, message string, w http.ResponseWriter) {
