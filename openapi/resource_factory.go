@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"time"
 )
 
 type resourceFactory struct {
@@ -19,6 +20,8 @@ type resourceFactory struct {
 	resourceInfo     resourceInfo
 	apiAuthenticator apiAuthenticator
 }
+
+var defaultTimeout = time.Duration(60 * time.Second)
 
 func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 	s, err := r.resourceInfo.createTerraformResourceSchema()
@@ -31,6 +34,9 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 		Read:   r.read,
 		Delete: r.delete,
 		Update: r.update,
+		Timeouts: &schema.ResourceTimeout{
+			Default: &defaultTimeout,
+		},
 	}, nil
 }
 
