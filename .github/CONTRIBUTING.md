@@ -16,9 +16,11 @@ Issues reported are more than welcome as they help us understand what's broken, 
 enhance the product. In order to keep the process of reporting an issue organised we encourage contributors to follow the steps below:
 
 1. Double check the [list of issues](https://github.com/dikhan/terraform-provider-api/issues) already opened and
-if the issue is not reported feel free to create a new one.
-2. Providing enough context and details about the issue is critical for people to understand the problem. Thus, an
-[issue template](ISSUE_TEMPLATE.md) is provided to help filling out the blanks. 
+if the issue is not reported feel free to create a [New Issue](https://github.com/dikhan/terraform-provider-openapi/issues)
+2. Providing enough context and details about the issue is critical for people to understand the problem. Hence, the following
+issue templates are available to help filling out the blanks. 
+  - [Bug Report](https://github.com/dikhan/terraform-provider-openapi/tree/master/.github/ISSUE_TEMPLATE/Bug_report.md)
+  - [Feature Request](https://github.com/dikhan/terraform-provider-openapi/tree/master/.github/ISSUE_TEMPLATE/Feature_request.md)    
 
 ## Pull Request Submission
 
