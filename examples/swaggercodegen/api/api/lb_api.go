@@ -16,33 +16,26 @@ import (
 	"log"
 	"strings"
 	"fmt"
+	"time"
 )
 
+var defaultTimeToProcess int32 = 30 // 30 seconds
 var lbsDB = map[string]*Lbv1{}
 
-func LBCreateV1(w http.ResponseWriter, r *http.Request) {
-	lb := &Lbv1{}
-	err := readRequest(r, lb)
-	if err != nil {
-		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
-		return
-	}
-	lb.Id = uuid.New()
-	lbsDB[lb.Id] = lb
-	log.Printf("POST [%+v\n]", lb)
-	sendResponse(http.StatusCreated, w, lb)
-}
+type status string
+const(
+	deployPending status = "deploy_pending"
+	deployInProgress status = "deploy_in_progress"
+	deployFailed status = "deploy_failed"
+	deployed status = "deployed"
+	deletePending status = "delete_pending"
+	deleteInProgress status = "delete_in_progress"
+	deleteFailed status = "delete_failed"
+	deleted status = "deleted"
+)
 
-func LBDeleteV1(w http.ResponseWriter, r *http.Request) {
-	lb, err := retrieveLB(r)
-	if err != nil {
-		sendErrorResponse(http.StatusNotFound, err.Error(), w)
-		return
-	}
-	delete(db, lb.Id)
-	log.Printf("DELETE [%s]", lb.Id)
-	sendResponse(http.StatusNoContent, w, nil)
-}
+var deployPendingStatuses = []status{deployInProgress}
+var deletePendingStatuses = []status{deleteInProgress}
 
 func LBGetV1(w http.ResponseWriter, r *http.Request) {
 	lb, err := retrieveLB(r)
@@ -52,6 +45,23 @@ func LBGetV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sendResponse(http.StatusOK, w, lb)
+}
+
+func LBCreateV1(w http.ResponseWriter, r *http.Request) {
+	lb := &Lbv1{}
+	err := readRequest(r, lb)
+	if err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
+	lb.Id = uuid.New()
+	updateLBStatus(lb, deployPending)
+	lbsDB[lb.Id] = lb
+	log.Printf("POST [%+v\n]", lb)
+
+	go pretendResourceOperationIsProcessing(lb, deployPendingStatuses, deployed, deployFailed)
+
+	sendResponse(http.StatusAccepted, w, lb)
 }
 
 func LBUpdateV1(w http.ResponseWriter, r *http.Request) {
@@ -66,10 +76,57 @@ func LBUpdateV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
+	newLB.Id = lb.Id
+	updateLBStatus(newLB, deployPending)
+	lbsDB[newLB.Id] = newLB
 	log.Printf("UPDATE [%+v\n]", newLB)
-	lb.Id = lb.Id
-	lbsDB[lb.Id] = newLB
-	sendResponse(http.StatusOK, w, newLB)
+
+	go pretendResourceOperationIsProcessing(lb, deployPendingStatuses, deployed, deployFailed)
+
+	sendResponse(http.StatusAccepted, w, newLB)
+}
+
+func LBDeleteV1(w http.ResponseWriter, r *http.Request) {
+	lb, err := retrieveLB(r)
+	if err != nil {
+		sendErrorResponse(http.StatusNotFound, err.Error(), w)
+		return
+	}
+	updateLBStatus(lb, deletePending)
+	delete(db, lb.Id)
+	log.Printf("DELETE [%s]", lb.Id)
+
+	go pretendResourceOperationIsProcessing(lb, deletePendingStatuses, deleted, deleteFailed)
+
+	sendResponse(http.StatusAccepted, w, nil)
+}
+
+func pretendResourceOperationIsProcessing(lb *Lbv1, pendingStatues []status, completed status, failureStatus status) {
+	var timeToProcess = defaultTimeToProcess
+	// Override default wait time if it is configured in the lb
+	if lb.TimeToProcess > 0 {
+		timeToProcess = lb.TimeToProcess
+	}
+	if lb.SimulateFailure {
+		log.Printf("Simulating failure - timeToProcess = %d", timeToProcess)
+		time.Sleep(time.Duration(timeToProcess) * time.Second)
+		updateLBStatus(lb, failureStatus)
+	} else {
+		waitTimePerPendingStatus := timeToProcess / int32(len(pendingStatues))
+		timeToProcessPerStatusDuration := time.Duration(waitTimePerPendingStatus) * time.Second
+		for _, newStatus := range pendingStatues {
+			log.Printf("Precessing resource [%s] [%s] - timeToProcess = %ds", lb.Id, newStatus, waitTimePerPendingStatus)
+			time.Sleep(timeToProcessPerStatusDuration)
+			updateLBStatus(lb, newStatus)
+		}
+		updateLBStatus(lb, completed)
+	}
+}
+
+func updateLBStatus(lb *Lbv1, newStatus status) {
+	oldStatus := lb.Status
+	lb.Status = string(newStatus)
+	log.Printf("LB [%s] status updated '%s' => '%s'", lb.Id, oldStatus, newStatus)
 }
 
 func retrieveLB(r *http.Request) (*Lbv1, error) {

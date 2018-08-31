@@ -20,6 +20,8 @@ type Lbv1 struct {
 
 	TimeToProcess int32 `json:"timeToProcess"`
 
+	SimulateFailure bool `json:"simulate_failure"`
+
 	// lb resource status
 	Status string `json:"status,omitempty"`
 }

@@ -57,8 +57,8 @@ func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
+	newCDN.Id = cdn.Id
 	log.Printf("UPDATE [%+v\n]", newCDN)
-	cdn.Id = cdn.Id
 	db[cdn.Id] = newCDN
 	sendResponse(http.StatusOK, w, newCDN)
 }

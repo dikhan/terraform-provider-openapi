@@ -14,3 +14,10 @@ resource "swaggercodegen_cdns_v1" "my_cdn" {
   better_example_number_field_name = 1.12
   example_boolean = true
 }
+
+resource "swaggercodegen_lbs_v1" "my_lb" {
+  name = "some_name"
+  backends = ["backend1.com"]
+  time_to_process = 30
+  simulate_failure = false
+}

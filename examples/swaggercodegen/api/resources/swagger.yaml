@@ -308,6 +308,7 @@ definitions:
         x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
         description: lb resource status
         type: string
+        readOnly: true
         enum:
           - deploy_pending
           - deploy_in_progress
@@ -317,6 +318,11 @@ definitions:
           - delete_in_progress
           - delete_failed
           - deleted
+      timeToProcess: # time that the resource will take to be processed in seconds
+        type: integer
+        default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
+      simulate_failure: # allows user to set it to true and force an error on the API when the given operation (POST/PUT/READ/DELETE) is being performed
+        type: boolean
 
   # Schema for error response body
   Error:
