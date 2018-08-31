@@ -18,6 +18,6 @@ resource "swaggercodegen_cdns_v1" "my_cdn" {
 resource "swaggercodegen_lbs_v1" "my_lb" {
   name = "some_name"
   backends = ["backend1.com"]
-  time_to_process = 30
-  simulate_failure = false
+  time_to_process = 30 # the operation (post,update,delete) will take 30s in the API to complete
+  simulate_failure = false # no failures wished now ;) (post,update,delete)
 }
