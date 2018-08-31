@@ -19,8 +19,8 @@ enhance the product. In order to keep the process of reporting an issue organise
 if the issue is not reported feel free to create a [New Issue](https://github.com/dikhan/terraform-provider-openapi/issues)
 2. Providing enough context and details about the issue is critical for people to understand the problem. Hence, the following
 issue templates are available to help filling out the blanks. 
-  - [Bug Report](https://github.com/dikhan/terraform-provider-openapi/tree/master/.github/ISSUE_TEMPLATE/Bug_report.md)
-  - [Feature Request](https://github.com/dikhan/terraform-provider-openapi/tree/master/.github/ISSUE_TEMPLATE/Feature_request.md)    
+  - [Bug Report](https://github.com/dikhan/terraform-provider-openapi/issues/new?template=bug_report.md)
+  - [Feature Request](https://github.com/dikhan/terraform-provider-openapi/issues/new?template=feature_request.md)    
 
 ## Pull Request Submission
 
