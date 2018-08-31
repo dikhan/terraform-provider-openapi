@@ -1,18 +1,17 @@
 ## Proposed changes
 
-Please add as many details as possible about the change here. 
+Please add as many details as possible about the change here. Does this Pull Request resolve any open issue? If so, please 
+make sure to link to that issue:
+                                                              
+Fixes: # 
 
 ## Type of change
 
 What type of change does your code introduce to the provider? Please put an `x` (w/o heading/trailing white spaces) 
 in the boxes that apply:
 
-- [ ] Bugfix (change that fixes current functionality)
+- [ ] Bug-fix (change that fixes current functionality)
 - [ ] New feature (change that adds new functionality)
-
-Does this Pull Request resolve any open issue? If so, please make sure to link to that issue:
-
-Fixes: #
 
 ## Checklist
 
