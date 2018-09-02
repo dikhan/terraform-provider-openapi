@@ -16,12 +16,12 @@ import (
 
 type resourceFactory struct {
 	httpClient       http_goclient.HttpClient
-	resourceInfo     resourceInfo
+	openApiResource  OpenApiResource
 	apiAuthenticator apiAuthenticator
 }
 
-func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
-	s, err := r.resourceInfo.createTerraformResourceSchema()
+func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
+	s, err := r.openApiResource.createResourceSchema()
 	if err != nil {
 		return nil, err
 	}

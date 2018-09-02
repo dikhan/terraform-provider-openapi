@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"errors"
 	"fmt"
 
 	"net/http"
@@ -9,14 +8,13 @@ import (
 	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
-	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type providerFactory struct {
-	name            string
-	discoveryAPIURL string
+	name                string
+	openAPISpecAnalyser OpenAPISpecAnalyser
 }
 
 type providerConfig struct {
@@ -24,51 +22,49 @@ type providerConfig struct {
 	SecuritySchemaDefinitions map[string]authenticator
 }
 
+func NewProviderFactory(name string, openAPISpecAnalyser OpenAPISpecAnalyser) (*providerFactory, error) {
+	if name == "" {
+		return nil, fmt.Errorf("provider name not specified")
+	}
+	if openAPISpecAnalyser == nil {
+		return nil, fmt.Errorf("provider missing an OpenAPI Spec Analyser")
+	}
+	return &providerFactory{
+		name:                name,
+		openAPISpecAnalyser: openAPISpecAnalyser,
+	}, nil
+}
+
 func (p providerFactory) createProvider() (*schema.Provider, error) {
-	apiSpecAnalyser, err := p.createAPISpecAnalyser()
-	if err != nil {
-		return nil, fmt.Errorf("error occurred while retrieving api specification. Error=%s", err)
-	}
 	// If host is not specified, it is assumed to be the same host where the API documentation is being served.
-	if apiSpecAnalyser.d.Spec().Host == "" {
-		apiSpecAnalyser.d.Spec().Host = openapiutils.GetHostFromURL(p.discoveryAPIURL)
-	}
-	provider, err := p.generateProviderFromAPISpec(apiSpecAnalyser)
+	//if apiSpecAnalyser.d.Spec().Host == "" {
+	//	apiSpecAnalyser.d.Spec().Host = openapiutils.GetHostFromURL(p.discoveryAPIURL)
+	//}
+	provider, err := p.generateProviderFromAPISpec()
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating schema provider. Error=%s", err)
 	}
 	return provider, nil
 }
 
-func (p providerFactory) createAPISpecAnalyser() (*apiSpecAnalyser, error) {
-	if p.discoveryAPIURL == "" {
-		return nil, errors.New("required param 'apiUrl' missing")
-	}
-	apiSpec, err := loads.JSONSpec(p.discoveryAPIURL)
-	if err != nil {
-		return nil, fmt.Errorf("error occurred when retrieving api spec from %s. Error=%s", p.discoveryAPIURL, err)
-	}
-	apiSpecAnalyser := &apiSpecAnalyser{apiSpec}
-	return apiSpecAnalyser, nil
-}
-
-func (p providerFactory) generateProviderFromAPISpec(apiSpecAnalyser *apiSpecAnalyser) (*schema.Provider, error) {
+func (p providerFactory) generateProviderFromAPISpec() (*schema.Provider, error) {
 	resourceMap := map[string]*schema.Resource{}
-	resourcesInfo, err := apiSpecAnalyser.getResourcesInfo()
+	openAPIResources, err := p.openAPISpecAnalyser.GetTerraformCompliantResources()
+	//resourcesInfo, err := apiSpecAnalyser.getResourcesInfo()
 	if err != nil {
 		return nil, err
 	}
-	for resourceName, resourceInfo := range resourcesInfo {
+	for _, openAPIResource := range openAPIResources {
 		r := resourceFactory{
 			http_goclient.HttpClient{HttpClient: &http.Client{}},
-			resourceInfo,
-			newAPIAuthenticator(apiSpecAnalyser.d.Spec().Security),
+			openAPIResource,
+			newAPIAuthenticator(p.openAPISpecAnalyser.GetSecurity().GetGlobalSecuritySchemes()),
 		}
-		resource, err := r.createSchemaResource()
+		resource, err := r.createTerraformResource()
 		if err != nil {
 			return nil, err
 		}
-		resourceName := p.getProviderResourceName(resourceName)
+		resourceName := p.getProviderResourceName(openAPIResource.getResourceName())
 		resourceMap[resourceName] = resource
 	}
 	provider := &schema.Provider{

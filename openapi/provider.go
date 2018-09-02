@@ -21,11 +21,18 @@ func APIProvider() (*schema.Provider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
-	d := &providerFactory{
-		name:            providerName,
-		discoveryAPIURL: serviceConfiguration.GetSwaggerURL(),
+
+	openAPISpecAnalyser, err := CreateOpenAPISpecAnalyser(OpenAPIv2SpecAnalyser, serviceConfiguration.GetSwaggerURL())
+	if err != nil {
+		return nil, fmt.Errorf("plugin OpenAPI spec analyser error: %s", err)
 	}
-	provider, err := d.createProvider()
+
+	providerFactory, err := NewProviderFactory(providerName, openAPISpecAnalyser)
+	if err != nil {
+		return nil, fmt.Errorf("plugin provider factory init error: %s", err)
+	}
+
+	provider, err := providerFactory.createProvider()
 	if err != nil {
 		return nil, fmt.Errorf("plugin terraform-provider-%s init error: %s", providerName, err)
 	}
