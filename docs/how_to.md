@@ -346,8 +346,8 @@ way they desire. More details about the 'x-terraform-field-status' extension can
 - The polling mechanism required two more extensions to work which define the expected 'status' values for both target and 
 pending statuses. These are:
 
-  - **x-terraform-resource-poll-target-statuses**: Defines the statuses on which the resource state will be considered 'completed'
-  - **x-terraform-resource-poll-pending-statuses**: Defines the statuses on which the resource state will be considered 'in progress'.
+  - **x-terraform-resource-poll-target-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
+  - **x-terraform-resource-poll-pending-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'in progress'.
 Any other state returned that returned but is not part of this list will be considered as a failure and the polling mechanism
 will stop its execution accordingly.
 

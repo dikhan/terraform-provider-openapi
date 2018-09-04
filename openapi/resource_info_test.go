@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 	"net/http"
+	"strings"
 )
 
 func TestGetResourceURL(t *testing.T) {
@@ -1360,7 +1361,7 @@ func TestIsResourcePollingEnabled(t *testing.T) {
 					},
 				},
 			}
-			isResourcePollingEnabled := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			isResourcePollingEnabled, _ := r.isResourcePollingEnabled(responses, http.StatusAccepted)
 			Convey("Then the bool returned should be true", func() {
 				So(isResourcePollingEnabled, ShouldBeTrue)
 			})
@@ -1379,7 +1380,7 @@ func TestIsResourcePollingEnabled(t *testing.T) {
 					},
 				},
 			}
-			isResourcePollingEnabled := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			isResourcePollingEnabled, _  := r.isResourcePollingEnabled(responses, http.StatusAccepted)
 			Convey("Then the bool returned should be false", func() {
 				So(isResourcePollingEnabled, ShouldBeFalse)
 			})
@@ -1393,13 +1394,116 @@ func TestIsResourcePollingEnabled(t *testing.T) {
 					},
 				},
 			}
-			isResourcePollingEnabled := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			isResourcePollingEnabled, _  := r.isResourcePollingEnabled(responses, http.StatusAccepted)
 			Convey("Then bool returned should be false", func() {
 				So(isResourcePollingEnabled, ShouldBeFalse)
 			})
 		})
 	})
 }
+
+func TestGetResourcePollTargetStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getResourcePollTargetStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-target-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getResourcePollTargetStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+	})
+}
+
+func TestGetPollingStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-target-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-target-statuses' containing multiple targets", func() {
+			expectedTargets := "deployed, completed, done"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain expected targets", func() {
+				for _, expectedTarget := range strings.Split(expectedTargets, ",") {
+					So(statuses, ShouldContain, expectedTarget)
+				}
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has does not have a given extension 'x-terraform-resource-poll-target-statuses'", func() {
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{},
+							},
+						},
+					},
+				},
+			}
+			_, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
 
 func TestShouldIgnoreResource(t *testing.T) {
 	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-exclude-resource with value true", t, func() {
