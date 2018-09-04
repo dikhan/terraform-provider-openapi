@@ -1431,6 +1431,35 @@ func TestGetResourcePollTargetStatuses(t *testing.T) {
 	})
 }
 
+func TestGetResourcePollPendingStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getResourcePollPendingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-pending-statuses'", func() {
+			expectedStatus := "deploy_pending"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollPendingStatuses, expectedStatus)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getResourcePollPendingStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedStatus)
+			})
+		})
+	})
+}
+
 func TestGetPollingStatuses(t *testing.T) {
 	Convey("Given a resourceInfo", t, func() {
 		r := resourceInfo{}

@@ -23,6 +23,7 @@ const extTfID = "x-terraform-id"
 const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourcePollEnabled= "x-terraform-resource-poll-enabled"
 const extTfResourcePollTargetStatuses= "x-terraform-resource-poll-target-statuses"
+const extTfResourcePollPendingStatuses= "x-terraform-resource-poll-pending-statuses"
 
 const idDefaultPropertyName = "id"
 const statusDefaultPropertyName = "status"
@@ -304,6 +305,10 @@ func (r resourceInfo) isResourcePollingEnabled(responses spec.Responses, respons
 
 func (r resourceInfo) getResourcePollTargetStatuses(response spec.Response) ([]string, error) {
 	return r.getPollingStatuses(response, extTfResourcePollTargetStatuses)
+}
+
+func (r resourceInfo) getResourcePollPendingStatuses(response spec.Response) ([]string, error) {
+	return r.getPollingStatuses(response, extTfResourcePollPendingStatuses)
 }
 
 func (r resourceInfo) getPollingStatuses(response spec.Response, extension string) ([]string, error) {
