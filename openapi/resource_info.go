@@ -11,13 +11,17 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+// Definition level extensions
 const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
-const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfFieldName = "x-terraform-field-name"
 const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
+
+// Operation level extensions
+const extTfExcludeResource = "x-terraform-exclude-resource"
+const extTfResourcePollEnabled= "x-terraform-resource-poll-enabled"
 
 const idDefaultPropertyName = "id"
 const statusDefaultPropertyName = "status"
@@ -278,6 +282,20 @@ func (r resourceInfo) getStatusIdentifier() (string, error) {
 // be exposed and users will be able to manage such resource via terraform.
 func (r resourceInfo) shouldIgnoreResource() bool {
 	if extensionExists, ignoreResource := r.createPathInfo.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
+		return true
+	}
+	return false
+}
+
+// isResourcePollingEnabled checks whether there is any response code defined for the given responseStatusCode and if so
+// whether that response contains the extension 'x-terraform-resource-poll-enabled' set to true returning true;
+// otherwise false is returned
+func (r resourceInfo) isResourcePollingEnabled(responses spec.Responses, responseStatusCode int) bool {
+	response, exists := responses.StatusCodeResponses[responseStatusCode]
+	if !exists {
+		return false
+	}
+	if isResourcePollEnabled, ok := response.Extensions.GetBool(extTfResourcePollEnabled); ok && isResourcePollEnabled {
 		return true
 	}
 	return false

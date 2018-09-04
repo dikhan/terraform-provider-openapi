@@ -263,6 +263,7 @@ Extension Name | Type | Description
 ---|:---:|---
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
+[x-terraform-resource-poll-enabled](#xTerraformResourcePollEnabled) | bool | Only supported in operation response (202). Defines that if the API responds with the given HTTP Status code (202), the polling mechanism will be enabled. This allows the OpenAPI Terraform provider to perform read calls to the remote API and check the resource state. The polling mechanism finalises if the remote resource state arrives at completion, failure state or times-out (60s)
 
 ###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
  
@@ -331,6 +332,66 @@ alphanumeric characters & underscores.). Hence, the result in this case will be 
 the header will be the one specified in the terraform configuration ```request header value for POST /resource```.
 
 *Note: Currently, parameters of type 'header' are only supported on an operation level*
+
+###### <a name="xTerraformResourcePollEnabled">x-terraform-resource-poll-enabled</a> 
+
+This extension allows the service provider to enable the polling mechanism in the OpenAPI Terraform provider for asynchronous
+operations. In order for this to work, the following must be met:
+
+- The resource definition must have a read-only field that defines the status of the resource. By default, if a string field caThis can be a field called
+called 'status' is present in the resource schema definition that field will be used to track the different statues of the resource. Alternatively,
+a field can be marked to serve as the status field adding the 'x-terraform-field-status'. This field will be used as the status
+field even if there is another field named 'status'. This gives service providers flexibility to name their status field the
+way they desire. More details about the 'x-terraform-field-status' extension can be found in the [Attribute details](#attributeDetails) section.
+- The polling mechanism required two more extensions to work which define the expected 'status' values for both target and 
+pending statuses. These are:
+
+  - **x-terraform-resource-poll-target-statuses**: Defines the statuses on which the resource state will be considered 'completed'
+  - **x-terraform-resource-poll-pending-statuses**: Defines the statuses on which the resource state will be considered 'in progress'.
+Any other state returned that returned but is not part of this list will be considered as a failure and the polling mechanism
+will stop its execution accordingly.
+
+In the example below, the response with HTTP status code 202 has the extension defined with value 'true' meaning 
+that the OpenAPI Terraform provider will treat this response as asynchronous. Therefore, the provider will perform
+continues calls to the resource's instance GET operation and will use the value from the resource 'status' property to
+determine the state of the resource:
+
+````
+  /v1/lbs:
+    post:
+      ...
+      responses:
+        202: # Accepted
+          x-terraform-resource-poll-enabled: true # [type (bool)] - this flags the response as trully async. Some resources might be async too but may require manual intervention from operators to complete the creation workflow. This flag will be used by the OpenAPI Service provider to detect whether the polling mechanism should be used or not. The flags below will only be applicable if this one is present with value 'true'
+          x-terraform-resource-poll-target-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
+          x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying          
+          schema:
+            $ref: "#/definitions/LBV1"
+definitions:
+  LBV1:
+    type: "object"
+    required:
+      - name
+      - backends
+    properties:
+      ...
+      status:
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        description: lb resource status
+        type: string
+        readOnly: true
+        enum:
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted          
+````
+
+*Note: This extension is only supported at the response level.*
 
 #### <a name="swaggerDefinitions">Definitions</a>
 
@@ -450,6 +511,21 @@ definitions:
       someNonUserFriendlyPropertyName:  # If this property did not have the 'x-terraform-field-name' extension, the property name will be automatically converted by the OpenAPI Terraform provider into a name that is Terraform field name compliant. The result will be:  some_non_user_friendly_propertyName
         type: string
         x-terraform-field-name: property_name_more_user_friendly
+        
+      status:
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not 'status' but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        type: string
+        readOnly: true
+        enum: # this is jsut for documentation purposes and to let the consumer know what statues should be expected 
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted        
+        
 ```
 
 
