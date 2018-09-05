@@ -240,6 +240,12 @@ func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interf
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
+
+	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutDelete)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
+	}
+
 	return nil
 }
 
