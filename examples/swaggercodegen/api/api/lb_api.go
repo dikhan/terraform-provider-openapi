@@ -39,11 +39,11 @@ var deletePendingStatuses = []status{deleteInProgress}
 
 func LBGetV1(w http.ResponseWriter, r *http.Request) {
 	lb, err := retrieveLB(r)
-	log.Printf("GET [%+v\n]", lb)
 	if err != nil {
 		sendErrorResponse(http.StatusNotFound, err.Error(), w)
 		return
 	}
+	log.Printf("GET Response [%+v\n]", lb)
 	sendResponse(http.StatusOK, w, lb)
 }
 
@@ -54,10 +54,8 @@ func LBCreateV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
-	lb.Id = uuid.New()
-	updateLBStatus(lb, deployPending)
-	lbsDB[lb.Id] = lb
-	log.Printf("POST [%+v\n]", lb)
+	UpdateLBV1(lb, uuid.New(), lb.Name, lb.Backends, lb.SimulateFailure, lb.TimeToProcess, deployPending)
+	log.Printf("POST Response [%+v\n]", lb)
 
 	go pretendResourceOperationIsProcessing(lb, deployPendingStatuses, deployed, deployFailed)
 
@@ -76,14 +74,22 @@ func LBUpdateV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
-	newLB.Id = lb.Id
-	updateLBStatus(newLB, deployPending)
-	lbsDB[newLB.Id] = newLB
-	log.Printf("UPDATE [%+v\n]", newLB)
+	UpdateLBV1(lb, lb.Id, newLB.Name, newLB.Backends, newLB.SimulateFailure, newLB.TimeToProcess, deployPending)
+	log.Printf("UPDATE Response [%+v\n]", lb)
 
 	go pretendResourceOperationIsProcessing(lb, deployPendingStatuses, deployed, deployFailed)
 
-	sendResponse(http.StatusAccepted, w, newLB)
+	sendResponse(http.StatusAccepted, w, lbsDB[lb.Id])
+}
+
+func UpdateLBV1(lb *Lbv1, id string, name string, backends []string, simulateFailure bool, timeToProcess int32, newStatus status) {
+	lb.Id = id
+	lb.Name = name
+	lb.Backends = backends
+	lb.SimulateFailure = simulateFailure
+	lb.TimeToProcess = timeToProcess
+	updateLBStatus(lb, newStatus)
+	lbsDB[lb.Id] = lb
 }
 
 func LBDeleteV1(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +100,7 @@ func LBDeleteV1(w http.ResponseWriter, r *http.Request) {
 	}
 	updateLBStatus(lb, deletePending)
 	delete(db, lb.Id)
-	log.Printf("DELETE [%s]", lb.Id)
+	log.Printf("DELETE Response [%s]", lb.Id)
 
 	go pretendResourceOperationIsProcessing(lb, deletePendingStatuses, deleted, deleteFailed)
 

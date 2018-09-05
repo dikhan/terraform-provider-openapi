@@ -207,7 +207,13 @@ func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interf
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
 	}
-	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
+
+	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutUpdate)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
+	}
+
+	return r.read(resourceLocalData, i)
 }
 
 func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interface{}) error {
