@@ -110,7 +110,7 @@ func pretendResourceOperationIsProcessing(lb *Lbv1, pendingStatues []status, com
 	var finalStatus status
 	var inProgressStatuses []status
 	if lb.SimulateFailure {
-		log.Println("Simulating failure...")
+		log.Printf("Simulating failure for '%s'", lb.Id)
 		inProgressStatuses = []status{failureStatus}
 		finalStatus = failureStatus
 	} else {
@@ -118,15 +118,17 @@ func pretendResourceOperationIsProcessing(lb *Lbv1, pendingStatues []status, com
 		finalStatus = completed
 	}
 	waitTimePerPendingStatus := timeToProcess / int32(len(inProgressStatuses) + 1)
-	timeToProcessPerStatusDuration := time.Duration(waitTimePerPendingStatus) * time.Second
 	for _, newStatus := range inProgressStatuses {
-		log.Printf("Precessing resource [%s] [%s => %s] - timeToProcess = %ds", lb.Id, lb.Status, newStatus, waitTimePerPendingStatus)
-		time.Sleep(timeToProcessPerStatusDuration)
-		updateLBStatus(lb, newStatus)
+		sleepAndUpdateLB(lb, newStatus, waitTimePerPendingStatus)
 	}
-	log.Printf("Precessing resource final status [%s] [%s => %s] - timeToProcess = %ds", lb.Id, lb.Status, finalStatus, waitTimePerPendingStatus)
+	sleepAndUpdateLB(lb, finalStatus, waitTimePerPendingStatus)
+}
+
+func sleepAndUpdateLB(lb *Lbv1, newStatus status, waitTime int32) {
+	timeToProcessPerStatusDuration := time.Duration(waitTime) * time.Second
+	log.Printf("Precessing resource [%s] [%s => %s] - timeToProcess = %ds", lb.Id, lb.Status, newStatus, waitTime)
 	time.Sleep(timeToProcessPerStatusDuration)
-	updateLBStatus(lb, finalStatus)
+	updateLBStatus(lb, newStatus)
 }
 
 func updateLBStatus(lb *Lbv1, newStatus status) {
