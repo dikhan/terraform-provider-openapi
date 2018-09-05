@@ -174,7 +174,7 @@ paths:
           x-terraform-resource-poll-poll-interval: "60s" # [type (string)] - Override MinTimeout/backoff and only poll this often
           x-terraform-resource-poll-not-found-checks: 2 # [type (int)] - Number of times to allow not found
           x-terraform-resource-poll-target-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
-          x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying
+          x-terraform-resource-poll-pending-statuses: "deploy_pending,deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying
           description: "this operation is asynchronous, to check the status of the deployment call GET operation and check the status field returned in the payload"
           schema:
             $ref: "#/definitions/LBV1"

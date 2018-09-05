@@ -21,9 +21,9 @@ const extTfID = "x-terraform-id"
 
 // Operation level extensions
 const extTfExcludeResource = "x-terraform-exclude-resource"
-const extTfResourcePollEnabled= "x-terraform-resource-poll-enabled"
-const extTfResourcePollTargetStatuses= "x-terraform-resource-poll-target-statuses"
-const extTfResourcePollPendingStatuses= "x-terraform-resource-poll-pending-statuses"
+const extTfResourcePollEnabled = "x-terraform-resource-poll-enabled"
+const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-target-statuses"
+const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
 
 const idDefaultPropertyName = "id"
 const statusDefaultPropertyName = "status"
@@ -292,7 +292,7 @@ func (r resourceInfo) shouldIgnoreResource() bool {
 // isResourcePollingEnabled checks whether there is any response code defined for the given responseStatusCode and if so
 // whether that response contains the extension 'x-terraform-resource-poll-enabled' set to true returning true;
 // otherwise false is returned
-func (r resourceInfo) isResourcePollingEnabled(responses spec.Responses, responseStatusCode int) (bool, *spec.Response) {
+func (r resourceInfo) isResourcePollingEnabled(responses *spec.Responses, responseStatusCode int) (bool, *spec.Response) {
 	response, exists := responses.StatusCodeResponses[responseStatusCode]
 	if !exists {
 		return false, nil
@@ -314,7 +314,8 @@ func (r resourceInfo) getResourcePollPendingStatuses(response spec.Response) ([]
 func (r resourceInfo) getPollingStatuses(response spec.Response, extension string) ([]string, error) {
 	statuses := []string{}
 	if resourcePollTargets, exists := response.Extensions.GetString(extension); exists {
-		statuses = strings.Split(resourcePollTargets, ",")
+		spaceTrimmedTargerts := strings.Replace(resourcePollTargets, " ", "", -1)
+		statuses = strings.Split(spaceTrimmedTargerts, ",")
 	} else {
 		return nil, fmt.Errorf("response missing required extension '%s' for the polling mechanism to work", extension)
 	}

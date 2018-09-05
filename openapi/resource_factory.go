@@ -8,6 +8,7 @@ import (
 	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/go-openapi/spec"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
@@ -67,7 +68,75 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
 	}
-	return r.updateLocalState(resourceLocalData, responsePayload)
+
+	err = r.setStateID(resourceLocalData, responsePayload)
+	if err != nil {
+		return err
+	}
+	log.Printf("[INFO] Resource '%s' ID: %s", r.resourceInfo.name, resourceLocalData.Id())
+
+	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourceURL, res.StatusCode, err)
+	}
+
+	return r.read(resourceLocalData, i)
+}
+
+func (r resourceFactory) handlePollingIfConfigured(resourceLocalData *schema.ResourceData, providerConfig providerConfig, responses *spec.Responses, responseStatusCode int) error {
+	if pollingEnabled, response := r.resourceInfo.isResourcePollingEnabled(responses, responseStatusCode); pollingEnabled {
+		targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
+		if err != nil {
+			return err
+		}
+		pendingStatuses, err := r.resourceInfo.getResourcePollPendingStatuses(*response)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
+		log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.resourceInfo.name, targetStatuses)
+
+		stateConf := &resource.StateChangeConf{
+			Pending:      pendingStatuses,
+			Target:       targetStatuses,
+			Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerConfig),
+			Timeout:      resourceLocalData.Timeout(schema.TimeoutCreate),
+			PollInterval: 5 * time.Second,
+			MinTimeout:   10 * time.Second,
+			Delay:        1 * time.Second,
+		}
+
+		// Wait, catching any errors
+		_, err = stateConf.WaitForState()
+		if err != nil {
+			return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
+		}
+	}
+	return nil
+}
+
+func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerConfig providerConfig) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
+		if err != nil {
+			return nil, "", err
+		}
+
+		statusIdentifier, err := r.resourceInfo.getStatusIdentifier()
+		if err != nil {
+			log.Printf("[WARN] Error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.name, resourceLocalData.Id(), err)
+			return nil, "", err
+		}
+
+		value, statusIdentifierPresentInResponse := remoteData[statusIdentifier]
+		if !statusIdentifierPresentInResponse {
+			return nil, "", fmt.Errorf("response payload received from GET /%s/%s  missing the status identifier field", r.resourceInfo.path, resourceLocalData.Id())
+		}
+		newStatus := value.(string)
+		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.resourceInfo.name, resourceLocalData.Id(), newStatus)
+		return remoteData, newStatus, nil
+	}
 }
 
 func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interface{}) error {
