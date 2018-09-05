@@ -75,7 +75,7 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 	}
 	log.Printf("[INFO] Resource '%s' ID: %s", r.resourceInfo.name, resourceLocalData.Id())
 
-	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode)
+	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutCreate)
 	if err != nil {
 		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourceURL, res.StatusCode, err)
 	}
@@ -83,7 +83,7 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 	return r.read(resourceLocalData, i)
 }
 
-func (r resourceFactory) handlePollingIfConfigured(resourceLocalData *schema.ResourceData, providerConfig providerConfig, responses *spec.Responses, responseStatusCode int) error {
+func (r resourceFactory) handlePollingIfConfigured(resourceLocalData *schema.ResourceData, providerConfig providerConfig, responses *spec.Responses, responseStatusCode int, timeoutFor string) error {
 	if pollingEnabled, response := r.resourceInfo.isResourcePollingEnabled(responses, responseStatusCode); pollingEnabled {
 		targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
 		if err != nil {
@@ -101,7 +101,7 @@ func (r resourceFactory) handlePollingIfConfigured(resourceLocalData *schema.Res
 			Pending:      pendingStatuses,
 			Target:       targetStatuses,
 			Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerConfig),
-			Timeout:      resourceLocalData.Timeout(schema.TimeoutCreate),
+			Timeout:      resourceLocalData.Timeout(timeoutFor),
 			PollInterval: 5 * time.Second,
 			MinTimeout:   10 * time.Second,
 			Delay:        1 * time.Second,
