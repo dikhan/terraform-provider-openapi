@@ -276,6 +276,9 @@ func (r resourceInfo) getStatusIdentifier() (string, error) {
 	if statusProperty == "" {
 		return "", fmt.Errorf("could not find any status property in the resource swagger definition. Please make sure the resource definition has either one property named 'status' or one property that contains %s metadata", extTfFieldStatus)
 	}
+	if !r.schemaDefinition.Properties[statusProperty].ReadOnly {
+		return "", fmt.Errorf("schema definition status property '%s' must be readOnly", statusProperty)
+	}
 	return statusProperty, nil
 }
 

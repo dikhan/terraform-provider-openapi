@@ -1148,6 +1148,9 @@ func TestGetStatusIdentifier(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
 							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
 						},
 					},
 				},
@@ -1176,6 +1179,9 @@ func TestGetStatusIdentifier(t *testing.T) {
 							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
 							},
 						},
 					},
@@ -1212,6 +1218,9 @@ func TestGetStatusIdentifier(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
 							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
 						},
 					},
 				},
@@ -1241,6 +1250,9 @@ func TestGetStatusIdentifier(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
 							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
 						},
 					},
 				},
@@ -1263,6 +1275,41 @@ func TestGetStatusIdentifier(t *testing.T) {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"prop-that-is-not-status-and-does-not-have-status-metadata-either": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition with a property configured with 'x-terraform-field-status' set to true but is not readonly", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"prop-that-is-not-status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: false,
 							},
 						},
 						"prop-that-is-not-status-and-does-not-have-status-metadata-either": {
