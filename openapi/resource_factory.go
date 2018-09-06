@@ -23,7 +23,7 @@ type resourceFactory struct {
 	apiAuthenticator apiAuthenticator
 }
 
-var defaultTimeout = time.Duration(60 * time.Second)
+var defaultTimeout = time.Duration(10 * time.Minute)
 
 func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 	s, err := r.resourceInfo.createTerraformResourceSchema()
@@ -87,9 +87,16 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
 	remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
+
 	if err != nil {
+		if openapiErr, ok := err.(openapierr.Error); ok {
+			if openapierr.NotFound == openapiErr.Code() {
+				return nil
+			}
+		}
 		return fmt.Errorf("GET %s/%s failed: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
 	}
+
 	return r.updateStateWithPayloadData(remoteData, resourceLocalData)
 }
 
@@ -184,7 +191,7 @@ func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interf
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted, http.StatusNotFound}); err != nil {
 		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
 
