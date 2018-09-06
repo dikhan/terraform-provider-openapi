@@ -338,8 +338,8 @@ the header will be the one specified in the terraform configuration ```request h
 This extension allows the service provider to enable the polling mechanism in the OpenAPI Terraform provider for asynchronous
 operations. In order for this to work, the following must be met:
 
-- The resource definition must have a read-only field that defines the status of the resource. By default, if a string field caThis can be a field called
-called 'status' is present in the resource schema definition that field will be used to track the different statues of the resource. Alternatively,
+- The resource definition must have a read-only field that defines the status of the resource. By default, if a string field
+named 'status' is present in the resource schema definition that field will be used to track the different statues of the resource. Alternatively,
 a field can be marked to serve as the status field adding the 'x-terraform-field-status'. This field will be used as the status
 field even if there is another field named 'status'. This gives service providers flexibility to name their status field the
 way they desire. More details about the 'x-terraform-field-status' extension can be found in the [Attribute details](#attributeDetails) section.
