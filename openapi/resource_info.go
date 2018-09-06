@@ -314,8 +314,8 @@ func (r resourceInfo) getResourcePollPendingStatuses(response spec.Response) ([]
 func (r resourceInfo) getPollingStatuses(response spec.Response, extension string) ([]string, error) {
 	statuses := []string{}
 	if resourcePollTargets, exists := response.Extensions.GetString(extension); exists {
-		spaceTrimmedTargerts := strings.Replace(resourcePollTargets, " ", "", -1)
-		statuses = strings.Split(spaceTrimmedTargerts, ",")
+		spaceTrimmedTargets := strings.Replace(resourcePollTargets, " ", "", -1)
+		statuses = strings.Split(spaceTrimmedTargets, ",")
 	} else {
 		return nil, fmt.Errorf("response missing required extension '%s' for the polling mechanism to work", extension)
 	}
