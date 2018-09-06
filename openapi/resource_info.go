@@ -22,7 +22,7 @@ const extTfID = "x-terraform-id"
 // Operation level extensions
 const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourcePollEnabled = "x-terraform-resource-poll-enabled"
-const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-target-statuses"
+const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-completed-statuses"
 const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
 
 const idDefaultPropertyName = "id"

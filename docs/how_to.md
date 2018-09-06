@@ -347,7 +347,7 @@ way they desire. More details about the 'x-terraform-field-status' extension can
 - The polling mechanism requires two more extensions to work which define the expected 'status' values for both target and 
 pending statuses. These are:
 
-  - **x-terraform-resource-poll-target-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
+  - **x-terraform-resource-poll-completed-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
   - **x-terraform-resource-poll-pending-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'in progress'.
 Any other state returned that returned but is not part of this list will be considered as a failure and the polling mechanism
 will stop its execution accordingly.
@@ -366,7 +366,7 @@ determine the state of the resource:
       responses:
         202: # Accepted
           x-terraform-resource-poll-enabled: true # [type (bool)] - this flags the response as trully async. Some resources might be async too but may require manual intervention from operators to complete the creation workflow. This flag will be used by the OpenAPI Service provider to detect whether the polling mechanism should be used or not. The flags below will only be applicable if this one is present with value 'true'
-          x-terraform-resource-poll-target-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
+          x-terraform-resource-poll-completed-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
           x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying          
           schema:
             $ref: "#/definitions/LBV1"

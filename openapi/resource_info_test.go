@@ -1404,7 +1404,7 @@ func TestIsResourcePollingEnabled(t *testing.T) {
 func TestGetResourcePollTargetStatuses(t *testing.T) {
 	Convey("Given a resourceInfo", t, func() {
 		r := resourceInfo{}
-		Convey("When getResourcePollTargetStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-target-statuses'", func() {
+		Convey("When getResourcePollTargetStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
 			expectedTarget := "deployed"
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
@@ -1462,7 +1462,7 @@ func TestGetResourcePollPendingStatuses(t *testing.T) {
 func TestGetPollingStatuses(t *testing.T) {
 	Convey("Given a resourceInfo", t, func() {
 		r := resourceInfo{}
-		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-target-statuses'", func() {
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
 			expectedTarget := "deployed"
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
@@ -1486,7 +1486,7 @@ func TestGetPollingStatuses(t *testing.T) {
 			})
 		})
 
-		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-target-statuses' containing multiple targets (comma separated with spaces)", func() {
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with spaces)", func() {
 			expectedTargets := "deployed, completed, done"
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
@@ -1513,7 +1513,7 @@ func TestGetPollingStatuses(t *testing.T) {
 			})
 		})
 
-		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-target-statuses' containing multiple targets (comma separated with no spaces)", func() {
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with no spaces)", func() {
 			expectedTargets := "deployed,completed,done"
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
@@ -1539,7 +1539,7 @@ func TestGetPollingStatuses(t *testing.T) {
 			})
 		})
 
-		Convey("When getPollingStatuses method is called with a response that has does not have a given extension 'x-terraform-resource-poll-target-statuses'", func() {
+		Convey("When getPollingStatuses method is called with a response that has does not have a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
 			responses := spec.Responses{
 				ResponsesProps: spec.ResponsesProps{
 					StatusCodeResponses: map[int]spec.Response{
