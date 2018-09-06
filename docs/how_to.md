@@ -338,18 +338,21 @@ the header will be the one specified in the terraform configuration ```request h
 This extension allows the service provider to enable the polling mechanism in the OpenAPI Terraform provider for asynchronous
 operations. In order for this to work, the following must be met:
 
+- The resource response status code must have the 'x-terraform-resource-poll-enabled' present and set to true.
 - The resource definition must have a read-only field that defines the status of the resource. By default, if a string field
 named 'status' is present in the resource schema definition that field will be used to track the different statues of the resource. Alternatively,
 a field can be marked to serve as the status field adding the 'x-terraform-field-status'. This field will be used as the status
 field even if there is another field named 'status'. This gives service providers flexibility to name their status field the
 way they desire. More details about the 'x-terraform-field-status' extension can be found in the [Attribute details](#attributeDetails) section.
-- The polling mechanism required two more extensions to work which define the expected 'status' values for both target and 
+- The polling mechanism requires two more extensions to work which define the expected 'status' values for both target and 
 pending statuses. These are:
 
   - **x-terraform-resource-poll-target-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
   - **x-terraform-resource-poll-pending-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'in progress'.
 Any other state returned that returned but is not part of this list will be considered as a failure and the polling mechanism
 will stop its execution accordingly.
+
+**If the above requirements are not met, the operation will be considered synchronous and no polling will be performed.**
 
 In the example below, the response with HTTP status code 202 has the extension defined with value 'true' meaning 
 that the OpenAPI Terraform provider will treat this response as asynchronous. Therefore, the provider will perform
