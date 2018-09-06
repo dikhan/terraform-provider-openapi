@@ -516,7 +516,7 @@ definitions:
         x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not 'status' but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
         type: string
         readOnly: true
-        enum: # this is jsut for documentation purposes and to let the consumer know what statues should be expected 
+        enum: # this is just for documentation purposes and to let the consumer know what statues should be expected 
           - deploy_pending
           - deploy_in_progress
           - deploy_failed
