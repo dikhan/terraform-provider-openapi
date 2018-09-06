@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 )
 
 func readRequest(r *http.Request, in interface{}) error {
@@ -35,7 +36,9 @@ func sendResponse(httpResponseStatusCode int, w http.ResponseWriter, out interfa
 
 func sendErrorResponse(httpStatusCode int, message string, w http.ResponseWriter) {
 	updateResponseHeaders(httpStatusCode, w)
-	w.Write([]byte(fmt.Sprintf(`{"code":"%d", "message": "%s"}`, httpStatusCode, message)))
+	err := fmt.Sprintf(`{"code":"%d", "message": "%s"}`, httpStatusCode, message)
+	w.Write([]byte(err))
+	log.Printf("Error Response sent '%s'", err)
 }
 
 func updateResponseHeaders(httpStatusCode int, w http.ResponseWriter) {

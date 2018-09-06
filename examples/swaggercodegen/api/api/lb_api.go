@@ -99,8 +99,6 @@ func LBDeleteV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updateLBStatus(lb, deletePending)
-	delete(db, lb.Id)
-	log.Printf("DELETE Response [%s]", lb.Id)
 
 	go pretendResourceOperationIsProcessing(lb, deletePendingStatuses, deleted, deleteFailed)
 
@@ -127,7 +125,12 @@ func pretendResourceOperationIsProcessing(lb *Lbv1, pendingStatues []status, com
 	for _, newStatus := range inProgressStatuses {
 		sleepAndUpdateLB(lb, newStatus, waitTimePerPendingStatus)
 	}
-	sleepAndUpdateLB(lb, finalStatus, waitTimePerPendingStatus)
+	// This is the case of delete operation; where there is no completed status as at point the resource should be destroyed completely
+	if completed == deleted {
+		sleepAndDestroyLB(lb, waitTimePerPendingStatus)
+	} else {
+		sleepAndUpdateLB(lb, finalStatus, waitTimePerPendingStatus)
+	}
 }
 
 func sleepAndUpdateLB(lb *Lbv1, newStatus status, waitTime int32) {
@@ -135,6 +138,14 @@ func sleepAndUpdateLB(lb *Lbv1, newStatus status, waitTime int32) {
 	log.Printf("Precessing resource [%s] [%s => %s] - timeToProcess = %ds", lb.Id, lb.Status, newStatus, waitTime)
 	time.Sleep(timeToProcessPerStatusDuration)
 	updateLBStatus(lb, newStatus)
+}
+
+func sleepAndDestroyLB(lb *Lbv1, waitTime int32) {
+	timeToProcessPerStatusDuration := time.Duration(waitTime) * time.Second
+	log.Printf("Destroying resource [%s] [%s] - timeToProcess = %ds", lb.Id, lb.Status, waitTime)
+	time.Sleep(timeToProcessPerStatusDuration)
+	delete(lbsDB, lb.Id)
+	log.Printf("resource [%s] destroyed", lb.Id)
 }
 
 func updateLBStatus(lb *Lbv1, newStatus status) {
@@ -148,8 +159,8 @@ func retrieveLB(r *http.Request) (*Lbv1, error) {
 	if id == "" {
 		return nil, fmt.Errorf("lb id path param not provided")
 	}
-	lb := lbsDB[id]
-	if lb == nil {
+	lb, exists := lbsDB[id]
+	if lb == nil || !exists{
 		return nil, fmt.Errorf("lb id '%s' not found", id)
 	}
 	return lb, nil
