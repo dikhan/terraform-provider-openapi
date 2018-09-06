@@ -5,7 +5,9 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -997,7 +999,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": {
+						idDefaultPropertyName: {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
@@ -1013,14 +1015,14 @@ func TestGetResourceIdentifier(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the value returned should be 'id'", func() {
-				So(id, ShouldEqual, "id")
+				So(id, ShouldEqual, idDefaultPropertyName)
 			})
 		})
 	})
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to TRUE", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", true)
+		extensions.Add(extTfID, true)
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1048,7 +1050,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that HAS BOTH an 'id' property AND ALSO a property configured with x-terraform-id set to true", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", true)
+		extensions.Add(extTfID, true)
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1082,7 +1084,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to FALSE", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", false)
+		extensions.Add(extTfID, false)
 		r := resourceInfo{
 			schemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1128,6 +1130,475 @@ func TestGetResourceIdentifier(t *testing.T) {
 		}
 		Convey("When getResourceIdentifier method is called", func() {
 			_, err := r.getResourceIdentifier()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestGetStatusIdentifier(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						statusDefaultPropertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			status, err := r.getStatusIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'status'", func() {
+				So(status, ShouldEqual, statusDefaultPropertyName)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with x-terraform-field-status set to TRUE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			id, err := r.getStatusIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'some-other-property-holding-status'", func() {
+				So(id, ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that HAS BOTH an 'status' property AND ALSO a property configured with 'x-terraform-field-status' set to true", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			id, err := r.getStatusIdentifier()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be 'some-other-property-holding-status' as it takes preference over the default 'status' property", func() {
+				So(id, ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with 'x-terraform-field-status' set to FALSE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, false)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier()
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that NEITHER HAS an 'status' property NOR a property configured with 'x-terraform-field-status' set to true", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"prop-that-is-not-status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"prop-that-is-not-status-and-does-not-have-status-metadata-either": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition with a property configured with 'x-terraform-field-status' set to true but is not readonly", t, func() {
+		r := resourceInfo{
+			schemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"prop-that-is-not-status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: false,
+							},
+						},
+						"prop-that-is-not-status-and-does-not-have-status-metadata-either": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestIsIDProperty(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When isIDProperty method is called with property named 'id'", func() {
+			isIDProperty := r.isIDProperty("id")
+			Convey("Then the error returned should be nil", func() {
+				So(isIDProperty, ShouldBeTrue)
+			})
+		})
+		Convey("When isIDProperty method is called with property NOT named 'id'", func() {
+			isIDProperty := r.isIDProperty("something_not_id")
+			Convey("Then the error returned should be nil", func() {
+				So(isIDProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsStatusProperty(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When isStatusProperty method is called with property named 'status'", func() {
+			isStatusProperty := r.isStatusProperty("status")
+			Convey("Then the error returned should be nil", func() {
+				So(isStatusProperty, ShouldBeTrue)
+			})
+		})
+		Convey("When isStatusProperty method is called with property NOT named 'status'", func() {
+			isStatusProperty := r.isStatusProperty("something_not_status")
+			Convey("Then the error returned should be nil", func() {
+				So(isStatusProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestPropertyNameMatchesDefaultName(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When propertyNameMatchesDefaultName method is called with property named 'status' and an expected name matching the property property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("status", "status")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeTrue)
+			})
+		})
+		Convey("When propertyNameMatchesDefaultName method is called with property named 'ID' which is not terraform compliant name and an expected property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("ID", "id")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeTrue)
+			})
+		})
+		Convey("When propertyNameMatchesDefaultName method is called with property NOT matching the expected property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("something_not_status", "")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsResourcePollingEnabled(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollEnabled, true)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			isResourcePollingEnabled, _ := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			Convey("Then the bool returned should be true", func() {
+				So(isResourcePollingEnabled, ShouldBeTrue)
+			})
+		})
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to false", func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollEnabled, false)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			isResourcePollingEnabled, _ := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			Convey("Then the bool returned should be false", func() {
+				So(isResourcePollingEnabled, ShouldBeFalse)
+			})
+		})
+		Convey("When isResourcePollingEnabled method is called with list of responses where non of the codes match the given response http code", func() {
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusOK: {},
+					},
+				},
+			}
+			isResourcePollingEnabled, _ := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			Convey("Then bool returned should be false", func() {
+				So(isResourcePollingEnabled, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestGetResourcePollTargetStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getResourcePollTargetStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getResourcePollTargetStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+	})
+}
+
+func TestGetResourcePollPendingStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getResourcePollPendingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-pending-statuses'", func() {
+			expectedStatus := "deploy_pending"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollPendingStatuses, expectedStatus)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getResourcePollPendingStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedStatus)
+			})
+		})
+	})
+}
+
+func TestGetPollingStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with spaces)", func() {
+			expectedTargets := "deployed, completed, done"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain expected targets", func() {
+				// the expected Targets are a list of targets with no spaces whatsoever, hence why the removal of spaces
+				for _, expectedTarget := range strings.Split(strings.Replace(expectedTargets, " ", "", -1), ",") {
+					So(statuses, ShouldContain, expectedTarget)
+				}
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with no spaces)", func() {
+			expectedTargets := "deployed,completed,done"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain expected targets", func() {
+				for _, expectedTarget := range strings.Split(expectedTargets, ",") {
+					So(statuses, ShouldContain, expectedTarget)
+				}
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has does not have a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{},
+							},
+						},
+					},
+				},
+			}
+			_, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})

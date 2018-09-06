@@ -84,6 +84,41 @@ var routes = Routes{
 	},
 
 	Route{
+		"LBCreateV1",
+		strings.ToUpper("Post"),
+		"/v1/lbs",
+		LBCreateV1,
+	},
+
+	Route{
+		"LBDeleteV1",
+		strings.ToUpper("Delete"),
+		"/v1/lbs/{id}",
+		LBDeleteV1,
+	},
+
+	Route{
+		"LBGetV1",
+		strings.ToUpper("Get"),
+		"/v1/lbs/{id}",
+		LBGetV1,
+	},
+
+	Route{
+		"LBUpdateV1",
+		strings.ToUpper("Put"),
+		"/v1/lbs/{id}",
+		LBUpdateV1,
+	},
+
+	Route{
+		"ApiDiscovery",
+		strings.ToUpper("Get"),
+		"/swagger.yaml",
+		ApiDiscovery,
+	},
+
+	Route{
 		"GetVersion",
 		strings.ToUpper("Get"),
 		"/version",

@@ -14,3 +14,10 @@ resource "swaggercodegen_cdns_v1" "my_cdn" {
   better_example_number_field_name = 1.12
   example_boolean = true
 }
+
+resource "swaggercodegen_lbs_v1" "my_lb" {
+  name = "some_name"
+  backends = ["backend.com"]
+  time_to_process = 15 # the operation (post,update,delete) will take 15s in the API to complete
+  simulate_failure = false # no failures wished now ;) (post,update,delete)
+}

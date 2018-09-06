@@ -263,6 +263,7 @@ Extension Name | Type | Description
 ---|:---:|---
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
+[x-terraform-resource-poll-enabled](#xTerraformResourcePollEnabled) | bool | Only supported in operation response (202). Defines that if the API responds with the given HTTP Status code (202), the polling mechanism will be enabled. This allows the OpenAPI Terraform provider to perform read calls to the remote API and check the resource state. The polling mechanism finalises if the remote resource state arrives at completion, failure state or times-out (60s)
 
 ###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
  
@@ -332,6 +333,69 @@ the header will be the one specified in the terraform configuration ```request h
 
 *Note: Currently, parameters of type 'header' are only supported on an operation level*
 
+###### <a name="xTerraformResourcePollEnabled">x-terraform-resource-poll-enabled</a> 
+
+This extension allows the service provider to enable the polling mechanism in the OpenAPI Terraform provider for asynchronous
+operations. In order for this to work, the following must be met:
+
+- The resource response status code must have the 'x-terraform-resource-poll-enabled' present and set to true.
+- The resource definition must have a **read-only** field that defines the status of the resource. By default, if a string field
+named 'status' is present in the resource schema definition that field will be used to track the different statues of the resource. Alternatively,
+a field can be marked to serve as the status field adding the 'x-terraform-field-status'. This field will be used as the status
+field even if there is another field named 'status'. This gives service providers flexibility to name their status field the
+way they desire. More details about the 'x-terraform-field-status' extension can be found in the [Attribute details](#attributeDetails) section.
+- The polling mechanism requires two more extensions to work which define the expected 'status' values for both target and 
+pending statuses. These are:
+
+  - **x-terraform-resource-poll-completed-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
+  - **x-terraform-resource-poll-pending-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'in progress'.
+Any other state returned that returned but is not part of this list will be considered as a failure and the polling mechanism
+will stop its execution accordingly.
+
+**If the above requirements are not met, the operation will be considered synchronous and no polling will be performed.**
+
+In the example below, the response with HTTP status code 202 has the extension defined with value 'true' meaning 
+that the OpenAPI Terraform provider will treat this response as asynchronous. Therefore, the provider will perform
+continues calls to the resource's instance GET operation and will use the value from the resource 'status' property to
+determine the state of the resource:
+
+````
+  /v1/lbs:
+    post:
+      ...
+      responses:
+        202: # Accepted
+          x-terraform-resource-poll-enabled: true # [type (bool)] - this flags the response as trully async. Some resources might be async too but may require manual intervention from operators to complete the creation workflow. This flag will be used by the OpenAPI Service provider to detect whether the polling mechanism should be used or not. The flags below will only be applicable if this one is present with value 'true'
+          x-terraform-resource-poll-completed-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
+          x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying          
+          schema:
+            $ref: "#/definitions/LBV1"
+definitions:
+  LBV1:
+    type: "object"
+    required:
+      - name
+      - backends
+    properties:
+      ...
+      status:
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        description: lb resource status
+        type: string
+        readOnly: true
+        enum:
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted          
+````
+
+*Note: This extension is only supported at the response level.*
+
 #### <a name="swaggerDefinitions">Definitions</a>
 
 - **Field Name:** definitions
@@ -395,6 +459,7 @@ x-terraform-force-new | boolean |  If the value of this property is updated; ter
 x-terraform-sensitive | boolean |  If this meta attribute is present in an object definition property, it will be considered sensitive as far as terraform is concerned, meaning that its value will not be disclosed in the TF state file
 x-terraform-id | boolean | If this meta attribute is present in an object definition property, the value will be used as the resource identifier when performing the read, update and delete API operations. The value will also be stored in the ID field of the local state file.
 x-terraform-field-name | string | This enables service providers to override the schema definition property name with a different one which will be the property name used in the terraform configuration file. This is mostly used to expose the internal property to a more user friendly name. If the extension is not present and the property name is not terraform compliant, an automatic conversion will be performed by the OpenAPI Terraform provider to make the name compliant (following Terraform's field name convention to be snake_case) 
+x-terraform-field-status | boolean | If this meta attribute is present in an object definition property, the value will be used as the status identifier when executing the polling mechanism on eligible async operations such as POST/PUT/DELETE.
 
 ##### <a name="definitionExample">Full Example</a>
 
@@ -449,6 +514,21 @@ definitions:
       someNonUserFriendlyPropertyName:  # If this property did not have the 'x-terraform-field-name' extension, the property name will be automatically converted by the OpenAPI Terraform provider into a name that is Terraform field name compliant. The result will be:  some_non_user_friendly_propertyName
         type: string
         x-terraform-field-name: property_name_more_user_friendly
+        
+      status:
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not 'status' but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        type: string
+        readOnly: true
+        enum: # this is just for documentation purposes and to let the consumer know what statues should be expected 
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted        
+        
 ```
 
 

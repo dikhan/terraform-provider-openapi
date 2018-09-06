@@ -11,12 +11,22 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+// Definition level extensions
 const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
-const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfFieldName = "x-terraform-field-name"
+const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
+
+// Operation level extensions
+const extTfExcludeResource = "x-terraform-exclude-resource"
+const extTfResourcePollEnabled = "x-terraform-resource-poll-enabled"
+const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-completed-statuses"
+const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
+
+const idDefaultPropertyName = "id"
+const statusDefaultPropertyName = "status"
 
 type resourcesInfo map[string]resourceInfo
 
@@ -209,7 +219,7 @@ func (r resourceInfo) getResourceIDURL(id string) (string, error) {
 
 // getResourceIdentifier returns the property name that is supposed to be used as the identifier. The resource id
 // is selected as follows:
-// 1.If the given schema definition contains a property configured with metadata 'x-terraform-id' set to true, that property value
+// 1.If the given schema definition contains a property configured with metadata 'x-terraform-id' set to true, that property
 // will be used to set the state ID of the resource. Additionally, the value will be used when performing GET/PUT/DELETE requests to
 // identify the resource in question.
 // 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
@@ -237,6 +247,41 @@ func (r resourceInfo) getResourceIdentifier() (string, error) {
 	return identifierProperty, nil
 }
 
+// getStatusIdentifier returns the property name that is supposed to be used as the status field. The status field
+// is selected as follows:
+// 1.If the given schema definition contains a property configured with metadata 'x-terraform-field-status' set to true, that property
+// will be used to check the different statues for the asynchronous pooling mechanism.
+// 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
+// will have a property named 'status'
+// 3. If none of the above requirements is met, an error will be returned
+func (r resourceInfo) getStatusIdentifier() (string, error) {
+	statusProperty := ""
+	for propertyName, property := range r.schemaDefinition.Properties {
+		if r.isIDProperty(propertyName) {
+			continue
+		}
+		if r.isStatusProperty(propertyName) {
+			statusProperty = propertyName
+			continue
+		}
+		// field with extTfFieldStatus metadata takes preference over 'status' fields as the service provider is the one acknowledging
+		// the fact that this field should be used as identifier of the resource
+		if terraformID, ok := property.Extensions.GetBool(extTfFieldStatus); ok && terraformID {
+			statusProperty = propertyName
+			break
+		}
+	}
+	// if the id field is missing and there isn't any properties set with extTfFieldStatus, there is not way for the resource
+	// to be identified and therefore an error is returned
+	if statusProperty == "" {
+		return "", fmt.Errorf("could not find any status property in the resource swagger definition. Please make sure the resource definition has either one property named 'status' or one property that contains %s metadata", extTfFieldStatus)
+	}
+	if !r.schemaDefinition.Properties[statusProperty].ReadOnly {
+		return "", fmt.Errorf("schema definition status property '%s' must be readOnly", statusProperty)
+	}
+	return statusProperty, nil
+}
+
 // shouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
 // defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provder; otherwise it will
 // be exposed and users will be able to manage such resource via terraform.
@@ -247,6 +292,47 @@ func (r resourceInfo) shouldIgnoreResource() bool {
 	return false
 }
 
+// isResourcePollingEnabled checks whether there is any response code defined for the given responseStatusCode and if so
+// whether that response contains the extension 'x-terraform-resource-poll-enabled' set to true returning true;
+// otherwise false is returned
+func (r resourceInfo) isResourcePollingEnabled(responses *spec.Responses, responseStatusCode int) (bool, *spec.Response) {
+	response, exists := responses.StatusCodeResponses[responseStatusCode]
+	if !exists {
+		return false, nil
+	}
+	if isResourcePollEnabled, ok := response.Extensions.GetBool(extTfResourcePollEnabled); ok && isResourcePollEnabled {
+		return true, &response
+	}
+	return false, nil
+}
+
+func (r resourceInfo) getResourcePollTargetStatuses(response spec.Response) ([]string, error) {
+	return r.getPollingStatuses(response, extTfResourcePollTargetStatuses)
+}
+
+func (r resourceInfo) getResourcePollPendingStatuses(response spec.Response) ([]string, error) {
+	return r.getPollingStatuses(response, extTfResourcePollPendingStatuses)
+}
+
+func (r resourceInfo) getPollingStatuses(response spec.Response, extension string) ([]string, error) {
+	statuses := []string{}
+	if resourcePollTargets, exists := response.Extensions.GetString(extension); exists {
+		spaceTrimmedTargets := strings.Replace(resourcePollTargets, " ", "", -1)
+		statuses = strings.Split(spaceTrimmedTargets, ",")
+	} else {
+		return nil, fmt.Errorf("response missing required extension '%s' for the polling mechanism to work", extension)
+	}
+	return statuses, nil
+}
+
 func (r resourceInfo) isIDProperty(propertyName string) bool {
-	return terraformutils.ConvertToTerraformCompliantName(propertyName) == "id"
+	return r.propertyNameMatchesDefaultName(propertyName, idDefaultPropertyName)
+}
+
+func (r resourceInfo) isStatusProperty(propertyName string) bool {
+	return r.propertyNameMatchesDefaultName(propertyName, statusDefaultPropertyName)
+}
+
+func (r resourceInfo) propertyNameMatchesDefaultName(propertyName, expectedPropertyName string) bool {
+	return terraformutils.ConvertToTerraformCompliantName(propertyName) == expectedPropertyName
 }

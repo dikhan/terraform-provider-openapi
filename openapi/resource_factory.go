@@ -6,12 +6,15 @@ import (
 	"reflect"
 
 	"github.com/dikhan/http_goclient"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/go-openapi/spec"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
 	"strconv"
+	"time"
 )
 
 type resourceFactory struct {
@@ -19,6 +22,8 @@ type resourceFactory struct {
 	resourceInfo     resourceInfo
 	apiAuthenticator apiAuthenticator
 }
+
+var defaultTimeout = time.Duration(60 * time.Second)
 
 func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 	s, err := r.resourceInfo.createTerraformResourceSchema()
@@ -31,6 +36,9 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 		Read:   r.read,
 		Delete: r.delete,
 		Update: r.update,
+		Timeouts: &schema.ResourceTimeout{
+			Default: &defaultTimeout,
+		},
 	}, nil
 }
 
@@ -61,14 +69,26 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
 	}
-	return r.updateLocalState(resourceLocalData, responsePayload)
+
+	err = r.setStateID(resourceLocalData, responsePayload)
+	if err != nil {
+		return err
+	}
+	log.Printf("[INFO] Resource '%s' ID: %s", r.resourceInfo.name, resourceLocalData.Id())
+
+	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutCreate)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourceURL, res.StatusCode, err)
+	}
+
+	return r.read(resourceLocalData, i)
 }
 
 func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interface{}) error {
 	providerConfig := i.(providerConfig)
 	remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("GET %s/%s failed: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
 	}
 	return r.updateStateWithPayloadData(remoteData, resourceLocalData)
 }
@@ -94,9 +114,11 @@ func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (m
 	if err != nil {
 		return nil, err
 	}
+
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
-		return nil, fmt.Errorf("GET %s failed: %s", resourceIDURL, err)
+		return nil, err
 	}
+
 	return responsePayload, nil
 }
 
@@ -132,7 +154,13 @@ func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interf
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
 	}
-	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
+
+	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutUpdate)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
+	}
+
+	return r.read(resourceLocalData, i)
 }
 
 func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interface{}) error {
@@ -159,7 +187,74 @@ func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interf
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
+
+	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutDelete)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
+	}
+
 	return nil
+}
+
+func (r resourceFactory) handlePollingIfConfigured(resourceLocalData *schema.ResourceData, providerConfig providerConfig, responses *spec.Responses, responseStatusCode int, timeoutFor string) error {
+	if pollingEnabled, response := r.resourceInfo.isResourcePollingEnabled(responses, responseStatusCode); pollingEnabled {
+		targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
+		if err != nil {
+			return err
+		}
+		pendingStatuses, err := r.resourceInfo.getResourcePollPendingStatuses(*response)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
+		log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.resourceInfo.name, targetStatuses)
+
+		stateConf := &resource.StateChangeConf{
+			Pending:      pendingStatuses,
+			Target:       targetStatuses,
+			Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerConfig),
+			Timeout:      resourceLocalData.Timeout(timeoutFor),
+			PollInterval: 5 * time.Second,
+			MinTimeout:   10 * time.Second,
+			Delay:        1 * time.Second,
+		}
+
+		// Wait, catching any errors
+		_, err = stateConf.WaitForState()
+		if err != nil {
+			return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
+		}
+	}
+	return nil
+}
+
+func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerConfig providerConfig) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
+
+		if err != nil {
+			if openapiErr, ok := err.(openapierr.Error); ok {
+				if openapierr.NotFound == openapiErr.Code() {
+					return "", "destroyed", nil
+				}
+			}
+			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.name, resourceLocalData.Id(), err)
+		}
+
+		statusIdentifier, err := r.resourceInfo.getStatusIdentifier()
+		if err != nil {
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier for resource '%s' (%s): %s", r.resourceInfo.name, resourceLocalData.Id(), err)
+		}
+
+		value, statusIdentifierPresentInResponse := remoteData[statusIdentifier]
+		if !statusIdentifierPresentInResponse {
+			return nil, "", fmt.Errorf("response payload received from GET /%s/%s  missing the status identifier field", r.resourceInfo.path, resourceLocalData.Id())
+		}
+		newStatus := value.(string)
+		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.resourceInfo.name, resourceLocalData.Id(), newStatus)
+		return remoteData, newStatus, nil
+	}
 }
 
 // appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
@@ -218,7 +313,9 @@ func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPSta
 		}
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
-			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", res.StatusCode, resBody)
+			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized. API access is denied due to invalid credentials: %s", res.StatusCode, resBody)
+		case http.StatusNotFound:
+			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Reponse Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
 		default:
 			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v (%s)", res.StatusCode, expectedHTTPStatusCodes, resBody)
 		}
