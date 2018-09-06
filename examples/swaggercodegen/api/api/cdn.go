@@ -25,7 +25,6 @@ func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
 	}
 	cdn.Id = uuid.New()
 	db[cdn.Id] = cdn
-	log.Printf("POST [%+v\n]", cdn)
 	sendResponse(http.StatusCreated, w, cdn)
 }
 
@@ -34,7 +33,6 @@ func ContentDeliveryNetworkGetV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cdn, err := retrieveCdn(r)
-	log.Printf("GET [%+v\n]", cdn)
 	if err != nil {
 		sendErrorResponse(http.StatusNotFound, err.Error(), w)
 		return
@@ -58,7 +56,6 @@ func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	newCDN.Id = cdn.Id
-	log.Printf("UPDATE [%+v\n]", newCDN)
 	db[cdn.Id] = newCDN
 	sendResponse(http.StatusOK, w, newCDN)
 }
@@ -73,7 +70,6 @@ func ContentDeliveryNetworkDeleteV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	delete(db, cdn.Id)
-	log.Printf("DELETE [%s]", cdn.Id)
 	sendResponse(http.StatusNoContent, w, nil)
 }
 

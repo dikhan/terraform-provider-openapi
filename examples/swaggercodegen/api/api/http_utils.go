@@ -32,6 +32,7 @@ func sendResponse(httpResponseStatusCode int, w http.ResponseWriter, out interfa
 	if len(resBody) > 0 {
 		w.Write(resBody)
 	}
+	log.Printf("Response sent '%+v'", out)
 }
 
 func sendErrorResponse(httpStatusCode int, message string, w http.ResponseWriter) {

@@ -43,7 +43,6 @@ func LBGetV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusNotFound, err.Error(), w)
 		return
 	}
-	log.Printf("GET Response [%+v\n]", lb)
 	sendResponse(http.StatusOK, w, lb)
 }
 
@@ -55,7 +54,6 @@ func LBCreateV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	UpdateLBV1(lb, uuid.New(), lb.Name, lb.Backends, lb.SimulateFailure, lb.TimeToProcess, deployPending)
-	log.Printf("POST Response [%+v\n]", lb)
 
 	go pretendResourceOperationIsProcessing(lb, deployPendingStatuses, deployed, deployFailed)
 
@@ -75,7 +73,6 @@ func LBUpdateV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	UpdateLBV1(lb, lb.Id, newLB.Name, newLB.Backends, newLB.SimulateFailure, newLB.TimeToProcess, deployPending)
-	log.Printf("UPDATE Response [%+v\n]", lb)
 
 	go pretendResourceOperationIsProcessing(lb, deployPendingStatuses, deployed, deployFailed)
 
