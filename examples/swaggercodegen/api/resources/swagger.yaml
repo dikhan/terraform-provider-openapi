@@ -307,7 +307,7 @@ definitions:
         description: lb resource status
         type: string
         readOnly: true
-        enum:
+        enum: # this is just for documentation purposes and to let the consumer know what statues should be expected
           - deploy_pending
           - deploy_in_progress
           - deploy_failed
