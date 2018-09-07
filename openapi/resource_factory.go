@@ -76,12 +76,11 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 	}
 	log.Printf("[INFO] Resource '%s' ID: %s", r.resourceInfo.name, resourceLocalData.Id())
 
-	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutCreate)
+	err = r.handlePollingIfConfigured(&responsePayload, resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutCreate)
 	if err != nil {
 		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourceURL, res.StatusCode, err)
 	}
-
-	return r.read(resourceLocalData, i)
+	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
 }
 
 func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interface{}) error {
@@ -162,12 +161,11 @@ func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interf
 		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
 	}
 
-	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutUpdate)
+	err = r.handlePollingIfConfigured(&responsePayload, resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutUpdate)
 	if err != nil {
 		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
 	}
-
-	return r.read(resourceLocalData, i)
+	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
 }
 
 func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interface{}) error {
@@ -195,7 +193,7 @@ func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interf
 		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
 	}
 
-	err = r.handlePollingIfConfigured(resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutDelete)
+	err = r.handlePollingIfConfigured(nil, resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutDelete)
 	if err != nil {
 		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
 	}
@@ -203,35 +201,42 @@ func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interf
 	return nil
 }
 
-func (r resourceFactory) handlePollingIfConfigured(resourceLocalData *schema.ResourceData, providerConfig providerConfig, responses *spec.Responses, responseStatusCode int, timeoutFor string) error {
-	if pollingEnabled, response := r.resourceInfo.isResourcePollingEnabled(responses, responseStatusCode); pollingEnabled {
-		targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
-		if err != nil {
-			return err
-		}
-		pendingStatuses, err := r.resourceInfo.getResourcePollPendingStatuses(*response)
-		if err != nil {
-			return err
-		}
+func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]interface{}, resourceLocalData *schema.ResourceData, providerConfig providerConfig, responses *spec.Responses, responseStatusCode int, timeoutFor string) error {
+	pollingEnabled, response := r.resourceInfo.isResourcePollingEnabled(responses, responseStatusCode)
 
-		log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
-		log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.resourceInfo.name, targetStatuses)
+	if !pollingEnabled {
+		return nil
+	}
 
-		stateConf := &resource.StateChangeConf{
-			Pending:      pendingStatuses,
-			Target:       targetStatuses,
-			Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerConfig),
-			Timeout:      resourceLocalData.Timeout(timeoutFor),
-			PollInterval: 5 * time.Second,
-			MinTimeout:   10 * time.Second,
-			Delay:        1 * time.Second,
-		}
+	targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
+	if err != nil {
+		return err
+	}
+	pendingStatuses, err := r.resourceInfo.getResourcePollPendingStatuses(*response)
+	if err != nil {
+		return err
+	}
 
-		// Wait, catching any errors
-		_, err = stateConf.WaitForState()
-		if err != nil {
-			return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
-		}
+	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
+	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.resourceInfo.name, targetStatuses)
+
+	stateConf := &resource.StateChangeConf{
+		Pending:      pendingStatuses,
+		Target:       targetStatuses,
+		Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerConfig),
+		Timeout:      resourceLocalData.Timeout(timeoutFor),
+		PollInterval: 5 * time.Second,
+		MinTimeout:   10 * time.Second,
+		Delay:        1 * time.Second,
+	}
+
+	// Wait, catching any errors
+	remoteData, err := stateConf.WaitForState()
+	if err != nil {
+		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
+	}
+	if responsePayload != nil {
+		*responsePayload = remoteData.(map[string]interface{})
 	}
 	return nil
 }
@@ -243,7 +248,7 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 		if err != nil {
 			if openapiErr, ok := err.(openapierr.Error); ok {
 				if openapierr.NotFound == openapiErr.Code() {
-					return "", "destroyed", nil
+					return remoteData, "destroyed", nil
 				}
 			}
 			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.name, resourceLocalData.Id(), err)
