@@ -243,7 +243,7 @@ paths:
         202:
           description: "LB v1 deletion"
           x-terraform-resource-poll-enabled: true
-          #x-terraform-resource-poll-completed-statuses: "destroyed-crazy-nusts!!!" #This extension is not needed in DELETE operations. This is due to the fact that when the resource is destroyed, it is expected that http GET calls made by the polling mechanism will get a NotFound response status code back wit no payload whatsoever. And the OpenAPI Terraform provider will internally know how to handle this particular cases without this extension being present. If the extension is present with certain value, the latter will be ignored.
+          #x-terraform-resource-poll-completed-statuses: "destroyed-crazy-nusts!!!" #This extension is not needed in DELETE operations and will be ignored if present. This is due to the fact that when the resource is destroyed, it is expected that http GET calls made by the polling mechanism will get a NotFound response status code back wit no payload whatsoever. And the OpenAPI Terraform provider will internally know how to handle this particular cases without this extension being present.
           x-terraform-resource-poll-pending-statuses: "delete_pending,delete_in_progress"
         400:
           $ref: "#/responses/Unauthorized"

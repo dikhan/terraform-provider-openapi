@@ -211,11 +211,6 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		return nil
 	}
 
-	targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
-	if err != nil {
-		return err
-	}
-
 	// This is a use case where payload does not contain payload data and hence status field is not available; e,g: DELETE operations
 	// The default behaviour for this case is to consider the resource as destroyed. Hence, the below code pre-populates
 	// the target extension with the expected status that the polling mechanism expects when dealing with NotFound resources (should only happen on delete operations).
@@ -226,7 +221,12 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 			log.Printf("[WARN] service provider speficied '%s': %s for a DELETE operation. This is not expected as the normal behaviour is the resource to no longer exists once the DELETE operation is completed; hence subsequent GET calls should return 404 NotFound instead", extTfResourcePollTargetStatuses, value)
 		}
 		log.Printf("[WARN] setting extension '%s' with default value '%s'", extTfResourcePollTargetStatuses, defaultDestroyStatus)
-		targetStatuses = []string{defaultDestroyStatus}
+		response.Extensions.Add(extTfResourcePollTargetStatuses, defaultDestroyStatus)
+	}
+
+	targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
+	if err != nil {
+		return err
 	}
 
 	pendingStatuses, err := r.resourceInfo.getResourcePollPendingStatuses(*response)
