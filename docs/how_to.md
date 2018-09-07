@@ -348,6 +348,12 @@ way they desire. More details about the 'x-terraform-field-status' extension can
 pending statuses. These are:
 
   - **x-terraform-resource-poll-completed-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
+*Note: For DELETE operations, the expected behaviour is that when the resource has been deleted, GET requests to the deleted 
+resource would return a 404 HTTP response status code back. This means that no payload will be returned in the response, 
+and hence there won't be any status field to check against to. Therefore, the OpenAPI Terraform provider handle deletes
+target statuses in a different way not expecting the service provide to populate this extension. Behind the scenes, the 
+OpenAPI Terraform provider will handle the polling accordingly until the resource is no longer available at which point
+the resource will be considered destroyed. If the extension is present with a value, it wil be ignored in the backend.*
   - **x-terraform-resource-poll-pending-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'in progress'.
 Any other state returned that returned but is not part of this list will be considered as a failure and the polling mechanism
 will stop its execution accordingly.
