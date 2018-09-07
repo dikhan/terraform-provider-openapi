@@ -23,6 +23,9 @@ type resourceFactory struct {
 	apiAuthenticator apiAuthenticator
 }
 
+// only applicable when remote resource no longer exists and GET operations return 404 NotFound
+var defaultDestroyStatus = "destroyed"
+
 var defaultTimeout = time.Duration(10 * time.Minute)
 
 func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
@@ -212,6 +215,20 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	if err != nil {
 		return err
 	}
+
+	// This is a use case where payload does not contain payload data and hence status field is not available; e,g: DELETE operations
+	// The default behaviour for this case is to consider the resource as destroyed. Hence, the below code pre-populates
+	// the target extension with the expected status that the polling mechanism expects when dealing with NotFound resources (should only happen on delete operations).
+	// Since this is internal behaviour it is not expected that the service provider will populate this field; and if so, it
+	// will be overridden
+	if responsePayload == nil {
+		if value, exists := response.Extensions.GetString(extTfResourcePollTargetStatuses); exists {
+			log.Printf("[WARN] service provider speficied '%s': %s for a DELETE operation. This is not expected as the normal behaviour is the resource to no longer exists once the DELETE operation is completed; hence subsequent GET calls should return 404 NotFound instead", extTfResourcePollTargetStatuses, value)
+		}
+		log.Printf("[WARN] setting extension '%s' with default value '%s'", extTfResourcePollTargetStatuses, defaultDestroyStatus)
+		targetStatuses = []string{defaultDestroyStatus}
+	}
+
 	pendingStatuses, err := r.resourceInfo.getResourcePollPendingStatuses(*response)
 	if err != nil {
 		return err
@@ -248,7 +265,7 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 		if err != nil {
 			if openapiErr, ok := err.(openapierr.Error); ok {
 				if openapierr.NotFound == openapiErr.Code() {
-					return remoteData, "destroyed", nil
+					return remoteData, defaultDestroyStatus, nil
 				}
 			}
 			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.name, resourceLocalData.Id(), err)
