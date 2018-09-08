@@ -1,17 +1,10 @@
 package openapi
 
 import (
-	"fmt"
-
-	"log"
-	"strings"
-
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
-type resourcesInfo map[string]resourceInfo
+//type resourcesInfo map[string]resourceInfo
 
 // resourceInfo serves as translator between swagger definitions and terraform schemas
 type resourceInfo struct {
@@ -22,9 +15,9 @@ type resourceInfo struct {
 	host             string
 	httpSchemes      []string
 	schemaDefinition spec.Schema
-	// createPathInfo contains info about /resource, including the POST operation
+	// rootPathItem contains info about /resource, including the POST operation
 	createPathInfo spec.PathItem
-	// pathInfo contains info about /resource/{id}, including GET, PUT and REMOVE operations if applicable
+	// instancePathItem contains info about /resource/{id}, including GET, PUT and REMOVE operations if applicable
 	pathInfo spec.PathItem
 }
 
@@ -235,7 +228,7 @@ type resourceInfo struct {
 //// defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provder; otherwise it will
 //// be exposed and users will be able to manage such resource via terraform.
 //func (r resourceInfo) shouldIgnoreResource() bool {
-//	if extensionExists, ignoreResource := r.createPathInfo.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
+//	if extensionExists, ignoreResource := r.rootPathItem.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
 //		return true
 //	}
 //	return false

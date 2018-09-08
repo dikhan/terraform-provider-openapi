@@ -2,26 +2,20 @@ package openapi
 
 import (
 	"fmt"
-	"net/http"
-	"reflect"
-
-	"github.com/dikhan/http_goclient"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"reflect"
 	"strconv"
 )
 
 type resourceFactory struct {
-	httpClient       http_goclient.HttpClient
-	openApiResource  OpenApiResource
-	apiAuthenticator apiAuthenticator
+	openAPIResource SpecResource
 }
 
 func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
-	s, err := r.openApiResource.createResourceSchema()
+	s, err := r.createResourceSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -34,151 +28,194 @@ func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 	}, nil
 }
 
-func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	input := r.createPayloadFromLocalStateData(resourceLocalData)
+func (r resourceFactory) createResourceSchema() (map[string]*schema.Schema, error) {
+	s := map[string]*schema.Schema{}
+	schemaDefinition, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
+		return nil, err
+	}
+	for _, property := range schemaDefinition.Properties {
+		// Terraform already has a field ID reserved, hence the schema does not need to include an explicit ID property
+		if property.isPropertyNamedID() {
+			continue
+		}
+		tfSchema, err := r.createTerraformPropertySchema(property)
+		if err != nil {
+			return nil, err
+		}
+		s[property.getTerraformCompliantPropertyName()] = tfSchema
+	}
+	return s, nil
+}
+
+func (r resourceFactory) createTerraformPropertySchema(property SchemaDefinitionProperty) (*schema.Schema, error) {
+	propertySchema, err := r.createTerraformPropertyBasicSchema(property)
+	if err != nil {
+		return nil, err
+	}
+	// ValidateFunc is not yet supported on lists or sets
+	if !property.isArrayProperty() {
+		propertySchema.ValidateFunc = r.validateFunc(property)
+	}
+	return propertySchema, nil
+}
+
+func (r resourceFactory) createTerraformPropertyBasicSchema(property SchemaDefinitionProperty) (*schema.Schema, error) {
+	var propertySchema *schema.Schema
+
+	switch property.Type {
+	case typeList:
+		// Arrays only support 'string' items at the moment
+		propertySchema = &schema.Schema{
+			Type: schema.TypeList,
+			Elem: &schema.Schema{Type: schema.TypeString},
+		}
+	case typeString:
+		propertySchema = &schema.Schema{
+			Type: schema.TypeString,
+		}
+	case typeInt:
+		propertySchema = &schema.Schema{
+			Type: schema.TypeInt,
+		}
+	case typeFloat:
+		propertySchema = &schema.Schema{
+			Type: schema.TypeFloat,
+		}
+	case typeBool:
+		propertySchema = &schema.Schema{
+			Type: schema.TypeBool,
+		}
+	}
+
+	// Set the property as required or optional
+	if property.isRequired() {
+		propertySchema.Required = true
+	} else {
+		propertySchema.Optional = true
+	}
+
+	// If the value of the property is changed, it will force the deletion of the previous generated resource and
+	// a new resource with this new value will be created
+	propertySchema.ForceNew = property.ForceNew
+
+	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
+	// it comes back from the api and is stored in the state. This properties are mostly informative.
+	propertySchema.Computed = property.ReadOnly
+
+	// A sensitive property means that the value will not be disclosed in the state file, preventing secrets from
+	// being leaked
+	propertySchema.Sensitive = property.Sensitive
+
+	if property.Default != nil {
+		if property.ReadOnly {
+			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
+			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
+			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", r.openAPIResource.getResourceName(), property.Name)
+		} else {
+			propertySchema.Default = property.Default
+		}
+	}
+	return propertySchema, nil
+}
+
+func (r resourceFactory) validateFunc(property SchemaDefinitionProperty) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		if property.Default != nil {
+			if property.ReadOnly {
+				err := fmt.Errorf(
+					"'%s.%s' is configured as 'readOnly' and can not have a default value. The value is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
+						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default value '%v' can be applied. Default must be nil if computed\n"+
+						"OR\n"+
+						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the value as specified by the 'readOnly' attribute\n", r.openAPIResource.getResourceName(), k, k, property.Default, k)
+				errors = append(errors, err)
+			}
+		}
+		return
+	}
+}
+
+func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
+	openAPIClient := i.(ProviderClient)
+	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-
-	resourceURL, err := r.resourceInfo.getResourceURL()
+	res, err := openAPIClient.Post(r.openAPIResource, requestPayload, responsePayload)
 	if err != nil {
 		return err
 	}
-
-	operation := r.resourceInfo.createPathInfo.Post
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceURL, operation.Security, providerConfig)
-	if err != nil {
-		return err
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
+		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), err)
 	}
-
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-
-	res, err := r.httpClient.PostJson(reqContext.url, reqContext.headers, input, &responsePayload)
-	if err != nil {
-		return err
-	}
-
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
-	}
-	return r.updateLocalState(resourceLocalData, responsePayload)
+	return r.updateLocalState(data, responsePayload)
 }
 
-func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
+func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
+	openAPIClient := i.(ProviderClient)
+	remoteData, err := r.readRemote(data.Id(), openAPIClient)
 	if err != nil {
 		return err
 	}
-	return r.updateStateWithPayloadData(remoteData, resourceLocalData)
+	return r.updateStateWithPayloadData(remoteData, data)
 }
 
-func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (map[string]interface{}, error) {
+func (r resourceFactory) readRemote(id string, openAPIClient ProviderClient) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(id)
+	resp, err := openAPIClient.Get(r.openAPIResource, id, responsePayload)
 	if err != nil {
 		return nil, err
 	}
-
-	operation := r.resourceInfo.pathInfo.Get
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-
-	res, err := r.httpClient.Get(reqContext.url, reqContext.headers, &responsePayload)
-	if err != nil {
-		return nil, err
-	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
-		return nil, fmt.Errorf("GET %s failed: %s", resourceIDURL, err)
+	if err := r.checkHTTPStatusCode(resp, []int{http.StatusOK}); err != nil {
+		return nil, fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), id, err)
 	}
 	return responsePayload, nil
 }
 
-func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	operation := r.resourceInfo.pathInfo.Put
+func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
+	openAPIClient := i.(ProviderClient)
+	operation := r.openAPIResource.getResourcePutOperation()
 	if operation == nil {
-		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
+		return fmt.Errorf("[resource='%s'] resource does not support PUT opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
-	input := r.createPayloadFromLocalStateData(resourceLocalData)
+	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-
-	if err := r.checkImmutableFields(resourceLocalData, providerConfig); err != nil {
+	if err := r.checkImmutableFields(data, openAPIClient); err != nil {
 		return err
 	}
-
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(resourceLocalData.Id())
+	res, err := openAPIClient.Put(r.openAPIResource, data.Id(), requestPayload, responsePayload)
 	if err != nil {
 		return err
 	}
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
-	if err != nil {
-		return err
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
+		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
-
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-
-	res, err := r.httpClient.PutJson(reqContext.url, reqContext.headers, input, &responsePayload)
-	if err != nil {
-		return err
-	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
-	}
-	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
+	return r.updateStateWithPayloadData(responsePayload, data)
 }
 
-func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	operation := r.resourceInfo.pathInfo.Delete
+func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
+	openAPIClient := i.(ProviderClient)
+	operation := r.openAPIResource.getResourceDeleteOperation()
 	if operation == nil {
-		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
+		return fmt.Errorf("[resource='%s'] resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(resourceLocalData.Id())
+	res, err := openAPIClient.Delete(r.openAPIResource, data.Id())
 	if err != nil {
 		return err
 	}
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
-	if err != nil {
-		return err
-	}
-
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-	res, err := r.httpClient.Delete(reqContext.url, reqContext.headers)
-	if err != nil {
-		return err
-	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK}); err != nil {
+		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
 	return nil
-}
-
-// appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
-// are retrieved from the provider configuration.
-func (r resourceFactory) appendOperationHeaders(operation *spec.Operation, providerConfig providerConfig, headers map[string]string) map[string]string {
-	if operation != nil {
-		headerConfigProps := openapiutils.GetHeaderConfigurations(operation.Parameters)
-		for headerConfigProp, headerConfiguration := range headerConfigProps {
-			// Setting the actual name of the header with the value coming from the provider configuration
-			headers[headerConfiguration.Name] = providerConfig.Headers[headerConfigProp]
-		}
-	}
-	return headers
 }
 
 // setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
 // r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
 func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
-	identifierProperty, err := r.resourceInfo.getResourceIdentifier()
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
+		return err
+	}
+	identifierProperty, err := resourceSchema.getResourceIdentifier()
 	if err != nil {
 		return err
 	}
@@ -211,28 +248,32 @@ func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPSta
 		var resBody string
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return fmt.Errorf("HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", res.StatusCode, err)
+			return fmt.Errorf("[resource='%s'] HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", r.openAPIResource.getResourceName(), res.StatusCode, err)
 		}
 		if len(b) > 0 {
 			resBody = string(b)
 		}
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
-			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", res.StatusCode, resBody)
+			return fmt.Errorf("[resource='%s'] HTTP Reponse Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", r.openAPIResource.getResourceName(), res.StatusCode, resBody)
 		default:
-			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v (%s)", res.StatusCode, expectedHTTPStatusCodes, resBody)
+			return fmt.Errorf("[resource='%s'] HTTP Reponse Status Code %d not matching expected one %v (%s)", r.openAPIResource.getResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
 		}
 	}
 	return nil
 }
 
-func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, providerConfig providerConfig) error {
+func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ProviderClient) error {
 	var remoteData map[string]interface{}
 	var err error
-	if remoteData, err = r.readRemote(updatedResourceLocalData.Id(), providerConfig); err != nil {
+	if remoteData, err = r.readRemote(updatedResourceLocalData.Id(), openAPIClient); err != nil {
 		return err
 	}
-	for _, immutablePropertyName := range r.resourceInfo.getImmutableProperties() {
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
+		return err
+	}
+	for _, immutablePropertyName := range resourceSchema.getImmutableProperties() {
 		if localValue, exists := r.getResourceDataOKExists(immutablePropertyName, updatedResourceLocalData); exists {
 			if localValue != remoteData[immutablePropertyName] {
 				// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
@@ -248,10 +289,19 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 // updateStateWithPayloadData is in charge of saving the given payload into the state file. The property names are
 // converted into compliant terraform names if needed.
 func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
+		return err
+	}
 	for propertyName, propertyValue := range remoteData {
-		if r.resourceInfo.isIDProperty(propertyName) {
+		property, err := resourceSchema.getProperty(propertyName)
+		if err != nil {
+			return fmt.Errorf("failed to update state with remote data. This usually happends when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
+		}
+		if property.isPropertyNamedID() {
 			continue
 		}
+		// TODO: validate that the data returned by the API matches the data configured by the user. This is a edge case sceneario but can likely happen with inconsistent APIs
 		if err := r.setResourceDataProperty(propertyName, propertyValue, resourceLocalData); err != nil {
 			return err
 		}
@@ -266,9 +316,10 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 // are alaways converted to terraform compatible names
 func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
-	for propertyName, property := range r.resourceInfo.schemaDefinition.Properties {
+	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	for propertyName, property := range resourceSchema.Properties {
 		// ReadOnly properties are not considered for the payload data
-		if r.resourceInfo.isIDProperty(propertyName) || property.ReadOnly {
+		if property.isPropertyNamedID() || property.ReadOnly {
 			continue
 		}
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
@@ -285,21 +336,21 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 				input[propertyName] = dataValue.(bool)
 			}
 		}
-		log.Printf("[DEBUG] createPayloadFromLocalStateData [%s] - newValue[%+v]", propertyName, input[propertyName])
+		log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData [%s] - newValue[%+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 	}
 	return input
 }
 
 // getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
-	schemaDefinitionProperty := r.resourceInfo.schemaDefinition.Properties[schemaDefinitionPropertyName]
-	dataPropertyName := r.resourceInfo.convertToTerraformCompliantFieldName(schemaDefinitionPropertyName, schemaDefinitionProperty)
-	return resourceLocalData.GetOkExists(dataPropertyName)
+	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	schemaDefinitionProperty := resourceSchema.Properties[schemaDefinitionPropertyName]
+	return resourceLocalData.GetOkExists(schemaDefinitionProperty.getTerraformCompliantPropertyName())
 }
 
 // setResourceDataProperty sets the value for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) setResourceDataProperty(schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
-	schemaDefinitionProperty := r.resourceInfo.schemaDefinition.Properties[schemaDefinitionPropertyName]
-	dataPropertyName := r.resourceInfo.convertToTerraformCompliantFieldName(schemaDefinitionPropertyName, schemaDefinitionProperty)
-	return resourceLocalData.Set(dataPropertyName, value)
+	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	schemaDefinitionProperty := resourceSchema.Properties[schemaDefinitionPropertyName]
+	return resourceLocalData.Set(schemaDefinitionProperty.getTerraformCompliantPropertyName(), value)
 }

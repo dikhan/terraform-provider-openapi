@@ -22,12 +22,12 @@ func APIProvider() (*schema.Provider, error) {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
 
-	openAPISpecAnalyser, err := CreateOpenAPISpecAnalyser(OpenAPIv2SpecAnalyser, serviceConfiguration.GetSwaggerURL())
+	openAPISpecAnalyser, err := CreateSpecAnalyser(specAnalyserV2, serviceConfiguration.GetSwaggerURL())
 	if err != nil {
 		return nil, fmt.Errorf("plugin OpenAPI spec analyser error: %s", err)
 	}
 
-	providerFactory, err := NewProviderFactory(providerName, openAPISpecAnalyser)
+	providerFactory, err := newProviderFactory(providerName, openAPISpecAnalyser)
 	if err != nil {
 		return nil, fmt.Errorf("plugin provider factory init error: %s", err)
 	}
