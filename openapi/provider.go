@@ -1,9 +1,6 @@
 package openapi
 
 import (
-	"os"
-	"regexp"
-
 	"net/http"
 
 	"crypto/tls"
@@ -12,15 +9,16 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"strconv"
 )
 
 // APIProvider returns a terraform.ResourceProvider.
-func APIProvider() (*schema.Provider, error) {
-	providerName, serviceConfiguration, err := getProviderNameAndServiceConfiguration()
+func APIProvider(providerName string) (*schema.Provider, error) {
+	providerName, serviceConfiguration, err := getProviderNameAndServiceConfiguration(providerName)
 	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
+
+	log.Printf("[DEBUG] service configuration = %+v", serviceConfiguration)
 
 	openAPISpecAnalyser, err := CreateSpecAnalyser(specAnalyserV2, serviceConfiguration.GetSwaggerURL())
 	if err != nil {
@@ -42,12 +40,8 @@ func APIProvider() (*schema.Provider, error) {
 // This function is implemented with temporary code thus it can serve as an example
 // on how the same code base can be used by binaries of this same provider named differently
 // but internally each will end up calling a different service provider's api
-func getProviderNameAndServiceConfiguration() (string, ServiceConfiguration, error) {
+func getProviderNameAndServiceConfiguration(providerName string) (string, ServiceConfiguration, error) {
 	var serviceConfiguration ServiceConfiguration
-	providerName, err := getProviderName()
-	if err != nil {
-		return "", nil, err
-	}
 	pluginConfiguration, err := NewPluginConfiguration(providerName)
 	if err != nil {
 		return "", nil, err
@@ -57,8 +51,7 @@ func getProviderNameAndServiceConfiguration() (string, ServiceConfiguration, err
 		return "", nil, err
 	}
 
-	skipVerify, _ := strconv.ParseBool(os.Getenv("OTF_INSECURE_SKIP_VERIFY"))
-	if skipVerify || serviceConfiguration.IsInsecureSkipVerifyEnabled() {
+	if serviceConfiguration.IsInsecureSkipVerifyEnabled() {
 		tr := http.DefaultTransport.(*http.Transport)
 		tr.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
@@ -66,22 +59,6 @@ func getProviderNameAndServiceConfiguration() (string, ServiceConfiguration, err
 		log.Printf("[WARN] Provider %s is using insecure skip verify for '%s'. Please make sure you trust the aforementioned server hosting the swagger file. Otherwise, it's highly recommended avoiding the use of OTF_INSECURE_SKIP_VERIFY env variable when executing this provider", providerName, serviceConfiguration)
 	}
 
-	log.Printf("[INFO] Provider %s is using the following remote swagger URL: %s", providerName, serviceConfiguration.GetSwaggerURL())
+	log.Printf("[INFO] Provider %s is using the following swagger file: %s", providerName, serviceConfiguration.GetSwaggerURL())
 	return providerName, serviceConfiguration, nil
-}
-
-func getProviderName() (string, error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	r, err := regexp.Compile("(\\w+)[^-]*$")
-	if err != nil {
-		return "", err
-	}
-	match := r.FindStringSubmatch(ex)
-	if len(match) != 2 {
-		return "", fmt.Errorf("provider name (%s) does not match terraform naming convention 'terraform-provider-{name}', please rename the provider binary", ex)
-	}
-	return match[0], nil
 }

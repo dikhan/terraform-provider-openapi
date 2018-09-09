@@ -20,7 +20,7 @@ type apiAuthenticator interface {
 	// The following parameters describe the operationId for which the authentication is being prepared, the url of
 	// the resource, the operation security schemes and the provider config containing the actual values like tokens,
 	// special headers, etc for each security schemes
-	prepareAuth(method httpMethodSupported, url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) (*authContext, error)
+	prepareAuth(url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) (*authContext, error)
 }
 
 // apiAuth is an implementation of apiAuthenticator encapsulating the general settings to be applied in case
@@ -44,13 +44,13 @@ func newAPIAuthenticator(globalSecuritySchemes SpecSecuritySchemes) apiAuthentic
 // Check if the operation contains any security policy. In the case where the operation contains multiple security
 // policies, the first one found in the list will be the one returned.
 // For more information about multiple api keys refer to https://swagger.io/docs/specification/authentication/api-keys/#multiple
-func (oa apiAuth) authRequired(method httpMethodSupported, url string, operationSecuritySchemes SpecSecuritySchemes) (bool, SpecSecuritySchemes) {
+func (oa apiAuth) authRequired(url string, operationSecuritySchemes SpecSecuritySchemes) (bool, SpecSecuritySchemes) {
 	// TODO: check in the OpenAPI spec whether operation overrides global schemes or can complement global configuration?
 	if len(operationSecuritySchemes) != 0 {
-		log.Printf("operation %s [%s] contains security policies (overriding global security config if applicable), selected the following based on order of appearance in the list %+v", method, url, operationSecuritySchemes)
+		log.Printf("operation security policies found for '%s' (overriding global security config if applicable). Selected the following based on order of appearance in the list %+v", url, operationSecuritySchemes)
 		return true, operationSecuritySchemes
 	}
-	log.Printf("operation %s [%s] is missing security schemes, falling back to global security schemes (if there's any)", method, url)
+	log.Printf("operation security schemes missing, falling back to global security schemes (if there's any)")
 	if len(oa.globalSecuritySchemes) != 0 {
 		log.Printf("the global configuration contains security schemes, selected the following based on order of appearance in the list %+v", oa.globalSecuritySchemes)
 		return true, oa.globalSecuritySchemes
@@ -70,12 +70,12 @@ func (oa apiAuth) confirmOperationSecurityPoliciesAreDefined(operationSecuritySc
 	return nil
 }
 
-func (oa apiAuth) prepareAuth(method httpMethodSupported, url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) (*authContext, error) {
+func (oa apiAuth) prepareAuth(url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) (*authContext, error) {
 	authContext := &authContext{
 		headers: map[string]string{},
 		url:     url,
 	}
-	if required, operationSecuritySchemes := oa.authRequired(method, url, operationSecuritySchemes); required {
+	if required, operationSecuritySchemes := oa.authRequired(url, operationSecuritySchemes); required {
 		if err := oa.confirmOperationSecurityPoliciesAreDefined(operationSecuritySchemes, providerConfig); err != nil {
 			return authContext, err
 		}

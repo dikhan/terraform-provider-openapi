@@ -69,8 +69,8 @@ func (p *PluginConfigSchemaV1) GetServiceConfig(providerName string) (ServiceCon
 	if providerName == "" {
 		return nil, fmt.Errorf("providerName not specified")
 	}
-	serviceConfig := p.Services[providerName]
-	if serviceConfig == nil {
+	serviceConfig, exists := p.Services[providerName]
+	if !exists {
 		return nil, fmt.Errorf("'%s' not found in provider's services configuration", providerName)
 	}
 	return serviceConfig, nil

@@ -29,7 +29,8 @@ func newSpecAnalyserV2(openAPIDocumentURL string) (*specV2Analyser, error) {
 		return nil, fmt.Errorf("failed to retrieve the OpenAPI document from '%s' - error = %s", openAPIDocumentURL, err)
 	}
 	return &specV2Analyser{
-		d: apiSpec,
+		d:                  apiSpec,
+		openAPIDocumentURL: openAPIDocumentURL,
 	}, nil
 }
 
@@ -46,16 +47,19 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			log.Printf("[DEBUG] resource not figure out valid terraform resource name for '%s': %s", resourcePath, err)
 			continue
 		}
-		r := &specV2Resource{
-			name:             resourceName,
-			path:             resourceRootPath,
-			schemaDefinition: *resourcePayloadSchemaDef,
-			rootPathItem:     *resourceRoot,
-			instancePathItem: pathItem,
+		r := &SpecV2Resource{
+			Name:             resourceName,
+			Path:             resourceRootPath,
+			SchemaDefinition: *resourcePayloadSchemaDef,
+			RootPathItem:     *resourceRoot,
+			InstancePathItem: pathItem,
 		}
-		if !r.shouldIgnoreResource() {
-			resources = append(resources, r)
+		if r.shouldIgnoreResource() {
+			log.Printf("[WARN] ignoring resource '%s' as the resource contains the 'x-terraform-exclude-resource' extension in the POST operation inthe OpeAPI document", resourceName)
+			continue
 		}
+		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", resourceName, resourceRootPath, resourcePath)
+		resources = append(resources, r)
 	}
 	return resources, nil
 }

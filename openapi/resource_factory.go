@@ -136,10 +136,10 @@ func (r resourceFactory) validateFunc(property SchemaDefinitionProperty) schema.
 }
 
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
-	openAPIClient := i.(ProviderClient)
+	providerClient := i.(ProviderClient)
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-	res, err := openAPIClient.Post(r.openAPIResource, requestPayload, responsePayload)
+	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload)
 	if err != nil {
 		return err
 	}
@@ -158,10 +158,10 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	return r.updateStateWithPayloadData(remoteData, data)
 }
 
-func (r resourceFactory) readRemote(id string, openAPIClient ProviderClient) (map[string]interface{}, error) {
+func (r resourceFactory) readRemote(id string, providerClient ProviderClient) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
-	resp, err := openAPIClient.Get(r.openAPIResource, id, responsePayload)
+	resp, err := providerClient.Get(r.openAPIResource, id, &responsePayload)
 	if err != nil {
 		return nil, err
 	}
@@ -172,17 +172,17 @@ func (r resourceFactory) readRemote(id string, openAPIClient ProviderClient) (ma
 }
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
-	openAPIClient := i.(ProviderClient)
+	providerClient := i.(ProviderClient)
 	operation := r.openAPIResource.getResourcePutOperation()
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support PUT opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-	if err := r.checkImmutableFields(data, openAPIClient); err != nil {
+	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
 	}
-	res, err := openAPIClient.Put(r.openAPIResource, data.Id(), requestPayload, responsePayload)
+	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload)
 	if err != nil {
 		return err
 	}
@@ -193,12 +193,12 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
-	openAPIClient := i.(ProviderClient)
+	providerClient := i.(ProviderClient)
 	operation := r.openAPIResource.getResourceDeleteOperation()
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
-	res, err := openAPIClient.Delete(r.openAPIResource, data.Id())
+	res, err := providerClient.Delete(r.openAPIResource, data.Id())
 	if err != nil {
 		return err
 	}
@@ -219,6 +219,7 @@ func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payl
 	if err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] payload = %+v", payload)
 	if payload[identifierProperty] == nil {
 		return fmt.Errorf("response object returned from the API is missing mandatory identifier property '%s'", identifierProperty)
 	}

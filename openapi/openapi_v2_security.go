@@ -16,7 +16,7 @@ func (s *specV2Security) GetAPIKeySecurityDefinitions() SpecSecurityDefinitions 
 	securityDefinitions := SpecSecurityDefinitions{}
 	for secDefName, secDef := range s.SecurityDefinitions {
 		if secDef.Type == "apiKey" {
-			securityDefinitions = append(securityDefinitions, SpecSecurityDefinition{Type: "apiKey", In: secDef.In, Name: secDefName})
+			securityDefinitions = append(securityDefinitions, SpecSecurityDefinition{Name: secDefName, Type: secDef.Type, apiKey: specAPIKey{Name: secDef.Name, In: secDef.In}})
 		}
 	}
 	return securityDefinitions

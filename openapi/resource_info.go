@@ -1,25 +1,21 @@
 package openapi
 
-import (
-	"github.com/go-openapi/spec"
-)
-
 //type resourcesInfo map[string]resourceInfo
 
 // resourceInfo serves as translator between swagger definitions and terraform schemas
-type resourceInfo struct {
-	name     string
-	basePath string
-	// path contains relative path to the resource e,g: /v1/resource
-	path             string
-	host             string
-	httpSchemes      []string
-	schemaDefinition spec.Schema
-	// rootPathItem contains info about /resource, including the POST operation
-	createPathInfo spec.PathItem
-	// instancePathItem contains info about /resource/{id}, including GET, PUT and REMOVE operations if applicable
-	pathInfo spec.PathItem
-}
+//type resourceInfo struct {
+//	name     string
+//	basePath string
+//	// path contains relative path to the resource e,g: /v1/resource
+//	path             string
+//	host             string
+//	httpSchemes      []string
+//	schemaDefinition spec.Schema
+//	// rootPathItem contains info about /resource, including the POST operation
+//	createPathInfo spec.PathItem
+//	// instancePathItem contains info about /resource/{id}, including GET, PUT and REMOVE operations if applicable
+//	pathInfo spec.PathItem
+//}
 
 //
 //func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema, error) {

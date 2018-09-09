@@ -69,12 +69,14 @@ func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Respons
 
 func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *ResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
 
-	reqContext, err := o.apiAuthenticator.prepareAuth(method, resourceURL, operation.SecuritySchemes, o.providerConfiguration)
+	reqContext, err := o.apiAuthenticator.prepareAuth(resourceURL, operation.SecuritySchemes, o.providerConfiguration)
 	if err != nil {
 		return nil, err
 	}
 	reqContext.headers = o.appendOperationHeaders(operation.HeaderParameters, o.providerConfiguration, reqContext.headers)
 	log.Printf("[DEBUG] Performing %s %s", method, reqContext.url)
+
+	log.Printf("[DEBUG] Headers %s %s", method, reqContext.headers)
 
 	switch method {
 	case httpPost:
@@ -102,7 +104,10 @@ func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderPara
 }
 
 func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
-	host := o.openAPIBackendConfiguration.getHost()
+	host, err := o.openAPIBackendConfiguration.getHost()
+	if err != nil {
+		return "", err
+	}
 	basePath := o.openAPIBackendConfiguration.getBasePath()
 	resourceRelativePath := resource.getResourcePath()
 

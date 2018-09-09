@@ -14,12 +14,17 @@ func (s SpecSecurityDefinitions) findSecurityDefinitionFor(securitySchemeName st
 	return nil
 }
 
+type specAPIKey struct {
+	In   string
+	Name string
+}
+
 // SpecSecurityDefinition defines a security definition. This struct serves as a translation between the OpenAPI document
 // and the scheme that will be used by the OpenAPI Terraform provider when making API calls to the backend
 type SpecSecurityDefinition struct {
-	Type string
-	In   string
-	Name string
+	Name   string
+	Type   string // apiKey
+	apiKey specAPIKey
 }
 
 func (o *SpecSecurityDefinition) getTerraformConfigurationName() string {
