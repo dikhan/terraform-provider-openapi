@@ -58,9 +58,18 @@ func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("UPDATE [%+v\n]", newCDN)
-	cdn.Id = cdn.Id
-	db[cdn.Id] = newCDN
+	updateCDN(cdn, newCDN)
 	sendResponse(http.StatusOK, w, newCDN)
+}
+
+func updateCDN(dbCDN, updatedCDN *ContentDeliveryNetwork) {
+	dbCDN.Label = updatedCDN.Label
+	dbCDN.Ips = updatedCDN.Ips
+	dbCDN.Hostnames = updatedCDN.Hostnames
+	dbCDN.ExampleInt = updatedCDN.ExampleInt
+	dbCDN.ExampleNumber = updatedCDN.ExampleNumber
+	dbCDN.ExampleBoolean = updatedCDN.ExampleBoolean
+	db[dbCDN.Id] = dbCDN
 }
 
 func ContentDeliveryNetworkDeleteV1(w http.ResponseWriter, r *http.Request) {
