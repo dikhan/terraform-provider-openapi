@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -27,6 +28,7 @@ var cdnUpdated = newContentDeliveryNetwork(cdn.Label, cdn.Ips, cdn.Hostnames, 14
 
 var testCDNCreateConfig string
 var testCDNUpdatedConfig string
+var testCDNUpdatedImmutableConfig string
 
 func init() {
 	testCDNCreateConfig = fmt.Sprintf(`provider "%s" {
@@ -58,6 +60,21 @@ resource "%s" "my_cdn" {
   better_example_number_field_name = %s
   example_boolean = %v
 }`, providerName, openAPIResourceName, cdnUpdated.Label, arrayToString(cdnUpdated.Ips), arrayToString(cdnUpdated.Hostnames), cdnUpdated.ExampleInt, floatToString(cdnUpdated.ExampleNumber), cdnUpdated.ExampleBoolean)
+
+	testCDNUpdatedImmutableConfig = fmt.Sprintf(`provider "%s" {
+  apikey_auth = "apiKeyValue" # this is the value expected bythe API when perfoming the authentication
+  x_request_id = "some value..."
+}
+
+resource "%s" "my_cdn" {
+  label = "%s" # This is an immutable property (refer to swagger file)
+  ips = ["%s"] # This is a force-new property (refer to swagger file)
+  hostnames = ["%s"]
+
+  example_int = %d
+  better_example_number_field_name = %s
+  example_boolean = %v
+}`, providerName, openAPIResourceName, "label updated", arrayToString(cdnUpdated.Ips), arrayToString(cdnUpdated.Hostnames), cdnUpdated.ExampleInt, floatToString(cdnUpdated.ExampleNumber), cdnUpdated.ExampleBoolean)
 
 }
 
@@ -153,6 +170,46 @@ func TestAccCDN_Update(t *testing.T) {
 						openAPIResourceState, "better_example_number_field_name", floatToString(cdnUpdated.ExampleNumber)),
 					resource.TestCheckResourceAttr(
 						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdnUpdated.ExampleBoolean)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
+	expectedValidationError, _ := regexp.Compile(".*property label is immutable and therefore can not be updated. Update operation was aborted; no updates were performed.*")
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckCDNsV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testCDNCreateConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckResourceExist(),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "label", cdn.Label),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+				),
+			},
+			{
+				Config:      testCDNUpdatedImmutableConfig,
+				ExpectError: expectedValidationError,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckResourceExist(),
 				),
 			},
 		},
