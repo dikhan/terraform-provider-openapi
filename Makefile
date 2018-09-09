@@ -3,7 +3,8 @@ TF_CMD?="plan"
 
 TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
-TEST_PACKAGES?=$$(go list ./... | grep -v "/examples\|/vendor")
+TEST_PACKAGES?=$$(go list ./... | grep -v "/examples\|/vendor|/integration")
+INT_TEST_PACKAGES?=$$(go list ./... | grep "/tests/integration")
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v 'examples\|vendor')
 
 TF_PROVIDER_NAMING_CONVENTION="terraform-provider-"
@@ -41,6 +42,14 @@ lint:
 test: fmt vet lint
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
+		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
+		exit 1; \
+	fi
+
+# make integration-test
+integration-test: local-env-down local-env
+	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
+	@TF_ACC=true go test -v -cover $(INT_TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
 		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
 		exit 1; \
 	fi
