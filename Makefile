@@ -3,7 +3,7 @@ TF_CMD?="plan"
 
 TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
-TEST_PACKAGES?=$$(go list ./... | grep -v "/examples\|/vendor|/integration")
+TEST_PACKAGES?=$$(go list ./... | grep -v "examples\|vendor\|integration")
 INT_TEST_PACKAGES?=$$(go list ./... | grep "/tests/integration")
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v 'examples\|vendor')
 
