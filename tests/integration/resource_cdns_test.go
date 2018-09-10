@@ -25,14 +25,32 @@ var openAPIResourceState = fmt.Sprintf("%s.%s", openAPIResourceName, openAPIReso
 
 var cdn = newContentDeliveryNetwork("someLabel", []string{"192.168.0.2"}, []string{"www.google.com"}, 10, 12.22, true)
 var cdnUpdated = newContentDeliveryNetwork(cdn.Label, cdn.Ips, cdn.Hostnames, 14, 14.14, false)
+var cdnUpdatedForceNew = newContentDeliveryNetwork(cdn.Label, []string{"192.168.1.5"}, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
 
 var testCDNCreateConfig string
+var testCDNCreateWrongApiKeyAuthConfig string
 var testCDNUpdatedConfig string
 var testCDNUpdatedImmutableConfig string
+var testCDNUpdatedForceNewConfig string
 
 func init() {
 	testCDNCreateConfig = fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue" # this is the value expected bythe API when perfoming the authentication
+  x_request_id = "some value..."
+}
+
+resource "%s" "my_cdn" {
+  label = "%s" # This is an immutable property (refer to swagger file)
+  ips = ["%s"] # This is a force-new property (refer to swagger file)
+  hostnames = ["%s"]
+
+  example_int = %d
+  better_example_number_field_name = %s
+  example_boolean = %v
+}`, providerName, openAPIResourceName, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames), cdn.ExampleInt, floatToString(cdn.ExampleNumber), cdn.ExampleBoolean)
+
+	testCDNCreateWrongApiKeyAuthConfig = fmt.Sprintf(`provider "%s" {
+  apikey_auth = "This is not the key expected by the API to authenticate the client"
   x_request_id = "some value..."
 }
 
@@ -76,6 +94,21 @@ resource "%s" "my_cdn" {
   example_boolean = %v
 }`, providerName, openAPIResourceName, "label updated", arrayToString(cdnUpdated.Ips), arrayToString(cdnUpdated.Hostnames), cdnUpdated.ExampleInt, floatToString(cdnUpdated.ExampleNumber), cdnUpdated.ExampleBoolean)
 
+	testCDNUpdatedForceNewConfig = fmt.Sprintf(`provider "%s" {
+  apikey_auth = "apiKeyValue" # this is the value expected bythe API when perfoming the authentication
+  x_request_id = "some value..."
+}
+
+resource "%s" "my_cdn" {
+  label = "%s" # This is an immutable property (refer to swagger file)
+  ips = ["%s"] # This is a force-new property (refer to swagger file)
+  hostnames = ["%s"]
+
+  example_int = %d
+  better_example_number_field_name = %s
+  example_boolean = %v
+}`, providerName, openAPIResourceName, cdnUpdatedForceNew.Label, cdnUpdatedForceNew.Ips, arrayToString(cdnUpdatedForceNew.Hostnames), cdnUpdatedForceNew.ExampleInt, floatToString(cdnUpdatedForceNew.ExampleNumber), cdnUpdatedForceNew.ExampleBoolean)
+
 }
 
 func newContentDeliveryNetwork(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool) api.ContentDeliveryNetwork {
@@ -116,6 +149,21 @@ func TestAccCDN_Create(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
 				),
+			},
+		},
+	})
+}
+
+func TestAccCDN_CreateFailsDueToWrongAuthKeyValue(t *testing.T) {
+	expectedValidationError, _ := regexp.Compile(".*{\"code\":\"401\", \"message\": \"unauthorized user\"}.*")
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckCDNsV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testCDNCreateWrongApiKeyAuthConfig,
+				ExpectError: expectedValidationError,
 			},
 		},
 	})
@@ -208,8 +256,81 @@ func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 			{
 				Config:      testCDNUpdatedImmutableConfig,
 				ExpectError: expectedValidationError,
+			},
+		},
+	})
+}
+
+func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
+	var originalId string
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckCDNsV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testCDNCreateConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckResourceExist(),
+					func(s *terraform.State) error {
+						for _, res := range s.RootModule().Resources {
+							if res.Type != openAPIResourceName {
+								continue
+							}
+							originalId = res.Primary.ID
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "label", cdn.Label),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+				),
+			},
+			{
+				Config: testCDNUpdatedForceNewConfig,
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						for _, res := range s.RootModule().Resources {
+							if res.Type != openAPIResourceName {
+								continue
+							}
+							// check that the ID generated in the first config apply has changed to a different one as the force new resource was required by the change applied
+							forceNewID := res.Primary.ID
+							if originalId == forceNewID {
+								return fmt.Errorf("force new operation did not work, resource still has the same ID %s", originalId)
+							}
+						}
+						resourceExistsFunc := testAccCheckResourceExist()
+						return resourceExistsFunc(s)
+					},
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "label", cdnUpdatedForceNew.Label),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdnUpdatedForceNew.Ips))),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.0", arrayToString(cdnUpdatedForceNew.Ips)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdnUpdatedForceNew.Hostnames))),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.0", arrayToString(cdnUpdatedForceNew.Hostnames)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdnUpdatedForceNew.ExampleInt)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "better_example_number_field_name", floatToString(cdnUpdatedForceNew.ExampleNumber)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdnUpdatedForceNew.ExampleBoolean)),
 				),
 			},
 		},
