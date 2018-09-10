@@ -9,6 +9,7 @@ import (
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
+	"regexp"
 	"time"
 )
 
@@ -336,6 +337,13 @@ func (r resourceInfo) getResourceTimeout(operation *spec.Operation) (*time.Durat
 
 func (r resourceInfo) getTimeDuration(extensions spec.Extensions, extension string) (*time.Duration, error) {
 	if value, exists := extensions.GetString(extension); exists {
+		regex, err := regexp.Compile("^[\\d]+([\\.]{1}[\\d]+)?[smh]{1}$")
+		if err != nil {
+			return nil, err
+		}
+		if !regex.Match([]byte(value)) {
+			return nil, fmt.Errorf("invalid duration value: '%s'. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)", value)
+		}
 		return r.getDuration(value)
 	}
 	return nil, nil
