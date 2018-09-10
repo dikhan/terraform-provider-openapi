@@ -70,7 +70,7 @@ local-env-down: fmt
 # make local-env
 local-env: fmt
 	@echo "[INFO] Bringing up local environment"
-	@docker-compose -f ./build/docker-compose.yml up --detach --build --force-recreate
+	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate
 
 # [TF_CMD=apply] make run-terraform-example-swaggercodegen
 run-terraform-example-swaggercodegen: build pre-requirements
