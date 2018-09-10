@@ -9,6 +9,7 @@ import (
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
+	"time"
 )
 
 // Definition level extensions
@@ -24,6 +25,7 @@ const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourcePollEnabled = "x-terraform-resource-poll-enabled"
 const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-completed-statuses"
 const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
+const extTfResourceTimeout = "x-terraform-resource-timeout"
 
 const idDefaultPropertyName = "id"
 const statusDefaultPropertyName = "status"
@@ -323,6 +325,25 @@ func (r resourceInfo) getPollingStatuses(response spec.Response, extension strin
 		return nil, fmt.Errorf("response missing required extension '%s' for the polling mechanism to work", extension)
 	}
 	return statuses, nil
+}
+
+func (r resourceInfo) getResourceTimeout(operation *spec.Operation) (*time.Duration, error) {
+	if operation == nil {
+		return nil, nil
+	}
+	return r.getTimeDuration(operation.Extensions, extTfResourceTimeout)
+}
+
+func (r resourceInfo) getTimeDuration(extensions spec.Extensions, extension string) (*time.Duration, error) {
+	if value, exists := extensions.GetString(extension); exists {
+		return r.getDuration(value)
+	}
+	return nil, nil
+}
+
+func (r resourceInfo) getDuration(t string) (*time.Duration, error) {
+	duration, err := time.ParseDuration(t)
+	return &duration, err
 }
 
 func (r resourceInfo) isIDProperty(propertyName string) bool {

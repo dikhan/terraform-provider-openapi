@@ -33,15 +33,44 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+	timeouts, err := r.createSchemaResourceTimeout()
+	if err != nil {
+		return nil, err
+	}
 	return &schema.Resource{
-		Schema: s,
-		Create: r.create,
-		Read:   r.read,
-		Delete: r.delete,
-		Update: r.update,
-		Timeouts: &schema.ResourceTimeout{
-			Default: &defaultTimeout,
-		},
+		Schema:   s,
+		Create:   r.create,
+		Read:     r.read,
+		Delete:   r.delete,
+		Update:   r.update,
+		Timeouts: timeouts,
+	}, nil
+}
+
+func (r resourceFactory) createSchemaResourceTimeout() (*schema.ResourceTimeout, error) {
+	var postTimeout *time.Duration
+	var getTimeout *time.Duration
+	var putTimeout *time.Duration
+	var deleteTimeout *time.Duration
+	var err error
+	if postTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.createPathInfo.Post); err != nil {
+		return nil, err
+	}
+	if getTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.pathInfo.Get); err != nil {
+		return nil, err
+	}
+	if putTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.pathInfo.Put); err != nil {
+		return nil, err
+	}
+	if deleteTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.pathInfo.Delete); err != nil {
+		return nil, err
+	}
+	return &schema.ResourceTimeout{
+		Create:  postTimeout,
+		Read:    getTimeout,
+		Update:  putTimeout,
+		Delete:  deleteTimeout,
+		Default: &defaultTimeout,
 	}, nil
 }
 
