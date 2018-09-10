@@ -64,7 +64,7 @@ func TestAccCDN_Create(t *testing.T) {
 }
 
 func TestAccCDN_CreateFailsDueToMissingMandatoryApiKeyAuth(t *testing.T) {
-	testCDNCreateMissingApiKeyAuthConfig := fmt.Sprintf(`provider "%s" {
+	testCDNCreateMissingAPIKeyAuthConfig := fmt.Sprintf(`provider "%s" {
   # apikey_auth = "apiKeyValue" simulating configuration that is missing the mandatory apikey_auth (commented out for the reference)
   x_request_id = "some value..."
 }
@@ -77,7 +77,7 @@ resource "%s" "my_cdn" {}`, providerName, openAPIResourceName)
 		CheckDestroy: testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      testCDNCreateMissingApiKeyAuthConfig,
+				Config:      testCDNCreateMissingAPIKeyAuthConfig,
 				ExpectError: expectedValidationError,
 			},
 		},
@@ -85,7 +85,7 @@ resource "%s" "my_cdn" {}`, providerName, openAPIResourceName)
 }
 
 func TestAccCDN_CreateFailsDueToWrongAuthKeyValue(t *testing.T) {
-	testCDNCreateWrongApiKeyAuthConfig := fmt.Sprintf(`provider "%s" {
+	testCDNCreateWrongAPIKeyAuthConfig := fmt.Sprintf(`provider "%s" {
   apikey_auth = "This is not the key expected by the API to authenticate the client, it should be 'apiKeyValue'' :)"
   x_request_id = "some value..."
 }
@@ -102,7 +102,7 @@ resource "%s" "my_cdn" {
 		CheckDestroy: testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      testCDNCreateWrongApiKeyAuthConfig,
+				Config:      testCDNCreateWrongAPIKeyAuthConfig,
 				ExpectError: expectedValidationError,
 			},
 		},
@@ -231,7 +231,7 @@ func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 	var cdnUpdatedForceNew = newContentDeliveryNetwork(cdn.Label, []string{"192.168.1.5"}, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
 	testCDNUpdatedForceNewConfig := populateTemplateConfiguration(cdnUpdatedForceNew.Label, cdnUpdatedForceNew.Ips, cdnUpdatedForceNew.Hostnames, cdnUpdatedForceNew.ExampleInt, cdnUpdatedForceNew.ExampleNumber, cdnUpdatedForceNew.ExampleBoolean)
-	var originalId string
+	var originalID string
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -245,7 +245,7 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 							if res.Type != openAPIResourceName {
 								continue
 							}
-							originalId = res.Primary.ID
+							originalID = res.Primary.ID
 						}
 						return nil
 					},
@@ -277,8 +277,8 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 							}
 							// check that the ID generated in the first config apply has changed to a different one as the force new resource was required by the change applied
 							forceNewID := res.Primary.ID
-							if originalId == forceNewID {
-								return fmt.Errorf("force new operation did not work, resource still has the same ID %s", originalId)
+							if originalID == forceNewID {
+								return fmt.Errorf("force new operation did not work, resource still has the same ID %s", originalID)
 							}
 						}
 						resourceExistsFunc := testAccCheckResourceExist()
