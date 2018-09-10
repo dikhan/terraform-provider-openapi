@@ -1,10 +1,16 @@
+sudo: required
+
 dist: trusty
-sudo: false
+
 language: go
 go:
 - 1.9.1
+
+services:
+  - docker
 
 install:
 
 script:
 - make test
+- make integration-test
