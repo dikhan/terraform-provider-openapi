@@ -337,7 +337,7 @@ func (r resourceInfo) getResourceTimeout(operation *spec.Operation) (*time.Durat
 
 func (r resourceInfo) getTimeDuration(extensions spec.Extensions, extension string) (*time.Duration, error) {
 	if value, exists := extensions.GetString(extension); exists {
-		regex, err := regexp.Compile("^[\\d]+([\\.]{1}[\\d]+)?[smh]{1}$")
+		regex, err := regexp.Compile("^\\d+(\\.\\d+)?[smh]{1}$")
 		if err != nil {
 			return nil, err
 		}
