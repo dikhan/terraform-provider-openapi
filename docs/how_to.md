@@ -304,14 +304,14 @@ paths:
   /v1/resource:
     post:
       ...
-      x-terraform-resource-timeout: "15m" # this means the max timeout for the post operation to finish is 15 minues. This overrides the deafult timeout per operation which is 10 minutes
+      x-terraform-resource-timeout: "15m" # this means the max timeout for the post operation to finish is 15 minutes. This overrides the default timeout per operation which is 10 minutes
       ...
   /v1/resource/{id}:
     get: # will have default value of 10 minutes as the 'x-terraform-resource-timeout' is not present for this operation
       ...
     delete:
-      x-terraform-resource-timeout: "20m" # this means the max timeout for the post operation to finish is 15 minues. This overrides the deafult timeout per operation which is 10 minutes
-      ...                
+      x-terraform-resource-timeout: "20m" # this means the max timeout for the delete operation to finish is 20 minutes. This overrides the default timeout per operation which is 10 minutes
+      ...               
 ````
 
 *Note: This extension is only supported at the operation level*
