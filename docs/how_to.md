@@ -262,11 +262,12 @@ The following extensions can be used in path operations. Read the according exte
 Extension Name | Type | Description
 ---|:---:|---
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
+[x-terraform-resource-timeout](#xTerraformResourceTimeout) | string | Only available in operation level. Defines the timeout for a given operation. This value overrides the default timeout operation value which is 10 minutes.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
-[x-terraform-resource-poll-enabled](#xTerraformResourcePollEnabled) | bool | Only supported in operation response (202). Defines that if the API responds with the given HTTP Status code (202), the polling mechanism will be enabled. This allows the OpenAPI Terraform provider to perform read calls to the remote API and check the resource state. The polling mechanism finalises if the remote resource state arrives at completion, failure state or times-out (60s)
+[x-terraform-resource-poll-enabled](#xTerraformResourcePollEnabled) | bool | Only supported in operation responses (e,g: 202). Defines that if the API responds with the given HTTP Status code (e,g: 202), the polling mechanism will be enabled. This allows the OpenAPI Terraform provider to perform read calls to the remote API and check the resource state. The polling mechanism finalises if the remote resource state arrives at completion, failure state or times-out (60s)
 
 ###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
- 
+
 Service providers might not want to expose certain resources to Terraform (e,g: admin resources). This can be achieved 
 by adding the following swagger extension to the resource root POST operation (in the example below ```/v1/resource:```):
 
@@ -288,6 +289,32 @@ this extension. If the extension is not present or has value 'false' then the re
 
 *Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
 above example*
+
+###### <a name="xTerraformResourceTimeout">x-terraform-resource-timeout</a>
+
+This extension allows service providers to override the default timeout value for CRUD operations with a different value.
+
+The value must comply with the duration type format. A duration string is a sequence of decimal positive numbers (negative numbers are not allowed), 
+each with optional fraction and a unit suffix, such as "300s", "20.5m", "1.5h" or "2h45m".
+
+Valid time units are "s", "m", "h".
+
+````
+paths:
+  /v1/resource:
+    post:
+      ...
+      x-terraform-resource-timeout: "15m" # this means the max timeout for the post operation to finish is 15 minutes. This overrides the default timeout per operation which is 10 minutes
+      ...
+  /v1/resource/{id}:
+    get: # will have default value of 10 minutes as the 'x-terraform-resource-timeout' is not present for this operation
+      ...
+    delete:
+      x-terraform-resource-timeout: "20m" # this means the max timeout for the delete operation to finish is 20 minutes. This overrides the default timeout per operation which is 10 minutes
+      ...               
+````
+
+*Note: This extension is only supported at the operation level*
 
 ###### <a name="xTerraformHeader">x-terraform-header</a>  
 
@@ -400,7 +427,7 @@ definitions:
           - deleted          
 ````
 
-*Note: This extension is only supported at the response level.*
+*Note: This extension is only supported at the operation's response level.*
 
 #### <a name="swaggerDefinitions">Definitions</a>
 
