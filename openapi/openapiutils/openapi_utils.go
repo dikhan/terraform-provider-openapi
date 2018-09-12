@@ -4,6 +4,7 @@ import (
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"regexp"
+	"strings"
 )
 
 const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-Z]{2,63})?|localhost(?:[:]\d+)?\b`
@@ -91,4 +92,24 @@ func appendOperationParametersIfPresent(parametersGroups parameterGroups, operat
 		parametersGroups = append(parametersGroups, operation.Parameters)
 	}
 	return parametersGroups
+}
+
+// StringExtensionExists tries to find a match using the built-in extensions GetString method and if there is no match
+// it will try to find a match without converting the key lower case (as done behind the scenes by GetString method).
+// Context: The Extensions look up methods tweaks the given key making it lower case and then trying to match against
+// the keys in the map. However this may not always work as the Extensions might have been added without going through
+// the Add method which lower cases the key, though in situations where the struct was un-marshaled directly instead this
+// translation would not have happened and therefore the look up queiry will not find matches
+func StringExtensionExists(extensions spec.Extensions, key string) (string, bool) {
+	var value string
+	value, exists := extensions.GetString(key)
+	if !exists {
+		// Fall back to look up with actual given key name (without converting to lower case as the GetString method from extensions does behind the scenes)
+		for k, v := range extensions {
+			if strings.ToLower(k) == strings.ToLower(key) {
+				return v.(string), true
+			}
+		}
+	}
+	return value, exists
 }

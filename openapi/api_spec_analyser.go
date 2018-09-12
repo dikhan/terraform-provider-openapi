@@ -41,6 +41,7 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 			log.Printf("[DEBUG] resource not figure out valid terraform resource name for '%s': %s", resourcePath, err)
 			continue
 		}
+
 		r := resourceInfo{
 			name:             resourceName,
 			basePath:         asa.d.BasePath(),
@@ -51,9 +52,37 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 			createPathInfo:   *resourceRoot,
 			pathInfo:         pathItem,
 		}
-		if !r.shouldIgnoreResource() {
-			resources[resourceName] = r
+
+		if r.shouldIgnoreResource() {
+			continue
 		}
+
+		isMultiRegion, regions := r.isMultiRegionResource(asa.d.Spec().Extensions)
+		if isMultiRegion {
+			log.Printf("[INFO] resource '%s' is configured with host override AND multi region; creating reasource per region", r.name)
+			for regionName, regionHost := range regions {
+				resourceRegionName := fmt.Sprintf("%s_%s", resourceName, regionName)
+				regionResource := resourceInfo{}
+				regionResource = r
+				regionResource.name = resourceRegionName
+				regionResource.host = regionHost
+				log.Printf("[INFO] multi region resource name for region %s = %s", regionName, resourceRegionName)
+				resources[resourceRegionName] = regionResource
+			}
+			continue
+		}
+
+		hostOverride := r.getResourceOverrideHost()
+		// if the override host is multi region then something must be wrong with the multi region configuration, failing to let the user know so they can fix the configuration
+		if isMultiRegionHost, _ := r.isMultiRegionHost(hostOverride); isMultiRegionHost {
+			return nil, fmt.Errorf("multi region configuration for resource '%s' is wrong, please check the multi region configuration in the swagger file is right for that resource", resourceName)
+		}
+		// Fall back to override the host if value is not empty; otherwise global host will be used as usual
+		if hostOverride != "" {
+			log.Printf("[INFO] resource '%s' is configured with host override, API calls will be made against '%s' instead of '%s'", r.name, hostOverride, asa.d.Spec().Host)
+			r.host = hostOverride
+		}
+		resources[resourceName] = r
 	}
 	return resources, nil
 }

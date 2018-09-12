@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -27,6 +28,8 @@ const extTfResourcePollEnabled = "x-terraform-resource-poll-enabled"
 const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-completed-statuses"
 const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
 const extTfResourceTimeout = "x-terraform-resource-timeout"
+const extTfResourceURL = "x-terraform-resource-host"
+const extTfResourceRegionsFmt = "x-terraform-resource-regions-%s"
 
 const idDefaultPropertyName = "id"
 const statusDefaultPropertyName = "status"
@@ -293,6 +296,67 @@ func (r resourceInfo) shouldIgnoreResource() bool {
 		return true
 	}
 	return false
+}
+
+// getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
+// value will override the global host value, and the API calls for this resource will be made agasint the value returned
+func (r resourceInfo) getResourceOverrideHost() string {
+	if resourceURL, exists := r.createPathInfo.Post.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
+		return resourceURL
+	}
+	return ""
+}
+
+func (r resourceInfo) isMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
+	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
+	log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
+	if err != nil {
+		return false, nil
+	}
+	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
+}
+
+// isMultiRegionResource returns true on ly if:
+// - the value is parametrized following the pattern: some.subdomain.${keyword}.domain.com, where ${keyword} must be present in the string, otherwise the resource will not be considered multi region
+// - there is a matching 'x-terraform-resource-regions-${keyword}' extension defined in the swagger root level (extensions passed in), where ${keyword} will be the value of the parameter in the above URL
+// - and finally the value of the extension is an array of strings containing the different regions where the resource can be created
+func (r resourceInfo) isMultiRegionResource(extensions spec.Extensions) (bool, map[string]string) {
+	overrideHost := r.getResourceOverrideHost()
+	if overrideHost == "" {
+		return false, nil
+	}
+	isMultiRegionHost, regex := r.isMultiRegionHost(overrideHost)
+	if !isMultiRegionHost {
+		return false, nil
+	}
+	region := regex.FindStringSubmatch(overrideHost)
+	if len(region) != 5 {
+		log.Printf("[DEBUG] override host %s provided does not comply with expected regex format", overrideHost)
+		return false, nil
+	}
+	regionIdentifier := region[3]
+	regionExtensionValue := fmt.Sprintf(extTfResourceRegionsFmt, regionIdentifier)
+	if resourceRegions, exists := openapiutils.StringExtensionExists(extensions, regionExtensionValue); exists {
+		resourceRegions = strings.Replace(resourceRegions, " ", "", -1)
+		regions := strings.Split(resourceRegions, ",")
+		if len(regions) < 1 {
+			log.Printf("[DEBUG] could not find any region for '%s' matching region extension %s: '%s'", regionIdentifier, regionExtensionValue, resourceRegions)
+			return false, nil
+		}
+		apiRegionsMap := map[string]string{}
+		for _, region := range regions {
+			repStr := fmt.Sprintf("${1}%s$4", region)
+			apiRegionsMap[region] = regex.ReplaceAllString(overrideHost, repStr)
+		}
+		if len(apiRegionsMap) < 1 {
+			log.Printf("[DEBUG] could not build properly the resource region map for '%s' matching region extension %s: '%s'", regionIdentifier, regionExtensionValue, resourceRegions)
+			return false, nil
+
+		}
+		return true, apiRegionsMap
+	}
+	log.Printf("missing '%s' root level region extension %s", regionIdentifier, regionExtensionValue)
+	return false, nil
 }
 
 // isResourcePollingEnabled checks whether there is any response code defined for the given responseStatusCode and if so
