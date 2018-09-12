@@ -309,8 +309,8 @@ func (r resourceInfo) getResourceOverrideHost() string {
 
 func (r resourceInfo) isMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
 	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
-	log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
 	if err != nil {
+		log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
 		return false, nil
 	}
 	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
@@ -355,7 +355,7 @@ func (r resourceInfo) isMultiRegionResource(extensions spec.Extensions) (bool, m
 		}
 		return true, apiRegionsMap
 	}
-	log.Printf("missing '%s' root level region extension %s", regionIdentifier, regionExtensionValue)
+	log.Printf("missing matching '%s' root level region extension '%s'", regionIdentifier, regionExtensionValue)
 	return false, nil
 }
 
