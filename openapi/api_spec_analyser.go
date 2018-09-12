@@ -66,7 +66,7 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 				regionResource = r
 				regionResource.name = resourceRegionName
 				regionResource.host = regionHost
-				log.Printf("[INFO] multi region resource name for region %s = %s", regionName, resourceRegionName)
+				log.Printf("[INFO] multi region resource: name = %s, region = %s, host = %s", regionName, resourceRegionName, regionHost)
 				resources[resourceRegionName] = regionResource
 			}
 			continue
