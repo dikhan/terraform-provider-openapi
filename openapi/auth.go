@@ -26,7 +26,7 @@ type apiAuthenticator interface {
 // apiAuth is an implementation of apiAuthenticator encapsulating the general settings to be applied in case
 // an operation does not contain a security policy; otherwise the operation's security policies will be applied instead.
 type apiAuth struct {
-	globalSecuritySchemes SpecSecuritySchemes
+	globalSecuritySchemes *SpecSecuritySchemes
 }
 
 type authContext struct {
@@ -35,7 +35,7 @@ type authContext struct {
 }
 
 // newAPIAuthenticator allows for the creation of a new authenticator
-func newAPIAuthenticator(globalSecuritySchemes SpecSecuritySchemes) apiAuthenticator {
+func newAPIAuthenticator(globalSecuritySchemes *SpecSecuritySchemes) apiAuthenticator {
 	return apiAuth{
 		globalSecuritySchemes: globalSecuritySchemes,
 	}
@@ -51,9 +51,9 @@ func (oa apiAuth) authRequired(url string, operationSecuritySchemes SpecSecurity
 		return true, operationSecuritySchemes
 	}
 	log.Printf("operation security schemes missing, falling back to global security schemes (if there's any)")
-	if len(oa.globalSecuritySchemes) != 0 {
+	if oa.globalSecuritySchemes != nil && len(*oa.globalSecuritySchemes) != 0 {
 		log.Printf("the global configuration contains security schemes, selected the following based on order of appearance in the list %+v", oa.globalSecuritySchemes)
-		return true, oa.globalSecuritySchemes
+		return true, *oa.globalSecuritySchemes
 	}
 	return false, nil
 }
@@ -62,7 +62,7 @@ func (oa apiAuth) authRequired(url string, operationSecuritySchemes SpecSecurity
 // 1. Verify that the operation security schemes are defined as security definitions in the provider config
 func (oa apiAuth) confirmOperationSecurityPoliciesAreDefined(operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) error {
 	for _, operationSecurityScheme := range operationSecuritySchemes {
-		authenticator := providerConfig.SecuritySchemaDefinitions[operationSecurityScheme.getTerraformConfigurationName()]
+		authenticator := providerConfig.SecuritySchemaDefinitions[operationSecurityScheme.Name]
 		if authenticator == nil {
 			return fmt.Errorf("operation's security policy '%s' is not defined, please make sure the swagger file contains a security definition named '%s' under the securityDefinitions section", operationSecurityScheme, operationSecurityScheme)
 		}
@@ -75,12 +75,12 @@ func (oa apiAuth) prepareAuth(url string, operationSecuritySchemes SpecSecurityS
 		headers: map[string]string{},
 		url:     url,
 	}
-	if required, operationSecuritySchemes := oa.authRequired(url, operationSecuritySchemes); required {
-		if err := oa.confirmOperationSecurityPoliciesAreDefined(operationSecuritySchemes, providerConfig); err != nil {
+	if required, requiredSecuritySchemes := oa.authRequired(url, operationSecuritySchemes); required {
+		if err := oa.confirmOperationSecurityPoliciesAreDefined(requiredSecuritySchemes, providerConfig); err != nil {
 			return authContext, err
 		}
-		for _, operationSecurityScheme := range operationSecuritySchemes {
-			authenticator := providerConfig.SecuritySchemaDefinitions[operationSecurityScheme.getTerraformConfigurationName()]
+		for _, operationSecurityScheme := range requiredSecuritySchemes {
+			authenticator := providerConfig.SecuritySchemaDefinitions[operationSecurityScheme.Name]
 			if err := authenticator.prepareAuth(authContext); err != nil {
 				return authContext, err
 			}
