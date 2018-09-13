@@ -105,7 +105,7 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 		if err != nil {
 			return nil, err
 		}
-		authenticator := newAPIAuthenticator(globalSecuritySchemes)
+		authenticator := newAPIAuthenticator(&globalSecuritySchemes)
 		config := p.createProviderConfig(data)
 		openAPIBackendConfiguration, err := p.specAnalyser.GetOpenAPIBackendConfiguration()
 		if err != nil {
