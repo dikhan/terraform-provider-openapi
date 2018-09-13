@@ -19,13 +19,13 @@ func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefini
 	for _, secDef := range securitySchemaDefinitions {
 		secDefTerraformCompliantName := secDef.getTerraformConfigurationName()
 		if value, exists := data.GetOkExists(secDefTerraformCompliantName); exists {
-			providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = createAPIKeyAuthenticator(secDef.apiKey.In, secDef.apiKey.Name, value.(string))
+			providerConfiguration.SecuritySchemaDefinitions[secDef.Name] = createAPIKeyAuthenticator(secDef.apiKey.In, secDef.apiKey.Name, value.(string))
 		}
 	}
 	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
 		if value, exists := data.GetOkExists(headerTerraformCompliantName); exists {
-			providerConfiguration.Headers[headerTerraformCompliantName] = value.(string)
+			providerConfiguration.Headers[headerParam.Name] = value.(string)
 		}
 	}
 	return providerConfiguration
