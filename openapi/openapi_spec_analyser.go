@@ -2,38 +2,7 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 )
-
-// SpecSecurity defines the behaviour related to OpenAPI security.
-// This interface serves as a translation between the OpenAPI document and the security spec that will be used by the
-// OpenAPI Terraform provider
-type SpecSecurity interface {
-	// GetAPIKeySecurityDefinitions returns all the OpenAPI security definitions from the OpenAPI document and translates those
-	// into SpecSecurityDefinitions
-	GetAPIKeySecurityDefinitions() SpecSecurityDefinitions
-	// GetGlobalSecuritySchemes returns all the global security schemes from the OpenAPI document and translates those
-	// into SpecSecuritySchemes
-	GetGlobalSecuritySchemes() (SpecSecuritySchemes, error)
-}
-
-// SpecHeaderParameters groups a list of SpecHeaderParam
-type SpecHeaderParameters []SpecHeaderParam
-
-// SpecHeaderParam defines the properties for a Header Parameter
-type SpecHeaderParam struct {
-	Name          string
-	TerraformName string
-}
-
-// GetHeaderTerraformConfigurationName returns the terraform compliant name of the header. If the header TerraformName
-// field is populated it takes preference over the Name field.
-func (h SpecHeaderParam) GetHeaderTerraformConfigurationName() string {
-	if h.TerraformName != "" {
-		return terraformutils.ConvertToTerraformCompliantName(h.TerraformName)
-	}
-	return terraformutils.ConvertToTerraformCompliantName(h.Name)
-}
 
 // SpecAnalyser analyses the swagger doc and provides helper methods to retrieve all the end points that can
 // be used as terraform resources. These endpoints have to meet certain criteria to be considered eligible resources
