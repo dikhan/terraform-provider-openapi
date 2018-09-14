@@ -55,15 +55,13 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 			continue
 		}
 
-
 		isMultiRegion, regions := r.isMultiRegionResource(asa.d.Spec().Extensions)
 		if isMultiRegion {
-			log.Printf("[INFO] resource '%s' is configured with host override AND multi region; creating reasource per region", r.name)
+			log.Printf("[INFO] resource '%s' is configured with host override AND multi region; creating reasource per region", r.path)
 			for regionName, regionHost := range regions {
 				resourceRegionName := fmt.Sprintf("%s_%s", resourceName, regionName)
 				regionResource := resourceInfo{}
 				regionResource = r
-				regionResource.name = resourceRegionName
 				regionResource.host = regionHost
 				log.Printf("[INFO] multi region resource: name = %s, region = %s, host = %s", regionName, resourceRegionName, regionHost)
 				resources[resourceRegionName] = regionResource
@@ -78,7 +76,7 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 		}
 		// Fall back to override the host if value is not empty; otherwise global host will be used as usual
 		if hostOverride != "" {
-			log.Printf("[INFO] resource '%s' is configured with host override, API calls will be made against '%s' instead of '%s'", r.name, hostOverride, asa.d.Spec().Host)
+			log.Printf("[INFO] resource '%s' is configured with host override, API calls will be made against '%s' instead of '%s'", r.path, hostOverride, asa.d.Spec().Host)
 			r.host = hostOverride
 		}
 		resources[resourceName] = r
