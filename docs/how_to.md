@@ -495,7 +495,7 @@ the overridden host instead, in this case ```cdn.api.otherdomain.com```.
 *Note: This extension is only supported at the operation's POST operation level. The other operations available for the
 resource such as GET/PUT/DELETE will used the overridden host value too.*
 
-####### <a name="xTerraformResourceRegions">Multi-region resources</a>
+###### <a name="xTerraformResourceRegions">Multi-region resources</a>
 
 Additionally, if the resource is using multi region domains, meaning there's one sub-domain for each region where the resource
 can be created into (similar to how aws resources are created per region), this can be configured as follows:
