@@ -37,10 +37,7 @@ lint:
 # make test
 test: fmt vet lint
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
-	@go test -v -cover $(TEST_PACKAGES) ; if [ $$? -ne 1 ]; then \
-		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
-		exit 1; \
-	fi
+	@go test -v -cover $(TEST_PACKAGES)
 
 pre-requirements:
 	@echo "[INFO] Creating $(TF_INSTALLED_PLUGINS_PATH) if it does not exist"
