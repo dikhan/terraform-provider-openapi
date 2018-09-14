@@ -1921,6 +1921,25 @@ func TestGetResourceName(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a resourceInfo configured with a valid resource path that is versioned with nuber higher than 9 such as '/v12/users/'", t, func() {
+		r := resourceInfo{
+			path: "/v12/users/",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users_v1'", func() {
+				So(resourceName, ShouldEqual, "users_v12")
+			})
+		})
+	})
 	Convey("Given a resourceInfo configured with a valid resource long path that is versioned such as '/v1/something/users'", t, func() {
 		r := resourceInfo{
 			path: "/v1/something/users",
