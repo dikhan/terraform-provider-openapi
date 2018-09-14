@@ -58,7 +58,7 @@ fi
 ARCH=$(uname)
 
 # installation variables
-LATEST_RELEASE_VERSION=0.2.0
+LATEST_RELEASE_VERSION=0.3.0
 
 TF_PROVIDER_BASE_NAME="terraform-provider-"
 TF_OPENAPI_PROVIDER_PLUGIN_NAME="${TF_PROVIDER_BASE_NAME}openapi"
