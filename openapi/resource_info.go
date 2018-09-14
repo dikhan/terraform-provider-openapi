@@ -13,6 +13,9 @@ import (
 	"time"
 )
 
+const resourceVersionRegex = "(/v[0-9]*/)"
+const resourceNameRegex = "((/\\w*[/]?))+$"
+
 // Definition level extensions
 const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
@@ -27,6 +30,7 @@ const extTfResourcePollEnabled = "x-terraform-resource-poll-enabled"
 const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-completed-statuses"
 const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
 const extTfResourceTimeout = "x-terraform-resource-timeout"
+const extTfResourceName = "x-terraform-resource-name"
 
 const idDefaultPropertyName = "id"
 const statusDefaultPropertyName = "status"
@@ -35,7 +39,6 @@ type resourcesInfo map[string]resourceInfo
 
 // resourceInfo serves as translator between swagger definitions and terraform schemas
 type resourceInfo struct {
-	name     string
 	basePath string
 	// path contains relative path to the resource e,g: /v1/resource
 	path             string
@@ -87,10 +90,10 @@ func (r resourceInfo) validateFunc(propertyName string, property spec.Schema) sc
 		if property.Default != nil {
 			if property.ReadOnly {
 				err := fmt.Errorf(
-					"'%s.%s' is configured as 'readOnly' and can not have a default value. The value is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
+					"'%s' is configured as 'readOnly' and can not have a default value. The value is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
 						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default value '%v' can be applied. Default must be nil if computed\n"+
 						"OR\n"+
-						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the value as specified by the 'readOnly' attribute\n", r.name, k, k, property.Default, k)
+						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the value as specified by the 'readOnly' attribute\n", k, k, property.Default, k)
 				errors = append(errors, err)
 			}
 		}
@@ -164,7 +167,7 @@ func (r resourceInfo) createTerraformPropertyBasicSchema(propertyName string, pr
 		if property.ReadOnly {
 			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
 			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
-			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", r.name, propertyName)
+			log.Printf("[WARN] '%s' is readOnly and can not have a default value. The value is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", propertyName)
 		} else {
 			propertySchema.Default = property.Default
 		}
@@ -354,6 +357,17 @@ func (r resourceInfo) getDuration(t string) (*time.Duration, error) {
 	return &duration, err
 }
 
+func (r resourceInfo) getResourceTerraformName() string {
+	return r.getExtensionStringValue(r.createPathInfo.Post.Extensions, extTfResourceName)
+}
+
+func (r resourceInfo) getExtensionStringValue(extensions spec.Extensions, key string) string {
+	if value, exists := extensions.GetString(key); exists && value != "" {
+		return value
+	}
+	return ""
+}
+
 func (r resourceInfo) isIDProperty(propertyName string) bool {
 	return r.propertyNameMatchesDefaultName(propertyName, idDefaultPropertyName)
 }
@@ -364,4 +378,35 @@ func (r resourceInfo) isStatusProperty(propertyName string) bool {
 
 func (r resourceInfo) propertyNameMatchesDefaultName(propertyName, expectedPropertyName string) bool {
 	return terraformutils.ConvertToTerraformCompliantName(propertyName) == expectedPropertyName
+}
+
+// getResourceName gets the name of the resource from a path /resource/{id}
+func (r resourceInfo) getResourceName() (string, error) {
+	nameRegex, err := regexp.Compile(resourceNameRegex)
+	if err != nil {
+		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
+	}
+	var resourceName string
+	resourcePath := r.path
+	matches := nameRegex.FindStringSubmatch(resourcePath)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
+	}
+	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
+
+	if preferredName := r.getResourceTerraformName(); preferredName != "" {
+		resourceName = preferredName
+	}
+
+	versionRegex, err := regexp.Compile(resourceVersionRegex)
+	if err != nil {
+		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
+	}
+	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
+	if len(versionMatches) != 0 {
+		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
+		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
+		return resourceNameWithVersion, nil
+	}
+	return resourceName, nil
 }

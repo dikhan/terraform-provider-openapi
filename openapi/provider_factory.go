@@ -12,6 +12,7 @@ import (
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
+	"log"
 )
 
 type providerFactory struct {
@@ -69,6 +70,7 @@ func (p providerFactory) generateProviderFromAPISpec(apiSpecAnalyser *apiSpecAna
 			return nil, err
 		}
 		resourceName := p.getProviderResourceName(resourceName)
+		log.Printf("[INFO] open api terraform compatible resource registered with the provider '%s'", resourceName)
 		resourceMap[resourceName] = resource
 	}
 	provider := &schema.Provider{

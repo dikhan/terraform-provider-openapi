@@ -106,7 +106,7 @@ func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interf
 	if err != nil {
 		return err
 	}
-	log.Printf("[INFO] Resource '%s' ID: %s", r.resourceInfo.name, resourceLocalData.Id())
+	log.Printf("[INFO] Resource '%s' ID: %s", r.resourceInfo.path, resourceLocalData.Id())
 
 	err = r.handlePollingIfConfigured(&responsePayload, resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutCreate)
 	if err != nil {
@@ -164,7 +164,7 @@ func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interf
 	providerConfig := i.(providerConfig)
 	operation := r.resourceInfo.pathInfo.Put
 	if operation == nil {
-		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
+		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.path, r.resourceInfo.host)
 	}
 	input := r.createPayloadFromLocalStateData(resourceLocalData)
 	responsePayload := map[string]interface{}{}
@@ -204,7 +204,7 @@ func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interf
 	providerConfig := i.(providerConfig)
 	operation := r.resourceInfo.pathInfo.Delete
 	if operation == nil {
-		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.name, r.resourceInfo.host)
+		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.path, r.resourceInfo.host)
 	}
 	resourceIDURL, err := r.resourceInfo.getResourceIDURL(resourceLocalData.Id())
 	if err != nil {
@@ -264,7 +264,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	}
 
 	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
-	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.resourceInfo.name, targetStatuses)
+	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.resourceInfo.path, targetStatuses)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:      pendingStatuses,
@@ -297,12 +297,12 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 					return remoteData, defaultDestroyStatus, nil
 				}
 			}
-			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.name, resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
 		}
 
 		statusIdentifier, err := r.resourceInfo.getStatusIdentifier()
 		if err != nil {
-			return nil, "", fmt.Errorf("error occurred while retrieving status identifier for resource '%s' (%s): %s", r.resourceInfo.name, resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier for resource '%s' (%s): %s", r.resourceInfo.path, resourceLocalData.Id(), err)
 		}
 
 		value, statusIdentifierPresentInResponse := remoteData[statusIdentifier]
@@ -310,7 +310,7 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 			return nil, "", fmt.Errorf("response payload received from GET /%s/%s  missing the status identifier field", r.resourceInfo.path, resourceLocalData.Id())
 		}
 		newStatus := value.(string)
-		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.resourceInfo.name, resourceLocalData.Id(), newStatus)
+		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.resourceInfo.path, resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
 }
