@@ -26,10 +26,7 @@ fmt:
 # make vet
 vet:
 	@echo "[INFO] Running go vet on the current directory"
-	@go vet $(TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
-		echo "[ERROR] Vet found suspicious constructs. Please fix the reported constructs before submitting code for review"; \
-		exit 1; \
-	fi
+	@go vet $(TEST_PACKAGES)
 
 # make lint
 lint:
@@ -40,7 +37,7 @@ lint:
 # make test
 test: fmt vet lint
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
-	@go test -v -cover $(TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
+	@go test -v -cover $(TEST_PACKAGES) ; if [ $$? -ne 1 ]; then \
 		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
 		exit 1; \
 	fi
