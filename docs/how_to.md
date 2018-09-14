@@ -266,6 +266,8 @@ Extension Name | Type | Description
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
 [x-terraform-resource-poll-enabled](#xTerraformResourcePollEnabled) | bool | Only supported in operation responses (e,g: 202). Defines that if the API responds with the given HTTP Status code (e,g: 202), the polling mechanism will be enabled. This allows the OpenAPI Terraform provider to perform read calls to the remote API and check the resource state. The polling mechanism finalises if the remote resource state arrives at completion, failure state or times-out (60s)
 [x-terraform-resource-name](#xTerraformResourceName) | string | Only available in resource root's POST operation. Defines the name that will be used for the resource in the Terraform configuration. If the extension is not preset, default value will be the name of the resource in the path. For instance, a path such as /v1/users will translate into a terraform resource name users_v1
+[x-terraform-resource-host](#xTerraformResourceHost) | string | Only supported in resource root's POST operation. Defines the host that should be used when managing this specific resource. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make thje API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration.
+[x-terraform-resource-regions-%s](#xTerraformResourceRegions) | string | Only supported in the root level. Defines the regions supported by a given resource identified by the %s variable. This extension only works if the ```x-terraform-resource-host``` extension contains a value that is parametrized and identifies the matching ```x-terraform-resource-regions-%s``` extension. The values of this extension must be comma separated strings.
 
 ###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
 
@@ -471,6 +473,82 @@ resource name.
 
 *Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
 above example*
+
+
+###### <a name="xTerraformResourceHost">x-terraform-resource-host</a> 
+
+This extension allows resources to override the global host configuration with a different host. This is handy when
+a given swagger file may combine resources provided by different service providers.
+
+````
+swagger: "2.0"
+host: "some.domain.com"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: cdn.api.otherdomain.com
+````
+
+The above configuration will make the OpenAPI Terraform provider client make API CRUD requests (POST/GET/PUT/DELETE) to
+the overridden host instead, in this case ```cdn.api.otherdomain.com```.
+
+*Note: This extension is only supported at the operation's POST operation level. The other operations available for the
+resource such as GET/PUT/DELETE will used the overridden host value too.*
+
+####### <a name="xTerraformResourceRegions">Multi-region resources</a>
+
+Additionally, if the resource is using multi region domains, meaning there's one sub-domain for each region where the resource
+can be created into (similar to how aws resources are created per region), this can be configured as follows:
+
+````
+swagger: "2.0"
+host: "some.domain.com"
+x-terraform-resource-regions-cdn: "dub1,sea1"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: cdn.${cdn}.api.otherdomain.com
+````
+
+If the ``x-terraform-resource-host`` extension has a value parametrised in the form where the following pattern ```${identifier}```
+ is found (identifier being any string with no whitspaces - spaces,tabs, line breaks, etc) AND there is a matching 
+ extension 'x-terraform-resource-regions-**identifier**' defined in the root level that refers to the same identifier 
+ then the resource will be considered multi region.
+For instance, in the above example, the ```x-terraform-resource-host``` value is parametrised as the ```${identifier}``` pattern
+is found, and the identifier in this case is ```cdn```. Moreover, there is a matching ```x-terraform-resource-regions-cdn``` 
+extension containing a list of regions where this resource can be created in.
+
+The regions found in the ```x-terraform-resource-regions-cdn``` will be used as follows:
+
+- The OpenAPI Terraform provider will expose one resource per region enlisted in the extension. In the case above, the
+following resources will become available in the Terraform configuration (the provider name chosen here is 'swaggercodegen'):
+
+````
+resource "swaggercodegen_cdn_v1_dub1" "my_cdn" {
+  label = "label" 
+  ips = ["127.0.0.1"] 
+  hostnames = ["origin.com"]
+}
+
+resource "swaggercodegen_cdn_v1_sea1" "my_cdn" {
+  label = "label" 
+  ips = ["127.0.0.1"] 
+  hostnames = ["origin.com"]
+}
+````
+
+As shown above, the resources that are multi-region will have extra information in their name that identifies the region
+where tha resource should be managed.
+
+- The OpenAPI Terraform provider client will make the API call against the specific resource region when the resource
+is configured with multi-region support.
+
+- As far as the resource configuration is concerned, the swagger configuration remains the same for that specific resource 
+(parameters, operations, polling support, etc) and the same configuration will be applicable to all the regions that resource 
+supports.
+
+*Note: This extension is only supported at the root level and can be used exclusively along with the 'x-terraform-resource-host'
+extension*
 
 #### <a name="swaggerDefinitions">Definitions</a>
 

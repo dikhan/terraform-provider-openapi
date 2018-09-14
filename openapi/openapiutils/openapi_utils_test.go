@@ -332,5 +332,51 @@ func TestGetHostFromURL(t *testing.T) {
 				So(domain, ShouldEqual, expectedResult)
 			})
 		})
+
+	})
+}
+
+func TestStringExtensionExists(t *testing.T) {
+	Convey("Given a list of extensions", t, func() {
+		extensions := spec.Extensions{
+			"directlyUnmarshaled": "value1",
+		}
+		extensions.Add("addedViaAddMethod", "value2")
+		Convey("When StringExtensionExists method is called to look up a key that is not lower case", func() {
+			value, exists := StringExtensionExists(extensions, "directlyUnmarshaled")
+			Convey("Then the key should exists", func() {
+				So(exists, ShouldBeTrue)
+			})
+			Convey("And Then the value should be", func() {
+				So(value, ShouldEqual, "value1")
+			})
+		})
+		Convey("When StringExtensionExists method is called to look up a key that added cammel case but the lookup key is lower cased", func() {
+			value, exists := StringExtensionExists(extensions, "directlyunmarshaled")
+			Convey("Then the key should exists", func() {
+				So(exists, ShouldBeTrue)
+			})
+			Convey("And Then the value should be", func() {
+				So(value, ShouldEqual, "value1")
+			})
+		})
+		Convey("When StringExtensionExists method is called to look up a key that was added via the Add extensions method", func() {
+			value, exists := StringExtensionExists(extensions, "addedViaAddMethod")
+			Convey("Then the key should exists", func() {
+				So(exists, ShouldBeTrue)
+			})
+			Convey("And Then the value should be", func() {
+				So(value, ShouldEqual, "value2")
+			})
+		})
+		Convey("When StringExtensionExists method is called to look up a lower case key that was added via the Add extensions method", func() {
+			value, exists := StringExtensionExists(extensions, "addedviaaddmethod")
+			Convey("Then the key should exists", func() {
+				So(exists, ShouldBeTrue)
+			})
+			Convey("And Then the value should be", func() {
+				So(value, ShouldEqual, "value2")
+			})
+		})
 	})
 }

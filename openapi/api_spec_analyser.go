@@ -45,17 +45,42 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 			pathInfo:         pathItem,
 		}
 
+		if r.shouldIgnoreResource() {
+			continue
+		}
+
 		resourceName, err := r.getResourceName()
 		if err != nil {
 			log.Printf("[DEBUG] could not figure out the resource name for '%s': %s", resourcePath, err)
 			continue
 		}
 
-		if r.shouldIgnoreResource() {
+
+		isMultiRegion, regions := r.isMultiRegionResource(asa.d.Spec().Extensions)
+		if isMultiRegion {
+			log.Printf("[INFO] resource '%s' is configured with host override AND multi region; creating reasource per region", r.name)
+			for regionName, regionHost := range regions {
+				resourceRegionName := fmt.Sprintf("%s_%s", resourceName, regionName)
+				regionResource := resourceInfo{}
+				regionResource = r
+				regionResource.name = resourceRegionName
+				regionResource.host = regionHost
+				log.Printf("[INFO] multi region resource: name = %s, region = %s, host = %s", regionName, resourceRegionName, regionHost)
+				resources[resourceRegionName] = regionResource
+			}
 			continue
 		}
 
-		log.Printf("[INFO] resource info created '%s'", resourceName)
+		hostOverride := r.getResourceOverrideHost()
+		// if the override host is multi region then something must be wrong with the multi region configuration, failing to let the user know so they can fix the configuration
+		if isMultiRegionHost, _ := r.isMultiRegionHost(hostOverride); isMultiRegionHost {
+			return nil, fmt.Errorf("multi region configuration for resource '%s' is wrong, please check the multi region configuration in the swagger file is right for that resource", resourceName)
+		}
+		// Fall back to override the host if value is not empty; otherwise global host will be used as usual
+		if hostOverride != "" {
+			log.Printf("[INFO] resource '%s' is configured with host override, API calls will be made against '%s' instead of '%s'", r.name, hostOverride, asa.d.Spec().Host)
+			r.host = hostOverride
+		}
 		resources[resourceName] = r
 	}
 	return resources, nil

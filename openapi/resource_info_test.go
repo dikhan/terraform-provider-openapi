@@ -2006,3 +2006,178 @@ func TestGetResourceName(t *testing.T) {
 		})
 	})
 }
+
+func TestGetResourceOverrideHost(t *testing.T) {
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a non parametrized host containing the host to use", t, func() {
+		expectedHost := "some.api.domain.com"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := r.getResourceOverrideHost()
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a parametrized host containing the host to use", t, func() {
+		expectedHost := "some.api.${serviceProviderName}.domain.com"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := r.getResourceOverrideHost()
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with an empty string value", t, func() {
+		expectedHost := ""
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := r.getResourceOverrideHost()
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+}
+
+func TestIsMultiRegionHost(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When isMultiRegionHost method is called with a non multi region host", func() {
+			expectedHost := "some.api.domain.com"
+			isMultiRegion, _ := r.isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host", func() {
+			expectedHost := "some.api.${%s}.domain.com"
+			isMultiRegion, _ := r.isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host that has region at the beginning", func() {
+			expectedHost := "${%s}.domain.com"
+			isMultiRegion, _ := r.isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsMultiRegionResource(t *testing.T) {
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a parametrized host containing region variable", t, func() {
+		serviceProviderName := "serviceProviderName"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName),
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest,useast")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where NONE matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, "someOtherServiceProvider"), "rst, dub")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+			Convey("And the regions map returned should be empty", func() {
+				So(regions, ShouldBeEmpty)
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are not comma separated", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest useast")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswestuseast")
+				So(regions["uswestuseast"], ShouldEqual, "some.api.uswestuseast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are comma separated with spaces", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest, useast")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+	})
+}

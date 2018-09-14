@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	. "github.com/smartystreets/goconvey/convey"
@@ -1054,7 +1055,9 @@ paths:
 
 func TestGetResourcesInfo(t *testing.T) {
 	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
-		swaggerContent := `swagger: "2.0"
+		expectedHost := "some.api.domain.com"
+		swaggerContent := fmt.Sprintf(`swagger: "2.0"
+host: %s
 paths:
   /v1/cdns:
     post:
@@ -1134,7 +1137,7 @@ definitions:
     properties:
       id:
         type: "string"
-        readOnly: true`
+        readOnly: true`, expectedHost)
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When getResourcesInfo method is called ", func() {
 			resourcesInfo, err := a.getResourcesInfo()
@@ -1144,6 +1147,9 @@ definitions:
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(resourcesInfo), ShouldEqual, 1)
 				So(resourcesInfo, ShouldContainKey, "cdns_v1")
+			})
+			Convey("And the resources info map only element should have global host", func() {
+				So(resourcesInfo["cdns_v1"].host, ShouldEqual, expectedHost)
 			})
 		})
 	})
@@ -1240,6 +1246,202 @@ definitions:
 			})
 			Convey("And the resourceInfo map should be empty as the resource was meant to be excluded", func() {
 				So(resourceInfo, ShouldBeEmpty)
+			})
+		})
+	})
+
+	// Tests that if the override host is present for a given resource and it is not multi region, the host for that given resource should be the override one
+	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-resource-host' extension and therefore overrides the global host value", t, func() {
+		expectedHost := "some.api.domain.com"
+		var swaggerJSON = fmt.Sprintf(`
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-resource-host": "%s",
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`, expectedHost)
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When getResourcesInfo method is called ", func() {
+			resourceInfo, err := a.getResourcesInfo()
+			expectedResourceName := "cdns_v1"
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resourceInfo map should not be empty", func() {
+				So(resourceInfo, ShouldNotBeEmpty)
+			})
+			Convey(fmt.Sprintf("And the resourceInfo map should contain key %s", expectedResourceName), func() {
+				So(resourceInfo, ShouldContainKey, expectedResourceName)
+			})
+			Convey(fmt.Sprintf("And the host value for that resource should be '%s'", expectedHost), func() {
+				So(resourceInfo[expectedResourceName].host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	// Tests that if the override host is present for a given resource and multi region configuration is correct, the appropriate resources per region should be created
+	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-resource-host' extension with a parametrized value some.api.${serviceProviderName}.domain.com and a matching root level 'x-terraform-resource-regions-serviceProviderName' extension populated with the different API regions", t, func() {
+		serviceProviderName := "serviceProviderName"
+		expectedHost := fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName)
+		var swaggerJSON = fmt.Sprintf(`
+{
+   "swagger":"2.0",
+   "x-terraform-resource-regions-%s": "uswest, useast",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-resource-host": "%s",
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`, serviceProviderName, expectedHost)
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When getResourcesInfo method is called ", func() {
+			resourceInfo, err := a.getResourcesInfo()
+			expectedResourceName1 := "cdns_v1_uswest"
+			expectedResourceName2 := "cdns_v1_useast"
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resourceInfo map should not be empty", func() {
+				So(resourceInfo, ShouldNotBeEmpty)
+			})
+			Convey(fmt.Sprintf("And the resourceInfo map should contain key %s", expectedResourceName1), func() {
+				So(resourceInfo, ShouldContainKey, expectedResourceName1)
+			})
+			Convey(fmt.Sprintf("And the host value for that resource should be '%s'", "some.api.uswest.domain.com"), func() {
+				So(resourceInfo[expectedResourceName1].host, ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey(fmt.Sprintf("And the resourceInfo map should contain key %s", expectedResourceName2), func() {
+				So(resourceInfo, ShouldContainKey, expectedResourceName2)
+			})
+			Convey(fmt.Sprintf("And the host value for that resource should be '%s'", "some.api.useast.domain.com"), func() {
+				So(resourceInfo[expectedResourceName2].host, ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+	})
+
+	// Tests that if the override host is present and the value is multi region but multi region requirements are not met, an error should be expected (so the user can fix the swagger config accordingly)
+	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-resource-host' extension with a parametrized value some.api.${serviceProviderName}.domain.com and NON matching root level 'x-terraform-resource-regions-serviceProviderName' extension", t, func() {
+		serviceProviderName := "serviceProviderName"
+		expectedHost := fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName)
+		var swaggerJSON = fmt.Sprintf(`
+{
+   "swagger":"2.0",
+   "x-terraform-resource-regions-%s": "uswest, useast",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-resource-host": "%s",
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`, "someOtherProviderName", expectedHost)
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When getResourcesInfo method is called ", func() {
+			_, err := a.getResourcesInfo()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
 			})
 		})
 	})
