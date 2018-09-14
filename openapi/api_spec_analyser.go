@@ -10,8 +10,6 @@ import (
 	"github.com/go-openapi/spec"
 )
 
-const resourceVersionRegex = "(/v[0-9]*/)"
-const resourceNameRegex = "((/\\w*/){\\w*})+$"
 const resourceInstanceRegex = "((?:.*)){.*}"
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
@@ -33,17 +31,11 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 	for resourcePath, pathItem := range asa.d.Spec().Paths.Paths {
 		resourceRootPath, resourceRoot, resourcePayloadSchemaDef, err := asa.isEndPointFullyTerraformResourceCompliant(resourcePath)
 		if err != nil {
-			log.Printf("[DEBUG] resource paht '%s' not terraform compliant: %s", resourcePath, err)
-			continue
-		}
-		resourceName, err := asa.getResourceName(resourcePath)
-		if err != nil {
-			log.Printf("[DEBUG] resource not figure out valid terraform resource name for '%s': %s", resourcePath, err)
+			log.Printf("[DEBUG] resource path '%s' not terraform compliant: %s", resourcePath, err)
 			continue
 		}
 
 		r := resourceInfo{
-			name:             resourceName,
 			basePath:         asa.d.BasePath(),
 			path:             resourceRootPath,
 			host:             asa.d.Spec().Host,
@@ -56,6 +48,13 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 		if r.shouldIgnoreResource() {
 			continue
 		}
+
+		resourceName, err := r.getResourceName()
+		if err != nil {
+			log.Printf("[DEBUG] could not figure out the resource name for '%s': %s", resourcePath, err)
+			continue
+		}
+
 
 		isMultiRegion, regions := r.isMultiRegionResource(asa.d.Spec().Extensions)
 		if isMultiRegion {
@@ -295,31 +294,6 @@ func (asa apiSpecAnalyser) isResourceInstanceEndPoint(p string) (bool, error) {
 		return false, err
 	}
 	return r.MatchString(p), nil
-}
-
-// getResourceName gets the name of the resource from a path /resource/{id}
-func (asa apiSpecAnalyser) getResourceName(resourcePath string) (string, error) {
-	nameRegex, err := regexp.Compile(resourceNameRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
-	}
-	var resourceName string
-	matches := nameRegex.FindStringSubmatch(resourcePath)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
-	}
-	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
-	versionRegex, err := regexp.Compile(resourceVersionRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
-	}
-	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
-	if len(versionMatches) != 0 {
-		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
-		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
-		return resourceNameWithVersion, nil
-	}
-	return resourceName, nil
 }
 
 // findMatchingResourceRootPath returns the corresponding POST root and path for a given end point

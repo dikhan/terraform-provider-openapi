@@ -1812,6 +1812,201 @@ func TestShouldIgnoreResource(t *testing.T) {
 	})
 }
 
+func TestGetResourceTerraformName(t *testing.T) {
+	Convey("Given a resource info", t, func() {
+		expectedResourceName := "cdn"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: expectedResourceName,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceTerraformName method is called with a map of extensions", func() {
+			value := r.getResourceTerraformName()
+			Convey(fmt.Sprintf("Then the value returned should equal %s", expectedResourceName), func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+}
+
+func TestGetExtensionStringValue(t *testing.T) {
+	Convey("Given a resource info", t, func() {
+		r := resourceInfo{}
+		Convey("When getExtensionStringValue method is called with a map of extensions and an existing key in the map", func() {
+			expectedResourceName := "cdn"
+			extensions := spec.Extensions{
+				extTfResourceName: expectedResourceName,
+			}
+			value := r.getExtensionStringValue(extensions, extTfResourceName)
+			Convey("Then the value returned should equal", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+		Convey("When getExtensionStringValue method is called with a map of extensions and a NON existing key in the map", func() {
+			expectedResourceName := "cdn"
+			extensions := spec.Extensions{
+				extTfResourceName: expectedResourceName,
+			}
+			value := r.getExtensionStringValue(extensions, "nonExistingKey")
+			Convey("Then the value returned should equal", func() {
+				So(value, ShouldBeEmpty)
+			})
+		})
+	})
+}
+
+func TestGetResourceName(t *testing.T) {
+	Convey("Given a resourceInfo configured with a path /users/ containing a trailing slash", t, func() {
+		r := resourceInfo{
+			path: "/users/",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users'", func() {
+				So(resourceName, ShouldEqual, "users")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a path /users with no trailing slash", t, func() {
+		r := resourceInfo{
+			path: "/users",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users'", func() {
+				So(resourceName, ShouldEqual, "users")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a valid resource path that is versioned such as '/v1/users/'", t, func() {
+		r := resourceInfo{
+			path: "/v1/users/",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users_v1'", func() {
+				So(resourceName, ShouldEqual, "users_v1")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a valid resource path that is versioned with nuber higher than 9 such as '/v12/users/'", t, func() {
+		r := resourceInfo{
+			path: "/v12/users/",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users_v1'", func() {
+				So(resourceName, ShouldEqual, "users_v12")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a valid resource long path that is versioned such as '/v1/something/users'", t, func() {
+		r := resourceInfo{
+			path: "/v1/something/users",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should still be 'users_v1'", func() {
+				So(resourceName, ShouldEqual, "users_v1")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with resource which has path parameters '/api/v1/nodes/{name}/proxy'", t, func() {
+		r := resourceInfo{
+			path: "/api/v1/nodes/{name}/proxy",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should still be 'proxy_v1'", func() {
+				So(resourceName, ShouldEqual, "proxy_v1")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with resource with path '/users' and the create operation has the extension 'x-terraform-resource-name' ", t, func() {
+		expectedResourceName := "user"
+		r := resourceInfo{
+			path: "/v1/users",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: expectedResourceName,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			expectedTerraformName := fmt.Sprintf("%s_v1", expectedResourceName)
+			Convey(fmt.Sprintf("And the value returned should still be '%s'", expectedTerraformName), func() {
+				So(resourceName, ShouldEqual, expectedTerraformName)
+			})
+		})
+	})
+}
+
 func TestGetResourceOverrideHost(t *testing.T) {
 	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a non parametrized host containing the host to use", t, func() {
 		expectedHost := "some.api.domain.com"
