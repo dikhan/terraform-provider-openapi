@@ -1,6 +1,8 @@
 PROVIDER_NAME?=""
 TF_CMD?="plan"
 
+EXAMPLE_API?=swaggercodegen-service-provider-api
+
 TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
 TEST_PACKAGES?=$$(go list ./... | grep -v "examples\|vendor\|integration")
@@ -70,7 +72,7 @@ local-env-down: fmt
 # make local-env
 local-env: fmt
 	@echo "[INFO] Bringing up local environment"
-	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate
+	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate $(EXAMPLE_API)
 
 # [TF_CMD=apply] make run-terraform-example-swaggercodegen
 run-terraform-example-swaggercodegen: build pre-requirements
