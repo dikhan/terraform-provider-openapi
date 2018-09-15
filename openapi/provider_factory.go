@@ -7,6 +7,7 @@ import (
 
 	"github.com/dikhan/http_goclient"
 	"github.com/hashicorp/terraform/helper/schema"
+	"log"
 )
 
 type providerFactory struct {
@@ -94,6 +95,7 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 			return nil, err
 		}
 		resourceName := p.getProviderResourceName(openAPIResource.getResourceName())
+		log.Printf("[INFO] resource '%s' successfully registered in the provider", resourceName)
 		resourceMap[resourceName] = resource
 	}
 	return resourceMap, nil
