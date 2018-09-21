@@ -13,6 +13,11 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   example_int = 12
   better_example_number_field_name = 1.12
   example_boolean = true
+
+  object_property = {
+    message = ""
+  }
+
 }
 
 resource "swaggercodegen_lbs_v1" "my_lb" {

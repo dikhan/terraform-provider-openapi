@@ -25,4 +25,6 @@ type ContentDeliveryNetwork struct {
 	ExampleNumber float32 `json:"exampleNumber,omitempty"`
 
 	ExampleBoolean bool `json:"example_boolean,omitempty"`
+
+	ObjectProperty *ObjectProperty `json:"object_property,omitempty"`
 }

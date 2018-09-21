@@ -291,6 +291,13 @@ definitions:
         x-terraform-field-name: betterExampleNumberFieldName  # overriding exampleNumber with a different name 'betterExampleNumberFieldName'; the preferred name is not terraform compliant either so the provider will perform the name conversion automatically when translating the name into the provider resource configuration and when saving the field into the state file
       example_boolean:
         type: boolean
+      object_property:
+        $ref: "#/definitions/ObjectProperty"
+  ObjectProperty:
+    type: object
+    properties:
+      message:
+        type: string
   LBV1:
     type: "object"
     required:
