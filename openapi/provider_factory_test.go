@@ -125,7 +125,7 @@ func TestCreateProviderConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the provider configuration returned should contain the header with its value (coming from the resource schema), the key used to look up the value is the actual header name", func() {
-				So(providerConfiguration.Headers[headerPreferredNameProperty.Name], ShouldEqual, headerProperty.Default)
+				So(providerConfiguration.Headers[headerPreferredNameProperty.PreferredName], ShouldEqual, headerProperty.Default)
 			})
 		})
 	})
