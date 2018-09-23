@@ -93,7 +93,8 @@ func TestCreateProviderConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the provider configuration returned should contain the header with its value (coming from the resource schema)", func() {
-				So(providerConfiguration.Headers[headerNonCompliantNameProperty.Name], ShouldEqual, headerProperty.Default)
+				// provider config keys are always snake_case
+				So(providerConfiguration.Headers["header_name"], ShouldEqual, headerProperty.Default)
 			})
 			Convey("And the provider configuration returned should contain the apiKey security with the correct apiKey header name and value (coming from the resource schema)", func() {
 				// The key values stored in the provider configuration are always terraform compliant names, hence querying 'apiKeyAuth' with its corresponding snake_case name
