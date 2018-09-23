@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 
 	"net/http"
 
@@ -18,6 +19,9 @@ type providerFactory struct {
 func newProviderFactory(name string, specAnalyser SpecAnalyser) (*providerFactory, error) {
 	if name == "" {
 		return nil, fmt.Errorf("provider name not specified")
+	}
+	if compliantName := terraformutils.ConvertToTerraformCompliantName(name); name != compliantName {
+		return nil, fmt.Errorf("provider name '%s' not terraform name compliant, please consider renaming provider to '%s'", name, compliantName)
 	}
 	if specAnalyser == nil {
 		return nil, fmt.Errorf("provider missing an OpenAPI Spec Analyser")
@@ -94,7 +98,10 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 		if err != nil {
 			return nil, err
 		}
-		resourceName := p.getProviderResourceName(openAPIResource.getResourceName())
+		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
+		if err != nil {
+			return nil, err
+		}
 		log.Printf("[INFO] resource '%s' successfully registered in the provider", resourceName)
 		resourceMap[resourceName] = resource
 	}
@@ -132,7 +139,10 @@ func (p providerFactory) createProviderConfig(data *schema.ResourceData) provide
 	return providerConfiguration
 }
 
-func (p providerFactory) getProviderResourceName(resourceName string) string {
+func (p providerFactory) getProviderResourceName(resourceName string) (string, error) {
+	if resourceName == "" {
+		return "", fmt.Errorf("resource name can not be empty")
+	}
 	fullResourceName := fmt.Sprintf("%s_%s", p.name, resourceName)
-	return fullResourceName
+	return fullResourceName, nil
 }
