@@ -368,7 +368,7 @@ func testCheckCDNsV1Destroy(state *terraform.State) error {
 			continue
 		}
 		cdnID := res.Primary.ID
-		openAPIClient := testAccProvider.Meta().(openapi.ProviderClient)
+		openAPIClient := testAccProvider.Meta().(openapi.ClientOpenAPI)
 		abs, err := filepath.Abs(exampleSwaggerFile)
 		if err != nil {
 			return err

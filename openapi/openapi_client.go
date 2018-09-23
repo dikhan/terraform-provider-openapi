@@ -17,6 +17,14 @@ const (
 	httpDelete httpMethodSupported = "DELETE"
 )
 
+// ClientOpenAPI defines the behaviour expected to be implemented for the OpenAPI Client used in the Terraform OpenAPI Provider
+type ClientOpenAPI interface {
+	Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
+	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
+	Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error)
+	Delete(resource SpecResource, id string) (*http.Response, error)
+}
+
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
 // The CRUD operations accept an OpenAPI operation which defines among other things the security scheme applicable to
 // the API when making the HTTP request
@@ -96,7 +104,7 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderParam, providerConfig providerConfiguration, headers map[string]string) map[string]string {
 	if operationHeaders != nil && len(operationHeaders) > 0 {
 		for _, headerParam := range operationHeaders {
-			// Setting the actual name of the header with the value coming from the provider configuration
+			// Setting the actual name of the header with the expectedValue coming from the provider configuration
 			headers[headerParam.Name] = providerConfig.Headers[headerParam.GetHeaderTerraformConfigurationName()]
 		}
 	}
