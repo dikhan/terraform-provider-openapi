@@ -87,21 +87,21 @@ func (o *SpecV2Resource) createResourceOperation(operation *spec.Operation) *Res
 	}
 }
 
-func (o *SpecV2Resource) getResourceSchema() (SchemaDefinition, error) {
-	schemaDefinition := SchemaDefinition{}
-	schemaDefinition.Properties = map[string]SchemaDefinitionProperty{}
+func (o *SpecV2Resource) getResourceSchema() (*SchemaDefinition, error) {
+	schemaDefinition := &SchemaDefinition{}
+	schemaDefinition.Properties = SchemaDefinitionProperties{}
 	for propertyName, property := range o.SchemaDefinition.Properties {
 		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property)
 		if err != nil {
-			return SchemaDefinition{}, err
+			return nil, err
 		}
 		schemaDefinition.Properties[schemaDefinitionProperty.Name] = schemaDefinitionProperty
 	}
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema) (SchemaDefinitionProperty, error) {
-	schemaDefinitionProperty := SchemaDefinitionProperty{}
+func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema) (*SchemaDefinitionProperty, error) {
+	schemaDefinitionProperty := &SchemaDefinitionProperty{}
 
 	schemaDefinitionProperty.Name = propertyName
 
