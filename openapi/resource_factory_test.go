@@ -22,6 +22,61 @@ func Test(t *testing.T) {
 	})
 }
 
+func TestCreateTerraformResource(t *testing.T) {
+	Convey("Given a resource factory initialised with a spec resource that has an id and string property and supports all CRUD operations", t, func() {
+		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
+		Convey("When createTerraformResource is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+				},
+			}
+			schemaResource, err := r.createTerraformResource()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema resource should not be empty", func() {
+				So(schemaResource.Schema, ShouldNotBeEmpty)
+			})
+			Convey("And the create function is invokable and returns nil error", func() {
+				err := schemaResource.Create(resourceData, client)
+				So(err, ShouldBeNil)
+			})
+			Convey("And the read function is invokable and returns nil error", func() {
+				err := schemaResource.Read(resourceData, client)
+				So(err, ShouldBeNil)
+			})
+			Convey("And the update function is invokable and returns nil error", func() {
+				err := schemaResource.Update(resourceData, client)
+				So(err, ShouldBeNil)
+			})
+			Convey("And the delete function is invokable and returns nil error", func() {
+				err := schemaResource.Delete(resourceData, client)
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestCreateResourceSchema(t *testing.T) {
+	Convey("Given a resource factory", t, func() {
+		r, _ := testCreateResourceFactory(t, idProperty, stringProperty)
+		Convey("When createResourceSchema is called", func() {
+			schema, err := r.createResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema returned should not contain the ID property as schema alreayd has a reserved ID field to store the unique identifier", func() {
+				So(schema, ShouldNotContainKey, idProperty.Name)
+			})
+			Convey("And the schema returned should contain the resource properties", func() {
+				So(schema, ShouldContainKey, stringProperty.Name)
+			})
+		})
+	})
+}
+
 func TestCreateTerraformPropertySchema(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r := resourceFactory{}
