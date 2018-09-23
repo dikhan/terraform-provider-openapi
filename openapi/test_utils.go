@@ -56,20 +56,3 @@ func (s *testSchemaDefinition) getResourceData(t *testing.T) *schema.ResourceDat
 	resourceLocalData := schema.TestResourceDataRaw(t, resourceSchema, resourceDataMap)
 	return resourceLocalData
 }
-
-// testCreateResourceFactoryWithID configures the resourceData with the Id field. This is used for tests that rely on the
-// resource state to be fully created. For instance, update or delete operations.
-func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *SchemaDefinitionProperty, schemaDefinitionProperties ...*SchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
-	schemaDefinitionProperties = append(schemaDefinitionProperties, idSchemaDefinitionProperty)
-	resourceFactory, resourceData := testCreateResourceFactory(t, schemaDefinitionProperties...)
-	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
-	return resourceFactory, resourceData
-}
-
-// testCreateResourceFactory configures the resourceData with some properties.
-func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*SchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
-	testSchema := newTestSchema(schemaDefinitionProperties...)
-	resourceData := testSchema.getResourceData(t)
-	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &ResourceOperation{}, &ResourceOperation{}, &ResourceOperation{}, &ResourceOperation{})
-	return resourceFactory{specResource}, resourceData
-}
