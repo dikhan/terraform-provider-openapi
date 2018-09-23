@@ -74,7 +74,11 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 			Required: true,
 		}
 	}
-	for _, headerParam := range p.specAnalyser.GetAllHeaderParameters() {
+	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	if err != nil {
+		return nil, err
+	}
+	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
 		s[headerTerraformCompliantName] = &schema.Schema{
 			Type:     schema.TypeString,
@@ -142,7 +146,11 @@ func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*provi
 	if err != nil {
 		return nil, err
 	}
-	providerConfiguration := newProviderConfiguration(p.specAnalyser.GetAllHeaderParameters(), securityDefinitions, data)
+	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	if err != nil {
+		return nil, err
+	}
+	providerConfiguration := newProviderConfiguration(headers, securityDefinitions, data)
 	return providerConfiguration, nil
 }
 
