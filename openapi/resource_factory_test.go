@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -9,18 +10,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-func Test(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
-		//r := resourceFactory{}
-		Convey("When  is called ", func() {
-			//exists := r.
-			Convey("Then the expectedValue returned should be true", func() {
-				//So(exists, ShouldBeTrue)
-			})
-		})
-	})
-}
 
 func TestCreateTerraformResource(t *testing.T) {
 	Convey("Given a resource factory initialised with a spec resource that has an id and string property and supports all CRUD operations", t, func() {
@@ -796,4 +785,21 @@ func TestGetResourceDataOKExists(t *testing.T) {
 			})
 		})
 	})
+}
+
+// testCreateResourceFactoryWithID configures the resourceData with the Id field. This is used for tests that rely on the
+// resource state to be fully created. For instance, update or delete operations.
+func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *SchemaDefinitionProperty, schemaDefinitionProperties ...*SchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+	schemaDefinitionProperties = append(schemaDefinitionProperties, idSchemaDefinitionProperty)
+	resourceFactory, resourceData := testCreateResourceFactory(t, schemaDefinitionProperties...)
+	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
+	return resourceFactory, resourceData
+}
+
+// testCreateResourceFactory configures the resourceData with some properties.
+func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*SchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+	testSchema := newTestSchema(schemaDefinitionProperties...)
+	resourceData := testSchema.getResourceData(t)
+	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &ResourceOperation{}, &ResourceOperation{}, &ResourceOperation{}, &ResourceOperation{})
+	return resourceFactory{specResource}, resourceData
 }
