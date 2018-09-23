@@ -143,11 +143,11 @@ func (a apiKeyQuery) prepareAuth(authContext *authContext) error {
 	return nil
 }
 
-func createAPIKeyAuthenticator(apiKeyAuthType, name, value string) authenticator {
+func createAPIKeyAuthenticator(apiKeyAuthType apiKeyIn, name, value string) authenticator {
 	switch apiKeyAuthType {
-	case "header":
+	case inHeader:
 		return apiKeyHeader{apiKey{name, value}}
-	case "query":
+	case inQuery:
 		return apiKeyQuery{apiKey{name, value}}
 	}
 	return nil

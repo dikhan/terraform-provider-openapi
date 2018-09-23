@@ -12,22 +12,34 @@ type specV2Security struct {
 
 // GetAPIKeySecurityDefinitions returns a list of SpecSecurityDefinition after looping through the SecurityDefinitions
 // and selecting only the SecurityDefinitions of type apiKey
-func (s *specV2Security) GetAPIKeySecurityDefinitions() SpecSecurityDefinitions {
-	securityDefinitions := SpecSecurityDefinitions{}
+func (s *specV2Security) GetAPIKeySecurityDefinitions() (*SpecSecurityDefinitions, error) {
+	securityDefinitions := &SpecSecurityDefinitions{}
 	for secDefName, secDef := range s.SecurityDefinitions {
 		if secDef.Type == "apiKey" {
-			securityDefinitions = append(securityDefinitions, SpecSecurityDefinition{Name: secDefName, Type: secDef.Type, apiKey: specAPIKey{Name: secDef.Name, In: secDef.In}})
+			switch secDef.In {
+			case "header":
+				*securityDefinitions = append(*securityDefinitions, newAPIKeyHeaderSecurityDefinition(secDefName, secDef.Name))
+			case "query":
+				*securityDefinitions = append(*securityDefinitions, newAPIKeyQuerySecurityDefinition(secDefName, secDef.Name))
+			default:
+				return nil, fmt.Errorf("apiKey In value '%s' not supported, only 'header' and 'query' values are valid", secDef.In)
+			}
+
 		}
 	}
-	return securityDefinitions
+	return securityDefinitions, nil
 }
 
 // GetGlobalSecuritySchemes returns a list of SpecSecuritySchemes that have their corresponding SpecSecurityDefinition
 func (s *specV2Security) GetGlobalSecuritySchemes() (SpecSecuritySchemes, error) {
 	securitySchemes := createSecuritySchemes(s.GlobalSecurity)
 	for _, securityScheme := range securitySchemes {
-		secDef := s.GetAPIKeySecurityDefinitions().findSecurityDefinitionFor(securityScheme.Name)
-		if secDef == nil {
+		secDef, err := s.GetAPIKeySecurityDefinitions()
+		if err != nil {
+			return SpecSecuritySchemes{}, nil
+		}
+		secDefFound := secDef.findSecurityDefinitionFor(securityScheme.Name)
+		if secDefFound == nil {
 			return nil, fmt.Errorf("global security scheme '%s' not found or not matching supported 'apiKey' type", securityScheme.Name)
 		}
 	}

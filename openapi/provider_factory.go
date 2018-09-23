@@ -115,7 +115,10 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 			return nil, err
 		}
 		authenticator := newAPIAuthenticator(&globalSecuritySchemes)
-		config := p.createProviderConfig(data)
+		config, err := p.createProviderConfig(data)
+		if err != nil {
+			return nil, err
+		}
 		openAPIBackendConfiguration, err := p.specAnalyser.GetOpenAPIBackendConfiguration()
 		if err != nil {
 			return nil, err
@@ -124,7 +127,7 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 			openAPIBackendConfiguration: openAPIBackendConfiguration,
 			apiAuthenticator:            authenticator,
 			httpClient:                  http_goclient.HttpClient{HttpClient: &http.Client{}},
-			providerConfiguration:       config,
+			providerConfiguration:       *config,
 		}
 		return openAPIClient, nil
 	}
@@ -134,9 +137,13 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 // - Header values that might be required by API operations
 // - Security definition values that might be required by API operations (or globally)
 // configuration mapped to the corresponding
-func (p providerFactory) createProviderConfig(data *schema.ResourceData) providerConfiguration {
-	providerConfiguration := newProviderConfiguration(p.specAnalyser.GetAllHeaderParameters(), p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions(), data)
-	return providerConfiguration
+func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*providerConfiguration, error) {
+	secDefs, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
+	if err != nil {
+		return nil, err
+	}
+	providerConfiguration := newProviderConfiguration(p.specAnalyser.GetAllHeaderParameters(), secDefs, data)
+	return providerConfiguration, nil
 }
 
 func (p providerFactory) getProviderResourceName(resourceName string) (string, error) {

@@ -6,7 +6,7 @@ package openapi
 type SpecSecurity interface {
 	// GetAPIKeySecurityDefinitions returns all the OpenAPI security definitions from the OpenAPI document and translates those
 	// into SpecSecurityDefinitions
-	GetAPIKeySecurityDefinitions() SpecSecurityDefinitions
+	GetAPIKeySecurityDefinitions() (*SpecSecurityDefinitions, error)
 	// GetGlobalSecuritySchemes returns all the global security schemes from the OpenAPI document and translates those
 	// into SpecSecuritySchemes
 	GetGlobalSecuritySchemes() (SpecSecuritySchemes, error)

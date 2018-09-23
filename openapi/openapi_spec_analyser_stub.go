@@ -3,7 +3,7 @@ package openapi
 // specAnalyserStub is a stubbed spec analyser used for testing purposes that implements the SpecAnalyser interface
 type specAnalyserStub struct {
 	resources            []SpecResource
-	security             SpecSecurity
+	security             *specSecurityStub
 	headers              SpecHeaderParameters
 	backendConfiguration SpecBackendConfiguration
 	error                error
