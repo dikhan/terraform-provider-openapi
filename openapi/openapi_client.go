@@ -105,7 +105,7 @@ func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderPara
 	if operationHeaders != nil && len(operationHeaders) > 0 {
 		for _, headerParam := range operationHeaders {
 			// Setting the actual name of the header with the expectedValue coming from the provider configuration
-			headers[headerParam.Name] = providerConfig.Headers[headerParam.GetHeaderTerraformConfigurationName()]
+			headers[headerParam.Name] = providerConfig.getHeaderValueFor(headerParam)
 		}
 	}
 	return headers

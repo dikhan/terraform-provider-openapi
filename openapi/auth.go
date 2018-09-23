@@ -60,14 +60,16 @@ func (oa apiAuth) authRequired(url string, operationSecuritySchemes SpecSecurity
 
 // Validate security policies. This function will perform the following checks:
 // 1. Verify that the operation security schemes are defined as security definitions in the provider config
-func (oa apiAuth) confirmOperationSecurityPoliciesAreDefined(operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) error {
+func (oa apiAuth) fetchRequiredAuthenticators(operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) ([]authenticator, error) {
+	var authenticators []authenticator
 	for _, operationSecurityScheme := range operationSecuritySchemes {
-		authenticator := providerConfig.SecuritySchemaDefinitions[operationSecurityScheme.Name]
+		authenticator := providerConfig.getAuthenticatorFor(operationSecurityScheme)
 		if authenticator == nil {
-			return fmt.Errorf("operation's security policy '%s' is not defined, please make sure the swagger file contains a security definition named '%s' under the securityDefinitions section", operationSecurityScheme, operationSecurityScheme)
+			return nil, fmt.Errorf("operation's security policy '%s' is not defined, please make sure the swagger file contains a security definition named '%s' under the securityDefinitions section", operationSecurityScheme, operationSecurityScheme)
 		}
+		authenticators = append(authenticators, authenticator)
 	}
-	return nil
+	return authenticators, nil
 }
 
 func (oa apiAuth) prepareAuth(url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) (*authContext, error) {
@@ -76,11 +78,11 @@ func (oa apiAuth) prepareAuth(url string, operationSecuritySchemes SpecSecurityS
 		url:     url,
 	}
 	if required, requiredSecuritySchemes := oa.authRequired(url, operationSecuritySchemes); required {
-		if err := oa.confirmOperationSecurityPoliciesAreDefined(requiredSecuritySchemes, providerConfig); err != nil {
+		authenticators, err := oa.fetchRequiredAuthenticators(requiredSecuritySchemes, providerConfig)
+		if err != nil {
 			return authContext, err
 		}
-		for _, operationSecurityScheme := range requiredSecuritySchemes {
-			authenticator := providerConfig.SecuritySchemaDefinitions[operationSecurityScheme.Name]
+		for _, authenticator := range authenticators {
 			if err := authenticator.prepareAuth(authContext); err != nil {
 				return authContext, err
 			}

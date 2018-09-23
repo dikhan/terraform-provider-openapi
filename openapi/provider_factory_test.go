@@ -96,8 +96,9 @@ func TestCreateProviderConfig(t *testing.T) {
 				So(providerConfiguration.Headers[headerNonCompliantNameProperty.Name], ShouldEqual, headerProperty.Default)
 			})
 			Convey("And the provider configuration returned should contain the apiKey security with the correct apiKey header name and value (coming from the resource schema)", func() {
-				So(providerConfiguration.SecuritySchemaDefinitions[apiKeyAuthPreferredNonCompliantNameProperty.Name].getContext().(apiKey).name, ShouldEqual, expectedSecurityDefinitions[0].apiKey.Name)
-				So(providerConfiguration.SecuritySchemaDefinitions[apiKeyAuthPreferredNonCompliantNameProperty.Name].getContext().(apiKey).value, ShouldEqual, apiKeyAuthPreferredNonCompliantNameProperty.Default)
+				// The key values stored in the provider configuration are always terraform compliant names, hence querying 'apiKeyAuth' with its corresponding snake_case name
+				So(providerConfiguration.SecuritySchemaDefinitions["api_key_auth"].getContext().(apiKey).name, ShouldEqual, expectedSecurityDefinitions[0].apiKey.Name)
+				So(providerConfiguration.SecuritySchemaDefinitions["api_key_auth"].getContext().(apiKey).value, ShouldEqual, apiKeyAuthPreferredNonCompliantNameProperty.Default)
 			})
 		})
 	})

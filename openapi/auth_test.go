@@ -107,13 +107,14 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing multiple 'apiKey' type security definitions (apiKey and appId), an operation that requires both 'apiKey' AND 'appId' header authentication and the resource URL", t, func() {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]authenticator{
-				"apiKey": apiKeyHeader{
+				// provider config keys are always terraform name compliant - snake case
+				"api_key": apiKeyHeader{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
 				},
-				"appId": apiKeyHeader{
+				"app_id": apiKeyHeader{
 					apiKey{
 						name:  "X-APP-ID",
 						value: "superSecretKeyForAppId",
@@ -141,7 +142,7 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing security definitions for the global security contains policies default and an operation that DOES NOT have any specific security scheme and the resource URL", t, func() {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]authenticator{
-				"apiKey": apiKeyHeader{
+				"api_key": apiKeyHeader{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
@@ -170,13 +171,13 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing security definitions for both global security schemes and operation overrides and the resource URL", t, func() {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]authenticator{
-				"apiKey": apiKeyHeader{
+				"api_key": apiKeyHeader{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
 				},
-				"apiKeyOverride": apiKeyHeader{
+				"api_key_override": apiKeyHeader{
 					apiKey{
 						name:  "X-API-KEY_OVERRIDE",
 						value: "superSecretKeyForSpecialOperationApiKey",
@@ -222,13 +223,16 @@ func TestPrepareAuth(t *testing.T) {
 			Convey("Then err should NOT be nil as global schemes contain policies which are not defined", func() {
 				So(err, ShouldNotBeNil)
 			})
+			Convey("And the err message should be", func() {
+				So(err.Error(), ShouldEqual, "operation's security policy '{not_defined_scheme}' is not defined, please make sure the swagger file contains a security definition named '{not_defined_scheme}' under the securityDefinitions section")
+			})
 		})
 	})
 
-	Convey("Given a operation security setting containing schemes which are not defined in the provider security definitions", t, func() {
+	Convey("Given an operation security setting containing schemes which are not defined in the provider security definitions", t, func() {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]authenticator{
-				"apiKey": apiKeyHeader{
+				"api_key": apiKeyHeader{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
@@ -243,6 +247,9 @@ func TestPrepareAuth(t *testing.T) {
 			_, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should NOT be nil as global schemes contain policies which are not defined", func() {
 				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err message should be", func() {
+				So(err.Error(), ShouldEqual, "operation's security policy '{not_defined_scheme}' is not defined, please make sure the swagger file contains a security definition named '{not_defined_scheme}' under the securityDefinitions section")
 			})
 		})
 	})
@@ -287,26 +294,33 @@ func TestAuthRequired(t *testing.T) {
 	})
 }
 
-func TestConfirmOperationSecurityPoliciesAreDefined(t *testing.T) {
+func TestFetchRequiredAuthenticators(t *testing.T) {
 	Convey("Given a provider configuration containing an 'apiKey' type security definition with name 'apikey_auth' and an operation that requires api key header authentication", t, func() {
 		securityPolicyName := "apikey_auth"
+		expectedAPIKey := apiKey{
+			name:  "Authorization",
+			value: "superSecretKey",
+		}
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]authenticator{
 				securityPolicyName: apiKeyHeader{
-					apiKey{
-						name:  "Authorization",
-						value: "superSecretKey",
-					},
+					expectedAPIKey,
 				},
 			},
 		}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: securityPolicyName}}
 		oa := apiAuth{}
-		Convey("When confirmOperationSecurityPoliciesAreDefined method with a security policy which is also defined in the security definitions", func() {
-			err := oa.confirmOperationSecurityPoliciesAreDefined(operationSecuritySchemes, providerConfig)
+		Convey("When fetchRequiredAuthenticators method with a security policy which is also defined in the security definitions", func() {
+			authenticators, err := oa.fetchRequiredAuthenticators(operationSecuritySchemes, providerConfig)
 			Convey("Then the err returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			Convey("And the list of authenticators returned should contain the required auths", func() {
+				So(authenticators, ShouldNotBeEmpty)
+				So(authenticators[0].getContext().(apiKey).name, ShouldEqual, expectedAPIKey.name)
+				So(authenticators[0].getContext().(apiKey).value, ShouldEqual, expectedAPIKey.value)
+			})
+
 		})
 	})
 
@@ -324,10 +338,13 @@ func TestConfirmOperationSecurityPoliciesAreDefined(t *testing.T) {
 		}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: "non_defined_security_policy"}}
 		oa := apiAuth{}
-		Convey("When confirmOperationSecurityPoliciesAreDefined method with a security policy which is NOT defined in the security definitions", func() {
-			err := oa.confirmOperationSecurityPoliciesAreDefined(operationSecuritySchemes, providerConfig)
+		Convey("When fetchRequiredAuthenticators method with a security policy which is NOT defined in the security definitions", func() {
+			authenticators, err := oa.fetchRequiredAuthenticators(operationSecuritySchemes, providerConfig)
 			Convey("Then the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the authenticators returned should be empty", func() {
+				So(authenticators, ShouldBeEmpty)
 			})
 		})
 	})
