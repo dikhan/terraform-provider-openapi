@@ -76,7 +76,7 @@ func (specAnalyser *specV2Analyser) GetSecurity() SpecSecurity {
 // - root level parameters (not supported)
 // - path level parameters (not supported)
 // - operation level parameters (supported)
-func (specAnalyser *specV2Analyser) GetAllHeaderParameters() SpecHeaderParameters {
+func (specAnalyser *specV2Analyser) GetAllHeaderParameters() (SpecHeaderParameters, error) {
 	specHeaderParameters := SpecHeaderParameters{}
 	// add header configuration names/values defined per path operation
 	for _, path := range specAnalyser.d.Spec().Paths.Paths {
@@ -84,7 +84,7 @@ func (specAnalyser *specV2Analyser) GetAllHeaderParameters() SpecHeaderParameter
 			specHeaderParameters = append(specHeaderParameters, headerParam)
 		}
 	}
-	return specHeaderParameters
+	return specHeaderParameters, nil
 }
 
 func (specAnalyser *specV2Analyser) GetOpenAPIBackendConfiguration() (SpecBackendConfiguration, error) {

@@ -23,7 +23,7 @@ type SpecAnalyser interface {
 	// enabled the OpenAPI provider to expose the headers as configurable properties available in the OpenAPI Terraform
 	// provider; so users can provide values for the headers that are meant to be sent along with the operations the headers
 	// are defined in.
-	GetAllHeaderParameters() SpecHeaderParameters
+	GetAllHeaderParameters() (SpecHeaderParameters, error)
 	// GetOpenAPIBackendConfiguration encapsulates all the information related to the backend in the OpenAPI doc
 	// (e,g: host, protocols, etc) which is then used in the ProviderClient to communicate with the API as specified in
 	// the configuration.

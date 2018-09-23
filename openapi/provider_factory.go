@@ -138,11 +138,11 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 // - Security definition values that might be required by API operations (or globally)
 // configuration mapped to the corresponding
 func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*providerConfiguration, error) {
-	secDefs, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
+	securityDefinitions, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
 	if err != nil {
 		return nil, err
 	}
-	providerConfiguration := newProviderConfiguration(p.specAnalyser.GetAllHeaderParameters(), secDefs, data)
+	providerConfiguration := newProviderConfiguration(p.specAnalyser.GetAllHeaderParameters(), securityDefinitions, data)
 	return providerConfiguration, nil
 }
 
