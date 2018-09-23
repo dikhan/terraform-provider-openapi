@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// clientOpenAPIStub is a stubbed client used for testing purposes that implements the ClientOpenAPI interface
 type clientOpenAPIStub struct {
 	responsePayload map[string]interface{}
 	error           error
