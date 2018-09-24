@@ -12,7 +12,7 @@ import (
 // file. These headers may be sent as part of the HTTP calls if the resource requires them (as specified in the swagger doc)
 type providerConfiguration struct {
 	Headers                   map[string]string
-	SecuritySchemaDefinitions map[string]authenticator
+	SecuritySchemaDefinitions map[string]specAPIKeyAuthenticator
 }
 
 // createProviderConfig returns a providerConfiguration populated with the values provided by the user in the provider's terraform
@@ -20,7 +20,7 @@ type providerConfiguration struct {
 func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefinitions *SpecSecurityDefinitions, data *schema.ResourceData) *providerConfiguration {
 	providerConfiguration := &providerConfiguration{}
 	providerConfiguration.Headers = map[string]string{}
-	providerConfiguration.SecuritySchemaDefinitions = map[string]authenticator{}
+	providerConfiguration.SecuritySchemaDefinitions = map[string]specAPIKeyAuthenticator{}
 
 	if securitySchemaDefinitions != nil {
 		for _, secDef := range *securitySchemaDefinitions {
@@ -42,7 +42,7 @@ func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefini
 	return providerConfiguration
 }
 
-func (p *providerConfiguration) getAuthenticatorFor(s SpecSecurityScheme) authenticator {
+func (p *providerConfiguration) getAuthenticatorFor(s SpecSecurityScheme) specAPIKeyAuthenticator {
 	securitySchemeConfigName := s.getTerraformConfigurationName()
 	return p.SecuritySchemaDefinitions[securitySchemeConfigName]
 }

@@ -10,8 +10,8 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing a header 'apiKey' type security definition with name 'apikey_header_auth', an operation that requires the 'apikey_auth' authentication and the resource URL", t, func() {
 		securityPolicyName := "apikey_header_auth"
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				securityPolicyName: apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "Authorization",
 						value: "superSecretKey",
@@ -42,8 +42,8 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing a query 'apiKey' type security definition with name 'apikey_query_auth', an operation that requires the 'apikey_auth' authentication and the resource URL", t, func() {
 		securityPolicyName := "apikey_query_auth"
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				securityPolicyName: apiKeyQuery{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				securityPolicyName: apiKeyQueryAuthenticator{
 					apiKey{
 						name:  "Authorization",
 						value: "superSecretKey",
@@ -72,14 +72,14 @@ func TestPrepareAuth(t *testing.T) {
 		apiKeyHeaderSecurityPolicyName := "apikey_header_auth"
 		apiKeyQuerySecurityPolicyName := "apikey_query_auth"
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				apiKeyHeaderSecurityPolicyName: apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				apiKeyHeaderSecurityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "Authorization",
 						value: "superSecretKeyInHeader",
 					},
 				},
-				apiKeyQuerySecurityPolicyName: apiKeyQuery{
+				apiKeyQuerySecurityPolicyName: apiKeyQueryAuthenticator{
 					apiKey{
 						name:  "someQueryParam",
 						value: "superSecretKeyInQuery",
@@ -106,15 +106,15 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a provider configuration containing multiple 'apiKey' type security definitions (apiKey and appId), an operation that requires both 'apiKey' AND 'appId' header authentication and the resource URL", t, func() {
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				// provider config keys are always terraform name compliant - snake case
-				"api_key": apiKeyHeader{
+				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
 				},
-				"app_id": apiKeyHeader{
+				"app_id": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-APP-ID",
 						value: "superSecretKeyForAppId",
@@ -141,8 +141,8 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a provider configuration containing security definitions for the global security contains policies default and an operation that DOES NOT have any specific security scheme and the resource URL", t, func() {
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				"api_key": apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
@@ -170,14 +170,14 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a provider configuration containing security definitions for both global security schemes and operation overrides and the resource URL", t, func() {
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				"api_key": apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
 				},
-				"api_key_override": apiKeyHeader{
+				"api_key_override": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY_OVERRIDE",
 						value: "superSecretKeyForSpecialOperationApiKey",
@@ -203,8 +203,8 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a global security setting containing schemes which are not defined in the provider security definitions, and an operation with NO security schemes", t, func() {
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				"apiKey": apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				"apiKey": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
@@ -231,8 +231,8 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given an operation security setting containing schemes which are not defined in the provider security definitions", t, func() {
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				"api_key": apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
@@ -302,8 +302,8 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 			value: "superSecretKey",
 		}
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				securityPolicyName: apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				securityPolicyName: apiKeyHeaderAuthenticator{
 					expectedAPIKey,
 				},
 			},
@@ -327,8 +327,8 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 	Convey("Given a provider configuration containing an 'apiKey' type security definition with name 'apikey_auth' and an operation that requires api key header authentication", t, func() {
 		securityPolicyName := "apikey_auth"
 		providerConfig := providerConfiguration{
-			SecuritySchemaDefinitions: map[string]authenticator{
-				securityPolicyName: apiKeyHeader{
+			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "Authorization",
 						value: "superSecretKey",

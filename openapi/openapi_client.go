@@ -32,7 +32,7 @@ type ProviderClient struct {
 	openAPIBackendConfiguration SpecBackendConfiguration
 	httpClient                  http_goclient.HttpClient
 	providerConfiguration       providerConfiguration
-	apiAuthenticator            apiAuthenticator
+	apiAuthenticator            specAuthenticator
 }
 
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in
