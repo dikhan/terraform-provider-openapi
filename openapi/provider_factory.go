@@ -123,7 +123,7 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 		if err != nil {
 			return nil, err
 		}
-		openAPIBackendConfiguration, err := p.specAnalyser.GetOpenAPIBackendConfiguration()
+		openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
 		if err != nil {
 			return nil, err
 		}

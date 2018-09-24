@@ -24,7 +24,7 @@ func (s *specAnalyserStub) GetAllHeaderParameters() (SpecHeaderParameters, error
 	return s.headers, nil
 }
 
-func (s *specAnalyserStub) GetOpenAPIBackendConfiguration() (SpecBackendConfiguration, error) {
+func (s *specAnalyserStub) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {
 	if s.error != nil {
 		return nil, s.error
 	}

@@ -35,7 +35,7 @@ func newSpecAnalyserV2(openAPIDocumentURL string) (*specV2Analyser, error) {
 }
 
 func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecResource, error) {
-	resources := []SpecResource{}
+	var resources []SpecResource
 	for resourcePath, pathItem := range specAnalyser.d.Spec().Paths.Paths {
 		resourceRootPath, resourceRoot, resourcePayloadSchemaDef, err := specAnalyser.isEndPointFullyTerraformResourceCompliant(resourcePath)
 		if err != nil {
@@ -87,7 +87,7 @@ func (specAnalyser *specV2Analyser) GetAllHeaderParameters() (SpecHeaderParamete
 	return specHeaderParameters, nil
 }
 
-func (specAnalyser *specV2Analyser) GetOpenAPIBackendConfiguration() (SpecBackendConfiguration, error) {
+func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {
 	return newOpenAPIBackendConfigurationV2(specAnalyser.d.Spec(), specAnalyser.openAPIDocumentURL)
 }
 
