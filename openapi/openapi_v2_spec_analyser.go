@@ -42,23 +42,16 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			log.Printf("[DEBUG] resource path '%s' not terraform compliant: %s", resourcePath, err)
 			continue
 		}
-		resourceName, err := specAnalyser.getResourceName(resourcePath)
+		r, err := newSpecV2Resource(resourceRootPath, *resourcePayloadSchemaDef, *resourceRoot, pathItem)
 		if err != nil {
-			log.Printf("[DEBUG] resource not figure out valid terraform resource name for '%s': %s", resourcePath, err)
+			log.Printf("[WARN] ignoring resource '%s' due to an error while creating a creating the SpecV2Resource: %s", resourceRootPath, err)
 			continue
-		}
-		r := &SpecV2Resource{
-			Name:             resourceName,
-			Path:             resourceRootPath,
-			SchemaDefinition: *resourcePayloadSchemaDef,
-			RootPathItem:     *resourceRoot,
-			InstancePathItem: pathItem,
 		}
 		if r.shouldIgnoreResource() {
-			log.Printf("[WARN] ignoring resource '%s' as the resource contains the 'x-terraform-exclude-resource' extension in the POST operation inthe OpeAPI document", resourceName)
+			log.Printf("[WARN] ignoring resource '%s' as the resource contains the 'x-terraform-exclude-resource' extension in the POST operation inthe OpeAPI document", r.getResourceName())
 			continue
 		}
-		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", resourceName, resourceRootPath, resourcePath)
+		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
 		resources = append(resources, r)
 	}
 	return resources, nil
@@ -299,31 +292,6 @@ func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) (bool, 
 		return false, err
 	}
 	return r.MatchString(p), nil
-}
-
-// getResourceName gets the name of the resource from a path /resource/{id}
-func (specAnalyser *specV2Analyser) getResourceName(resourcePath string) (string, error) {
-	nameRegex, err := regexp.Compile(resourceNameRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
-	}
-	var resourceName string
-	matches := nameRegex.FindStringSubmatch(resourcePath)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
-	}
-	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
-	versionRegex, err := regexp.Compile(resourceVersionRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
-	}
-	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
-	if len(versionMatches) != 0 {
-		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
-		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
-		return resourceNameWithVersion, nil
-	}
-	return resourceName, nil
 }
 
 // findMatchingResourceRootPath returns the corresponding POST root and path for a given end point

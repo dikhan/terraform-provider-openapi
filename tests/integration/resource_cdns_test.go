@@ -16,7 +16,7 @@ import (
 )
 
 const providerName = "openapi"
-const resourceName = "cdns_v1"
+const resourceName = "cdn_v1"
 
 var openAPIResourceName = fmt.Sprintf("%s_%s", providerName, resourceName)
 var openAPIResourceInstanceName = "my_cdn"

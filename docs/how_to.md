@@ -263,6 +263,7 @@ Extension Name | Type | Description
 ---|:---:|---
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
+[x-terraform-resource-name](#xTerraformResourceName) | string | Only available in resource root's POST operation. Defines the name that will be used for the resource in the Terraform configuration. If the extension is not preset, default value will be the name of the resource in the path. For instance, a path such as /v1/users will translate into a terraform resource name users_v1
 
 ###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
  
@@ -331,6 +332,48 @@ alphanumeric characters & underscores.). Hence, the result in this case will be 
 the header will be the one specified in the terraform configuration ```request header value for POST /resource```.
 
 *Note: Currently, parameters of type 'header' are only supported on an operation level*
+
+###### <a name="xTerraformResourceName">x-terraform-resource-name</a>
+
+This extension enables service providers to write a preferred resource name for the terraform configuration.
+
+````
+paths:
+  /cdns:
+    post:
+      x-terraform-resource-name: "cdn"
+````
+
+In the example above, the resource POST operation contains the extension ``x-terraform-resource-name`` with value ``cdn``.
+This value will be the name used in the terraform configuration``cdn``.
+
+````
+resource "swaggercodegen_cdn" "my_cdn" {...} # ==> 'cdn' name is used as specified by the `x-terraform-resource-name` extension
+````
+
+The preferred name only applies to the name itself, if the resource is versioned like the example below
+using version path ``/v1/cdns``, the appropriate postfix including the version will be attached automatically to the resource name.
+
+````
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-name: "cdn"
+````
+
+The corresponding terraform configuration in this case will be (note the ``_v1`` after the resource name):
+
+````
+resource "swaggercodegen_cdn_v1" "my_cdn" {...} # ==> 'cdn' name is used instead of 'cdns'
+````
+
+If the ``x-terraform-resource-name`` extension is not present in the resource root POST operation, the default resource
+name will be picked from the resource root POST path. In the above example ``/v1/cdns`` would translate into ``cdns_v1``
+resource name.
+
+*Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
+above example*
+
 
 #### <a name="swaggerDefinitions">Definitions</a>
 

@@ -517,58 +517,6 @@ paths:
 	})
 }
 
-func TestGetResourceName(t *testing.T) {
-	Convey("Given an specV2Analyser", t, func() {
-		a := specV2Analyser{}
-		Convey("When getResourceName method is called with a valid resource instance path such as '/users/{id}'", func() {
-			resourceName, err := a.getResourceName("/users/{id}")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be 'users'", func() {
-				So(resourceName, ShouldEqual, "users")
-			})
-		})
-
-		Convey("When getResourceName method is called with an invalid resource instance path such as '/resource/not/instance/path'", func() {
-			_, err := a.getResourceName("/resource/not/instance/path")
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-		})
-
-		Convey("When getResourceName method is called with a valid resource instance path that is versioned such as '/v1/users/{id}'", func() {
-			resourceName, err := a.getResourceName("/v1/users/{id}")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be 'users_v1'", func() {
-				So(resourceName, ShouldEqual, "users_v1")
-			})
-		})
-
-		Convey("When getResourceName method is called with a valid resource instance long path that is versioned such as '/v1/something/users/{id}'", func() {
-			resourceName, err := a.getResourceName("/v1/something/users/{id}")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should still be 'users_v1'", func() {
-				So(resourceName, ShouldEqual, "users_v1")
-			})
-		})
-
-		Convey("When getResourceName method is called with resource instance which has path parameters '/api/v1/nodes/{name}/proxy/{path}'", func() {
-			resourceName, err := a.getResourceName("/api/v1/nodes/{name}/proxy/{path}")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should still be 'proxy_v1'", func() {
-				So(resourceName, ShouldEqual, "proxy_v1")
-			})
-		})
-	})
-}
-
 func TestPostIsPresent(t *testing.T) {
 
 	Convey("Given an specV2Analyser with a path '/users' that has a post operation", t, func() {

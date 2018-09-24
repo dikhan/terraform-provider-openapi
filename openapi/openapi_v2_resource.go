@@ -1,26 +1,31 @@
 package openapi
 
 import (
+	"fmt"
 	"github.com/go-openapi/spec"
 	"log"
+	"regexp"
+	"strings"
 )
 
 const resourceVersionRegex = "(/v[0-9]*/)"
-const resourceNameRegex = "((/\\w*/){\\w*})+$"
+const resourceNameRegex = "((/\\w*[/]?))+$"
 const resourceInstanceRegex = "((?:.*)){.*}"
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
+// Definition level extensions
 const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
 const extTfFieldName = "x-terraform-field-name"
 const extTfID = "x-terraform-id"
+
+// Operation level extensions
 const extTfExcludeResource = "x-terraform-exclude-resource"
+const extTfResourceName = "x-terraform-resource-name"
 
 // SpecV2Resource defines a struct that implements the SpecResource interface and it's based on OpenAPI v2 specification
 type SpecV2Resource struct {
-	// Name defines the name of the resource (including the version if applicable). This name is used along with
-	// the provider name to build the terraform resource name that will be used in the terraform configuration file
 	Name string
 	// Path contains the full relative path to the resource e,g: /v1/resource
 	Path string
@@ -32,8 +37,61 @@ type SpecV2Resource struct {
 	InstancePathItem spec.PathItem
 }
 
+func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem) (*SpecV2Resource, error) {
+	if path == "" {
+		return nil, fmt.Errorf("path must not be empty")
+	}
+	resource := &SpecV2Resource{
+		Path:             path,
+		SchemaDefinition: schemaDefinition,
+		RootPathItem:     rootPathItem,
+		InstancePathItem: instancePathItem,
+	}
+	name, err := resource.buildResourceName()
+	if err != nil {
+		return nil, fmt.Errorf("could not build resource name for '%s': %s", path, err)
+	}
+	resource.Name = name
+	return resource, nil
+}
+
 func (o *SpecV2Resource) getResourceName() string {
 	return o.Name
+}
+
+// getResourceName gets the name of the resource from a path /resource/{id}
+// getResourceName returns the name of the resource (including the version if applicable). The name is build from the resource
+// root path /resource/{id} or if specified the value set in the x-terraform-resource-name extension is used instead along
+// along with the version (if applicable)
+// the provider name to build the terraform resource name that will be used in the terraform configuration file
+func (o *SpecV2Resource) buildResourceName() (string, error) {
+	nameRegex, err := regexp.Compile(resourceNameRegex)
+	if err != nil {
+		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
+	}
+	var resourceName string
+	resourcePath := o.Path
+	matches := nameRegex.FindStringSubmatch(resourcePath)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
+	}
+	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
+
+	if preferredName := o.getResourceTerraformName(); preferredName != "" {
+		resourceName = preferredName
+	}
+
+	versionRegex, err := regexp.Compile(resourceVersionRegex)
+	if err != nil {
+		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
+	}
+	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
+	if len(versionMatches) != 0 {
+		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
+		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
+		return resourceNameWithVersion, nil
+	}
+	return resourceName, nil
 }
 
 func (o *SpecV2Resource) getResourcePath() string {
@@ -159,7 +217,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		if property.ReadOnly {
 			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
 			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
-			log.Printf("[WARN] '%s.%s' is readOnly and can not have a default value. The value is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", o.Name, propertyName)
+			log.Printf("[WARN] '%s' is readOnly and can not have a default value. The value is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", propertyName)
 		} else {
 			schemaDefinitionProperty.Default = property.Default
 		}
@@ -179,4 +237,15 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 
 func (o *SpecV2Resource) isArrayProperty(property spec.Schema) bool {
 	return property.Type.Contains("array")
+}
+
+func (o *SpecV2Resource) getResourceTerraformName() string {
+	return o.getExtensionStringValue(o.RootPathItem.Post.Extensions, extTfResourceName)
+}
+
+func (o *SpecV2Resource) getExtensionStringValue(extensions spec.Extensions, key string) string {
+	if value, exists := extensions.GetString(key); exists && value != "" {
+		return value
+	}
+	return ""
 }
