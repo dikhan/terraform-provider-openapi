@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/schema"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -17,6 +18,104 @@ func Test(t *testing.T) {
 			//exists := p.
 			Convey("Then the expectedValue returned should be true", func() {
 				//So(exists, ShouldBeTrue)
+			})
+		})
+	})
+}
+
+func TestCreateTerraformProviderResourceMap(t *testing.T) {
+	Convey("Given a provider factory", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				resources: []SpecResource{
+					newSpecStubResource("resource", "/v1/resource", false, &SchemaDefinition{
+						Properties: map[string]*SchemaDefinitionProperty{
+							idProperty.Name:        idProperty,
+							stringProperty.Name:    stringProperty,
+							intProperty.Name:       intProperty,
+							numberProperty.Name:    numberProperty,
+							boolProperty.Name:      boolProperty,
+							sliceProperty.Name:     sliceProperty,
+							computedProperty.Name:  computedProperty,
+							optionalProperty.Name:  optionalProperty,
+							sensitiveProperty.Name: sensitiveProperty,
+							forceNewProperty.Name:  forceNewProperty,
+						},
+					}),
+				},
+			},
+		}
+		Convey("When createTerraformProviderResourceMap is called ", func() {
+			schemaResource, err := p.createTerraformProviderResourceMap()
+			expectedResourceName := "provider_resource"
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the schema resource should contain the resource", func() {
+				So(schemaResource, ShouldContainKey, expectedResourceName)
+			})
+			Convey("And the schema for the resource should contain the expected attributes", func() {
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, stringProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, computedProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, intProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, numberProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, boolProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, sliceProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, optionalProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, sensitiveProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, forceNewProperty.Name)
+			})
+			Convey("And the schema property types should match the expected configuration", func() {
+				So(schemaResource[expectedResourceName].Schema[stringProperty.Name].Type, ShouldEqual, schema.TypeString)
+				So(schemaResource[expectedResourceName].Schema[intProperty.Name].Type, ShouldEqual, schema.TypeInt)
+				So(schemaResource[expectedResourceName].Schema[numberProperty.Name].Type, ShouldEqual, schema.TypeFloat)
+				So(schemaResource[expectedResourceName].Schema[boolProperty.Name].Type, ShouldEqual, schema.TypeBool)
+				So(schemaResource[expectedResourceName].Schema[sliceProperty.Name].Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And the schema property options should match the expected configuration", func() {
+				So(schemaResource[expectedResourceName].Schema[computedProperty.Name].Computed, ShouldBeTrue)
+				So(schemaResource[expectedResourceName].Schema[optionalProperty.Name].Optional, ShouldBeTrue)
+				So(schemaResource[expectedResourceName].Schema[sensitiveProperty.Name].Sensitive, ShouldBeTrue)
+				So(schemaResource[expectedResourceName].Schema[stringProperty.Name].Default, ShouldEqual, stringProperty.Default)
+				So(schemaResource[expectedResourceName].Schema[forceNewProperty.Name].ForceNew, ShouldBeTrue)
+			})
+		})
+	})
+}
+
+func TestConfigureProvider(t *testing.T) {
+	Convey("Given a provider factory", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{
+						Name: headerProperty.Name,
+					},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+			},
+		}
+		testProviderSchema := newTestSchema(apiKeyAuthProperty, headerProperty)
+		Convey("When configureProvider is called and the returned configureFunc is invoked upon ", func() {
+			configureFunc := p.configureProvider()
+			client, err := configureFunc(testProviderSchema.getResourceData(t))
+			providerClient := client.(*ProviderClient)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the client should implement ClientOpenAPI interface", func() {
+				var _ ClientOpenAPI = providerClient
 			})
 		})
 	})

@@ -8,18 +8,25 @@ import (
 // testSchemaDefinition defines a test schema that contains a list of properties.
 type testSchemaDefinition []*SchemaDefinitionProperty
 
+// primitive testing vars
 var idProperty = newStringSchemaDefinitionProperty("id", "", true, false, false, false, true, false, "id")
-var someIdentifierProperty = newStringSchemaDefinitionProperty("somePropertyThatShouldBeUsedAsID", "", true, true, false, false, false, true, "idValue")
 var stringProperty = newStringSchemaDefinitionPropertyWithDefaults("string_property", "", true, false, "updatedValue")
-var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_property", true, false, "updatedValue")
-var immutableProperty = newStringSchemaDefinitionProperty("string_immutable_property", "", true, false, false, false, true, false, "updatedImmutableValue")
-var nonImmutableProperty = newStringSchemaDefinitionPropertyWithDefaults("other_string_property", "", true, false, "newValue")
-var computedProperty = newStringSchemaDefinitionPropertyWithDefaults("computed_property", "", true, true, nil)
 var intProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 12)
 var numberProperty = newNumberSchemaDefinitionPropertyWithDefaults("number_property", "", true, false, 13.99)
 var boolProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, true)
 var sliceProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, []string{"value1"})
 
+// testing properties with special configuration
+var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_property", true, false, "updatedValue")
+var nonImmutableProperty = newStringSchemaDefinitionPropertyWithDefaults("other_string_property", "", true, false, "newValue")
+var someIdentifierProperty = newStringSchemaDefinitionProperty("somePropertyThatShouldBeUsedAsID", "", true, true, false, false, false, true, "idValue")
+var immutableProperty = newStringSchemaDefinitionProperty("string_immutable_property", "", true, false, false, false, true, false, "updatedImmutableValue")
+var computedProperty = newStringSchemaDefinitionPropertyWithDefaults("computed_property", "", true, true, nil)
+var optionalProperty = newStringSchemaDefinitionPropertyWithDefaults("optional_property", "", false, false, "updatedValue")
+var sensitiveProperty = newStringSchemaDefinitionProperty("sensitive_property", "", false, false, false, true, false, false, "sensitive")
+var forceNewProperty = newBoolSchemaDefinitionProperty("bool_force_new_property", "", true, false, true, false, false, false, true)
+
+// testing properties with zero values set
 var intZeroValueProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 0)
 var numberZeroValueProperty = newNumberSchemaDefinitionPropertyWithDefaults("number_property", "", true, false, 0)
 var boolZeroValueProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, false)
