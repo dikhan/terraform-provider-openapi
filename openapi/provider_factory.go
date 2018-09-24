@@ -33,14 +33,6 @@ func newProviderFactory(name string, specAnalyser SpecAnalyser) (*providerFactor
 }
 
 func (p providerFactory) createProvider() (*schema.Provider, error) {
-	provider, err := p.generateProviderFromAPISpec()
-	if err != nil {
-		return nil, fmt.Errorf("error occurred while creating schema provider. Error=%s", err)
-	}
-	return provider, nil
-}
-
-func (p providerFactory) generateProviderFromAPISpec() (*schema.Provider, error) {
 	var providerSchema map[string]*schema.Schema
 	var resourceMap map[string]*schema.Resource
 	var err error

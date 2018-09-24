@@ -32,7 +32,7 @@ func APIProvider(providerName string) (*schema.Provider, error) {
 
 	provider, err := providerFactory.createProvider()
 	if err != nil {
-		return nil, fmt.Errorf("plugin terraform-provider-%s init error: %s", providerName, err)
+		return nil, fmt.Errorf("plugin terraform-provider-%s init error while creating schema provider: %s", providerName, err)
 	}
 	return provider, nil
 }

@@ -23,6 +23,164 @@ func Test(t *testing.T) {
 	})
 }
 
+func TestNewProviderFactory(t *testing.T) {
+	Convey("Given a provider name and an analyser", t, func() {
+		providerName := "provider"
+		analyser := &specAnalyserStub{}
+		Convey("When newProviderFactory is called ", func() {
+			p, err := newProviderFactory(providerName, analyser)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider returned should NOT be nil", func() {
+				So(p, ShouldNotBeNil)
+			})
+		})
+	})
+	Convey("Given a provider name that is empty and an analyser", t, func() {
+		providerName := ""
+		analyser := &specAnalyserStub{}
+		Convey("When newProviderFactory is called ", func() {
+			_, err := newProviderFactory(providerName, analyser)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the provider returned should NOT be nil", func() {
+				So(err.Error(), ShouldEqual, "provider name not specified")
+			})
+		})
+	})
+	Convey("Given a provider name that is not terraform compliant and an analyser", t, func() {
+		providerName := "someNonTerraformCompliantName"
+		analyser := &specAnalyserStub{}
+		Convey("When newProviderFactory is called ", func() {
+			_, err := newProviderFactory(providerName, analyser)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the provider returned should NOT be nil", func() {
+				So(err.Error(), ShouldEqual, "provider name 'someNonTerraformCompliantName' not terraform name compliant, please consider renaming provider to 'some_non_terraform_compliant_name'")
+			})
+		})
+	})
+	Convey("Given a provider name and a nil analyser", t, func() {
+		providerName := "provider"
+		Convey("When newProviderFactory is called ", func() {
+			_, err := newProviderFactory(providerName, nil)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the provider returned should NOT be nil", func() {
+				So(err.Error(), ShouldEqual, "provider missing an OpenAPI Spec Analyser")
+			})
+		})
+	})
+}
+
+func TestCreateProvider(t *testing.T) {
+	Convey("Given a provider factory", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{
+						Name: headerProperty.Name,
+					},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+			},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider returned should NOT be nil", func() {
+				So(p, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestCreateTerraformProviderSchema(t *testing.T) {
+	Convey("Given a provider factory", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{
+						Name: headerProperty.Name,
+					},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+			},
+		}
+		Convey("When createTerraformProviderSchema is called ", func() {
+			providerSchema, err := p.createTerraformProviderSchema()
+			Convey("Then the expectedValue returned should be true", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider schema for the resource should contain the expected attributes", func() {
+				So(providerSchema, ShouldContainKey, apiKeyAuthProperty.Name)
+				So(providerSchema, ShouldContainKey, headerProperty.Name)
+			})
+		})
+	})
+
+	Convey("Given a provider factory tht is configured with headers/security props that don't have compliant names", t, func() {
+		var apiKeyAuthPreferredNonCompliantNameProperty = "apiKeyAuth"
+		var headerNonCompliantNameProperty = "headerName"
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{
+						Name: headerNonCompliantNameProperty,
+					},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthPreferredNonCompliantNameProperty, "Authorization"),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthPreferredNonCompliantNameProperty: []string{""},
+						},
+					}),
+				},
+			},
+		}
+		Convey("When createTerraformProviderSchema is called ", func() {
+			providerSchema, err := p.createTerraformProviderSchema()
+			Convey("Then the expectedValue returned should be true", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider schema for the resource should contain the expected attributes with names automatically converted to be compliant", func() {
+				So(providerSchema, ShouldContainKey, "api_key_auth")
+				So(providerSchema, ShouldContainKey, "header_name")
+			})
+		})
+	})
+}
+
 func TestCreateTerraformProviderResourceMap(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
 		p := providerFactory{
