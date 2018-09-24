@@ -97,6 +97,16 @@ type authenticator interface {
 	getType() authType
 }
 
+func createAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) authenticator {
+	switch secDef.apiKey.In {
+	case inHeader:
+		return apiKeyHeader{apiKey{secDef.apiKey.Name, value}}
+	case inQuery:
+		return apiKeyQuery{apiKey{secDef.apiKey.Name, value}}
+	}
+	return nil
+}
+
 type apiKey struct {
 	name  string
 	value string
@@ -142,15 +152,5 @@ func (a apiKeyQuery) getType() authType {
 func (a apiKeyQuery) prepareAuth(authContext *authContext) error {
 	apiKey := a.getContext().(apiKey)
 	authContext.url = fmt.Sprintf("%s?%s=%s", authContext.url, apiKey.name, apiKey.value)
-	return nil
-}
-
-func createAPIKeyAuthenticator(apiKeyAuthType apiKeyIn, name, value string) authenticator {
-	switch apiKeyAuthType {
-	case inHeader:
-		return apiKeyHeader{apiKey{name, value}}
-	case inQuery:
-		return apiKeyQuery{apiKey{name, value}}
-	}
 	return nil
 }
