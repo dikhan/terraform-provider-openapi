@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"log"
 	"regexp"
 	"strings"
@@ -11,7 +12,6 @@ import (
 )
 
 const resourceInstanceRegex = "((?:.*)){.*}"
-const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
 // apiSpecAnalyser analyses the swagger doc and provides helper methods to retrieve all the end points that can
 // be used as terraform resources. These endpoints have to meet certain criteria to be considered eligible resources
@@ -36,13 +36,14 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 		}
 
 		r := resourceInfo{
-			basePath:         asa.d.BasePath(),
-			path:             resourceRootPath,
-			host:             asa.d.Spec().Host,
-			httpSchemes:      asa.d.Spec().Schemes,
-			schemaDefinition: *resourcePayloadSchemaDef,
-			createPathInfo:   *resourceRoot,
-			pathInfo:         pathItem,
+			basePath:          asa.d.BasePath(),
+			path:              resourceRootPath,
+			host:              asa.d.Spec().Host,
+			httpSchemes:       asa.d.Spec().Schemes,
+			schemaDefinition:  resourcePayloadSchemaDef,
+			createPathInfo:    *resourceRoot,
+			pathInfo:          pathItem,
+			schemaDefinitions: asa.d.Spec().Definitions,
 		}
 
 		if r.shouldIgnoreResource() {
@@ -220,15 +221,7 @@ func (asa apiSpecAnalyser) getResourcePayloadSchemaDef(resourceRootPostOperation
 	if err != nil {
 		return nil, err
 	}
-	payloadDefName, err := asa.getPayloadDefName(ref)
-	if err != nil {
-		return nil, err
-	}
-	payloadDefinition, exists := asa.d.Spec().Definitions[payloadDefName]
-	if !exists {
-		return nil, fmt.Errorf("missing schema definition in the swagger file with the supplied ref '%s'", ref)
-	}
-	return &payloadDefinition, nil
+	return openapiutils.GetSchemaDefinition(asa.d.Spec().Definitions, ref)
 }
 
 func (asa apiSpecAnalyser) getResourcePayloadSchemaRef(resourceRootPostOperation *spec.Operation) (string, error) {
@@ -259,19 +252,6 @@ func (asa apiSpecAnalyser) getResourcePayloadSchemaRef(resourceRootPostOperation
 		return "", fmt.Errorf("operation has an invalid schema definition ref empty")
 	}
 	return payloadDefinitionSchemaRef.Ref.String(), nil
-}
-
-// getPayloadDefName only supports references to the same document. External references like URLs is not supported at the moment
-func (asa apiSpecAnalyser) getPayloadDefName(ref string) (string, error) {
-	reg, err := regexp.Compile(swaggerResourcePayloadDefinitionRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the swaggerResourcePayloadDefinitionRegex regex '%s': %s", swaggerResourcePayloadDefinitionRegex, err)
-	}
-	payloadDefName := reg.FindStringSubmatch(ref)[0]
-	if payloadDefName == "" {
-		return "", fmt.Errorf("could not find a valid definition name for '%s'", ref)
-	}
-	return payloadDefName, nil
 }
 
 // resourceInstanceRegex loads up the regex specified in const resourceInstanceRegex
