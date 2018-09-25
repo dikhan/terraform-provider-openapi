@@ -5,6 +5,7 @@ import (
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
+	"time"
 )
 
 // SpecResource defines the behaviour related to terraform compliant OpenAPI Resources.
@@ -19,6 +20,15 @@ type SpecResource interface {
 	getResourceGetOperation() *ResourceOperation
 	getResourcePutOperation() *ResourceOperation
 	getResourceDeleteOperation() *ResourceOperation
+
+	getTimeouts() (*specTimeouts, error)
+}
+
+type specTimeouts struct {
+	Get    *time.Duration
+	Put    *time.Duration
+	Post   *time.Duration
+	Delete *time.Duration
 }
 
 // ResourceOperation defines a resource operation

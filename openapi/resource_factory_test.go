@@ -7,9 +7,39 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func TestCreateSchemaResourceTimeout(t *testing.T) {
+	Convey("Given a resource factory initialised with a spec resource that has some timeouts", t, func() {
+		duration, _ := time.ParseDuration("30m")
+		expectedTimeouts := &specTimeouts{
+			Get:    &duration,
+			Post:   &duration,
+			Put:    &duration,
+			Delete: &duration,
+		}
+		r := resourceFactory{
+			&specStubResource{
+				timeouts: expectedTimeouts,
+			},
+		}
+		Convey("When createSchemaResourceTimeout is called", func() {
+			timeouts, err := r.createSchemaResourceTimeout()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the timeouts should match the expected ones", func() {
+				So(timeouts.Read, ShouldEqual, expectedTimeouts.Get)
+				So(timeouts.Create, ShouldEqual, expectedTimeouts.Post)
+				So(timeouts.Delete, ShouldEqual, expectedTimeouts.Delete)
+				So(timeouts.Update, ShouldEqual, expectedTimeouts.Put)
+			})
+		})
+	})
+}
 
 func TestCreateTerraformResource(t *testing.T) {
 	Convey("Given a resource factory initialised with a spec resource that has an id and string property and supports all CRUD operations", t, func() {

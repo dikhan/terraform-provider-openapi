@@ -1,10 +1,11 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net/http"
 )
 
 func readRequest(r *http.Request, in interface{}) error {
@@ -21,21 +22,27 @@ func readRequest(r *http.Request, in interface{}) error {
 func sendResponse(httpResponseStatusCode int, w http.ResponseWriter, out interface{}) {
 	var resBody []byte
 	var err error
-	if resBody, err = json.Marshal(out); err != nil {
-		msg := fmt.Sprintf("internal server error - %s", err)
-		sendErrorResponse(http.StatusInternalServerError, msg, w)
+	if out != nil {
+		if resBody, err = json.Marshal(out); err != nil {
+			msg := fmt.Sprintf("internal server error - %s", err)
+			sendErrorResponse(http.StatusInternalServerError, msg, w)
+		}
 	}
-	w.WriteHeader(httpResponseStatusCode)
-	w.Write(resBody)
+	updateResponseHeaders(httpResponseStatusCode, w)
+	if len(resBody) > 0 {
+		w.Write(resBody)
+	}
+	log.Printf("Response sent '%+v'", out)
 }
 
 func sendErrorResponse(httpStatusCode int, message string, w http.ResponseWriter) {
 	updateResponseHeaders(httpStatusCode, w)
-	w.Write([]byte(fmt.Sprintf(`{"code":"%d", "message": "%s"}`, httpStatusCode, message)))
+	err := fmt.Sprintf(`{"code":"%d", "message": "%s"}`, httpStatusCode, message)
+	w.Write([]byte(err))
+	log.Printf("Error Response sent '%s'", err)
 }
 
 func updateResponseHeaders(httpStatusCode int, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(httpStatusCode)
 }
-

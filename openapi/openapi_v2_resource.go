@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const resourceVersionRegex = "(/v[0-9]*/)"
@@ -21,6 +22,7 @@ const extTfFieldName = "x-terraform-field-name"
 const extTfID = "x-terraform-id"
 
 // Operation level extensions
+const extTfResourceTimeout = "x-terraform-resource-timeout"
 const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourceName = "x-terraform-resource-name"
 
@@ -248,4 +250,56 @@ func (o *SpecV2Resource) getExtensionStringValue(extensions spec.Extensions, key
 		return value
 	}
 	return ""
+}
+
+func (o *SpecV2Resource) getTimeouts() (*specTimeouts, error) {
+	var postTimeout *time.Duration
+	var getTimeout *time.Duration
+	var putTimeout *time.Duration
+	var deleteTimeout *time.Duration
+	var err error
+	if postTimeout, err = o.getResourceTimeout(o.RootPathItem.Post); err != nil {
+		return nil, err
+	}
+	if getTimeout, err = o.getResourceTimeout(o.InstancePathItem.Get); err != nil {
+		return nil, err
+	}
+	if putTimeout, err = o.getResourceTimeout(o.InstancePathItem.Put); err != nil {
+		return nil, err
+	}
+	if deleteTimeout, err = o.getResourceTimeout(o.InstancePathItem.Delete); err != nil {
+		return nil, err
+	}
+	return &specTimeouts{
+		Post:   postTimeout,
+		Get:    getTimeout,
+		Put:    putTimeout,
+		Delete: deleteTimeout,
+	}, nil
+}
+
+func (o *SpecV2Resource) getResourceTimeout(operation *spec.Operation) (*time.Duration, error) {
+	if operation == nil {
+		return nil, nil
+	}
+	return o.getTimeDuration(operation.Extensions, extTfResourceTimeout)
+}
+
+func (o *SpecV2Resource) getTimeDuration(extensions spec.Extensions, extension string) (*time.Duration, error) {
+	if value, exists := extensions.GetString(extension); exists {
+		regex, err := regexp.Compile("^\\d+(\\.\\d+)?[smh]{1}$")
+		if err != nil {
+			return nil, err
+		}
+		if !regex.Match([]byte(value)) {
+			return nil, fmt.Errorf("invalid duration value: '%s'. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)", value)
+		}
+		return o.getDuration(value)
+	}
+	return nil, nil
+}
+
+func (o *SpecV2Resource) getDuration(t string) (*time.Duration, error) {
+	duration, err := time.ParseDuration(t)
+	return &duration, err
 }

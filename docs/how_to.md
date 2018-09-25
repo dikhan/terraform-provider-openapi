@@ -262,6 +262,7 @@ The following extensions can be used in path operations. Read the according exte
 Extension Name | Type | Description
 ---|:---:|---
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
+[x-terraform-resource-timeout](#xTerraformResourceTimeout) | string | Only available in operation level. Defines the timeout for a given operation. This value overrides the default timeout operation value which is 10 minutes.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
 [x-terraform-resource-name](#xTerraformResourceName) | string | Only available in resource root's POST operation. Defines the name that will be used for the resource in the Terraform configuration. If the extension is not preset, default value will be the name of the resource in the path. For instance, a path such as /v1/users will translate into a terraform resource name users_v1
 
@@ -288,6 +289,32 @@ this extension. If the extension is not present or has value 'false' then the re
 
 *Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
 above example*
+
+###### <a name="xTerraformResourceTimeout">x-terraform-resource-timeout</a>
+
+This extension allows service providers to override the default timeout value for CRUD operations with a different value.
+
+The value must comply with the duration type format. A duration string is a sequence of decimal positive numbers (negative numbers are not allowed),
+each with optional fraction and a unit suffix, such as "300s", "20.5m", "1.5h" or "2h45m".
+
+Valid time units are "s", "m", "h".
+
+````
+paths:
+  /v1/resource:
+    post:
+      ...
+      x-terraform-resource-timeout: "15m" # this means the max timeout for the post operation to finish is 15 minutes. This overrides the default timeout per operation which is 10 minutes
+      ...
+  /v1/resource/{id}:
+    get: # will have default value of 10 minutes as the 'x-terraform-resource-timeout' is not present for this operation
+      ...
+    delete:
+      x-terraform-resource-timeout: "20m" # this means the max timeout for the delete operation to finish is 20 minutes. This overrides the default timeout per operation which is 10 minutes
+      ...
+````
+
+*Note: This extension is only supported at the operation level*
 
 ###### <a name="xTerraformHeader">x-terraform-header</a>  
 

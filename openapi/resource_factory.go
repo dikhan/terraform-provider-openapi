@@ -8,23 +8,46 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 type resourceFactory struct {
 	openAPIResource SpecResource
 }
 
+var defaultTimeout = time.Duration(10 * time.Minute)
+
 func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 	s, err := r.createResourceSchema()
 	if err != nil {
 		return nil, err
 	}
+	timeouts, err := r.createSchemaResourceTimeout()
+	if err != nil {
+		return nil, err
+	}
 	return &schema.Resource{
-		Schema: s,
-		Create: r.create,
-		Read:   r.read,
-		Delete: r.delete,
-		Update: r.update,
+		Schema:   s,
+		Create:   r.create,
+		Read:     r.read,
+		Delete:   r.delete,
+		Update:   r.update,
+		Timeouts: timeouts,
+	}, nil
+}
+
+func (r resourceFactory) createSchemaResourceTimeout() (*schema.ResourceTimeout, error) {
+	var timeouts *specTimeouts
+	var err error
+	if timeouts, err = r.openAPIResource.getTimeouts(); err != nil {
+		return nil, err
+	}
+	return &schema.ResourceTimeout{
+		Create:  timeouts.Post,
+		Read:    timeouts.Get,
+		Update:  timeouts.Put,
+		Delete:  timeouts.Delete,
+		Default: &defaultTimeout,
 	}, nil
 }
 

@@ -5,7 +5,7 @@ provider "swaggercodegen" {
   x_request_id = "request header value for POST /v1/cdns"
 }
 
-resource "swaggercodegen_cdns_v1" "my_cdn" {
+resource "swaggercodegen_cdn_v1" "my_cdn" {
   label = "label" ## This is an immutable property (refer to swagger file)
   ips = ["127.0.0.1"] ## This is a force-new property (refer to swagger file)
   hostnames = ["origin.com"]
