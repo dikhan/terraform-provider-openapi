@@ -190,6 +190,40 @@ func TestAccCDN_Update(t *testing.T) {
 	})
 }
 
+func TestAccCDN_CreateWithZeroValues(t *testing.T) {
+	var cdn = newContentDeliveryNetwork("", []string{}, []string{}, 0, 0, false)
+	testCDNZeroValuesConfig := populateTemplateConfiguration(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckCDNsV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testCDNZeroValuesConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckResourceExist(),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "label", cdn.Label),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.#", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.#", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "better_example_number_field_name", "0"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 	testCDNUpdatedImmutableConfig := populateTemplateConfiguration("label updated", cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
 	expectedValidationError, _ := regexp.Compile(".*property label is immutable and therefore can not be updated. Update operation was aborted; no updates were performed.*")
