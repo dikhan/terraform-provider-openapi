@@ -87,6 +87,10 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 		return nil, err
 	}
 	for _, openAPIResource := range openAPIResources {
+		if openAPIResource.shouldIgnoreResource() {
+			log.Printf("[WARN] '%s' is marked as to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			continue
+		}
 		r := resourceFactory{
 			openAPIResource,
 		}

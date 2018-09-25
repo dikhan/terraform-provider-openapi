@@ -240,6 +240,26 @@ func TestCreateTerraformProviderResourceMap(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a provider factory with a factory loaded with a resource that should be ignored", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				resources: []SpecResource{
+					newSpecStubResource("resource", "/v1/resource", true, nil),
+				},
+			},
+		}
+		Convey("When createTerraformProviderResourceMap is called ", func() {
+			schemaResource, err := p.createTerraformProviderResourceMap()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the schema resource should contain the resource", func() {
+				So(schemaResource, ShouldBeEmpty)
+			})
+		})
+	})
 }
 
 func TestConfigureProvider(t *testing.T) {

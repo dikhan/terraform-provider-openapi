@@ -1236,8 +1236,8 @@ definitions:
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the terraformCompliantResources map should be empty as the resource was meant to be excluded", func() {
-				So(terraformCompliantResources, ShouldBeEmpty)
+			Convey("And the terraformCompliantResources map should contain one resource with ignore flag set to true", func() {
+				So(terraformCompliantResources[0].shouldIgnoreResource(), ShouldBeTrue)
 			})
 		})
 	})

@@ -47,10 +47,6 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			log.Printf("[WARN] ignoring resource '%s' due to an error while creating a creating the SpecV2Resource: %s", resourceRootPath, err)
 			continue
 		}
-		if r.shouldIgnoreResource() {
-			log.Printf("[WARN] ignoring resource '%s' as the resource contains the 'x-terraform-exclude-resource' extension in the POST operation inthe OpeAPI document", r.getResourceName())
-			continue
-		}
 		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
 		resources = append(resources, r)
 	}
