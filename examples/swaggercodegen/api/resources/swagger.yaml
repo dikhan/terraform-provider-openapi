@@ -267,6 +267,7 @@ definitions:
       - label
       - ips
       - hostnames
+      - object_property
     properties:
       id:
         type: "string"
@@ -292,9 +293,18 @@ definitions:
       example_boolean:
         type: boolean
       object_property:
+        #type: object - type is optional for properties of object type that use $ref
         $ref: "#/definitions/ObjectProperty"
+      object_nested_scheme_property:
+        type: object # nested properties required type equal object to be considered as object
+        readOnly: true
+        properties:
+          name:
+            type: string
   ObjectProperty:
     type: object
+    required:
+    - message
     properties:
       message:
         type: string
@@ -314,8 +324,7 @@ definitions:
         type: "array"
         items:
           type: "string"
-      status:
-        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+      status: # no longer used, using the object status instead for the sake of testing
         description: lb resource status
         type: string
         readOnly: true
@@ -328,12 +337,22 @@ definitions:
           - delete_in_progress
           - delete_failed
           - deleted
+      newStatus:
+        $ref: "#/definitions/Status"
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        readOnly: true
       timeToProcess: # time that the resource will take to be processed in seconds
         type: integer
         default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
       simulate_failure: # allows user to set it to true and force an error on the API when the given operation (POST/PUT/READ/DELETE) is being performed
         type: boolean
-
+  Status:
+    type: object
+    properties:
+      message:
+        type: string
+      status:
+        type: string
   # Schema for error response body
   Error:
     type: object

@@ -15,7 +15,7 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   example_boolean = true
 
   object_property = {
-    message = ""
+    message = "some message news"
   }
 
 }
