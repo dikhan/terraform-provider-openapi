@@ -16,9 +16,9 @@ import (
 
 var exampleSwaggerFile string
 
-var serviceProviderName = "openapi"
+const providerName = "openapi"
 
-var otfVarSwaggerURLEnvVariable = fmt.Sprintf("OTF_VAR_%s_SWAGGER_URL", serviceProviderName)
+var otfVarSwaggerURLEnvVariable = fmt.Sprintf("OTF_VAR_%s_SWAGGER_URL", providerName)
 var otfVarInsecureSkipVerifyEnvVariable = "OTF_INSECURE_SKIP_VERIFY"
 var otfVarSwaggerURLEnvVariableValue string
 var otfVarInsecureSkipVerifyEnvVariableValue string
@@ -46,7 +46,7 @@ func init() {
 
 	testAccProvider = getAPIProvider()
 	testAccProviders = map[string]terraform.ResourceProvider{
-		serviceProviderName: testAccProvider,
+		providerName: testAccProvider,
 	}
 }
 
@@ -78,7 +78,7 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func getAPIProvider() *schema.Provider {
-	testAccProvider, err := openapi.APIProvider(serviceProviderName)
+	testAccProvider, err := openapi.APIProvider(providerName)
 	if err != nil {
 		log.Fatalf("err: %s", err)
 	}

@@ -5,30 +5,27 @@ import (
 	"testing"
 
 	"github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
-	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/go-openapi/loads"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"net/http"
-	"path/filepath"
 	"regexp"
-	"strings"
 )
 
-const providerName = "openapi"
-const resourceName = "cdn_v1"
+const resourcePathCDN = "/v1/cdns"
+const resouceSchemaDefinitionNameCDN = "ContentDeliveryNetworkV1"
 
-var openAPIResourceName = fmt.Sprintf("%s_%s", providerName, resourceName)
-var openAPIResourceInstanceName = "my_cdn"
-var openAPIResourceState = fmt.Sprintf("%s.%s", openAPIResourceName, openAPIResourceInstanceName)
+const resourceCDNName = "cdn_v1"
+
+var openAPIResourceNameCDN = fmt.Sprintf("%s_%s", providerName, resourceCDNName)
+var openAPIResourceInstanceNameCDN = "my_cdn"
+var openAPIResourceStateCDN = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
 
 var cdn api.ContentDeliveryNetwork
-var testCDNCreateConfig string
+var testCreateConfigCDN string
 
 func init() {
 	// Setting this up here as it is used by many different tests
 	cdn = newContentDeliveryNetwork("someLabel", []string{"192.168.0.2"}, []string{"www.google.com"}, 10, 12.22, true)
-	testCDNCreateConfig = populateTemplateConfiguration(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
+	testCreateConfigCDN = populateTemplateConfigurationCDN(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
 }
 
 func TestAccCDN_Create(t *testing.T) {
@@ -38,25 +35,25 @@ func TestAccCDN_Create(t *testing.T) {
 		CheckDestroy: testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testCDNCreateConfig,
+				Config: testCreateConfigCDN,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckResourceExist(),
+					testAccCheckResourceExistCDN(),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "label", cdn.Label),
+						openAPIResourceStateCDN, "label", cdn.Label),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
+						openAPIResourceStateCDN, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+						openAPIResourceStateCDN, "ips.0", arrayToString(cdn.Ips)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
+						openAPIResourceStateCDN, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+						openAPIResourceStateCDN, "hostnames.0", arrayToString(cdn.Hostnames)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+						openAPIResourceStateCDN, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
+						openAPIResourceStateCDN, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+						openAPIResourceStateCDN, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
 				),
 			},
 		},
@@ -68,7 +65,7 @@ func TestAccCDN_CreateFailsDueToMissingMandatoryApiKeyAuth(t *testing.T) {
   # apikey_auth = "apiKeyValue" simulating configuration that is missing the mandatory apikey_auth (commented out for the reference)
   x_request_id = "some value..."
 }
-resource "%s" "my_cdn" {}`, providerName, openAPIResourceName)
+resource "%s" "my_cdn" {}`, providerName, openAPIResourceNameCDN)
 
 	expectedValidationError, _ := regexp.Compile(".*\"apikey_auth\": required field is not set.*")
 	resource.Test(t, resource.TestCase{
@@ -93,7 +90,7 @@ resource "%s" "my_cdn" {
   label = "%s"
   ips = ["%s"]
   hostnames = ["%s"]
-}`, providerName, openAPIResourceName, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames))
+}`, providerName, openAPIResourceNameCDN, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames))
 
 	expectedValidationError, _ := regexp.Compile(".*{\"code\":\"401\", \"message\": \"unauthorized user\"}.*")
 	resource.Test(t, resource.TestCase{
@@ -118,7 +115,7 @@ resource "%s" "my_cdn" {
   #label = "%s" # ==> Simulating required field is missing (commented out for the reference)
   ips = ["%s"]
   hostnames = ["%s"]
-}`, providerName, openAPIResourceName, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames))
+}`, providerName, openAPIResourceNameCDN, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames))
 
 	expectedValidationError, _ := regexp.Compile(".*\"label\": required field is not set.*")
 	resource.Test(t, resource.TestCase{
@@ -136,54 +133,54 @@ resource "%s" "my_cdn" {
 
 func TestAccCDN_Update(t *testing.T) {
 	var cdnUpdated = newContentDeliveryNetwork(cdn.Label, cdn.Ips, cdn.Hostnames, 14, 14.14, false)
-	testCDNUpdatedConfig := populateTemplateConfiguration(cdnUpdated.Label, cdnUpdated.Ips, cdnUpdated.Hostnames, cdnUpdated.ExampleInt, cdnUpdated.ExampleNumber, cdnUpdated.ExampleBoolean)
+	testCDNUpdatedConfig := populateTemplateConfigurationCDN(cdnUpdated.Label, cdnUpdated.Ips, cdnUpdated.Hostnames, cdnUpdated.ExampleInt, cdnUpdated.ExampleNumber, cdnUpdated.ExampleBoolean)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testCDNCreateConfig,
+				Config: testCreateConfigCDN,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckResourceExist(),
+					testAccCheckResourceExistCDN(),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "label", cdn.Label),
+						openAPIResourceStateCDN, "label", cdn.Label),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
+						openAPIResourceStateCDN, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+						openAPIResourceStateCDN, "ips.0", arrayToString(cdn.Ips)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
+						openAPIResourceStateCDN, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+						openAPIResourceStateCDN, "hostnames.0", arrayToString(cdn.Hostnames)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+						openAPIResourceStateCDN, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
+						openAPIResourceStateCDN, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+						openAPIResourceStateCDN, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
 				),
 			},
 			{
 				Config: testCDNUpdatedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckResourceExist(),
+					testAccCheckResourceExistCDN(),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "label", cdnUpdated.Label),
+						openAPIResourceStateCDN, "label", cdnUpdated.Label),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdnUpdated.Ips))),
+						openAPIResourceStateCDN, "ips.#", fmt.Sprintf("%d", len(cdnUpdated.Ips))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.0", arrayToString(cdnUpdated.Ips)),
+						openAPIResourceStateCDN, "ips.0", arrayToString(cdnUpdated.Ips)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdnUpdated.Hostnames))),
+						openAPIResourceStateCDN, "hostnames.#", fmt.Sprintf("%d", len(cdnUpdated.Hostnames))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.0", arrayToString(cdnUpdated.Hostnames)),
+						openAPIResourceStateCDN, "hostnames.0", arrayToString(cdnUpdated.Hostnames)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdnUpdated.ExampleInt)),
+						openAPIResourceStateCDN, "example_int", fmt.Sprintf("%d", cdnUpdated.ExampleInt)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "better_example_number_field_name", floatToString(cdnUpdated.ExampleNumber)),
+						openAPIResourceStateCDN, "better_example_number_field_name", floatToString(cdnUpdated.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdnUpdated.ExampleBoolean)),
+						openAPIResourceStateCDN, "example_boolean", fmt.Sprintf("%v", cdnUpdated.ExampleBoolean)),
 				),
 			},
 		},
@@ -192,7 +189,7 @@ func TestAccCDN_Update(t *testing.T) {
 
 func TestAccCDN_CreateWithZeroValues(t *testing.T) {
 	var cdn = newContentDeliveryNetwork("", []string{}, []string{}, 0, 0, false)
-	testCDNZeroValuesConfig := populateTemplateConfiguration(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
+	testCDNZeroValuesConfig := populateTemplateConfigurationCDN(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -201,23 +198,23 @@ func TestAccCDN_CreateWithZeroValues(t *testing.T) {
 			{
 				Config: testCDNZeroValuesConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckResourceExist(),
+					testAccCheckResourceExistCDN(),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "label", cdn.Label),
+						openAPIResourceStateCDN, "label", cdn.Label),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.#", "1"),
+						openAPIResourceStateCDN, "ips.#", "1"),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+						openAPIResourceStateCDN, "ips.0", arrayToString(cdn.Ips)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.#", "1"),
+						openAPIResourceStateCDN, "hostnames.#", "1"),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+						openAPIResourceStateCDN, "hostnames.0", arrayToString(cdn.Hostnames)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+						openAPIResourceStateCDN, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "better_example_number_field_name", "0"),
+						openAPIResourceStateCDN, "better_example_number_field_name", "0"),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+						openAPIResourceStateCDN, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
 				),
 			},
 		},
@@ -225,7 +222,7 @@ func TestAccCDN_CreateWithZeroValues(t *testing.T) {
 }
 
 func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
-	testCDNUpdatedImmutableConfig := populateTemplateConfiguration("label updated", cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
+	testCDNUpdatedImmutableConfig := populateTemplateConfigurationCDN("label updated", cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
 	expectedValidationError, _ := regexp.Compile(".*property label is immutable and therefore can not be updated. Update operation was aborted; no updates were performed.*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -233,25 +230,25 @@ func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 		CheckDestroy: testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testCDNCreateConfig,
+				Config: testCreateConfigCDN,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckResourceExist(),
+					testAccCheckResourceExistCDN(),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "label", cdn.Label),
+						openAPIResourceStateCDN, "label", cdn.Label),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
+						openAPIResourceStateCDN, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+						openAPIResourceStateCDN, "ips.0", arrayToString(cdn.Ips)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
+						openAPIResourceStateCDN, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+						openAPIResourceStateCDN, "hostnames.0", arrayToString(cdn.Hostnames)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+						openAPIResourceStateCDN, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
+						openAPIResourceStateCDN, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+						openAPIResourceStateCDN, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
 				),
 			},
 			{
@@ -264,7 +261,7 @@ func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 
 func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 	var cdnUpdatedForceNew = newContentDeliveryNetwork(cdn.Label, []string{"192.168.1.5"}, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean)
-	testCDNUpdatedForceNewConfig := populateTemplateConfiguration(cdnUpdatedForceNew.Label, cdnUpdatedForceNew.Ips, cdnUpdatedForceNew.Hostnames, cdnUpdatedForceNew.ExampleInt, cdnUpdatedForceNew.ExampleNumber, cdnUpdatedForceNew.ExampleBoolean)
+	testCDNUpdatedForceNewConfig := populateTemplateConfigurationCDN(cdnUpdatedForceNew.Label, cdnUpdatedForceNew.Ips, cdnUpdatedForceNew.Hostnames, cdnUpdatedForceNew.ExampleInt, cdnUpdatedForceNew.ExampleNumber, cdnUpdatedForceNew.ExampleBoolean)
 	var originalID string
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -272,11 +269,11 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 		CheckDestroy: testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testCDNCreateConfig,
+				Config: testCreateConfigCDN,
 				Check: resource.ComposeTestCheckFunc(
 					func(s *terraform.State) error {
 						for _, res := range s.RootModule().Resources {
-							if res.Type != openAPIResourceName {
+							if res.Type != openAPIResourceNameCDN {
 								continue
 							}
 							originalID = res.Primary.ID
@@ -284,21 +281,21 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 						return nil
 					},
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "label", cdn.Label),
+						openAPIResourceStateCDN, "label", cdn.Label),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
+						openAPIResourceStateCDN, "ips.#", fmt.Sprintf("%d", len(cdn.Ips))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.0", arrayToString(cdn.Ips)),
+						openAPIResourceStateCDN, "ips.0", arrayToString(cdn.Ips)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
+						openAPIResourceStateCDN, "hostnames.#", fmt.Sprintf("%d", len(cdn.Hostnames))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.0", arrayToString(cdn.Hostnames)),
+						openAPIResourceStateCDN, "hostnames.0", arrayToString(cdn.Hostnames)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
+						openAPIResourceStateCDN, "example_int", fmt.Sprintf("%d", cdn.ExampleInt)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
+						openAPIResourceStateCDN, "better_example_number_field_name", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
+						openAPIResourceStateCDN, "example_boolean", fmt.Sprintf("%v", cdn.ExampleBoolean)),
 				),
 			},
 			{
@@ -306,7 +303,7 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					func(s *terraform.State) error {
 						for _, res := range s.RootModule().Resources {
-							if res.Type != openAPIResourceName {
+							if res.Type != openAPIResourceNameCDN {
 								continue
 							}
 							// check that the ID generated in the first config apply has changed to a different one as the force new resource was required by the change applied
@@ -315,25 +312,25 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 								return fmt.Errorf("force new operation did not work, resource still has the same ID %s", originalID)
 							}
 						}
-						resourceExistsFunc := testAccCheckResourceExist()
+						resourceExistsFunc := testAccCheckResourceExistCDN()
 						return resourceExistsFunc(s)
 					},
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "label", cdnUpdatedForceNew.Label),
+						openAPIResourceStateCDN, "label", cdnUpdatedForceNew.Label),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.#", fmt.Sprintf("%d", len(cdnUpdatedForceNew.Ips))),
+						openAPIResourceStateCDN, "ips.#", fmt.Sprintf("%d", len(cdnUpdatedForceNew.Ips))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "ips.0", arrayToString(cdnUpdatedForceNew.Ips)),
+						openAPIResourceStateCDN, "ips.0", arrayToString(cdnUpdatedForceNew.Ips)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.#", fmt.Sprintf("%d", len(cdnUpdatedForceNew.Hostnames))),
+						openAPIResourceStateCDN, "hostnames.#", fmt.Sprintf("%d", len(cdnUpdatedForceNew.Hostnames))),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "hostnames.0", arrayToString(cdnUpdatedForceNew.Hostnames)),
+						openAPIResourceStateCDN, "hostnames.0", arrayToString(cdnUpdatedForceNew.Hostnames)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_int", fmt.Sprintf("%d", cdnUpdatedForceNew.ExampleInt)),
+						openAPIResourceStateCDN, "example_int", fmt.Sprintf("%d", cdnUpdatedForceNew.ExampleInt)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "better_example_number_field_name", floatToString(cdnUpdatedForceNew.ExampleNumber)),
+						openAPIResourceStateCDN, "better_example_number_field_name", floatToString(cdnUpdatedForceNew.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceState, "example_boolean", fmt.Sprintf("%v", cdnUpdatedForceNew.ExampleBoolean)),
+						openAPIResourceStateCDN, "example_boolean", fmt.Sprintf("%v", cdnUpdatedForceNew.ExampleBoolean)),
 				),
 			},
 		},
@@ -351,13 +348,13 @@ func newContentDeliveryNetwork(label string, ips, hostnames []string, exampleInt
 	}
 }
 
-func populateTemplateConfiguration(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool) string {
+func populateTemplateConfigurationCDN(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool) string {
 	return fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
 }
 
-resource "%s" "my_cdn" {
+resource "%s" "%s" {
   label = "%s"
   ips = ["%s"]
   hostnames = ["%s"]
@@ -365,68 +362,16 @@ resource "%s" "my_cdn" {
   example_int = %d
   better_example_number_field_name = %s
   example_boolean = %v
-}`, providerName, openAPIResourceName, label, arrayToString(ips), arrayToString(hostnames), exampleInt, floatToString(exampleNumber), exampleBool)
+}`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, label, arrayToString(ips), arrayToString(hostnames), exampleInt, floatToString(exampleNumber), exampleBool)
 }
 
-func floatToString(number float32) string {
-	return fmt.Sprintf("%.2f", number)
-}
-
-func arrayToString(value []string) string {
-	var result = "["
-	for _, v := range value {
-		result += fmt.Sprintf("%s,", v)
-	}
-	result = strings.TrimRight(result, ",")
-	result += "]"
-	return result
-}
-
-// Check if resource exists remotely
-func testAccCheckResourceExist() resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		err := testCheckCDNsV1Destroy(s)
-		if strings.Contains(err.Error(), "still exists") {
-			return nil
-		}
-		return err
-	}
-}
-
-// Acceptance test resource-destruction for openapi_cdns_v1:
+// Acceptance test resource-destruction for openapi_cdn_v1:
 //
 // Check all CDNs specified in the configuration have been destroyed.
 func testCheckCDNsV1Destroy(state *terraform.State) error {
-	for _, res := range state.RootModule().Resources {
-		if res.Type != openAPIResourceName {
-			continue
-		}
-		cdnID := res.Primary.ID
-		openAPIClient := testAccProvider.Meta().(openapi.ClientOpenAPI)
-		abs, err := filepath.Abs(exampleSwaggerFile)
-		if err != nil {
-			return err
-		}
-		apiSpec, err := loads.JSONSpec(abs)
-		if err != nil {
-			return err
-		}
+	return testCheckDestroy(state, openAPIResourceNameCDN, resourceCDNName, resourcePathCDN, resouceSchemaDefinitionNameCDN)
+}
 
-		specResource := &openapi.SpecV2Resource{
-			Name:             resourceName,
-			Path:             "/v1/cdns",
-			SchemaDefinition: apiSpec.Spec().Definitions["ContentDeliveryNetworkV1"],
-			InstancePathItem: apiSpec.Spec().Paths.Paths["/v1/cdns/{id}"],
-			RootPathItem:     apiSpec.Spec().Paths.Paths["/v1/cdns"],
-		}
-
-		resp, err := openAPIClient.Get(specResource, cdnID, nil)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("cdn '%s' still exists", cdnID)
-		}
-	}
-	return nil
+func testAccCheckResourceExistCDN() resource.TestCheckFunc {
+	return testAccCheckResourceExist(openAPIResourceNameCDN, resourceCDNName, resourcePathCDN, resouceSchemaDefinitionNameCDN)
 }
