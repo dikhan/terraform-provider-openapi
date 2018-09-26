@@ -430,6 +430,34 @@ definitions:
           - deleted          
 ````
 
+Alternatively, the status field can also be of 'object' type in which case the nested properties can be defined in place or
+the $ref attribute can be used to link to the corresponding status schema definition. The nested properties are considered
+computed automatically even if they are not marked as readOnly.
+
+````
+definitions:
+  LBV1:
+    type: "object"
+    ...
+    properties:
+      newStatus:
+        $ref: "#/definitions/Status"
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        readOnly: true
+      timeToProcess: # time that the resource will take to be processed in seconds
+        type: integer
+        default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
+      simulate_failure: # allows user to set it to true and force an error on the API when the given operation (POST/PUT/READ/DELETE) is being performed
+        type: boolean
+  Status:
+    type: object
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+````
+
 *Note: This extension is only supported at the operation's response level.*
 
 
@@ -590,6 +618,51 @@ string | Type: schema.TypeString | string value
 integer | schema.TypeInt | int value
 number | schema.TypeFloat | float value
 boolean | schema.TypeBool | boolean value
+object | schema.TypeMap | map value
+
+Object types can be defined in two fashions:
+
+###### Nested properties
+
+Properties can have their schema definition in place or nested; and they must be of type 'object'.
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    ...
+    properties:
+      ...
+      object_nested_scheme_property:
+        type: object # nested properties required type equal object to be considered as object
+        properties:
+          name:
+            type: string
+````
+
+###### Ref schema definition
+
+A property that has a $ref attribute is considered automatically and object so defining the type is optional (although
+it's recommended).
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    ...
+    properties:
+      ...
+      object_property:
+        #type: object - type is optional for properties of object type that use $ref
+        $ref: "#/definitions/ObjectProperty"
+  ObjectProperty:
+    type: object
+    required:
+    - message
+    properties:
+      message:
+        type: string
+````
 
 Additionally, properties can be flagged as required as follows:
 

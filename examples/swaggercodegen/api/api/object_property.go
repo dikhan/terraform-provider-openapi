@@ -10,20 +10,7 @@
 
 package api
 
-type Lbv1 struct {
+type ObjectProperty struct {
 
-	Id string `json:"id,omitempty"`
-
-	Name string `json:"name"`
-
-	Backends []string `json:"backends"`
-
-	TimeToProcess int32 `json:"timeToProcess"`
-
-	SimulateFailure bool `json:"simulate_failure"`
-
-	// lb resource status
-	Status string `json:"status,omitempty"`
-
-	NewStatus *Status `json:"newStatus,omitempty"`
+	Message string `json:"message,omitempty"`
 }

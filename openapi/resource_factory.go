@@ -290,7 +290,6 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerConfig providerConfig) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
-
 		if err != nil {
 			if openapiErr, ok := err.(openapierr.Error); ok {
 				if openapierr.NotFound == openapiErr.Code() {
@@ -299,17 +298,10 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 			}
 			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
 		}
-
-		statusIdentifier, err := r.resourceInfo.getStatusIdentifier()
+		newStatus, err := r.resourceInfo.getStatusValueFromPayload(remoteData)
 		if err != nil {
-			return nil, "", fmt.Errorf("error occurred while retrieving status identifier for resource '%s' (%s): %s", r.resourceInfo.path, resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("failed to get the status value after receiving response from GET /%s/%s: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
 		}
-
-		value, statusIdentifierPresentInResponse := remoteData[statusIdentifier]
-		if !statusIdentifierPresentInResponse {
-			return nil, "", fmt.Errorf("response payload received from GET /%s/%s  missing the status identifier field", r.resourceInfo.path, resourceLocalData.Id())
-		}
-		newStatus := value.(string)
 		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.resourceInfo.path, resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
@@ -428,6 +420,8 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 		}
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 			switch reflect.TypeOf(dataValue).Kind() {
+			case reflect.Map:
+				input[propertyName] = dataValue.(map[string]interface{})
 			case reflect.Slice:
 				input[propertyName] = dataValue.([]interface{})
 			case reflect.String:

@@ -1,7 +1,9 @@
 package openapiutils
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -379,4 +381,125 @@ func TestStringExtensionExists(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestGetPayloadDefName(t *testing.T) {
+	Convey("Given a valid internal definition path", t, func() {
+		ref := "#/definitions/ContentDeliveryNetworkV1"
+		// Local Reference use cases
+		Convey("When getPayloadDefName method is called with a valid internal definition path", func() {
+			defName, err := getPayloadDefName(ref)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be true", func() {
+				So(defName, ShouldEqual, "ContentDeliveryNetworkV1")
+			})
+		})
+	})
+
+	Convey("Given a ref URL (not supported)", t, func() {
+		ref := "http://path/to/your/resource.json#myElement"
+		Convey("When getPayloadDefName method is called ", func() {
+			_, err := getPayloadDefName(ref)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given an element of the document located on the same server (not supported)", t, func() {
+		ref := "document.json#/myElement"
+		// Remote Reference use cases
+		Convey("When getPayloadDefName method is called with ", func() {
+			_, err := getPayloadDefName(ref)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given an element of the document located in the parent folder (not supported)", t, func() {
+		ref := "../document.json#/myElement"
+		Convey("When getPayloadDefName method is called with ", func() {
+			_, err := getPayloadDefName(ref)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given an specific element of the document stored on the different server (not supported)", t, func() {
+		ref := "http://path/to/your/resource.json#myElement"
+		Convey("When getPayloadDefName method is called with ", func() {
+			_, err := getPayloadDefName(ref)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given an element of the document located in another folder (not supported)", t, func() {
+		ref := "../another-folder/document.json#/myElement"
+		// URL Reference use case
+		Convey("When getPayloadDefName method is called with ", func() {
+			_, err := getPayloadDefName(ref)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a  document on the different server, which uses the same protocol (not supported)", t, func() {
+		ref := "//anotherserver.com/files/example.json"
+		Convey("When getPayloadDefName method is called with ", func() {
+			_, err := getPayloadDefName(ref)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestGetResourcePayloadSchemaDef(t *testing.T) {
+	Convey("Given a swagger doc", t, func() {
+		swaggerContent := `swagger: "2.0"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+		spec := initSwagger(swaggerContent)
+		Convey("When getResourcePayloadSchemaDef method is called with an operation containing a valid ref: '#/definitions/Users'", func() {
+			ref := "#/definitions/Users"
+			resourcePayloadSchemaDef, err := GetSchemaDefinition(spec.Definitions, ref)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be a valid schema def", func() {
+				So(len(resourcePayloadSchemaDef.Type), ShouldEqual, 1)
+				So(resourcePayloadSchemaDef.Type, ShouldContain, "object")
+			})
+		})
+		Convey("When getResourcePayloadSchemaDef method is called with schema that is missing the definition the ref is pointing at", func() {
+			ref := "#/definitions/NonExistingDef"
+			_, err := GetSchemaDefinition(spec.Definitions, ref)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "missing schema definition in the swagger file with the supplied ref '#/definitions/NonExistingDef'")
+			})
+		})
+	})
+}
+
+func initSwagger(swaggerContent string) *spec.Swagger {
+	swagger := json.RawMessage([]byte(swaggerContent))
+	d, _ := loads.Analyzed(swagger, "2.0")
+	return d.Spec()
 }

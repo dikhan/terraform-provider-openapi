@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"reflect"
 
 	"log"
 	"strings"
@@ -47,20 +48,33 @@ type resourceInfo struct {
 	path             string
 	host             string
 	httpSchemes      []string
-	schemaDefinition spec.Schema
+	schemaDefinition *spec.Schema
 	// createPathInfo contains info about /resource, including the POST operation
 	createPathInfo spec.PathItem
 	// pathInfo contains info about /resource/{id}, including GET, PUT and REMOVE operations if applicable
 	pathInfo spec.PathItem
+
+	// schemaDefinitions contains all the definitions which might be needed in case the resource schema contains properties
+	// of type object which in turn refer to other definitions
+	schemaDefinitions map[string]spec.Schema
 }
 
 func (r resourceInfo) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
+	return r.terraformSchema(r.schemaDefinition, true)
+}
+
+// terraformSchema returns the terraform schema for the given schema definition. if ignoreID is true then properties named
+// id will be ignored, this is because terraform already has an ID field reserved that identifies uniquely the resource and
+// root level schema can not contain a property named ID. For other levels, in case there are properties of type object
+// id named properties is allowed as there won't be a  conflict with terraform in that case.
+func (r resourceInfo) terraformSchema(schemaDefinition *spec.Schema, ignoreID bool) (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
-	for propertyName, property := range r.schemaDefinition.Properties {
-		if r.isIDProperty(propertyName) {
+	for propertyName, property := range schemaDefinition.Properties {
+		// ID should only be ignored when looping through the root level properties of the schema definition
+		if r.isIDProperty(propertyName) && ignoreID {
 			continue
 		}
-		tfSchema, err := r.createTerraformPropertySchema(propertyName, property)
+		tfSchema, err := r.createTerraformPropertyBasicSchema(propertyName, property, schemaDefinition.Required)
 		if err != nil {
 			return nil, err
 		}
@@ -74,18 +88,6 @@ func (r resourceInfo) convertToTerraformCompliantFieldName(propertyName string, 
 		return terraformutils.ConvertToTerraformCompliantName(preferredPropertyName)
 	}
 	return terraformutils.ConvertToTerraformCompliantName(propertyName)
-}
-
-func (r resourceInfo) createTerraformPropertySchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
-	propertySchema, err := r.createTerraformPropertyBasicSchema(propertyName, property)
-	if err != nil {
-		return nil, err
-	}
-	// ValidateFunc is not yet supported on lists or sets
-	if !r.isArrayProperty(property) {
-		propertySchema.ValidateFunc = r.validateFunc(propertyName, property)
-	}
-	return propertySchema, nil
 }
 
 func (r resourceInfo) validateFunc(propertyName string, property spec.Schema) schema.SchemaValidateFunc {
@@ -114,10 +116,23 @@ func (r resourceInfo) isRequired(propertyName string, requiredProps []string) bo
 	return required
 }
 
-func (r resourceInfo) createTerraformPropertyBasicSchema(propertyName string, property spec.Schema) (*schema.Schema, error) {
+func (r resourceInfo) createTerraformPropertyBasicSchema(propertyName string, property spec.Schema, requiredProperties []string) (*schema.Schema, error) {
 	var propertySchema *schema.Schema
-	// Arrays only support 'string' items at the moment
-	if r.isArrayProperty(property) {
+	if isObject, schemaDefinition, err := r.isObjectProperty(property); isObject {
+		if err != nil {
+			return nil, err
+		}
+		s, err := r.terraformSchema(schemaDefinition, false)
+		if err != nil {
+			return nil, err
+		}
+		propertySchema = &schema.Schema{
+			Type: schema.TypeMap,
+			Elem: &schema.Resource{
+				Schema: s,
+			},
+		}
+	} else if r.isArrayProperty(property) { // Arrays only support 'string' items at the moment
 		propertySchema = &schema.Schema{
 			Type: schema.TypeList,
 			Elem: &schema.Schema{Type: schema.TypeString},
@@ -141,7 +156,7 @@ func (r resourceInfo) createTerraformPropertyBasicSchema(propertyName string, pr
 	}
 
 	// Set the property as required or optional
-	required := r.isRequired(propertyName, r.schemaDefinition.Required)
+	required := r.isRequired(propertyName, requiredProperties)
 	if required {
 		propertySchema.Required = true
 	} else {
@@ -175,11 +190,41 @@ func (r resourceInfo) createTerraformPropertyBasicSchema(propertyName string, pr
 			propertySchema.Default = property.Default
 		}
 	}
+
+	// ValidateFunc is not yet supported on lists or sets
+	if !r.isArrayProperty(property) {
+		propertySchema.ValidateFunc = r.validateFunc(propertyName, property)
+	}
+
 	return propertySchema, nil
 }
 
+func (r resourceInfo) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
+
+	if r.isObjectTypeProperty(property) && len(property.Properties) != 0 {
+		return true, &property, nil
+	}
+
+	if property.Ref.Ref.GetURL() != nil {
+		schema, err := openapiutils.GetSchemaDefinition(r.schemaDefinitions, property.Ref.String())
+		if err != nil {
+			return true, nil, err
+		}
+		return true, schema, nil
+	}
+	return false, nil, nil
+}
+
 func (r resourceInfo) isArrayProperty(property spec.Schema) bool {
-	return property.Type.Contains("array")
+	return r.isOfType(property, "array")
+}
+
+func (r resourceInfo) isObjectTypeProperty(property spec.Schema) bool {
+	return r.isOfType(property, "object")
+}
+
+func (r resourceInfo) isOfType(property spec.Schema, propertyType string) bool {
+	return property.Type.Contains(propertyType)
 }
 
 func (r resourceInfo) getImmutableProperties() []string {
@@ -256,17 +301,25 @@ func (r resourceInfo) getResourceIdentifier() (string, error) {
 	return identifierProperty, nil
 }
 
-// getStatusIdentifier returns the property name that is supposed to be used as the status field. The status field
-// is selected as follows:
+// getStatusIdentifier loops through the schema definition given and tries to find the status id. This method supports both simple structures
+// where the status field is at the schema definition root level or complex structures where status field is meant to be
+// a sub-property of an object type property
 // 1.If the given schema definition contains a property configured with metadata 'x-terraform-field-status' set to true, that property
 // will be used to check the different statues for the asynchronous pooling mechanism.
 // 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
 // will have a property named 'status'
-// 3. If none of the above requirements is met, an error will be returned
-func (r resourceInfo) getStatusIdentifier() (string, error) {
-	statusProperty := ""
-	for propertyName, property := range r.schemaDefinition.Properties {
-		if r.isIDProperty(propertyName) {
+// 3. If the status field is NOT an object, then the array returned will contain one element with the property name that identifies
+// the status field.
+// 3. If the schema definition contains a deemed status field (as described above) and the property is of object type, the same logic
+// as above will be applied to identify the status field to be used within the object property. In this case the result will
+// be an array containing the property hierarchy, starting from the root and ending with the actual status field. This is needed
+// so the correct status field can be extracted from payloads.
+// 4. If none of the above requirements is met, an error will be returned
+func (r resourceInfo) getStatusIdentifier(schemaDefinition *spec.Schema, shouldIgnoreID, shouldEnforceReadOnly bool) ([]string, error) {
+	var statusProperty string
+	var statusHierarchy []string
+	for propertyName, property := range schemaDefinition.Properties {
+		if r.isIDProperty(propertyName) && shouldIgnoreID {
 			continue
 		}
 		if r.isStatusProperty(propertyName) {
@@ -283,12 +336,48 @@ func (r resourceInfo) getStatusIdentifier() (string, error) {
 	// if the id field is missing and there isn't any properties set with extTfFieldStatus, there is not way for the resource
 	// to be identified and therefore an error is returned
 	if statusProperty == "" {
-		return "", fmt.Errorf("could not find any status property in the resource swagger definition. Please make sure the resource definition has either one property named 'status' or one property that contains %s metadata", extTfFieldStatus)
+		return nil, fmt.Errorf("could not find any status property in the resource swagger definition. Please make sure the resource definition has either one property named 'status' or one property that contains %s metadata", extTfFieldStatus)
 	}
-	if !r.schemaDefinition.Properties[statusProperty].ReadOnly {
-		return "", fmt.Errorf("schema definition status property '%s' must be readOnly", statusProperty)
+	if !schemaDefinition.Properties[statusProperty].ReadOnly && shouldEnforceReadOnly {
+		return nil, fmt.Errorf("schema definition status property '%s' must be readOnly", statusProperty)
 	}
-	return statusProperty, nil
+
+	statusHierarchy = append(statusHierarchy, statusProperty)
+	if isObject, propertySchemaDefinition, err := r.isObjectProperty(schemaDefinition.Properties[statusProperty]); isObject {
+		if err != nil {
+			return nil, err
+		}
+		statusIdentifier, err := r.getStatusIdentifier(propertySchemaDefinition, false, false)
+		if err != nil {
+			return nil, err
+		}
+		statusHierarchy = append(statusHierarchy, statusIdentifier...)
+	}
+
+	return statusHierarchy, nil
+}
+
+func (r resourceInfo) getStatusValueFromPayload(payload map[string]interface{}) (string, error) {
+	statuses, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+	if err != nil {
+		return "", err
+	}
+	var property = payload
+	for _, statusField := range statuses {
+		propertyValue, statusExistsInPayload := property[statusField]
+		if !statusExistsInPayload {
+			return "", fmt.Errorf("payload does not match resouce schema, could not find the status field: %s", statuses)
+		}
+		switch reflect.TypeOf(propertyValue).Kind() {
+		case reflect.Map:
+			property = propertyValue.(map[string]interface{})
+		case reflect.String:
+			return propertyValue.(string), nil
+		default:
+			return "", fmt.Errorf("status property value '%s' does not have a supported type [string/map]", statuses)
+		}
+	}
+	return "", fmt.Errorf("could not find status value [%s] in the payload provided", statuses)
 }
 
 // shouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension

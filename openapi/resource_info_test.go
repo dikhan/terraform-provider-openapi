@@ -288,7 +288,7 @@ func TestGetImmutableProperties(t *testing.T) {
 		extensions := spec.Extensions{}
 		extensions.Add("x-terraform-immutable", true)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"id": {
@@ -314,7 +314,7 @@ func TestGetImmutableProperties(t *testing.T) {
 
 	Convey("Given resource info is configured with schemaDefinition that DOES NOT contain immutable properties", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"id": {
@@ -346,16 +346,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type string too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
@@ -371,16 +372,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"int_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("int_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("int_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeInt)
@@ -396,16 +398,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"number_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("number_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("number_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type float too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeFloat)
@@ -415,7 +418,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 
 	Convey("Given a swagger schema definition that has a property of type 'boolean'", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": {
@@ -425,11 +428,12 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 							},
 						},
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", r.schemaDefinition.Properties["boolean_prop"])
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", r.schemaDefinition.Properties["boolean_prop"], r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeBool)
@@ -439,7 +443,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 
 	Convey("Given a swagger schema definition that has a property of type 'array'", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": {
@@ -449,11 +453,12 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 							},
 						},
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", r.schemaDefinition.Properties["array_prop"])
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", r.schemaDefinition.Properties["array_prop"], r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type array too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
@@ -465,9 +470,140 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 		})
 	})
 
+	Convey("Given a swagger schema definition that has a property of type object and a ref pointing to the schema", t, func() {
+		expectedRef := "#/definitions/ObjectProperty"
+		ref := spec.MustCreateRef(expectedRef)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"object_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Ref:  ref,
+							},
+						},
+					},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{
+				"ObjectProperty": {
+					SchemaProps: spec.SchemaProps{
+						Properties: map[string]spec.Schema{
+							"message": {
+								VendorExtensible: spec.VendorExtensible{},
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"string"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("object_prop", r.schemaDefinition.Properties["object_prop"], r.schemaDefinition.Required)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(tfPropSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should contained the sub property - 'message'", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type object that has nested schema", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"object_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									"message": {
+										VendorExtensible: spec.VendorExtensible{},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("object_prop", r.schemaDefinition.Properties["object_prop"], r.schemaDefinition.Required)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(tfPropSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should contained the sub property - 'message'", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type object that has nested schema and property named id", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"object_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									"id": {
+										VendorExtensible: spec.VendorExtensible{},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+									},
+									"message": {
+										VendorExtensible: spec.VendorExtensible{},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("object_prop", r.schemaDefinition.Properties["object_prop"], r.schemaDefinition.Required)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(tfPropSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should contain the sub property - 'message'", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+			Convey("And the tf resource schema returned should contain the sub property - 'id' and should not be ignored", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
+			})
+		})
+	})
+
 	Convey("Given a swagger schema definition that has a property 'string_prop' which is required", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": {
@@ -482,7 +618,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"])
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"], r.schemaDefinition.Required)
 			Convey("Then the returned value should be true", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Required, ShouldBeTrue)
@@ -500,16 +636,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.ForceNew, ShouldBeTrue)
@@ -526,16 +663,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: true},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be configured as computed", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Computed, ShouldBeTrue)
@@ -554,16 +692,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be configured as forceNew and sensitive", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.ForceNew, ShouldBeTrue)
@@ -582,22 +721,93 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be configured with the according default value, ", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Default, ShouldEqual, expectedDefaultValue)
 			})
 		})
 	})
+
+	Convey("Given a swagger schema definition that has a property 'string_prop' of type string, required, sensitive and has a default value 'defaultValue'", t, func() {
+		expectedDefaultValue := "defaultValue"
+		extensions := spec.Extensions{}
+		extensions.Add("x-terraform-sensitive", true)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type:    []string{"string"},
+								Default: expectedDefaultValue,
+							},
+						},
+					},
+					Required: []string{"string_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"], r.schemaDefinition.Required)
+			Convey("Then the returned tf tfPropSchema should be of type string", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
+			})
+			Convey("And a validateFunc should be configured", func() {
+				So(tfPropSchema.ValidateFunc, ShouldNotBeNil)
+			})
+			Convey("And be configured as required", func() {
+				So(tfPropSchema.Required, ShouldBeTrue)
+			})
+			Convey("And be configured as sensitive", func() {
+				So(tfPropSchema.Sensitive, ShouldBeTrue)
+			})
+			Convey("And the default value should match 'defaultValue'", func() {
+				So(tfPropSchema.Default, ShouldEqual, expectedDefaultValue)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property 'array_prop' of type array", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"array_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+							},
+						},
+					},
+					Required: []string{"array_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", r.schemaDefinition.Properties["array_prop"], r.schemaDefinition.Required)
+			Convey("Then the returned tf tfPropSchema should be of type array", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And there should not be any validation function attached to it", func() {
+				So(tfPropSchema.ValidateFunc, ShouldBeNil)
+			})
+		})
+	})
+
 }
 
 func TestIsArrayProperty(t *testing.T) {
@@ -609,7 +819,7 @@ func TestIsArrayProperty(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": propSchema,
@@ -633,7 +843,7 @@ func TestIsArrayProperty(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
@@ -659,7 +869,7 @@ func TestIsRequired(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
@@ -684,7 +894,7 @@ func TestIsRequired(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
@@ -701,81 +911,10 @@ func TestIsRequired(t *testing.T) {
 	})
 }
 
-func TestCreateTerraformPropertySchema(t *testing.T) {
-	Convey("Given a swagger schema definition that has a property 'string_prop' of type string, required, sensitive and has a default value 'defaultValue'", t, func() {
-		expectedDefaultValue := "defaultValue"
-		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-sensitive", true)
-		r := resourceInfo{
-			schemaDefinition: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"string_prop": {
-							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
-							SchemaProps: spec.SchemaProps{
-								Type:    []string{"string"},
-								Default: expectedDefaultValue,
-							},
-						},
-					},
-					Required: []string{"string_prop"}, // This array contains the list of properties that are required
-				},
-			},
-		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertySchema("string_prop", r.schemaDefinition.Properties["string_prop"])
-			Convey("Then the returned tf tfPropSchema should be of type string", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
-			})
-			Convey("And a validateFunc should be configured", func() {
-				So(tfPropSchema.ValidateFunc, ShouldNotBeNil)
-			})
-			Convey("And be configured as required, sensitive and the default value should match 'defaultValue'", func() {
-				So(tfPropSchema.Required, ShouldBeTrue)
-			})
-			Convey("And be configured as sensitive", func() {
-				So(tfPropSchema.Sensitive, ShouldBeTrue)
-			})
-			Convey("And the default value should match 'defaultValue'", func() {
-				So(tfPropSchema.Default, ShouldEqual, expectedDefaultValue)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property 'array_prop' of type array", t, func() {
-		r := resourceInfo{
-			schemaDefinition: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"array_prop": {
-							VendorExtensible: spec.VendorExtensible{},
-							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
-							},
-						},
-					},
-					Required: []string{"array_prop"}, // This array contains the list of properties that are required
-				},
-			},
-		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertySchema("array_prop", r.schemaDefinition.Properties["array_prop"])
-			Convey("Then the returned tf tfPropSchema should be of type array", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And there should not be any validation function attached to it", func() {
-				So(tfPropSchema.ValidateFunc, ShouldBeNil)
-			})
-		})
-	})
-}
-
 func TestValidateFunc(t *testing.T) {
 	Convey("Given a swagger schema definition that has one property", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": {
@@ -798,7 +937,7 @@ func TestValidateFunc(t *testing.T) {
 
 	Convey("Given a swagger schema definition that has a property which is supposed to be computed but has a default value set", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": {
@@ -829,7 +968,7 @@ func TestValidateFunc(t *testing.T) {
 func TestCreateTerraformResourceSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has multiple properties - 'string_prop', 'int_prop', 'number_prop', 'bool_prop' and 'array_prop'", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": {
@@ -885,13 +1024,79 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a swagger schema definition that has object properties and a list of schema definitions containing the definition the object refs to", t, func() {
+		expectedRef := "#/definitions/ObjectProperty"
+		ref := spec.MustCreateRef(expectedRef)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						"object_prop": { // This prop does not have a terraform compliant name; however an automatic translation is performed behind the scenes to make it compliant
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Ref:  ref,
+							},
+						},
+					},
+					Required: []string{"string_prop", "object_prop"},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{
+				"ObjectProperty": {
+					SchemaProps: spec.SchemaProps{
+						Properties: map[string]spec.Schema{
+							"message": {
+								VendorExtensible: spec.VendorExtensible{},
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"string"},
+								},
+							},
+						},
+						Required: []string{"message"},
+					},
+				},
+			},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			resourceSchema, err := r.createTerraformResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(resourceSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should match the swagger props - 'string_prop' and 'object_prop'", func() {
+				So(resourceSchema, ShouldNotBeNil)
+				So(resourceSchema, ShouldContainKey, "string_prop")
+				So(resourceSchema, ShouldContainKey, "object_prop")
+			})
+			Convey("And the properties 'string_prop' and 'object_prop' should be required", func() {
+				So(resourceSchema["string_prop"].Required, ShouldBeTrue)
+				So(resourceSchema["object_prop"].Required, ShouldBeTrue)
+			})
+			Convey("And the tf resource schema ", func() {
+				So(resourceSchema["object_prop"].Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+			Convey("And the properties 'message' should be required", func() {
+				So(resourceSchema["object_prop"].Elem.(*schema.Resource).Schema["message"].Required, ShouldBeTrue)
+			})
+		})
+	})
 }
 
 func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a property with a name that is terraform field name compliant", t, func() {
 		propertyName := "some_prop_name_that_is_terraform_field_name_compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -915,7 +1120,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a property with a name that is NOT terraform field name compliant", t, func() {
 		propertyName := "thisPropIsNotTerraformField_Compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -940,7 +1145,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		propertyName := "thisPropIsNotTerraformField_Compliant"
 		expectedPropertyName := "this_property_is_now_terraform_field_compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -968,7 +1173,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a property with a name that is NOT terraform field name compliant but has an extension that overrides it which in turn is also not terraform name compliant", t, func() {
 		propertyName := "thisPropIsNotTerraformField_Compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -997,7 +1202,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 func TestGetResourceIdentifier(t *testing.T) {
 	Convey("Given a swagger schema definition that has an id property", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						idDefaultPropertyName: {
@@ -1025,7 +1230,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 		extensions := spec.Extensions{}
 		extensions.Add(extTfID, true)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"some-other-id": {
@@ -1053,7 +1258,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 		extensions := spec.Extensions{}
 		extensions.Add(extTfID, true)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"id": {
@@ -1087,7 +1292,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 		extensions := spec.Extensions{}
 		extensions.Add(extTfID, false)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"some-other-id": {
@@ -1110,7 +1315,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that NEITHER HAS an 'id' property NOR a property configured with x-terraform-id set to true", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"prop-that-is-not-id": {
@@ -1138,10 +1343,10 @@ func TestGetResourceIdentifier(t *testing.T) {
 	})
 }
 
-func TestGetStatusIdentifier(t *testing.T) {
-	Convey("Given a swagger schema definition that has an status property", t, func() {
+func TestGetStatusId(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property that is not an object", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						statusDefaultPropertyName: {
@@ -1158,12 +1363,15 @@ func TestGetStatusIdentifier(t *testing.T) {
 			},
 		}
 		Convey("When getStatusIdentifier method is called", func() {
-			status, err := r.getStatusIdentifier()
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("Then the value returned should be 'status'", func() {
-				So(status, ShouldEqual, statusDefaultPropertyName)
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(status[0], ShouldEqual, statusDefaultPropertyName)
 			})
 		})
 	})
@@ -1173,7 +1381,7 @@ func TestGetStatusIdentifier(t *testing.T) {
 		extensions.Add(extTfFieldStatus, true)
 		expectedStatusProperty := "some-other-property-holding-status"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						expectedStatusProperty: {
@@ -1190,12 +1398,15 @@ func TestGetStatusIdentifier(t *testing.T) {
 			},
 		}
 		Convey("When getStatusIdentifier method is called", func() {
-			id, err := r.getStatusIdentifier()
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("Then the value returned should be 'some-other-property-holding-status'", func() {
-				So(id, ShouldEqual, expectedStatusProperty)
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
+			Convey("Then the value returned should contain the name of the property 'some-other-property-holding-status'", func() {
+				So(status[0], ShouldEqual, expectedStatusProperty)
 			})
 		})
 	})
@@ -1205,13 +1416,16 @@ func TestGetStatusIdentifier(t *testing.T) {
 		extensions.Add(extTfFieldStatus, true)
 		expectedStatusProperty := "some-other-property-holding-status"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"status": {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
 							},
 						},
 						expectedStatusProperty: {
@@ -1228,12 +1442,72 @@ func TestGetStatusIdentifier(t *testing.T) {
 			},
 		}
 		Convey("When getStatusIdentifier method is called", func() {
-			id, err := r.getStatusIdentifier()
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
 			Convey("Then the value returned should be 'some-other-property-holding-status' as it takes preference over the default 'status' property", func() {
-				So(id, ShouldEqual, expectedStatusProperty)
+				So(status[0], ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that HAS an status field which is an object containing a status field", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "actualStatus"
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: []string{"object"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									expectedStatusProperty: {
+										VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+										SwaggerSchemaProps: spec.SwaggerSchemaProps{
+											ReadOnly: true,
+										},
+									},
+								},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
+			Convey("Then the status array returned should contain the different the trace of property names (hierarchy) until the last one which is the one used as status, in this case 'actualStatus' on the last index", func() {
+				So(status[0], ShouldEqual, "status")
+				So(status[1], ShouldEqual, expectedStatusProperty)
 			})
 		})
 	})
@@ -1243,7 +1517,7 @@ func TestGetStatusIdentifier(t *testing.T) {
 		extensions.Add(extTfFieldStatus, false)
 		expectedStatusProperty := "some-other-property-holding-status"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						expectedStatusProperty: {
@@ -1260,7 +1534,7 @@ func TestGetStatusIdentifier(t *testing.T) {
 			},
 		}
 		Convey("When getStatusIdentifier method is called", func() {
-			_, err := r.getStatusIdentifier()
+			_, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
 			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -1269,7 +1543,7 @@ func TestGetStatusIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that NEITHER HAS an 'status' property NOR a property configured with 'x-terraform-field-status' set to true", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"prop-that-is-not-status": {
@@ -1292,19 +1566,19 @@ func TestGetStatusIdentifier(t *testing.T) {
 			},
 		}
 		Convey("When getStatusIdentifier method is called", func() {
-			_, err := r.getStatusIdentifier()
+			_, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 		})
 	})
 
-	Convey("Given a swagger schema definition with a property configured with 'x-terraform-field-status' set to true but is not readonly", t, func() {
+	Convey("Given a swagger schema definition with a status property that is not readonly", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"prop-that-is-not-status": {
+						"status": {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
@@ -1313,7 +1587,24 @@ func TestGetStatusIdentifier(t *testing.T) {
 								ReadOnly: false,
 							},
 						},
-						"prop-that-is-not-status-and-does-not-have-status-metadata-either": {
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition with a property configured with 'x-terraform-field-status' set to true and it is not readonly", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"status": {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
@@ -1323,13 +1614,137 @@ func TestGetStatusIdentifier(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getStatusIdentifier method is called", func() {
-			_, err := r.getStatusIdentifier()
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
+		Convey("When getStatusIdentifier method is called with a schema definition and forceReadOnly check is disabled (this happens when the method is called recursively)", func() {
+			status, err := r.getStatusIdentifier(r.schemaDefinition, false, false)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status array returned should contain the status property even though it's not read only...readonly checks are only perform on root level properties", func() {
+				So(status[0], ShouldEqual, "status")
 			})
 		})
 	})
+}
+
+func TestGetStatusValueFromPayload(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property that is not an object", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						statusDefaultPropertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that also has a 'status' field in the root level", func() {
+			expectedStatusValue := "someValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: expectedStatusValue,
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload that does not have status field", func() {
+			payload := map[string]interface{}{
+				"someOtherPropertyName": "arggg",
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "payload does not match resouce schema, could not find the status field: [status]")
+			})
+		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload that has a status field but the value is not supported", func() {
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: 12, // this value is not supported, only strings and maps (for nested properties within an object) are supported
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "status property value '[status]' does not have a supported type [string/map]")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has an status property that IS an object", t, func() {
+		expectedStatusProperty := "some-other-property-holding-status"
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: []string{"object"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						statusDefaultPropertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									expectedStatusProperty: {
+										VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+										SwaggerSchemaProps: spec.SwaggerSchemaProps{
+											ReadOnly: true,
+										},
+									},
+								},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that has an status object property inside which there's an status property", func() {
+			expectedStatusValue := "someStatusValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: map[string]interface{}{
+					expectedStatusProperty: expectedStatusValue,
+				},
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+	})
+
 }
 
 func TestIsIDProperty(t *testing.T) {
