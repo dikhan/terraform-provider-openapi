@@ -54,6 +54,23 @@ func TestAccLB_Create(t *testing.T) {
 	})
 }
 
+//func TestAccLB_CreateTimeout(t *testing.T) {
+//	lb = newLB("some_name", []string{"backend.com"}, 10, false)
+//	testCreateConfigLB = populateTemplateConfigurationLB(lb.Name, lb.Backends, lb.TimeToProcess, lb.SimulateFailure)
+//	expectedValidationError, _ := regexp.Compile(".*property label is immutable and therefore can not be updated. Update operation was aborted; no updates were performed.*")
+//	resource.Test(t, resource.TestCase{
+//		PreCheck:     func() { testAccPreCheck(t) },
+//		Providers:    testAccProviders,
+//		CheckDestroy: testCheckLBsV1Destroy,
+//		Steps: []resource.TestStep{
+//			{
+//				Config:      testCreateConfigLB,
+//				ExpectError: expectedValidationError,
+//			},
+//		},
+//	})
+//}
+
 func newLB(name string, backend []string, timeToProcess int32, simulateFailure bool) api.Lbv1 {
 	return api.Lbv1{
 		Name:            name,
