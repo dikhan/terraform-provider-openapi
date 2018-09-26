@@ -13,26 +13,27 @@ type SpecResource interface {
 	getResourceName() string
 	getResourcePath() string
 	getResourceSchema() (*SchemaDefinition, error)
-
 	shouldIgnoreResource() bool
-
-	getResourcePostOperation() *ResourceOperation
-	getResourceGetOperation() *ResourceOperation
-	getResourcePutOperation() *ResourceOperation
-	getResourceDeleteOperation() *ResourceOperation
-
+	getResourceOperations() specResourceOperations
 	getTimeouts() (*specTimeouts, error)
 }
 
 type specTimeouts struct {
+	Post   *time.Duration
 	Get    *time.Duration
 	Put    *time.Duration
-	Post   *time.Duration
 	Delete *time.Duration
 }
 
-// ResourceOperation defines a resource operation
-type ResourceOperation struct {
+type specResourceOperations struct {
+	Post   *specResourceOperation
+	Get    *specResourceOperation
+	Put    *specResourceOperation
+	Delete *specResourceOperation
+}
+
+// specResourceOperation defines a resource operation
+type specResourceOperation struct {
 	SecuritySchemes  SpecSecuritySchemes
 	HeaderParameters SpecHeaderParameters
 }

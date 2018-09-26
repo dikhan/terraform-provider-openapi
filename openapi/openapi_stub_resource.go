@@ -6,10 +6,10 @@ type specStubResource struct {
 	path                    string
 	shouldIgnore            bool
 	schemaDefinition        *SchemaDefinition
-	resourceGetOperation    *ResourceOperation
-	resourcePostOperation   *ResourceOperation
-	resourcePutOperation    *ResourceOperation
-	resourceDeleteOperation *ResourceOperation
+	resourceGetOperation    *specResourceOperation
+	resourcePostOperation   *specResourceOperation
+	resourcePutOperation    *specResourceOperation
+	resourceDeleteOperation *specResourceOperation
 	timeouts                *specTimeouts
 }
 
@@ -17,7 +17,7 @@ func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition 
 	return newSpecStubResourceWithOperations(name, path, shouldIgnore, schemaDefinition, nil, nil, nil, nil)
 }
 
-func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, schemaDefinition *SchemaDefinition, resourcePostOperation, resourcePutOperation, resourceGetOperation, resourceDeleteOperation *ResourceOperation) *specStubResource {
+func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, schemaDefinition *SchemaDefinition, resourcePostOperation, resourcePutOperation, resourceGetOperation, resourceDeleteOperation *specResourceOperation) *specStubResource {
 	return &specStubResource{
 		name:                    name,
 		path:                    path,
@@ -41,17 +41,13 @@ func (s *specStubResource) getResourceSchema() (*SchemaDefinition, error) {
 
 func (s *specStubResource) shouldIgnoreResource() bool { return s.shouldIgnore }
 
-func (s *specStubResource) getResourcePostOperation() *ResourceOperation {
-	return s.resourcePostOperation
-}
-func (s *specStubResource) getResourceGetOperation() *ResourceOperation {
-	return s.resourceGetOperation
-}
-func (s *specStubResource) getResourcePutOperation() *ResourceOperation {
-	return s.resourcePutOperation
-}
-func (s *specStubResource) getResourceDeleteOperation() *ResourceOperation {
-	return s.resourceDeleteOperation
+func (s *specStubResource) getResourceOperations() specResourceOperations {
+	return specResourceOperations{
+		Post:   s.resourcePostOperation,
+		Get:    s.resourceGetOperation,
+		Put:    s.resourcePutOperation,
+		Delete: s.resourceDeleteOperation,
+	}
 }
 
 func (s *specStubResource) getTimeouts() (*specTimeouts, error) {

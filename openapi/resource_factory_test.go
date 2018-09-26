@@ -830,6 +830,6 @@ func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *S
 func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*SchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	testSchema := newTestSchema(schemaDefinitionProperties...)
 	resourceData := testSchema.getResourceData(t)
-	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &ResourceOperation{}, &ResourceOperation{}, &ResourceOperation{}, &ResourceOperation{})
+	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
 	return resourceFactory{specResource}, resourceData
 }

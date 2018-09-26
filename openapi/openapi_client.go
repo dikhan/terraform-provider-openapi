@@ -41,7 +41,7 @@ func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{},
 	if err != nil {
 		return nil, err
 	}
-	operation := resource.getResourcePostOperation()
+	operation := resource.getResourceOperations().Post
 	return o.performRequest(httpPost, resourceURL, operation, requestPayload, responsePayload)
 }
 
@@ -51,7 +51,7 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 	if err != nil {
 		return nil, err
 	}
-	operation := resource.getResourcePutOperation()
+	operation := resource.getResourceOperations().Put
 	return o.performRequest(httpPut, resourceURL, operation, requestPayload, responsePayload)
 }
 
@@ -61,7 +61,7 @@ func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload i
 	if err != nil {
 		return nil, err
 	}
-	operation := resource.getResourceGetOperation()
+	operation := resource.getResourceOperations().Get
 	return o.performRequest(httpGet, resourceURL, operation, nil, responsePayload)
 }
 
@@ -71,11 +71,11 @@ func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Respons
 	if err != nil {
 		return nil, err
 	}
-	operation := resource.getResourceDeleteOperation()
+	operation := resource.getResourceOperations().Delete
 	return o.performRequest(httpDelete, resourceURL, operation, nil, nil)
 }
 
-func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *ResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
+func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *specResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
 
 	reqContext, err := o.apiAuthenticator.prepareAuth(resourceURL, operation.SecuritySchemes, o.providerConfiguration)
 	if err != nil {

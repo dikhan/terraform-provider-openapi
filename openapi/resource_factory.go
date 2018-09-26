@@ -118,7 +118,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (ma
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
-	operation := r.openAPIResource.getResourcePutOperation()
+	operation := r.openAPIResource.getResourceOperations().Put
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support PUT opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
@@ -131,7 +131,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
 	return r.updateStateWithPayloadData(responsePayload, data)
@@ -139,7 +139,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
-	operation := r.openAPIResource.getResourceDeleteOperation()
+	operation := r.openAPIResource.getResourceOperations().Delete
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
@@ -147,7 +147,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
 	return nil

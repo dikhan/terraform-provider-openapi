@@ -100,32 +100,13 @@ func (o *SpecV2Resource) getResourcePath() string {
 	return o.Path
 }
 
-func (o *SpecV2Resource) getResourcePostOperation() *ResourceOperation {
-	if o.RootPathItem.Post == nil {
-		return nil
+func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
+	return specResourceOperations{
+		Post:   o.createResourceOperation(o.RootPathItem.Post),
+		Get:    o.createResourceOperation(o.InstancePathItem.Get),
+		Put:    o.createResourceOperation(o.InstancePathItem.Put),
+		Delete: o.createResourceOperation(o.InstancePathItem.Delete),
 	}
-	return o.createResourceOperation(o.RootPathItem.Post)
-}
-
-func (o *SpecV2Resource) getResourceGetOperation() *ResourceOperation {
-	if o.InstancePathItem.Get == nil {
-		return nil
-	}
-	return o.createResourceOperation(o.InstancePathItem.Get)
-}
-
-func (o *SpecV2Resource) getResourcePutOperation() *ResourceOperation {
-	if o.InstancePathItem.Put == nil {
-		return nil
-	}
-	return o.createResourceOperation(o.InstancePathItem.Put)
-}
-
-func (o *SpecV2Resource) getResourceDeleteOperation() *ResourceOperation {
-	if o.InstancePathItem.Delete == nil {
-		return nil
-	}
-	return o.createResourceOperation(o.InstancePathItem.Delete)
 }
 
 // shouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
@@ -138,10 +119,13 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-func (o *SpecV2Resource) createResourceOperation(operation *spec.Operation) *ResourceOperation {
+func (o *SpecV2Resource) createResourceOperation(operation *spec.Operation) *specResourceOperation {
+	if operation == nil {
+		return nil
+	}
 	headerParameters := getHeaderConfigurations(operation.Parameters)
 	securitySchemes := createSecuritySchemes(operation.Security)
-	return &ResourceOperation{
+	return &specResourceOperation{
 		HeaderParameters: headerParameters,
 		SecuritySchemes:  securitySchemes,
 	}
