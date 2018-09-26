@@ -36,6 +36,23 @@ type specResourceOperations struct {
 type specResourceOperation struct {
 	SecuritySchemes  SpecSecuritySchemes
 	HeaderParameters SpecHeaderParameters
+	responses        specResponses
+}
+
+type specResponses map[int]*specResponse
+
+type specResponse struct {
+	isPollingEnabled    bool
+	pollTargetStatuses  []string
+	pollPendingStatuses []string
+}
+
+func (s specResponses) getResponse(responseStatusCode int) *specResponse {
+	response, exists := s[responseStatusCode]
+	if !exists {
+		return nil
+	}
+	return response
 }
 
 // SchemaDefinitionPropertyType defines the type of a property
@@ -49,18 +66,22 @@ const (
 	typeList   SchemaDefinitionPropertyType = "list"
 )
 
+const idDefaultPropertyName = "id"
+const statusDefaultPropertyName = "status"
+
 // SchemaDefinitionProperty defines the attributes for a schema property
 type SchemaDefinitionProperty struct {
-	Name          string
-	PreferredName string
-	Type          SchemaDefinitionPropertyType
-	Required      bool
-	ReadOnly      bool
-	ForceNew      bool
-	Sensitive     bool
-	Immutable     bool
-	IsIdentifier  bool
-	Default       interface{}
+	Name               string
+	PreferredName      string
+	Type               SchemaDefinitionPropertyType
+	Required           bool
+	ReadOnly           bool
+	ForceNew           bool
+	Sensitive          bool
+	Immutable          bool
+	IsIdentifier       bool
+	IsStatusIdentifier bool
+	Default            interface{}
 }
 
 func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *SchemaDefinitionProperty {
@@ -255,6 +276,53 @@ func (s *SchemaDefinition) getResourceIdentifier() (string, error) {
 		return "", fmt.Errorf("could not find any identifier property in the resource schema definition")
 	}
 	return identifierProperty, nil
+}
+
+// getStatusIdentifier returns the property name that is supposed to be used as the status field. The status field
+// is selected as follows:
+// 1.If the given schema definition contains a property configured with metadata 'x-terraform-field-status' set to true, that property
+// will be used to check the different statues for the asynchronous pooling mechanism.
+// 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
+// will have a property named 'status'
+// 3. If none of the above requirements is met, an error will be returned
+func (s *SchemaDefinition) getStatusIdentifier() (string, error) {
+	statusProperty := ""
+	for propertyName, property := range s.Properties {
+		if s.isIDProperty(propertyName) {
+			continue
+		}
+		if s.isStatusProperty(propertyName) {
+			statusProperty = propertyName
+			continue
+		}
+		// field with extTfFieldStatus metadata takes preference over 'status' fields as the service provider is the one acknowledging
+		// the fact that this field should be used as identifier of the resource
+		if property.IsStatusIdentifier {
+			statusProperty = propertyName
+			break
+		}
+	}
+	// if the id field is missing and there isn't any properties set with extTfFieldStatus, there is not way for the resource
+	// to be identified and therefore an error is returned
+	if statusProperty == "" {
+		return "", fmt.Errorf("could not find any status property. Please make sure the resource schema definition has either one property named '%s' or one property is marked with IsStatusIdentifier set to true", statusDefaultPropertyName)
+	}
+	if !s.Properties[statusProperty].ReadOnly {
+		return "", fmt.Errorf("schema definition status property '%s' must be readOnly", statusProperty)
+	}
+	return statusProperty, nil
+}
+
+func (s *SchemaDefinition) isIDProperty(propertyName string) bool {
+	return s.propertyNameMatchesDefaultName(propertyName, idDefaultPropertyName)
+}
+
+func (s *SchemaDefinition) isStatusProperty(propertyName string) bool {
+	return s.propertyNameMatchesDefaultName(propertyName, statusDefaultPropertyName)
+}
+
+func (s *SchemaDefinition) propertyNameMatchesDefaultName(propertyName, expectedPropertyName string) bool {
+	return terraformutils.ConvertToTerraformCompliantName(propertyName) == expectedPropertyName
 }
 
 func (s *SchemaDefinition) getProperty(name string) (*SchemaDefinitionProperty, error) {

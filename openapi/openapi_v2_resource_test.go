@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/go-openapi/spec"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -163,6 +165,247 @@ func TestNewSpecV2Resource(t *testing.T) {
 			_, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{})
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestCreateResponses(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{}
+		Convey("When createResponses method is called with an operation that has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
+			expectedTarget := "deployed"
+			expectedStatus := "deploy_pending"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollEnabled, true)
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			extensions.Add(extTfResourcePollPendingStatuses, expectedStatus)
+			operation := &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusAccepted: {
+									VendorExtensible: spec.VendorExtensible{
+										Extensions: extensions,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			specResponses := r.createResponses(operation)
+			Convey("Then the spec responses map returned should not be empty", func() {
+				So(specResponses, ShouldNotBeEmpty)
+			})
+			Convey("Then there should be an existing key for response code 202", func() {
+				So(specResponses, ShouldContainKey, http.StatusAccepted)
+			})
+			Convey("And the response should meet the configuration", func() {
+				So(specResponses[http.StatusAccepted].isPollingEnabled, ShouldBeTrue)
+				So(specResponses[http.StatusAccepted].pollTargetStatuses, ShouldContain, expectedTarget)
+				So(specResponses[http.StatusAccepted].pollPendingStatuses, ShouldContain, expectedStatus)
+			})
+		})
+	})
+}
+
+func TestIsResourcePollingEnabled(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{}
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollEnabled, true)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			isResourcePollingEnabled := r.isResourcePollingEnabled(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the bool returned should be true", func() {
+				So(isResourcePollingEnabled, ShouldBeTrue)
+			})
+		})
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to false", func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollEnabled, false)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			isResourcePollingEnabled := r.isResourcePollingEnabled(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the bool returned should be false", func() {
+				So(isResourcePollingEnabled, ShouldBeFalse)
+			})
+		})
+		Convey("When isResourcePollingEnabled method is called with list of responses where non of the codes match the given response http code", func() {
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusOK: {},
+					},
+				},
+			}
+			isResourcePollingEnabled := r.isResourcePollingEnabled(responses.StatusCodeResponses[http.StatusOK])
+			Convey("Then bool returned should be false", func() {
+				So(isResourcePollingEnabled, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestGetResourcePollTargetStatuses(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{}
+		Convey("When getResourcePollTargetStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses := r.getResourcePollTargetStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+	})
+}
+
+func TestGetResourcePollPendingStatuses(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{}
+		Convey("When getResourcePollPendingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-pending-statuses'", func() {
+			expectedStatus := "deploy_pending"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollPendingStatuses, expectedStatus)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses := r.getResourcePollPendingStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedStatus)
+			})
+		})
+	})
+}
+
+func TestGetPollingStatuses(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{}
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the statuses returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with spaces)", func() {
+			expectedTargets := "deployed, completed, done"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the statuses returned should contain expected targets", func() {
+				// the expected Targets are a list of targets with no spaces whatsoever, hence why the removal of spaces
+				for _, expectedTarget := range strings.Split(strings.Replace(expectedTargets, " ", "", -1), ",") {
+					So(statuses, ShouldContain, expectedTarget)
+				}
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with no spaces)", func() {
+			expectedTargets := "deployed,completed,done"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the statuses returned should contain expected targets", func() {
+				for _, expectedTarget := range strings.Split(expectedTargets, ",") {
+					So(statuses, ShouldContain, expectedTarget)
+				}
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has does not have a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{},
+							},
+						},
+					},
+				},
+			}
+			statuses := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the status returned should be empty", func() {
+				So(statuses, ShouldBeEmpty)
 			})
 		})
 	})

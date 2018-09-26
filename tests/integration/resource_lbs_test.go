@@ -47,7 +47,7 @@ func TestAccLB_Create(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "status", "deploy_pending"),
+						openAPIResourceStateLB, "status", "deployed"),
 				),
 			},
 		},

@@ -460,7 +460,7 @@ func TestDelete(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error returned should be", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] DELETE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [204 200] ()")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] DELETE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [204 200 202] ()")
 			})
 		})
 	})
@@ -539,34 +539,6 @@ func TestSetStateID(t *testing.T) {
 			})
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err.Error(), ShouldEqual, "could not find any identifier property in the resource schema definition")
-			})
-		})
-	})
-}
-
-func TestUpdateLocalState(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, sliceProperty)
-		Convey("When updateLocalState is called ", func() {
-			responsePayload := map[string]interface{}{
-				idProperty.Name:       "idValue",
-				computedProperty.Name: "someComputedValue",
-				intProperty.Name:      intProperty.Default,
-				numberProperty.Name:   numberProperty.Default,
-				boolProperty.Name:     boolProperty.Default,
-				sliceProperty.Name:    sliceProperty.Default,
-			}
-			err := r.updateLocalState(resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(resourceData.Id(), ShouldEqual, responsePayload[idProperty.Name])
-				So(resourceData.Get(computedProperty.Name), ShouldEqual, responsePayload[computedProperty.Name])
-				So(resourceData.Get(intProperty.Name), ShouldEqual, responsePayload[intProperty.Name])
-				So(resourceData.Get(numberProperty.Name), ShouldEqual, responsePayload[numberProperty.Name])
-				So(resourceData.Get(boolProperty.Name), ShouldEqual, responsePayload[boolProperty.Name])
-				So(resourceData.Get(sliceProperty.Name), ShouldContain, sliceProperty.Default.([]string)[0])
 			})
 		})
 	})

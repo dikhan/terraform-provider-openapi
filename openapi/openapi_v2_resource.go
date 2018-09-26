@@ -19,10 +19,14 @@ const extTfImmutable = "x-terraform-immutable"
 const extTfForceNew = "x-terraform-force-new"
 const extTfSensitive = "x-terraform-sensitive"
 const extTfFieldName = "x-terraform-field-name"
+const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"
+const extTfResourcePollEnabled = "x-terraform-resource-poll-enabled"
+const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-completed-statuses"
+const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
 const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourceName = "x-terraform-resource-name"
 
@@ -119,18 +123,6 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-func (o *SpecV2Resource) createResourceOperation(operation *spec.Operation) *specResourceOperation {
-	if operation == nil {
-		return nil
-	}
-	headerParameters := getHeaderConfigurations(operation.Parameters)
-	securitySchemes := createSecuritySchemes(operation.Security)
-	return &specResourceOperation{
-		HeaderParameters: headerParameters,
-		SecuritySchemes:  securitySchemes,
-	}
-}
-
 func (o *SpecV2Resource) getResourceSchema() (*SchemaDefinition, error) {
 	schemaDefinition := &SchemaDefinition{}
 	schemaDefinition.Properties = SchemaDefinitionProperties{}
@@ -199,6 +191,10 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.Immutable = true
 	}
 
+	if isStatusIdentifier, ok := property.Extensions.GetBool(extTfFieldStatus); ok && isStatusIdentifier {
+		schemaDefinitionProperty.Immutable = true
+	}
+
 	if property.Default != nil {
 		if property.ReadOnly {
 			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
@@ -234,6 +230,63 @@ func (o *SpecV2Resource) getExtensionStringValue(extensions spec.Extensions, key
 		return value
 	}
 	return ""
+}
+
+func (o *SpecV2Resource) createResourceOperation(operation *spec.Operation) *specResourceOperation {
+	if operation == nil {
+		return nil
+	}
+	headerParameters := getHeaderConfigurations(operation.Parameters)
+	securitySchemes := createSecuritySchemes(operation.Security)
+	return &specResourceOperation{
+		HeaderParameters: headerParameters,
+		SecuritySchemes:  securitySchemes,
+		responses:        o.createResponses(operation),
+	}
+}
+
+func (o *SpecV2Resource) createResponses(operation *spec.Operation) specResponses {
+	responses := specResponses{}
+	for statusCode, response := range operation.Responses.StatusCodeResponses {
+		responses[statusCode] = &specResponse{
+			isPollingEnabled:    o.isResourcePollingEnabled(response),
+			pollTargetStatuses:  o.getResourcePollTargetStatuses(response),
+			pollPendingStatuses: o.getResourcePollPendingStatuses(response),
+		}
+		//if responses[statusCode].isPollingEnabled {
+		//	if len(responses[statusCode].pollTargetStatuses) == 0 || len(responses[statusCode].pollTargetStatuses) == 0 {
+		//		return nil, fmt.Errorf("response missing required extension '%s' for the polling mechanism to work", extension)
+		//	}
+		//}
+	}
+	return responses
+}
+
+// isResourcePollingEnabled checks whether there is any response code defined for the given responseStatusCode and if so
+// whether that response contains the extension 'x-terraform-resource-poll-enabled' set to true returning true;
+// otherwise false is returned
+func (o *SpecV2Resource) isResourcePollingEnabled(response spec.Response) bool {
+	if isResourcePollEnabled, ok := response.Extensions.GetBool(extTfResourcePollEnabled); ok && isResourcePollEnabled {
+		return true
+	}
+	return false
+}
+
+func (o *SpecV2Resource) getResourcePollTargetStatuses(response spec.Response) []string {
+	return o.getPollingStatuses(response, extTfResourcePollTargetStatuses)
+}
+
+func (o *SpecV2Resource) getResourcePollPendingStatuses(response spec.Response) []string {
+	return o.getPollingStatuses(response, extTfResourcePollPendingStatuses)
+}
+
+func (o *SpecV2Resource) getPollingStatuses(response spec.Response, extension string) []string {
+	var statuses []string
+	if resourcePollTargets, exists := response.Extensions.GetString(extension); exists {
+		spaceTrimmedTargets := strings.Replace(resourcePollTargets, " ", "", -1)
+		statuses = strings.Split(spaceTrimmedTargets, ",")
+	}
+	return statuses
 }
 
 func (o *SpecV2Resource) getTimeouts() (*specTimeouts, error) {

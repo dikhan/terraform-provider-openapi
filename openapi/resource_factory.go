@@ -2,6 +2,8 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
@@ -15,6 +17,12 @@ type resourceFactory struct {
 	openAPIResource SpecResource
 }
 
+// only applicable when remote resource no longer exists and GET operations return 404 NotFound
+var defaultDestroyStatus = "destroyed"
+
+var defaultPollInterval = time.Duration(5 * time.Second)
+var defaultPollMinTimeout = time.Duration(10 * time.Second)
+var defaultPollDelay = time.Duration(1 * time.Second)
 var defaultTimeout = time.Duration(10 * time.Minute)
 
 func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
@@ -91,7 +99,19 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), err)
 	}
-	return r.updateLocalState(data, responsePayload)
+
+	err = r.setStateID(data, responsePayload)
+	if err != nil {
+		return err
+	}
+	log.Printf("[INFO] Resource '%s' ID: %s", r.openAPIResource.getResourcePath(), data.Id())
+
+	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, r.openAPIResource.getResourceOperations().Post, res.StatusCode, schema.TimeoutCreate)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", r.openAPIResource.getResourcePath(), res.StatusCode, err)
+	}
+
+	return r.updateStateWithPayloadData(responsePayload, data)
 }
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
@@ -153,6 +173,87 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	return nil
 }
 
+func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]interface{}, resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI, operation *specResourceOperation, responseStatusCode int, timeoutFor string) error {
+	response := operation.responses.getResponse(responseStatusCode)
+
+	if response == nil || !response.isPollingEnabled {
+		return nil
+	}
+
+	targetStatuses := response.pollTargetStatuses
+	pendingStatuses := response.pollPendingStatuses
+
+	// This is a use case where payload does not contain payload data and hence status field is not available; e,g: DELETE operations
+	// The default behaviour for this case is to consider the resource as destroyed. Hence, the below code pre-populates
+	// the target extension with the expected status that the polling mechanism expects when dealing with NotFound resources (should only happen on delete operations).
+	// Since this is internal behaviour it is not expected that the service provider will populate this field; and if so, it
+	// will be overridden
+	if responsePayload == nil {
+		// TODO: Better handle this case, only DELETE should be allowed here, if we reach this point and we are handling any other action something is wrong with the API
+		if len(targetStatuses) > 0 {
+			log.Printf("[WARN] resource speficied poll target statuses for a DELETE operation. This is not expected as the normal behaviour is the resource to no longer exists once the DELETE operation is completed; hence subsequent GET calls should return 404 NotFound instead")
+		}
+		log.Printf("[WARN] overriding target status with default destroy status")
+		targetStatuses = []string{defaultDestroyStatus}
+	}
+
+	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
+	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.openAPIResource.getResourcePath(), targetStatuses)
+
+	stateConf := &resource.StateChangeConf{
+		Pending:      pendingStatuses,
+		Target:       targetStatuses,
+		Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerClient),
+		Timeout:      resourceLocalData.Timeout(timeoutFor),
+		PollInterval: defaultPollInterval,
+		MinTimeout:   defaultPollMinTimeout,
+		Delay:        defaultPollDelay,
+	}
+
+	// Wait, catching any errors
+	remoteData, err := stateConf.WaitForState()
+	if err != nil {
+		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
+	}
+	if responsePayload != nil {
+		*responsePayload = remoteData.(map[string]interface{})
+	}
+	return nil
+}
+
+func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		remoteData, err := r.readRemote(resourceLocalData.Id(), providerClient)
+
+		if err != nil {
+			if openapiErr, ok := err.(openapierr.Error); ok {
+				if openapierr.NotFound == openapiErr.Code() {
+					return remoteData, defaultDestroyStatus, nil
+				}
+			}
+			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
+		}
+
+		resourceSchema, err := r.openAPIResource.getResourceSchema()
+		if err != nil {
+			return nil, "", err
+		}
+
+		statusIdentifier, err := resourceSchema.getStatusIdentifier()
+		if err != nil {
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier for resource '%s' (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
+		}
+
+		value, statusIdentifierPresentInResponse := remoteData[statusIdentifier]
+		if !statusIdentifierPresentInResponse {
+			return nil, "", fmt.Errorf("response payload received from GET /%s/%s  missing the status identifier field", r.openAPIResource.getResourcePath(), resourceLocalData.Id())
+		}
+		newStatus := value.(string)
+		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), newStatus)
+		return remoteData, newStatus, nil
+	}
+}
+
 // setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
 // r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
 func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
@@ -178,15 +279,6 @@ func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payl
 		resourceLocalData.SetId(payload[identifierProperty].(string))
 	}
 	return nil
-}
-
-// updateLocalState populates the state of the schema resource data with the payload data received from the POST API request
-func (r resourceFactory) updateLocalState(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
-	err := r.setStateID(resourceLocalData, payload)
-	if err != nil {
-		return err
-	}
-	return r.updateStateWithPayloadData(payload, resourceLocalData)
 }
 
 func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
