@@ -7,15 +7,15 @@ import (
 	"log"
 )
 
-// SchemaDefinitionPropertyType defines the type of a property
-type SchemaDefinitionPropertyType string
+// schemaDefinitionPropertyType defines the type of a property
+type schemaDefinitionPropertyType string
 
 const (
-	typeString SchemaDefinitionPropertyType = "string"
-	typeInt    SchemaDefinitionPropertyType = "integer"
-	typeFloat  SchemaDefinitionPropertyType = "number"
-	typeBool   SchemaDefinitionPropertyType = "boolean"
-	typeList   SchemaDefinitionPropertyType = "list"
+	typeString schemaDefinitionPropertyType = "string"
+	typeInt    schemaDefinitionPropertyType = "integer"
+	typeFloat  schemaDefinitionPropertyType = "number"
+	typeBool   schemaDefinitionPropertyType = "boolean"
+	typeList   schemaDefinitionPropertyType = "list"
 )
 
 const idDefaultPropertyName = "id"
@@ -25,7 +25,7 @@ const statusDefaultPropertyName = "status"
 type specSchemaDefinitionProperty struct {
 	Name               string
 	PreferredName      string
-	Type               SchemaDefinitionPropertyType
+	Type               schemaDefinitionPropertyType
 	Required           bool
 	ReadOnly           bool
 	ForceNew           bool
@@ -76,7 +76,7 @@ func newListSchemaDefinitionProperty(name, preferredName string, required, readO
 	return newSchemaDefinitionProperty(name, preferredName, typeList, required, readOnly, forceNew, sensitive, immutable, isIdentifier, defaultValue)
 }
 
-func newSchemaDefinitionProperty(name, preferredName string, propertyType SchemaDefinitionPropertyType, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+func newSchemaDefinitionProperty(name, preferredName string, propertyType schemaDefinitionPropertyType, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
 	return &specSchemaDefinitionProperty{
 		Name:          name,
 		PreferredName: preferredName,
