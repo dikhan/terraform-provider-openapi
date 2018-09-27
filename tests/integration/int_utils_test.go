@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func floatToString(number float32) string {
@@ -40,6 +41,13 @@ func testAccCheckResourceExist(openAPIResourceName, resourceName, resourcePath, 
 //
 // Check all resources of the type specified in the configuration have been destroyed.
 func testCheckDestroy(state *terraform.State, openAPIResourceName, resourceName, resourcePath, resourceSchemaDefinitionName string) error {
+	return testCheckDestroyWithDelay(state, openAPIResourceName, resourceName, resourcePath, resourceSchemaDefinitionName, 0)
+}
+
+// Acceptance test resource-destruction for openapi_{resourceName}:
+//
+// Check all resources of the type specified in the configuration have been destroyed but delay the check {delayCheck} seconds
+func testCheckDestroyWithDelay(state *terraform.State, openAPIResourceName, resourceName, resourcePath, resourceSchemaDefinitionName string, delayCheck int) error {
 	for _, res := range state.RootModule().Resources {
 		if res.Type != openAPIResourceName {
 			continue
@@ -64,6 +72,8 @@ func testCheckDestroy(state *terraform.State, openAPIResourceName, resourceName,
 			InstancePathItem: apiSpec.Spec().Paths.Paths[instancePath],
 			RootPathItem:     apiSpec.Spec().Paths.Paths[resourcePath],
 		}
+
+		time.Sleep(time.Duration(delayCheck) * time.Second)
 
 		resp, err := openAPIClient.Get(specResource, cdnID, nil)
 		if err != nil {
