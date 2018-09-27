@@ -208,6 +208,22 @@ func TestCreateResponses(t *testing.T) {
 				So(specResponses[http.StatusAccepted].pollPendingStatuses, ShouldContain, expectedStatus)
 			})
 		})
+
+		Convey("When createResponses method is called with an operation does not have any status responses", func() {
+			operation := &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{},
+						},
+					},
+				},
+			}
+			specResponses := r.createResponses(operation)
+			Convey("Then the spec responses map returned should not be empty", func() {
+				So(specResponses, ShouldBeEmpty)
+			})
+		})
 	})
 }
 
