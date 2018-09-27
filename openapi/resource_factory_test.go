@@ -791,7 +791,7 @@ func TestGetResourceDataOKExists(t *testing.T) {
 
 // testCreateResourceFactoryWithID configures the resourceData with the Id field. This is used for tests that rely on the
 // resource state to be fully created. For instance, update or delete operations.
-func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *SchemaDefinitionProperty, schemaDefinitionProperties ...*SchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *specSchemaDefinitionProperty, schemaDefinitionProperties ...*specSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	schemaDefinitionProperties = append(schemaDefinitionProperties, idSchemaDefinitionProperty)
 	resourceFactory, resourceData := testCreateResourceFactory(t, schemaDefinitionProperties...)
 	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
@@ -799,7 +799,7 @@ func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *S
 }
 
 // testCreateResourceFactory configures the resourceData with some properties.
-func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*SchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*specSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	testSchema := newTestSchema(schemaDefinitionProperties...)
 	resourceData := testSchema.getResourceData(t)
 	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})

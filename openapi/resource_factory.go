@@ -79,7 +79,7 @@ func (r resourceFactory) createResourceSchema() (map[string]*schema.Schema, erro
 	return s, nil
 }
 
-func (r resourceFactory) createTerraformPropertySchema(property *SchemaDefinitionProperty) (*schema.Schema, error) {
+func (r resourceFactory) createTerraformPropertySchema(property *specSchemaDefinitionProperty) (*schema.Schema, error) {
 	propertySchema := property.terraformSchema()
 	// ValidateFunc is not yet supported on lists or sets
 	if !property.isArrayProperty() {

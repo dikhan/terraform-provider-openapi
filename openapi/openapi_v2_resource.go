@@ -35,7 +35,7 @@ type SpecV2Resource struct {
 	Name string
 	// Path contains the full relative path to the resource e,g: /v1/resource
 	Path string
-	// SchemaDefinition definition represents the representational state (aka model) of the resource
+	// specSchemaDefinition definition represents the representational state (aka model) of the resource
 	SchemaDefinition spec.Schema
 	// RootPathItem contains info about the resource root path e,g: /resource, including the POST operation used to create instances of this resource
 	RootPathItem spec.PathItem
@@ -123,9 +123,9 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-func (o *SpecV2Resource) getResourceSchema() (*SchemaDefinition, error) {
-	schemaDefinition := &SchemaDefinition{}
-	schemaDefinition.Properties = SchemaDefinitionProperties{}
+func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
+	schemaDefinition := &specSchemaDefinition{}
+	schemaDefinition.Properties = specSchemaDefinitionProperties{}
 	for propertyName, property := range o.SchemaDefinition.Properties {
 		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property)
 		if err != nil {
@@ -136,8 +136,8 @@ func (o *SpecV2Resource) getResourceSchema() (*SchemaDefinition, error) {
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema) (*SchemaDefinitionProperty, error) {
-	schemaDefinitionProperty := &SchemaDefinitionProperty{}
+func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema) (*specSchemaDefinitionProperty, error) {
+	schemaDefinitionProperty := &specSchemaDefinitionProperty{}
 
 	schemaDefinitionProperty.Name = propertyName
 

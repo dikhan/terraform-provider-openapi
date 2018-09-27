@@ -6,7 +6,7 @@ import (
 )
 
 // testSchemaDefinition defines a test schema that contains a list of properties.
-type testSchemaDefinition []*SchemaDefinitionProperty
+type testSchemaDefinition []*specSchemaDefinitionProperty
 
 // primitive testing vars
 var idProperty = newStringSchemaDefinitionProperty("id", "", true, false, false, false, true, false, "id")
@@ -32,7 +32,7 @@ var numberZeroValueProperty = newNumberSchemaDefinitionPropertyWithDefaults("num
 var boolZeroValueProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, false)
 var sliceZeroValueProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, []string{""})
 
-func newTestSchema(schemaDefinitionProperty ...*SchemaDefinitionProperty) *testSchemaDefinition {
+func newTestSchema(schemaDefinitionProperty ...*specSchemaDefinitionProperty) *testSchemaDefinition {
 	testSchema := &testSchemaDefinition{}
 	for _, s := range schemaDefinitionProperty {
 		*testSchema = append(*testSchema, s)
@@ -40,12 +40,12 @@ func newTestSchema(schemaDefinitionProperty ...*SchemaDefinitionProperty) *testS
 	return testSchema
 }
 
-func (s *testSchemaDefinition) getSchemaDefinition() *SchemaDefinition {
-	schemaDefinitionProperties := SchemaDefinitionProperties{}
+func (s *testSchemaDefinition) getSchemaDefinition() *specSchemaDefinition {
+	schemaDefinitionProperties := specSchemaDefinitionProperties{}
 	for _, schemaProperty := range *s {
 		schemaDefinitionProperties[schemaProperty.Name] = schemaProperty
 	}
-	return &SchemaDefinition{
+	return &specSchemaDefinition{
 		Properties: schemaDefinitionProperties,
 	}
 }

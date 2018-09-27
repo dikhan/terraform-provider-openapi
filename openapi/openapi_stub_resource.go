@@ -5,7 +5,7 @@ type specStubResource struct {
 	name                    string
 	path                    string
 	shouldIgnore            bool
-	schemaDefinition        *SchemaDefinition
+	schemaDefinition        *specSchemaDefinition
 	resourceGetOperation    *specResourceOperation
 	resourcePostOperation   *specResourceOperation
 	resourcePutOperation    *specResourceOperation
@@ -13,11 +13,11 @@ type specStubResource struct {
 	timeouts                *specTimeouts
 }
 
-func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *SchemaDefinition) *specStubResource {
+func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition) *specStubResource {
 	return newSpecStubResourceWithOperations(name, path, shouldIgnore, schemaDefinition, nil, nil, nil, nil)
 }
 
-func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, schemaDefinition *SchemaDefinition, resourcePostOperation, resourcePutOperation, resourceGetOperation, resourceDeleteOperation *specResourceOperation) *specStubResource {
+func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition, resourcePostOperation, resourcePutOperation, resourceGetOperation, resourceDeleteOperation *specResourceOperation) *specStubResource {
 	return &specStubResource{
 		name:                    name,
 		path:                    path,
@@ -35,7 +35,7 @@ func (s *specStubResource) getResourceName() string { return s.name }
 
 func (s *specStubResource) getResourcePath() string { return s.path }
 
-func (s *specStubResource) getResourceSchema() (*SchemaDefinition, error) {
+func (s *specStubResource) getResourceSchema() (*specSchemaDefinition, error) {
 	return s.schemaDefinition, nil
 }
 
