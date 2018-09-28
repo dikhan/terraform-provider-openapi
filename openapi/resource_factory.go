@@ -189,7 +189,6 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	// Since this is internal behaviour it is not expected that the service provider will populate this field; and if so, it
 	// will be overridden
 	if responsePayload == nil {
-		// TODO: Better handle this case, only DELETE should be allowed here, if we reach this point and we are handling any other action something is wrong with the API
 		if len(targetStatuses) > 0 {
 			log.Printf("[WARN] resource speficied poll target statuses for a DELETE operation. This is not expected as the normal behaviour is the resource to no longer exists once the DELETE operation is completed; hence subsequent GET calls should return 404 NotFound instead")
 		}

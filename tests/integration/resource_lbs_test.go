@@ -31,7 +31,7 @@ func TestAccLB_Create(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testCheckLBsV1Destroy,
+		CheckDestroy: testCheckLBsV1Destroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigLB,
@@ -55,14 +55,16 @@ func TestAccLB_Create(t *testing.T) {
 	})
 }
 
+// resource create operation is configured with x-terraform-resource-timeout: "1s"
 func TestAccLB_CreateTimeout(t *testing.T) {
-	lb = newLB("some_name", []string{"backend.com"}, 3, false)
+	timeToProcess := 3
+	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
 	testCreateConfigLB = populateTemplateConfigurationLB(lb.Name, lb.Backends, lb.TimeToProcess, lb.SimulateFailure)
 	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\(last state: 'deploy_in_progress', timeout: 2s\\).*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testCheckLBsV1Destroy,
+		CheckDestroy: testCheckLBsV1DestroyWithDelay(timeToProcess + 1), // wait long enough so polling timeouts; otherwise
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,
@@ -72,11 +74,11 @@ func TestAccLB_CreateTimeout(t *testing.T) {
 	})
 }
 
-func newLB(name string, backend []string, timeToProcess int32, simulateFailure bool) api.Lbv1 {
+func newLB(name string, backend []string, timeToProcess int, simulateFailure bool) api.Lbv1 {
 	return api.Lbv1{
 		Name:            name,
 		Backends:        backend,
-		TimeToProcess:   timeToProcess,
+		TimeToProcess:   int32(timeToProcess),
 		SimulateFailure: simulateFailure,
 	}
 }
@@ -98,9 +100,19 @@ resource "%s" "%s" {
 // Acceptance test resource-destruction for openapi_lbs_v1:
 //
 // Check all CDNs specified in the configuration have been destroyed.
-func testCheckLBsV1Destroy(state *terraform.State) error {
-	delayCheck := 4
-	return testCheckDestroyWithDelay(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB, delayCheck)
+func testCheckLBsV1DestroyWithDelay(delayCheck int) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		return testCheckDestroyWithDelay(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB, delayCheck)
+	}
+}
+
+// Acceptance test resource-destruction for openapi_lbs_v1:
+//
+// Check all CDNs specified in the configuration have been destroyed.
+func testCheckLBsV1Destroy() resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		return testCheckDestroy(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB)
+	}
 }
 
 func testAccCheckResourceExistLBs() resource.TestCheckFunc {
