@@ -25,6 +25,7 @@ var computedProperty = newStringSchemaDefinitionPropertyWithDefaults("computed_p
 var optionalProperty = newStringSchemaDefinitionPropertyWithDefaults("optional_property", "", false, false, "updatedValue")
 var sensitiveProperty = newStringSchemaDefinitionProperty("sensitive_property", "", false, false, false, true, false, false, "sensitive")
 var forceNewProperty = newBoolSchemaDefinitionProperty("bool_force_new_property", "", true, false, true, false, false, false, true)
+var statusProperty = newStringSchemaDefinitionPropertyWithDefaults("status", "", false, true, "pending")
 
 // testing properties with zero values set
 var intZeroValueProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 0)

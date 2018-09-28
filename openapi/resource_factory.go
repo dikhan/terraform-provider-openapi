@@ -18,7 +18,7 @@ type resourceFactory struct {
 }
 
 // only applicable when remote resource no longer exists and GET operations return 404 NotFound
-var defaultDestroyStatus = "destroyed"
+const defaultDestroyStatus = "destroyed"
 
 var defaultPollInterval = time.Duration(5 * time.Second)
 var defaultPollMinTimeout = time.Duration(10 * time.Second)
@@ -117,9 +117,16 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 	remoteData, err := r.readRemote(data.Id(), openAPIClient)
+
 	if err != nil {
-		return err
+		if openapiErr, ok := err.(openapierr.Error); ok {
+			if openapierr.NotFound == openapiErr.Code() {
+				return nil
+			}
+		}
+		return fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
+
 	return r.updateStateWithPayloadData(remoteData, data)
 }
 
@@ -130,9 +137,11 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (ma
 	if err != nil {
 		return nil, err
 	}
+
 	if err := r.checkHTTPStatusCode(resp, []int{http.StatusOK}); err != nil {
-		return nil, fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), id, err)
+		return nil, err
 	}
+
 	return responsePayload, nil
 }
 
@@ -140,7 +149,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	providerClient := i.(ClientOpenAPI)
 	operation := r.openAPIResource.getResourceOperations().Put
 	if operation == nil {
-		return fmt.Errorf("[resource='%s'] resource does not support PUT opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
+		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
@@ -161,7 +170,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	providerClient := i.(ClientOpenAPI)
 	operation := r.openAPIResource.getResourceOperations().Delete
 	if operation == nil {
-		return fmt.Errorf("[resource='%s'] resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
+		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
 	res, err := providerClient.Delete(r.openAPIResource, data.Id())
 	if err != nil {
@@ -227,7 +236,7 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 		if err != nil {
 			if openapiErr, ok := err.(openapierr.Error); ok {
 				if openapierr.NotFound == openapiErr.Code() {
-					return remoteData, defaultDestroyStatus, nil
+					return 0, defaultDestroyStatus, nil
 				}
 			}
 			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
@@ -293,6 +302,8 @@ func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPSta
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
 			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", r.openAPIResource.getResourceName(), res.StatusCode, resBody)
+		case http.StatusNotFound:
+			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Reponse Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
 		default:
 			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d not matching expected one %v (%s)", r.openAPIResource.getResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
 		}

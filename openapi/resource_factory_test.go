@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -320,7 +321,7 @@ func TestReadRemote(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error returned should be", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/ failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
 			})
 		})
 	})
@@ -385,7 +386,7 @@ func TestUpdate(t *testing.T) {
 			})
 		})
 
-		Convey("When update is called with resource data and a client returns a non expected http code", func() {
+		Convey("When update is called with resource data and a client returns a non expected http code when reading remote", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{},
 				returnHTTPCode:  http.StatusInternalServerError,
@@ -395,7 +396,7 @@ func TestUpdate(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error returned should be", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
 			})
 		})
 	})
@@ -410,7 +411,7 @@ func TestUpdate(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE opperation, check the swagger file exposed on '/v1/resource'")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE operation, check the swagger file exposed on '/v1/resource'")
 			})
 		})
 	})
@@ -475,7 +476,7 @@ func TestDelete(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE opperation, check the swagger file exposed on '/v1/resource'")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE operation, check the swagger file exposed on '/v1/resource'")
 			})
 		})
 	})
@@ -784,6 +785,95 @@ func TestGetResourceDataOKExists(t *testing.T) {
 			})
 			Convey("And then expectedValue should equal", func() {
 				So(value, ShouldEqual, stringPropertyWithNonCompliantName.Default)
+			})
+		})
+	})
+}
+
+func TestResourceStateRefreshFunc(t *testing.T) {
+	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client and the returned function (stateRefreshFunc) is invoked", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+					statusProperty.Name: statusProperty.Default,
+				},
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the new status should match the one returned by the API", func() {
+				So(newStatus, ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+			Convey("And the remote data should be the payload returned by the API", func() {
+				So(remoteData.(map[string]interface{})[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(remoteData.(map[string]interface{})[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
+				So(remoteData.(map[string]interface{})[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+
+		})
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns 404 not found", func() {
+			client := &clientOpenAPIStub{
+				returnHTTPCode: http.StatusNotFound,
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			_, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the new status should be the internal hardcoded status 'destroyed' as a response with 404 status code is not expected to have a body", func() {
+				So(newStatus, ShouldEqual, defaultDestroyStatus)
+			})
+		})
+
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
+			expectedError := "some error"
+			client := &clientOpenAPIStub{
+				error: errors.New(expectedError),
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(err.Error(), ShouldEqual, fmt.Sprintf("error on retrieving resource '/v1/resource' (id) when waiting: %s", expectedError))
+			})
+			Convey("And the remoteData should be empty", func() {
+				So(remoteData, ShouldBeNil)
+			})
+			Convey("And the new status should be empty", func() {
+				So(newStatus, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a resource which has a schema definition missing a status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+				},
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier for resource '/v1/resource' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+			})
+			Convey("And the remoteData should be empty", func() {
+				So(remoteData, ShouldBeNil)
+			})
+			Convey("And the new status should be empty", func() {
+				So(newStatus, ShouldBeEmpty)
 			})
 		})
 	})
