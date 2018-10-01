@@ -14,7 +14,11 @@ import (
 )
 
 type resourceFactory struct {
-	openAPIResource SpecResource
+	openAPIResource       SpecResource
+	defaultTimeout        time.Duration
+	defaultPollInterval   time.Duration
+	defaultPollMinTimeout time.Duration
+	defaultPollDelay      time.Duration
 }
 
 // only applicable when remote resource no longer exists and GET operations return 404 NotFound
@@ -24,6 +28,16 @@ var defaultPollInterval = time.Duration(5 * time.Second)
 var defaultPollMinTimeout = time.Duration(10 * time.Second)
 var defaultPollDelay = time.Duration(1 * time.Second)
 var defaultTimeout = time.Duration(10 * time.Minute)
+
+func newResourceFactory(openAPIResource SpecResource) resourceFactory {
+	return resourceFactory{
+		openAPIResource:       openAPIResource,
+		defaultPollDelay:      defaultPollDelay,
+		defaultPollInterval:   defaultPollInterval,
+		defaultPollMinTimeout: defaultPollMinTimeout,
+		defaultTimeout:        defaultTimeout,
+	}
+}
 
 func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 	s, err := r.createResourceSchema()
@@ -55,7 +69,7 @@ func (r resourceFactory) createSchemaResourceTimeout() (*schema.ResourceTimeout,
 		Read:    timeouts.Get,
 		Update:  timeouts.Put,
 		Delete:  timeouts.Delete,
-		Default: &defaultTimeout,
+		Default: &r.defaultTimeout,
 	}, nil
 }
 
@@ -213,9 +227,9 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		Target:       targetStatuses,
 		Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerClient),
 		Timeout:      resourceLocalData.Timeout(timeoutFor),
-		PollInterval: defaultPollInterval,
-		MinTimeout:   defaultPollMinTimeout,
-		Delay:        defaultPollDelay,
+		PollInterval: r.defaultPollInterval,
+		MinTimeout:   r.defaultPollMinTimeout,
+		Delay:        r.defaultPollDelay,
 	}
 
 	// Wait, catching any errors
@@ -224,7 +238,12 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
 	}
 	if responsePayload != nil {
-		*responsePayload = remoteData.(map[string]interface{})
+		remoteDataCasted, ok := remoteData.(map[string]interface{})
+		if ok {
+			*responsePayload = remoteDataCasted
+		} else {
+			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData))
+		}
 	}
 	return nil
 }
@@ -254,7 +273,7 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 
 		value, statusIdentifierPresentInResponse := remoteData[statusIdentifier]
 		if !statusIdentifierPresentInResponse {
-			return nil, "", fmt.Errorf("response payload received from GET /%s/%s  missing the status identifier field", r.openAPIResource.getResourcePath(), resourceLocalData.Id())
+			return nil, "", fmt.Errorf("response payload received from GET %s/%s  missing the status identifier field", r.openAPIResource.getResourcePath(), resourceLocalData.Id())
 		}
 		newStatus := value.(string)
 		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), newStatus)

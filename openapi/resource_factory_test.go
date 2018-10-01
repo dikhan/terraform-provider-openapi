@@ -22,11 +22,9 @@ func TestCreateSchemaResourceTimeout(t *testing.T) {
 			Put:    &duration,
 			Delete: &duration,
 		}
-		r := resourceFactory{
-			&specStubResource{
-				timeouts: expectedTimeouts,
-			},
-		}
+		r := newResourceFactory(&specStubResource{
+			timeouts: expectedTimeouts,
+		})
 		Convey("When createSchemaResourceTimeout is called", func() {
 			timeouts, err := r.createSchemaResourceTimeout()
 			Convey("Then the error returned should be nil", func() {
@@ -403,7 +401,7 @@ func TestUpdate(t *testing.T) {
 
 	Convey("Given a resource factory with no delete operation configured", t, func() {
 		specResource := newSpecStubResource("resourceName", "/v1/resource", false, nil)
-		r := resourceFactory{specResource}
+		r := newResourceFactory(specResource)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.delete(nil, client)
@@ -468,7 +466,7 @@ func TestDelete(t *testing.T) {
 
 	Convey("Given a resource factory with no delete operation configured", t, func() {
 		specResource := newSpecStubResource("resourceName", "/v1/resource", false, nil)
-		r := resourceFactory{specResource}
+		r := newResourceFactory(specResource)
 		Convey("When delete is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.delete(nil, client)
@@ -790,6 +788,102 @@ func TestGetResourceDataOKExists(t *testing.T) {
 	})
 }
 
+func TestHandlePollingIfConfigured(t *testing.T) {
+	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When handlePollingIfConfigured is called with an operation that has a response defined for the API response status code passed in and polling is enabled AND the API returns a status that matches the target", func() {
+			targetState := "deployed"
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+					statusProperty.Name: targetState,
+				},
+				returnHTTPCode: http.StatusOK,
+			}
+			responsePayload := map[string]interface{}{}
+
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					responseStatusCode: {
+						isPollingEnabled:    true,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{targetState},
+					},
+				},
+			}
+			err := r.handlePollingIfConfigured(&responsePayload, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the remote data should be the payload returned by the API", func() {
+				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
+				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+		})
+
+		Convey("When handlePollingIfConfigured is called with an operation that has a response defined for the API response status code passed in and polling is enabled AND the responsePayload is nil (meaning we are handling a DELETE operation)", func() {
+			targetState := "deployed"
+			client := &clientOpenAPIStub{
+				returnHTTPCode: http.StatusNotFound,
+			}
+			responsePayload := map[string]interface{}{}
+
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					responseStatusCode: {
+						isPollingEnabled:    true,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{targetState},
+					},
+				},
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the remote data should be the payload returned by the API", func() {
+				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
+				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+		})
+
+		Convey("When handlePollingIfConfigured is called with a response status code that DOES NOT any of the operation's reponse definitions", func() {
+			client := &clientOpenAPIStub{}
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{},
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When handlePollingIfConfigured is called with a response status code that DOES math one of the operation responses BUT polling is not enabled for that response", func() {
+			client := &clientOpenAPIStub{}
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					responseStatusCode: {
+						isPollingEnabled:    false,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{"deployed"},
+					},
+				},
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestResourceStateRefreshFunc(t *testing.T) {
 	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
@@ -877,6 +971,32 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory configured with a resource which has a schema definition with a status property but the responsePayload is missing the status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+				},
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "response payload received from GET /v1/resource/id  missing the status identifier field")
+			})
+			Convey("And the remoteData should be empty", func() {
+				So(remoteData, ShouldBeNil)
+			})
+			Convey("And the new status should be empty", func() {
+				So(newStatus, ShouldBeEmpty)
+			})
+		})
+	})
 }
 
 // testCreateResourceFactoryWithID configures the resourceData with the Id field. This is used for tests that rely on the
@@ -893,5 +1013,5 @@ func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*spec
 	testSchema := newTestSchema(schemaDefinitionProperties...)
 	resourceData := testSchema.getResourceData(t)
 	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
-	return resourceFactory{specResource}, resourceData
+	return newResourceFactory(specResource), resourceData
 }
