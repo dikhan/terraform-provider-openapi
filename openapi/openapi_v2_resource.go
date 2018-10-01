@@ -253,11 +253,6 @@ func (o *SpecV2Resource) createResponses(operation *spec.Operation) specResponse
 			pollTargetStatuses:  o.getResourcePollTargetStatuses(response),
 			pollPendingStatuses: o.getResourcePollPendingStatuses(response),
 		}
-		//if responses[statusCode].isPollingEnabled {
-		//	if len(responses[statusCode].pollTargetStatuses) == 0 || len(responses[statusCode].pollTargetStatuses) == 0 {
-		//		return nil, fmt.Errorf("response missing required extension '%s' for the polling mechanism to work", extension)
-		//	}
-		//}
 	}
 	return responses
 }
