@@ -122,16 +122,16 @@ func TestAccLB_CreateTimeout(t *testing.T) {
 	})
 }
 
+// TestAccLB_CreateFailureSimulation this test covers situations where the API does not return an expected status
 func TestAccLB_CreateFailureSimulation(t *testing.T) {
 	simulateFailure := true
-	timeToProcess := 3
-	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, simulateFailure)
+	lb = newLB("some_name", []string{"backend.com"}, 1, simulateFailure)
 	testCreateConfigLB = populateTemplateConfigurationLB(lb.Name, lb.Backends, lb.TimeToProcess, lb.SimulateFailure)
 	expectedValidationError, _ := regexp.Compile(".*unexpected state 'deploy_failed', wanted target 'deployed'.*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testCheckLBsV1DestroyWithDelay(timeToProcess + 1), // wait long enough so polling timeouts; otherwise
+		CheckDestroy: testCheckLBsV1Destroy(), // wait long enough so polling timeouts; otherwise
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,
