@@ -103,6 +103,43 @@ func TestAccLB_Update(t *testing.T) {
 	})
 }
 
+func TestAccLB_Destroy(t *testing.T) {
+	var lbUpdated = newLB("some_name_updated", []string{"backend2.com"}, 1, false)
+	testLBUpdatedConfig := populateTemplateConfigurationLB(lbUpdated.Name, lbUpdated.Backends, lbUpdated.TimeToProcess, lbUpdated.SimulateFailure)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckLBsV1Destroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testCreateConfigLB,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckResourceExistLBs(),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateLB, "name", lb.Name),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateLB, "backends.#", fmt.Sprintf("%d", len(lb.Backends))),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateLB, "backends.0", arrayToString(lb.Backends)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateLB, "time_to_process", fmt.Sprintf("%d", lb.TimeToProcess)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateLB, "status", "deployed"),
+				),
+			},
+			{
+				Config:  testLBUpdatedConfig,
+				Destroy: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckResourceDoesNotExistLBs(),
+				),
+			},
+		},
+	})
+}
+
 // resource create operation is configured with x-terraform-resource-timeout: "1s"
 func TestAccLB_CreateTimeout(t *testing.T) {
 	timeToProcess := 3
@@ -180,6 +217,10 @@ func testCheckLBsV1Destroy() resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		return testCheckDestroy(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB)
 	}
+}
+
+func testAccCheckResourceDoesNotExistLBs() resource.TestCheckFunc {
+	return testAccCheckResourceDoesNotExist(openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB)
 }
 
 func testAccCheckResourceExistLBs() resource.TestCheckFunc {
