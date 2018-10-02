@@ -1,9 +1,9 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
