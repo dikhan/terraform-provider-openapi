@@ -53,3 +53,7 @@ func (s *specStubResource) getResourceOperations() specResourceOperations {
 func (s *specStubResource) getTimeouts() (*specTimeouts, error) {
 	return s.timeouts, nil
 }
+
+func (s *specStubResource) getHost() (string, error) {
+	return "", nil
+}

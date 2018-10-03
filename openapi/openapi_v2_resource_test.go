@@ -606,3 +606,145 @@ func TestGetDuration(t *testing.T) {
 		})
 	})
 }
+
+func TestGetResourceOverrideHost(t *testing.T) {
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a non parametrized host containing the host to use", t, func() {
+		expectedHost := "some.api.domain.com"
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := getResourceOverrideHost(r.RootPathItem.Post)
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a parametrized host containing the host to use", t, func() {
+		expectedHost := "some.api.${serviceProviderName}.domain.com"
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := getResourceOverrideHost(r.RootPathItem.Post)
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with an empty string value", t, func() {
+		expectedHost := ""
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := getResourceOverrideHost(r.RootPathItem.Post)
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+}
+
+func TestIsMultiRegionHost(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		Convey("When isMultiRegionHost method is called with a non multi region host", func() {
+			expectedHost := "some.api.domain.com"
+			isMultiRegion, _ := isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host", func() {
+			expectedHost := "some.api.${%s}.domain.com"
+			isMultiRegion, _ := isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host that has region at the beginning", func() {
+			expectedHost := "${%s}.domain.com"
+			isMultiRegion, _ := isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestGetMultiRegionHost(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		Convey("When isMultiRegionHost method is called with a non multi region host and a region", func() {
+			expectedHost := "some.api.domain.com"
+			region := "some-region"
+			multiRegionHost, err := getMultiRegionHost(expectedHost, region)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be empty", func() {
+				So(multiRegionHost, ShouldBeEmpty)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host", func() {
+			expectedHost := "some.api.${%s}.domain.com"
+			region := "some-region"
+			multiRegionHost, err := getMultiRegionHost(expectedHost, region)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(multiRegionHost, ShouldEqual, "some.api.some-region.domain.com")
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host that has region at the beginning", func() {
+			expectedHost := "${%s}.domain.com"
+			region := "some-region"
+			multiRegionHost, err := getMultiRegionHost(expectedHost, region)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be false", func() {
+				So(multiRegionHost, ShouldBeEmpty)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host but empty region", func() {
+			expectedHost := "some.api.${%s}.domain.com"
+			_, err := getMultiRegionHost(expectedHost, "")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}

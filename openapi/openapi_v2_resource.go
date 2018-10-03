@@ -29,10 +29,12 @@ const extTfResourcePollTargetStatuses = "x-terraform-resource-poll-completed-sta
 const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-statuses"
 const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourceName = "x-terraform-resource-name"
+const extTfResourceURL = "x-terraform-resource-host"
 
 // SpecV2Resource defines a struct that implements the SpecResource interface and it's based on OpenAPI v2 specification
 type SpecV2Resource struct {
-	Name string
+	Name   string
+	Region string
 	// Path contains the full relative path to the resource e,g: /v1/resource
 	Path string
 	// specSchemaDefinition definition represents the representational state (aka model) of the resource
@@ -43,12 +45,18 @@ type SpecV2Resource struct {
 	InstancePathItem spec.PathItem
 }
 
+// newSpecV2Resource creates a SpecV2Resource with no region and default host
 func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem) (*SpecV2Resource, error) {
+	return newSpecV2ResourceWithRegion("", path, schemaDefinition, rootPathItem, instancePathItem)
+}
+
+func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem) (*SpecV2Resource, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path must not be empty")
 	}
 	resource := &SpecV2Resource{
 		Path:             path,
+		Region:           region,
 		SchemaDefinition: schemaDefinition,
 		RootPathItem:     rootPathItem,
 		InstancePathItem: instancePathItem,
@@ -62,6 +70,9 @@ func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, 
 }
 
 func (o *SpecV2Resource) getResourceName() string {
+	if o.Region != "" {
+		return fmt.Sprintf("%s_%s", o.Name, o.Region)
+	}
 	return o.Name
 }
 
@@ -102,6 +113,53 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 
 func (o *SpecV2Resource) getResourcePath() string {
 	return o.Path
+}
+
+// getHost can return an empty host in which case the expectation is that the host used will be the one specified in the
+// swagger host attribute or if not present the host used will be the host where the swagger file was served
+func (o *SpecV2Resource) getHost() (string, error) {
+	overrideHost := getResourceOverrideHost(o.RootPathItem.Post)
+	if overrideHost == "" {
+		return "", nil
+	}
+	multiRegionHost, err := getMultiRegionHost(overrideHost, o.Region)
+	if err != nil {
+		return "", nil
+	}
+	if multiRegionHost != "" {
+		return multiRegionHost, nil
+	}
+	return overrideHost, nil
+}
+
+func getMultiRegionHost(overrideHost string, region string) (string, error) {
+	isMultiRegionHost, regex := isMultiRegionHost(overrideHost)
+	if isMultiRegionHost {
+		if region == "" {
+			return "", fmt.Errorf("region can not be empty for multiregion resources")
+		}
+		repStr := fmt.Sprintf("${1}%s$4", region)
+		return regex.ReplaceAllString(overrideHost, repStr), nil
+	}
+	return "", nil
+}
+
+// getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
+// value will override the global host value, and the API calls for this resource will be made against the value returned
+func getResourceOverrideHost(rootPathItem *spec.Operation) string {
+	if resourceURL, exists := rootPathItem.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
+		return resourceURL
+	}
+	return ""
+}
+
+func isMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
+	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
+	if err != nil {
+		log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
+		return false, nil
+	}
+	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
 }
 
 func (o *SpecV2Resource) getResourceOperations() specResourceOperations {

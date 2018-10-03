@@ -14,6 +14,16 @@ tags:
   externalDocs:
     description: "Find out more about cdn api"
     url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
+- name: "lb"
+  description: "Operations about lbs"
+  externalDocs:
+    description: "Find out more about lb api"
+    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
+- name: "monitor"
+  description: "Operations about monitors"
+  externalDocs:
+    description: "Find out more about monitor api"
+    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
 schemes:
 - "http"
 - "https"
@@ -25,6 +35,8 @@ produces:
 
 security:
   - apikey_auth: []
+
+x-terraform-resource-regions-monitor: "rst1,dub1"
 
 paths:
   /swagger.json:
@@ -49,6 +61,7 @@ paths:
   /v1/cdns:
     post:
       x-terraform-resource-name: "cdn"
+      x-terraform-resource-host: localhost:8443
       tags:
       - "cdn"
       summary: "Create cdn"
@@ -255,6 +268,60 @@ paths:
         404:
           $ref: "#/responses/NotFound"
 
+
+  ############################
+  ##### Monitors Resource ####
+  ############################
+
+  # The monitor resource is not implemented in the backed, it only serves as an example on how the global host can be overridden
+  # and how the resource can be configured with multi region setup
+
+  /v1/monitors:
+    post:
+      tags:
+      - "monitor"
+      summary: "Create monitor v1"
+      operationId: "MonitorV1"
+      x-terraform-resource-host: "some.api.${monitor}.domain.com"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Monitor v1 payload object to be posted as part of the POST request"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitorV1"
+      responses:
+        200:
+          description: "this operation is asynchronous, to check the status of the deployment call GET operation and check the status field returned in the payload"
+          schema:
+            $ref: "#/definitions/MonitorV1"
+        default:
+          description: "generic error response"
+          schema:
+            $ref: "#/definitions/Error"
+  /v1/monitors/{id}:
+    get:
+      tags:
+      - "monitor"
+      summary: "Get monitor by id"
+      description: ""
+      operationId: "MonitorV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The monitor v1 id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitorV1"
+        400:
+          description: "Invalid monitor id supplied"
+        404:
+          description: "Monitor not found"
+
 securityDefinitions:
   apikey_auth:
     type: "apiKey"
@@ -328,6 +395,17 @@ definitions:
         default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
       simulate_failure: # allows user to set it to true and force an error on the API when the given operation (POST/PUT/READ/DELETE) is being performed
         type: boolean
+
+  MonitorV1:
+    type: "object"
+    required:
+    - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"
 
   # Schema for error response body
   Error:

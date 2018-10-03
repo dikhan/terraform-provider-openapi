@@ -12,7 +12,7 @@ import (
 
 const resourceNameLB = "lbs_v1"
 const resourcePathLB = "/v1/lbs"
-const resouceSchemaDefinitionNameLB = "LB"
+const resourceSchemaDefinitionNameLB = "LBV1"
 
 var openAPIResourceNameLB = fmt.Sprintf("%s_%s", providerName, resourceNameLB)
 var openAPIResourceInstanceNameLB = "my_lb"
@@ -206,7 +206,7 @@ resource "%s" "%s" {
 // Check all CDNs specified in the configuration have been destroyed.
 func testCheckLBsV1DestroyWithDelay(delayCheck int) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		return testCheckDestroyWithDelay(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB, delayCheck)
+		return testCheckDestroyWithDelay(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resourceSchemaDefinitionNameLB, delayCheck)
 	}
 }
 
@@ -215,14 +215,14 @@ func testCheckLBsV1DestroyWithDelay(delayCheck int) resource.TestCheckFunc {
 // Check all CDNs specified in the configuration have been destroyed.
 func testCheckLBsV1Destroy() resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		return testCheckDestroy(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB)
+		return testCheckDestroy(state, openAPIResourceNameLB, resourceNameLB, resourcePathLB, resourceSchemaDefinitionNameLB)
 	}
 }
 
 func testAccCheckResourceDoesNotExistLBs() resource.TestCheckFunc {
-	return testAccCheckResourceDoesNotExist(openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB)
+	return testAccCheckResourceDoesNotExist(openAPIResourceNameLB, resourceNameLB, resourcePathLB, resourceSchemaDefinitionNameLB)
 }
 
 func testAccCheckResourceExistLBs() resource.TestCheckFunc {
-	return testAccCheckResourceExist(openAPIResourceNameLB, resourceNameLB, resourcePathLB, resouceSchemaDefinitionNameLB)
+	return testAccCheckResourceExist(openAPIResourceNameLB, resourceNameLB, resourcePathLB, resourceSchemaDefinitionNameLB)
 }

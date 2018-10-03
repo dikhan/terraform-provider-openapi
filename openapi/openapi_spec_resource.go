@@ -7,6 +7,7 @@ import (
 // SpecResource defines the behaviour related to terraform compliant OpenAPI Resources.
 type SpecResource interface {
 	getResourceName() string
+	getHost() (string, error)
 	getResourcePath() string
 	getResourceSchema() (*specSchemaDefinition, error)
 	shouldIgnoreResource() bool

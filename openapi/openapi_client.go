@@ -116,8 +116,19 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	basePath := o.openAPIBackendConfiguration.getBasePath()
 	resourceRelativePath := resource.getResourcePath()
+
+	// Fall back to override the host if value is not empty; otherwise global host will be used as usual
+	hostOverride, err := resource.getHost()
+	if err != nil {
+		return "", err
+	}
+	if hostOverride != "" {
+		log.Printf("[INFO] resource '%s' is configured with host override, API calls will be made against '%s' instead of '%s'", resourceRelativePath, hostOverride, host)
+		host = hostOverride
+	}
 
 	if host == "" || resourceRelativePath == "" {
 		return "", fmt.Errorf("host and path are mandatory attributes to get the resource URL - host['%s'], path['%s']", host, resourceRelativePath)
