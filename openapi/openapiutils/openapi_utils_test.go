@@ -1,6 +1,5 @@
 package openapiutils
 
-//
 import (
 	"fmt"
 	"github.com/go-openapi/spec"

@@ -2,11 +2,103 @@ package openapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
+
+func TestIsMultiRegionResource(t *testing.T) {
+	Convey("Given a specV2Analyser and a resource root has a POST operation containing the x-terraform-resource-host with a parametrized host containing region variable", t, func() {
+		serviceProviderName := "serviceProviderName"
+		r := specV2Analyser{}
+		resourceRoot := &spec.PathItem{
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceURL: fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName),
+						},
+					},
+				},
+			},
+		}
+		Convey("When isMultiRegionResource method is called with a resourceRoot pathItem and a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest,useast")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where NONE matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, "someOtherServiceProvider"), "rst, dub")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err returned should contain the following error message", func() {
+				So(err.Error(), ShouldEqual, "missing matching 'serviceProviderName' root level region extension 'x-terraform-resource-regions-serviceProviderName'")
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+			Convey("And the regions map returned should be empty", func() {
+				So(regions, ShouldBeEmpty)
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are not comma separated", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest useast")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswestuseast")
+				So(regions["uswestuseast"], ShouldEqual, "some.api.uswestuseast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are comma separated with spaces", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest, useast")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+	})
+}
 
 func TestResourceInstanceRegex(t *testing.T) {
 	Convey("Given an specV2Analyser", t, func() {
