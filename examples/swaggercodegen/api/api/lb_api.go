@@ -48,7 +48,9 @@ func LBGetV1(w http.ResponseWriter, r *http.Request) {
 }
 
 func LBCreateV1(w http.ResponseWriter, r *http.Request) {
-	lb := &Lbv1{}
+	lb := &Lbv1{
+		NewStatus: &Status{},
+	}
 	err := readRequest(r, lb)
 	if err != nil {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
@@ -147,9 +149,9 @@ func sleepAndDestroyLB(lb *Lbv1, waitTime int32) {
 }
 
 func updateLBStatus(lb *Lbv1, newStatus status) {
-	oldStatus := lb.Status
-	lb.Status = string(newStatus)
-	log.Printf("LB [%s] status updated '%s' => '%s'", lb.Id, oldStatus, newStatus)
+	oldStatus := lb.NewStatus.Status
+	lb.NewStatus.Status = string(newStatus)
+	log.Printf("LB [%s] status updated '%s' => '%s'", lb.Id, oldStatus, lb.NewStatus.Status)
 }
 
 func retrieveLB(r *http.Request) (*Lbv1, error) {

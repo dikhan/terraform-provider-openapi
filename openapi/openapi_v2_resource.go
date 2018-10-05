@@ -211,11 +211,12 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinition, err := o.getSchemaDefinition(schemaDefinition)
+		objectSchemaDefinition, err := o.getSchemaDefinition(schemaDefinition)
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinitionProperty.specSchemaDefinition = *schemaDefinition
+		schemaDefinitionProperty.specSchemaDefinition = *objectSchemaDefinition
+		schemaDefinitionProperty.Type = typeObject
 	} else if o.isArrayProperty(property) {
 		schemaDefinitionProperty.Type = typeList
 	} else if property.Type.Contains("string") {

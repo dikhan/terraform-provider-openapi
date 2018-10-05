@@ -394,6 +394,8 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 		}
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 			switch reflect.TypeOf(dataValue).Kind() {
+			case reflect.Map:
+				input[propertyName] = dataValue.(map[string]interface{})
 			case reflect.Slice:
 				input[propertyName] = dataValue.([]interface{})
 			case reflect.String:

@@ -359,6 +359,22 @@ definitions:
         x-terraform-field-name: betterExampleNumberFieldName  # overriding exampleNumber with a different name 'betterExampleNumberFieldName'; the preferred name is not terraform compliant either so the provider will perform the name conversion automatically when translating the name into the provider resource configuration and when saving the field into the state file
       example_boolean:
         type: boolean
+      object_property:
+        #type: object - type is optional for properties of object type that use $ref
+        $ref: "#/definitions/ObjectProperty"
+      object_nested_scheme_property:
+        type: object # nested properties required type equal object to be considered as object
+        readOnly: true
+        properties:
+          name:
+            type: string
+  ObjectProperty:
+    type: object
+    required:
+    - message
+    properties:
+      message:
+        type: string
 
   LBV1:
     type: "object"
@@ -395,6 +411,17 @@ definitions:
         default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
       simulate_failure: # allows user to set it to true and force an error on the API when the given operation (POST/PUT/READ/DELETE) is being performed
         type: boolean
+      newStatus:
+        $ref: "#/definitions/Status"
+#        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        readOnly: true
+  Status:
+    type: object
+    properties:
+      message:
+        type: string
+      status:
+        type: string
 
   MonitorV1:
     type: "object"
