@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // specSchemaDefinitionProperties defines a collection of schema definition properties
@@ -11,6 +12,31 @@ type specSchemaDefinitionProperties map[string]*specSchemaDefinitionProperty
 // specSchemaDefinition defines a struct for a schema definition
 type specSchemaDefinition struct {
 	Properties specSchemaDefinitionProperties
+}
+
+func (s *specSchemaDefinition) createResourceSchema() (map[string]*schema.Schema, error) {
+	return s.createResourceSchemaIgnoreID(true)
+}
+
+func (s *specSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {
+	return s.createResourceSchemaIgnoreID(false)
+}
+
+func (s *specSchemaDefinition) createResourceSchemaIgnoreID(ignoreID bool) (map[string]*schema.Schema, error) {
+	terraformSchema := map[string]*schema.Schema{}
+
+	for _, property := range s.Properties {
+		// Terraform already has a field ID reserved, hence the schema does not need to include an explicit ID property
+		if property.isPropertyNamedID() && ignoreID {
+			continue
+		}
+		tfSchema, err := property.terraformSchema()
+		if err != nil {
+			return nil, err
+		}
+		terraformSchema[property.getTerraformCompliantPropertyName()] = tfSchema
+	}
+	return terraformSchema, nil
 }
 
 func (s *specSchemaDefinition) getImmutableProperties() []string {

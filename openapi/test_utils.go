@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
+	"log"
 	"testing"
 )
 
@@ -58,7 +59,11 @@ func (s *testSchemaDefinition) getResourceData(t *testing.T) *schema.ResourceDat
 	resourceDataMap := map[string]interface{}{}
 	for _, schemaProperty := range *s {
 		terraformName := schemaProperty.getTerraformCompliantPropertyName()
-		resourceSchema[terraformName] = schemaProperty.terraformSchema()
+		schema, err := schemaProperty.terraformSchema()
+		if err != nil {
+			log.Fatal(err)
+		}
+		resourceSchema[terraformName] = schema
 		resourceDataMap[terraformName] = schemaProperty.Default
 	}
 	resourceLocalData := schema.TestResourceDataRaw(t, resourceSchema, resourceDataMap)

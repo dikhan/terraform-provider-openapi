@@ -19,7 +19,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When getResourceName method is called", func() {
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -36,7 +37,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When getResourceName method is called", func() {
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -54,7 +56,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When getResourceName method is called", func() {
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -72,7 +75,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When getResourceName method is called", func() {
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -90,7 +94,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When getResourceName method is called", func() {
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -108,7 +113,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When getResourceName method is called", func() {
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -132,7 +138,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When getResourceName method is called", func() {
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -152,7 +159,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			},
 		}
 		Convey("When newSpecV2Resource method is called", func() {
-			_, err := newSpecV2Resource(invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			_, err := newSpecV2Resource(invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -162,7 +170,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 	Convey("Given an empty path", t, func() {
 		path := ""
 		Convey("When newSpecV2Resource method is called", func() {
-			_, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{})
+			schemaDefinitions := map[string]spec.Schema{}
+			_, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions)
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})

@@ -19,7 +19,7 @@ var openAPIResourceNameCDN = fmt.Sprintf("%s_%s", providerName, resourceCDNName)
 var openAPIResourceInstanceNameCDN = "my_cdn"
 var openAPIResourceStateCDN = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
 
-var cdn api.ContentDeliveryNetwork
+var cdn api.ContentDeliveryNetworkV1
 var testCreateConfigCDN string
 
 func init() {
@@ -337,8 +337,8 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 	})
 }
 
-func newContentDeliveryNetwork(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool) api.ContentDeliveryNetwork {
-	return api.ContentDeliveryNetwork{
+func newContentDeliveryNetwork(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool) api.ContentDeliveryNetworkV1 {
+	return api.ContentDeliveryNetworkV1{
 		Label:          label,
 		Ips:            ips,
 		Hostnames:      hostnames,

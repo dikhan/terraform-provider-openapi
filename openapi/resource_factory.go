@@ -40,7 +40,7 @@ func newResourceFactory(openAPIResource SpecResource) resourceFactory {
 }
 
 func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
-	s, err := r.createResourceSchema()
+	s, err := r.createTerraformResourceSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -73,33 +73,12 @@ func (r resourceFactory) createSchemaResourceTimeout() (*schema.ResourceTimeout,
 	}, nil
 }
 
-func (r resourceFactory) createResourceSchema() (map[string]*schema.Schema, error) {
-	s := map[string]*schema.Schema{}
+func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
 	schemaDefinition, err := r.openAPIResource.getResourceSchema()
 	if err != nil {
 		return nil, err
 	}
-	for _, property := range schemaDefinition.Properties {
-		// Terraform already has a field ID reserved, hence the schema does not need to include an explicit ID property
-		if property.isPropertyNamedID() {
-			continue
-		}
-		tfSchema, err := r.createTerraformPropertySchema(property)
-		if err != nil {
-			return nil, err
-		}
-		s[property.getTerraformCompliantPropertyName()] = tfSchema
-	}
-	return s, nil
-}
-
-func (r resourceFactory) createTerraformPropertySchema(property *specSchemaDefinitionProperty) (*schema.Schema, error) {
-	propertySchema := property.terraformSchema()
-	// ValidateFunc is not yet supported on lists or sets
-	if !property.isArrayProperty() {
-		propertySchema.ValidateFunc = property.validateFunc()
-	}
-	return propertySchema, nil
+	return schemaDefinition.createResourceSchema()
 }
 
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {

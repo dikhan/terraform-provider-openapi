@@ -16,6 +16,7 @@ const (
 	typeFloat  schemaDefinitionPropertyType = "number"
 	typeBool   schemaDefinitionPropertyType = "boolean"
 	typeList   schemaDefinitionPropertyType = "list"
+	typeObject schemaDefinitionPropertyType = "object"
 )
 
 const idDefaultPropertyName = "id"
@@ -34,6 +35,8 @@ type specSchemaDefinitionProperty struct {
 	IsIdentifier       bool
 	IsStatusIdentifier bool
 	Default            interface{}
+	// only for object type properties
+	specSchemaDefinition specSchemaDefinition
 }
 
 func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
@@ -102,6 +105,10 @@ func (s *specSchemaDefinitionProperty) isPropertyNamedID() bool {
 	return s.getTerraformCompliantPropertyName() == "id"
 }
 
+func (s *specSchemaDefinitionProperty) isObjectProperty() bool {
+	return s.Type == typeObject
+}
+
 func (s *specSchemaDefinitionProperty) isArrayProperty() bool {
 	return s.Type == typeList
 }
@@ -115,22 +122,20 @@ func (s *specSchemaDefinitionProperty) isReadOnly() bool {
 }
 
 // terraformSchema returns the terraform schema for a the given specSchemaDefinitionProperty
-func (s *specSchemaDefinitionProperty) terraformSchema() *schema.Schema {
-	terraformSchema := &schema.Schema{
-		// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
-		// it comes back from the api and is stored in the state. This properties are mostly informative.
-		Computed: s.ReadOnly,
-		// A sensitive property means that the expectedValue will not be disclosed in the state file, preventing secrets from
-		// being leaked
-		Sensitive: s.Sensitive,
-		// If the expectedValue of the property is changed, it will force the deletion of the previous generated resource and
-		// a new resource with this new expectedValue will be created
-		ForceNew: s.ForceNew,
-		Default:  s.Default,
-		// Set the property as required or optional
-		Required: s.Required,
-	}
+func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error) {
+	var terraformSchema = &schema.Schema{}
 	switch s.Type {
+	case typeObject:
+		objectSchema, err := s.specSchemaDefinition.createResourceSchemaKeepID()
+		if err != nil {
+			return nil, err
+		}
+		terraformSchema = &schema.Schema{
+			Type: schema.TypeMap,
+			Elem: &schema.Resource{
+				Schema: objectSchema,
+			},
+		}
 	case typeString:
 		terraformSchema.Type = schema.TypeString
 	case typeInt:
@@ -143,6 +148,19 @@ func (s *specSchemaDefinitionProperty) terraformSchema() *schema.Schema {
 		terraformSchema.Type = schema.TypeList
 		terraformSchema.Elem = &schema.Schema{Type: schema.TypeString}
 	}
+
+	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
+	// it comes back from the api and is stored in the state. This properties are mostly informative.
+	terraformSchema.Computed = s.ReadOnly
+	// A sensitive property means that the expectedValue will not be disclosed in the state file, preventing secrets from
+	// being leaked
+	terraformSchema.Sensitive = s.Sensitive
+	// If the expectedValue of the property is changed, it will force the deletion of the previous generated resource and
+	// a new resource with this new expectedValue will be created
+	terraformSchema.ForceNew = s.ForceNew
+	terraformSchema.Default = s.Default
+
+	// Set the property as required or optional
 	if s.Required {
 		terraformSchema.Required = true
 	} else {
@@ -157,7 +175,13 @@ func (s *specSchemaDefinitionProperty) terraformSchema() *schema.Schema {
 			terraformSchema.Default = s.Default
 		}
 	}
-	return terraformSchema
+
+	// ValidateFunc is not yet supported on lists or sets
+	if !s.isArrayProperty() && !s.isObjectProperty() {
+		terraformSchema.ValidateFunc = s.validateFunc()
+	}
+
+	return terraformSchema, nil
 }
 
 func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc {

@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/go-openapi/spec"
 	"log"
 	"regexp"
@@ -43,23 +44,28 @@ type SpecV2Resource struct {
 	RootPathItem spec.PathItem
 	// InstancePathItem contains info about the resource's instance /resource/{id}, including GET, PUT and REMOVE operations if applicable
 	InstancePathItem spec.PathItem
+
+	// SchemaDefinitions contains all the definitions which might be needed in case the resource schema contains properties
+	// of type object which in turn refer to other definitions
+	SchemaDefinitions map[string]spec.Schema
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
-func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem) (*SpecV2Resource, error) {
-	return newSpecV2ResourceWithRegion("", path, schemaDefinition, rootPathItem, instancePathItem)
+func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema) (*SpecV2Resource, error) {
+	return newSpecV2ResourceWithRegion("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions)
 }
 
-func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem) (*SpecV2Resource, error) {
+func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema) (*SpecV2Resource, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path must not be empty")
 	}
 	resource := &SpecV2Resource{
-		Path:             path,
-		Region:           region,
-		SchemaDefinition: schemaDefinition,
-		RootPathItem:     rootPathItem,
-		InstancePathItem: instancePathItem,
+		Path:              path,
+		Region:            region,
+		SchemaDefinition:  schemaDefinition,
+		RootPathItem:      rootPathItem,
+		InstancePathItem:  instancePathItem,
+		SchemaDefinitions: schemaDefinitions,
 	}
 	name, err := resource.buildResourceName()
 	if err != nil {
@@ -172,7 +178,7 @@ func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
 }
 
 // shouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
-// defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provder; otherwise it will
+// defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provider; otherwise it will
 // be exposed and users will be able to manage such resource via terraform.
 func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	if extensionExists, ignoreResource := o.RootPathItem.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
@@ -182,10 +188,14 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 }
 
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
+	return o.getSchemaDefinition(&o.SchemaDefinition)
+}
+
+func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDefinition, error) {
 	schemaDefinition := &specSchemaDefinition{}
 	schemaDefinition.Properties = specSchemaDefinitionProperties{}
-	for propertyName, property := range o.SchemaDefinition.Properties {
-		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property)
+	for propertyName, property := range schema.Properties {
+		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property, schema.Required)
 		if err != nil {
 			return nil, err
 		}
@@ -194,16 +204,19 @@ func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema) (*specSchemaDefinitionProperty, error) {
+func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
 	schemaDefinitionProperty := &specSchemaDefinitionProperty{}
 
-	schemaDefinitionProperty.Name = propertyName
-
-	if preferredPropertyName, exists := property.Extensions.GetString(extTfFieldName); exists {
-		schemaDefinitionProperty.PreferredName = preferredPropertyName
-	}
-
-	if o.isArrayProperty(property) {
+	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject {
+		if err != nil {
+			return nil, err
+		}
+		schemaDefinition, err := o.getSchemaDefinition(schemaDefinition)
+		if err != nil {
+			return nil, err
+		}
+		schemaDefinitionProperty.specSchemaDefinition = *schemaDefinition
+	} else if o.isArrayProperty(property) {
 		schemaDefinitionProperty.Type = typeList
 	} else if property.Type.Contains("string") {
 		schemaDefinitionProperty.Type = typeString
@@ -215,8 +228,14 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.Type = typeBool
 	}
 
+	schemaDefinitionProperty.Name = propertyName
+
+	if preferredPropertyName, exists := property.Extensions.GetString(extTfFieldName); exists {
+		schemaDefinitionProperty.PreferredName = preferredPropertyName
+	}
+
 	// Set the property as required or optional
-	required := o.isRequired(propertyName, o.SchemaDefinition.Required)
+	required := o.isRequired(propertyName, requiredProperties)
 	if required {
 		schemaDefinitionProperty.Required = true
 	}
@@ -265,6 +284,34 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	return schemaDefinitionProperty, nil
 }
 
+func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
+
+	if o.isObjectTypeProperty(property) && len(property.Properties) != 0 {
+		return true, &property, nil
+	}
+
+	if property.Ref.Ref.GetURL() != nil {
+		schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
+		if err != nil {
+			return true, nil, err
+		}
+		return true, schema, nil
+	}
+	return false, nil, nil
+}
+
+func (o *SpecV2Resource) isArrayProperty(property spec.Schema) bool {
+	return o.isOfType(property, "array")
+}
+
+func (o *SpecV2Resource) isObjectTypeProperty(property spec.Schema) bool {
+	return o.isOfType(property, "object")
+}
+
+func (o *SpecV2Resource) isOfType(property spec.Schema, propertyType string) bool {
+	return property.Type.Contains(propertyType)
+}
+
 func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string) bool {
 	var required = false
 	for _, f := range requiredProps {
@@ -273,10 +320,6 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 		}
 	}
 	return required
-}
-
-func (o *SpecV2Resource) isArrayProperty(property spec.Schema) bool {
-	return property.Type.Contains("array")
 }
 
 func (o *SpecV2Resource) getResourceTerraformName() string {
