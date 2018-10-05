@@ -253,21 +253,10 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
 		}
 
-		resourceSchema, err := r.openAPIResource.getResourceSchema()
+		newStatus, err := r.getStatusValueFromPayload(remoteData)
 		if err != nil {
-			return nil, "", err
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
 		}
-
-		statusIdentifier, err := resourceSchema.getStatusIdentifier()
-		if err != nil {
-			return nil, "", fmt.Errorf("error occurred while retrieving status identifier for resource '%s' (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
-		}
-
-		value, statusIdentifierPresentInResponse := remoteData[statusIdentifier]
-		if !statusIdentifierPresentInResponse {
-			return nil, "", fmt.Errorf("response payload received from GET %s/%s  missing the status identifier field", r.openAPIResource.getResourcePath(), resourceLocalData.Id())
-		}
-		newStatus := value.(string)
 		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
@@ -387,7 +376,8 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
 	resourceSchema, _ := r.openAPIResource.getResourceSchema()
-	for propertyName, property := range resourceSchema.Properties {
+	for _, property := range resourceSchema.Properties {
+		propertyName := property.Name
 		// ReadOnly properties are not considered for the payload data
 		if property.isPropertyNamedID() || property.ReadOnly {
 			continue
@@ -413,11 +403,38 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 	return input
 }
 
+func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{}) (string, error) {
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
+		return "", err
+	}
+	statuses, err := resourceSchema.getStatusIdentifier()
+	if err != nil {
+		return "", err
+	}
+	var property = payload
+	for _, statusField := range statuses {
+		propertyValue, statusExistsInPayload := property[statusField]
+		if !statusExistsInPayload {
+			return "", fmt.Errorf("payload does not match resouce schema, could not find the status field: %s", statuses)
+		}
+		switch reflect.TypeOf(propertyValue).Kind() {
+		case reflect.Map:
+			property = propertyValue.(map[string]interface{})
+		case reflect.String:
+			return propertyValue.(string), nil
+		default:
+			return "", fmt.Errorf("status property value '%s' does not have a supported type [string/map]", statuses)
+		}
+	}
+	return "", fmt.Errorf("could not find status value [%s] in the payload provided", statuses)
+}
+
 // getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
 	resourceSchema, _ := r.openAPIResource.getResourceSchema()
-	schemaDefinitionProperty, exists := resourceSchema.Properties[schemaDefinitionPropertyName]
-	if !exists {
+	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
+	if err != nil {
 		return nil, false
 	}
 	return resourceLocalData.GetOkExists(schemaDefinitionProperty.getTerraformCompliantPropertyName())
@@ -426,9 +443,9 @@ func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName st
 // setResourceDataProperty sets the expectedValue for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) setResourceDataProperty(schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
 	resourceSchema, _ := r.openAPIResource.getResourceSchema()
-	schemaDefinitionProperty, exists := resourceSchema.Properties[schemaDefinitionPropertyName]
-	if !exists {
-		return fmt.Errorf("could not find schema definition property name %s in the resource data", schemaDefinitionPropertyName)
+	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
+	if err != nil {
+		return fmt.Errorf("could not find schema definition property name %s in the resource data: %s", schemaDefinitionPropertyName, err)
 	}
 	return resourceLocalData.Set(schemaDefinitionProperty.getTerraformCompliantPropertyName(), value)
 }

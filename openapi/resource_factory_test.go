@@ -13,6 +13,117 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func TestGetStatusValueFromPayload(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property that is not an object", t, func() {
+		specResource := newSpecStubResource(
+			"resourceName",
+			"/v1/resource",
+			false,
+			&specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name:     statusDefaultPropertyName,
+						Type:     typeString,
+						ReadOnly: true,
+					},
+				},
+			})
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that also has a 'status' field in the root level", func() {
+			expectedStatusValue := "someValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: expectedStatusValue,
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload that does not have status field", func() {
+			payload := map[string]interface{}{
+				"someOtherPropertyName": "arggg",
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "payload does not match resouce schema, could not find the status field: [status]")
+			})
+		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload that has a status field but the value is not supported", func() {
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: 12, // this value is not supported, only strings and maps (for nested properties within an object) are supported
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "status property value '[status]' does not have a supported type [string/map]")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has an status property that IS an object", t, func() {
+		expectedStatusProperty := "some-other-property-holding-status"
+		specResource := newSpecStubResource(
+			"resourceName",
+			"/v1/resource",
+			false,
+			&specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name:     "id",
+						Type:     typeString,
+						ReadOnly: true,
+					},
+					&specSchemaDefinitionProperty{
+						Name:     statusDefaultPropertyName,
+						Type:     typeObject,
+						ReadOnly: true,
+						specSchemaDefinition: &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{
+								&specSchemaDefinitionProperty{
+									Name:               expectedStatusProperty,
+									Type:               typeString,
+									ReadOnly:           true,
+									IsStatusIdentifier: true,
+								},
+							},
+						},
+					},
+				},
+			})
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that has an status object property inside which there's an status property", func() {
+			expectedStatusValue := "someStatusValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: map[string]interface{}{
+					expectedStatusProperty: expectedStatusValue,
+				},
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+	})
+
+}
+
 func TestCreateSchemaResourceTimeout(t *testing.T) {
 	Convey("Given a resource factory initialised with a spec resource that has some timeouts", t, func() {
 		duration, _ := time.ParseDuration("30m")
@@ -631,7 +742,7 @@ func TestSetResourceDataProperty(t *testing.T) {
 			})
 			Convey("And then expectedValue should equal", func() {
 				// keys stores in the resource data struct are always snake case
-				So(err.Error(), ShouldEqual, "could not find schema definition property name nonExistingKey in the resource data")
+				So(err.Error(), ShouldEqual, "could not find schema definition property name nonExistingKey in the resource data: property with name 'nonExistingKey' not existing in resource schema definition")
 			})
 		})
 	})
@@ -856,7 +967,7 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier for resource '/v1/resource' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
 			})
 			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)
@@ -882,7 +993,7 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "response payload received from GET /v1/resource/id  missing the status identifier field")
+				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): payload does not match resouce schema, could not find the status field: [status]")
 			})
 			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)

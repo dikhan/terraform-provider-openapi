@@ -7,7 +7,7 @@ import (
 )
 
 // specSchemaDefinitionProperties defines a collection of schema definition properties
-type specSchemaDefinitionProperties map[string]*specSchemaDefinitionProperty
+type specSchemaDefinitionProperties []*specSchemaDefinitionProperty
 
 // specSchemaDefinition defines a struct for a schema definition
 type specSchemaDefinition struct {
@@ -86,32 +86,46 @@ func (s *specSchemaDefinition) getResourceIdentifier() (string, error) {
 // 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
 // will have a property named 'status'
 // 3. If none of the above requirements is met, an error will be returned
-func (s *specSchemaDefinition) getStatusIdentifier() (string, error) {
-	statusProperty := ""
-	for propertyName, property := range s.Properties {
-		if s.isIDProperty(propertyName) {
+func (s *specSchemaDefinition) getStatusIdentifier() ([]string, error) {
+	return s.getStatusIdentifierFor(s, true, true)
+}
+
+func (s *specSchemaDefinition) getStatusIdentifierFor(schemaDefinition *specSchemaDefinition, shouldIgnoreID, shouldEnforceReadOnly bool) ([]string, error) {
+	var statusProperty *specSchemaDefinitionProperty
+	var statusHierarchy []string
+	for _, property := range schemaDefinition.Properties {
+		if property.isPropertyNamedID() && shouldIgnoreID {
 			continue
 		}
-		if s.isStatusProperty(propertyName) {
-			statusProperty = propertyName
+		if property.isPropertyNamedStatus() {
+			statusProperty = property
 			continue
 		}
 		// field with extTfFieldStatus metadata takes preference over 'status' fields as the service provider is the one acknowledging
 		// the fact that this field should be used as identifier of the resource
 		if property.IsStatusIdentifier {
-			statusProperty = propertyName
+			statusProperty = property
 			break
 		}
 	}
 	// if the id field is missing and there isn't any properties set with extTfFieldStatus, there is not way for the resource
 	// to be identified and therefore an error is returned
-	if statusProperty == "" {
-		return "", fmt.Errorf("could not find any status property. Please make sure the resource schema definition has either one property named '%s' or one property is marked with IsStatusIdentifier set to true", statusDefaultPropertyName)
+	if statusProperty == nil {
+		return nil, fmt.Errorf("could not find any status property. Please make sure the resource schema definition has either one property named '%s' or one property is marked with IsStatusIdentifier set to true", statusDefaultPropertyName)
 	}
-	if !s.Properties[statusProperty].ReadOnly {
-		return "", fmt.Errorf("schema definition status property '%s' must be readOnly", statusProperty)
+	if !statusProperty.ReadOnly && shouldEnforceReadOnly {
+		return nil, fmt.Errorf("schema definition status property '%s' must be readOnly: '%+v' ", statusProperty.Name, statusProperty)
 	}
-	return statusProperty, nil
+
+	statusHierarchy = append(statusHierarchy, statusProperty.Name)
+	if statusProperty.isObjectProperty() {
+		statusIdentifier, err := s.getStatusIdentifierFor(statusProperty.specSchemaDefinition, false, false)
+		if err != nil {
+			return nil, err
+		}
+		statusHierarchy = append(statusHierarchy, statusIdentifier...)
+	}
+	return statusHierarchy, nil
 }
 
 func (s *specSchemaDefinition) isIDProperty(propertyName string) bool {
@@ -127,8 +141,10 @@ func (s *specSchemaDefinition) propertyNameMatchesDefaultName(propertyName, expe
 }
 
 func (s *specSchemaDefinition) getProperty(name string) (*specSchemaDefinitionProperty, error) {
-	if property, exists := s.Properties[name]; exists {
-		return property, nil
+	for _, property := range s.Properties {
+		if property.Name == name {
+			return property, nil
+		}
 	}
 	return nil, fmt.Errorf("property with name '%s' not existing in resource schema definition", name)
 }

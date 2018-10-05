@@ -188,17 +188,17 @@ func TestCreateTerraformProviderResourceMap(t *testing.T) {
 			specAnalyser: &specAnalyserStub{
 				resources: []SpecResource{
 					newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{
-						Properties: map[string]*specSchemaDefinitionProperty{
-							idProperty.Name:        idProperty,
-							stringProperty.Name:    stringProperty,
-							intProperty.Name:       intProperty,
-							numberProperty.Name:    numberProperty,
-							boolProperty.Name:      boolProperty,
-							sliceProperty.Name:     sliceProperty,
-							computedProperty.Name:  computedProperty,
-							optionalProperty.Name:  optionalProperty,
-							sensitiveProperty.Name: sensitiveProperty,
-							forceNewProperty.Name:  forceNewProperty,
+						Properties: specSchemaDefinitionProperties{
+							idProperty,
+							stringProperty,
+							intProperty,
+							numberProperty,
+							boolProperty,
+							sliceProperty,
+							computedProperty,
+							optionalProperty,
+							sensitiveProperty,
+							forceNewProperty,
 						},
 					}),
 				},

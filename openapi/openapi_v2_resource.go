@@ -199,7 +199,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinition.Properties[schemaDefinitionProperty.Name] = schemaDefinitionProperty
+		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
 	return schemaDefinition, nil
 }
@@ -215,7 +215,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinitionProperty.specSchemaDefinition = *objectSchemaDefinition
+		schemaDefinitionProperty.specSchemaDefinition = objectSchemaDefinition
 		schemaDefinitionProperty.Type = typeObject
 	} else if o.isArrayProperty(property) {
 		schemaDefinitionProperty.Type = typeList
@@ -270,7 +270,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	}
 
 	if isStatusIdentifier, ok := property.Extensions.GetBool(extTfFieldStatus); ok && isStatusIdentifier {
-		schemaDefinitionProperty.Immutable = true
+		schemaDefinitionProperty.IsStatusIdentifier = true
 	}
 
 	if property.Default != nil {

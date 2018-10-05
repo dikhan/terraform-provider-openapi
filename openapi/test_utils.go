@@ -45,7 +45,7 @@ func newTestSchema(schemaDefinitionProperty ...*specSchemaDefinitionProperty) *t
 func (s *testSchemaDefinition) getSchemaDefinition() *specSchemaDefinition {
 	schemaDefinitionProperties := specSchemaDefinitionProperties{}
 	for _, schemaProperty := range *s {
-		schemaDefinitionProperties[schemaProperty.Name] = schemaProperty
+		schemaDefinitionProperties = append(schemaDefinitionProperties, schemaProperty)
 	}
 	return &specSchemaDefinition{
 		Properties: schemaDefinitionProperties,

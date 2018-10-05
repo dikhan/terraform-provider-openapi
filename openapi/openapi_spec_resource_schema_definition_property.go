@@ -36,7 +36,7 @@ type specSchemaDefinitionProperty struct {
 	IsStatusIdentifier bool
 	Default            interface{}
 	// only for object type properties
-	specSchemaDefinition specSchemaDefinition
+	specSchemaDefinition *specSchemaDefinition
 }
 
 func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
@@ -102,7 +102,11 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 }
 
 func (s *specSchemaDefinitionProperty) isPropertyNamedID() bool {
-	return s.getTerraformCompliantPropertyName() == "id"
+	return s.getTerraformCompliantPropertyName() == idDefaultPropertyName
+}
+
+func (s *specSchemaDefinitionProperty) isPropertyNamedStatus() bool {
+	return s.getTerraformCompliantPropertyName() == statusDefaultPropertyName
 }
 
 func (s *specSchemaDefinitionProperty) isObjectProperty() bool {
