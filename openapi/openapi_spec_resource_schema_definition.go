@@ -9,7 +9,7 @@ import (
 // specSchemaDefinitionProperties defines a collection of schema definition properties
 type specSchemaDefinitionProperties []*specSchemaDefinitionProperty
 
-// specSchemaDefinition defines a struct for a schema definition
+// SpecSchemaDefinition defines a struct for a schema definition
 type specSchemaDefinition struct {
 	Properties specSchemaDefinitionProperties
 }
@@ -119,7 +119,7 @@ func (s *specSchemaDefinition) getStatusIdentifierFor(schemaDefinition *specSche
 
 	statusHierarchy = append(statusHierarchy, statusProperty.Name)
 	if statusProperty.isObjectProperty() {
-		statusIdentifier, err := s.getStatusIdentifierFor(statusProperty.specSchemaDefinition, false, false)
+		statusIdentifier, err := s.getStatusIdentifierFor(statusProperty.SpecSchemaDefinition, false, false)
 		if err != nil {
 			return nil, err
 		}

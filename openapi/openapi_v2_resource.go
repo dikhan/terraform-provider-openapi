@@ -38,7 +38,7 @@ type SpecV2Resource struct {
 	Region string
 	// Path contains the full relative path to the resource e,g: /v1/resource
 	Path string
-	// specSchemaDefinition definition represents the representational state (aka model) of the resource
+	// SpecSchemaDefinition definition represents the representational state (aka model) of the resource
 	SchemaDefinition spec.Schema
 	// RootPathItem contains info about the resource root path e,g: /resource, including the POST operation used to create instances of this resource
 	RootPathItem spec.PathItem
@@ -215,7 +215,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinitionProperty.specSchemaDefinition = objectSchemaDefinition
+		schemaDefinitionProperty.SpecSchemaDefinition = objectSchemaDefinition
 		schemaDefinitionProperty.Type = typeObject
 	} else if o.isArrayProperty(property) {
 		schemaDefinitionProperty.Type = typeList

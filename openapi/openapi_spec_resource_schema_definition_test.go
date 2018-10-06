@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetStatusId(t *testing.T) {
-	Convey("Given a specSchemaDefinition that has an status property that is not an object", t, func() {
+	Convey("Given a SpecSchemaDefinition that has an status property that is not an object", t, func() {
 		s := &specSchemaDefinition{
 			Properties: specSchemaDefinitionProperties{
 				&specSchemaDefinitionProperty{
@@ -102,7 +102,7 @@ func TestGetStatusId(t *testing.T) {
 					Name:     statusDefaultPropertyName,
 					Type:     typeObject,
 					ReadOnly: true,
-					specSchemaDefinition: &specSchemaDefinition{
+					SpecSchemaDefinition: &specSchemaDefinition{
 						Properties: specSchemaDefinitionProperties{
 							&specSchemaDefinitionProperty{
 								Name:               expectedStatusProperty,

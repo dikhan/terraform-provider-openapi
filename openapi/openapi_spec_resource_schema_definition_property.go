@@ -36,61 +36,62 @@ type specSchemaDefinitionProperty struct {
 	IsStatusIdentifier bool
 	Default            interface{}
 	// only for object type properties
-	specSchemaDefinition *specSchemaDefinition
+	SpecSchemaDefinition *specSchemaDefinition
 }
 
 func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newStringSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, defaultValue)
+	return newStringSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
 }
 
-func newStringSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeString, required, readOnly, forceNew, sensitive, immutable, isIdentifier, defaultValue)
+func newStringSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeString, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
 }
 
 func newIntSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newIntSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, defaultValue)
+	return newIntSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
 }
 
-func newIntSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeInt, required, readOnly, forceNew, sensitive, immutable, isIdentifier, defaultValue)
+func newIntSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeInt, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
 }
 
 func newNumberSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newNumberSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, defaultValue)
+	return newNumberSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
 }
 
-func newNumberSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeFloat, required, readOnly, forceNew, sensitive, immutable, isIdentifier, defaultValue)
+func newNumberSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeFloat, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
 }
 
 func newBoolSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newBoolSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, defaultValue)
+	return newBoolSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
 }
 
-func newBoolSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeBool, required, readOnly, forceNew, sensitive, immutable, isIdentifier, defaultValue)
+func newBoolSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeBool, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
 }
 
 func newListSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newListSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, defaultValue)
+	return newListSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
 }
 
-func newListSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeList, required, readOnly, forceNew, sensitive, immutable, isIdentifier, defaultValue)
+func newListSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeList, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
 }
 
-func newSchemaDefinitionProperty(name, preferredName string, propertyType schemaDefinitionPropertyType, required, readOnly, forceNew, sensitive, immutable, isIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+func newSchemaDefinitionProperty(name, preferredName string, propertyType schemaDefinitionPropertyType, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
 	return &specSchemaDefinitionProperty{
-		Name:          name,
-		PreferredName: preferredName,
-		Type:          propertyType,
-		Required:      required,
-		ReadOnly:      readOnly,
-		ForceNew:      forceNew,
-		Sensitive:     sensitive,
-		Immutable:     immutable,
-		IsIdentifier:  isIdentifier,
-		Default:       defaultValue,
+		Name:               name,
+		PreferredName:      preferredName,
+		Type:               propertyType,
+		Required:           required,
+		ReadOnly:           readOnly,
+		ForceNew:           forceNew,
+		Sensitive:          sensitive,
+		Immutable:          immutable,
+		IsIdentifier:       isIdentifier,
+		IsStatusIdentifier: isStatusIdentifier,
+		Default:            defaultValue,
 	}
 }
 
@@ -130,7 +131,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	var terraformSchema = &schema.Schema{}
 	switch s.Type {
 	case typeObject:
-		objectSchema, err := s.specSchemaDefinition.createResourceSchemaKeepID()
+		objectSchema, err := s.SpecSchemaDefinition.createResourceSchemaKeepID()
 		if err != nil {
 			return nil, err
 		}

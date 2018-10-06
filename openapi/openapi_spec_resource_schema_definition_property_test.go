@@ -10,7 +10,7 @@ func TestCreateTerraformPropertySchema(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		//r := resourceFactory{}
 		Convey("When createTerraformPropertySchema is called with a schema definition property that is required, force new, sensitive and has a default value", func() {
-			s := newStringSchemaDefinitionProperty("propertyName", "", true, false, true, true, false, false, "defaultValue")
+			s := newStringSchemaDefinitionProperty("propertyName", "", true, false, true, true, false, false, false, "defaultValue")
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -36,7 +36,7 @@ func TestCreateTerraformPropertySchema(t *testing.T) {
 		})
 
 		Convey("When createTerraformPropertySchema is called with a schema definition property that is readonly", func() {
-			s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, "")
+			s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, "")
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -50,7 +50,7 @@ func TestCreateTerraformPropertySchema(t *testing.T) {
 		})
 
 		Convey("When createTerraformPropertySchema is called with a schema definition property that validation fails due to read only field having a default value", func() {
-			s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, "defaultValue")
+			s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, "defaultValue")
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -70,7 +70,7 @@ func TestCreateTerraformPropertySchema(t *testing.T) {
 		})
 
 		Convey("When createTerraformPropertySchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
-			s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, true, false, "")
+			s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, true, false, false, "")
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -87,7 +87,7 @@ func TestCreateTerraformPropertySchema(t *testing.T) {
 		})
 
 		Convey("When createTerraformPropertySchema is called with a schema definition property that validation fails due to required and computed set", func() {
-			s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, nil)
+			s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, nil)
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)

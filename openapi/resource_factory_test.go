@@ -13,117 +13,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestGetStatusValueFromPayload(t *testing.T) {
-	Convey("Given a swagger schema definition that has an status property that is not an object", t, func() {
-		specResource := newSpecStubResource(
-			"resourceName",
-			"/v1/resource",
-			false,
-			&specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Name:     statusDefaultPropertyName,
-						Type:     typeString,
-						ReadOnly: true,
-					},
-				},
-			})
-		r := resourceFactory{
-			openAPIResource: specResource,
-		}
-		Convey("When getStatusValueFromPayload method is called with a payload that also has a 'status' field in the root level", func() {
-			expectedStatusValue := "someValue"
-			payload := map[string]interface{}{
-				statusDefaultPropertyName: expectedStatusValue,
-			}
-			statusField, err := r.getStatusValueFromPayload(payload)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the value returned should contain the name of the property 'status'", func() {
-				So(statusField, ShouldEqual, expectedStatusValue)
-			})
-		})
-
-		Convey("When getStatusValueFromPayload method is called with a payload that does not have status field", func() {
-			payload := map[string]interface{}{
-				"someOtherPropertyName": "arggg",
-			}
-			_, err := r.getStatusValueFromPayload(payload)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should be", func() {
-				So(err.Error(), ShouldEqual, "payload does not match resouce schema, could not find the status field: [status]")
-			})
-		})
-
-		Convey("When getStatusValueFromPayload method is called with a payload that has a status field but the value is not supported", func() {
-			payload := map[string]interface{}{
-				statusDefaultPropertyName: 12, // this value is not supported, only strings and maps (for nested properties within an object) are supported
-			}
-			_, err := r.getStatusValueFromPayload(payload)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should be", func() {
-				So(err.Error(), ShouldEqual, "status property value '[status]' does not have a supported type [string/map]")
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has an status property that IS an object", t, func() {
-		expectedStatusProperty := "some-other-property-holding-status"
-		specResource := newSpecStubResource(
-			"resourceName",
-			"/v1/resource",
-			false,
-			&specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Name:     "id",
-						Type:     typeString,
-						ReadOnly: true,
-					},
-					&specSchemaDefinitionProperty{
-						Name:     statusDefaultPropertyName,
-						Type:     typeObject,
-						ReadOnly: true,
-						specSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
-									Name:               expectedStatusProperty,
-									Type:               typeString,
-									ReadOnly:           true,
-									IsStatusIdentifier: true,
-								},
-							},
-						},
-					},
-				},
-			})
-		r := resourceFactory{
-			openAPIResource: specResource,
-		}
-		Convey("When getStatusValueFromPayload method is called with a payload that has an status object property inside which there's an status property", func() {
-			expectedStatusValue := "someStatusValue"
-			payload := map[string]interface{}{
-				statusDefaultPropertyName: map[string]interface{}{
-					expectedStatusProperty: expectedStatusValue,
-				},
-			}
-			statusField, err := r.getStatusValueFromPayload(payload)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the value returned should contain the name of the property 'status'", func() {
-				So(statusField, ShouldEqual, expectedStatusValue)
-			})
-		})
-	})
-
-}
-
 func TestCreateSchemaResourceTimeout(t *testing.T) {
 	Convey("Given a resource factory initialised with a spec resource that has some timeouts", t, func() {
 		duration, _ := time.ParseDuration("30m")
@@ -196,7 +85,7 @@ func TestCreateResourceSchema(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the schema returned should not contain the ID property as schema alreayd has a reserved ID field to store the unique identifier", func() {
+			Convey("And the schema returned should not contain the ID property as schema already has a reserved ID field to store the unique identifier", func() {
 				So(schema, ShouldNotContainKey, idProperty.Name)
 			})
 			Convey("And the schema returned should contain the resource properties", func() {
@@ -486,6 +375,217 @@ func TestDelete(t *testing.T) {
 	})
 }
 
+func TestHandlePollingIfConfigured(t *testing.T) {
+	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When handlePollingIfConfigured is called with an operation that has a response defined for the API response status code passed in and polling is enabled AND the API returns a status that matches the target", func() {
+			targetState := "deployed"
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+					statusProperty.Name: targetState,
+				},
+				returnHTTPCode: http.StatusOK,
+			}
+			responsePayload := map[string]interface{}{}
+
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					responseStatusCode: {
+						isPollingEnabled:    true,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{targetState},
+					},
+				},
+			}
+			err := r.handlePollingIfConfigured(&responsePayload, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the remote data should be the payload returned by the API", func() {
+				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
+				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+		})
+
+		Convey("When handlePollingIfConfigured is called with an operation that has a response defined for the API response status code passed in and polling is enabled AND the responsePayload is nil (meaning we are handling a DELETE operation)", func() {
+			targetState := "deployed"
+			client := &clientOpenAPIStub{
+				returnHTTPCode: http.StatusNotFound,
+			}
+			responsePayload := map[string]interface{}{}
+
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					responseStatusCode: {
+						isPollingEnabled:    true,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{targetState},
+					},
+				},
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the remote data should be the payload returned by the API", func() {
+				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
+				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+		})
+
+		Convey("When handlePollingIfConfigured is called with a response status code that DOES NOT any of the operation's reponse definitions", func() {
+			client := &clientOpenAPIStub{}
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{},
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When handlePollingIfConfigured is called with a response status code that DOES math one of the operation responses BUT polling is not enabled for that response", func() {
+			client := &clientOpenAPIStub{}
+			responseStatusCode := http.StatusAccepted
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					responseStatusCode: {
+						isPollingEnabled:    false,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{"deployed"},
+					},
+				},
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestResourceStateRefreshFunc(t *testing.T) {
+	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client and the returned function (stateRefreshFunc) is invoked", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+					statusProperty.Name: statusProperty.Default,
+				},
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the new status should match the one returned by the API", func() {
+				So(newStatus, ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+			Convey("And the remote data should be the payload returned by the API", func() {
+				So(remoteData.(map[string]interface{})[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(remoteData.(map[string]interface{})[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
+				So(remoteData.(map[string]interface{})[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			})
+
+		})
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns 404 not found", func() {
+			client := &clientOpenAPIStub{
+				returnHTTPCode: http.StatusNotFound,
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			_, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the new status should be the internal hardcoded status 'destroyed' as a response with 404 status code is not expected to have a body", func() {
+				So(newStatus, ShouldEqual, defaultDestroyStatus)
+			})
+		})
+
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
+			expectedError := "some error"
+			client := &clientOpenAPIStub{
+				error: errors.New(expectedError),
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(err.Error(), ShouldEqual, fmt.Sprintf("error on retrieving resource '/v1/resource' (id) when waiting: %s", expectedError))
+			})
+			Convey("And the remoteData should be empty", func() {
+				So(remoteData, ShouldBeNil)
+			})
+			Convey("And the new status should be empty", func() {
+				So(newStatus, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a resource which has a schema definition missing a status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+				},
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+			})
+			Convey("And the remoteData should be empty", func() {
+				So(remoteData, ShouldBeNil)
+			})
+			Convey("And the new status should be empty", func() {
+				So(newStatus, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a resource which has a schema definition with a status property but the responsePayload is missing the status property", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     idProperty.Default,
+					stringProperty.Name: stringProperty.Default,
+				},
+			}
+			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
+			remoteData, newStatus, err := stateRefreshFunc()
+			Convey("Then the err returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): payload does not match resouce schema, could not find the status field: [status]")
+			})
+			Convey("And the remoteData should be empty", func() {
+				So(remoteData, ShouldBeNil)
+			})
+			Convey("And the new status should be empty", func() {
+				So(newStatus, ShouldBeEmpty)
+			})
+		})
+	})
+}
+
 func TestSetStateID(t *testing.T) {
 	Convey("Given a resource factory configured with a schema definition that as an id property", t, func() {
 		r, resourceData := testCreateResourceFactory(t, idProperty)
@@ -710,42 +810,115 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 	})
 }
 
-func TestSetResourceDataProperty(t *testing.T) {
-	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
-		r, resourceData := testCreateResourceFactory(t, stringProperty, stringWithPreferredNameProperty)
-		Convey("When setResourceDataProperty is called with a schema definition property name that exists in terraform resource data object and with a new expectedValue", func() {
-			expectedValue := "newValue"
-			err := r.setResourceDataProperty(stringProperty.Name, expectedValue, resourceData)
-			Convey("Then the err returned should be nil", func() {
+func TestGetStatusValueFromPayload(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property that is not an object", t, func() {
+		specResource := newSpecStubResource(
+			"resourceName",
+			"/v1/resource",
+			false,
+			&specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name:     statusDefaultPropertyName,
+						Type:     typeString,
+						ReadOnly: true,
+					},
+				},
+			})
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that also has a 'status' field in the root level", func() {
+			expectedStatusValue := "someValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: expectedStatusValue,
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And then expectedValue should equal", func() {
-				// keys stores in the resource data struct are always snake case
-				So(resourceData.Get(stringProperty.Name), ShouldEqual, expectedValue)
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
 			})
 		})
-		Convey("When setResourceDataProperty is called with a schema definition property preferred name that exists in terraform resource data object and with a new expectedValue", func() {
-			expectedValue := "theNewValue"
-			err := r.setResourceDataProperty(stringWithPreferredNameProperty.Name, expectedValue, resourceData)
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And then expectedValue should equal the expected value (note the state is queried using the preferred name)", func() {
-				// keys stores in the resource data struct are always snake case
-				So(resourceData.Get(stringWithPreferredNameProperty.PreferredName), ShouldEqual, expectedValue)
-			})
-		})
-		Convey("When setResourceDataProperty is called with a schema definition property name does NOT exist", func() {
-			err := r.setResourceDataProperty("nonExistingKey", "", resourceData)
-			Convey("Then the err returned should be nil", func() {
+
+		Convey("When getStatusValueFromPayload method is called with a payload that does not have status field", func() {
+			payload := map[string]interface{}{
+				"someOtherPropertyName": "arggg",
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("And then expectedValue should equal", func() {
-				// keys stores in the resource data struct are always snake case
-				So(err.Error(), ShouldEqual, "could not find schema definition property name nonExistingKey in the resource data: property with name 'nonExistingKey' not existing in resource schema definition")
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "payload does not match resouce schema, could not find the status field: [status]")
+			})
+		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload that has a status field but the value is not supported", func() {
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: 12, // this value is not supported, only strings and maps (for nested properties within an object) are supported
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "status property value '[status]' does not have a supported type [string/map]")
 			})
 		})
 	})
+
+	Convey("Given a swagger schema definition that has an status property that IS an object", t, func() {
+		expectedStatusProperty := "some-other-property-holding-status"
+		specResource := newSpecStubResource(
+			"resourceName",
+			"/v1/resource",
+			false,
+			&specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name:     "id",
+						Type:     typeString,
+						ReadOnly: true,
+					},
+					&specSchemaDefinitionProperty{
+						Name:     statusDefaultPropertyName,
+						Type:     typeObject,
+						ReadOnly: true,
+						SpecSchemaDefinition: &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{
+								&specSchemaDefinitionProperty{
+									Name:               expectedStatusProperty,
+									Type:               typeString,
+									ReadOnly:           true,
+									IsStatusIdentifier: true,
+								},
+							},
+						},
+					},
+				},
+			})
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that has an status object property inside which there's an status property", func() {
+			expectedStatusValue := "someStatusValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: map[string]interface{}{
+					expectedStatusProperty: expectedStatusValue,
+				},
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+	})
+
 }
 
 func TestGetResourceDataOKExists(t *testing.T) {
@@ -794,212 +967,39 @@ func TestGetResourceDataOKExists(t *testing.T) {
 	})
 }
 
-func TestHandlePollingIfConfigured(t *testing.T) {
-	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
-		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
-		Convey("When handlePollingIfConfigured is called with an operation that has a response defined for the API response status code passed in and polling is enabled AND the API returns a status that matches the target", func() {
-			targetState := "deployed"
-			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					idProperty.Name:     idProperty.Default,
-					stringProperty.Name: stringProperty.Default,
-					statusProperty.Name: targetState,
-				},
-				returnHTTPCode: http.StatusOK,
-			}
-			responsePayload := map[string]interface{}{}
-
-			responseStatusCode := http.StatusAccepted
-			operation := &specResourceOperation{
-				responses: map[int]*specResponse{
-					responseStatusCode: {
-						isPollingEnabled:    true,
-						pollPendingStatuses: []string{"pending"},
-						pollTargetStatuses:  []string{targetState},
-					},
-				},
-			}
-			err := r.handlePollingIfConfigured(&responsePayload, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+func TestSetResourceDataProperty(t *testing.T) {
+	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
+		r, resourceData := testCreateResourceFactory(t, stringProperty, stringWithPreferredNameProperty)
+		Convey("When setResourceDataProperty is called with a schema definition property name that exists in terraform resource data object and with a new expectedValue", func() {
+			expectedValue := "newValue"
+			err := r.setResourceDataProperty(stringProperty.Name, expectedValue, resourceData)
 			Convey("Then the err returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the remote data should be the payload returned by the API", func() {
-				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
-				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
-				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			Convey("And then expectedValue should equal", func() {
+				// keys stores in the resource data struct are always snake case
+				So(resourceData.Get(stringProperty.Name), ShouldEqual, expectedValue)
 			})
 		})
-
-		Convey("When handlePollingIfConfigured is called with an operation that has a response defined for the API response status code passed in and polling is enabled AND the responsePayload is nil (meaning we are handling a DELETE operation)", func() {
-			targetState := "deployed"
-			client := &clientOpenAPIStub{
-				returnHTTPCode: http.StatusNotFound,
-			}
-			responsePayload := map[string]interface{}{}
-
-			responseStatusCode := http.StatusAccepted
-			operation := &specResourceOperation{
-				responses: map[int]*specResponse{
-					responseStatusCode: {
-						isPollingEnabled:    true,
-						pollPendingStatuses: []string{"pending"},
-						pollTargetStatuses:  []string{targetState},
-					},
-				},
-			}
-			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+		Convey("When setResourceDataProperty is called with a schema definition property preferred name that exists in terraform resource data object and with a new expectedValue", func() {
+			expectedValue := "theNewValue"
+			err := r.setResourceDataProperty(stringWithPreferredNameProperty.Name, expectedValue, resourceData)
 			Convey("Then the err returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the remote data should be the payload returned by the API", func() {
-				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
-				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
-				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
+			Convey("And then expectedValue should equal the expected value (note the state is queried using the preferred name)", func() {
+				// keys stores in the resource data struct are always snake case
+				So(resourceData.Get(stringWithPreferredNameProperty.PreferredName), ShouldEqual, expectedValue)
 			})
 		})
-
-		Convey("When handlePollingIfConfigured is called with a response status code that DOES NOT any of the operation's reponse definitions", func() {
-			client := &clientOpenAPIStub{}
-			responseStatusCode := http.StatusAccepted
-			operation := &specResourceOperation{
-				responses: map[int]*specResponse{},
-			}
-			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
+		Convey("When setResourceDataProperty is called with a schema definition property name does NOT exist", func() {
+			err := r.setResourceDataProperty("nonExistingKey", "", resourceData)
 			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-
-		Convey("When handlePollingIfConfigured is called with a response status code that DOES math one of the operation responses BUT polling is not enabled for that response", func() {
-			client := &clientOpenAPIStub{}
-			responseStatusCode := http.StatusAccepted
-			operation := &specResourceOperation{
-				responses: map[int]*specResponse{
-					responseStatusCode: {
-						isPollingEnabled:    false,
-						pollPendingStatuses: []string{"pending"},
-						pollTargetStatuses:  []string{"deployed"},
-					},
-				},
-			}
-			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-	})
-}
-
-func TestResourceStateRefreshFunc(t *testing.T) {
-	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
-		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
-		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client and the returned function (stateRefreshFunc) is invoked", func() {
-			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					idProperty.Name:     idProperty.Default,
-					stringProperty.Name: stringProperty.Default,
-					statusProperty.Name: statusProperty.Default,
-				},
-			}
-			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
-			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the new status should match the one returned by the API", func() {
-				So(newStatus, ShouldEqual, client.responsePayload[statusProperty.Name])
-			})
-			Convey("And the remote data should be the payload returned by the API", func() {
-				So(remoteData.(map[string]interface{})[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
-				So(remoteData.(map[string]interface{})[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
-				So(remoteData.(map[string]interface{})[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
-			})
-
-		})
-		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns 404 not found", func() {
-			client := &clientOpenAPIStub{
-				returnHTTPCode: http.StatusNotFound,
-			}
-			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
-			_, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the new status should be the internal hardcoded status 'destroyed' as a response with 404 status code is not expected to have a body", func() {
-				So(newStatus, ShouldEqual, defaultDestroyStatus)
-			})
-		})
-
-		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
-			expectedError := "some error"
-			client := &clientOpenAPIStub{
-				error: errors.New(expectedError),
-			}
-			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
-			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, fmt.Sprintf("error on retrieving resource '/v1/resource' (id) when waiting: %s", expectedError))
-			})
-			Convey("And the remoteData should be empty", func() {
-				So(remoteData, ShouldBeNil)
-			})
-			Convey("And the new status should be empty", func() {
-				So(newStatus, ShouldBeEmpty)
-			})
-		})
-	})
-
-	Convey("Given a resource factory configured with a resource which has a schema definition missing a status property", t, func() {
-		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
-		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
-			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					idProperty.Name:     idProperty.Default,
-					stringProperty.Name: stringProperty.Default,
-				},
-			}
-			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
-			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
-			})
-			Convey("And the remoteData should be empty", func() {
-				So(remoteData, ShouldBeNil)
-			})
-			Convey("And the new status should be empty", func() {
-				So(newStatus, ShouldBeEmpty)
-			})
-		})
-	})
-
-	Convey("Given a resource factory configured with a resource which has a schema definition with a status property but the responsePayload is missing the status property", t, func() {
-		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
-		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns an error", func() {
-			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					idProperty.Name:     idProperty.Default,
-					stringProperty.Name: stringProperty.Default,
-				},
-			}
-			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
-			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): payload does not match resouce schema, could not find the status field: [status]")
-			})
-			Convey("And the remoteData should be empty", func() {
-				So(remoteData, ShouldBeNil)
-			})
-			Convey("And the new status should be empty", func() {
-				So(newStatus, ShouldBeEmpty)
+			Convey("And then expectedValue should equal", func() {
+				// keys stores in the resource data struct are always snake case
+				So(err.Error(), ShouldEqual, "could not find schema definition property name nonExistingKey in the resource data: property with name 'nonExistingKey' not existing in resource schema definition")
 			})
 		})
 	})
