@@ -21,9 +21,9 @@ Internally, the make target 'local-env' uses the following [docker-compose](http
 file that contains the definitions for the [example API services](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples). 
 
 Additionally, it will also render a UI from the swagger file exposed by the 'swaggercodegen-service-provider-api' API 
-server that can be accessed from the browser at ``https://localhost:8443``.
+server that can be accessed from the browser at ``http://localhost:8082/``.
 
-The UI rendered feeds from the swagger file located at [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/service_provider_example/resources/swagger.yaml)
+The UI rendered feeds from the swagger file located at [docker-compose](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/swaggercodegen/api/resources/swagger.yaml)
 
 ## Trying out the service provider example
 
@@ -68,8 +68,7 @@ ls -la /Users/dikhan/.terraform.d/plugins
 total 44120
 drwxr-xr-x  5 dikhan  staff       160  5 Jul 16:02 .
 drwxr-xr-x  5 dikhan  staff       160  4 Jul 13:19 ..
--rwxr-xr-x  1 dikhan  staff  22270452  5 Jul 16:01 terraform-provider-openapi
-lrwxr-xr-x  1 dikhan  staff        63  5 Jul 16:01 terraform-provider-swaggercodegen -> /Users/dkhanram/.terraform.d/plugins/terraform-provider-openapi
+-rwxr-xr-x  1 dikhan  staff  22270452  5 Jul 16:01 terraform-provider-swaggercodegen
 ````
 
 ### Running the openapi terraform provider
@@ -99,7 +98,7 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  + swaggercodegen_cdns_v1.my_cdn
+  + swaggercodegen_cdn_v1.my_cdn
       id:              <computed>
       example_boolean: "true"
       example_int:     "12"
@@ -130,7 +129,7 @@ the name of the provider specified in the binary when compiling the plugin - 'sw
 When defining the env variable, {PROVIDER_NAME} can be lower case or upper case.
 
 This means that the plugin was able to read the swagger file exposed by the service provider example, load it
-up and set up the terraform provider dynamically with the resources exposed by 'cdn-service-provider-api' being one of
+up and set up the terraform provider dynamically with the resources exposed by 'swaggercodegen-service-provider-api' being one of
 them 'cdns'.
 
 #### Executing terraform apply
@@ -138,7 +137,7 @@ them 'cdns'.
 Now we can run terraform apply to see the plugin do its magic:
 
 ```
-$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_swaggercodegensp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform apply
+$ terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform apply
 
 Initializing provider plugins...
 
@@ -158,7 +157,7 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  + swaggercodegen_cdns_v1.my_cdn
+  + swaggercodegen_cdn_v1.my_cdn
       id:              <computed>
       example_boolean: "true"
       example_int:     "12"
@@ -178,7 +177,7 @@ Do you want to perform these actions?
 
   Enter a value: yes
 
-swaggercodegen_cdns_v1.my_cdn: Creating...
+swaggercodegen_cdn_v1.my_cdn: Creating...
   example_boolean: "" => "true"
   example_int:     "" => "12"
   example_number:  "" => "1.12"
@@ -207,7 +206,7 @@ And a 'terraform.tfstate' should have been created by terraform containing the s
             ],
             "outputs": {},
             "resources": {
-                "swaggercodegen_cdns_v1.my_cdn": {
+                "swaggercodegen_cdn_v1.my_cdn": {
                     "type": "swaggercodegen_cdns_v1",
                     "depends_on": [],
                     "primary": {
@@ -250,5 +249,5 @@ The above command will bring up the example server API and install the binary pl
 When calling terraform it will pass all the required environment variables mentioned above using the example values:
 
 ````
-terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_sp_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+terraform init && OTF_INSECURE_SKIP_VERIFY="true" OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
 ````
