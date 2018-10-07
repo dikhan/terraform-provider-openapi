@@ -80,20 +80,7 @@ folder as described in the [Terraform documentation on how to install plugins](h
     drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
     -rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<your_provider_name>
     ````
- 
-  - Create a symlink pointing at the terraform-provider-openapi binary. The latter is recommended so the same compiled binary 
-'terraform-provider-openapi' can be reused by multiple openapi providers and also reduces the number of providers to support.
 
-    ````
-    $ cd ~/.terraform.d/plugins
-    $ ln -sF terraform-provider-openapi terraform-provider-<your_provider_name>
-    $ ls -la 
-    total 29656
-    drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
-    drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
-    -rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-openapi
-    lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-<your_provider_name> -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
-    ````
 
 Where ````<your_provider_name>```` should be replaced with your provider's name. This is the name that will also be used
 in the Terraform tf files to refer to the provider resources. 
@@ -126,16 +113,15 @@ $ export PROVIDER_NAME=goa && curl -fsSL https://raw.githubusercontent.com/dikha
 ````
 
 The install script will download the most recent [terraform-provider-openapi release](https://github.com/dikhan/terraform-provider-openapi/releases) 
-and install it in the terraform plugins folder ````~/.terraform.d/plugins```` as described above. The terraform plugins 
-folder should contain both the terraform-provider-openapi provider and the provider's symlink pointing at it.
+and install it in the terraform plugins folder ````~/.terraform.d/plugins```` as described above. The terraform plugins
+folder should contain the newly installed open api customer terraform provider with the name provider in the installation (PROVIDER_NAME=goa) ```terraform-provider-goa```.
 
 ````
 $ ls -la ~/.terraform.d/plugins
 total 29656
 drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
 drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
--rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-openapi
-lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-goa -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
+-rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-goa
 ````
 
 ### Using the OpenAPI Terraform provider

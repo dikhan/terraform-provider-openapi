@@ -112,7 +112,7 @@ definitions:
         type: string
     title: 'Mediatype identifier: application/vnd.goa.error; view=default'
     type: object
-host: localhost:9090
+#host: localhost:9090
 info:
   description: The wine review service
   version: ""

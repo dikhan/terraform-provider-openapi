@@ -108,9 +108,9 @@ $ make local-env
 
 This command will bring up the example APIs provided for development purposes.
 
-## Running terraform-provider-openapi against this API
+## Running terraform-provider-goa against this API
 
-- Install terraform-provider-api and the symlink for 'goa' provider:
+- Install terraform-provider-goa provider:
 
 ````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
@@ -120,7 +120,7 @@ $ PROVIDER_NAME="goa" make install
 - Execute terraform passing the following env variables:
 
 ````
-$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/goa/api
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/goa/
 $ terraform init && OTF_VAR_goa_SWAGGER_URL="http://localhost:9090/swagger/swagger.yaml" OTF_INSECURE_SKIP_VERIFY=true terraform plan
 ````
 

@@ -36,23 +36,20 @@ the openapi terraform provider binary:
 $ PROVIDER_NAME="<provider_name>" make install
 [INFO] Building terraform-provider-openapi binary
 [INFO] Creating /Users/dikhan/.terraform.d/plugins if it does not exist
-[INFO] Installing terraform-provider-<provider_name> binary in -> /Users/dikhan/.terraform.d/plugins
+[INFO] Installing terraform-provider-<provider_name> binary in -> /Users/dikhan/.terraform.d/plugins/terraform-provider-<provider_name>
 ```
 
 Where ````<your_provider_name>```` should be replaced with your provider's name.
 
-The above ```make install``` command will compile the provider from the source code, install the compiled binary terraform-provider-openapi 
-in the terraform plugin folder ````~/.terraform.d/plugins```` and create a symlink from terraform-provider-goa to the
-binary compiled. The reason why a symlink is created is so the same compiled binary can be reused by multiple openapi providers 
-and also reduces the number of providers to support.
+The above ```make install``` command will compile the provider from the source code, install the openapi provider binary ```terraform-provider-goa```
+in the terraform plugin folder ````~/.terraform.d/plugins````:
 
 ````
 $ ls -la ~/.terraform.d/plugins
 total 29656
 drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
 drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
--rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-openapi
-lrwxr-xr-x  1 dikhan  staff        63  3 Jul 15:11 terraform-provider-<provider_name> -> /Users/dikhan/.terraform.d/plugins/terraform-provider-openapi
+-rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<provider_name>
 ````
 
 For the sake of the example, let's pick the swaggercodegen service example and install the plugin:
