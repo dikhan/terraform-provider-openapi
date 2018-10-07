@@ -77,7 +77,7 @@ func TestCreateTerraformResource(t *testing.T) {
 	})
 }
 
-func TestCreateResourceSchema(t *testing.T) {
+func TestCreateTerraformResourceSchema(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r, _ := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When createResourceSchema is called", func() {

@@ -2,7 +2,6 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -24,7 +23,6 @@ func (s *specSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.
 
 func (s *specSchemaDefinition) createResourceSchemaIgnoreID(ignoreID bool) (map[string]*schema.Schema, error) {
 	terraformSchema := map[string]*schema.Schema{}
-
 	for _, property := range s.Properties {
 		// Terraform already has a field ID reserved, hence the schema does not need to include an explicit ID property
 		if property.isPropertyNamedID() && ignoreID {
@@ -126,18 +124,6 @@ func (s *specSchemaDefinition) getStatusIdentifierFor(schemaDefinition *specSche
 		statusHierarchy = append(statusHierarchy, statusIdentifier...)
 	}
 	return statusHierarchy, nil
-}
-
-func (s *specSchemaDefinition) isIDProperty(propertyName string) bool {
-	return s.propertyNameMatchesDefaultName(propertyName, idDefaultPropertyName)
-}
-
-func (s *specSchemaDefinition) isStatusProperty(propertyName string) bool {
-	return s.propertyNameMatchesDefaultName(propertyName, statusDefaultPropertyName)
-}
-
-func (s *specSchemaDefinition) propertyNameMatchesDefaultName(propertyName, expectedPropertyName string) bool {
-	return terraformutils.ConvertToTerraformCompliantName(propertyName) == expectedPropertyName
 }
 
 func (s *specSchemaDefinition) getProperty(name string) (*specSchemaDefinitionProperty, error) {
