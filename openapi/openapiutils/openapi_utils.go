@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-Z]{2,63})?|localhost(?:[:]\d+)?\b`
+const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-Z]{2,63})?(?:[:]\d+)?|localhost(?:[:]\d+)?\b`
 const extTfHeader = "x-terraform-header"
 
 // HeaderConfigurations defines the header configurations that on runtime will be used by the resource factory to
