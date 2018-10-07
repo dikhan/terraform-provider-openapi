@@ -23,7 +23,4 @@ COPY examples/ .
 # move plugin config file set up with openapi providers configuration to terraform plugins folder
 RUN mv terraform-provider-openapi.yaml /root/.terraform.d/plugins/
 
-RUN rm -rf /root/.terraform.d/plugins/terraform-provider-goa
-COPY terraform-provider-openapi /root/.terraform.d/plugins/terraform-provider-goa
-
 CMD ["bash"]
