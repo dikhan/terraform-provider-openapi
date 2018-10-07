@@ -37,6 +37,5 @@ func (t *TerraformUtils) GetTerraformPluginsVendorDir() (string, error) {
 // Terraform's snake case field name convention (lower case and snake case).
 func ConvertToTerraformCompliantName(name string) string {
 	compliantName := strcase.ToSnake(name)
-	log.Printf("[DEBUG] ConvertToTerraformCompliantName - originalName = %s; compliantName = %s)", name, compliantName)
 	return compliantName
 }

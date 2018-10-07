@@ -10,7 +10,7 @@
 
 package api
 
-type ContentDeliveryNetwork struct {
+type ContentDeliveryNetworkV1 struct {
 
 	Id string `json:"id,omitempty"`
 
@@ -25,4 +25,8 @@ type ContentDeliveryNetwork struct {
 	ExampleNumber float32 `json:"exampleNumber,omitempty"`
 
 	ExampleBoolean bool `json:"example_boolean,omitempty"`
+
+	ObjectProperty *ObjectProperty `json:"object_property"`
+
+	ObjectNestedSchemeProperty *ContentDeliveryNetworkV1ObjectNestedSchemeProperty `json:"object_nested_scheme_property,omitempty"`
 }

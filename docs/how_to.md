@@ -262,10 +262,15 @@ The following extensions can be used in path operations. Read the according exte
 Extension Name | Type | Description
 ---|:---:|---
 [x-terraform-exclude-resource](#xTerraformExcludeResource) | bool | Only available in resource root's POST operation. Defines whether a given terraform compliant resource should be exposed to the OpenAPI Terraform provider or ignored.
+[x-terraform-resource-timeout](#xTerraformResourceTimeout) | string | Only available in operation level. Defines the timeout for a given operation. This value overrides the default timeout operation value which is 10 minutes.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
+[x-terraform-resource-poll-enabled](#xTerraformResourcePollEnabled) | bool | Only supported in operation responses (e,g: 202). Defines that if the API responds with the given HTTP Status code (e,g: 202), the polling mechanism will be enabled. This allows the OpenAPI Terraform provider to perform read calls to the remote API and check the resource state. The polling mechanism finalises if the remote resource state arrives at completion, failure state or times-out (60s)
+[x-terraform-resource-name](#xTerraformResourceName) | string | Only available in resource root's POST operation. Defines the name that will be used for the resource in the Terraform configuration. If the extension is not preset, default value will be the name of the resource in the path. For instance, a path such as /v1/users will translate into a terraform resource name users_v1
+[x-terraform-resource-host](#xTerraformResourceHost) | string | Only supported in resource root's POST operation. Defines the host that should be used when managing this specific resource. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make thje API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration.
+[x-terraform-resource-regions-%s](#xTerraformResourceRegions) | string | Only supported in the root level. Defines the regions supported by a given resource identified by the %s variable. This extension only works if the ```x-terraform-resource-host``` extension contains a value that is parametrized and identifies the matching ```x-terraform-resource-regions-%s``` extension. The values of this extension must be comma separated strings.
 
 ###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
- 
+
 Service providers might not want to expose certain resources to Terraform (e,g: admin resources). This can be achieved 
 by adding the following swagger extension to the resource root POST operation (in the example below ```/v1/resource:```):
 
@@ -287,6 +292,32 @@ this extension. If the extension is not present or has value 'false' then the re
 
 *Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
 above example*
+
+###### <a name="xTerraformResourceTimeout">x-terraform-resource-timeout</a>
+
+This extension allows service providers to override the default timeout value for CRUD operations with a different value.
+
+The value must comply with the duration type format. A duration string is a sequence of decimal positive numbers (negative numbers are not allowed), 
+each with optional fraction and a unit suffix, such as "300s", "20.5m", "1.5h" or "2h45m".
+
+Valid time units are "s", "m", "h".
+
+````
+paths:
+  /v1/resource:
+    post:
+      ...
+      x-terraform-resource-timeout: "15m" # this means the max timeout for the post operation to finish is 15 minutes. This overrides the default timeout per operation which is 10 minutes
+      ...
+  /v1/resource/{id}:
+    get: # will have default value of 10 minutes as the 'x-terraform-resource-timeout' is not present for this operation
+      ...
+    delete:
+      x-terraform-resource-timeout: "20m" # this means the max timeout for the delete operation to finish is 20 minutes. This overrides the default timeout per operation which is 10 minutes
+      ...               
+````
+
+*Note: This extension is only supported at the operation level*
 
 ###### <a name="xTerraformHeader">x-terraform-header</a>  
 
@@ -332,6 +363,221 @@ the header will be the one specified in the terraform configuration ```request h
 
 *Note: Currently, parameters of type 'header' are only supported on an operation level*
 
+###### <a name="xTerraformResourcePollEnabled">x-terraform-resource-poll-enabled</a> 
+
+This extension allows the service provider to enable the polling mechanism in the OpenAPI Terraform provider for asynchronous
+operations. In order for this to work, the following must be met:
+
+- The resource response status code must have the 'x-terraform-resource-poll-enabled' present and set to true.
+- The resource definition must have a **read-only** field that defines the status of the resource. By default, if a string field
+named 'status' is present in the resource schema definition that field will be used to track the different statues of the resource. Alternatively,
+a field can be marked to serve as the status field adding the 'x-terraform-field-status'. This field will be used as the status
+field even if there is another field named 'status'. This gives service providers flexibility to name their status field the
+way they desire. More details about the 'x-terraform-field-status' extension can be found in the [Attribute details](#attributeDetails) section.
+- The polling mechanism requires two more extensions to work which define the expected 'status' values for both target and 
+pending statuses. These are:
+
+  - **x-terraform-resource-poll-completed-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
+*Note: For DELETE operations, the expected behaviour is that when the resource has been deleted, GET requests to the deleted 
+resource would return a 404 HTTP response status code back. This means that no payload will be returned in the response, 
+and hence there won't be any status field to check against to. Therefore, the OpenAPI Terraform provider handle deletes
+target statuses in a different way not expecting the service provide to populate this extension. Behind the scenes, the 
+OpenAPI Terraform provider will handle the polling accordingly until the resource is no longer available at which point
+the resource will be considered destroyed. If the extension is present with a value, it wil be ignored in the backend.*
+  - **x-terraform-resource-poll-pending-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'in progress'.
+Any other state returned that returned but is not part of this list will be considered as a failure and the polling mechanism
+will stop its execution accordingly.
+
+**If the above requirements are not met, the operation will be considered synchronous and no polling will be performed.**
+
+In the example below, the response with HTTP status code 202 has the extension defined with value 'true' meaning 
+that the OpenAPI Terraform provider will treat this response as asynchronous. Therefore, the provider will perform
+continues calls to the resource's instance GET operation and will use the value from the resource 'status' property to
+determine the state of the resource:
+
+````
+  /v1/lbs:
+    post:
+      ...
+      responses:
+        202: # Accepted
+          x-terraform-resource-poll-enabled: true # [type (bool)] - this flags the response as trully async. Some resources might be async too but may require manual intervention from operators to complete the creation workflow. This flag will be used by the OpenAPI Service provider to detect whether the polling mechanism should be used or not. The flags below will only be applicable if this one is present with value 'true'
+          x-terraform-resource-poll-completed-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
+          x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying          
+          schema:
+            $ref: "#/definitions/LBV1"
+definitions:
+  LBV1:
+    type: "object"
+    required:
+      - name
+      - backends
+    properties:
+      ...
+      status:
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        description: lb resource status
+        type: string
+        readOnly: true
+        enum:
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted          
+````
+
+Alternatively, the status field can also be of 'object' type in which case the nested properties can be defined in place or
+the $ref attribute can be used to link to the corresponding status schema definition. The nested properties are considered
+computed automatically even if they are not marked as readOnly.
+
+````
+definitions:
+  LBV1:
+    type: "object"
+    ...
+    properties:
+      newStatus:
+        $ref: "#/definitions/Status"
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        readOnly: true
+      timeToProcess: # time that the resource will take to be processed in seconds
+        type: integer
+        default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
+      simulate_failure: # allows user to set it to true and force an error on the API when the given operation (POST/PUT/READ/DELETE) is being performed
+        type: boolean
+  Status:
+    type: object
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+````
+
+*Note: This extension is only supported at the operation's response level.*
+
+
+###### <a name="xTerraformResourceName">x-terraform-resource-name</a> 
+
+This extension enables service providers to write a preferred resource name for the terraform configuration.
+
+````
+paths:
+  /cdns:
+    post:
+      x-terraform-resource-name: "cdn"
+````
+
+In the example above, the resource POST operation contains the extension ``x-terraform-resource-name`` with value ``cdn``.
+This value will be the name used in the terraform configuration``cdn``.
+
+````
+resource "swaggercodegen_cdn" "my_cdn" {...} # ==> 'cdn' name is used as specified by the `x-terraform-resource-name` extension
+````
+
+The preferred name only applies to the name itself, if the resource is versioned like the example below
+using version path ``/v1/cdns``, the appropriate postfix including the version will be attached automatically to the resource name. 
+
+````
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-name: "cdn"
+````
+
+The corresponding terraform configuration in this case will be (note the ``_v1`` after the resource name):
+
+````
+resource "swaggercodegen_cdn_v1" "my_cdn" {...} # ==> 'cdn' name is used instead of 'cdns'
+````
+
+If the ``x-terraform-resource-name`` extension is not present in the resource root POST operation, the default resource 
+name will be picked from the resource root POST path. In the above example ``/v1/cdns`` would translate into ``cdns_v1`` 
+resource name.
+
+*Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
+above example*
+
+
+###### <a name="xTerraformResourceHost">x-terraform-resource-host</a> 
+
+This extension allows resources to override the global host configuration with a different host. This is handy when
+a given swagger file may combine resources provided by different service providers.
+
+````
+swagger: "2.0"
+host: "some.domain.com"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: cdn.api.otherdomain.com
+````
+
+The above configuration will make the OpenAPI Terraform provider client make API CRUD requests (POST/GET/PUT/DELETE) to
+the overridden host instead, in this case ```cdn.api.otherdomain.com```.
+
+*Note: This extension is only supported at the operation's POST operation level. The other operations available for the
+resource such as GET/PUT/DELETE will used the overridden host value too.*
+
+###### <a name="xTerraformResourceRegions">Multi-region resources</a>
+
+Additionally, if the resource is using multi region domains, meaning there's one sub-domain for each region where the resource
+can be created into (similar to how aws resources are created per region), this can be configured as follows:
+
+````
+swagger: "2.0"
+host: "some.domain.com"
+x-terraform-resource-regions-cdn: "dub1,sea1"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: cdn.${cdn}.api.otherdomain.com
+````
+
+If the ``x-terraform-resource-host`` extension has a value parametrised in the form where the following pattern ```${identifier}```
+ is found (identifier being any string with no whitspaces - spaces,tabs, line breaks, etc) AND there is a matching 
+ extension 'x-terraform-resource-regions-**identifier**' defined in the root level that refers to the same identifier 
+ then the resource will be considered multi region.
+For instance, in the above example, the ```x-terraform-resource-host``` value is parametrised as the ```${identifier}``` pattern
+is found, and the identifier in this case is ```cdn```. Moreover, there is a matching ```x-terraform-resource-regions-cdn``` 
+extension containing a list of regions where this resource can be created in.
+
+The regions found in the ```x-terraform-resource-regions-cdn``` will be used as follows:
+
+- The OpenAPI Terraform provider will expose one resource per region enlisted in the extension. In the case above, the
+following resources will become available in the Terraform configuration (the provider name chosen here is 'swaggercodegen'):
+
+````
+resource "swaggercodegen_cdn_v1_dub1" "my_cdn" {
+  label = "label" 
+  ips = ["127.0.0.1"] 
+  hostnames = ["origin.com"]
+}
+
+resource "swaggercodegen_cdn_v1_sea1" "my_cdn" {
+  label = "label" 
+  ips = ["127.0.0.1"] 
+  hostnames = ["origin.com"]
+}
+````
+
+As shown above, the resources that are multi-region will have extra information in their name that identifies the region
+where tha resource should be managed.
+
+- The OpenAPI Terraform provider client will make the API call against the specific resource region when the resource
+is configured with multi-region support.
+
+- As far as the resource configuration is concerned, the swagger configuration remains the same for that specific resource 
+(parameters, operations, polling support, etc) and the same configuration will be applicable to all the regions that resource 
+supports.
+
+*Note: This extension is only supported at the root level and can be used exclusively along with the 'x-terraform-resource-host'
+extension*
+
 #### <a name="swaggerDefinitions">Definitions</a>
 
 - **Field Name:** definitions
@@ -372,6 +618,51 @@ string | Type: schema.TypeString | string value
 integer | schema.TypeInt | int value
 number | schema.TypeFloat | float value
 boolean | schema.TypeBool | boolean value
+object | schema.TypeMap | map value
+
+Object types can be defined in two fashions:
+
+###### Nested properties
+
+Properties can have their schema definition in place or nested; and they must be of type 'object'.
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    ...
+    properties:
+      ...
+      object_nested_scheme_property:
+        type: object # nested properties required type equal object to be considered as object
+        properties:
+          name:
+            type: string
+````
+
+###### Ref schema definition
+
+A property that has a $ref attribute is considered automatically and object so defining the type is optional (although
+it's recommended).
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    ...
+    properties:
+      ...
+      object_property:
+        #type: object - type is optional for properties of object type that use $ref
+        $ref: "#/definitions/ObjectProperty"
+  ObjectProperty:
+    type: object
+    required:
+    - message
+    properties:
+      message:
+        type: string
+````
 
 Additionally, properties can be flagged as required as follows:
 
@@ -395,6 +686,7 @@ x-terraform-force-new | boolean |  If the value of this property is updated; ter
 x-terraform-sensitive | boolean |  If this meta attribute is present in an object definition property, it will be considered sensitive as far as terraform is concerned, meaning that its value will not be disclosed in the TF state file
 x-terraform-id | boolean | If this meta attribute is present in an object definition property, the value will be used as the resource identifier when performing the read, update and delete API operations. The value will also be stored in the ID field of the local state file.
 x-terraform-field-name | string | This enables service providers to override the schema definition property name with a different one which will be the property name used in the terraform configuration file. This is mostly used to expose the internal property to a more user friendly name. If the extension is not present and the property name is not terraform compliant, an automatic conversion will be performed by the OpenAPI Terraform provider to make the name compliant (following Terraform's field name convention to be snake_case) 
+x-terraform-field-status | boolean | If this meta attribute is present in an object definition property, the value will be used as the status identifier when executing the polling mechanism on eligible async operations such as POST/PUT/DELETE.
 
 ##### <a name="definitionExample">Full Example</a>
 
@@ -449,6 +741,21 @@ definitions:
       someNonUserFriendlyPropertyName:  # If this property did not have the 'x-terraform-field-name' extension, the property name will be automatically converted by the OpenAPI Terraform provider into a name that is Terraform field name compliant. The result will be:  some_non_user_friendly_propertyName
         type: string
         x-terraform-field-name: property_name_more_user_friendly
+        
+      status:
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not 'status' but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        type: string
+        readOnly: true
+        enum: # this is just for documentation purposes and to let the consumer know what statues should be expected 
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted        
+        
 ```
 
 

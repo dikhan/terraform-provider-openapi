@@ -1,7 +1,7 @@
 ## Proposed changes
 
-Please add as many details as possible about the change here. Does this Pull Request resolve any open issue? If so, please 
-make sure to link to that issue:
+Please add as many details as possible about the change here. Does this Pull Request resolve any open issue? 
+If so, please make sure to link to that issue:
                                                               
 Fixes: # 
 

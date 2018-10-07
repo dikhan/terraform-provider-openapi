@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"log"
 	"regexp"
 	"strings"
@@ -10,10 +11,7 @@ import (
 	"github.com/go-openapi/spec"
 )
 
-const resourceVersionRegex = "(/v[0-9]*/)"
-const resourceNameRegex = "((/\\w*/){\\w*})+$"
 const resourceInstanceRegex = "((?:.*)){.*}"
-const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
 // apiSpecAnalyser analyses the swagger doc and provides helper methods to retrieve all the end points that can
 // be used as terraform resources. These endpoints have to meet certain criteria to be considered eligible resources
@@ -33,27 +31,56 @@ func (asa apiSpecAnalyser) getResourcesInfo() (resourcesInfo, error) {
 	for resourcePath, pathItem := range asa.d.Spec().Paths.Paths {
 		resourceRootPath, resourceRoot, resourcePayloadSchemaDef, err := asa.isEndPointFullyTerraformResourceCompliant(resourcePath)
 		if err != nil {
-			log.Printf("[DEBUG] resource paht '%s' not terraform compliant: %s", resourcePath, err)
+			log.Printf("[DEBUG] resource path '%s' not terraform compliant: %s", resourcePath, err)
 			continue
 		}
-		resourceName, err := asa.getResourceName(resourcePath)
-		if err != nil {
-			log.Printf("[DEBUG] resource not figure out valid terraform resource name for '%s': %s", resourcePath, err)
-			continue
-		}
+
 		r := resourceInfo{
-			name:             resourceName,
-			basePath:         asa.d.BasePath(),
-			path:             resourceRootPath,
-			host:             asa.d.Spec().Host,
-			httpSchemes:      asa.d.Spec().Schemes,
-			schemaDefinition: *resourcePayloadSchemaDef,
-			createPathInfo:   *resourceRoot,
-			pathInfo:         pathItem,
+			basePath:          asa.d.BasePath(),
+			path:              resourceRootPath,
+			host:              asa.d.Spec().Host,
+			httpSchemes:       asa.d.Spec().Schemes,
+			schemaDefinition:  resourcePayloadSchemaDef,
+			createPathInfo:    *resourceRoot,
+			pathInfo:          pathItem,
+			schemaDefinitions: asa.d.Spec().Definitions,
 		}
-		if !r.shouldIgnoreResource() {
-			resources[resourceName] = r
+
+		if r.shouldIgnoreResource() {
+			continue
 		}
+
+		resourceName, err := r.getResourceName()
+		if err != nil {
+			log.Printf("[DEBUG] could not figure out the resource name for '%s': %s", resourcePath, err)
+			continue
+		}
+
+		isMultiRegion, regions := r.isMultiRegionResource(asa.d.Spec().Extensions)
+		if isMultiRegion {
+			log.Printf("[INFO] resource '%s' is configured with host override AND multi region; creating reasource per region", r.path)
+			for regionName, regionHost := range regions {
+				resourceRegionName := fmt.Sprintf("%s_%s", resourceName, regionName)
+				regionResource := resourceInfo{}
+				regionResource = r
+				regionResource.host = regionHost
+				log.Printf("[INFO] multi region resource: name = %s, region = %s, host = %s", regionName, resourceRegionName, regionHost)
+				resources[resourceRegionName] = regionResource
+			}
+			continue
+		}
+
+		hostOverride := r.getResourceOverrideHost()
+		// if the override host is multi region then something must be wrong with the multi region configuration, failing to let the user know so they can fix the configuration
+		if isMultiRegionHost, _ := r.isMultiRegionHost(hostOverride); isMultiRegionHost {
+			return nil, fmt.Errorf("multi region configuration for resource '%s' is wrong, please check the multi region configuration in the swagger file is right for that resource", resourceName)
+		}
+		// Fall back to override the host if value is not empty; otherwise global host will be used as usual
+		if hostOverride != "" {
+			log.Printf("[INFO] resource '%s' is configured with host override, API calls will be made against '%s' instead of '%s'", r.path, hostOverride, asa.d.Spec().Host)
+			r.host = hostOverride
+		}
+		resources[resourceName] = r
 	}
 	return resources, nil
 }
@@ -194,15 +221,7 @@ func (asa apiSpecAnalyser) getResourcePayloadSchemaDef(resourceRootPostOperation
 	if err != nil {
 		return nil, err
 	}
-	payloadDefName, err := asa.getPayloadDefName(ref)
-	if err != nil {
-		return nil, err
-	}
-	payloadDefinition, exists := asa.d.Spec().Definitions[payloadDefName]
-	if !exists {
-		return nil, fmt.Errorf("missing schema definition in the swagger file with the supplied ref '%s'", ref)
-	}
-	return &payloadDefinition, nil
+	return openapiutils.GetSchemaDefinition(asa.d.Spec().Definitions, ref)
 }
 
 func (asa apiSpecAnalyser) getResourcePayloadSchemaRef(resourceRootPostOperation *spec.Operation) (string, error) {
@@ -235,19 +254,6 @@ func (asa apiSpecAnalyser) getResourcePayloadSchemaRef(resourceRootPostOperation
 	return payloadDefinitionSchemaRef.Ref.String(), nil
 }
 
-// getPayloadDefName only supports references to the same document. External references like URLs is not supported at the moment
-func (asa apiSpecAnalyser) getPayloadDefName(ref string) (string, error) {
-	reg, err := regexp.Compile(swaggerResourcePayloadDefinitionRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the swaggerResourcePayloadDefinitionRegex regex '%s': %s", swaggerResourcePayloadDefinitionRegex, err)
-	}
-	payloadDefName := reg.FindStringSubmatch(ref)[0]
-	if payloadDefName == "" {
-		return "", fmt.Errorf("could not find a valid definition name for '%s'", ref)
-	}
-	return payloadDefName, nil
-}
-
 // resourceInstanceRegex loads up the regex specified in const resourceInstanceRegex
 // If the regex is not able to compile the regular expression the function exists calling os.Exit(1) as
 // there is the regex is completely busted
@@ -266,31 +272,6 @@ func (asa apiSpecAnalyser) isResourceInstanceEndPoint(p string) (bool, error) {
 		return false, err
 	}
 	return r.MatchString(p), nil
-}
-
-// getResourceName gets the name of the resource from a path /resource/{id}
-func (asa apiSpecAnalyser) getResourceName(resourcePath string) (string, error) {
-	nameRegex, err := regexp.Compile(resourceNameRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
-	}
-	var resourceName string
-	matches := nameRegex.FindStringSubmatch(resourcePath)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
-	}
-	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
-	versionRegex, err := regexp.Compile(resourceVersionRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
-	}
-	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
-	if len(versionMatches) != 0 {
-		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
-		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
-		return resourceNameWithVersion, nil
-	}
-	return resourceName, nil
 }
 
 // findMatchingResourceRootPath returns the corresponding POST root and path for a given end point

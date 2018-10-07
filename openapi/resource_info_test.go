@@ -5,8 +5,11 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/http"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestGetResourceURL(t *testing.T) {
@@ -285,7 +288,7 @@ func TestGetImmutableProperties(t *testing.T) {
 		extensions := spec.Extensions{}
 		extensions.Add("x-terraform-immutable", true)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"id": {
@@ -311,7 +314,7 @@ func TestGetImmutableProperties(t *testing.T) {
 
 	Convey("Given resource info is configured with schemaDefinition that DOES NOT contain immutable properties", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"id": {
@@ -343,16 +346,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type string too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
@@ -368,16 +372,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"int_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("int_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("int_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeInt)
@@ -393,16 +398,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"number_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("number_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("number_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type float too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeFloat)
@@ -412,7 +418,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 
 	Convey("Given a swagger schema definition that has a property of type 'boolean'", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": {
@@ -422,11 +428,12 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 							},
 						},
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", r.schemaDefinition.Properties["boolean_prop"])
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", r.schemaDefinition.Properties["boolean_prop"], r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeBool)
@@ -436,7 +443,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 
 	Convey("Given a swagger schema definition that has a property of type 'array'", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": {
@@ -446,11 +453,12 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 							},
 						},
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", r.schemaDefinition.Properties["array_prop"])
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", r.schemaDefinition.Properties["array_prop"], r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type array too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
@@ -462,9 +470,140 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 		})
 	})
 
+	Convey("Given a swagger schema definition that has a property of type object and a ref pointing to the schema", t, func() {
+		expectedRef := "#/definitions/ObjectProperty"
+		ref := spec.MustCreateRef(expectedRef)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"object_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Ref:  ref,
+							},
+						},
+					},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{
+				"ObjectProperty": {
+					SchemaProps: spec.SchemaProps{
+						Properties: map[string]spec.Schema{
+							"message": {
+								VendorExtensible: spec.VendorExtensible{},
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"string"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("object_prop", r.schemaDefinition.Properties["object_prop"], r.schemaDefinition.Required)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(tfPropSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should contained the sub property - 'message'", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type object that has nested schema", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"object_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									"message": {
+										VendorExtensible: spec.VendorExtensible{},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("object_prop", r.schemaDefinition.Properties["object_prop"], r.schemaDefinition.Required)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(tfPropSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should contained the sub property - 'message'", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type object that has nested schema and property named id", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"object_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									"id": {
+										VendorExtensible: spec.VendorExtensible{},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+									},
+									"message": {
+										VendorExtensible: spec.VendorExtensible{},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("object_prop", r.schemaDefinition.Properties["object_prop"], r.schemaDefinition.Required)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(tfPropSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should contain the sub property - 'message'", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+			Convey("And the tf resource schema returned should contain the sub property - 'id' and should not be ignored", func() {
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
+			})
+		})
+	})
+
 	Convey("Given a swagger schema definition that has a property 'string_prop' which is required", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": {
@@ -479,7 +618,7 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"])
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"], r.schemaDefinition.Required)
 			Convey("Then the returned value should be true", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Required, ShouldBeTrue)
@@ -497,16 +636,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.ForceNew, ShouldBeTrue)
@@ -523,16 +663,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: true},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be configured as computed", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Computed, ShouldBeTrue)
@@ -551,16 +692,17 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be configured as forceNew and sensitive", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.ForceNew, ShouldBeTrue)
@@ -579,22 +721,93 @@ func TestCreateTerraformPropertyBasicSchema(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"boolean_prop": propSchema,
 					},
+					Required: []string{},
 				},
 			},
 		}
 		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema)
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("boolean_prop", propSchema, r.schemaDefinition.Required)
 			Convey("Then the resulted terraform property schema should be configured with the according default value, ", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Default, ShouldEqual, expectedDefaultValue)
 			})
 		})
 	})
+
+	Convey("Given a swagger schema definition that has a property 'string_prop' of type string, required, sensitive and has a default value 'defaultValue'", t, func() {
+		expectedDefaultValue := "defaultValue"
+		extensions := spec.Extensions{}
+		extensions.Add("x-terraform-sensitive", true)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type:    []string{"string"},
+								Default: expectedDefaultValue,
+							},
+						},
+					},
+					Required: []string{"string_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("string_prop", r.schemaDefinition.Properties["string_prop"], r.schemaDefinition.Required)
+			Convey("Then the returned tf tfPropSchema should be of type string", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
+			})
+			Convey("And a validateFunc should be configured", func() {
+				So(tfPropSchema.ValidateFunc, ShouldNotBeNil)
+			})
+			Convey("And be configured as required", func() {
+				So(tfPropSchema.Required, ShouldBeTrue)
+			})
+			Convey("And be configured as sensitive", func() {
+				So(tfPropSchema.Sensitive, ShouldBeTrue)
+			})
+			Convey("And the default value should match 'defaultValue'", func() {
+				So(tfPropSchema.Default, ShouldEqual, expectedDefaultValue)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property 'array_prop' of type array", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"array_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+							},
+						},
+					},
+					Required: []string{"array_prop"}, // This array contains the list of properties that are required
+				},
+			},
+		}
+		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+			tfPropSchema, err := r.createTerraformPropertyBasicSchema("array_prop", r.schemaDefinition.Properties["array_prop"], r.schemaDefinition.Required)
+			Convey("Then the returned tf tfPropSchema should be of type array", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And there should not be any validation function attached to it", func() {
+				So(tfPropSchema.ValidateFunc, ShouldBeNil)
+			})
+		})
+	})
+
 }
 
 func TestIsArrayProperty(t *testing.T) {
@@ -606,7 +819,7 @@ func TestIsArrayProperty(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": propSchema,
@@ -630,7 +843,7 @@ func TestIsArrayProperty(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
@@ -656,7 +869,7 @@ func TestIsRequired(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
@@ -681,7 +894,7 @@ func TestIsRequired(t *testing.T) {
 			},
 		}
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": propSchema,
@@ -698,81 +911,10 @@ func TestIsRequired(t *testing.T) {
 	})
 }
 
-func TestCreateTerraformPropertySchema(t *testing.T) {
-	Convey("Given a swagger schema definition that has a property 'string_prop' of type string, required, sensitive and has a default value 'defaultValue'", t, func() {
-		expectedDefaultValue := "defaultValue"
-		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-sensitive", true)
-		r := resourceInfo{
-			schemaDefinition: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"string_prop": {
-							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
-							SchemaProps: spec.SchemaProps{
-								Type:    []string{"string"},
-								Default: expectedDefaultValue,
-							},
-						},
-					},
-					Required: []string{"string_prop"}, // This array contains the list of properties that are required
-				},
-			},
-		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertySchema("string_prop", r.schemaDefinition.Properties["string_prop"])
-			Convey("Then the returned tf tfPropSchema should be of type string", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
-			})
-			Convey("And a validateFunc should be configured", func() {
-				So(tfPropSchema.ValidateFunc, ShouldNotBeNil)
-			})
-			Convey("And be configured as required, sensitive and the default value should match 'defaultValue'", func() {
-				So(tfPropSchema.Required, ShouldBeTrue)
-			})
-			Convey("And be configured as sensitive", func() {
-				So(tfPropSchema.Sensitive, ShouldBeTrue)
-			})
-			Convey("And the default value should match 'defaultValue'", func() {
-				So(tfPropSchema.Default, ShouldEqual, expectedDefaultValue)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property 'array_prop' of type array", t, func() {
-		r := resourceInfo{
-			schemaDefinition: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"array_prop": {
-							VendorExtensible: spec.VendorExtensible{},
-							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
-							},
-						},
-					},
-					Required: []string{"array_prop"}, // This array contains the list of properties that are required
-				},
-			},
-		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := r.createTerraformPropertySchema("array_prop", r.schemaDefinition.Properties["array_prop"])
-			Convey("Then the returned tf tfPropSchema should be of type array", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And there should not be any validation function attached to it", func() {
-				So(tfPropSchema.ValidateFunc, ShouldBeNil)
-			})
-		})
-	})
-}
-
 func TestValidateFunc(t *testing.T) {
 	Convey("Given a swagger schema definition that has one property", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": {
@@ -795,7 +937,7 @@ func TestValidateFunc(t *testing.T) {
 
 	Convey("Given a swagger schema definition that has a property which is supposed to be computed but has a default value set", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"array_prop": {
@@ -826,7 +968,7 @@ func TestValidateFunc(t *testing.T) {
 func TestCreateTerraformResourceSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has multiple properties - 'string_prop', 'int_prop', 'number_prop', 'bool_prop' and 'array_prop'", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"string_prop": {
@@ -882,13 +1024,79 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a swagger schema definition that has object properties and a list of schema definitions containing the definition the object refs to", t, func() {
+		expectedRef := "#/definitions/ObjectProperty"
+		ref := spec.MustCreateRef(expectedRef)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_prop": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+						"object_prop": { // This prop does not have a terraform compliant name; however an automatic translation is performed behind the scenes to make it compliant
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Ref:  ref,
+							},
+						},
+					},
+					Required: []string{"string_prop", "object_prop"},
+				},
+			},
+			schemaDefinitions: map[string]spec.Schema{
+				"ObjectProperty": {
+					SchemaProps: spec.SchemaProps{
+						Properties: map[string]spec.Schema{
+							"message": {
+								VendorExtensible: spec.VendorExtensible{},
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"string"},
+								},
+							},
+						},
+						Required: []string{"message"},
+					},
+				},
+			},
+		}
+		Convey("When createTerraformResourceSchema method is called", func() {
+			resourceSchema, err := r.createTerraformResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tf resource schema returned should not be nil", func() {
+				So(resourceSchema, ShouldNotBeNil)
+			})
+			Convey("And the tf resource schema returned should match the swagger props - 'string_prop' and 'object_prop'", func() {
+				So(resourceSchema, ShouldNotBeNil)
+				So(resourceSchema, ShouldContainKey, "string_prop")
+				So(resourceSchema, ShouldContainKey, "object_prop")
+			})
+			Convey("And the properties 'string_prop' and 'object_prop' should be required", func() {
+				So(resourceSchema["string_prop"].Required, ShouldBeTrue)
+				So(resourceSchema["object_prop"].Required, ShouldBeTrue)
+			})
+			Convey("And the tf resource schema ", func() {
+				So(resourceSchema["object_prop"].Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+			})
+			Convey("And the properties 'message' should be required", func() {
+				So(resourceSchema["object_prop"].Elem.(*schema.Resource).Schema["message"].Required, ShouldBeTrue)
+			})
+		})
+	})
 }
 
 func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a property with a name that is terraform field name compliant", t, func() {
 		propertyName := "some_prop_name_that_is_terraform_field_name_compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -912,7 +1120,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a property with a name that is NOT terraform field name compliant", t, func() {
 		propertyName := "thisPropIsNotTerraformField_Compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -937,7 +1145,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		propertyName := "thisPropIsNotTerraformField_Compliant"
 		expectedPropertyName := "this_property_is_now_terraform_field_compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -965,7 +1173,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a property with a name that is NOT terraform field name compliant but has an extension that overrides it which in turn is also not terraform name compliant", t, func() {
 		propertyName := "thisPropIsNotTerraformField_Compliant"
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						propertyName: {
@@ -994,10 +1202,10 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 func TestGetResourceIdentifier(t *testing.T) {
 	Convey("Given a swagger schema definition that has an id property", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": {
+						idDefaultPropertyName: {
 							VendorExtensible: spec.VendorExtensible{},
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
@@ -1013,16 +1221,16 @@ func TestGetResourceIdentifier(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the value returned should be 'id'", func() {
-				So(id, ShouldEqual, "id")
+				So(id, ShouldEqual, idDefaultPropertyName)
 			})
 		})
 	})
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to TRUE", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", true)
+		extensions.Add(extTfID, true)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"some-other-id": {
@@ -1048,9 +1256,9 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that HAS BOTH an 'id' property AND ALSO a property configured with x-terraform-id set to true", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", true)
+		extensions.Add(extTfID, true)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"id": {
@@ -1082,9 +1290,9 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'id' property but has a property configured with x-terraform-id set to FALSE", t, func() {
 		extensions := spec.Extensions{}
-		extensions.Add("x-terraform-id", false)
+		extensions.Add(extTfID, false)
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"some-other-id": {
@@ -1107,7 +1315,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 	Convey("Given a swagger schema definition that NEITHER HAS an 'id' property NOR a property configured with x-terraform-id set to true", t, func() {
 		r := resourceInfo{
-			schemaDefinition: spec.Schema{
+			schemaDefinition: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
 						"prop-that-is-not-id": {
@@ -1129,6 +1337,826 @@ func TestGetResourceIdentifier(t *testing.T) {
 		Convey("When getResourceIdentifier method is called", func() {
 			_, err := r.getResourceIdentifier()
 			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestGetStatusId(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property that is not an object", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						statusDefaultPropertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(status[0], ShouldEqual, statusDefaultPropertyName)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with x-terraform-field-status set to TRUE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
+			Convey("Then the value returned should contain the name of the property 'some-other-property-holding-status'", func() {
+				So(status[0], ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that HAS BOTH an 'status' property AND ALSO a property configured with 'x-terraform-field-status' set to true", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
+			Convey("Then the value returned should be 'some-other-property-holding-status' as it takes preference over the default 'status' property", func() {
+				So(status[0], ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that HAS an status field which is an object containing a status field", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		expectedStatusProperty := "actualStatus"
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: []string{"object"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									expectedStatusProperty: {
+										VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+										SwaggerSchemaProps: spec.SwaggerSchemaProps{
+											ReadOnly: true,
+										},
+									},
+								},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			status, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the status returned should not be empty'", func() {
+				So(status, ShouldNotBeEmpty)
+			})
+			Convey("Then the status array returned should contain the different the trace of property names (hierarchy) until the last one which is the one used as status, in this case 'actualStatus' on the last index", func() {
+				So(status[0], ShouldEqual, "status")
+				So(status[1], ShouldEqual, expectedStatusProperty)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with 'x-terraform-field-status' set to FALSE", t, func() {
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, false)
+		expectedStatusProperty := "some-other-property-holding-status"
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						expectedStatusProperty: {
+							VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that NEITHER HAS an 'status' property NOR a property configured with 'x-terraform-field-status' set to true", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"prop-that-is-not-status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"prop-that-is-not-status-and-does-not-have-status-metadata-either": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition with a status property that is not readonly", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: false,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called", func() {
+			_, err := r.getStatusIdentifier(r.schemaDefinition, true, true)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition with a property configured with 'x-terraform-field-status' set to true and it is not readonly", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"status": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusIdentifier method is called with a schema definition and forceReadOnly check is disabled (this happens when the method is called recursively)", func() {
+			status, err := r.getStatusIdentifier(r.schemaDefinition, false, false)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status array returned should contain the status property even though it's not read only...readonly checks are only perform on root level properties", func() {
+				So(status[0], ShouldEqual, "status")
+			})
+		})
+	})
+}
+
+func TestGetStatusValueFromPayload(t *testing.T) {
+	Convey("Given a swagger schema definition that has an status property that is not an object", t, func() {
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						statusDefaultPropertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that also has a 'status' field in the root level", func() {
+			expectedStatusValue := "someValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: expectedStatusValue,
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload that does not have status field", func() {
+			payload := map[string]interface{}{
+				"someOtherPropertyName": "arggg",
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "payload does not match resouce schema, could not find the status field: [status]")
+			})
+		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload that has a status field but the value is not supported", func() {
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: 12, // this value is not supported, only strings and maps (for nested properties within an object) are supported
+			}
+			_, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should be", func() {
+				So(err.Error(), ShouldEqual, "status property value '[status]' does not have a supported type [string/map]")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has an status property that IS an object", t, func() {
+		expectedStatusProperty := "some-other-property-holding-status"
+		extensions := spec.Extensions{}
+		extensions.Add(extTfFieldStatus, true)
+		r := resourceInfo{
+			schemaDefinition: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: []string{"object"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						statusDefaultPropertyName: {
+							VendorExtensible: spec.VendorExtensible{},
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								Properties: map[string]spec.Schema{
+									expectedStatusProperty: {
+										VendorExtensible: spec.VendorExtensible{Extensions: extensions},
+										SchemaProps: spec.SchemaProps{
+											Type: []string{"string"},
+										},
+										SwaggerSchemaProps: spec.SwaggerSchemaProps{
+											ReadOnly: true,
+										},
+									},
+								},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getStatusValueFromPayload method is called with a payload that has an status object property inside which there's an status property", func() {
+			expectedStatusValue := "someStatusValue"
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: map[string]interface{}{
+					expectedStatusProperty: expectedStatusValue,
+				},
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should contain the name of the property 'status'", func() {
+				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+	})
+
+}
+
+func TestIsIDProperty(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When isIDProperty method is called with property named 'id'", func() {
+			isIDProperty := r.isIDProperty("id")
+			Convey("Then the error returned should be nil", func() {
+				So(isIDProperty, ShouldBeTrue)
+			})
+		})
+		Convey("When isIDProperty method is called with property NOT named 'id'", func() {
+			isIDProperty := r.isIDProperty("something_not_id")
+			Convey("Then the error returned should be nil", func() {
+				So(isIDProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsStatusProperty(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When isStatusProperty method is called with property named 'status'", func() {
+			isStatusProperty := r.isStatusProperty("status")
+			Convey("Then the error returned should be nil", func() {
+				So(isStatusProperty, ShouldBeTrue)
+			})
+		})
+		Convey("When isStatusProperty method is called with property NOT named 'status'", func() {
+			isStatusProperty := r.isStatusProperty("something_not_status")
+			Convey("Then the error returned should be nil", func() {
+				So(isStatusProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestPropertyNameMatchesDefaultName(t *testing.T) {
+	Convey("Given a swagger schema definition", t, func() {
+		r := resourceInfo{}
+		Convey("When propertyNameMatchesDefaultName method is called with property named 'status' and an expected name matching the property property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("status", "status")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeTrue)
+			})
+		})
+		Convey("When propertyNameMatchesDefaultName method is called with property named 'ID' which is not terraform compliant name and an expected property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("ID", "id")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeTrue)
+			})
+		})
+		Convey("When propertyNameMatchesDefaultName method is called with property NOT matching the expected property name", func() {
+			propertyNameMatchesDefaultName := r.propertyNameMatchesDefaultName("something_not_status", "")
+			Convey("Then the error returned should be nil", func() {
+				So(propertyNameMatchesDefaultName, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsResourcePollingEnabled(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollEnabled, true)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			isResourcePollingEnabled, _ := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			Convey("Then the bool returned should be true", func() {
+				So(isResourcePollingEnabled, ShouldBeTrue)
+			})
+		})
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to false", func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollEnabled, false)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			isResourcePollingEnabled, _ := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			Convey("Then the bool returned should be false", func() {
+				So(isResourcePollingEnabled, ShouldBeFalse)
+			})
+		})
+		Convey("When isResourcePollingEnabled method is called with list of responses where non of the codes match the given response http code", func() {
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusOK: {},
+					},
+				},
+			}
+			isResourcePollingEnabled, _ := r.isResourcePollingEnabled(responses, http.StatusAccepted)
+			Convey("Then bool returned should be false", func() {
+				So(isResourcePollingEnabled, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestGetResourcePollTargetStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getResourcePollTargetStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := &spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getResourcePollTargetStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+	})
+}
+
+func TestGetResourcePollPendingStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getResourcePollPendingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-pending-statuses'", func() {
+			expectedStatus := "deploy_pending"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollPendingStatuses, expectedStatus)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getResourcePollPendingStatuses(responses.StatusCodeResponses[http.StatusAccepted])
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the status returned should contain", func() {
+				So(statuses, ShouldContain, expectedStatus)
+			})
+		})
+	})
+}
+
+func TestGetPollingStatuses(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			expectedTarget := "deployed"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTarget)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain", func() {
+				So(statuses, ShouldContain, expectedTarget)
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with spaces)", func() {
+			expectedTargets := "deployed, completed, done"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain expected targets", func() {
+				// the expected Targets are a list of targets with no spaces whatsoever, hence why the removal of spaces
+				for _, expectedTarget := range strings.Split(strings.Replace(expectedTargets, " ", "", -1), ",") {
+					So(statuses, ShouldContain, expectedTarget)
+				}
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has a given extension 'x-terraform-resource-poll-completed-statuses' containing multiple targets (comma separated with no spaces)", func() {
+			expectedTargets := "deployed,completed,done"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourcePollTargetStatuses, expectedTargets)
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: extensions,
+							},
+						},
+					},
+				},
+			}
+			statuses, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain expected targets", func() {
+				for _, expectedTarget := range strings.Split(expectedTargets, ",") {
+					So(statuses, ShouldContain, expectedTarget)
+				}
+			})
+		})
+
+		Convey("When getPollingStatuses method is called with a response that has does not have a given extension 'x-terraform-resource-poll-completed-statuses'", func() {
+			responses := spec.Responses{
+				ResponsesProps: spec.ResponsesProps{
+					StatusCodeResponses: map[int]spec.Response{
+						http.StatusAccepted: {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{},
+							},
+						},
+					},
+				},
+			}
+			_, err := r.getPollingStatuses(responses.StatusCodeResponses[http.StatusAccepted], extTfResourcePollTargetStatuses)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestGetResourceTimeout(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey(fmt.Sprintf("When getResourceTimeout method is called with an operation that has the extension '%s'", extTfResourceTimeout), func() {
+			expectedTimeout := "30s"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, expectedTimeout)
+			post := &spec.Operation{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: extensions,
+				},
+			}
+			duration, err := r.getResourceTimeout(post)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the duration returned should contain", func() {
+				So(*duration, ShouldEqual, time.Duration(30*time.Second))
+			})
+		})
+	})
+}
+
+func TestGetTimeDuration(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that contains the extension passed in '%s' with value in seconds", extTfResourceTimeout), func() {
+			expectedTimeout := "30s"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, expectedTimeout)
+			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the duration returned should contain", func() {
+				So(*duration, ShouldEqual, time.Duration(30*time.Second))
+			})
+		})
+		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that contains the extension passed in '%s' with value in minutes (using fractions)", extTfResourceTimeout), func() {
+			expectedTimeout := "20.5m"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, expectedTimeout)
+			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the duration returned should contain", func() {
+				So(*duration, ShouldEqual, time.Duration((20*time.Minute)+(30*time.Second)))
+			})
+		})
+		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that contains the extension passed in '%s' with value in hours", extTfResourceTimeout), func() {
+			expectedTimeout := "1h"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, expectedTimeout)
+			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the duration returned should contain", func() {
+				So(*duration, ShouldEqual, time.Duration(1*time.Hour))
+			})
+		})
+		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that DOES NOT contain the extension passed in '%s'", extTfResourceTimeout), func() {
+			expectedTimeout := "30s"
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, expectedTimeout)
+			duration, err := r.getTimeDuration(extensions, "nonExistingExtension")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the duration returned should be nil", func() {
+				So(duration, ShouldBeNil)
+			})
+		})
+		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that DOES contain the extension passed in '%s' BUT the value is an empty string", extTfResourceTimeout), func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, "")
+			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the duration returned should be nil", func() {
+				So(duration, ShouldBeNil)
+			})
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "invalid duration value: ''. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)")
+			})
+		})
+		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that DOES contain the extension passed in '%s' BUT the value is a negative duration", extTfResourceTimeout), func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, "-1.5h")
+			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the duration returned should be nil", func() {
+				So(duration, ShouldBeNil)
+			})
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "invalid duration value: '-1.5h'. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)")
+			})
+		})
+		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that DOES contain the extension passed in '%s' BUT the value is NOT supported (distinct than s,m and h)", extTfResourceTimeout), func() {
+			extensions := spec.Extensions{}
+			extensions.Add(extTfResourceTimeout, "300ms")
+			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the duration returned should be nil", func() {
+				So(duration, ShouldBeNil)
+			})
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "invalid duration value: '300ms'. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)")
+			})
+		})
+	})
+}
+
+func TestGetDuration(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When getDuration method is called a valid formatted time'", func() {
+			duration, err := r.getDuration("30s")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the statuses returned should contain", func() {
+				fmt.Println(duration)
+				So(*duration, ShouldEqual, time.Duration(30*time.Second))
+			})
+		})
+		Convey("When getDuration method is called a invalid formatted time'", func() {
+			_, err := r.getDuration("some invalid formatted time")
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 		})
@@ -1194,6 +2222,376 @@ func TestShouldIgnoreResource(t *testing.T) {
 			shouldIgnoreResource := r.shouldIgnoreResource()
 			Convey("Then the value returned should be true", func() {
 				So(shouldIgnoreResource, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestGetResourceTerraformName(t *testing.T) {
+	Convey("Given a resource info", t, func() {
+		expectedResourceName := "cdn"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: expectedResourceName,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceTerraformName method is called with a map of extensions", func() {
+			value := r.getResourceTerraformName()
+			Convey(fmt.Sprintf("Then the value returned should equal %s", expectedResourceName), func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+}
+
+func TestGetExtensionStringValue(t *testing.T) {
+	Convey("Given a resource info", t, func() {
+		r := resourceInfo{}
+		Convey("When getExtensionStringValue method is called with a map of extensions and an existing key in the map", func() {
+			expectedResourceName := "cdn"
+			extensions := spec.Extensions{
+				extTfResourceName: expectedResourceName,
+			}
+			value := r.getExtensionStringValue(extensions, extTfResourceName)
+			Convey("Then the value returned should equal", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+		Convey("When getExtensionStringValue method is called with a map of extensions and a NON existing key in the map", func() {
+			expectedResourceName := "cdn"
+			extensions := spec.Extensions{
+				extTfResourceName: expectedResourceName,
+			}
+			value := r.getExtensionStringValue(extensions, "nonExistingKey")
+			Convey("Then the value returned should equal", func() {
+				So(value, ShouldBeEmpty)
+			})
+		})
+	})
+}
+
+func TestGetResourceName(t *testing.T) {
+	Convey("Given a resourceInfo configured with a path /users/ containing a trailing slash", t, func() {
+		r := resourceInfo{
+			path: "/users/",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users'", func() {
+				So(resourceName, ShouldEqual, "users")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a path /users with no trailing slash", t, func() {
+		r := resourceInfo{
+			path: "/users",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users'", func() {
+				So(resourceName, ShouldEqual, "users")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a valid resource path that is versioned such as '/v1/users/'", t, func() {
+		r := resourceInfo{
+			path: "/v1/users/",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users_v1'", func() {
+				So(resourceName, ShouldEqual, "users_v1")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a valid resource path that is versioned with nuber higher than 9 such as '/v12/users/'", t, func() {
+		r := resourceInfo{
+			path: "/v12/users/",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users_v1'", func() {
+				So(resourceName, ShouldEqual, "users_v12")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with a valid resource long path that is versioned such as '/v1/something/users'", t, func() {
+		r := resourceInfo{
+			path: "/v1/something/users",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should still be 'users_v1'", func() {
+				So(resourceName, ShouldEqual, "users_v1")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with resource which has path parameters '/api/v1/nodes/{name}/proxy'", t, func() {
+		r := resourceInfo{
+			path: "/api/v1/nodes/{name}/proxy",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should still be 'proxy_v1'", func() {
+				So(resourceName, ShouldEqual, "proxy_v1")
+			})
+		})
+	})
+	Convey("Given a resourceInfo configured with resource with path '/users' and the create operation has the extension 'x-terraform-resource-name' ", t, func() {
+		expectedResourceName := "user"
+		r := resourceInfo{
+			path: "/v1/users",
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: expectedResourceName,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceName method is called", func() {
+			resourceName, err := r.getResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			expectedTerraformName := fmt.Sprintf("%s_v1", expectedResourceName)
+			Convey(fmt.Sprintf("And the value returned should still be '%s'", expectedTerraformName), func() {
+				So(resourceName, ShouldEqual, expectedTerraformName)
+			})
+		})
+	})
+}
+
+func TestGetResourceOverrideHost(t *testing.T) {
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a non parametrized host containing the host to use", t, func() {
+		expectedHost := "some.api.domain.com"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := r.getResourceOverrideHost()
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a parametrized host containing the host to use", t, func() {
+		expectedHost := "some.api.${serviceProviderName}.domain.com"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := r.getResourceOverrideHost()
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with an empty string value", t, func() {
+		expectedHost := ""
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: expectedHost,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := r.getResourceOverrideHost()
+			Convey("Then the value returned should be the host value", func() {
+				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+}
+
+func TestIsMultiRegionHost(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		r := resourceInfo{}
+		Convey("When isMultiRegionHost method is called with a non multi region host", func() {
+			expectedHost := "some.api.domain.com"
+			isMultiRegion, _ := r.isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host", func() {
+			expectedHost := "some.api.${%s}.domain.com"
+			isMultiRegion, _ := r.isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host that has region at the beginning", func() {
+			expectedHost := "${%s}.domain.com"
+			isMultiRegion, _ := r.isMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsMultiRegionResource(t *testing.T) {
+	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a parametrized host containing region variable", t, func() {
+		serviceProviderName := "serviceProviderName"
+		r := resourceInfo{
+			createPathInfo: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName),
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest,useast")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where NONE matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, "someOtherServiceProvider"), "rst, dub")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+			Convey("And the regions map returned should be empty", func() {
+				So(regions, ShouldBeEmpty)
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are not comma separated", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest useast")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswestuseast")
+				So(regions["uswestuseast"], ShouldEqual, "some.api.uswestuseast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are comma separated with spaces", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest, useast")
+			isMultiRegion, regions := r.isMultiRegionResource(rootLevelExtensions)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
 			})
 		})
 	})
