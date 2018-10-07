@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # installation variables
-LATEST_RELEASE_VERSION=0.3.0
+LATEST_RELEASE_VERSION=0.3.1
 
 #
 # Installation script to download and install terraform-provider-openapi
