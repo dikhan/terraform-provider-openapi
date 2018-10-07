@@ -67,20 +67,17 @@ the suggested options:
 page.
 - Extract contents of tar ball and copy the terraform-provider-openapi binary into your  ````~/.terraform.d/plugins````
 folder as described in the [Terraform documentation on how to install plugins](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
-- After installing the plugin, you have two options. Either:
+- After installing the plugin, rename the binary file to have your provider's name:
  
-  - Rename the binary file to have your provider's name:
- 
-    ````
-    $ cd ~/.terraform.d/plugins
-    $ mv terraform-provider-openapi terraform-provider-<your_provider_name>
-    $ ls -la 
-    total 29656
-    drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
-    drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
-    -rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<your_provider_name>
-    ````
-
+````
+$ cd ~/.terraform.d/plugins
+$ mv terraform-provider-openapi terraform-provider-<your_provider_name>
+$ ls -la
+total 29656
+drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
+drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
+-rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<your_provider_name>
+````
 
 Where ````<your_provider_name>```` should be replaced with your provider's name. This is the name that will also be used
 in the Terraform tf files to refer to the provider resources. 
@@ -149,39 +146,39 @@ to the plugin in two different ways:
 Terraform will need to be executed passing in the OTF_VAR_<provider_name>_SWAGGER_URL environment variable pointing at the location 
 where the swagger file is hosted, where````<your_provider_name>```` should be replaced with your provider's name. 
 
-    ```
-    $ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
-    ```
+```
+$ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
+```
 
 #### OpenAPI plugin configuration file
 
 A configuration file will need to be created in terraform plugins folder ```~/.terraform.d/plugins``` following [OpenAPI v1 plugin configuration specification](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md).
 An example is described below:
 
-    ```
-    $ pwd
-    /Users/dikhan/.terraform.d/plugins
-    $ cat terraform-provider-openapi.yaml
-    version: '1'
-    services:
-        monitor:
-          swagger-url: http://monitor-api.com/swagger.json
-          insecure_skip_verify: true
-        cdn:
-          swagger-url: /Users/user/go/src/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/resources/swagger.yaml
-        vm:
-          swagger-url: http://vm-api.com/swagger.json
-        goa: 
-          swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml
-    ```
+```
+$ pwd
+/Users/dikhan/.terraform.d/plugins
+$ cat terraform-provider-openapi.yaml
+version: '1'
+services:
+    monitor:
+      swagger-url: http://monitor-api.com/swagger.json
+      insecure_skip_verify: true
+    cdn:
+      swagger-url: /Users/user/go/src/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/resources/swagger.yaml
+    vm:
+      swagger-url: http://vm-api.com/swagger.json
+    goa:
+      swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml
+```
 
 This option is the recommended one when the user is managing resources provided by multiple OpenAPI providers (e,g: goa and swaggercodegen),
 since it minimizes the configuration needed when calling terraform. Hence, terraform could be executed as usual without 
 having to pass in any special environment variables like OTF_VAR_<provider_name>_SWAGGER_URL:
 
-    ```
-    $ terraform init && terraform plan
-    ```
+```
+$ terraform init && terraform plan
+```
 
 ## Examples
 
@@ -193,6 +190,17 @@ and each of them provides details on how to bring up the service and run this pr
 This API exposes a resource called 'bottles'
 - [swaggercodegen](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen): Example 
 created using swaggercodegen. This API exposes a resource called 'cdns'
+
+A convenient make target ``make examples-container`` is provided to bring up a container initialised with terraform and
+the example OpenAPI terraform providers (goa and swaggercodegen) already installed. This enables users of this provider to
+play around with the OpenAPI providers without messing with their local environments. The following
+command will bring up the example APIs, and a container that you can interact with:
+
+````
+$ make examples-container
+$ root@6d7ac292eebd:/openapi# cd goa/
+$ root@6d7ac292eebd:/openapi/goa# terraform init && terraform plan
+````
 
 For more information refer to [How to set up the local environment?](./docs/local_environment.md) which contains instructions
 for learning how to bring up the example APIs and run terraform against them.
