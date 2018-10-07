@@ -1,0 +1,7 @@
+version: '1'
+services:
+  swaggercodegen:
+    swagger-url: https://swaggercodegen-service-provider-api.com:8443/swagger.yaml
+    insecure_skip_verify: true
+  goa:
+    swagger-url: http://goa-service-provider-api.com:9090/swagger/swagger.yaml
