@@ -6,7 +6,7 @@ info:
   title: "Dummy Service Provider generated using 'swaggercodegen' that has two resources 'cdns' and 'lbs' which are terraform compliant"
   contact:
     email: "apiteam@serviceprovider.io"
-host: "localhost:8443" # If host is not specified, it is assumed to be the same host where the API documentation is being served.
+#host: "localhost:8443" # If host is not specified, it is assumed to be the same host where the API documentation is being served.
 #basePath: ""
 tags:
 - name: "cdn"
@@ -61,7 +61,7 @@ paths:
   /v1/cdns:
     post:
       x-terraform-resource-name: "cdn"
-      x-terraform-resource-host: localhost:8443
+#      x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
       - "cdn"
       summary: "Create cdn"

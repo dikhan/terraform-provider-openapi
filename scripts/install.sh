@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# installation variables
+LATEST_RELEASE_VERSION=0.3.1
+
 #
 # Installation script to download and install terraform-provider-openapi
 #
@@ -56,9 +59,6 @@ fi
 
 # used to determine which architecture to install
 ARCH=$(uname)
-
-# installation variables
-LATEST_RELEASE_VERSION=0.2.0
 
 TF_PROVIDER_BASE_NAME="terraform-provider-"
 TF_OPENAPI_PROVIDER_PLUGIN_NAME="${TF_PROVIDER_BASE_NAME}openapi"
@@ -119,18 +119,11 @@ fi
 
 # check we have write permissions on $INSTALLATION_DIR
 if [ -w ${INSTALLATION_DIR} ]; then
-  if ! mv "${TMP_INSTALL_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}" "${INSTALLATION_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}"; then
-	echo "[ERROR] failed to move '${TF_OPENAPI_PROVIDER_PLUGIN_NAME}' binary to ${INSTALLATION_DIR}"
+  if ! mv "${TMP_INSTALL_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}" "${INSTALLATION_DIR}/${TF_PROVIDER_PLUGIN_NAME}"; then
+	echo "[ERROR] failed to move '${TMP_INSTALL_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}' binary to ${INSTALLATION_DIR}/${TF_PROVIDER_PLUGIN_NAME}"
 	cleanup
 	exit 1
   fi
-
-  if ! ln -sF "${INSTALLATION_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}" "${INSTALLATION_DIR}/${TF_PROVIDER_PLUGIN_NAME}"; then
-	echo "[ERROR] failed to create symlink to '${INSTALLATION_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}' for ${TF_PROVIDER_PLUGIN_NAME}"
-	cleanup
-	exit 1
-  fi
-
 
 else
     echo "[ERROR] unable to write to ${INSTALLATION_DIR} due to lack of write permissions"

@@ -132,16 +132,16 @@ func TestGetHostFromURL(t *testing.T) {
 		})
 	})
 
-	// Negative cases
 	Convey("Given a url with a fqdn not using standard port", t, func() {
-		expectedResult := "domain.com"
-		url := fmt.Sprintf("%s:8080", expectedResult)
+		expectedResult := "domain.com:8080"
+		url := fmt.Sprintf("https://%s/swagger.yaml", expectedResult)
 		Convey("When GetHostFromURL method is called", func() {
 			domain := GetHostFromURL(url)
-			Convey("Then the string returned should JUST be the FQDN part (this is by design - it is assumed that actual FQDN will use HTTP standard ports)", func() {
+			Convey("Then the string returned should contain both the FQDN and the non standard port", func() {
 				So(domain, ShouldEqual, expectedResult)
 			})
 		})
+
 	})
 }
 

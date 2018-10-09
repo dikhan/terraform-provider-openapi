@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -76,11 +75,7 @@ func testCheckDestroyWithDelay(state *terraform.State, openAPIResourceName, reso
 		}
 		cdnID := res.Primary.ID
 		openAPIClient := testAccProvider.Meta().(openapi.ClientOpenAPI)
-		abs, err := filepath.Abs(exampleSwaggerFile)
-		if err != nil {
-			return err
-		}
-		apiSpec, err := loads.JSONSpec(abs)
+		apiSpec, err := loads.JSONSpec(otfVarSwaggerURLEnvVariableValue)
 		if err != nil {
 			return err
 		}

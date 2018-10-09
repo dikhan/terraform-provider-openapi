@@ -1,26 +1,51 @@
-version: '2'
+version: '3'
 services:
   swaggercodegen-service-provider-api:
     build: ../examples/swaggercodegen/api
     image: swaggercodegen-service-provider-api:latest
     container_name: swaggercodegen-service-provider-api
     ports:
-     - "8080:80"
-     - "8443:443"
+    - "8080:80"
+    - "8443:443"
+    networks:
+    - example
 
   swagger-ui-swaggercodegen:
     image: swaggerapi/swagger-ui:latest
     container_name: swagger-ui-swaggercodegen
     ports:
-     - "8082:8080"
+    - "8082:8080"
     environment:
-      - SWAGGER_JSON=/app/resources/swagger.yaml
+    - SWAGGER_JSON=/app/resources/swagger.yaml
     volumes:
-      - ../examples/swaggercodegen/api/resources:/app/resources
+    - ../examples/swaggercodegen/api/resources:/app/resources
+    networks:
+    - example
 
   goa-service-provider-api:
     build: ../examples/goa/api
     image: goa-service-provider-api:latest
     container_name: goa-service-provider-api
     ports:
-     - "9090:9090"
+    - "9090:9090"
+    networks:
+    - example
+
+  terraform-provider-openapi-examples:
+    build: ../.
+    image: terraform-provider-openapi-examples:latest
+    container_name: terraform-provider-openapi-examples
+    links:
+    - swaggercodegen-service-provider-api:swaggercodegen-service-provider-api.com
+    - goa-service-provider-api:goa-service-provider-api.com
+    networks:
+    - example
+    depends_on:
+    - swaggercodegen-service-provider-api
+    - goa-service-provider-api
+    stdin_open: true
+    tty: true
+    entrypoint: bash
+
+networks:
+  example:

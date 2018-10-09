@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 	"log"
 	"net/http"
-	"path/filepath"
 )
 
 var exampleSwaggerFile string
@@ -27,19 +26,7 @@ var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
 
 func init() {
-	otfVarSwaggerURLEnvVariableValue = os.Getenv(otfVarSwaggerURLEnvVariable)
-	if otfVarSwaggerURLEnvVariableValue == "" {
-
-		pwd, err := os.Getwd()
-		log.Printf("[DEBUG] integration tests folder = %s", pwd)
-
-		exampleSwaggerFile = fmt.Sprintf("%s/../../examples/swaggercodegen/api/resources/swagger.yaml", pwd)
-		abs, err := filepath.Abs(exampleSwaggerFile)
-		if err != nil {
-			log.Fatalf("failed to load example swagger file '%s'", exampleSwaggerFile)
-		}
-		otfVarSwaggerURLEnvVariableValue = abs
-	}
+	otfVarSwaggerURLEnvVariableValue = "https://localhost:8443/swagger.yaml"
 	otfVarInsecureSkipVerifyEnvVariableValue = "true"
 	os.Setenv(otfVarSwaggerURLEnvVariable, otfVarSwaggerURLEnvVariableValue)
 	os.Setenv(otfVarInsecureSkipVerifyEnvVariable, otfVarInsecureSkipVerifyEnvVariableValue)

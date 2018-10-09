@@ -1,8 +1,6 @@
 PROVIDER_NAME?=""
 TF_CMD?="plan"
 
-EXAMPLE_API?=swaggercodegen-service-provider-api
-
 TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
 TEST_PACKAGES?=$$(go list ./... | grep -v "examples\|vendor\|integration")
@@ -66,7 +64,13 @@ local-env-down: fmt
 # make local-env
 local-env: fmt
 	@echo "[INFO] Bringing up local environment"
-	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate $(EXAMPLE_API)
+	@docker-compose -f ./build/docker-compose.yml up --detach --build --force-recreate swaggercodegen-service-provider-api swagger-ui-swaggercodegen goa-service-provider-api
+
+# make examples-container
+examples-container: local-env
+	@echo "[INFO] Bringing up container with OpenAPI providers examples"
+	@docker-compose -f ./build/docker-compose.yml build --no-cache terraform-provider-openapi-examples
+	@docker-compose -f ./build/docker-compose.yml run terraform-provider-openapi-examples
 
 # [TF_CMD=apply] make run-terraform-example-swaggercodegen
 run-terraform-example-swaggercodegen: build pre-requirements
@@ -99,9 +103,8 @@ release-version:
 define install_plugin
     @$(eval TF_PROVIDER_PLUGIN_NAME := $(TF_PROVIDER_NAMING_CONVENTION)$(1))
 
-	@echo "[INFO] Installing $(TF_PROVIDER_PLUGIN_NAME) binary in -> $(TF_INSTALLED_PLUGINS_PATH)"
-	@mv ./$(TF_OPENAPI_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)
-	@ln -sF $(TF_INSTALLED_PLUGINS_PATH)/$(TF_OPENAPI_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)
+	@echo "[INFO] Installing $(TF_PROVIDER_PLUGIN_NAME) binary in -> $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)"
+	@mv ./$(TF_OPENAPI_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)
 endef
 
 define run_terraform_example

@@ -76,9 +76,9 @@ $ make local-env
 
 This command will bring up the example APIs provided for development purposes.
 
-## Running terraform-provider-api against this API
+## Running terraform-provider-swaggercodegen against this API
 
-- Install terraform-provider-api and the symlink for 'swaggercodegen' provider:
+- Install terraform-provider-swaggercodegen provider:
 
 ````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
