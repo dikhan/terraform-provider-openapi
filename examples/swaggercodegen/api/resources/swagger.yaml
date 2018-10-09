@@ -49,7 +49,7 @@ paths:
   /v1/cdns:
     post:
       x-terraform-resource-name: "cdn"
-      x-terraform-resource-host: localhost:8443
+#      x-terraform-resource-host: localhost:8443
       tags:
       - "cdn"
       summary: "Create cdn"
