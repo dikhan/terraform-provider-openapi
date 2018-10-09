@@ -60,7 +60,7 @@ local-env: fmt
 # make examples-container
 examples-container: local-env
 	@echo "[INFO] Bringing up container with OpenAPI providers examples"
-	@docker-compose -f ./build/docker-compose.yml up --detach --build --force-recreate terraform-provider-openapi-examples
+	@docker-compose -f ./build/docker-compose.yml build --no-cache terraform-provider-openapi-examples
 	@docker-compose -f ./build/docker-compose.yml run terraform-provider-openapi-examples
 
 # [TF_CMD=apply] make run-terraform-example-swaggercodegen
