@@ -64,7 +64,7 @@ local-env-down: fmt
 # make local-env
 local-env: fmt
 	@echo "[INFO] Bringing up local environment"
-	@docker-compose -f ./build/docker-compose.yml up --detach --build --force-recreate swaggercodegen-service-provider-api swagger-ui-swaggercodegen goa-service-provider-api
+	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate swaggercodegen-service-provider-api swagger-ui-swaggercodegen goa-service-provider-api
 
 # make examples-container
 examples-container: local-env
