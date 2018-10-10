@@ -9,6 +9,16 @@ import (
 	"bytes"
 )
 
+type HttpClientIface interface {
+	Get(url string, headers map[string]string, out interface{}) (*http.Response, error)
+	PostJson(url string, headers map[string]string, in interface{}, out interface{}) (*http.Response, error)
+	Post(url string, headers map[string]string, in interface{}, out interface{}) (*http.Response, error)
+	PutJson(url string, headers map[string]string, in interface{}, out interface{}) (*http.Response, error)
+	Put(url string, headers map[string]string, in interface{}, out interface{}) (*http.Response, error)
+	Delete(url string, headers map[string]string) (*http.Response, error)
+}
+
+
 // HttpClient represents an http wrapper which reduces the boiler plate needed to marshall/un-marshall request/response
 // bodies by providing friendly CRUD http operations that allow in/out interfaces
 type HttpClient struct {
