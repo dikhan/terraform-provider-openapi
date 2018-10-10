@@ -6,6 +6,14 @@ type specStubBackendConfiguration struct {
 	httpSchemes []string
 }
 
+func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *specStubBackendConfiguration{
+	return &specStubBackendConfiguration{
+		host:        host,
+		basePath:    basePath,
+		httpSchemes: httpSchemes,
+	}
+}
+
 func (s *specStubBackendConfiguration) getHost() (string, error) {
 	return s.host, nil
 }

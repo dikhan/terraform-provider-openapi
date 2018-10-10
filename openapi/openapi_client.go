@@ -76,7 +76,6 @@ func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Respons
 }
 
 func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *specResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-
 	reqContext, err := o.apiAuthenticator.prepareAuth(resourceURL, operation.SecuritySchemes, o.providerConfiguration)
 	if err != nil {
 		return nil, err
