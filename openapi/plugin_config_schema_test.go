@@ -8,6 +8,22 @@ import (
 	"testing"
 )
 
+func TestPluginConfigSchemaV1(t *testing.T) {
+	Convey("Given a list of services and version", t, func() {
+		version := ""
+		services := map[string]*ServiceConfigV1{}
+		Convey("When PluginConfigSchemaV1 method is constructed", func() {
+			pluginConfigSchemaV1 := &PluginConfigSchemaV1{
+				Services: services,
+				Version:  version,
+			}
+			Convey("Then the pluginConfigSchemaV1 should comply with PluginConfigSchema interface", func() {
+				var _ PluginConfigSchema = pluginConfigSchemaV1
+			})
+		})
+	})
+}
+
 func TestNewPluginConfigSchemaV1(t *testing.T) {
 	Convey("Given a schema version and a map of services and their swagger URLs", t, func() {
 		services := map[string]*ServiceConfigV1{

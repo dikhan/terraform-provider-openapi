@@ -6,6 +6,20 @@ import (
 	"testing"
 )
 
+func TestApiAuth(t *testing.T) {
+	Convey("Given a list of globalSecuritySchemes", t, func() {
+		globalSecuritySchemes := &SpecSecuritySchemes{}
+		Convey("When apiAuth method is constructed", func() {
+			apiAuth := &apiAuth{
+				globalSecuritySchemes: globalSecuritySchemes,
+			}
+			Convey("Then the apiAuth should comply with specAuthenticator interface", func() {
+				var _ specAuthenticator = apiAuth
+			})
+		})
+	})
+}
+
 func TestAuthRequired(t *testing.T) {
 	Convey("Given a provider configuration containing an 'apiKey' type security definition with name 'apikey_header_auth' and an operation that requires the 'apikey_auth' authentication", t, func() {
 		securityPolicyName := "apikey_header_auth"
