@@ -30,7 +30,7 @@ type ClientOpenAPI interface {
 // the API when making the HTTP request
 type ProviderClient struct {
 	openAPIBackendConfiguration SpecBackendConfiguration
-	httpClient                  http_goclient.HttpClient
+	httpClient                  http_goclient.HttpClientIface
 	providerConfiguration       providerConfiguration
 	apiAuthenticator            specAuthenticator
 }
