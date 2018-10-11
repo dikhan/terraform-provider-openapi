@@ -14,33 +14,6 @@ func (s SpecSecurityDefinitions) findSecurityDefinitionFor(securitySchemeName st
 	return nil
 }
 
-type apiKeyIn string
-
-const (
-	inHeader apiKeyIn = "header"
-	inQuery  apiKeyIn = "query"
-)
-
-type specAPIKey struct {
-	In   apiKeyIn
-	Name string
-}
-
-func newAPIKeyHeader(name string) specAPIKey {
-	return newAPIKey(name, inHeader)
-}
-
-func newAPIKeyQuery(name string) specAPIKey {
-	return newAPIKey(name, inQuery)
-}
-
-func newAPIKey(name string, in apiKeyIn) specAPIKey {
-	return specAPIKey{
-		Name: name,
-		In:   in,
-	}
-}
-
 // SpecSecurityDefinition defines a security definition. This struct serves as a translation between the OpenAPI document
 // and the scheme that will be used by the OpenAPI Terraform provider when making API calls to the backend
 type SpecSecurityDefinition struct {
