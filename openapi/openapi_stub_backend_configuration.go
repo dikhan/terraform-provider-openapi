@@ -6,7 +6,7 @@ type specStubBackendConfiguration struct {
 	httpSchemes []string
 }
 
-func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *specStubBackendConfiguration{
+func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *specStubBackendConfiguration {
 	return &specStubBackendConfiguration{
 		host:        host,
 		basePath:    basePath,

@@ -2,7 +2,7 @@ package openapi
 
 type specStubAuthenticator struct {
 	authContext *authContext
-	err error
+	err         error
 }
 
 func newStubAuthenticator(expectedHeader, expectedHeaderValue string, err error) *specStubAuthenticator {
