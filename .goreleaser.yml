@@ -1,13 +1,34 @@
 builds:
   - main: main.go
-    binary: terraform-provider-openapi
+    binary: terraform-provider-openapi_v{{ .Version }}
     goos:
       - darwin
       - linux
       - windows
     goarch:
       - amd64
+  env:
+  - CGO_ENABLED=0
+  flags:
+  - -a
+  - -tags="netgo"
+  ldflags:
+  - -s -w -extldflags "-static" -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}"
+
+release:
+  name_template: "v{{.Version}} {{.Env.USER}}"
+  # If set to true, will mark the release as not ready for production.
+  # Default is false.
+  prerelease: false
+
 archive:
+  name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
   format: tar.gz
+  format_overrides:
+  - goos: windows
+    format: zip
   files:
     - LICENSE
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{.Version}}_checksums.txt"
