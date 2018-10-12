@@ -65,7 +65,7 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func getAPIProvider() *schema.Provider {
-	testAccProvider, err := openapi.APIProvider(providerName)
+	testAccProvider, err := openapi.ProviderOpenAPI(providerName)
 	if err != nil {
 		log.Fatalf("err: %s", err)
 	}
