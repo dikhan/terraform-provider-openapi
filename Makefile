@@ -1,4 +1,7 @@
 VERSION  = $(shell cat ./version)
+GITHUB_VERSION = 'v$(VERSION)'
+RELEASE_TAG?="$(GITHUB_VERSION)"
+RELEASE_MESSAGE?="$(GITHUB_VERSION)"
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
 LDFLAGS = '-s -w -extldflags "-static" -X "main.version=$(VERSION)" -X "main.commit=$(COMMIT)" -X "main.date=$(DATE)"'
