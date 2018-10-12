@@ -1,7 +1,7 @@
 VERSION  = $(shell cat ./version)
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
-LDFLAGS = '-s -w -X "main.Version=$(VERSION)" -X "main.Commit=$(COMMIT)" -X "main.Date=$(DATE)"'
+LDFLAGS = '-s -w -extldflags "-static" -X "main.Version=$(VERSION)" -X "main.Commit=$(COMMIT)" -X "main.Date=$(DATE)"'
 
 PROVIDER_NAME?=""
 TF_CMD?="plan"
@@ -25,7 +25,7 @@ all: test build
 # make build
 build:
 	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
-	@go build -ldflags=$(LDFLAGS) -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
+	@CGO_ENABLED=0 go build -a -tags=netgo -ldflags=$(LDFLAGS) -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
 
 # make fmt
 fmt:
