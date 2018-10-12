@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
+_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${_DIR}/.."
+
 # installation variables
-LATEST_RELEASE_VERSION="$(cat ../version)"
+LATEST_RELEASE_VERSION="$(cat ${ROOT_DIR}/version)"
 
 #
 # Installation script to download and install terraform-provider-openapi
@@ -62,7 +65,9 @@ ARCH=$(uname)
 
 TF_PROVIDER_BASE_NAME="terraform-provider-"
 TF_OPENAPI_PROVIDER_PLUGIN_NAME="${TF_PROVIDER_BASE_NAME}openapi"
-TF_PROVIDER_PLUGIN_NAME="${TF_PROVIDER_BASE_NAME}${PROVIDER_NAME}"
+PLUGIN_VERSION="v${LATEST_RELEASE_VERSION}"
+TF_OPENAPI_PROVIDER_PLUGIN_NAME_VERSIONED="${TF_PROVIDER_BASE_NAME}openapi_${PLUGIN_VERSION}"
+TF_PROVIDER_PLUGIN_NAME="${TF_PROVIDER_BASE_NAME}${PROVIDER_NAME}_${PLUGIN_VERSION}"
 
 INSTALLATION_DIR="$HOME/.terraform.d/plugins"
 TMP_INSTALL_DIR=$(mktemp -d)
@@ -119,8 +124,8 @@ fi
 
 # check we have write permissions on $INSTALLATION_DIR
 if [ -w ${INSTALLATION_DIR} ]; then
-  if ! mv "${TMP_INSTALL_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}" "${INSTALLATION_DIR}/${TF_PROVIDER_PLUGIN_NAME}"; then
-	echo "[ERROR] failed to move '${TMP_INSTALL_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME}' binary to ${INSTALLATION_DIR}/${TF_PROVIDER_PLUGIN_NAME}"
+  if ! mv "${TMP_INSTALL_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME_VERSIONED}" "${INSTALLATION_DIR}/${TF_PROVIDER_PLUGIN_NAME}"; then
+	echo "[ERROR] failed to move '${TMP_INSTALL_DIR}/${TF_OPENAPI_PROVIDER_PLUGIN_NAME_VERSIONED}' binary to ${INSTALLATION_DIR}/${TF_PROVIDER_PLUGIN_NAME}"
 	cleanup
 	exit 1
   fi
