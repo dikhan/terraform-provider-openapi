@@ -1,5 +1,5 @@
 VERSION  = $(shell cat ./version)
-GITHUB_VERSION = 'v$(VERSION)'
+GITHUB_VERSION=v$(VERSION)
 RELEASE_TAG?="$(GITHUB_VERSION)"
 RELEASE_MESSAGE?="$(GITHUB_VERSION)"
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
