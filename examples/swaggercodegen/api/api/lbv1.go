@@ -11,7 +11,6 @@
 package api
 
 type Lbv1 struct {
-
 	Id string `json:"id,omitempty"`
 
 	Name string `json:"name"`
@@ -23,7 +22,7 @@ type Lbv1 struct {
 	SimulateFailure bool `json:"simulate_failure"`
 
 	// lb resource status
-	Status string `json:"status,omitempty"`
+	Status string `json:"status,omitempty"` // @deprecated
 
 	NewStatus *Status `json:"newStatus,omitempty"`
 }

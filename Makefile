@@ -3,7 +3,8 @@ TF_CMD?="plan"
 
 TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
-TEST_PACKAGES?=$$(go list ./... | grep -v "/examples\|/vendor")
+TEST_PACKAGES?=$$(go list ./... | grep -v "examples\|vendor\|integration")
+INT_TEST_PACKAGES?=$$(go list ./... | grep "/tests/integration")
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v 'examples\|vendor')
 
 TF_PROVIDER_NAMING_CONVENTION="terraform-provider-"
@@ -31,7 +32,7 @@ vet:
 # make lint
 lint:
 	@echo "[INFO] Running golint on the current directory"
-	@go get -u github.com/golang/lint/golint
+	@go get -u golang.org/x/lint/golint
 	@golint -set_exit_status $(TEST_PACKAGES)
 
 # make test
@@ -39,11 +40,19 @@ test: fmt vet lint
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES)
 
+# make integration-test
+integration-test: local-env-down local-env
+	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
+	@TF_ACC=true go test -v -cover $(INT_TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
+		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
+		exit 1; \
+	fi
+
 pre-requirements:
 	@echo "[INFO] Creating $(TF_INSTALLED_PLUGINS_PATH) if it does not exist"
 	@[ -d $(TF_INSTALLED_PLUGINS_PATH) ] || mkdir -p $(TF_INSTALLED_PLUGINS_PATH)
 
-# make install
+# PROVIDER_NAME="goa" make install
 install: build pre-requirements
 	$(call install_plugin,$(PROVIDER_NAME))
 
@@ -55,7 +64,7 @@ local-env-down: fmt
 # make local-env
 local-env: fmt
 	@echo "[INFO] Bringing up local environment"
-	@docker-compose -f ./build/docker-compose.yml up --detach --build --force-recreate swaggercodegen-service-provider-api swagger-ui-swaggercodegen goa-service-provider-api
+	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate swaggercodegen-service-provider-api swagger-ui-swaggercodegen goa-service-provider-api
 
 # make examples-container
 examples-container: local-env

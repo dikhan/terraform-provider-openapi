@@ -269,8 +269,9 @@ Extension Name | Type | Description
 [x-terraform-resource-host](#xTerraformResourceHost) | string | Only supported in resource root's POST operation. Defines the host that should be used when managing this specific resource. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make thje API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration.
 [x-terraform-resource-regions-%s](#xTerraformResourceRegions) | string | Only supported in the root level. Defines the regions supported by a given resource identified by the %s variable. This extension only works if the ```x-terraform-resource-host``` extension contains a value that is parametrized and identifies the matching ```x-terraform-resource-regions-%s``` extension. The values of this extension must be comma separated strings.
 
-###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
 
+###### <a name="xTerraformExcludeResource">x-terraform-exclude-resource</a>
+ 
 Service providers might not want to expose certain resources to Terraform (e,g: admin resources). This can be achieved 
 by adding the following swagger extension to the resource root POST operation (in the example below ```/v1/resource:```):
 
@@ -297,7 +298,7 @@ above example*
 
 This extension allows service providers to override the default timeout value for CRUD operations with a different value.
 
-The value must comply with the duration type format. A duration string is a sequence of decimal positive numbers (negative numbers are not allowed), 
+The value must comply with the duration type format. A duration string is a sequence of decimal positive numbers (negative numbers are not allowed),
 each with optional fraction and a unit suffix, such as "300s", "20.5m", "1.5h" or "2h45m".
 
 Valid time units are "s", "m", "h".
@@ -314,7 +315,7 @@ paths:
       ...
     delete:
       x-terraform-resource-timeout: "20m" # this means the max timeout for the delete operation to finish is 20 minutes. This overrides the default timeout per operation which is 10 minutes
-      ...               
+      ...
 ````
 
 *Note: This extension is only supported at the operation level*
@@ -363,7 +364,7 @@ the header will be the one specified in the terraform configuration ```request h
 
 *Note: Currently, parameters of type 'header' are only supported on an operation level*
 
-###### <a name="xTerraformResourcePollEnabled">x-terraform-resource-poll-enabled</a> 
+###### <a name="xTerraformResourcePollEnabled">x-terraform-resource-poll-enabled</a>
 
 This extension allows the service provider to enable the polling mechanism in the OpenAPI Terraform provider for asynchronous
 operations. In order for this to work, the following must be met:
@@ -374,14 +375,14 @@ named 'status' is present in the resource schema definition that field will be u
 a field can be marked to serve as the status field adding the 'x-terraform-field-status'. This field will be used as the status
 field even if there is another field named 'status'. This gives service providers flexibility to name their status field the
 way they desire. More details about the 'x-terraform-field-status' extension can be found in the [Attribute details](#attributeDetails) section.
-- The polling mechanism requires two more extensions to work which define the expected 'status' values for both target and 
+- The polling mechanism requires two more extensions to work which define the expected 'status' values for both target and
 pending statuses. These are:
 
   - **x-terraform-resource-poll-completed-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'completed'
-*Note: For DELETE operations, the expected behaviour is that when the resource has been deleted, GET requests to the deleted 
-resource would return a 404 HTTP response status code back. This means that no payload will be returned in the response, 
+*Note: For DELETE operations, the expected behaviour is that when the resource has been deleted, GET requests to the deleted
+resource would return a 404 HTTP response status code back. This means that no payload will be returned in the response,
 and hence there won't be any status field to check against to. Therefore, the OpenAPI Terraform provider handle deletes
-target statuses in a different way not expecting the service provide to populate this extension. Behind the scenes, the 
+target statuses in a different way not expecting the service provide to populate this extension. Behind the scenes, the
 OpenAPI Terraform provider will handle the polling accordingly until the resource is no longer available at which point
 the resource will be considered destroyed. If the extension is present with a value, it wil be ignored in the backend.*
   - **x-terraform-resource-poll-pending-statuses**: (type: string) Comma separated values - Defines the statuses on which the resource state will be considered 'in progress'.
@@ -390,7 +391,7 @@ will stop its execution accordingly.
 
 **If the above requirements are not met, the operation will be considered synchronous and no polling will be performed.**
 
-In the example below, the response with HTTP status code 202 has the extension defined with value 'true' meaning 
+In the example below, the response with HTTP status code 202 has the extension defined with value 'true' meaning
 that the OpenAPI Terraform provider will treat this response as asynchronous. Therefore, the provider will perform
 continues calls to the resource's instance GET operation and will use the value from the resource 'status' property to
 determine the state of the resource:
@@ -403,7 +404,7 @@ determine the state of the resource:
         202: # Accepted
           x-terraform-resource-poll-enabled: true # [type (bool)] - this flags the response as trully async. Some resources might be async too but may require manual intervention from operators to complete the creation workflow. This flag will be used by the OpenAPI Service provider to detect whether the polling mechanism should be used or not. The flags below will only be applicable if this one is present with value 'true'
           x-terraform-resource-poll-completed-statuses: "deployed" # [type (string)] - Comma separated values with the states that will considered this resource creation done/completed
-          x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying          
+          x-terraform-resource-poll-pending-statuses: "deploy_pending, deploy_in_progress" # [type (string)] - Comma separated values with the states that are "allowed" and will continue trying
           schema:
             $ref: "#/definitions/LBV1"
 definitions:
@@ -427,7 +428,7 @@ definitions:
           - delete_pending
           - delete_in_progress
           - delete_failed
-          - deleted          
+          - deleted
 ````
 
 Alternatively, the status field can also be of 'object' type in which case the nested properties can be defined in place or
@@ -461,7 +462,7 @@ definitions:
 *Note: This extension is only supported at the operation's response level.*
 
 
-###### <a name="xTerraformResourceName">x-terraform-resource-name</a> 
+###### <a name="xTerraformResourceName">x-terraform-resource-name</a>
 
 This extension enables service providers to write a preferred resource name for the terraform configuration.
 
@@ -480,7 +481,7 @@ resource "swaggercodegen_cdn" "my_cdn" {...} # ==> 'cdn' name is used as specifi
 ````
 
 The preferred name only applies to the name itself, if the resource is versioned like the example below
-using version path ``/v1/cdns``, the appropriate postfix including the version will be attached automatically to the resource name. 
+using version path ``/v1/cdns``, the appropriate postfix including the version will be attached automatically to the resource name.
 
 ````
 paths:
@@ -495,15 +496,15 @@ The corresponding terraform configuration in this case will be (note the ``_v1``
 resource "swaggercodegen_cdn_v1" "my_cdn" {...} # ==> 'cdn' name is used instead of 'cdns'
 ````
 
-If the ``x-terraform-resource-name`` extension is not present in the resource root POST operation, the default resource 
-name will be picked from the resource root POST path. In the above example ``/v1/cdns`` would translate into ``cdns_v1`` 
+If the ``x-terraform-resource-name`` extension is not present in the resource root POST operation, the default resource
+name will be picked from the resource root POST path. In the above example ``/v1/cdns`` would translate into ``cdns_v1``
 resource name.
 
 *Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
 above example*
 
 
-###### <a name="xTerraformResourceHost">x-terraform-resource-host</a> 
+###### <a name="xTerraformResourceHost">x-terraform-resource-host</a>
 
 This extension allows resources to override the global host configuration with a different host. This is handy when
 a given swagger file may combine resources provided by different service providers.
@@ -539,11 +540,11 @@ paths:
 ````
 
 If the ``x-terraform-resource-host`` extension has a value parametrised in the form where the following pattern ```${identifier}```
- is found (identifier being any string with no whitspaces - spaces,tabs, line breaks, etc) AND there is a matching 
- extension 'x-terraform-resource-regions-**identifier**' defined in the root level that refers to the same identifier 
+ is found (identifier being any string with no whitspaces - spaces,tabs, line breaks, etc) AND there is a matching
+ extension 'x-terraform-resource-regions-**identifier**' defined in the root level that refers to the same identifier
  then the resource will be considered multi region.
 For instance, in the above example, the ```x-terraform-resource-host``` value is parametrised as the ```${identifier}``` pattern
-is found, and the identifier in this case is ```cdn```. Moreover, there is a matching ```x-terraform-resource-regions-cdn``` 
+is found, and the identifier in this case is ```cdn```. Moreover, there is a matching ```x-terraform-resource-regions-cdn```
 extension containing a list of regions where this resource can be created in.
 
 The regions found in the ```x-terraform-resource-regions-cdn``` will be used as follows:
@@ -553,14 +554,14 @@ following resources will become available in the Terraform configuration (the pr
 
 ````
 resource "swaggercodegen_cdn_v1_dub1" "my_cdn" {
-  label = "label" 
-  ips = ["127.0.0.1"] 
+  label = "label"
+  ips = ["127.0.0.1"]
   hostnames = ["origin.com"]
 }
 
 resource "swaggercodegen_cdn_v1_sea1" "my_cdn" {
-  label = "label" 
-  ips = ["127.0.0.1"] 
+  label = "label"
+  ips = ["127.0.0.1"]
   hostnames = ["origin.com"]
 }
 ````
@@ -571,8 +572,8 @@ where tha resource should be managed.
 - The OpenAPI Terraform provider client will make the API call against the specific resource region when the resource
 is configured with multi-region support.
 
-- As far as the resource configuration is concerned, the swagger configuration remains the same for that specific resource 
-(parameters, operations, polling support, etc) and the same configuration will be applicable to all the regions that resource 
+- As far as the resource configuration is concerned, the swagger configuration remains the same for that specific resource
+(parameters, operations, polling support, etc) and the same configuration will be applicable to all the regions that resource
 supports.
 
 *Note: This extension is only supported at the root level and can be used exclusively along with the 'x-terraform-resource-host'
@@ -741,21 +742,6 @@ definitions:
       someNonUserFriendlyPropertyName:  # If this property did not have the 'x-terraform-field-name' extension, the property name will be automatically converted by the OpenAPI Terraform provider into a name that is Terraform field name compliant. The result will be:  some_non_user_friendly_propertyName
         type: string
         x-terraform-field-name: property_name_more_user_friendly
-        
-      status:
-        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not 'status' but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
-        type: string
-        readOnly: true
-        enum: # this is just for documentation purposes and to let the consumer know what statues should be expected 
-          - deploy_pending
-          - deploy_in_progress
-          - deploy_failed
-          - deployed
-          - delete_pending
-          - delete_in_progress
-          - delete_failed
-          - deleted        
-        
 ```
 
 

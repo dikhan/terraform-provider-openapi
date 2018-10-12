@@ -11,11 +11,11 @@
 package api
 
 import (
-	"net/http"
+	"fmt"
 	"github.com/pborman/uuid"
 	"log"
+	"net/http"
 	"strings"
-	"fmt"
 	"time"
 )
 
@@ -23,15 +23,16 @@ var defaultTimeToProcess int32 = 30 // 30 seconds
 var lbsDB = map[string]*Lbv1{}
 
 type status string
-const(
-	deployPending status = "deploy_pending"
+
+const (
+	deployPending    status = "deploy_pending"
 	deployInProgress status = "deploy_in_progress"
-	deployFailed status = "deploy_failed"
-	deployed status = "deployed"
-	deletePending status = "delete_pending"
+	deployFailed     status = "deploy_failed"
+	deployed         status = "deployed"
+	deletePending    status = "delete_pending"
 	deleteInProgress status = "delete_in_progress"
-	deleteFailed status = "delete_failed"
-	deleted status = "deleted"
+	deleteFailed     status = "delete_failed"
+	deleted          status = "deleted"
 )
 
 var deployPendingStatuses = []status{deployInProgress}
@@ -120,7 +121,7 @@ func pretendResourceOperationIsProcessing(lb *Lbv1, pendingStatues []status, com
 		inProgressStatuses = pendingStatues
 		finalStatus = completed
 	}
-	waitTimePerPendingStatus := timeToProcess / int32(len(inProgressStatuses) + 1)
+	waitTimePerPendingStatus := timeToProcess / int32(len(inProgressStatuses)+1)
 	for _, newStatus := range inProgressStatuses {
 		sleepAndUpdateLB(lb, newStatus, waitTimePerPendingStatus)
 	}
@@ -159,7 +160,7 @@ func retrieveLB(r *http.Request) (*Lbv1, error) {
 		return nil, fmt.Errorf("lb id path param not provided")
 	}
 	lb, exists := lbsDB[id]
-	if lb == nil || !exists{
+	if lb == nil || !exists {
 		return nil, fmt.Errorf("lb id '%s' not found", id)
 	}
 	return lb, nil

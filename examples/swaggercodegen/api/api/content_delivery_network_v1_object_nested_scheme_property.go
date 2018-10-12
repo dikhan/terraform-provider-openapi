@@ -11,6 +11,5 @@
 package api
 
 type ContentDeliveryNetworkV1ObjectNestedSchemeProperty struct {
-
 	Name string `json:"name"`
 }

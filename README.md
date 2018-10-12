@@ -68,16 +68,16 @@ page.
 - Extract contents of tar ball and copy the terraform-provider-openapi binary into your  ````~/.terraform.d/plugins````
 folder as described in the [Terraform documentation on how to install plugins](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
 - After installing the plugin, rename the binary file to have your provider's name:
- 
-````
-$ cd ~/.terraform.d/plugins
-$ mv terraform-provider-openapi terraform-provider-<your_provider_name>
-$ ls -la
-total 29656
-drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
-drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
--rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<your_provider_name>
-````
+
+    ````
+    $ cd ~/.terraform.d/plugins
+    $ mv terraform-provider-openapi terraform-provider-<your_provider_name>
+    $ ls -la
+    total 29656
+    drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
+    drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
+    -rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<your_provider_name>
+    ````
 
 Where ````<your_provider_name>```` should be replaced with your provider's name. This is the name that will also be used
 in the Terraform tf files to refer to the provider resources. 
@@ -110,8 +110,8 @@ $ export PROVIDER_NAME=goa && curl -fsSL https://raw.githubusercontent.com/dikha
 ````
 
 The install script will download the most recent [terraform-provider-openapi release](https://github.com/dikhan/terraform-provider-openapi/releases) 
-and install it in the terraform plugins folder ````~/.terraform.d/plugins```` as described above. The terraform plugins
-folder should contain the newly installed open api customer terraform provider with the name provider in the installation (PROVIDER_NAME=goa) ```terraform-provider-goa```.
+and install it in the terraform plugins folder ````~/.terraform.d/plugins```` as described above. The terraform plugins folder should contain the newly
+installed open api customer terraform provider with the name provider in the installation (PROVIDER_NAME=goa) ```terraform-provider-goa```.
 
 ````
 $ ls -la ~/.terraform.d/plugins
@@ -196,7 +196,7 @@ the example OpenAPI terraform providers (goa and swaggercodegen) already install
 play around with the OpenAPI providers without messing with their local environments. The following
 command will bring up the example APIs, and a container that you can interact with:
 
-````
+ ````
 $ make examples-container
 $ root@6d7ac292eebd:/openapi# cd goa/
 $ root@6d7ac292eebd:/openapi/goa# terraform init && terraform plan

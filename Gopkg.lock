@@ -109,7 +109,7 @@
   branch = "master"
   name = "github.com/dikhan/http_goclient"
   packages = ["."]
-  revision = "121a189e1ef74dc945eb3e1299c4c24a544e3c5f"
+  revision = "b9de9b5ee7b6278aff207db56053ffdf77e84efb"
 
 [[projects]]
   branch = "master"
@@ -684,6 +684,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c4a49e8a626665d817bd0e3193b0b252ce7f1e345e2c38e2808bce88400c58dc"
+  inputs-digest = "e9a23e9c2c172594641824d3a3edb226ecfc212e5dfb5bced64661fe4f0b4c36"
   solver-name = "gps-cdcl"
   solver-version = 1

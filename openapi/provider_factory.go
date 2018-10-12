@@ -1,129 +1,157 @@
 package openapi
 
 import (
-	"errors"
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 
 	"net/http"
 
 	"github.com/dikhan/http_goclient"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
-	"github.com/go-openapi/loads"
-	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 )
 
 type providerFactory struct {
-	name            string
-	discoveryAPIURL string
+	name         string
+	specAnalyser SpecAnalyser
 }
 
-type providerConfig struct {
-	Headers                   map[string]string
-	SecuritySchemaDefinitions map[string]authenticator
+func newProviderFactory(name string, specAnalyser SpecAnalyser) (*providerFactory, error) {
+	if name == "" {
+		return nil, fmt.Errorf("provider name not specified")
+	}
+	if compliantName := terraformutils.ConvertToTerraformCompliantName(name); name != compliantName {
+		return nil, fmt.Errorf("provider name '%s' not terraform name compliant, please consider renaming provider to '%s'", name, compliantName)
+	}
+	if specAnalyser == nil {
+		return nil, fmt.Errorf("provider missing an OpenAPI Spec Analyser")
+	}
+	return &providerFactory{
+		name:         name,
+		specAnalyser: specAnalyser,
+	}, nil
 }
 
 func (p providerFactory) createProvider() (*schema.Provider, error) {
-	apiSpecAnalyser, err := p.createAPISpecAnalyser()
-	if err != nil {
-		return nil, fmt.Errorf("error occurred while retrieving api specification. Error=%s", err)
+	var providerSchema map[string]*schema.Schema
+	var resourceMap map[string]*schema.Resource
+	var err error
+
+	if providerSchema, err = p.createTerraformProviderSchema(); err != nil {
+		return nil, err
 	}
-	// If host is not specified, it is assumed to be the same host where the API documentation is being served.
-	if apiSpecAnalyser.d.Spec().Host == "" {
-		apiSpecAnalyser.d.Spec().Host = openapiutils.GetHostFromURL(p.discoveryAPIURL)
+	if resourceMap, err = p.createTerraformProviderResourceMap(); err != nil {
+		return nil, err
 	}
-	provider, err := p.generateProviderFromAPISpec(apiSpecAnalyser)
-	if err != nil {
-		return nil, fmt.Errorf("error occurred while creating schema provider. Error=%s", err)
+	provider := &schema.Provider{
+		Schema:        providerSchema,
+		ResourcesMap:  resourceMap,
+		ConfigureFunc: p.configureProvider(),
 	}
 	return provider, nil
 }
 
-func (p providerFactory) createAPISpecAnalyser() (*apiSpecAnalyser, error) {
-	if p.discoveryAPIURL == "" {
-		return nil, errors.New("required param 'apiUrl' missing")
-	}
-	apiSpec, err := loads.JSONSpec(p.discoveryAPIURL)
-	if err != nil {
-		return nil, fmt.Errorf("error occurred when retrieving api spec from %s. Error=%s", p.discoveryAPIURL, err)
-	}
-	apiSpecAnalyser := &apiSpecAnalyser{apiSpec}
-	return apiSpecAnalyser, nil
-}
-
-func (p providerFactory) generateProviderFromAPISpec(apiSpecAnalyser *apiSpecAnalyser) (*schema.Provider, error) {
-	resourceMap := map[string]*schema.Resource{}
-	resourcesInfo, err := apiSpecAnalyser.getResourcesInfo()
+// createTerraformProviderSchema adds support for specific provider configuration such as:
+// - api key auth which will be used as the authentication mechanism when making http requests to the service provider
+// - specific headers used in operations
+func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Schema, error) {
+	s := map[string]*schema.Schema{}
+	globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
 	if err != nil {
 		return nil, err
 	}
-	for resourceName, resourceInfo := range resourcesInfo {
-		r := resourceFactory{
-			http_goclient.HttpClient{HttpClient: &http.Client{}},
-			resourceInfo,
-			newAPIAuthenticator(apiSpecAnalyser.d.Spec().Security),
-		}
-		resource, err := r.createSchemaResource()
-		if err != nil {
-			return nil, err
-		}
-		resourceName := p.getProviderResourceName(resourceName)
-		log.Printf("[INFO] open api terraform compatible resource registered with the provider '%s'", resourceName)
-		resourceMap[resourceName] = resource
-	}
-	provider := &schema.Provider{
-		Schema:        p.createTerraformProviderSchema(apiSpecAnalyser.d.Spec()),
-		ResourcesMap:  resourceMap,
-		ConfigureFunc: p.configureProvider(apiSpecAnalyser.d.Spec()),
-	}
-	return provider, nil
-}
-
-// createTerraformProviderSchema adds support for specific provider configuration such as api key which will
-// be used as the authentication mechanism when making http requests to the service provider
-func (p providerFactory) createTerraformProviderSchema(spec *spec.Swagger) map[string]*schema.Schema {
-	s := map[string]*schema.Schema{}
-	for secDefName, secDef := range spec.SecurityDefinitions {
-		if secDef.Type == "apiKey" {
-			s[terraformutils.ConvertToTerraformCompliantName(secDefName)] = &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			}
+	for _, securityScheme := range globalSecuritySchemes {
+		s[securityScheme.getTerraformConfigurationName()] = &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
 		}
 	}
-	headerConfigProps := openapiutils.GetAllHeaderParameters(spec)
-	for headerConfigProp := range headerConfigProps {
-		s[headerConfigProp] = &schema.Schema{
+	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	if err != nil {
+		return nil, err
+	}
+	for _, headerParam := range headers {
+		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
+		s[headerTerraformCompliantName] = &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
 		}
 	}
-	return s
+	return s, nil
 }
 
-func (p providerFactory) configureProvider(spec *spec.Swagger) schema.ConfigureFunc {
+func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schema.Resource, error) {
+	resourceMap := map[string]*schema.Resource{}
+	openAPIResources, err := p.specAnalyser.GetTerraformCompliantResources()
+	if err != nil {
+		return nil, err
+	}
+	for _, openAPIResource := range openAPIResources {
+		if openAPIResource.shouldIgnoreResource() {
+			log.Printf("[WARN] '%s' is marked as to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			continue
+		}
+		r := newResourceFactory(openAPIResource)
+		resource, err := r.createTerraformResource()
+		if err != nil {
+			return nil, err
+		}
+		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("[INFO] resource '%s' successfully registered in the provider", resourceName)
+		resourceMap[resourceName] = resource
+	}
+	return resourceMap, nil
+}
+
+func (p providerFactory) configureProvider() schema.ConfigureFunc {
 	return func(data *schema.ResourceData) (interface{}, error) {
-		config := providerConfig{}
-		config.SecuritySchemaDefinitions = map[string]authenticator{}
-		for secDefName, secDef := range spec.SecurityDefinitions {
-			if secDef.Type == "apiKey" {
-				config.SecuritySchemaDefinitions[secDefName] = createAPIKeyAuthenticator(secDef.In, secDef.Name, data.Get(secDefName).(string))
-			}
+		globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
+		if err != nil {
+			return nil, err
 		}
-		config.Headers = map[string]string{}
-		headerConfigProps := openapiutils.GetAllHeaderParameters(spec)
-		// Here we only save the value of the header with its corresponding identifier, which is defined in the keys
-		// saved in the map returned headerConfigProps
-		for headerConfigProp := range headerConfigProps {
-			config.Headers[headerConfigProp] = data.Get(headerConfigProp).(string)
+		authenticator := newAPIAuthenticator(&globalSecuritySchemes)
+		config, err := p.createProviderConfig(data)
+		if err != nil {
+			return nil, err
 		}
-		return config, nil
+		openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
+		if err != nil {
+			return nil, err
+		}
+		openAPIClient := &ProviderClient{
+			openAPIBackendConfiguration: openAPIBackendConfiguration,
+			apiAuthenticator:            authenticator,
+			httpClient:                  &http_goclient.HttpClient{HttpClient: &http.Client{}},
+			providerConfiguration:       *config,
+		}
+		return openAPIClient, nil
 	}
 }
 
-func (p providerFactory) getProviderResourceName(resourceName string) string {
+// createProviderConfig returns a providerConfiguration populated with:
+// - Header values that might be required by API operations
+// - Security definition values that might be required by API operations (or globally)
+// configuration mapped to the corresponding
+func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*providerConfiguration, error) {
+	securityDefinitions, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
+	if err != nil {
+		return nil, err
+	}
+	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	if err != nil {
+		return nil, err
+	}
+	providerConfiguration := newProviderConfiguration(headers, securityDefinitions, data)
+	return providerConfiguration, nil
+}
+
+func (p providerFactory) getProviderResourceName(resourceName string) (string, error) {
+	if resourceName == "" {
+		return "", fmt.Errorf("resource name can not be empty")
+	}
 	fullResourceName := fmt.Sprintf("%s_%s", p.name, resourceName)
-	return fullResourceName
+	return fullResourceName, nil
 }

@@ -2,34 +2,45 @@ package openapi
 
 import (
 	"fmt"
-	"net/http"
-	"reflect"
-
-	"github.com/dikhan/http_goclient"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 )
 
 type resourceFactory struct {
-	httpClient       http_goclient.HttpClient
-	resourceInfo     resourceInfo
-	apiAuthenticator apiAuthenticator
+	openAPIResource       SpecResource
+	defaultTimeout        time.Duration
+	defaultPollInterval   time.Duration
+	defaultPollMinTimeout time.Duration
+	defaultPollDelay      time.Duration
 }
 
 // only applicable when remote resource no longer exists and GET operations return 404 NotFound
-var defaultDestroyStatus = "destroyed"
+const defaultDestroyStatus = "destroyed"
 
+var defaultPollInterval = time.Duration(5 * time.Second)
+var defaultPollMinTimeout = time.Duration(10 * time.Second)
+var defaultPollDelay = time.Duration(1 * time.Second)
 var defaultTimeout = time.Duration(10 * time.Minute)
 
-func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
-	s, err := r.resourceInfo.createTerraformResourceSchema()
+func newResourceFactory(openAPIResource SpecResource) resourceFactory {
+	return resourceFactory{
+		openAPIResource:       openAPIResource,
+		defaultPollDelay:      defaultPollDelay,
+		defaultPollInterval:   defaultPollInterval,
+		defaultPollMinTimeout: defaultPollMinTimeout,
+		defaultTimeout:        defaultTimeout,
+	}
+}
+
+func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
+	s, err := r.createTerraformResourceSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -48,76 +59,58 @@ func (r resourceFactory) createSchemaResource() (*schema.Resource, error) {
 }
 
 func (r resourceFactory) createSchemaResourceTimeout() (*schema.ResourceTimeout, error) {
-	var postTimeout *time.Duration
-	var getTimeout *time.Duration
-	var putTimeout *time.Duration
-	var deleteTimeout *time.Duration
+	var timeouts *specTimeouts
 	var err error
-	if postTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.createPathInfo.Post); err != nil {
-		return nil, err
-	}
-	if getTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.pathInfo.Get); err != nil {
-		return nil, err
-	}
-	if putTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.pathInfo.Put); err != nil {
-		return nil, err
-	}
-	if deleteTimeout, err = r.resourceInfo.getResourceTimeout(r.resourceInfo.pathInfo.Delete); err != nil {
+	if timeouts, err = r.openAPIResource.getTimeouts(); err != nil {
 		return nil, err
 	}
 	return &schema.ResourceTimeout{
-		Create:  postTimeout,
-		Read:    getTimeout,
-		Update:  putTimeout,
-		Delete:  deleteTimeout,
-		Default: &defaultTimeout,
+		Create:  timeouts.Post,
+		Read:    timeouts.Get,
+		Update:  timeouts.Put,
+		Delete:  timeouts.Delete,
+		Default: &r.defaultTimeout,
 	}, nil
 }
 
-func (r resourceFactory) create(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	input := r.createPayloadFromLocalStateData(resourceLocalData)
-	responsePayload := map[string]interface{}{}
-
-	resourceURL, err := r.resourceInfo.getResourceURL()
+func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
+	schemaDefinition, err := r.openAPIResource.getResourceSchema()
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	operation := r.resourceInfo.createPathInfo.Post
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceURL, operation.Security, providerConfig)
-	if err != nil {
-		return err
-	}
-
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-
-	res, err := r.httpClient.PostJson(reqContext.url, reqContext.headers, input, &responsePayload)
-	if err != nil {
-		return err
-	}
-
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("POST %s failed: %s", resourceURL, err)
-	}
-
-	err = r.setStateID(resourceLocalData, responsePayload)
-	if err != nil {
-		return err
-	}
-	log.Printf("[INFO] Resource '%s' ID: %s", r.resourceInfo.path, resourceLocalData.Id())
-
-	err = r.handlePollingIfConfigured(&responsePayload, resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutCreate)
-	if err != nil {
-		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourceURL, res.StatusCode, err)
-	}
-	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
+	return schemaDefinition.createResourceSchema()
 }
 
-func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
+func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
+	providerClient := i.(ClientOpenAPI)
+	operation := r.openAPIResource.getResourceOperations().Post
+	requestPayload := r.createPayloadFromLocalStateData(data)
+	responsePayload := map[string]interface{}{}
+	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload)
+	if err != nil {
+		return err
+	}
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
+		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), err)
+	}
+
+	err = r.setStateID(data, responsePayload)
+	if err != nil {
+		return err
+	}
+	log.Printf("[INFO] Resource '%s' ID: %s", r.openAPIResource.getResourcePath(), data.Id())
+
+	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutCreate)
+	if err != nil {
+		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", r.openAPIResource.getResourcePath(), res.StatusCode, err)
+	}
+
+	return r.updateStateWithPayloadData(responsePayload, data)
+}
+
+func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
+	openAPIClient := i.(ClientOpenAPI)
+	remoteData, err := r.readRemote(data.Id(), openAPIClient)
 
 	if err != nil {
 		if openapiErr, ok := err.(openapierr.Error); ok {
@@ -125,120 +118,85 @@ func (r resourceFactory) read(resourceLocalData *schema.ResourceData, i interfac
 				return nil
 			}
 		}
-		return fmt.Errorf("GET %s/%s failed: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
+		return fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
 
-	return r.updateStateWithPayloadData(remoteData, resourceLocalData)
+	return r.updateStateWithPayloadData(remoteData, data)
 }
 
-func (r resourceFactory) readRemote(id string, providerConfig providerConfig) (map[string]interface{}, error) {
+func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(id)
+	resp, err := providerClient.Get(r.openAPIResource, id, &responsePayload)
 	if err != nil {
 		return nil, err
 	}
 
-	operation := r.resourceInfo.pathInfo.Get
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-
-	res, err := r.httpClient.Get(reqContext.url, reqContext.headers, &responsePayload)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK}); err != nil {
+	if err := r.checkHTTPStatusCode(resp, []int{http.StatusOK}); err != nil {
 		return nil, err
 	}
 
 	return responsePayload, nil
 }
 
-func (r resourceFactory) update(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	operation := r.resourceInfo.pathInfo.Put
+func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
+	providerClient := i.(ClientOpenAPI)
+	operation := r.openAPIResource.getResourceOperations().Put
 	if operation == nil {
-		return fmt.Errorf("%s resource does not support PUT opperation, check the swagger file exposed on '%s'", r.resourceInfo.path, r.resourceInfo.host)
+		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
-	input := r.createPayloadFromLocalStateData(resourceLocalData)
+	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-
-	if err := r.checkImmutableFields(resourceLocalData, providerConfig); err != nil {
+	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
 	}
-
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(resourceLocalData.Id())
-	if err != nil {
-		return err
-	}
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
-	if err != nil {
-		return err
-	}
-
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-
-	res, err := r.httpClient.PutJson(reqContext.url, reqContext.headers, input, &responsePayload)
+	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("UPDATE %s failed: %s", resourceIDURL, err)
+		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
 
-	err = r.handlePollingIfConfigured(&responsePayload, resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutUpdate)
+	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutUpdate)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", r.openAPIResource.getResourcePath(), res.StatusCode, err)
 	}
-	return r.updateStateWithPayloadData(responsePayload, resourceLocalData)
+
+	return r.updateStateWithPayloadData(responsePayload, data)
 }
 
-func (r resourceFactory) delete(resourceLocalData *schema.ResourceData, i interface{}) error {
-	providerConfig := i.(providerConfig)
-	operation := r.resourceInfo.pathInfo.Delete
+func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
+	providerClient := i.(ClientOpenAPI)
+	operation := r.openAPIResource.getResourceOperations().Delete
 	if operation == nil {
-		return fmt.Errorf("%s resource does not support DELETE opperation, check the swagger file exposed on '%s'", r.resourceInfo.path, r.resourceInfo.host)
+		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
 	}
-	resourceIDURL, err := r.resourceInfo.getResourceIDURL(resourceLocalData.Id())
+	res, err := providerClient.Delete(r.openAPIResource, data.Id())
 	if err != nil {
 		return err
 	}
-
-	reqContext, err := r.apiAuthenticator.prepareAuth(operation.ID, resourceIDURL, operation.Security, providerConfig)
-	if err != nil {
-		return err
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
+		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
 
-	reqContext.headers = r.appendOperationHeaders(operation, providerConfig, reqContext.headers)
-	res, err := r.httpClient.Delete(reqContext.url, reqContext.headers)
+	err = r.handlePollingIfConfigured(nil, data, providerClient, operation, res.StatusCode, schema.TimeoutDelete)
 	if err != nil {
-		return err
-	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted, http.StatusNotFound}); err != nil {
-		return fmt.Errorf("DELETE %s failed: %s", resourceIDURL, err)
-	}
-
-	err = r.handlePollingIfConfigured(nil, resourceLocalData, providerConfig, operation.Responses, res.StatusCode, schema.TimeoutDelete)
-	if err != nil {
-		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", resourceIDURL, res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", r.openAPIResource.getResourcePath(), res.StatusCode, err)
 	}
 
 	return nil
 }
 
-func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]interface{}, resourceLocalData *schema.ResourceData, providerConfig providerConfig, responses *spec.Responses, responseStatusCode int, timeoutFor string) error {
-	pollingEnabled, response := r.resourceInfo.isResourcePollingEnabled(responses, responseStatusCode)
+func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]interface{}, resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI, operation *specResourceOperation, responseStatusCode int, timeoutFor string) error {
+	response := operation.responses.getResponse(responseStatusCode)
 
-	if !pollingEnabled {
+	if response == nil || !response.isPollingEnabled {
 		return nil
 	}
+
+	targetStatuses := response.pollTargetStatuses
+	pendingStatuses := response.pollPendingStatuses
 
 	// This is a use case where payload does not contain payload data and hence status field is not available; e,g: DELETE operations
 	// The default behaviour for this case is to consider the resource as destroyed. Hence, the below code pre-populates
@@ -246,34 +204,24 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	// Since this is internal behaviour it is not expected that the service provider will populate this field; and if so, it
 	// will be overridden
 	if responsePayload == nil {
-		if value, exists := response.Extensions.GetString(extTfResourcePollTargetStatuses); exists {
-			log.Printf("[WARN] service provider speficied '%s': %s for a DELETE operation. This is not expected as the normal behaviour is the resource to no longer exists once the DELETE operation is completed; hence subsequent GET calls should return 404 NotFound instead", extTfResourcePollTargetStatuses, value)
+		if len(targetStatuses) > 0 {
+			log.Printf("[WARN] resource speficied poll target statuses for a DELETE operation. This is not expected as the normal behaviour is the resource to no longer exists once the DELETE operation is completed; hence subsequent GET calls should return 404 NotFound instead")
 		}
-		log.Printf("[WARN] setting extension '%s' with default value '%s'", extTfResourcePollTargetStatuses, defaultDestroyStatus)
-		response.Extensions.Add(extTfResourcePollTargetStatuses, defaultDestroyStatus)
-	}
-
-	targetStatuses, err := r.resourceInfo.getResourcePollTargetStatuses(*response)
-	if err != nil {
-		return err
-	}
-
-	pendingStatuses, err := r.resourceInfo.getResourcePollPendingStatuses(*response)
-	if err != nil {
-		return err
+		log.Printf("[WARN] overriding target status with default destroy status")
+		targetStatuses = []string{defaultDestroyStatus}
 	}
 
 	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
-	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.resourceInfo.path, targetStatuses)
+	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.openAPIResource.getResourcePath(), targetStatuses)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:      pendingStatuses,
 		Target:       targetStatuses,
-		Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerConfig),
+		Refresh:      r.resourceStateRefreshFunc(resourceLocalData, providerClient),
 		Timeout:      resourceLocalData.Timeout(timeoutFor),
-		PollInterval: 5 * time.Second,
-		MinTimeout:   10 * time.Second,
-		Delay:        1 * time.Second,
+		PollInterval: r.defaultPollInterval,
+		MinTimeout:   r.defaultPollMinTimeout,
+		Delay:        r.defaultPollDelay,
 	}
 
 	// Wait, catching any errors
@@ -282,51 +230,50 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
 	}
 	if responsePayload != nil {
-		*responsePayload = remoteData.(map[string]interface{})
+		remoteDataCasted, ok := remoteData.(map[string]interface{})
+		if ok {
+			*responsePayload = remoteDataCasted
+		} else {
+			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData))
+		}
 	}
 	return nil
 }
 
-func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerConfig providerConfig) resource.StateRefreshFunc {
+func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		remoteData, err := r.readRemote(resourceLocalData.Id(), providerConfig)
+		remoteData, err := r.readRemote(resourceLocalData.Id(), providerClient)
+
 		if err != nil {
 			if openapiErr, ok := err.(openapierr.Error); ok {
 				if openapierr.NotFound == openapiErr.Code() {
-					return remoteData, defaultDestroyStatus, nil
+					return 0, defaultDestroyStatus, nil
 				}
 			}
-			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
 		}
-		newStatus, err := r.resourceInfo.getStatusValueFromPayload(remoteData)
+
+		newStatus, err := r.getStatusValueFromPayload(remoteData)
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to get the status value after receiving response from GET /%s/%s: %s", r.resourceInfo.path, resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
 		}
-		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.resourceInfo.path, resourceLocalData.Id(), newStatus)
+		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
-}
-
-// appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
-// are retrieved from the provider configuration.
-func (r resourceFactory) appendOperationHeaders(operation *spec.Operation, providerConfig providerConfig, headers map[string]string) map[string]string {
-	if operation != nil {
-		headerConfigProps := openapiutils.GetHeaderConfigurations(operation.Parameters)
-		for headerConfigProp, headerConfiguration := range headerConfigProps {
-			// Setting the actual name of the header with the value coming from the provider configuration
-			headers[headerConfiguration.Name] = providerConfig.Headers[headerConfigProp]
-		}
-	}
-	return headers
 }
 
 // setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
 // r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
 func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
-	identifierProperty, err := r.resourceInfo.getResourceIdentifier()
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
 	if err != nil {
 		return err
 	}
+	identifierProperty, err := resourceSchema.getResourceIdentifier()
+	if err != nil {
+		return err
+	}
+	log.Printf("[DEBUG] payload = %+v", payload)
 	if payload[identifierProperty] == nil {
 		return fmt.Errorf("response object returned from the API is missing mandatory identifier property '%s'", identifierProperty)
 	}
@@ -342,50 +289,56 @@ func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payl
 	return nil
 }
 
-// updateLocalState populates the state of the schema resource data with the payload data received from the POST API request
-func (r resourceFactory) updateLocalState(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
-	err := r.setStateID(resourceLocalData, payload)
-	if err != nil {
-		return err
-	}
-	return r.updateStateWithPayloadData(payload, resourceLocalData)
-}
-
 func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
-	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
+	if !r.responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
 		var resBody string
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return fmt.Errorf("HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", res.StatusCode, err)
+			return fmt.Errorf("[resource='%s'] HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", r.openAPIResource.getResourceName(), res.StatusCode, err)
 		}
-		if len(b) > 0 {
+		if b != nil && len(b) > 0 {
 			resBody = string(b)
 		}
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
-			return fmt.Errorf("HTTP Reponse Status Code %d - Unauthorized. API access is denied due to invalid credentials: %s", res.StatusCode, resBody)
+			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", r.openAPIResource.getResourceName(), res.StatusCode, resBody)
 		case http.StatusNotFound:
 			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Reponse Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
 		default:
-			return fmt.Errorf("HTTP Reponse Status Code %d not matching expected one %v (%s)", res.StatusCode, expectedHTTPStatusCodes, resBody)
+			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d not matching expected one %v (%s)", r.openAPIResource.getResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
 		}
 	}
 	return nil
 }
 
-func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, providerConfig providerConfig) error {
-	var remoteData map[string]interface{}
-	var err error
-	if remoteData, err = r.readRemote(updatedResourceLocalData.Id(), providerConfig); err != nil {
+func (r resourceFactory) responseContainsExpectedStatus(expectedStatusCodes []int, responseStatusCode int) bool {
+	for _, expectedStatusCode := range expectedStatusCodes {
+		if expectedStatusCode == responseStatusCode {
+			return true
+		}
+	}
+	return false
+}
+
+func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI) error {
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
 		return err
 	}
-	for _, immutablePropertyName := range r.resourceInfo.getImmutableProperties() {
-		if localValue, exists := r.getResourceDataOKExists(immutablePropertyName, updatedResourceLocalData); exists {
-			if localValue != remoteData[immutablePropertyName] {
-				// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
-				// data inside the updated (*schema.ResourceData) in the state file
-				r.updateStateWithPayloadData(remoteData, updatedResourceLocalData)
-				return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
+	immutableProperties := resourceSchema.getImmutableProperties()
+	if len(immutableProperties) > 0 {
+		remoteData, err := r.readRemote(updatedResourceLocalData.Id(), openAPIClient)
+		if err != nil {
+			return err
+		}
+		for _, immutablePropertyName := range immutableProperties {
+			if localValue, exists := r.getResourceDataOKExists(immutablePropertyName, updatedResourceLocalData); exists {
+				if localValue != remoteData[immutablePropertyName] {
+					// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
+					// data inside the updated (*schema.ResourceData) in the state file
+					r.updateStateWithPayloadData(remoteData, updatedResourceLocalData)
+					return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
+				}
 			}
 		}
 	}
@@ -395,10 +348,19 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 // updateStateWithPayloadData is in charge of saving the given payload into the state file. The property names are
 // converted into compliant terraform names if needed.
 func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
+		return err
+	}
 	for propertyName, propertyValue := range remoteData {
-		if r.resourceInfo.isIDProperty(propertyName) {
+		property, err := resourceSchema.getProperty(propertyName)
+		if err != nil {
+			return fmt.Errorf("failed to update state with remote data. This usually happends when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
+		}
+		if property.isPropertyNamedID() {
 			continue
 		}
+		// TODO: validate that the data returned by the API matches the data configured by the user. This is a edge case scenario but can likely happen with inconsistent APIs
 		if err := r.setResourceDataProperty(propertyName, propertyValue, resourceLocalData); err != nil {
 			return err
 		}
@@ -410,12 +372,14 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 // to the API. Note that when reading the properties from the schema definition, there's a conversion to a compliant
 // will automatically translate names into terraform compatible names that can be saved in the state file; otherwise
 // terraform name so the look up in the local state operation works properly. The property names saved in the local state
-// are alaways converted to terraform compatible names
+// are always converted to terraform compatible names
 func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
-	for propertyName, property := range r.resourceInfo.schemaDefinition.Properties {
+	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	for _, property := range resourceSchema.Properties {
+		propertyName := property.Name
 		// ReadOnly properties are not considered for the payload data
-		if r.resourceInfo.isIDProperty(propertyName) || property.ReadOnly {
+		if property.isPropertyNamedID() || property.ReadOnly {
 			continue
 		}
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
@@ -434,21 +398,54 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 				input[propertyName] = dataValue.(bool)
 			}
 		}
-		log.Printf("[DEBUG] createPayloadFromLocalStateData [%s] - newValue[%+v]", propertyName, input[propertyName])
+		log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 	}
 	return input
 }
 
-// getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
-func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
-	schemaDefinitionProperty := r.resourceInfo.schemaDefinition.Properties[schemaDefinitionPropertyName]
-	dataPropertyName := r.resourceInfo.convertToTerraformCompliantFieldName(schemaDefinitionPropertyName, schemaDefinitionProperty)
-	return resourceLocalData.GetOkExists(dataPropertyName)
+func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{}) (string, error) {
+	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	if err != nil {
+		return "", err
+	}
+	statuses, err := resourceSchema.getStatusIdentifier()
+	if err != nil {
+		return "", err
+	}
+	var property = payload
+	for _, statusField := range statuses {
+		propertyValue, statusExistsInPayload := property[statusField]
+		if !statusExistsInPayload {
+			return "", fmt.Errorf("payload does not match resouce schema, could not find the status field: %s", statuses)
+		}
+		switch reflect.TypeOf(propertyValue).Kind() {
+		case reflect.Map:
+			property = propertyValue.(map[string]interface{})
+		case reflect.String:
+			return propertyValue.(string), nil
+		default:
+			return "", fmt.Errorf("status property value '%s' does not have a supported type [string/map]", statuses)
+		}
+	}
+	return "", fmt.Errorf("could not find status value [%s] in the payload provided", statuses)
 }
 
-// setResourceDataProperty sets the value for the given schemaDefinitionPropertyName using the terraform compliant property name
+// getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
+func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
+	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
+	if err != nil {
+		return nil, false
+	}
+	return resourceLocalData.GetOkExists(schemaDefinitionProperty.getTerraformCompliantPropertyName())
+}
+
+// setResourceDataProperty sets the expectedValue for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) setResourceDataProperty(schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
-	schemaDefinitionProperty := r.resourceInfo.schemaDefinition.Properties[schemaDefinitionPropertyName]
-	dataPropertyName := r.resourceInfo.convertToTerraformCompliantFieldName(schemaDefinitionPropertyName, schemaDefinitionProperty)
-	return resourceLocalData.Set(dataPropertyName, value)
+	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
+	if err != nil {
+		return fmt.Errorf("could not find schema definition property name %s in the resource data: %s", schemaDefinitionPropertyName, err)
+	}
+	return resourceLocalData.Set(schemaDefinitionProperty.getTerraformCompliantPropertyName(), value)
 }

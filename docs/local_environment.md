@@ -29,7 +29,7 @@ The UI rendered feeds from the swagger file located at [docker-compose](https://
 
 ### Installing the openapi terraform provider plugin binary
 
-Once docker-compose is done bringing up the example API servers, the following command can be executed to compile and install 
+Once docker-compose is done bringing up the example API servers, the following command can be executed to compile and install
 the openapi terraform provider binary:
 
 ```
@@ -74,7 +74,7 @@ drwxr-xr-x  5 dikhan  staff       160  4 Jul 13:19 ..
 ### Running the openapi terraform provider
 
 Having the openapi provider binary installed, we can now execute terraform commands.
- 
+
 #### Executing terraform plan
 
 First we need to access the folder where the the .tf file is localed. An example of swaggercodegen [main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/swaggercodegen/main.tf)
@@ -120,7 +120,7 @@ Plan: 1 to add, 0 to change, 0 to destroy.
 Notice that OTF_INSECURE_SKIP_VERIFY="true" is passed in to the command, this is needed due to the fact that the server
 uses a self-signed cert. This will make the provider's internal http client skip the certificate verification. This is
 **not recommended** for regular use and this env variable OTF_INSECURE_SKIP_VERIFY should only be set when the server hosting
-the swagger file is known and trusted but does not have a cert signed by the usually trusted CAs. 
+the swagger file is known and trusted but does not have a cert signed by the usually trusted CAs.
 
 The OpenAPI terraform provider expects as input the URL where the service provider is exposing the swagger file. This
 can be passed in defining as an environment variable with a name tha follows "OTF_VAR_{PROVIDER_NAME}_SWAGGER_URL" being '{PROVIDER_NAME}'
@@ -238,13 +238,13 @@ And a 'terraform.tfstate' should have been created by terraform containing the s
 
 ## Running the example via Makefile
 
-A convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) is provided allowing 
+A convenient [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) is provided allowing
 the user to execute the above in just one command as follows:
 ```
 $ make local-env-down local-env run-terraform-example-swaggercodegen TF_CMD=plan
 ```
 
-The above command will bring up the example server API and install the binary plugin in the terraform plugin folder. 
+The above command will bring up the example server API and install the binary plugin in the terraform plugin folder.
 
 When calling terraform it will pass all the required environment variables mentioned above using the example values:
 

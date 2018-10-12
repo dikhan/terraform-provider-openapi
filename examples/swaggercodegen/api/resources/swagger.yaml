@@ -6,13 +6,23 @@ info:
   title: "Dummy Service Provider generated using 'swaggercodegen' that has two resources 'cdns' and 'lbs' which are terraform compliant"
   contact:
     email: "apiteam@serviceprovider.io"
-#host: "localhost:8443" If host is not specified, it is assumed to be the same host where the API documentation is being served.
+#host: "localhost:8443" # If host is not specified, it is assumed to be the same host where the API documentation is being served.
 #basePath: ""
 tags:
 - name: "cdn"
   description: "Operations about cdns"
   externalDocs:
     description: "Find out more about cdn api"
+    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
+- name: "lb"
+  description: "Operations about lbs"
+  externalDocs:
+    description: "Find out more about lb api"
+    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
+- name: "monitor"
+  description: "Operations about monitors"
+  externalDocs:
+    description: "Find out more about monitor api"
     url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
 schemes:
 - "http"
@@ -25,6 +35,8 @@ produces:
 
 security:
   - apikey_auth: []
+
+x-terraform-resource-regions-monitor: "rst1,dub1"
 
 paths:
   /swagger.json:
@@ -49,7 +61,7 @@ paths:
   /v1/cdns:
     post:
       x-terraform-resource-name: "cdn"
-#      x-terraform-resource-host: localhost:8443
+#      x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
       - "cdn"
       summary: "Create cdn"
@@ -66,6 +78,7 @@ paths:
         name: "X-Request-ID"
         type: "string"
         required: true
+      x-terraform-resource-timeout: "30s"
       responses:
         201:
           description: "successful operation"
@@ -90,6 +103,7 @@ paths:
         description: "The cdn id that needs to be fetched."
         required: true
         type: "string"
+      #x-terraform-resource-timeout: "30s" If a given operation does not have the 'x-terraform-resource-timeout' extension; the resource operation timeout will default to 10m (10 minutes)
       responses:
         200:
           description: "successful operation"
@@ -167,7 +181,7 @@ paths:
         required: true
         schema:
           $ref: "#/definitions/LBV1"
-      x-terraform-resource-timeout: "30s"
+      x-terraform-resource-timeout: "2s"
       responses:
         202: # Accepted
           x-terraform-resource-poll-enabled: true # [type (bool)] - this flags the response as trully async. Some resources might be async too but may require manual intervention from operators to complete the creation workflow. This flag will be used by the OpenAPI Service provider to detect whether the polling mechanism should be used or not. The flags below will only be applicable if this one is present with value 'true'
@@ -219,7 +233,7 @@ paths:
         required: true
         schema:
           $ref: "#/definitions/LBV1"
-#      x-terraform-resource-timeout: "30s" If a given operation does not have the 'x-terraform-resource-timeout' extension; the resource operation timeout will default to 10m (10 minutes)
+      #      x-terraform-resource-timeout: "30s" If a given operation does not have the 'x-terraform-resource-timeout' extension; the resource operation timeout will default to 10m (10 minutes)
       responses:
         202: # Accepted
           x-terraform-resource-poll-enabled: true
@@ -254,6 +268,60 @@ paths:
         404:
           $ref: "#/responses/NotFound"
 
+
+  ############################
+  ##### Monitors Resource ####
+  ############################
+
+  # The monitor resource is not implemented in the backed, it only serves as an example on how the global host can be overridden
+  # and how the resource can be configured with multi region setup
+
+  /v1/monitors:
+    post:
+      tags:
+      - "monitor"
+      summary: "Create monitor v1"
+      operationId: "MonitorV1"
+      x-terraform-resource-host: "some.api.${monitor}.domain.com"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Monitor v1 payload object to be posted as part of the POST request"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitorV1"
+      responses:
+        200:
+          description: "this operation is asynchronous, to check the status of the deployment call GET operation and check the status field returned in the payload"
+          schema:
+            $ref: "#/definitions/MonitorV1"
+        default:
+          description: "generic error response"
+          schema:
+            $ref: "#/definitions/Error"
+  /v1/monitors/{id}:
+    get:
+      tags:
+      - "monitor"
+      summary: "Get monitor by id"
+      description: ""
+      operationId: "MonitorV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The monitor v1 id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitorV1"
+        400:
+          description: "Invalid monitor id supplied"
+        404:
+          description: "Monitor not found"
+
 securityDefinitions:
   apikey_auth:
     type: "apiKey"
@@ -267,7 +335,6 @@ definitions:
       - label
       - ips
       - hostnames
-      - object_property
     properties:
       id:
         type: "string"
@@ -308,44 +375,46 @@ definitions:
     properties:
       message:
         type: string
+
   LBV1:
     type: "object"
     required:
-      - name
-      - backends
+    - name
+    - backends
     properties:
       id:
         type: "string"
         readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
-                       # to be returned from the api, and will be saved as computed value in the terraform state file
+        # to be returned from the api, and will be saved as computed value in the terraform state file
       name:
         type: "string"
       backends:
         type: "array"
         items:
           type: "string"
-      status: # no longer used, using the object status instead for the sake of testing
+      status:
+#        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
         description: lb resource status
         type: string
         readOnly: true
         enum: # this is just for documentation purposes and to let the consumer know what statues should be expected
-          - deploy_pending
-          - deploy_in_progress
-          - deploy_failed
-          - deployed
-          - delete_pending
-          - delete_in_progress
-          - delete_failed
-          - deleted
-      newStatus:
-        $ref: "#/definitions/Status"
-        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
-        readOnly: true
+        - deploy_pending
+        - deploy_in_progress
+        - deploy_failed
+        - deployed
+        - delete_pending
+        - delete_in_progress
+        - delete_failed
+        - deleted
       timeToProcess: # time that the resource will take to be processed in seconds
         type: integer
         default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
       simulate_failure: # allows user to set it to true and force an error on the API when the given operation (POST/PUT/READ/DELETE) is being performed
         type: boolean
+      newStatus:
+        $ref: "#/definitions/Status"
+        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        readOnly: true
   Status:
     type: object
     properties:
@@ -353,12 +422,24 @@ definitions:
         type: string
       status:
         type: string
+
+  MonitorV1:
+    type: "object"
+    required:
+    - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"
+
   # Schema for error response body
   Error:
     type: object
     required:
-      - code
-      - message
+    - code
+    - message
     properties:
       code:
         type: string

@@ -9,9 +9,116 @@ import (
 	"testing"
 )
 
+func TestSpecV2Analyser(t *testing.T) {
+	Convey("Given a openAPIDocumentURL and a swagger doc object", t, func() {
+		openAPIDocumentURL := ""
+		d := &loads.Document{}
+		Convey("When specV2Analyser method is constructed", func() {
+			specV2Analyser := &specV2Analyser{
+				openAPIDocumentURL: openAPIDocumentURL,
+				d:                  d,
+			}
+			Convey("Then the specV2Analyser should comply with SpecAnalyser interface", func() {
+				var _ SpecAnalyser = specV2Analyser
+			})
+		})
+	})
+}
+
+func TestIsMultiRegionResource(t *testing.T) {
+	Convey("Given a specV2Analyser and a resource root has a POST operation containing the x-terraform-resource-host with a parametrized host containing region variable", t, func() {
+		serviceProviderName := "serviceProviderName"
+		r := specV2Analyser{}
+		resourceRoot := &spec.PathItem{
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceURL: fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName),
+						},
+					},
+				},
+			},
+		}
+		Convey("When isMultiRegionResource method is called with a resourceRoot pathItem and a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest,useast")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where NONE matches the region for which the above 's-terraform-resource-host' extension is for", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, "someOtherServiceProvider"), "rst, dub")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err returned should contain the following error message", func() {
+				So(err.Error(), ShouldEqual, "missing matching 'serviceProviderName' root level region extension 'x-terraform-resource-regions-serviceProviderName'")
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+			Convey("And the regions map returned should be empty", func() {
+				So(regions, ShouldBeEmpty)
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are not comma separated", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest useast")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswestuseast")
+				So(regions["uswestuseast"], ShouldEqual, "some.api.uswestuseast.domain.com")
+			})
+		})
+
+		Convey("When isMultiRegionResource method is called with a set of extensions where one matches the region for which the above 's-terraform-resource-host' extension is for BUT the values are comma separated with spaces", func() {
+			rootLevelExtensions := spec.Extensions{}
+			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest, useast")
+			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("And the map returned should contain uswest", func() {
+				So(regions, ShouldContainKey, "uswest")
+				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
+			})
+			Convey("And the map returned should contain useast", func() {
+				So(regions, ShouldContainKey, "useast")
+				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			})
+		})
+	})
+}
+
 func TestResourceInstanceRegex(t *testing.T) {
-	Convey("Given an apiSpecAnalyser", t, func() {
-		a := apiSpecAnalyser{}
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
 		Convey("When resourceInstanceRegex method is called", func() {
 			regex, err := a.resourceInstanceRegex()
 			Convey("Then the error returned should be nil", func() {
@@ -25,8 +132,8 @@ func TestResourceInstanceRegex(t *testing.T) {
 }
 
 func TestResourceInstanceEndPoint(t *testing.T) {
-	Convey("Given an apiSpecAnalyser", t, func() {
-		a := apiSpecAnalyser{}
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
 		Convey("When isResourceInstanceEndPoint method is called with a valid resource path such as '/resource/{id}'", func() {
 			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{id}")
 			Convey("Then the error returned should be nil", func() {
@@ -66,9 +173,70 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 	})
 }
 
+func TestGetPayloadDefName(t *testing.T) {
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
+
+		// Local Reference use cases
+		Convey("When getPayloadDefName method is called with a valid internal definition path", func() {
+			defName, err := a.getPayloadDefName("#/definitions/ContentDeliveryNetworkV1")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be true", func() {
+				So(defName, ShouldEqual, "ContentDeliveryNetworkV1")
+			})
+		})
+
+		Convey("When getPayloadDefName method is called with a URL (not supported)", func() {
+			_, err := a.getPayloadDefName("http://path/to/your/resource.json#myElement")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		// Remote Reference use cases
+		Convey("When getPayloadDefName method is called with an element of the document located on the same server (not supported)", func() {
+			_, err := a.getPayloadDefName("document.json#/myElement")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When getPayloadDefName method is called with an element of the document located in the parent folder (not supported)", func() {
+			_, err := a.getPayloadDefName("../document.json#/myElement")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When getPayloadDefName method is called with an specific element of the document stored on the different server (not supported)", func() {
+			_, err := a.getPayloadDefName("http://path/to/your/resource.json#myElement")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		// URL Reference use case
+		Convey("When getPayloadDefName method is called with an element of the document located in another folder (not supported)", func() {
+			_, err := a.getPayloadDefName("../another-folder/document.json#/myElement")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When getPayloadDefName method is called with document on the different server, which uses the same protocol (not supported)", func() {
+			_, err := a.getPayloadDefName("//anotherserver.com/files/example.json")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetResourcePayloadSchemaRef(t *testing.T) {
-	Convey("Given an apiSpecAnalyser", t, func() {
-		a := apiSpecAnalyser{}
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
 
 		Convey("When getResourcePayloadSchemaRef method is called with an operation that has a reference to the resource schema definition", func() {
 			expectedRef := "#/definitions/ContentDeliveryNetworkV1"
@@ -209,7 +377,7 @@ func TestGetResourcePayloadSchemaRef(t *testing.T) {
 }
 
 func TestGetResourcePayloadSchemaDef(t *testing.T) {
-	Convey("Given an apiSpecAnalyser", t, func() {
+	Convey("Given an specV2Analyser", t, func() {
 		swaggerContent := `swagger: "2.0"
 definitions:
   Users:
@@ -254,8 +422,8 @@ definitions:
 
 	})
 
-	Convey("Given an apiSpecAnalyser", t, func() {
-		a := apiSpecAnalyser{}
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
 		Convey("When getResourcePayloadSchemaDef method is called with an operation that is missing the parameters section", func() {
 			operation := &spec.Operation{
 				OperationProps: spec.OperationProps{},
@@ -455,12 +623,11 @@ paths:
 			})
 		})
 	})
-
 }
 
 func TestPostIsPresent(t *testing.T) {
 
-	Convey("Given an apiSpecAnalyser with a path '/users' that has a post operation", t, func() {
+	Convey("Given an specV2Analyser with a path '/users' that has a post operation", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -511,8 +678,8 @@ paths:
 }
 
 func TestValidateResourceSchemaDefinition(t *testing.T) {
-	Convey("Given an apiSpecAnalyser", t, func() {
-		a := apiSpecAnalyser{}
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
 		Convey("When validateResourceSchemaDefinition method is called with a valid schema definition containing a property ID'", func() {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -585,7 +752,7 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 }
 
 func TestValidateRootPath(t *testing.T) {
-	Convey("Given an apiSpecAnalyser with a terraform compliant root path", t, func() {
+	Convey("Given an specV2Analyser with a terraform compliant root path", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -703,7 +870,7 @@ definitions:
 }
 
 func TestValidateInstancePath(t *testing.T) {
-	Convey("Given an apiSpecAnalyser with a terraform compliant instance path", t, func() {
+	Convey("Given an specV2Analyser with a terraform compliant instance path", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users/{id}:
@@ -727,7 +894,7 @@ paths:
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser with an instance path that is missing the get operation", t, func() {
+	Convey("Given an specV2Analyser with an instance path that is missing the get operation", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users/{id}:
@@ -754,8 +921,8 @@ paths:
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser", t, func() {
-		a := apiSpecAnalyser{}
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
 		Convey("When validateInstancePath method is called with a non instance path", func() {
 			err := a.validateInstancePath("/users")
 			Convey("Then the error returned should NOT be nil", func() {
@@ -769,7 +936,7 @@ paths:
 }
 
 func TestIsEndPointTerraformResourceCompliant(t *testing.T) {
-	Convey("Given an apiSpecAnalyser with a fully terraform compliant resource Users", t, func() {
+	Convey("Given an specV2Analyser with a fully terraform compliant resource Users", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -819,7 +986,7 @@ definitions:
 	})
 
 	// This is the ideal case where the resource exposes al CRUD operations
-	Convey("Given an apiSpecAnalyser with an resource instance path such as '/users/{id}' that has a GET/PUT/DELETE operations exposed and the corresponding resource root path '/users' exposes a POST operation", t, func() {
+	Convey("Given an specV2Analyser with an resource instance path such as '/users/{id}' that has a GET/PUT/DELETE operations exposed and the corresponding resource root path '/users' exposes a POST operation", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -891,7 +1058,7 @@ definitions:
 	})
 
 	// This use case avoids resource duplicates as the root paths are filtered out
-	Convey("Given an apiSpecAnalyser", t, func() {
+	Convey("Given an specV2Analyser", t, func() {
 		swaggerContent := `swagger: "2.0"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When isEndPointFullyTerraformResourceCompliant method is called with a non resource instance path such as '/users'", func() {
@@ -905,7 +1072,7 @@ definitions:
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser with a resource that fails the instance path validation (no get operation defined)", t, func() {
+	Convey("Given an specV2Analyser with a resource that fails the instance path validation (no get operation defined)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users/{id}:
@@ -923,7 +1090,7 @@ paths:
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser with a resource that fails the root path validation (no post operation defined)", t, func() {
+	Convey("Given an specV2Analyser with a resource that fails the root path validation (no post operation defined)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -952,7 +1119,7 @@ paths:
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser with a resource that fails the schema validation (non existing ref)", t, func() {
+	Convey("Given an specV2Analyser with a resource that fails the schema validation (non existing ref)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -989,14 +1156,11 @@ paths:
 			})
 		})
 	})
-
 }
 
-func TestGetResourcesInfo(t *testing.T) {
-	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
-		expectedHost := "some.api.domain.com"
-		swaggerContent := fmt.Sprintf(`swagger: "2.0"
-host: %s
+func TestGetTerraformCompliantResources(t *testing.T) {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
+		swaggerContent := `swagger: "2.0"
 paths:
   /v1/cdns:
     post:
@@ -1045,7 +1209,7 @@ paths:
           description: "successful operation, no content is returned"
   /non/compliant:
     post: # this path post operation is missing a reference to the schema definition (commented out)
-      parameters: 
+      parameters:
       - in: "body"
         name: "body"
       #  schema:
@@ -1076,24 +1240,21 @@ definitions:
     properties:
       id:
         type: "string"
-        readOnly: true`, expectedHost)
+        readOnly: true`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When getResourcesInfo method is called ", func() {
-			resourcesInfo, err := a.getResourcesInfo()
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
-				So(len(resourcesInfo), ShouldEqual, 1)
-				So(resourcesInfo, ShouldContainKey, "cdns_v1")
-			})
-			Convey("And the resources info map only element should have global host", func() {
-				So(resourcesInfo["cdns_v1"].host, ShouldEqual, expectedHost)
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
 			})
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a non compliant terraform resource /v1/cdns because its missing the post operation", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a non compliant terraform resource /v1/cdns because its missing the post operation", t, func() {
 		var swaggerJSON = `
 {
    "swagger":"2.0",
@@ -1122,18 +1283,18 @@ definitions:
    }
 }`
 		a := initAPISpecAnalyser(swaggerJSON)
-		Convey("When getResourcesInfo method is called ", func() {
-			resourcesInfo, err := a.getResourcesInfo()
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the resources info map should contain a resource called cdns_v1", func() {
-				So(resourcesInfo, ShouldBeEmpty)
+				So(terraformCompliantResources, ShouldBeEmpty)
 			})
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
 		var swaggerJSON = `
 {
    "swagger":"2.0",
@@ -1178,216 +1339,20 @@ definitions:
    }
 }`
 		a := initAPISpecAnalyser(swaggerJSON)
-		Convey("When getResourcesInfo method is called ", func() {
-			resourceInfo, err := a.getResourcesInfo()
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the resourceInfo map should be empty as the resource was meant to be excluded", func() {
-				So(resourceInfo, ShouldBeEmpty)
-			})
-		})
-	})
-
-	// Tests that if the override host is present for a given resource and it is not multi region, the host for that given resource should be the override one
-	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-resource-host' extension and therefore overrides the global host value", t, func() {
-		expectedHost := "some.api.domain.com"
-		var swaggerJSON = fmt.Sprintf(`
-{
-   "swagger":"2.0",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "x-terraform-resource-host": "%s",
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
-                  }
-               }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
-            }
-         }
-      }
-   }
-}`, expectedHost)
-		a := initAPISpecAnalyser(swaggerJSON)
-		Convey("When getResourcesInfo method is called ", func() {
-			resourceInfo, err := a.getResourcesInfo()
-			expectedResourceName := "cdns_v1"
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the resourceInfo map should not be empty", func() {
-				So(resourceInfo, ShouldNotBeEmpty)
-			})
-			Convey(fmt.Sprintf("And the resourceInfo map should contain key %s", expectedResourceName), func() {
-				So(resourceInfo, ShouldContainKey, expectedResourceName)
-			})
-			Convey(fmt.Sprintf("And the host value for that resource should be '%s'", expectedHost), func() {
-				So(resourceInfo[expectedResourceName].host, ShouldEqual, expectedHost)
-			})
-		})
-	})
-
-	// Tests that if the override host is present for a given resource and multi region configuration is correct, the appropriate resources per region should be created
-	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-resource-host' extension with a parametrized value some.api.${serviceProviderName}.domain.com and a matching root level 'x-terraform-resource-regions-serviceProviderName' extension populated with the different API regions", t, func() {
-		serviceProviderName := "serviceProviderName"
-		expectedHost := fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName)
-		var swaggerJSON = fmt.Sprintf(`
-{
-   "swagger":"2.0",
-   "x-terraform-resource-regions-%s": "uswest, useast",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "x-terraform-resource-host": "%s",
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
-                  }
-               }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
-            }
-         }
-      }
-   }
-}`, serviceProviderName, expectedHost)
-		a := initAPISpecAnalyser(swaggerJSON)
-		Convey("When getResourcesInfo method is called ", func() {
-			resourceInfo, err := a.getResourcesInfo()
-			expectedResourceName1 := "cdns_v1_uswest"
-			expectedResourceName2 := "cdns_v1_useast"
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the resourceInfo map should not be empty", func() {
-				So(resourceInfo, ShouldNotBeEmpty)
-			})
-			Convey(fmt.Sprintf("And the resourceInfo map should contain key %s", expectedResourceName1), func() {
-				So(resourceInfo, ShouldContainKey, expectedResourceName1)
-			})
-			Convey(fmt.Sprintf("And the host value for that resource should be '%s'", "some.api.uswest.domain.com"), func() {
-				So(resourceInfo[expectedResourceName1].host, ShouldEqual, "some.api.uswest.domain.com")
-			})
-			Convey(fmt.Sprintf("And the resourceInfo map should contain key %s", expectedResourceName2), func() {
-				So(resourceInfo, ShouldContainKey, expectedResourceName2)
-			})
-			Convey(fmt.Sprintf("And the host value for that resource should be '%s'", "some.api.useast.domain.com"), func() {
-				So(resourceInfo[expectedResourceName2].host, ShouldEqual, "some.api.useast.domain.com")
-			})
-		})
-	})
-
-	// Tests that if the override host is present and the value is multi region but multi region requirements are not met, an error should be expected (so the user can fix the swagger config accordingly)
-	Convey("Given an apiSpecAnalyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-resource-host' extension with a parametrized value some.api.${serviceProviderName}.domain.com and NON matching root level 'x-terraform-resource-regions-serviceProviderName' extension", t, func() {
-		serviceProviderName := "serviceProviderName"
-		expectedHost := fmt.Sprintf("some.api.${%s}.domain.com", serviceProviderName)
-		var swaggerJSON = fmt.Sprintf(`
-{
-   "swagger":"2.0",
-   "x-terraform-resource-regions-%s": "uswest, useast",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "x-terraform-resource-host": "%s",
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
-                  }
-               }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
-            }
-         }
-      }
-   }
-}`, "someOtherProviderName", expectedHost)
-		a := initAPISpecAnalyser(swaggerJSON)
-		Convey("When getResourcesInfo method is called ", func() {
-			_, err := a.getResourcesInfo()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldNotBeNil)
+			Convey("And the terraformCompliantResources map should contain one resource with ignore flag set to true", func() {
+				So(terraformCompliantResources[0].shouldIgnoreResource(), ShouldBeTrue)
 			})
 		})
 	})
 }
 
-func initAPISpecAnalyser(swaggerContent string) apiSpecAnalyser {
+func initAPISpecAnalyser(swaggerContent string) specV2Analyser {
 	swagger := json.RawMessage([]byte(swaggerContent))
 	d, _ := loads.Analyzed(swagger, "2.0")
-	return apiSpecAnalyser{d}
+	return specV2Analyser{d: d}
 }

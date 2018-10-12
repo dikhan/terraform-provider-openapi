@@ -1,11 +1,11 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 )
 
 func readRequest(r *http.Request, in interface{}) error {
@@ -46,4 +46,3 @@ func updateResponseHeaders(httpStatusCode int, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(httpStatusCode)
 }
-

@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -17,6 +18,7 @@ import (
 const OpenAPIPluginConfigurationFileName = "terraform-provider-openapi.yaml"
 
 const otfVarSwaggerURL = "OTF_VAR_%s_SWAGGER_URL"
+const otfVarInsecureSkipVerify = "OTF_INSECURE_SKIP_VERIFY"
 
 // PluginConfiguration defines the OpenAPI plugin's configuration
 type PluginConfiguration struct {
@@ -62,6 +64,8 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 	var serviceConfig ServiceConfiguration
 	var err error
 
+	skipVerify, _ := strconv.ParseBool(os.Getenv(otfVarInsecureSkipVerify))
+
 	swaggerURLEnvVar := fmt.Sprintf(otfVarSwaggerURL, p.ProviderName)
 	apiDiscoveryURL := os.Getenv(swaggerURLEnvVar)
 	if apiDiscoveryURL == "" {
@@ -74,7 +78,7 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 	if apiDiscoveryURL != "" {
 		log.Printf("[INFO] %s set with value %s", swaggerURLEnvVar, apiDiscoveryURL)
 		pluginConfigV1.Services = map[string]*ServiceConfigV1{}
-		pluginConfigV1.Services[p.ProviderName] = &ServiceConfigV1{SwaggerURL: apiDiscoveryURL}
+		pluginConfigV1.Services[p.ProviderName] = &ServiceConfigV1{SwaggerURL: apiDiscoveryURL, InsecureSkipVerify: skipVerify}
 		serviceConfig, err = pluginConfigV1.GetServiceConfig(p.ProviderName)
 		if err != nil {
 			return nil, err
@@ -103,10 +107,10 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 		}
 	}
 
+	log.Printf("[DEBUG] serviceConfig = %+v", serviceConfig)
+
 	if serviceConfig == nil || serviceConfig.GetSwaggerURL() == "" {
 		return nil, fmt.Errorf("swagger url not provided, please export OTF_VAR_<provider_name>_SWAGGER_URL env variable with the URL where '%s' service provider is exposing the swagger file OR create a plugin configuration file at ~/.terraform.d/plugins following the Plugin configuration schema specifications", p.ProviderName)
 	}
-
 	return serviceConfig, err
-
 }

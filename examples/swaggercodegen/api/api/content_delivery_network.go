@@ -11,7 +11,6 @@
 package api
 
 type ContentDeliveryNetworkV1 struct {
-
 	Id string `json:"id,omitempty"`
 
 	Label string `json:"label"`
