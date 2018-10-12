@@ -21,9 +21,14 @@ func main() {
 
 	log.Printf("Running OpenAPI Terraform Provider v%s-%s; Released on: %s", version, commit, date)
 
-	providerName, err := getProviderName()
+	ex, err := os.Executable()
 	if err != nil {
-		log.Fatalf("[ERROR] There was an error when getting the provider's name: %s", err)
+		log.Fatalf("[ERROR] There was an error when getting the provider binary name: %s", err)
+	}
+
+	providerName, err := getProviderName(ex)
+	if err != nil {
+		log.Fatalf("[ERROR] There was an error when getting the provider's name fomr the binary '%s': %s", ex, err)
 	}
 	plugin.Serve(
 		&plugin.ServeOpts{
@@ -37,18 +42,15 @@ func main() {
 		})
 }
 
-func getProviderName() (string, error) {
-	ex, err := os.Executable()
+func getProviderName(binaryName string) (string, error) {
+	r, err := regexp.Compile("\\bterraform-provider-([a-zA-Z0-9]+)(?:_v\\d\\.\\d\\.\\d)?\\b")
 	if err != nil {
 		return "", err
 	}
-	r, err := regexp.Compile("(\\w+)[^-]*$")
-	if err != nil {
-		return "", err
-	}
-	match := r.FindStringSubmatch(ex)
+
+	match := r.FindStringSubmatch(binaryName)
 	if len(match) != 2 {
-		return "", fmt.Errorf("provider name (%s) does not match terraform naming convention 'terraform-provider-{name}', please rename the provider binary", ex)
+		return "", fmt.Errorf("provider binary name (%s) does not match terraform naming convention 'terraform-provider-{name}', please rename the provider binary", binaryName)
 	}
-	return match[0], nil
+	return match[1], nil
 }
