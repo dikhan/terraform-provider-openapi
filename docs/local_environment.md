@@ -3,6 +3,27 @@
 The Makefile has some convenient targets configured to help you bring up/tear down the two example APIs provided for 
 development purposes.
 
+## Running tests
+
+First and foremost, try running both the unit tests as well as the integration
+tests. This should give you enough confidence when contributing to know
+if new changes introduce any regression to the base code.
+
+- Running unit tests
+
+````
+$ make test
+````
+
+- Running integration tests
+
+````
+$ make integration-test
+````
+
+The tests should all pass but if you get any errors please feel free to raise an issue.
+
+
 ## Bringing up the example API servers
 
 The following target can be executed to bring up the [example API services](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples)
