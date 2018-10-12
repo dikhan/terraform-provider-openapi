@@ -1,4 +1,4 @@
-# Swagger codegen service provider example
+# Swagger codegen OpenAPI Example
 
 This example was created using [swagger-codegen](https://github.com/swagger-api/swagger-codegen) tool. Using the generator
  we have created a service provider that exposes a resource for managing 'CDNs' allowing the consumer to create and read CDNs.
@@ -14,98 +14,83 @@ To see how to make this your own, look here:
 - API version: 0.0.1
 - Build date: 2017-10-28T10:56:37.853-07:00
 
-
 ## Running the example swaggercodegen API
 
-### Building and running container 'manual approach'
+This service is fully OpenAPI Terraform compliant and the swagger document
+can be found [here](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/swaggercodegen/api/resources/swagger.yaml).
 
-A dockerfile is provided to run the example in a container.
+### Using make target 'faster approach'
 
-To build the container:
+A make target is provided to bring up the API service running in a docker
+container:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi
+$ DC_SERVICE=swaggercodegen-service-provider-api make local-env
+````
+
+Similarly, a ```local-env-down``` is provided to shutdown the service:
+
+````
+$ make local-env-down
+````
+
+### Manual approach
+
+A dockerfile is provided to run the example in a container:
+
+- To build the container:
+
 ````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api
 $ docker build -t swaggercodegen-service-provider-api .
 ````
 
-To run the container:
+- To run the container:
+
 ````
-docker run -p 8080:80 -p 8443:443 swaggercodegen-service-provider-api
+$ docker run -p 8080:80 -p 8443:443 swaggercodegen-service-provider-api
 ````
-
-#### Curl commands
-
-- Create new CDN
-
-```
-$ curl -X POST http://localhost:8080/v1/cdns -d '{"label":"label", "ips":["127.0.0.1"], "hostnames":["www.origin.com"]}'
-```
-
-- Get info about previously created CDN
-
-```
-$ curl http://localhost:8080/v1/cdns/<CDN_ID>'
-```
-
-- Update CDN
-
-```
-$ curl -X PUT http://localhost:8080/v1/cdns/<CDN_ID> -d '{"label":"label updated", "ips":["127.0.0.1"], "hostnames":["www.origin.com"]}'
-```
-
-- Delete exiting CDN
-
-```
-$ curl -X DELETE http://localhost:8080/v1/cdns/<CDN_ID>'
-```
 
 ### Create swagger-ui
+
+This example also includes a docker container that contains a a simple web app
+that exposes the swagger UI for the swaggercodegen example.
 
 ```
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api
 $ docker run -p 8082:8080 -e SWAGGER_JSON=/app/resources/swagger.yaml -v $(pwd):/app  swaggerapi/swagger-ui
 ```
 
-### Building and running container via make target 'faster approach'
+## Installing 'swaggercodegen' OpenAPI Terraform provider
 
-Alternatively, a make target is provided to do the above in one command:
-
-````
-$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi
-$ make local-env
-```` 
-
-This command will bring up the example APIs provided for development purposes.
-
-## Running terraform-provider-swaggercodegen against this API
-
-- Install terraform-provider-swaggercodegen provider:
+The following command will build the OpenAPI Terraform provider and install
+the ```terraform-provider-swaggercodegen``` terraform provider plugin in Terraform's
+plugin installation directory:
 
 ````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
 $ PROVIDER_NAME="swaggercodegen" make install
 ````
 
-- Execute terraform passing the following env variables:
+## Running Terraform
+
+Now that the terraform-provider-swaggercodegen plugin is installed, we can go ahead
+and execute terraform passing the following env variables or if using the
+[plugin configuration file](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#openapi-plugin-configuration-file)
+the env variables won't be needed:
 
 ````
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api
-$ export OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" PROVIDER_NAME="swaggercodegen" OTF_INSECURE_SKIP_VERIFY=true && terraform init && terraform plan
+$ terraform init && OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" PROVIDER_NAME="swaggercodegen" OTF_INSECURE_SKIP_VERIFY=true terraform plan
 ````
 
-Alternatively, a make target is also provided to achieve the same output but executing the following:
-
-````
-$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
-$ make local-env
-$ make run-terraform-example-swaggercodegen
-````
-
-Below is an output of the terraform execution: 
+Below is an output of the terraform execution:
 
 ````
 
 $ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen
-$ terraform init && OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" terraform plan
+$ terraform init && OTF_VAR_swaggercodegen_SWAGGER_URL="https://localhost:8443/swagger.yaml" OTF_INSECURE_SKIP_VERIFY=true terraform plan
 
 Initializing provider plugins...
 
@@ -152,3 +137,21 @@ can't guarantee that exactly these actions will be performed if
 "terraform apply" is subsequently run.
 
 ````
+
+## Running Terraform using make
+
+Alternatively, a make target is also provided to achieve the same output by
+executing the following command:
+
+````
+$ cd $GOPATH/github.com/dikhan/terraform-provider-openapi/
+$ TF_CMD=plan make run-terraform-example-swaggercodegen
+````
+
+The above command will:
+
+- Compile, build and install the ```terraform-provider-swaggercodegen``` terraform provider
+- Bring up the API service running in the docker container
+- Execute the Terraform command specified with the TF_CMD variable
+against the [main.tf](https://github.com/dikhan/terraform-provider-openapi/blob/master/examples/goa/main.tf)
+containing a resource provided by the goa service.
