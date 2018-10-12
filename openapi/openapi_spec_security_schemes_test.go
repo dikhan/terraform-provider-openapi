@@ -9,7 +9,7 @@ import (
 func TestSpecSecuritySchemeGetTerraformConfigurationName(t *testing.T) {
 	Convey("Given a SpecSecurityScheme with a terraform compliant name", t, func() {
 		expectedName := "some_compliant_name"
-		specSecurityScheme := SpecSecurityScheme{Name:expectedName}
+		specSecurityScheme := SpecSecurityScheme{Name: expectedName}
 		Convey("When newAPIKeySecurityDefinition method is called", func() {
 			secSchemeTerraformName := specSecurityScheme.getTerraformConfigurationName()
 			Convey("Then the secSchemeTerraformName name should match", func() {
@@ -18,7 +18,7 @@ func TestSpecSecuritySchemeGetTerraformConfigurationName(t *testing.T) {
 		})
 	})
 	Convey("Given a SpecSecurityScheme with a Non terraform compliant name", t, func() {
-		specSecurityScheme := SpecSecurityScheme{Name:"nonCompliantName"}
+		specSecurityScheme := SpecSecurityScheme{Name: "nonCompliantName"}
 		Convey("When newAPIKeySecurityDefinition method is called", func() {
 			secSchemeTerraformName := specSecurityScheme.getTerraformConfigurationName()
 			Convey("Then the secSchemeTerraformName name should be compliant", func() {
@@ -73,4 +73,3 @@ func TestCreateSecuritySchemes(t *testing.T) {
 		})
 	})
 }
-

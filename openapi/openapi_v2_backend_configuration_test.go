@@ -9,9 +9,9 @@ import (
 
 func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 	Convey("Given a swagger spec 2.0 and an openAPIDocumentURL", t, func() {
-		spec  := &spec.Swagger{
+		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
-				Swagger:"2.0",
+				Swagger: "2.0",
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
@@ -27,9 +27,9 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 	})
 
 	Convey("Given a swagger spec that is not supported 3.0 and an openAPIDocumentURL", t, func() {
-		spec  := &spec.Swagger{
+		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
-				Swagger:"3.0",
+				Swagger: "3.0",
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
@@ -45,9 +45,9 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 	})
 
 	Convey("Given a swagger spec 2.0 and an empty openAPIDocumentURL", t, func() {
-		spec  := &spec.Swagger{
+		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
-				Swagger:"2.0",
+				Swagger: "2.0",
 			},
 		}
 		openAPIDocumentURL := ""
@@ -63,13 +63,12 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 	})
 }
 
-
 func TestGetHost(t *testing.T) {
 	Convey("Given a specV2BackendConfiguration with the host configured", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",
-				Host: "www.some-backend.com",
+				Host:    "www.some-backend.com",
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
@@ -89,7 +88,7 @@ func TestGetHost(t *testing.T) {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",
-				Host: "",
+				Host:    "",
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
@@ -109,10 +108,10 @@ func TestGetHost(t *testing.T) {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",
-				Host: "",
+				Host:    "",
 			},
 		}
-		specV2BackendConfiguration := specV2BackendConfiguration{spec:spec, openAPIDocumentURL:""}
+		specV2BackendConfiguration := specV2BackendConfiguration{spec: spec, openAPIDocumentURL: ""}
 		Convey("When getHost method is called", func() {
 			_, err := specV2BackendConfiguration.getHost()
 			Convey("Then the error returned should NOT be nil", func() {
@@ -125,13 +124,12 @@ func TestGetHost(t *testing.T) {
 	})
 }
 
-
 func TestGetBasePath(t *testing.T) {
 	Convey("Given a specV2BackendConfiguration with the basePath configured", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
-				Swagger: "2.0",
-				Host:    "www.some-backend.com",
+				Swagger:  "2.0",
+				Host:     "www.some-backend.com",
 				BasePath: "/api",
 			},
 		}
@@ -146,15 +144,14 @@ func TestGetBasePath(t *testing.T) {
 	})
 }
 
-
 func TestGetHTTPSchemes(t *testing.T) {
 	Convey("Given a specV2BackendConfiguration with the getHTTPSchemes configured", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
-				Swagger: "2.0",
-				Host:    "www.some-backend.com",
+				Swagger:  "2.0",
+				Host:     "www.some-backend.com",
 				BasePath: "/api",
-				Schemes: []string{"http", "https"},
+				Schemes:  []string{"http", "https"},
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"

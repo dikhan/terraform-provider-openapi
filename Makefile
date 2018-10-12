@@ -32,7 +32,7 @@ vet:
 # make lint
 lint:
 	@echo "[INFO] Running golint on the current directory"
-	@go get -u github.com/golang/lint/golint
+	@go get -u golang.org/x/lint/golint
 	@golint -set_exit_status $(TEST_PACKAGES)
 
 # make test

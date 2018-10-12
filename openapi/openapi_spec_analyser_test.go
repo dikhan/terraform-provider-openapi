@@ -11,7 +11,7 @@ import (
 
 func TestCreateSpecAnalyser(t *testing.T) {
 	Convey("Given a specAnalyserVersion and a openAPIDocumentURL", t, func() {
-		specAnalyserVersion :=  specAnalyserV2
+		specAnalyserVersion := specAnalyserV2
 
 		file := initAPISpecFile(`swagger: "2.0"`)
 		defer os.Remove(file.Name())

@@ -11,7 +11,7 @@ func TestNewAPIKeySecurityDefinition(t *testing.T) {
 		secDefName := "api_header_auth"
 		specAPIKey := specAPIKey{
 			Name: "apiKeyName",
-			In: "somewhere",
+			In:   "somewhere",
 		}
 		Convey("When newAPIKeySecurityDefinition method is called", func() {
 			secDef := newAPIKeySecurityDefinition(secDefName, specAPIKey)
@@ -118,5 +118,3 @@ func TestFindSecurityDefinitionFor(t *testing.T) {
 	})
 
 }
-
-
