@@ -8,9 +8,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var apiKeyAuthProperty = newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
-var headerProperty = newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
-
 func Test(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
 		//p := providerFactory{}
@@ -79,6 +76,8 @@ func TestNewProviderFactory(t *testing.T) {
 
 func TestCreateProvider(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
@@ -113,6 +112,8 @@ func TestCreateProvider(t *testing.T) {
 
 func TestCreateTerraformProviderSchema(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
@@ -264,6 +265,8 @@ func TestCreateTerraformProviderResourceMap(t *testing.T) {
 
 func TestConfigureProvider(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
@@ -301,6 +304,8 @@ func TestConfigureProvider(t *testing.T) {
 
 func TestCreateProviderConfig(t *testing.T) {
 	Convey("Given a provider factory configured with a global header and security scheme", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		expectedSecurityDefinitions := SpecSecurityDefinitions{
 			newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
 		}
@@ -339,6 +344,8 @@ func TestCreateProviderConfig(t *testing.T) {
 	})
 
 	Convey("Given a provider factory configured with a global header and security scheme that use non terraform compliant names", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		var headerProperty = newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		var apiKeyAuthPreferredNonCompliantNameProperty = newStringSchemaDefinitionPropertyWithDefaults("apiKeyAuth", "", true, false, "someAuthValue")
 		var headerNonCompliantNameProperty = newStringSchemaDefinitionPropertyWithDefaults("headerName", "", true, false, "someHeaderValue")
 
@@ -382,8 +389,8 @@ func TestCreateProviderConfig(t *testing.T) {
 	})
 
 	Convey("Given a provider factory configured with a global header that has a preferred terraform name configured", t, func() {
-		var headerPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("header_name", "preferred_header_name", true, false, "someHeaderValue")
-
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
+		headerPreferredNameProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "preferred_header_name", true, false, "someHeaderValue")
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
