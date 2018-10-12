@@ -16,7 +16,7 @@ func TestOpenAPIProvider(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message returned should be", func() {
-				So(err.Error(), ShouldEqual, "plugin init error: error occurred when getting service configuration from plugin configuration file terraform-provider-openapi.yaml - error = 'nonExistingProvider' not found in provider's services configuration")
+				So(err.Error(), ShouldContainSubstring, "plugin init error")
 			})
 			Convey("Then the schema provider returned should also be nil", func() {
 				So(tfProvider, ShouldBeNil)
