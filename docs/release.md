@@ -75,5 +75,5 @@ If the command above fails for some reason most likely the new tag would have be
 the command again the latest tag would need to be cleaned up as follows:
 
 ````
-RELEASE_TAG=v0.1.1 make delete-tag
+$ RELEASE_TAG=v0.1.1 make delete-tag
 ````
