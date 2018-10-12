@@ -1,7 +1,7 @@
 VERSION  = $(shell cat ./version)
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
-LDFLAGS = '-s -w -extldflags "-static" -X "main.Version=$(VERSION)" -X "main.Commit=$(COMMIT)" -X "main.Date=$(DATE)"'
+LDFLAGS = '-s -w -extldflags "-static" -X "main.version=$(VERSION)" -X "main.commit=$(COMMIT)" -X "main.date=$(DATE)"'
 
 PROVIDER_NAME?=""
 TF_CMD?="plan"
