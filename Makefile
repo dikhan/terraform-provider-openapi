@@ -10,6 +10,9 @@ GOFMT_FILES?=$$(find . -name '*.go' | grep -v 'examples\|vendor')
 TF_PROVIDER_NAMING_CONVENTION="terraform-provider-"
 TF_OPENAPI_PROVIDER_PLUGIN_NAME="$(TF_PROVIDER_NAMING_CONVENTION)openapi"
 
+# By default all are included
+DC_SERVICE?=swaggercodegen-service-provider-api swagger-ui-swaggercodegen goa-service-provider-api
+
 default: build
 
 all: test build
@@ -64,7 +67,7 @@ local-env-down: fmt
 # make local-env
 local-env: fmt
 	@echo "[INFO] Bringing up local environment"
-	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate swaggercodegen-service-provider-api swagger-ui-swaggercodegen goa-service-provider-api
+	@docker-compose -f ./build/docker-compose.yml up -d --build --force-recreate $(DC_SERVICE)
 
 # make examples-container
 examples-container: local-env

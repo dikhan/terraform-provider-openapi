@@ -58,152 +58,16 @@ More information about how terraform discovers third party terraform providers a
 
 ### OpenAPI Terraform provider installation
 
-Installing the OpenAPI Terraform provider can be achieved in various ways, but for the sake of simplicity below are
-the suggested options:
+There are multiple ways how the OpenAPI Terraform provider can be installed. Please
+refer to the [OpenAPI Terraform provider installation document](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/installing_openapi_provider.md)
+to learn more about it.
 
-#### OpenAPI Terraform provider 'manual' installation
+### OpenAPI Terraform provider in action
 
-- Download most recent release for your architecture (macOS/Linux) from [release](https://github.com/dikhan/terraform-provider-openapi/releases) 
-page.
-- Extract contents of tar ball and copy the terraform-provider-openapi binary into your  ````~/.terraform.d/plugins````
-folder as described in the [Terraform documentation on how to install plugins](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
-- After installing the plugin, rename the binary file to have your provider's name:
-
-    ````
-    $ cd ~/.terraform.d/plugins
-    $ mv terraform-provider-openapi terraform-provider-<your_provider_name>
-    $ ls -la
-    total 29656
-    drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
-    drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
-    -rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-<your_provider_name>
-    ````
-
-Where ````<your_provider_name>```` should be replaced with your provider's name. This is the name that will also be used
-in the Terraform tf files to refer to the provider resources. 
-
-````
-$ cat main.tf
-resource "<your_provider_name>_<resource_name>" "my_resource" {
-    ...
-    ...
-}
-````
-
-#### OpenAPI Terraform provider 'script' installation
-
-In order to simplify the installation process for this provider, a convenient install script is provided and can also be 
-used as follows:
-
-- Check out this repo and execute the install script:
-
-````
-$ git clone git@github.com:dikhan/terraform-provider-openapi.git
-$ cd ./scripts
-$ PROVIDER_NAME=goa ./install.sh --provider-name $PROVIDER_NAME
-````
-
-- Or directly by downloading the install script using curl:
-
-````
-$ export PROVIDER_NAME=goa && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME
-````
-
-The install script will download the most recent [terraform-provider-openapi release](https://github.com/dikhan/terraform-provider-openapi/releases) 
-and install it in the terraform plugins folder ````~/.terraform.d/plugins```` as described above. The terraform plugins folder should contain the newly
-installed open api customer terraform provider with the name provider in the installation (PROVIDER_NAME=goa) ```terraform-provider-goa```.
-
-````
-$ ls -la ~/.terraform.d/plugins
-total 29656
-drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
-drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
--rwxr-xr-x  1 dikhan  staff  15182644 29 Jun 16:21 terraform-provider-goa
-````
-
-### Using the OpenAPI Terraform provider
-
-Once the OpenAPI terraform plugin is installed, you can go ahead and define a tf file that has resources exposed
-by your service provider. 
-
-The example below describes a resource of type 'bottle' provided by the 'goa' service provider. For full details about this
-example refer to [goa example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/goa).
-
-````
-$ cat main.tf
-resource "goa_bottles" "my_bottle" {
-  name = "Name of bottle"
-  rating = 3
-  vintage = 2653
-}
-````
-
-The OpenAPI terraform provider relies on the swagger file exposed by the service provider. This information can be provided
-to the plugin in two different ways:
-
-#### OTF_VAR_<provider_name>_SWAGGER_URL
-
-Terraform will need to be executed passing in the OTF_VAR_<provider_name>_SWAGGER_URL environment variable pointing at the location 
-where the swagger file is hosted, where````<your_provider_name>```` should be replaced with your provider's name. 
-
-```
-$ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
-```
-
-#### OpenAPI plugin configuration file
-
-A configuration file will need to be created in terraform plugins folder ```~/.terraform.d/plugins``` following [OpenAPI v1 plugin configuration specification](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md).
-An example is described below:
-
-```
-$ pwd
-/Users/dikhan/.terraform.d/plugins
-$ cat terraform-provider-openapi.yaml
-version: '1'
-services:
-    monitor:
-      swagger-url: http://monitor-api.com/swagger.json
-      insecure_skip_verify: true
-    cdn:
-      swagger-url: /Users/user/go/src/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/resources/swagger.yaml
-    vm:
-      swagger-url: http://vm-api.com/swagger.json
-    goa:
-      swagger-url: https://some-domain-where-swagger-is-served.com/swagger.yaml
-```
-
-This option is the recommended one when the user is managing resources provided by multiple OpenAPI providers (e,g: goa and swaggercodegen),
-since it minimizes the configuration needed when calling terraform. Hence, terraform could be executed as usual without 
-having to pass in any special environment variables like OTF_VAR_<provider_name>_SWAGGER_URL:
-
-```
-$ terraform init && terraform plan
-```
-
-## Examples
-
-Two API examples compliant with terraform are provided to make it easier to play around with this terraform provider. This
-examples can be found in the [examples folder](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples) 
-and each of them provides details on how to bring up the service and run this provider against the APIs using terraform.
-
-- [goa](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/goa): Example created using goa framework. 
-This API exposes a resource called 'bottles'
-- [swaggercodegen](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen): Example 
-created using swaggercodegen. This API exposes a resource called 'cdns'
-
-A convenient make target ``make examples-container`` is provided to bring up a container initialised with terraform and
-the example OpenAPI terraform providers (goa and swaggercodegen) already installed. This enables users of this provider to
-play around with the OpenAPI providers without messing with their local environments. The following
-command will bring up the example APIs, and a container that you can interact with:
-
- ````
-$ make examples-container
-$ root@6d7ac292eebd:/openapi# cd goa/
-$ root@6d7ac292eebd:/openapi/goa# terraform init && terraform plan
-````
-
-For more information refer to [How to set up the local environment?](./docs/local_environment.md) which contains instructions
-for learning how to bring up the example APIs and run terraform against them.
+After having provisioned your environment with the OpenAPI Terraform provider
+you can now write Terraform configuration files using resources provided
+by the OpenAPI service. Refer to [Using the OpenAPI Terraform Provider doc](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md)
+for more details.
 
 ## References
 
