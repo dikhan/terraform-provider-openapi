@@ -19,7 +19,7 @@ release:
   name_template: "v{{.Version}} {{.Env.USER}}"
   # If set to true, will mark the release as not ready for production.
   # Default is false.
-  prerelease: false
+  prerelease: true
 
 archive:
   name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
