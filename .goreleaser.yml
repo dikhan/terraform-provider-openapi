@@ -4,7 +4,7 @@ builds:
     goos:
       - darwin
       - linux
-      - windows
+      #- windows
     goarch:
       - amd64
     env:
@@ -24,9 +24,9 @@ release:
 archive:
   name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
   format: tar.gz
-  format_overrides:
-  - goos: windows
-    format: zip
+  #format_overrides:
+  #- goos: windows
+  #  format: zip
   files:
     - LICENSE
 
