@@ -16,10 +16,10 @@ builds:
     - -s -w -extldflags "-static" -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}"
 
 release:
-  name_template: "v{{.Version}} {{.Env.USER}}"
+  name_template: "v{{.Version}}"
   # If set to true, will mark the release as not ready for production.
   # Default is false.
-  prerelease: true
+  prerelease: false
 
 archive:
   name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
