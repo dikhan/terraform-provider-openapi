@@ -25,7 +25,7 @@ all: test build
 # make build
 build:
 	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
-	@CGO_ENABLED=0 go build -a -tags=netgo -ldflags=$(LDFLAGS) -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
+	@CGO_ENABLED=0 go build -tags=netgo -ldflags=$(LDFLAGS) -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
 
 # make fmt
 fmt:
