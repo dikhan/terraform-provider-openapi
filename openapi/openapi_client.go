@@ -30,7 +30,7 @@ type ClientOpenAPI interface {
 // the API when making the HTTP request
 type ProviderClient struct {
 	openAPIBackendConfiguration SpecBackendConfiguration
-	httpClient                  http_goclient.HttpClient
+	httpClient                  http_goclient.HttpClientIface
 	providerConfiguration       providerConfiguration
 	apiAuthenticator            specAuthenticator
 }
@@ -76,15 +76,14 @@ func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Respons
 }
 
 func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *specResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-
 	reqContext, err := o.apiAuthenticator.prepareAuth(resourceURL, operation.SecuritySchemes, o.providerConfiguration)
 	if err != nil {
 		return nil, err
 	}
-	reqContext.headers = o.appendOperationHeaders(operation.HeaderParameters, o.providerConfiguration, reqContext.headers)
+	o.appendOperationHeaders(operation.HeaderParameters, o.providerConfiguration, reqContext.headers)
 	log.Printf("[DEBUG] Performing %s %s", method, reqContext.url)
 
-	log.Printf("[DEBUG] Headers %s %s", method, reqContext.headers)
+	o.logHeadersSafely(reqContext.headers)
 
 	switch method {
 	case httpPost:
@@ -99,16 +98,27 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 	return nil, fmt.Errorf("method '%s' not supported", method)
 }
 
+// logHeadersSafely logs the header names sent to the APIs but the values are redacted for security reasons in case
+// values contain secrets. However, the logging will display whether the values contained data or not so it's easier
+// to debug whether the headers sent had data.
+func (o *ProviderClient) logHeadersSafely(headers map[string]string) {
+	for headerName, headerValue := range headers {
+		if headerValue == "" {
+			log.Printf("[DEBUG] Request Header '%s' sent with empty value :(", headerName)
+		}
+		log.Printf("[DEBUG] Request Header '%s' sent", headerName)
+	}
+}
+
 // appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
 // are retrieved from the provider configuration.
-func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderParam, providerConfig providerConfiguration, headers map[string]string) map[string]string {
+func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderParam, providerConfig providerConfiguration, headers map[string]string) {
 	if operationHeaders != nil && len(operationHeaders) > 0 {
 		for _, headerParam := range operationHeaders {
 			// Setting the actual name of the header with the expectedValue coming from the provider configuration
 			headers[headerParam.Name] = providerConfig.getHeaderValueFor(headerParam)
 		}
 	}
-	return headers
 }
 
 func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {

@@ -3,6 +3,7 @@ package openapi
 // specStubResource is a stub implementation of SpecResource interface which is used for testing purposes
 type specStubResource struct {
 	name                    string
+	host                    string
 	path                    string
 	shouldIgnore            bool
 	schemaDefinition        *specSchemaDefinition
@@ -55,5 +56,5 @@ func (s *specStubResource) getTimeouts() (*specTimeouts, error) {
 }
 
 func (s *specStubResource) getHost() (string, error) {
-	return "", nil
+	return s.host, nil
 }

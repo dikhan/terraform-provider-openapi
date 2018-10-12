@@ -124,7 +124,7 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 		openAPIClient := &ProviderClient{
 			openAPIBackendConfiguration: openAPIBackendConfiguration,
 			apiAuthenticator:            authenticator,
-			httpClient:                  http_goclient.HttpClient{HttpClient: &http.Client{}},
+			httpClient:                  &http_goclient.HttpClient{HttpClient: &http.Client{}},
 			providerConfiguration:       *config,
 		}
 		return openAPIClient, nil

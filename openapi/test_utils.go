@@ -18,7 +18,7 @@ var boolProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", 
 var sliceProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, []string{"value1"})
 
 // testing properties with special configuration
-var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_property", true, false, "updatedValue")
+var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_preferred_property", true, false, "updatedValue")
 var nonImmutableProperty = newStringSchemaDefinitionPropertyWithDefaults("other_string_property", "", true, false, "newValue")
 var someIdentifierProperty = newStringSchemaDefinitionProperty("somePropertyThatShouldBeUsedAsID", "", true, true, false, false, false, true, false, "idValue")
 var immutableProperty = newStringSchemaDefinitionProperty("string_immutable_property", "", true, false, false, false, true, false, false, "updatedImmutableValue")

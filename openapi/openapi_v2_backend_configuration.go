@@ -14,7 +14,7 @@ type specV2BackendConfiguration struct {
 
 func newOpenAPIBackendConfigurationV2(spec *spec.Swagger, openAPIDocumentURL string) (*specV2BackendConfiguration, error) {
 	if spec.Swagger != "2.0" {
-		return nil, fmt.Errorf("swagger version '%s' not supported, specV2BackendConfiguration only supports 2.0 ", spec.Swagger)
+		return nil, fmt.Errorf("swagger version '%s' not supported, specV2BackendConfiguration only supports 2.0", spec.Swagger)
 	}
 	if openAPIDocumentURL == "" {
 		return nil, fmt.Errorf("missing mandatory parameter openAPIDocumentURL")

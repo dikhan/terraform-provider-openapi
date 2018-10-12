@@ -11,9 +11,9 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// APIProvider returns a terraform.ResourceProvider.
-func APIProvider(providerName string) (*schema.Provider, error) {
-	providerName, serviceConfiguration, err := getProviderNameAndServiceConfiguration(providerName)
+// ProviderOpenAPI returns a terraform.ResourceProvider.
+func ProviderOpenAPI(providerName string) (*schema.Provider, error) {
+	serviceConfiguration, err := getServiceConfiguration(providerName)
 	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
@@ -40,15 +40,15 @@ func APIProvider(providerName string) (*schema.Provider, error) {
 // This function is implemented with temporary code thus it can serve as an example
 // on how the same code base can be used by binaries of this same provider named differently
 // but internally each will end up calling a different service provider's api
-func getProviderNameAndServiceConfiguration(providerName string) (string, ServiceConfiguration, error) {
+func getServiceConfiguration(providerName string) (ServiceConfiguration, error) {
 	var serviceConfiguration ServiceConfiguration
 	pluginConfiguration, err := NewPluginConfiguration(providerName)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	serviceConfiguration, err = pluginConfiguration.getServiceConfiguration()
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	if serviceConfiguration.IsInsecureSkipVerifyEnabled() {
@@ -60,5 +60,5 @@ func getProviderNameAndServiceConfiguration(providerName string) (string, Servic
 	}
 
 	log.Printf("[INFO] Provider %s is using the following swagger file: %s", providerName, serviceConfiguration.GetSwaggerURL())
-	return providerName, serviceConfiguration, nil
+	return serviceConfiguration, nil
 }

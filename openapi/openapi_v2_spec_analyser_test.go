@@ -9,6 +9,22 @@ import (
 	"testing"
 )
 
+func TestSpecV2Analyser(t *testing.T) {
+	Convey("Given a openAPIDocumentURL and a swagger doc object", t, func() {
+		openAPIDocumentURL := ""
+		d := &loads.Document{}
+		Convey("When specV2Analyser method is constructed", func() {
+			specV2Analyser := &specV2Analyser{
+				openAPIDocumentURL: openAPIDocumentURL,
+				d:                  d,
+			}
+			Convey("Then the specV2Analyser should comply with SpecAnalyser interface", func() {
+				var _ SpecAnalyser = specV2Analyser
+			})
+		})
+	})
+}
+
 func TestIsMultiRegionResource(t *testing.T) {
 	Convey("Given a specV2Analyser and a resource root has a POST operation containing the x-terraform-resource-host with a parametrized host containing region variable", t, func() {
 		serviceProviderName := "serviceProviderName"

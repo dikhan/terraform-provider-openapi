@@ -55,7 +55,7 @@ pre-requirements:
 	@echo "[INFO] Creating $(TF_INSTALLED_PLUGINS_PATH) if it does not exist"
 	@[ -d $(TF_INSTALLED_PLUGINS_PATH) ] || mkdir -p $(TF_INSTALLED_PLUGINS_PATH)
 
-# make install
+# PROVIDER_NAME="goa" make install
 install: build pre-requirements
 	$(call install_plugin,$(PROVIDER_NAME))
 
