@@ -11,7 +11,16 @@ import (
 	"regexp"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
+
+	log.Printf("Running OpenAPI Terraform Provider v%s-%s; Released on: %s", version, commit, date)
+
 	providerName, err := getProviderName()
 	if err != nil {
 		log.Fatalf("[ERROR] There was an error when getting the provider's name: %s", err)

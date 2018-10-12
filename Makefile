@@ -1,3 +1,11 @@
+VERSION  = $(shell cat ./version)
+GITHUB_VERSION=v$(VERSION)
+RELEASE_TAG?="$(GITHUB_VERSION)"
+RELEASE_MESSAGE?="$(GITHUB_VERSION)"
+COMMIT :=$(shell git rev-parse --verify --short HEAD)
+DATE :=$(shell date +'%FT%TZ%z')
+LDFLAGS = '-s -w -extldflags "-static" -X "main.version=$(VERSION)" -X "main.commit=$(COMMIT)" -X "main.date=$(DATE)"'
+
 PROVIDER_NAME?=""
 TF_CMD?="plan"
 
@@ -20,7 +28,7 @@ all: test build
 # make build
 build:
 	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
-	@go build -ldflags="-s -w" -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
+	@CGO_ENABLED=0 go build -tags=netgo -ldflags=$(LDFLAGS) -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
 
 # make fmt
 fmt:
