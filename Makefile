@@ -1,8 +1,7 @@
 VERSION  = $(shell cat ./version)
-RELEASE :=$(shell git rev-parse --verify --short HEAD)
-BUILD    = $(VERSION)-$(RELEASE)
-
-LDFLAGS = '-s -w -X "main.Build=$(BUILD)"'
+COMMIT :=$(shell git rev-parse --verify --short HEAD)
+DATE :=$(shell date +'%FT%TZ%z')
+LDFLAGS = '-s -w -X "main.Version=$(VERSION)" -X "main.Commit=$(COMMIT)" -X "main.Date=$(DATE)"'
 
 PROVIDER_NAME?=""
 TF_CMD?="plan"

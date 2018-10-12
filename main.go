@@ -12,12 +12,14 @@ import (
 )
 
 var (
-	Build string
+	Version string
+	Commit string
+	Date string
 )
 
 func main() {
 
-	log.Printf("OpenAPI Terraform Provider v%s", Build)
+	log.Printf("Running OpenAPI Terraform Provider v%s-%s; Released on: %s", Version, Commit, Date)
 
 	providerName, err := getProviderName()
 	if err != nil {
