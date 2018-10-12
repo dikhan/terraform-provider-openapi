@@ -1,3 +1,9 @@
+VERSION  = $(shell cat ./version)
+RELEASE :=$(shell git rev-parse --verify --short HEAD)
+BUILD    = $(VERSION)-$(RELEASE)
+
+LDFLAGS = '-s -w -X "main.Build=$(BUILD)"'
+
 PROVIDER_NAME?=""
 TF_CMD?="plan"
 
@@ -20,7 +26,7 @@ all: test build
 # make build
 build:
 	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
-	@go build -ldflags="-s -w" -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
+	@go build -ldflags=$(LDFLAGS) -o $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)
 
 # make fmt
 fmt:
