@@ -13,6 +13,8 @@ RUN apt-get update && \
     rm -rf /var/cache/apk/* && \
     rm -rf /var/tmp/*
 
+COPY version /
+
 # provision openapi plugins
 RUN export PROVIDER_NAME=goa && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME
 RUN export PROVIDER_NAME=swaggercodegen && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME
