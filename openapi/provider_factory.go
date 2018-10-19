@@ -56,6 +56,20 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 // - specific headers used in operations
 func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
+
+	// Add all security definitions as optional properties
+	securityDefinitions, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
+	if err != nil {
+		return nil, err
+	}
+	for _, securityDefinition := range *securityDefinitions {
+		s[securityDefinition.getTerraformConfigurationName()] = &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		}
+	}
+
+	// Override security definitions to required if they are global security schemes
 	globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
 	if err != nil {
 		return nil, err

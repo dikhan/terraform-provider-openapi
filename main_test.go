@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestGetProviderName(t *testing.T) {

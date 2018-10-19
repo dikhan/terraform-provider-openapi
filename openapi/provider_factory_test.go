@@ -146,24 +146,21 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a provider factory tht is configured with headers/security props that don't have compliant names", t, func() {
-		var apiKeyAuthPreferredNonCompliantNameProperty = "apiKeyAuth"
-		var headerNonCompliantNameProperty = "headerName"
+	Convey("Given a provider factory tht is configured with security definitions that are not all part of the global schemes", t, func() {
+		var globalSecurityDefinitionName = "apiKeyAuth"
+		var otherSecurityDefinitionName = "otherSecurityDefinitionName"
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
-				headers: SpecHeaderParameters{
-					SpecHeaderParam{
-						Name: headerNonCompliantNameProperty,
-					},
-				},
+				headers: SpecHeaderParameters{},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthPreferredNonCompliantNameProperty, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(globalSecurityDefinitionName, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(otherSecurityDefinitionName, "Authorization2"),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
-							apiKeyAuthPreferredNonCompliantNameProperty: []string{""},
+							globalSecurityDefinitionName: []string{""},
 						},
 					}),
 				},
@@ -176,7 +173,13 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			})
 			Convey("And the provider schema for the resource should contain the expected attributes with names automatically converted to be compliant", func() {
 				So(providerSchema, ShouldContainKey, "api_key_auth")
-				So(providerSchema, ShouldContainKey, "header_name")
+				So(providerSchema, ShouldContainKey, "other_security_definition_name")
+			})
+			Convey("And the api_key_auth should be required as it's a global scheme", func() {
+				So(providerSchema["api_key_auth"].Required, ShouldBeTrue)
+			})
+			Convey("And the other_security_definition_name should be optional as it's not referred in the global schemes", func() {
+				So(providerSchema["other_security_definition_name"].Optional, ShouldBeTrue)
 			})
 		})
 	})
