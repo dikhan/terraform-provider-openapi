@@ -54,6 +54,7 @@ func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 		Read:     r.read,
 		Delete:   r.delete,
 		Update:   r.update,
+		Importer: r.importer(),
 		Timeouts: timeouts,
 	}, nil
 }
@@ -186,6 +187,17 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	}
 
 	return nil
+}
+
+func (r resourceFactory) importer() *schema.ResourceImporter {
+	return &schema.ResourceImporter{
+		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
+			results := make([]*schema.ResourceData, 1, 1)
+			results[0] = data
+			err := r.read(data, i)
+			return results, err
+		},
+	}
 }
 
 func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]interface{}, resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI, operation *specResourceOperation, responseStatusCode int, timeoutFor string) error {
