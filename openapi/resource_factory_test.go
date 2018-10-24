@@ -375,6 +375,38 @@ func TestDelete(t *testing.T) {
 	})
 }
 
+func TestImporter(t *testing.T) {
+	Convey("Given a resource factory", t, func() {
+		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
+		Convey("When importer is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				data, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should be nil", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("And the data list returned should have one item", func() {
+					So(len(data), ShouldEqual, 1)
+				})
+				Convey("And the data returned should contained the imported id field with the right value", func() {
+					So(data[0].Get(idProperty.Name), ShouldEqual, idProperty.Default)
+				})
+				Convey("And the data returned should contained the imported string field with the right value returned from the API", func() {
+					So(data[0].Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+				})
+			})
+		})
+	})
+}
+
 func TestHandlePollingIfConfigured(t *testing.T) {
 	Convey("Given a resource factory configured with a resource which has a schema definition containing a status property", t, func() {
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
