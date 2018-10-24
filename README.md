@@ -52,7 +52,7 @@ rather than the tooling around it.
 
 - Terraform expects third party providers to be manually installed in the '.terraform.d/plugins' sub-path in your user's home directory.
 - Terraform expects terraform provider names to follow a specific naming scheme. The naming scheme for plugins is 
-terraform-<type>-NAME_vX.Y.Z, where type is either provider or provisioner. 
+``terraform-<type>-NAME_vX.Y.Z``, where type is either provider or provisioner. 
 
 More information about how terraform discovers third party terraform providers and naming conventions [here](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
 
