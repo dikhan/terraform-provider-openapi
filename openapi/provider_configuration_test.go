@@ -19,7 +19,10 @@ func TestNewProviderConfiguration(t *testing.T) {
 		}
 		data := newTestSchema(stringProperty, stringWithPreferredNameProperty, headerProperty).getResourceData(t)
 		Convey("When newProviderConfiguration method is called", func() {
-			providerConfiguration := newProviderConfiguration(headers, securitySchemaDefinitions, data)
+			providerConfiguration, err := newProviderConfiguration(headers, securitySchemaDefinitions, data)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("Then the providerConfiguration headers should contain the configured header with the right value", func() {
 				So(providerConfiguration.Headers, ShouldContainKey, headerProperty.getTerraformCompliantPropertyName())
 				So(providerConfiguration.Headers[headerProperty.getTerraformCompliantPropertyName()], ShouldEqual, headerProperty.Default)
@@ -31,6 +34,43 @@ func TestNewProviderConfiguration(t *testing.T) {
 			Convey("And the providerConfiguration securitySchemaDefinitions should contain the configured stringWithPreferredNameProperty security definitions with the right value", func() {
 				So(providerConfiguration.SecuritySchemaDefinitions, ShouldContainKey, stringWithPreferredNameProperty.getTerraformCompliantPropertyName())
 				So(providerConfiguration.SecuritySchemaDefinitions[stringWithPreferredNameProperty.getTerraformCompliantPropertyName()].getContext().(apiKey).value, ShouldEqual, stringWithPreferredNameProperty.Default)
+			})
+		})
+	})
+
+	Convey("Given securitySchemaDefinitions and a schema ResourceData not containing values for the security definitions", t, func() {
+		headers := SpecHeaderParameters{}
+		securitySchemaDefinitions := &SpecSecurityDefinitions{
+			newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
+		}
+		data := newTestSchema().getResourceData(t)
+		Convey("When newProviderConfiguration method is called", func() {
+			_, err := newProviderConfiguration(headers, securitySchemaDefinitions, data)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Adn the error message returned should be equal to", func() {
+				So(err.Error(), ShouldEqual, "security schema definition 'string_property' is missing the value, please make sure this value is provided in the terraform configuration")
+			})
+		})
+	})
+
+	Convey("Given a headers a SpecHeaderParameters and a schema ResourceData not containing values for the security definitions", t, func() {
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("headerProperty", "header_property", true, false, "updatedValue")
+		headers := SpecHeaderParameters{
+			SpecHeaderParam{
+				Name: headerProperty.getTerraformCompliantPropertyName(),
+			},
+		}
+		securitySchemaDefinitions := &SpecSecurityDefinitions{}
+		data := newTestSchema().getResourceData(t)
+		Convey("When newProviderConfiguration method is called", func() {
+			_, err := newProviderConfiguration(headers, securitySchemaDefinitions, data)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Adn the error message returned should be equal to", func() {
+				So(err.Error(), ShouldEqual, "header parameter 'header_property' is missing the value, please make sure this value is provided in the terraform configuration")
 			})
 		})
 	})

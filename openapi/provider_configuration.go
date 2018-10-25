@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -17,7 +18,7 @@ type providerConfiguration struct {
 
 // createProviderConfig returns a providerConfiguration populated with the values provided by the user in the provider's terraform
 // configuration mapped to the corresponding
-func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefinitions *SpecSecurityDefinitions, data *schema.ResourceData) *providerConfiguration {
+func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefinitions *SpecSecurityDefinitions, data *schema.ResourceData) (*providerConfiguration, error) {
 	providerConfiguration := &providerConfiguration{}
 	providerConfiguration.Headers = map[string]string{}
 	providerConfiguration.SecuritySchemaDefinitions = map[string]specAPIKeyAuthenticator{}
@@ -27,6 +28,8 @@ func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefini
 			secDefTerraformCompliantName := secDef.getTerraformConfigurationName()
 			if value, exists := data.GetOkExists(secDefTerraformCompliantName); exists {
 				providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = createAPIKeyAuthenticator(secDef, value.(string))
+			} else {
+				return nil, fmt.Errorf("security schema definition '%s' is missing the value, please make sure this value is provided in the terraform configuration", secDefTerraformCompliantName)
 			}
 		}
 	}
@@ -36,10 +39,12 @@ func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefini
 			headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
 			if value, exists := data.GetOkExists(headerTerraformCompliantName); exists {
 				providerConfiguration.Headers[headerTerraformCompliantName] = value.(string)
+			} else {
+				return nil, fmt.Errorf("header parameter '%s' is missing the value, please make sure this value is provided in the terraform configuration", headerTerraformCompliantName)
 			}
 		}
 	}
-	return providerConfiguration
+	return providerConfiguration, nil
 }
 
 func (p *providerConfiguration) getAuthenticatorFor(s SpecSecurityScheme) specAPIKeyAuthenticator {

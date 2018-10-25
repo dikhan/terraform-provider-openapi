@@ -67,6 +67,7 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 			Type:     schema.TypeString,
 			Optional: true,
 		}
+		log.Printf("[DEBUG] registered optional security definition '%s' into provider schema", securityDefinition.getTerraformConfigurationName())
 	}
 
 	// Override security definitions to required if they are global security schemes
@@ -79,6 +80,7 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 			Type:     schema.TypeString,
 			Required: true,
 		}
+		log.Printf("[DEBUG] registered required security scheme '%s' into provider schema", securityScheme.getTerraformConfigurationName())
 	}
 	headers, err := p.specAnalyser.GetAllHeaderParameters()
 	if err != nil {
@@ -158,7 +160,10 @@ func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*provi
 	if err != nil {
 		return nil, err
 	}
-	providerConfiguration := newProviderConfiguration(headers, securityDefinitions, data)
+	providerConfiguration, err := newProviderConfiguration(headers, securityDefinitions, data)
+	if err != nil {
+		return nil, err
+	}
 	return providerConfiguration, nil
 }
 
