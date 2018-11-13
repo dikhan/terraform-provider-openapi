@@ -141,7 +141,7 @@ func TestCreate(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error returned should be", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] POST /v1/resource failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [201 202] ()")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] POST /v1/resource failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 201 202] ()")
 			})
 		})
 

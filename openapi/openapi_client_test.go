@@ -111,6 +111,29 @@ func TestGetResourceIDURL(t *testing.T) {
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s/%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
 			})
 		})
+
+		Convey("When getResourceIDURL with a specResource containing trailing / in the path and and ID", func() {
+			expectedID := "1234"
+			expectedPath := "/v1/resource/"
+			specStubResource := &specStubResource{
+				path: expectedPath,
+				resourcePostOperation: &specResourceOperation{
+					HeaderParameters: SpecHeaderParameters{},
+					responses:        specResponses{},
+					SecuritySchemes:  SpecSecuritySchemes{},
+				},
+			}
+			resourceURL, err := providerClient.getResourceIDURL(specStubResource, expectedID)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then resourceURL should equal", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
+			})
+		})
 	})
 }
 
