@@ -170,5 +170,8 @@ func (o ProviderClient) getResourceIDURL(resource SpecResource, id string) (stri
 	if err != nil {
 		return "", err
 	}
+	if strings.HasSuffix(url, "/") {
+		return fmt.Sprintf("%s%s", url, id), nil
+	}
 	return fmt.Sprintf("%s/%s", url, id), nil
 }
