@@ -91,7 +91,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusCreated, http.StatusAccepted}); err != nil {
+	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), err)
 	}
 
