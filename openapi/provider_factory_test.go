@@ -143,6 +143,9 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				So(providerSchema, ShouldContainKey, apiKeyAuthProperty.Name)
 				So(providerSchema, ShouldContainKey, headerProperty.Name)
 			})
+			Convey("And the provider schema default function should not be nil", func() {
+				So(providerSchema[apiKeyAuthProperty.Name].DefaultFunc, ShouldNotBeNil)
+			})
 		})
 	})
 
@@ -180,6 +183,10 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			})
 			Convey("And the other_security_definition_name should be optional as it's not referred in the global schemes", func() {
 				So(providerSchema["other_security_definition_name"].Optional, ShouldBeTrue)
+			})
+			Convey("And the provider schema default function for all the properties", func() {
+				So(providerSchema["api_key_auth"].DefaultFunc, ShouldNotBeNil)
+				So(providerSchema["other_security_definition_name"].DefaultFunc, ShouldNotBeNil)
 			})
 		})
 	})
