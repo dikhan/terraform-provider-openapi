@@ -1,25 +1,12 @@
 # Using the OpenAPI Terraform provider
 
-Once the OpenAPI terraform plugin is installed, you can go ahead and define a tf file that has resources exposed
-by your service provider.
-
-The example below describes a resource of type 'bottle' provided by the 'goa' service provider. For full details about this
-example refer to [goa example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/goa).
-
-````
-$ cat main.tf
-resource "goa_bottles" "my_bottle" {
-  name = "Name of bottle"
-  rating = 3
-  vintage = 2653
-}
-````
+## OpenAPI configuration
 
 The OpenAPI terraform provider relies on the swagger file exposed by the service provider to
 configure itself dynamically at runtime. This information can be provided to the plugin in two
 different ways:
 
-## OTF_VAR_<provider_name>_SWAGGER_URL
+### OTF_VAR_<provider_name>_SWAGGER_URL
 
 Terraform will need to be executed passing in the OTF_VAR_<provider_name>_SWAGGER_URL environment variable pointing at the location
 where the swagger file is hosted, where````<your_provider_name>```` should be replaced with your provider's name.
@@ -28,7 +15,7 @@ where the swagger file is hosted, where````<your_provider_name>```` should be re
 $ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
 ```
 
-## OpenAPI plugin configuration file
+### OpenAPI plugin configuration file
 
 A configuration file can be used to describe multiple OpenAPI service configurations
 including where the swagger file is hosted as well as other meatada (e,g: insecure_skip_verify). This
@@ -62,7 +49,186 @@ having to pass in any special environment variables like OTF_VAR_<provider_name>
 $ terraform init && terraform plan
 ```
 
-# Examples
+## OpenAPI Terraform provider configuration
+
+Once the OpenAPI terraform plugin is installed, you can go ahead and define a tf file that has resources exposed
+by your service provider.
+
+### Example Usage
+
+The example below describes a resource of type 'cdn_v1' provided by the 'swaggercodegen' service provider. For full details about this
+example refer to [goa example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen).
+
+````
+provider "swaggercodegen" {
+  apikey_auth = "${var.apikey_auth}"
+  x_request_id = "request header value for POST /v1/cdns"
+}
+
+resource "swaggercodegen_cdn_v1" "my_cdn" {
+  label = "label" ## This is an immutable property (refer to swagger file)
+  ips = ["127.0.0.1"] ## This is a force-new property (refer to swagger file)
+  hostnames = ["origin.com"]
+}
+````
+
+### Configuration
+
+The terraform provider supports the following configurations:
+
+- Authentication
+- Headers
+
+However, the above will only be available if the swagger file describes them accordingly
+as described below.
+
+#### Authentication
+
+The authentication is described in the swagger file under the security definitions section. Additionally,
+the security definitions can be attached to the global security scheme making the
+authentication mandatory for all the end points exposed (unless overridden in any operation).
+
+In the below example, the swagger file has one security definition named ```apikey_auth```
+that defines some basic authentication. On the other hand, there's also a global 'security'
+definition which has the ```apikey_auth``` attached.
+
+````
+swagger: "2.0"
+
+paths:
+ ...
+ ...
+
+security:
+  - apikey_auth: []
+
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+````
+
+The above will translate into the following configuration for the
+terraform provider:
+
+````
+provider "swaggercodegen" {
+  apikey_auth = "..."
+}
+````
+
+As you can see above, the provider automatically detects that the swagger
+has a global scheme and automatically exposes that as part of the terraform
+provider configuration allowing the user to provider the right values
+and therefore be able to authenticate properly when creating resources
+provider by the aforementioned provider.
+
+Note: A global security scheme makes the authentication required as far as
+the terraform provider is concerned. If there are no global security schemes
+defined and there are just security definitions, these can also be configured
+via the terraform provider but will be optional.
+
+The OpenAPI provider offers a flexible means of providing credentials for authentication.
+The following methods are supported, in this order, and explained below:
+
+- Static credentials
+- Environment variables
+
+##### Static credentials
+
+Static credentials can be provided by adding the global security scheme in-line in the
+OpenAPI provider block:
+
+Usage:
+
+````
+provider "swaggercodegen" {
+  apikey_auth = "apiKeyValue"
+}
+````
+
+##### Environment variables
+
+You can provide the auth credentials via environment variables representing
+the security definition in the swagger file. For instance, in the case above the
+security definition name is ```apikey_auth``` and the corresponding environment
+variable name would be ```APIKEY_AUTH```.
+
+````
+provider "swaggercodegen" {}
+````
+
+Usage:
+
+````
+$ export APIKEY_AUTH="apiKeyValue"
+$ terraform plan
+````
+
+#### Headers
+
+Similarly to the authentication configuration, the provider can also be
+configured with headers required by certain operations as described in the [xTerraformHeader](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformHeader)
+
+````
+swagger: "2.0"
+
+paths:
+/resource:
+  post:
+  ...
+  - in: "body"
+    ...
+  - in: "header"
+    name: "X-Request-ID" # This header will be send along with the request when making the POST request against the '/resource' API
+    required: true
+    x-terraform-header: x_request_id
+    responses:
+      ...
+    ...
+  ...
+````
+
+These headers can be configured in the same manner as the authentication
+both using static values or using environment variables.
+
+##### Static credentials
+
+Static header values can be provided by adding the header name in-line in the
+OpenAPI provider block:
+
+Usage:
+
+````
+provider "swaggercodegen" {
+  x_request_id = "some value for the header"
+}
+````
+
+##### Environment variables
+
+You can provide the header values via environment variables representing
+the headers described in the swagger file. For instance, in the case above the
+header name is ```x_request_id``` as defined in the extension ```x-terraform-header```
+value and the corresponding environment variable name would be ```X_REQUEST_ID```.
+
+Note: if the extension ```x-terraform-header``` is not present, the name
+of the header will be translated in a terraform compliant name (snake_case pattern)
+and the environment variable name will match that name in upper case.
+
+````
+provider "swaggercodegen" {}
+````
+
+Usage:
+
+````
+$ export X_REQUEST_ID="some value for the header"
+$ terraform plan
+````
+
+## Examples
 
 Two API examples compliant with terraform are provided to make it easier to play around with this terraform provider. This
 examples can be found in the [examples folder](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples)
