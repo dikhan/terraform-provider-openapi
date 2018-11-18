@@ -3,7 +3,6 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
-
 	"net/http"
 
 	"github.com/dikhan/http_goclient"
@@ -63,11 +62,9 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 		return nil, err
 	}
 	for _, securityDefinition := range *securityDefinitions {
-		s[securityDefinition.getTerraformConfigurationName()] = &schema.Schema{
-			Type:     schema.TypeString,
-			Optional: true,
-		}
-		log.Printf("[DEBUG] registered optional security definition '%s' into provider schema", securityDefinition.getTerraformConfigurationName())
+		secDefName := securityDefinition.getTerraformConfigurationName()
+		s[secDefName] = terraformutils.CreateStringSchema(secDefName, false)
+		log.Printf("[DEBUG] registered optional security definition '%s' into provider schema", secDefName)
 	}
 
 	// Override security definitions to required if they are global security schemes
@@ -76,11 +73,9 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 		return nil, err
 	}
 	for _, securityScheme := range globalSecuritySchemes {
-		s[securityScheme.getTerraformConfigurationName()] = &schema.Schema{
-			Type:     schema.TypeString,
-			Required: true,
-		}
-		log.Printf("[DEBUG] registered required security scheme '%s' into provider schema", securityScheme.getTerraformConfigurationName())
+		securityScheme := securityScheme.getTerraformConfigurationName()
+		s[securityScheme] = terraformutils.CreateStringSchema(securityScheme, true)
+		log.Printf("[DEBUG] registered required security scheme '%s' into provider schema", securityScheme)
 	}
 	headers, err := p.specAnalyser.GetAllHeaderParameters()
 	if err != nil {
@@ -88,10 +83,8 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
-		s[headerTerraformCompliantName] = &schema.Schema{
-			Type:     schema.TypeString,
-			Optional: true,
-		}
+		s[headerTerraformCompliantName] = terraformutils.CreateStringSchema(headerTerraformCompliantName, false)
+		log.Printf("[DEBUG] registered optional header configuration '%s' into provider schema", headerTerraformCompliantName)
 	}
 	return s, nil
 }

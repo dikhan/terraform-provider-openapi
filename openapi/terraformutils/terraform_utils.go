@@ -2,9 +2,12 @@ package terraformutils
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/go-homedir"
 	"log"
+	"os"
+	"strings"
 )
 
 const terraformPluginVendorDir = "terraform.d/plugins"
@@ -38,4 +41,34 @@ func (t *TerraformUtils) GetTerraformPluginsVendorDir() (string, error) {
 func ConvertToTerraformCompliantName(name string) string {
 	compliantName := strcase.ToSnake(name)
 	return compliantName
+}
+
+// createSchema creates a terraform schema configured based upon the parameters passed in
+func createSchema(propertyName string, schemaType schema.ValueType, required bool) *schema.Schema {
+	s := &schema.Schema{
+		Type:        schemaType,
+		DefaultFunc: envDefaultFunc(propertyName, nil),
+	}
+	if required {
+		s.Required = true
+	} else {
+		s.Optional = true
+	}
+	return s
+}
+
+// CreateStringSchema creates a terraform schema of type string configured based upon the parameters passed in
+func CreateStringSchema(propertyName string, required bool) *schema.Schema {
+	return createSchema(propertyName, schema.TypeString, required)
+}
+
+func envDefaultFunc(k string, defaultValue interface{}) schema.SchemaDefaultFunc {
+	return func() (interface{}, error) {
+		key := strings.ToUpper(k)
+		if v := os.Getenv(key); v != "" {
+			return v, nil
+		}
+
+		return defaultValue, nil
+	}
 }
