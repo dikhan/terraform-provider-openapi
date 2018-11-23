@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"net/http"
 	"testing"
 
 	"os"
@@ -10,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"log"
-	"net/http"
 )
 
 var exampleSwaggerFile string
@@ -54,6 +54,10 @@ func testAccPreCheck(t *testing.T) {
 	if otfVarInsecureSkipVerifyEnvVariableValue != "true" {
 		t.Fatalf("env variable '%s' must be set to true for acceptance tests", otfVarInsecureSkipVerifyEnvVariable)
 	}
+	testAccPreCheckBackend(t)
+}
+
+func testAccPreCheckBackend(t *testing.T) {
 	versionEndpoint := "https://localhost:8443/version"
 	res, err := http.Get(versionEndpoint)
 	if err != nil {
