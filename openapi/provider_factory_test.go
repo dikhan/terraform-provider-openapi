@@ -21,11 +21,12 @@ func Test(t *testing.T) {
 }
 
 func TestNewProviderFactory(t *testing.T) {
-	Convey("Given a provider name and an analyser", t, func() {
+	Convey("Given a provider name, an analyser and the service config", t, func() {
 		providerName := "provider"
 		analyser := &specAnalyserStub{}
+		serviceConfig := &ServiceConfigV1{}
 		Convey("When newProviderFactory is called ", func() {
-			p, err := newProviderFactory(providerName, analyser)
+			p, err := newProviderFactory(providerName, analyser, serviceConfig)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -34,11 +35,12 @@ func TestNewProviderFactory(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a provider name that is empty and an analyser", t, func() {
+	Convey("Given a provider name that is empty, an analyser and the service config", t, func() {
 		providerName := ""
 		analyser := &specAnalyserStub{}
+		serviceConfig := &ServiceConfigV1{}
 		Convey("When newProviderFactory is called ", func() {
-			_, err := newProviderFactory(providerName, analyser)
+			_, err := newProviderFactory(providerName, analyser, serviceConfig)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -47,11 +49,12 @@ func TestNewProviderFactory(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a provider name that is not terraform compliant and an analyser", t, func() {
+	Convey("Given a provider name that is not terraform compliant, an analyser and the service config", t, func() {
 		providerName := "someNonTerraformCompliantName"
 		analyser := &specAnalyserStub{}
+		serviceConfig := &ServiceConfigV1{}
 		Convey("When newProviderFactory is called ", func() {
-			_, err := newProviderFactory(providerName, analyser)
+			_, err := newProviderFactory(providerName, analyser, serviceConfig)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -60,15 +63,29 @@ func TestNewProviderFactory(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a provider name and a nil analyser", t, func() {
+	Convey("Given a provider name, a nil analyser and the service config", t, func() {
 		providerName := "provider"
 		Convey("When newProviderFactory is called ", func() {
-			_, err := newProviderFactory(providerName, nil)
+			_, err := newProviderFactory(providerName, nil, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the provider returned should NOT be nil", func() {
 				So(err.Error(), ShouldEqual, "provider missing an OpenAPI Spec Analyser")
+			})
+		})
+	})
+
+	Convey("Given a provider name, an analyser and a nil service config", t, func() {
+		providerName := "provider"
+		analyser := &specAnalyserStub{}
+		Convey("When newProviderFactory is called ", func() {
+			_, err := newProviderFactory(providerName, analyser, nil)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the provider returned should NOT be nil", func() {
+				So(err.Error(), ShouldEqual, "provider missing the service configuration")
 			})
 		})
 	})
@@ -97,6 +114,7 @@ func TestCreateProvider(t *testing.T) {
 					}),
 				},
 			},
+			serviceConfiguration: serviceConfigStub{},
 		}
 		Convey("When createProvider is called ", func() {
 			p, err := p.createProvider()
@@ -133,6 +151,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					}),
 				},
 			},
+			serviceConfiguration: serviceConfigStub{},
 		}
 		Convey("When createTerraformProviderSchema is called ", func() {
 			providerSchema, err := p.createTerraformProviderSchema()
@@ -168,6 +187,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					}),
 				},
 			},
+			serviceConfiguration: serviceConfigStub{},
 		}
 		Convey("When createTerraformProviderSchema is called ", func() {
 			providerSchema, err := p.createTerraformProviderSchema()

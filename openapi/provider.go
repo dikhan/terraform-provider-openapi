@@ -25,7 +25,7 @@ func ProviderOpenAPI(providerName string) (*schema.Provider, error) {
 		return nil, fmt.Errorf("plugin OpenAPI spec analyser error: %s", err)
 	}
 
-	providerFactory, err := newProviderFactory(providerName, openAPISpecAnalyser)
+	providerFactory, err := newProviderFactory(providerName, openAPISpecAnalyser, serviceConfiguration)
 	if err != nil {
 		return nil, fmt.Errorf("plugin provider factory init error: %s", err)
 	}

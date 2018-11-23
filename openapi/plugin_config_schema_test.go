@@ -228,6 +228,7 @@ services:
   test:
     swagger-url: %s
     insecure_skip_verify: %t
+    schema_configuration: []
 `, expectedURL, expectedInscureSkipVerify)
 				So(string(marshalConfig), ShouldEqual, expectedConfig)
 			})
