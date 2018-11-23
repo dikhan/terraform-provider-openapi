@@ -3,5 +3,11 @@ services:
   swaggercodegen:
     swagger-url: https://swaggercodegen-service-provider-api.com/swagger.yaml
     insecure_skip_verify: true
+    schema_configuration:
+    - schema_property_name: "apikey_auth"
+      default_value: "apiKeyValue"
+      schema_property_external_configuration:
+        content_type: raw
+        file: /Users/dikhanr/.terraform.d/plugins/swaggercodegen
   goa:
     swagger-url: http://goa-service-provider-api.com:9090/swagger/swagger.yaml
