@@ -6,10 +6,22 @@ import (
 	"github.com/go-openapi/loads"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
+
+func createPluginConfigFile(content string) *os.File {
+	file, err := ioutil.TempFile("", "terraform-provider-openapi.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	file.Write([]byte(content))
+	return file
+}
 
 func floatToString(number float32) string {
 	return fmt.Sprintf("%.2f", number)
