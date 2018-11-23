@@ -19,6 +19,7 @@ const OpenAPIPluginConfigurationFileName = "terraform-provider-openapi.yaml"
 
 const otfVarSwaggerURL = "OTF_VAR_%s_SWAGGER_URL"
 const otfVarInsecureSkipVerify = "OTF_INSECURE_SKIP_VERIFY"
+const otfVarPluginConfigurationFile = "OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE"
 
 // PluginConfiguration defines the OpenAPI plugin's configuration
 type PluginConfiguration struct {
@@ -36,12 +37,10 @@ type PluginConfiguration struct {
 // NewPluginConfiguration creates a new PluginConfiguration
 func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 	var configurationFile io.Reader
-	terraformUtils := terraformutils.TerraformUtils{Runtime: runtime.GOOS}
-	expandedTerraformVendorDir, err := terraformUtils.GetTerraformPluginsVendorDir()
+	configurationFilePath, err := getPluginConfigurationPath(providerName)
 	if err != nil {
 		return nil, err
 	}
-	configurationFilePath := fmt.Sprintf("%s/%s", expandedTerraformVendorDir, OpenAPIPluginConfigurationFileName)
 	if _, err := os.Stat(configurationFilePath); os.IsNotExist(err) {
 		log.Printf("[INFO] open api plugin configuration not present at %s", configurationFilePath)
 	} else {
@@ -58,6 +57,27 @@ func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 	}, nil
 }
 
+func getPluginConfigurationPath(providerName string) (string, error) {
+	pluginConfigurationFileEnvVar := fmt.Sprintf(otfVarPluginConfigurationFile, providerName)
+	pluginConfigurationFileEnvVars := []string{pluginConfigurationFileEnvVar, strings.ToUpper(pluginConfigurationFileEnvVar)}
+	configurationFile, err := terraformutils.MultiEnvDefaultFunc(pluginConfigurationFileEnvVars, "")()
+	if err != nil {
+		return "", err
+	}
+	pluginConfigurationFile := configurationFile.(string)
+	if pluginConfigurationFile != "" {
+		return pluginConfigurationFile, nil
+	}
+
+	terraformUtils := terraformutils.TerraformUtils{Runtime: runtime.GOOS}
+	expandedTerraformVendorDir, err := terraformUtils.GetTerraformPluginsVendorDir()
+	if err != nil {
+		return "", err
+	}
+	configurationFilePath := fmt.Sprintf("%s/%s", expandedTerraformVendorDir, OpenAPIPluginConfigurationFileName)
+	return configurationFilePath, nil
+}
+
 func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, error) {
 	var pluginConfig PluginConfigSchema
 	var pluginConfigV1 = &PluginConfigSchemaV1{}
@@ -67,18 +87,17 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 	skipVerify, _ := strconv.ParseBool(os.Getenv(otfVarInsecureSkipVerify))
 
 	swaggerURLEnvVar := fmt.Sprintf(otfVarSwaggerURL, p.ProviderName)
-	apiDiscoveryURL := os.Getenv(swaggerURLEnvVar)
-	if apiDiscoveryURL == "" {
-		// Falling back to upper case check
-		swaggerURLEnvVar = fmt.Sprintf(otfVarSwaggerURL, strings.ToUpper(p.ProviderName))
-		apiDiscoveryURL = os.Getenv(swaggerURLEnvVar)
+	swaggerURLEnvVars := []string{swaggerURLEnvVar, strings.ToUpper(swaggerURLEnvVar)}
+	discoveryURL, err := terraformutils.MultiEnvDefaultFunc(swaggerURLEnvVars, "")()
+	if err != nil {
+		return nil, err
 	}
-
+	apiDiscoveryURL := discoveryURL.(string)
 	// Found OTF_VAR_%s_SWAGGER_URL env variable
 	if apiDiscoveryURL != "" {
 		log.Printf("[INFO] %s set with value %s", swaggerURLEnvVar, apiDiscoveryURL)
 		pluginConfigV1.Services = map[string]*ServiceConfigV1{}
-		pluginConfigV1.Services[p.ProviderName] = &ServiceConfigV1{SwaggerURL: apiDiscoveryURL, InsecureSkipVerify: skipVerify}
+		pluginConfigV1.Services[p.ProviderName] = NewServiceConfigV1(apiDiscoveryURL, skipVerify)
 		serviceConfig, err = pluginConfigV1.GetServiceConfig(p.ProviderName)
 		if err != nil {
 			return nil, err
