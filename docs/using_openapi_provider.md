@@ -18,9 +18,17 @@ $ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-i
 ### OpenAPI plugin configuration file
 
 A configuration file can be used to describe multiple OpenAPI service configurations
-including where the swagger file is hosted as well as other meatada (e,g: insecure_skip_verify). This
-plugin configuration file needs to be placed at ```~/.terraform.d/plugins```. For more information
- about the plugin configuration file read the [OpenAPI v1 plugin configuration specification](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md).
+including where the swagger file is hosted as well as other metadata (e,g: insecure_skip_verify).
+
+The plugin configuration file location by default is ```~/.terraform.d/plugins```. However,
+this location can be overridden by setting the OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE
+environment variable, where '%s' should be replaced with your provider's name.
+
+````
+OTF_VAR_myprovider_PLUGIN_CONFIGURATION_FILE="/Users/user/myprovider_config.yaml"
+````
+
+The configuration file must comply with the [OpenAPI v1 plugin configuration specification](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md).
 
 An example is described below:
 
@@ -227,6 +235,15 @@ Usage:
 $ export X_REQUEST_ID="some value for the header"
 $ terraform plan
 ````
+
+
+##### Shared OpenAPI Plugin Configuration file
+
+The OpenAPI plugin configuration file may contain schema configuration
+for the provider. Read more about how to configure the OpenAPI provider
+schema in the [Schema Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-configuration-object)
+documentation.
+
 
 ## Examples
 
