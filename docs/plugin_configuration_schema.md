@@ -30,6 +30,14 @@ lrwxr-xr-x  1 dikhan  staff        63  4 Jul 17:12 terraform-provider-goa -> /Us
 -rw-r--r--  1 dikhan  staff       127  4 Jul 17:12 terraform-provider-openapi.yaml
 ```
 
+Alternately, the location of the file can be specified by setting the
+following environment variable OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE
+where '%s' should be replaced with your provider's name.
+
+````
+OTF_VAR_myprovider_PLUGIN_CONFIGURATION_FILE="/Users/user/myprovider_config.yaml"
+````
+
 ### Data Types
 Primitive data types in the OpenAPI plugin configuration specification are based on the types supported by the YAML-Schema 2.0.
 
