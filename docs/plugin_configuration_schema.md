@@ -35,7 +35,7 @@ following environment variable OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE
 where '%s' should be replaced with your provider's name.
 
 ````
-OTF_VAR_myprovider_PLUGIN_CONFIGURATION_FILE="/Users/user/myprovider_config.yaml"
+$ export OTF_VAR_myprovider_PLUGIN_CONFIGURATION_FILE="/Users/user/myprovider_config.yaml"
 ````
 
 ### Data Types

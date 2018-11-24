@@ -25,7 +25,7 @@ this location can be overridden by setting the OTF_VAR_%s_PLUGIN_CONFIGURATION_F
 environment variable, where '%s' should be replaced with your provider's name.
 
 ````
-OTF_VAR_myprovider_PLUGIN_CONFIGURATION_FILE="/Users/user/myprovider_config.yaml"
+$ export OTF_VAR_myprovider_PLUGIN_CONFIGURATION_FILE="/Users/user/myprovider_config.yaml"
 ````
 
 The configuration file must comply with the [OpenAPI v1 plugin configuration specification](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md).
