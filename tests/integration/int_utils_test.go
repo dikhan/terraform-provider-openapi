@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"testing"
 	"time"
 )
 
@@ -113,4 +114,15 @@ func testCheckDestroyWithDelay(state *terraform.State, openAPIResourceName, reso
 		}
 	}
 	return nil
+}
+
+func testAccPreCheck(t *testing.T) {
+	versionEndpoint := "https://localhost:8443/version"
+	res, err := http.Get(versionEndpoint)
+	if err != nil {
+		t.Fatalf("error occured when verifying if the API is up and running: %s", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("GET %s returned not expected response status code %d", versionEndpoint, res.StatusCode)
+	}
 }
