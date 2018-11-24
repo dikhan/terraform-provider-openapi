@@ -73,7 +73,7 @@ Field Name | Type | Description
 ---|:---:|---
 schema_property_name | `string` | Defines the name of the provider's schema property. For more info refer to [OpenAPI Provider Configuration](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#configuration)
 default_value | `string` | Defines the default value for the property. If ```schema_property_external_configuration``` is defined, it takes preference over this value.
-schema_property_external_configuration | [Schema Property External Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-property-external-configuration) |  | Schema Property External Configuration Object
+schema_property_external_configuration | [Schema Property External Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-property-external-configuration) | Schema Property External Configuration Object
 
 ##### Schema Property External Configuration Object
 
