@@ -44,10 +44,14 @@ func ConvertToTerraformCompliantName(name string) string {
 }
 
 // createSchema creates a terraform schema configured based upon the parameters passed in
-func createSchema(propertyName string, schemaType schema.ValueType, required bool) *schema.Schema {
+func createSchema(propertyName string, schemaType schema.ValueType, required bool, defaultValue string) *schema.Schema {
 	s := &schema.Schema{
-		Type:        schemaType,
-		DefaultFunc: envDefaultFunc(propertyName, nil),
+		Type: schemaType,
+	}
+	if defaultValue != "" {
+		s.DefaultFunc = envDefaultFunc(propertyName, defaultValue)
+	} else {
+		s.DefaultFunc = envDefaultFunc(propertyName, nil)
 	}
 	if required {
 		s.Required = true
@@ -57,18 +61,32 @@ func createSchema(propertyName string, schemaType schema.ValueType, required boo
 	return s
 }
 
-// CreateStringSchema creates a terraform schema of type string configured based upon the parameters passed in
-func CreateStringSchema(propertyName string, required bool) *schema.Schema {
-	return createSchema(propertyName, schema.TypeString, required)
+// CreateStringSchemaProperty creates a terraform schema of type string configured based upon the parameters passed in
+func CreateStringSchemaProperty(propertyName string, required bool, defaultValue string) *schema.Schema {
+	return createSchema(propertyName, schema.TypeString, required, defaultValue)
 }
 
-func envDefaultFunc(k string, defaultValue interface{}) schema.SchemaDefaultFunc {
-	return func() (interface{}, error) {
-		key := strings.ToUpper(k)
-		if v := os.Getenv(key); v != "" {
-			return v, nil
-		}
+// envDefaultFunc is a helper function that returns the value of the first
+// environment variable in the given list 'ks' that returns a non-empty value. The ks are converted to upper case
+// automatically for convenience. If none of the environment variables return a value, the default value is
+// returned.
+func envDefaultFunc(ks string, defaultValue interface{}) schema.SchemaDefaultFunc {
+	key := strings.ToUpper(ks)
+	return MultiEnvDefaultFunc([]string{key}, defaultValue)
 
+}
+
+// MultiEnvDefaultFunc is a helper function that returns the value of the first
+// environment variable in the given list 'ks' that returns a non-empty value. If none of the environment variables
+// return a value, the default value is
+// returned.
+func MultiEnvDefaultFunc(ks []string, defaultValue interface{}) schema.SchemaDefaultFunc {
+	return func() (interface{}, error) {
+		for _, k := range ks {
+			if v := os.Getenv(k); v != "" {
+				return v, nil
+			}
+		}
 		return defaultValue, nil
 	}
 }

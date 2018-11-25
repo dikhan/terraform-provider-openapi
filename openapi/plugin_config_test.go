@@ -13,9 +13,52 @@ import (
 
 const providerName = "test"
 const otfVarSwaggerURLValue = "http://host.com/swagger.yaml"
+const otfVarPluginConfigurationFileValue = "/some/path/terraform-provider-openapi.yaml"
 
 var otfVarNameLc = fmt.Sprintf(otfVarSwaggerURL, providerName)
-var otfVarNameUc = fmt.Sprintf(otfVarSwaggerURL, strings.ToUpper(providerName))
+var otfVarNameUc = strings.ToUpper(otfVarNameLc)
+
+func TestGetPluginConfigurationPath(t *testing.T) {
+	var otfVarPluginConfigurationFileLc = fmt.Sprintf(otfVarPluginConfigurationFile, providerName)
+	var otfVarPluginConfigurationFileUc = strings.ToUpper(otfVarPluginConfigurationFileLc)
+	Convey("Given an environment variable set using lower case provider name with the plugin configuration file path", t, func() {
+		os.Setenv(otfVarPluginConfigurationFileLc, otfVarPluginConfigurationFileValue)
+		Convey("When getServiceConfiguration is called", func() {
+			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the pluginConfigurationFile returned should not be nil ", func() {
+				So(pluginConfigurationFile, ShouldEqual, otfVarPluginConfigurationFileValue)
+			})
+		})
+		os.Unsetenv(otfVarPluginConfigurationFileLc)
+	})
+	Convey("Given an environment variable set using lower case provider name with the plugin configuration file path", t, func() {
+		os.Setenv(otfVarPluginConfigurationFileUc, otfVarPluginConfigurationFileValue)
+		Convey("When getServiceConfiguration is called", func() {
+			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the pluginConfigurationFile returned should not be nil ", func() {
+				So(pluginConfigurationFile, ShouldEqual, otfVarPluginConfigurationFileValue)
+			})
+		})
+		os.Unsetenv(otfVarPluginConfigurationFileUc)
+	})
+	Convey("Given no environment variables set for the plugin configuration file", t, func() {
+		Convey("When getServiceConfiguration is called", func() {
+			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the pluginConfigurationFile returned should not be nil ", func() {
+				So(pluginConfigurationFile, ShouldContainSubstring, ".terraform.d/plugins/terraform-provider-openapi.yaml")
+			})
+		})
+	})
+}
 
 func TestGetServiceProviderConfiguration(t *testing.T) {
 	Convey("Given a PluginConfiguration for 'test' provider and a OTF_VAR_test_SWAGGER_URL is set using lower case provider name", t, func() {

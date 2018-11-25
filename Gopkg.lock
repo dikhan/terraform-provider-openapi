@@ -480,6 +480,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/oliveagle/jsonpath"
+  packages = ["."]
+  revision = "2e52cf6e685269ed8aefec6390f3cac3ef74e730"
+
+[[projects]]
   name = "github.com/pborman/uuid"
   packages = ["."]
   revision = "e790cca94e6cc75c7064b1332e63811d4aae1a53"
@@ -684,6 +690,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e9a23e9c2c172594641824d3a3edb226ecfc212e5dfb5bced64661fe4f0b4c36"
+  inputs-digest = "3db94e3d481d02dda590c1b091d99e0e8230d3938019d583c913b66b51168b3c"
   solver-name = "gps-cdcl"
   solver-version = 1

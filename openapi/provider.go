@@ -25,7 +25,7 @@ func ProviderOpenAPI(providerName string) (*schema.Provider, error) {
 		return nil, fmt.Errorf("plugin OpenAPI spec analyser error: %s", err)
 	}
 
-	providerFactory, err := newProviderFactory(providerName, openAPISpecAnalyser)
+	providerFactory, err := newProviderFactory(providerName, openAPISpecAnalyser, serviceConfiguration)
 	if err != nil {
 		return nil, fmt.Errorf("plugin provider factory init error: %s", err)
 	}
@@ -56,7 +56,7 @@ func getServiceConfiguration(providerName string) (ServiceConfiguration, error) 
 		tr.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
-		log.Printf("[WARN] Provider %s is using insecure skip verify for '%s'. Please make sure you trust the aforementioned server hosting the swagger file. Otherwise, it's highly recommended avoiding the use of OTF_INSECURE_SKIP_VERIFY env variable when executing this provider", providerName, serviceConfiguration)
+		log.Printf("[WARN] Provider '%s' is using insecure skip verify. Please make sure you trust the aforementioned server hosting the swagger file. Otherwise, it's highly recommended avoiding the use of OTF_INSECURE_SKIP_VERIFY env variable when executing this provider", providerName)
 	}
 
 	log.Printf("[INFO] Provider %s is using the following swagger file: %s", providerName, serviceConfiguration.GetSwaggerURL())

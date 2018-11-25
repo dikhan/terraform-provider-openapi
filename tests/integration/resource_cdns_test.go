@@ -69,7 +69,7 @@ func TestAccCDN_Create(t *testing.T) {
 	})
 }
 
-func TestAccCDN_Create_Using_Env_Variables(t *testing.T) {
+func TestAccCDN_Create_Using_Provider_Env_Variables(t *testing.T) {
 	os.Setenv("APIKEY_AUTH", "apiKeyValue")
 	testCDNCreateConfigWithoutProviderAuthProperty := fmt.Sprintf(`provider "%s" {
   x_request_id = "some value..."

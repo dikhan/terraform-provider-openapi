@@ -59,14 +59,15 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 }
 
 func TestCreateSchema(t *testing.T) {
-	Convey("Given an environment variable, schemaType of type string and a required property", t, func() {
+	Convey("Given an environment variable, schemaType of type string, required property and an empty default value", t, func() {
 		propertyName := "propertyName"
 		envVariableValue := "someValue"
+		defaultValue := ""
 		os.Setenv(strings.ToUpper(propertyName), envVariableValue)
 		schemaType := schema.TypeString
 		required := true
 		Convey("When createSchema method is called", func() {
-			schema := createSchema(propertyName, schemaType, required)
+			schema := createSchema(propertyName, schemaType, required, defaultValue)
 			Convey("Then the schema returned should be of type string", func() {
 				So(schema.Type, ShouldEqual, schemaType)
 			})
@@ -81,11 +82,12 @@ func TestCreateSchema(t *testing.T) {
 		})
 		os.Unsetenv(strings.ToUpper(propertyName))
 	})
-	Convey("Given a schemaType of type bool and an optional property", t, func() {
+	Convey("Given a schemaType of type bool, an optional property and an empty default value", t, func() {
 		schemaType := schema.TypeBool
 		required := false
+		defaultValue := ""
 		Convey("When createSchema method is called", func() {
-			schema := createSchema("propertyName", schemaType, required)
+			schema := createSchema("propertyName", schemaType, required, defaultValue)
 			Convey("Then the schema returned should be of type bool", func() {
 				So(schema.Type, ShouldEqual, schemaType)
 			})
@@ -99,13 +101,35 @@ func TestCreateSchema(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a schemaType of type string, required property and a NON empty default value", t, func() {
+		propertyName := "propertyName"
+		defaultValue := "defaultValue"
+		schemaType := schema.TypeString
+		required := true
+		Convey("When createSchema method is called", func() {
+			schema := createSchema(propertyName, schemaType, required, defaultValue)
+			Convey("Then the schema returned should be of type string", func() {
+				So(schema.Type, ShouldEqual, schemaType)
+			})
+			Convey("And the schema returned should be required", func() {
+				So(schema.Required, ShouldEqual, required)
+			})
+			Convey("And the schema default function should return the value set for te environment variable", func() {
+				value, err := schema.DefaultFunc()
+				So(err, ShouldBeNil)
+				So(value, ShouldEqual, defaultValue)
+			})
+		})
+		os.Unsetenv(strings.ToUpper(propertyName))
+	})
 }
 
 func TestCreateStringSchema(t *testing.T) {
 	Convey("Given a required property of type string", t, func() {
 		required := true
-		Convey("When CreateStringSchema method is called", func() {
-			s := CreateStringSchema("propertyName", required)
+		Convey("When CreateStringSchemaProperty method is called", func() {
+			s := CreateStringSchemaProperty("propertyName", required, "")
 			Convey("Then the schema returned should be of type string", func() {
 				So(s.Type, ShouldEqual, schema.TypeString)
 			})

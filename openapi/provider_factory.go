@@ -11,11 +11,12 @@ import (
 )
 
 type providerFactory struct {
-	name         string
-	specAnalyser SpecAnalyser
+	name                 string
+	specAnalyser         SpecAnalyser
+	serviceConfiguration ServiceConfiguration
 }
 
-func newProviderFactory(name string, specAnalyser SpecAnalyser) (*providerFactory, error) {
+func newProviderFactory(name string, specAnalyser SpecAnalyser, serviceConfiguration ServiceConfiguration) (*providerFactory, error) {
 	if name == "" {
 		return nil, fmt.Errorf("provider name not specified")
 	}
@@ -25,9 +26,13 @@ func newProviderFactory(name string, specAnalyser SpecAnalyser) (*providerFactor
 	if specAnalyser == nil {
 		return nil, fmt.Errorf("provider missing an OpenAPI Spec Analyser")
 	}
+	if serviceConfiguration == nil {
+		return nil, fmt.Errorf("provider missing the service configuration")
+	}
 	return &providerFactory{
-		name:         name,
-		specAnalyser: specAnalyser,
+		name:                 name,
+		specAnalyser:         specAnalyser,
+		serviceConfiguration: serviceConfiguration,
 	}, nil
 }
 
@@ -63,8 +68,9 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 	for _, securityDefinition := range *securityDefinitions {
 		secDefName := securityDefinition.getTerraformConfigurationName()
-		s[secDefName] = terraformutils.CreateStringSchema(secDefName, false)
-		log.Printf("[DEBUG] registered optional security definition '%s' into provider schema", secDefName)
+		if err := p.addSchemaProperty(s, secDefName, false); err != nil {
+			return nil, err
+		}
 	}
 
 	// Override security definitions to required if they are global security schemes
@@ -74,8 +80,9 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 	for _, securityScheme := range globalSecuritySchemes {
 		securityScheme := securityScheme.getTerraformConfigurationName()
-		s[securityScheme] = terraformutils.CreateStringSchema(securityScheme, true)
-		log.Printf("[DEBUG] registered required security scheme '%s' into provider schema", securityScheme)
+		if err := p.addSchemaProperty(s, securityScheme, true); err != nil {
+			return nil, err
+		}
 	}
 	headers, err := p.specAnalyser.GetAllHeaderParameters()
 	if err != nil {
@@ -83,10 +90,26 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
-		s[headerTerraformCompliantName] = terraformutils.CreateStringSchema(headerTerraformCompliantName, false)
-		log.Printf("[DEBUG] registered optional header configuration '%s' into provider schema", headerTerraformCompliantName)
+		if err := p.addSchemaProperty(s, headerTerraformCompliantName, false); err != nil {
+			return nil, err
+		}
 	}
 	return s, nil
+}
+
+func (p providerFactory) addSchemaProperty(providerSchema map[string]*schema.Schema, schemaPropertyName string, required bool) error {
+	var defaultValue = ""
+	var err error
+	schemaPropertyConfiguration := p.serviceConfiguration.GetSchemaPropertyConfiguration(schemaPropertyName)
+	if schemaPropertyConfiguration != nil {
+		defaultValue, err = schemaPropertyConfiguration.GetDefaultValue()
+		if err != nil {
+			return err
+		}
+	}
+	providerSchema[schemaPropertyName] = terraformutils.CreateStringSchemaProperty(schemaPropertyName, required, defaultValue)
+	log.Printf("[DEBUG] registered new property '%s' into provider schema", schemaPropertyName)
+	return nil
 }
 
 func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schema.Resource, error) {

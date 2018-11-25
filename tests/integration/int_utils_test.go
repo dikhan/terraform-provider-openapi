@@ -6,10 +6,23 @@ import (
 	"github.com/go-openapi/loads"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strings"
+	"testing"
 	"time"
 )
+
+func createPluginConfigFile(content string) *os.File {
+	file, err := ioutil.TempFile("", "terraform-provider-openapi.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	file.Write([]byte(content))
+	return file
+}
 
 func floatToString(number float32) string {
 	return fmt.Sprintf("%.2f", number)
@@ -101,4 +114,15 @@ func testCheckDestroyWithDelay(state *terraform.State, openAPIResourceName, reso
 		}
 	}
 	return nil
+}
+
+func testAccPreCheck(t *testing.T) {
+	versionEndpoint := "https://localhost:8443/version"
+	res, err := http.Get(versionEndpoint)
+	if err != nil {
+		t.Fatalf("error occured when verifying if the API is up and running: %s", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("GET %s returned not expected response status code %d", versionEndpoint, res.StatusCode)
+	}
 }
