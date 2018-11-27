@@ -93,6 +93,9 @@ file | `string` | Defines the location where the swagger document is hosted. The
 key_name | `string` | Defines the key name of the property to look for in the `file`. The file must be JSON formatted if this property is populated. The value must be formatted using the [JsonPath syntax](https://github.com/oliveagle/jsonpath)
 content_type | `string` | Defines the type of content in the ```file```. Supported values are: raw, json
 
+The [JSONPath online evaluator](http://jsonpath.com/) can be used to play around with the syntax
+and validate right paths.
+
 #### Example
 
 ````
