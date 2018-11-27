@@ -72,15 +72,14 @@ func CreateStringSchemaProperty(propertyName string, required bool, defaultValue
 // returned.
 func envDefaultFunc(ks string, defaultValue interface{}) schema.SchemaDefaultFunc {
 	key := strings.ToUpper(ks)
-	return MultiEnvDefaultFunc([]string{key}, defaultValue)
+	return multiEnvDefaultFunc([]string{key}, defaultValue)
 
 }
 
-// MultiEnvDefaultFunc is a helper function that returns the value of the first
-// environment variable in the given list 'ks' that returns a non-empty value. If none of the environment variables
-// return a value, the default value is
-// returned.
-func MultiEnvDefaultFunc(ks []string, defaultValue interface{}) schema.SchemaDefaultFunc {
+// multiEnvDefaultFunc is a helper function that returns a schema.SchemaDefaultFunc. The function returned
+// returns the first environment variable in the given list 'ks' that returns a non-empty value. If none of the
+// environment variables return a value, the default value is returned.
+func multiEnvDefaultFunc(ks []string, defaultValue interface{}) schema.SchemaDefaultFunc {
 	return func() (interface{}, error) {
 		for _, k := range ks {
 			if v := os.Getenv(k); v != "" {
@@ -89,4 +88,16 @@ func MultiEnvDefaultFunc(ks []string, defaultValue interface{}) schema.SchemaDef
 		}
 		return defaultValue, nil
 	}
+}
+
+// MultiEnvDefaultString is a helper function that returns the value as string of the first
+// environment variable in the given list 'ks' that returns a non-empty value. If none of the environment variables
+// return a value, the default value is
+// returned.
+func MultiEnvDefaultString(ks []string, defaultValue interface{}) (string, error) {
+	dv, err := multiEnvDefaultFunc(ks, defaultValue)()
+	if err != nil {
+		return "", err
+	}
+	return dv.(string), nil
 }
