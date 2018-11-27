@@ -827,7 +827,16 @@ definitions:
 security schemes in securityDefinitions, you can apply them to the whole API or individual operations by adding the 
 security section on the root level (global security schemes) or operation level, respectively.
 
-The API terraform provider supports apiKey type authentication in the header as well as a query parameter.
+The API terraform provider supports apiKey type authentication in the header as well as a query parameter. The
+location can be specified in the 'in' parameter of the security definition.
+
+The following terraform specific extensions are supported to complement the lack of support
+for authentication schemes in the OpenAPI 2.0 specification. To use them, just add the extension
+to the security definition as the example below.
+
+Attribute Name | Type | Description
+---|:---:|---
+x-terraform-authentication-scheme-bearer | boolean |  A security definition with this attribute enabled will enable the Bearer auth scheme. This means that the provider will automatically add to the value of the header/query the Bearer scheme. Note when using this extension the 'name' param will be ignored as this will automatically use the Bearer specification names behind the scenes, that being "Authorization" for header type and "access_token" for the query type.
 
 If an API has a security policy attached to it (as shown below), the API provider will use the corresponding policy
 when performing the HTTP request to the API.
@@ -848,6 +857,18 @@ securityDefinitions:
     type: "apiKey"
     name: "Authorization"
     in: "header"
+```
+
+An example on how the supported security definition extension can be used
+is as follows:
+
+```yml
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-terraform-authentication-scheme-bearer: true
 ```
 
 The provider automatically identifies header/query based auth policies and exposes them as part of the provider
