@@ -1,47 +1,38 @@
 package openapi
 
-import "github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
-
 // SpecSecurityDefinitions groups a list of SpecSecurityDefinition
 type SpecSecurityDefinitions []SpecSecurityDefinition
 
-func (s SpecSecurityDefinitions) findSecurityDefinitionFor(securitySchemeName string) *SpecSecurityDefinition {
+func (s SpecSecurityDefinitions) findSecurityDefinitionFor(securitySchemeName string) SpecSecurityDefinition {
 	for _, securityDefinition := range s {
-		if securityDefinition.Name == securitySchemeName {
-			return &securityDefinition
+		if securityDefinition.getName() == securitySchemeName {
+			return securityDefinition
 		}
 	}
 	return nil
 }
 
-// SpecSecurityDefinition defines a security definition. This struct serves as a translation between the OpenAPI document
-// and the scheme that will be used by the OpenAPI Terraform provider when making API calls to the backend
-type SpecSecurityDefinition struct {
-	Name   string
-	Type   string // apiKey
-	apiKey specAPIKey
-}
+type securityDefinitionType string
 
-// newAPIKeyHeaderSecurityDefinition constructs a SpecSecurityDefinition of Header type. The secDefName value is the identifier
-// of the security definition, and the apiKeyName is the actual value of the header/query that will be user in the HTTP request.
-func newAPIKeyHeaderSecurityDefinition(secDefName, apiKeyName string) SpecSecurityDefinition {
-	return newAPIKeySecurityDefinition(secDefName, newAPIKeyHeader(apiKeyName))
-}
+const (
+	securityDefinitionAPIKey securityDefinitionType = "apiKey"
+)
 
-// newAPIKeyHeaderSecurityDefinition constructs a SpecSecurityDefinition of Query type. The secDefName value is the identifier
-// of the security definition, and the apiKeyName is the actual value of the header/query that will be user in the HTTP request.
-func newAPIKeyQuerySecurityDefinition(secDefName, apiKeyName string) SpecSecurityDefinition {
-	return newAPIKeySecurityDefinition(secDefName, newAPIKeyQuery(apiKeyName))
-}
-
-func newAPIKeySecurityDefinition(name string, apiKey specAPIKey) SpecSecurityDefinition {
-	return SpecSecurityDefinition{
-		Name:   name,
-		Type:   "apiKey",
-		apiKey: apiKey,
-	}
-}
-
-func (o *SpecSecurityDefinition) getTerraformConfigurationName() string {
-	return terraformutils.ConvertToTerraformCompliantName(o.Name)
+// SpecSecurityDefinition defines the behaviour expected for security definition implementations. This interface creates
+// an abstraction between the swagger security definitions and the openapi provider removing dependencies in external
+// libraries
+type SpecSecurityDefinition interface {
+	// getName returns the name of the security scheme as defined in the swagger file
+	getName() string
+	// getType returns the security definition type, e,g: apiKey
+	getType() securityDefinitionType
+	// getTerraformConfigurationName returns the name converted terraform compliant name (snake_case) if needed
+	getTerraformConfigurationName() string
+	// getAPIKey returns the actual apiKey info containing the location of the key (e,g: header/query param) and the
+	// name of the parameter used, in the case of a header the header name and in the case of a query parameter the query
+	// parameter name
+	getAPIKey() specAPIKey
+	// buildValue accepts a value that then can be used to join with other values (e,g: auth schemes such as bearer)
+	// to form the final value returned
+	buildValue(value string) string
 }

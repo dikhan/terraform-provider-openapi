@@ -5,6 +5,15 @@ type apiKeyHeaderAuthenticator struct {
 	apiKey
 }
 
+func newAPIKeyHeaderAuthenticator(name, value string) apiKeyHeaderAuthenticator {
+	return apiKeyHeaderAuthenticator{
+		apiKey: apiKey{
+			name:  name,
+			value: value,
+		},
+	}
+}
+
 func (a apiKeyHeaderAuthenticator) getContext() interface{} {
 	return a.apiKey
 }

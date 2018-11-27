@@ -5,6 +5,8 @@ import (
 	"github.com/go-openapi/spec"
 )
 
+const extTfAuthenticationSchemeBearer = "x-terraform-authentication-scheme-bearer"
+
 type specV2Security struct {
 	SecurityDefinitions spec.SecurityDefinitions
 	GlobalSecurity      []map[string][]string
@@ -16,11 +18,20 @@ func (s *specV2Security) GetAPIKeySecurityDefinitions() (*SpecSecurityDefinition
 	securityDefinitions := &SpecSecurityDefinitions{}
 	for secDefName, secDef := range s.SecurityDefinitions {
 		if secDef.Type == "apiKey" {
+
 			switch secDef.In {
 			case "header":
-				*securityDefinitions = append(*securityDefinitions, newAPIKeyHeaderSecurityDefinition(secDefName, secDef.Name))
+				if s.isBearerScheme(secDef) {
+					*securityDefinitions = append(*securityDefinitions, newAPIKeyHeaderBearerSecurityDefinition(secDefName))
+				} else {
+					*securityDefinitions = append(*securityDefinitions, newAPIKeyHeaderSecurityDefinition(secDefName, secDef.Name))
+				}
 			case "query":
-				*securityDefinitions = append(*securityDefinitions, newAPIKeyQuerySecurityDefinition(secDefName, secDef.Name))
+				if s.isBearerScheme(secDef) {
+					*securityDefinitions = append(*securityDefinitions, newAPIKeyQueryBearerSecurityDefinition(secDefName))
+				} else {
+					*securityDefinitions = append(*securityDefinitions, newAPIKeyQuerySecurityDefinition(secDefName, secDef.Name))
+				}
 			default:
 				return nil, fmt.Errorf("apiKey In value '%s' not supported, only 'header' and 'query' values are valid", secDef.In)
 			}
@@ -28,6 +39,14 @@ func (s *specV2Security) GetAPIKeySecurityDefinitions() (*SpecSecurityDefinition
 		}
 	}
 	return securityDefinitions, nil
+}
+
+func (s *specV2Security) isBearerScheme(secDef *spec.SecurityScheme) bool {
+	authScheme, enabled := secDef.Extensions.GetBool(extTfAuthenticationSchemeBearer)
+	if authScheme && enabled {
+		return true
+	}
+	return false
 }
 
 // GetGlobalSecuritySchemes returns a list of SpecSecuritySchemes that have their corresponding SpecSecurityDefinition
