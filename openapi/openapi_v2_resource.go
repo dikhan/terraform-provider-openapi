@@ -207,27 +207,28 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
 	schemaDefinitionProperty := &specSchemaDefinitionProperty{}
 
-	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject {
+	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject || err != nil {
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to process object type property '%s': %s", propertyName, err)
 		}
 		objectSchemaDefinition, err := o.getSchemaDefinition(schemaDefinition)
 		if err != nil {
 			return nil, err
 		}
 		schemaDefinitionProperty.SpecSchemaDefinition = objectSchemaDefinition
-		schemaDefinitionProperty.Type = typeObject
-	} else if o.isArrayProperty(property) {
-		schemaDefinitionProperty.Type = typeList
-	} else if property.Type.Contains("string") {
-		schemaDefinitionProperty.Type = typeString
-	} else if property.Type.Contains("integer") {
-		schemaDefinitionProperty.Type = typeInt
-	} else if property.Type.Contains("number") {
-		schemaDefinitionProperty.Type = typeFloat
-	} else if property.Type.Contains("boolean") {
-		schemaDefinitionProperty.Type = typeBool
+	} else if isArray, itemsType, itemsSchema, err := o.isArrayProperty(property); isArray || err != nil {
+		if err != nil {
+			return nil, fmt.Errorf("failed to process array type property '%s': %s", propertyName, err)
+		}
+		schemaDefinitionProperty.ArrayItemsType = itemsType
+		schemaDefinitionProperty.SpecSchemaDefinition = itemsSchema // only diff than nil if type is object
 	}
+
+	propertyType, err := o.getPropertyType(property)
+	if err != nil {
+		return nil, err
+	}
+	schemaDefinitionProperty.Type = propertyType
 
 	schemaDefinitionProperty.Name = propertyName
 
@@ -285,23 +286,84 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	return schemaDefinitionProperty, nil
 }
 
-func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
+func (o *SpecV2Resource) isArrayItemPrimitiveType(propertyType schemaDefinitionPropertyType) bool {
+	return propertyType == typeString || propertyType == typeInt || propertyType == typeFloat || propertyType == typeBool
+}
 
-	if o.isObjectTypeProperty(property) && len(property.Properties) != 0 {
-		return true, &property, nil
+func (o *SpecV2Resource) validateArrayItems(property spec.Schema) (schemaDefinitionPropertyType, error) {
+	if property.Items == nil || property.Items.Schema == nil {
+		return "", fmt.Errorf("array property is missing items schema definition")
+	}
+	if o.isArrayTypeProperty(*property.Items.Schema) {
+		return "", fmt.Errorf("array property can not have items of type 'array'")
+	}
+	itemsType, err := o.getPropertyType(*property.Items.Schema)
+	if err != nil {
+		return "", err
+	}
+	if !o.isArrayItemPrimitiveType(itemsType) && !(itemsType == typeObject) {
+		return "", fmt.Errorf("array item type '%s' not supported", itemsType)
+	}
+	return itemsType, nil
+}
+
+func (o *SpecV2Resource) getPropertyType(property spec.Schema) (schemaDefinitionPropertyType, error) {
+	if o.isArrayTypeProperty(property) {
+		return typeList, nil
+	} else if isObject, _, err := o.isObjectProperty(property); isObject || err != nil {
+		return typeObject, err
+	} else if property.Type.Contains("string") {
+		return typeString, nil
+	} else if property.Type.Contains("integer") {
+		return typeInt, nil
+	} else if property.Type.Contains("number") {
+		return typeFloat, nil
+	} else if property.Type.Contains("boolean") {
+		return typeBool, nil
+	}
+	return "", fmt.Errorf("non supported '%+v' type", property.Type)
+}
+
+func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
+	// Case of nested object schema
+	if o.isObjectTypeProperty(property) {
+		if len(property.Properties) != 0 {
+			return true, &property, nil
+		}
+		return false, nil, fmt.Errorf("object is missing the nested schema definition")
 	}
 
+	// Case of external ref to the object schema
 	if property.Ref.Ref.GetURL() != nil {
 		schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
 		if err != nil {
-			return true, nil, err
+			return false, nil, err
 		}
 		return true, schema, nil
 	}
 	return false, nil, nil
 }
 
-func (o *SpecV2Resource) isArrayProperty(property spec.Schema) bool {
+func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefinitionPropertyType, *specSchemaDefinition, error) {
+	if o.isArrayTypeProperty(property) {
+		itemsType, err := o.validateArrayItems(property)
+		if err != nil {
+			return false, "", nil, err
+		}
+		if o.isArrayItemPrimitiveType(itemsType) {
+			return true, itemsType, nil, nil
+		}
+		// This is the case where items must be object
+		itemsSpecSchemaDefinition, err := o.getSchemaDefinition(property.Items.Schema)
+		if err != nil {
+			return false, "", nil, err
+		}
+		return true, itemsType, itemsSpecSchemaDefinition, nil
+	}
+	return false, "", nil, nil
+}
+
+func (o *SpecV2Resource) isArrayTypeProperty(property spec.Schema) bool {
 	return o.isOfType(property, "array")
 }
 

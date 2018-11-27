@@ -179,6 +179,398 @@ func TestNewSpecV2Resource(t *testing.T) {
 	})
 }
 
+func TestCreateSchemaDefinitionProperty(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{}
+
+		//////////////////
+		// Type checks
+		//////////////////
+
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type string and a list of required properties", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name and type", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeString)
+			})
+		})
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type integer and a list of required properties", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"integer"},
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name and type", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeInt)
+			})
+		})
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type number and a list of required properties", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"number"},
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name and type", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeFloat)
+			})
+		})
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type boolean and a list of required properties", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"boolean"},
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name and type", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeBool)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of unknown type and a list of required properties", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					//Type: spec.StringOrArray{"boolean"}, NO TYPE ASSIGNED
+				},
+			}
+			requiredProperties := []string{}
+			_, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should equal", func() {
+				So(err.Error(), ShouldEqual, "non supported '[]' type")
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type object with nested properties and a list of required properties", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Properties: map[string]spec.Schema{
+						"objectProperty": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name and type", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeObject)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type object with NO nested properties nor a REF and a list of required properties", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					// Missing object schema information
+				},
+			}
+			requiredProperties := []string{}
+			_, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should equal", func() {
+				So(err.Error(), ShouldEqual, "failed to process object type property 'propertyName': object is missing the nested schema definition")
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type string", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name and type", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeList)
+				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeString)
+				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldBeNil)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type object", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"object"},
+								Properties: map[string]spec.Schema{
+									"prop1": spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{"string"},
+										},
+									},
+									"prop2": spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{"integer"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name, list type amd items type object", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeList)
+				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeObject)
+			})
+			Convey("And schema definition should contain the schema of the array items", func() {
+				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldNotBeNil)
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties, ShouldNotBeEmpty)
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "prop1")
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[1].Name, ShouldEqual, "prop2")
+			})
+		})
+
+		/////////////////////
+		// Extension checks
+		/////////////////////
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-field-name' extension", func() {
+			expectedTerraformName := "property_terraform_name"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfFieldName: expectedTerraformName,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right", func() {
+				So(schemaDefinitionProperty.PreferredName, ShouldEqual, expectedTerraformName)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that is required", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			requiredProperties := []string{"propertyName"}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be required", func() {
+				So(schemaDefinitionProperty.Required, ShouldBeTrue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-force-new' extension", func() {
+			expectedForceNewValue := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfForceNew: expectedForceNewValue,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be have force new enabled", func() {
+				So(schemaDefinitionProperty.ForceNew, ShouldEqual, expectedForceNewValue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that is computed (readOnly)", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+			}
+			requiredProperties := []string{"propertyName"}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be computed", func() {
+				So(schemaDefinitionProperty.ReadOnly, ShouldBeTrue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-sensitive' extension", func() {
+			expectedSensitiveValue := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfSensitive: expectedSensitiveValue,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be sensitive", func() {
+				So(schemaDefinitionProperty.Sensitive, ShouldEqual, expectedSensitiveValue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-id' extension", func() {
+			expectedIsIdentifierValue := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfID: expectedIsIdentifierValue,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be marked as identifier", func() {
+				So(schemaDefinitionProperty.IsIdentifier, ShouldEqual, expectedIsIdentifierValue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-immutable' extension", func() {
+			expectedIsImmutableValue := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfImmutable: expectedIsImmutableValue,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be immutable", func() {
+				So(schemaDefinitionProperty.Immutable, ShouldEqual, expectedIsImmutableValue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-field-status' extension", func() {
+			expectedIsStatusFieldValue := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfFieldStatus: expectedIsStatusFieldValue,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be marked as the status field", func() {
+				So(schemaDefinitionProperty.IsStatusIdentifier, ShouldEqual, expectedIsStatusFieldValue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has a default value", func() {
+			expectedDefaultValue := "someDefaultValue"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type:    spec.StringOrArray{"string"},
+					Default: expectedDefaultValue,
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should have the right default value", func() {
+				So(schemaDefinitionProperty.Default, ShouldEqual, expectedDefaultValue)
+			})
+		})
+	})
+}
+
 func TestCreateResponses(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := SpecV2Resource{}
