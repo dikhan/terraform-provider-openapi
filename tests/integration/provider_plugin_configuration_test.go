@@ -16,7 +16,7 @@ var testCDNCreateConfigWithoutProviderAuthProperty string
 
 func init() {
 	// Setting this up here as it is used by many different tests
-	cdn = newContentDeliveryNetwork("someLabel", []string{"192.168.0.2"}, []string{"www.google.com"}, 10, 12.22, true, "some message news")
+	cdn = newContentDeliveryNetwork("someLabel", []string{"192.168.0.2"}, []string{"www.google.com"}, 10, 12.22, true, "some message news", "")
 	testCDNCreateConfigWithoutProviderAuthProperty = fmt.Sprintf(`provider "%s" {
   x_request_id = "some value..."
 }
