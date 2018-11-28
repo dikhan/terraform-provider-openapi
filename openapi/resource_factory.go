@@ -398,7 +398,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			switch reflect.TypeOf(dataValue).Kind() {
 			case reflect.Map:
 				input[propertyName] = dataValue.(map[string]interface{})
-			case reflect.Slice:
+			case reflect.Slice, reflect.Array:
 				input[propertyName] = dataValue.([]interface{})
 			case reflect.String:
 				input[propertyName] = dataValue.(string)
@@ -408,6 +408,8 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 				input[propertyName] = dataValue.(float64)
 			case reflect.Bool:
 				input[propertyName] = dataValue.(bool)
+			default:
+				log.Printf("[WARN] [resource='%s'] createPayloadFromLocalStateData unkown dataValue type [propertyName: %s; propertyValueType: %+v;]", r.openAPIResource.getResourceName(), propertyName, reflect.TypeOf(dataValue).Kind())
 			}
 		}
 		log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
