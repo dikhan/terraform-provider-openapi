@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/go-openapi/jsonreference"
 	"github.com/go-openapi/spec"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
@@ -342,7 +343,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type object", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type object (nested)", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -382,6 +383,53 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties, ShouldNotBeEmpty)
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "prop1")
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[1].Name, ShouldEqual, "prop2")
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type object (external ref definition)", func() {
+			r := SpecV2Resource{
+				SchemaDefinitions: map[string]spec.Schema{
+					"Listeners": {
+						SchemaProps: spec.SchemaProps{
+							Type: spec.StringOrArray{"object"},
+							Properties: map[string]spec.Schema{
+								"protocol": {
+									SchemaProps: spec.SchemaProps{
+										Type: spec.StringOrArray{"string"},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Ref: spec.Ref{Ref: jsonreference.MustCreateRef("#/definitions/Listeners")},
+							},
+						},
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be configured with the right name, list type amd items type object", func() {
+				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeList)
+				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeObject)
+			})
+			Convey("And schema definition should contain the schema of the array items", func() {
+				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldNotBeNil)
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties, ShouldNotBeEmpty)
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
 			})
 		})
 

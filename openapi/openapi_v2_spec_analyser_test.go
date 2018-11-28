@@ -1301,18 +1301,25 @@ definitions:
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
 			})
-			Convey("And the resources schema should be the right one", func() {
+			Convey("And the resources schema should contain the right configuration", func() {
 				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
 				So(err, ShouldBeNil)
-				So(resourceSchema.Properties[0].Name, ShouldEqual, "id")
-				So(resourceSchema.Properties[1].Name, ShouldEqual, "listeners")
-				So(resourceSchema.Properties[1].Type, ShouldEqual, typeList)
-				So(resourceSchema.Properties[1].ArrayItemsType, ShouldEqual, typeString)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the listeners property", func() {
+					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+					So(exists, ShouldBeTrue)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeString)
+				})
 			})
+
 		})
 	})
 
-	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /v1/cdns:
@@ -1366,17 +1373,95 @@ definitions:
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
 			})
-			Convey("And the resources schema should be the right one", func() {
+			Convey("And the resources schema should contain the right configuration", func() {
 				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
 				So(err, ShouldBeNil)
-				So(resourceSchema.Properties[0].Name, ShouldEqual, "id")
-				So(resourceSchema.Properties[1].Name, ShouldEqual, "listeners")
-				So(resourceSchema.Properties[1].Type, ShouldEqual, typeList)
-				So(resourceSchema.Properties[1].ArrayItemsType, ShouldEqual, typeObject)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the listeners property", func() {
+					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+					So(exists, ShouldBeTrue)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+				})
 			})
 		})
 	})
 
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (nested configuration)", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      listeners:
+        type: array
+        items:
+          type: object
+          required:
+          - protocol
+          properties:
+            protocol:
+              type: string`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+			Convey("And the resources schema should contain the right configuration", func() {
+				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
+				So(err, ShouldBeNil)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the listeners property", func() {
+					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+					So(exists, ShouldBeTrue)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+				})
+			})
+		})
+	})
 	Convey("Given an specV2Analyser loaded with a swagger file containing a non compliant terraform resource /v1/cdns because its missing the post operation", t, func() {
 		var swaggerJSON = `
 {
@@ -1472,6 +1557,15 @@ definitions:
 			})
 		})
 	})
+}
+
+func assertPropertyExists(properties specSchemaDefinitionProperties, name string) (bool, int) {
+	for idx, prop := range properties {
+		if prop.Name == name {
+			return true, idx
+		}
+	}
+	return false, -1
 }
 
 func initAPISpecAnalyser(swaggerContent string) specV2Analyser {
