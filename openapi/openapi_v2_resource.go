@@ -216,12 +216,14 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 			return nil, err
 		}
 		schemaDefinitionProperty.SpecSchemaDefinition = objectSchemaDefinition
+		log.Printf("[DEBUG] found object type property '%s' with the following schema: %+v", propertyName, objectSchemaDefinition)
 	} else if isArray, itemsType, itemsSchema, err := o.isArrayProperty(property); isArray || err != nil {
 		if err != nil {
 			return nil, fmt.Errorf("failed to process array type property '%s': %s", propertyName, err)
 		}
 		schemaDefinitionProperty.ArrayItemsType = itemsType
 		schemaDefinitionProperty.SpecSchemaDefinition = itemsSchema // only diff than nil if type is object
+		log.Printf("[DEBUG] found array type property '%s' with items of type '%s'", propertyName, itemsType)
 	}
 
 	propertyType, err := o.getPropertyType(property)
@@ -354,11 +356,16 @@ func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefi
 			return true, itemsType, nil, nil
 		}
 		// This is the case where items must be object
-		itemsSpecSchemaDefinition, err := o.getSchemaDefinition(property.Items.Schema)
-		if err != nil {
-			return false, "", nil, err
+		if isObject, schemaDefinition, err := o.isObjectProperty(*property.Items.Schema); isObject || err != nil {
+			if err != nil {
+				return true, itemsType, nil, err
+			}
+			objectSchemaDefinition, err := o.getSchemaDefinition(schemaDefinition)
+			if err != nil {
+				return true, itemsType, nil, err
+			}
+			return true, itemsType, objectSchemaDefinition, nil
 		}
-		return true, itemsType, itemsSpecSchemaDefinition, nil
 	}
 	return false, "", nil, nil
 }
