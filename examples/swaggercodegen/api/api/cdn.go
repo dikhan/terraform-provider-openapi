@@ -77,6 +77,7 @@ func updateCDN(dbCDN, updatedCDN *ContentDeliveryNetworkV1) {
 	dbCDN.ExampleNumber = updatedCDN.ExampleNumber
 	dbCDN.ExampleBoolean = updatedCDN.ExampleBoolean
 	dbCDN.ObjectProperty = updatedCDN.ObjectProperty
+	dbCDN.ArrayOfObjectsExample = updatedCDN.ArrayOfObjectsExample
 	db[dbCDN.Id] = dbCDN
 }
 
