@@ -17,6 +17,12 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   object_property = {
     message = "some message news"
   }
+
+  array_of_objects_example = [
+    {
+      protocol = "%s"
+    }
+  ]
 }
 
 resource "swaggercodegen_lbs_v1" "my_lb" {
