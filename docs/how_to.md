@@ -615,15 +615,84 @@ The following property types will be translated into their corresponding terrafo
 Swagger Type | TF Type | Description
 ---|:---:|---
 string | Type: schema.TypeString | string value
-[string] | schema.TypeList (schema.TypeString) | list of string values
 integer | schema.TypeInt | int value
 number | schema.TypeFloat | float value
 boolean | schema.TypeBool | boolean value
-object | schema.TypeMap | map value
+[object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions) | schema.TypeMap | map value
+[array](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#array-definitions) | schema.TypeList | list of values of the same type. The list item types can be primitives (string, integer, number or bool) or complex data structures (objects)
+
+###### Array definitions
+
+Arrays can be constructed containing simple values like primitive types (string, integer, number or bool) or complex
+types defined by the object definition. In any case, the swagger property 'items' must be populated when describing
+an array property. 
+
+- Arrays of primitive values (string, integer, number or bool primitives):
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    ...
+    properties:    
+      arrayOfOStringsExample: # This is an example of an array of strings
+        type: "array"
+        items:
+          type: "string"
+````
+
+The above OpenAPI configuration would translate into the following Terraform configuration:
+
+````
+
+resource "swaggercodegen_cdn_v1" "my_cdn" {
+  ...
+  array_of_strings_example = ["somevalue", "some-other-value"]
+  ...
+````
+
+- Arrays of complex values (objects):
+
+The example below shows how the property named 'arrayOfObjectsExample' is configured with type 'array' and the elements
+are ob type object, meaning that the array holds objects inside as described in the object 'properties' section.
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    ...
+    properties:    
+      arrayOfObjectsExample: # This is an example of an array of objects
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            protocol:
+              type: string
+````
+
+The above OpenAPI configuration would translate into the following Terraform configuration:
+
+````
+
+resource "swaggercodegen_cdn_v1" "my_cdn" {
+  ...
+  array_of_objects_example = [
+    {
+      protocol = "http"
+    },
+    {
+      protocol = "tcp"
+    }
+  ]
+  ...
+````
+
+###### Object definitions
 
 Object types can be defined in two fashions:
 
-###### Nested properties
+####### Nested properties
 
 Properties can have their schema definition in place or nested; and they must be of type 'object'.
 
@@ -641,7 +710,7 @@ definitions:
             type: string
 ````
 
-###### Ref schema definition
+####### Ref schema definition
 
 A property that has a $ref attribute is considered automatically and object so defining the type is optional (although
 it's recommended).
