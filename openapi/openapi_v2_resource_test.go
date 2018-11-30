@@ -11,153 +11,6 @@ import (
 	"time"
 )
 
-func TestIsArrayItemPrimitiveType(t *testing.T) {
-	Convey("Given a SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeString", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeString)
-			Convey("The the result returned should be true", func() {
-				So(isPrimitive, ShouldBeTrue)
-			})
-		})
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeInt", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeInt)
-			Convey("The the result returned should be true", func() {
-				So(isPrimitive, ShouldBeTrue)
-			})
-		})
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeFloat", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeFloat)
-			Convey("The the result returned should be true", func() {
-				So(isPrimitive, ShouldBeTrue)
-			})
-		})
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeBool", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeBool)
-			Convey("The the result returned should be true", func() {
-				So(isPrimitive, ShouldBeTrue)
-			})
-		})
-		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeList", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeList)
-			Convey("The the result returned should be false", func() {
-				So(isPrimitive, ShouldBeFalse)
-			})
-		})
-		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeObject", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeObject)
-			Convey("The the result returned should be false", func() {
-				So(isPrimitive, ShouldBeFalse)
-			})
-		})
-	})
-}
-
-func TestIsObjectTypeProperty(t *testing.T) {
-	Convey("Given a SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When isObjectTypeProperty method is called a property of type object", func() {
-			property := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"object"},
-				},
-			}
-			isArrayType := r.isObjectTypeProperty(property)
-			Convey("The the result returned should be true", func() {
-				So(isArrayType, ShouldBeTrue)
-			})
-		})
-		Convey("When isObjectTypeProperty method is called a property that IS NOT of type object", func() {
-			property := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"array"},
-				},
-			}
-			isArrayType := r.isObjectTypeProperty(property)
-			Convey("The the result returned should be false", func() {
-				So(isArrayType, ShouldBeFalse)
-			})
-		})
-	})
-}
-
-func TestIsArrayTypeProperty(t *testing.T) {
-	Convey("Given a SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When isArrayTypeProperty method is called a property of type array", func() {
-			property := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"array"},
-				},
-			}
-			isArrayType := r.isArrayTypeProperty(property)
-			Convey("The the result returned should be true", func() {
-				So(isArrayType, ShouldBeTrue)
-			})
-		})
-		Convey("When isArrayTypeProperty method is called a property that IS NOT of type array", func() {
-			property := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"object"},
-				},
-			}
-			isArrayType := r.isArrayTypeProperty(property)
-			Convey("The the result returned should be false", func() {
-				So(isArrayType, ShouldBeFalse)
-			})
-		})
-	})
-}
-
-func TestIsOfType(t *testing.T) {
-	Convey("Given a SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When isOfType method is called a property of the expected type", func() {
-			property := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
-				},
-			}
-			isString := r.isOfType(property, "string")
-			Convey("The the result returned should be true", func() {
-				So(isString, ShouldBeTrue)
-			})
-		})
-		Convey("When isArrayTypeProperty method is called a property that IS NOT of the expected type", func() {
-			property := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
-				},
-			}
-			isInteger := r.isOfType(property,"integer")
-			Convey("The the result returned should be false", func() {
-				So(isInteger, ShouldBeFalse)
-			})
-		})
-	})
-}
-
-func TestSwaggerPropIsRequired(t *testing.T) {
-	Convey("Given a SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When isRequired is called with a required prop", func() {
-			requiredProp := "requiredProp"
-			requiredProps := []string{requiredProp}
-			isRequired := r.isRequired(requiredProp , requiredProps)
-			Convey("The the result returned should be true", func() {
-				So(isRequired, ShouldBeTrue)
-			})
-		})
-		Convey("When isRequired is called with a NON required prop", func() {
-			requiredProps := []string{"requiredProp"}
-			isRequired := r.isRequired("nonRequired" , requiredProps)
-			Convey("The the result returned should be true", func() {
-				So(isRequired, ShouldBeFalse)
-			})
-		})
-	})
-}
-
 func TestNewSpecV2Resource(t *testing.T) {
 	Convey("Given a root path /users/ containing a trailing slash and a root path item item", t, func() {
 		path := "/users/"
@@ -327,6 +180,585 @@ func TestNewSpecV2Resource(t *testing.T) {
 	})
 }
 
+func TestIsArrayItemPrimitiveType(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeString", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(typeString)
+			Convey("The the result returned should be true", func() {
+				So(isPrimitive, ShouldBeTrue)
+			})
+		})
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeInt", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(typeInt)
+			Convey("The the result returned should be true", func() {
+				So(isPrimitive, ShouldBeTrue)
+			})
+		})
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeFloat", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(typeFloat)
+			Convey("The the result returned should be true", func() {
+				So(isPrimitive, ShouldBeTrue)
+			})
+		})
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeBool", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(typeBool)
+			Convey("The the result returned should be true", func() {
+				So(isPrimitive, ShouldBeTrue)
+			})
+		})
+		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeList", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(typeList)
+			Convey("The the result returned should be false", func() {
+				So(isPrimitive, ShouldBeFalse)
+			})
+		})
+		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeObject", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(typeObject)
+			Convey("The the result returned should be false", func() {
+				So(isPrimitive, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestValidateArrayItems(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When validateArrayItems method is called with a property that does not have items", func() {
+			property := spec.Schema{}
+			_, err := r.validateArrayItems(property)
+			Convey("The error shoudl not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected", func() {
+				So(err.Error(), ShouldEqual, "array property is missing items schema definition")
+			})
+		})
+		Convey("When validateArrayItems method is called with a property that does have items but they lack the schema", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Items: &spec.SchemaOrArray{
+						// no schema :(
+					},
+				},
+			}
+			_, err := r.validateArrayItems(property)
+			Convey("The error shoudl not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected", func() {
+				So(err.Error(), ShouldEqual, "array property is missing items schema definition")
+			})
+		})
+		Convey("When validateArrayItems method is called with a property that does have items and a schema BUT the items are of type array (this is not supported at the moment)", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"array"},
+							},
+						},
+					},
+				},
+			}
+			_, err := r.validateArrayItems(property)
+			Convey("The error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected", func() {
+				So(err.Error(), ShouldEqual, "array property can not have items of type 'array'")
+			})
+		})
+		Convey("When validateArrayItems method is called with an array of unknown type items", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"unknown"},
+							},
+						},
+					},
+				},
+			}
+			_, err := r.validateArrayItems(property)
+			Convey("The error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected", func() {
+				So(err.Error(), ShouldEqual, "non supported '[unknown]' type")
+			})
+		})
+		Convey("When validateArrayItems method is called with a valid array property that has items of type string", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			}
+			itemsPropType, err := r.validateArrayItems(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected string", func() {
+				So(itemsPropType, ShouldEqual, typeString)
+			})
+		})
+		Convey("When validateArrayItems method is called with a valid array property that has items of type object", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"object"},
+								Properties: map[string]spec.Schema{
+									"prop1": spec.Schema{},
+								},
+							},
+						},
+					},
+				},
+			}
+			itemsPropType, err := r.validateArrayItems(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected object", func() {
+				So(itemsPropType, ShouldEqual, typeObject)
+			})
+		})
+	})
+}
+
+func TestGetPropertyType(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When getPropertyType method is called with a property of type array", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+				},
+			}
+			itemsPropType, err := r.getPropertyType(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected array", func() {
+				So(itemsPropType, ShouldEqual, typeList)
+			})
+		})
+
+		Convey("When getPropertyType method is called with a property of type object", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Properties: map[string]spec.Schema{
+						"prop1": spec.Schema{},
+					},
+				},
+			}
+			itemsPropType, err := r.getPropertyType(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected object", func() {
+				So(itemsPropType, ShouldEqual, typeObject)
+			})
+		})
+
+		Convey("When getPropertyType method is called with a property of type string", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			itemsPropType, err := r.getPropertyType(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected string", func() {
+				So(itemsPropType, ShouldEqual, typeString)
+			})
+		})
+
+		Convey("When getPropertyType method is called with a property of type integer", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"integer"},
+				},
+			}
+			itemsPropType, err := r.getPropertyType(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected integer", func() {
+				So(itemsPropType, ShouldEqual, typeInt)
+			})
+		})
+
+		Convey("When getPropertyType method is called with a property of type float", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"number"},
+				},
+			}
+			itemsPropType, err := r.getPropertyType(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected float", func() {
+				So(itemsPropType, ShouldEqual, typeFloat)
+			})
+		})
+
+		Convey("When getPropertyType method is called with a property of type bool", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"boolean"},
+				},
+			}
+			itemsPropType, err := r.getPropertyType(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the type of the items should match the expected bool", func() {
+				So(itemsPropType, ShouldEqual, typeBool)
+			})
+		})
+
+		Convey("When getPropertyType method is called with a property of type non supported", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"non supported"},
+				},
+			}
+			_, err := r.getPropertyType(property)
+			Convey("The error should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error returned should be ", func() {
+				So(err.Error(), ShouldEqual, "non supported '[non supported]' type")
+			})
+		})
+	})
+}
+
+func TestResourceIsObjectProperty(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isObjectProperty method is called with a property of type object that has nested properties", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Properties: map[string]spec.Schema{
+						"prop1": spec.Schema{},
+					},
+				},
+			}
+			isObject, objectSchema, err := r.isObjectProperty(property)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result your be true", func() {
+				So(isObject, ShouldBeTrue)
+			})
+			Convey("And the object schema should not be nil", func() {
+				So(objectSchema, ShouldNotBeNil)
+			})
+		})
+		Convey("When isObjectProperty method is called with a property of type object that has a ref to an external schema but is missing the type", func() {
+			r := SpecV2Resource{
+				SchemaDefinitions: map[string]spec.Schema{
+					"Listeners": {
+						SchemaProps: spec.SchemaProps{
+							Type: spec.StringOrArray{"object"},
+							Properties: map[string]spec.Schema{
+								"protocol": {
+									SchemaProps: spec.SchemaProps{
+										Type: spec.StringOrArray{"string"},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					//Type: spec.StringOrArray{"object"}, // Missing type info but still should be considered as object
+					Ref: spec.Ref{Ref: jsonreference.MustCreateRef("#/definitions/Listeners")},
+				},
+			}
+			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result your be true", func() {
+				So(isObject, ShouldBeTrue)
+			})
+			Convey("And the object schema should not be nil", func() {
+				So(objectSchema, ShouldNotBeNil)
+			})
+		})
+		Convey("When isObjectProperty method is called with a property of type object that has a ref to an external schema and also has the type", func() {
+			r := SpecV2Resource{
+				SchemaDefinitions: map[string]spec.Schema{
+					"Listeners": {
+						SchemaProps: spec.SchemaProps{
+							Type: spec.StringOrArray{"object"},
+							Properties: map[string]spec.Schema{
+								"protocol": {
+									SchemaProps: spec.SchemaProps{
+										Type: spec.StringOrArray{"string"},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Ref:  spec.Ref{Ref: jsonreference.MustCreateRef("#/definitions/Listeners")},
+				},
+			}
+			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result your be true", func() {
+				So(isObject, ShouldBeTrue)
+			})
+			Convey("And the object schema should not be nil", func() {
+				So(objectSchema, ShouldNotBeNil)
+			})
+		})
+
+		Convey("When isObjectProperty method is called with a property of type object that has a ref to a non existing schema", func() {
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Ref:  spec.Ref{Ref: jsonreference.MustCreateRef("#/definitions/nonExisting")},
+				},
+			}
+			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
+			Convey("The error should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("The error message should be the expected", func() {
+				So(err.Error(), ShouldEqual, "object ref is poitning to a non existing schema definition: missing schema definition in the swagger file with the supplied ref '#/definitions/nonExisting'")
+			})
+			Convey("And the result your be true", func() {
+				So(isObject, ShouldBeTrue)
+			})
+			Convey("And the object schema should be nil", func() {
+				So(objectSchema, ShouldBeNil)
+			})
+		})
+
+		Convey("When isObjectProperty method is called with a property that has nested schema with no properties", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{},
+					},
+				},
+			}
+			isObject, objectSchema, err := r.isObjectProperty(property)
+			Convey("The error should NOT be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result your be false", func() {
+				So(isObject, ShouldBeFalse)
+			})
+			Convey("And the object schema should be nil", func() {
+				So(objectSchema, ShouldBeNil)
+			})
+		})
+
+		Convey("When isObjectProperty method is called with a property of type string", func() {
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result your be false", func() {
+				So(isObject, ShouldBeFalse)
+			})
+			Convey("And the object schema should be nil", func() {
+				So(objectSchema, ShouldBeNil)
+			})
+		})
+
+	})
+}
+
+func TestResourceIsArrayProperty(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isArrayProperty is called with an array type property that has items of type object", func() {
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"object"},
+								Properties: map[string]spec.Schema{
+									"prop1": spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{"string"},
+										},
+									},
+									"prop2": spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{"integer"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			isArray, arrayItemType, objectItemSchema, err := r.isArrayProperty(propertySchema)
+			Convey("The error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result your be true", func() {
+				So(isArray, ShouldBeTrue)
+			})
+			Convey("And the array items should be of type object", func() {
+				So(arrayItemType, ShouldEqual, typeObject)
+			})
+			Convey("And the object schema should not be nil", func() {
+				So(objectItemSchema, ShouldNotBeNil)
+				exists, _ := assertPropertyExists(objectItemSchema.Properties, "prop1")
+				So(exists, ShouldBeTrue)
+				exists, _ = assertPropertyExists(objectItemSchema.Properties, "prop2")
+				So(exists, ShouldBeTrue)
+			})
+		})
+	})
+}
+
+func TestIsObjectTypeProperty(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isObjectTypeProperty method is called a property of type object", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+				},
+			}
+			isArrayType := r.isObjectTypeProperty(property)
+			Convey("The the result returned should be true", func() {
+				So(isArrayType, ShouldBeTrue)
+			})
+		})
+		Convey("When isObjectTypeProperty method is called a property that IS NOT of type object", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+				},
+			}
+			isArrayType := r.isObjectTypeProperty(property)
+			Convey("The the result returned should be false", func() {
+				So(isArrayType, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsArrayTypeProperty(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isArrayTypeProperty method is called a property of type array", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+				},
+			}
+			isArrayType := r.isArrayTypeProperty(property)
+			Convey("The the result returned should be true", func() {
+				So(isArrayType, ShouldBeTrue)
+			})
+		})
+		Convey("When isArrayTypeProperty method is called a property that IS NOT of type array", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+				},
+			}
+			isArrayType := r.isArrayTypeProperty(property)
+			Convey("The the result returned should be false", func() {
+				So(isArrayType, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsOfType(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isOfType method is called a property of the expected type", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			isString := r.isOfType(property, "string")
+			Convey("The the result returned should be true", func() {
+				So(isString, ShouldBeTrue)
+			})
+		})
+		Convey("When isArrayTypeProperty method is called a property that IS NOT of the expected type", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			isInteger := r.isOfType(property, "integer")
+			Convey("The the result returned should be false", func() {
+				So(isInteger, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestSwaggerPropIsRequired(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isRequired is called with a required prop", func() {
+			requiredProp := "requiredProp"
+			requiredProps := []string{requiredProp}
+			isRequired := r.isRequired(requiredProp, requiredProps)
+			Convey("The the result returned should be true", func() {
+				So(isRequired, ShouldBeTrue)
+			})
+		})
+		Convey("When isRequired is called with a NON required prop", func() {
+			requiredProps := []string{"requiredProp"}
+			isRequired := r.isRequired("nonRequired", requiredProps)
+			Convey("The the result returned should be true", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestCreateSchemaDefinitionProperty(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := SpecV2Resource{}
@@ -460,7 +892,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should equal", func() {
-				So(err.Error(), ShouldEqual, "failed to process object type property 'propertyName': object is missing the nested schema definition")
+				So(err.Error(), ShouldEqual, "failed to process object type property 'propertyName': object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
 			})
 		})
 
