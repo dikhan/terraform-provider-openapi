@@ -793,7 +793,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
 	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, sliceProperty)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty)
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
 			payload := r.createPayloadFromLocalStateData(resourceData)
 			Convey("Then the map returned should not be empty", func() {
@@ -808,14 +808,14 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				So(payload, ShouldContainKey, intProperty.Name)
 				So(payload, ShouldContainKey, numberProperty.Name)
 				So(payload, ShouldContainKey, boolProperty.Name)
-				So(payload, ShouldContainKey, sliceProperty.Name)
+				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
 			})
 			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
 				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
 				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
 				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
 				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
-				So(payload[sliceProperty.Name], ShouldContain, sliceProperty.Default.([]string)[0])
+				So(payload[slicePrimitiveProperty.Name], ShouldContain, slicePrimitiveProperty.Default.([]string)[0])
 			})
 		})
 	})
@@ -834,7 +834,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			},
 		}
 		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, sliceProperty, sliceObjectProperty)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, slicePrimitiveProperty, sliceObjectProperty)
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
 			payload := r.createPayloadFromLocalStateData(resourceData)
 			Convey("Then the map returned should not be empty", func() {
@@ -846,12 +846,12 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			})
 			Convey("And then payload returned should include the following keys ", func() {
 				So(payload, ShouldContainKey, stringProperty.Name)
-				So(payload, ShouldContainKey, sliceProperty.Name)
+				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
 				So(payload, ShouldContainKey, sliceObjectProperty.Name)
 			})
 			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
 				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
-				So(payload[sliceProperty.Name], ShouldContain, sliceProperty.Default.([]string)[0])
+				So(payload[slicePrimitiveProperty.Name], ShouldContain, slicePrimitiveProperty.Default.([]string)[0])
 				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, arrayObjectDefault[0]["origin_port"])
 				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, arrayObjectDefault[0]["protocol"])
 			})
@@ -875,6 +875,153 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				So(payload[intZeroValueProperty.Name], ShouldEqual, intZeroValueProperty.Default)
 				So(payload[numberZeroValueProperty.Name], ShouldEqual, numberZeroValueProperty.Default)
 				So(payload[boolZeroValueProperty.Name], ShouldEqual, boolZeroValueProperty.Default)
+			})
+		})
+	})
+}
+
+func TestGetPropertyPayload(t *testing.T) {
+	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		objectDefault := map[string]interface{}{
+			"origin_port": 80,
+			"protocol":    "http",
+		}
+		arrayObjectDefault := []map[string]interface{}{
+			objectDefault,
+		}
+		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, objectDefault, objectSchemaDefinition)
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, sliceObjectProperty)
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the string property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(stringProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, stringProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the string property", func() {
+				So(payload, ShouldContainKey, stringProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
+			})
+		})
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the int property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(intProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, intProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the integer property", func() {
+				So(payload, ShouldContainKey, intProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
+			})
+		})
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the number property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(numberProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, numberProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the number property", func() {
+				So(payload, ShouldContainKey, numberProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
+			})
+		})
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the bool property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(boolProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, boolProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the bool property", func() {
+				So(payload, ShouldContainKey, boolProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
+			})
+		})
+
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the object property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(objectProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, objectProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the object property", func() {
+				So(payload, ShouldContainKey, objectProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				// For some reason the data values in the terraform state file are all strings
+				So(payload[objectProperty.Name].(map[string]interface{})[objectProperty.SpecSchemaDefinition.Properties[0].Name], ShouldEqual, fmt.Sprintf("%d", objectProperty.SpecSchemaDefinition.Properties[0].Default.(int)))
+				So(payload[objectProperty.Name].(map[string]interface{})[objectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[1].Default)
+			})
+		})
+
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the object property", func() {
+				So(payload, ShouldContainKey, sliceObjectProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				// For some reason the data values in the terraform state file are all strings
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})[sliceObjectProperty.SpecSchemaDefinition.Properties[0].Name], ShouldEqual, sliceObjectProperty.SpecSchemaDefinition.Properties[0].Default.(int))
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})[sliceObjectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, sliceObjectProperty.SpecSchemaDefinition.Properties[1].Default)
+			})
+		})
+
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, slicePrimitiveProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the object property", func() {
+				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[slicePrimitiveProperty.Name].([]interface{})[0], ShouldEqual, slicePrimitiveProperty.Default.([]string)[0])
 			})
 		})
 	})
