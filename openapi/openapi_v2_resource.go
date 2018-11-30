@@ -138,36 +138,6 @@ func (o *SpecV2Resource) getHost() (string, error) {
 	return overrideHost, nil
 }
 
-func getMultiRegionHost(overrideHost string, region string) (string, error) {
-	isMultiRegionHost, regex := isMultiRegionHost(overrideHost)
-	if isMultiRegionHost {
-		if region == "" {
-			return "", fmt.Errorf("region can not be empty for multiregion resources")
-		}
-		repStr := fmt.Sprintf("${1}%s$4", region)
-		return regex.ReplaceAllString(overrideHost, repStr), nil
-	}
-	return "", nil
-}
-
-// getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
-// value will override the global host value, and the API calls for this resource will be made against the value returned
-func getResourceOverrideHost(rootPathItem *spec.Operation) string {
-	if resourceURL, exists := rootPathItem.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
-		return resourceURL
-	}
-	return ""
-}
-
-func isMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
-	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
-	if err != nil {
-		log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
-		return false, nil
-	}
-	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
-}
-
 func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
 	return specResourceOperations{
 		Post:   o.createResourceOperation(o.RootPathItem.Post),
@@ -327,7 +297,6 @@ func (o *SpecV2Resource) getPropertyType(property spec.Schema) (schemaDefinition
 }
 
 func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
-
 	if o.isObjectTypeProperty(property) || property.Ref.Ref.GetURL() != nil {
 		// Case of nested object schema
 		if len(property.Properties) != 0 {
@@ -393,6 +362,9 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 }
 
 func (o *SpecV2Resource) getResourceTerraformName() string {
+	if o.RootPathItem.Post == nil {
+		return ""
+	}
 	return o.getExtensionStringValue(o.RootPathItem.Post.Extensions, extTfResourceName)
 }
 
@@ -505,4 +477,34 @@ func (o *SpecV2Resource) getTimeDuration(extensions spec.Extensions, extension s
 func (o *SpecV2Resource) getDuration(t string) (*time.Duration, error) {
 	duration, err := time.ParseDuration(t)
 	return &duration, err
+}
+
+func getMultiRegionHost(overrideHost string, region string) (string, error) {
+	isMultiRegionHost, regex := isMultiRegionHost(overrideHost)
+	if isMultiRegionHost {
+		if region == "" {
+			return "", fmt.Errorf("region can not be empty for multiregion resources")
+		}
+		repStr := fmt.Sprintf("${1}%s$4", region)
+		return regex.ReplaceAllString(overrideHost, repStr), nil
+	}
+	return "", nil
+}
+
+// getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
+// value will override the global host value, and the API calls for this resource will be made against the value returned
+func getResourceOverrideHost(rootPathItem *spec.Operation) string {
+	if resourceURL, exists := rootPathItem.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
+		return resourceURL
+	}
+	return ""
+}
+
+func isMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
+	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
+	if err != nil {
+		log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
+		return false, nil
+	}
+	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
 }
