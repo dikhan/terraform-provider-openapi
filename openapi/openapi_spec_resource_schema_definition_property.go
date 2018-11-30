@@ -63,6 +63,10 @@ func (s *specSchemaDefinitionProperty) isArrayProperty() bool {
 	return s.Type == typeList
 }
 
+func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
+	return s.Type == typeList && s.ArrayItemsType == typeObject
+}
+
 func (s *specSchemaDefinitionProperty) isRequired() bool {
 	return s.Required
 }
