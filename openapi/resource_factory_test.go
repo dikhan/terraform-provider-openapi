@@ -820,6 +820,44 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 		})
 	})
 
+	Convey("Given a resource factory initialized with a spec resource with some schema definition containing an array of objects", t, func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, nil),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, nil),
+			},
+		}
+		arrayObjectDefault := []map[string]interface{}{
+			{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
+		}
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, sliceProperty, sliceObjectProperty)
+		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
+			payload := r.createPayloadFromLocalStateData(resourceData)
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should not include the following keys as they are either an identifier or read only (computed) properties", func() {
+				So(payload, ShouldNotContainKey, idProperty.Name)
+				So(payload, ShouldNotContainKey, computedProperty.Name)
+			})
+			Convey("And then payload returned should include the following keys ", func() {
+				So(payload, ShouldContainKey, stringProperty.Name)
+				So(payload, ShouldContainKey, sliceProperty.Name)
+				So(payload, ShouldContainKey, sliceObjectProperty.Name)
+			})
+			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
+				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
+				So(payload[sliceProperty.Name], ShouldContain, sliceProperty.Default.([]string)[0])
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, arrayObjectDefault[0]["origin_port"])
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, arrayObjectDefault[0]["protocol"])
+			})
+		})
+	})
+
 	Convey("Given a resource factory initialized with a spec resource with some schema definition and zero values", t, func() {
 		r, resourceData := testCreateResourceFactory(t, intZeroValueProperty, numberZeroValueProperty, boolZeroValueProperty, sliceZeroValueProperty)
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {

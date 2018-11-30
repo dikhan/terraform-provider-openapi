@@ -44,6 +44,8 @@ func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+	//log.Printf("[DEBUG] '%s' terraform schema: %+v", r.openAPIResource.getResourceName(), s)
+	//spew.Dump(s)
 	timeouts, err := r.createSchemaResourceTimeout()
 	if err != nil {
 		return nil, err
@@ -79,6 +81,7 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[DEBUG] resource '%s' schemaDefinition: %s", r.openAPIResource.getResourceName(), sPrettyPrint(schemaDefinition))
 	return schemaDefinition.createResourceSchema()
 }
 
@@ -372,12 +375,66 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 		if property.isPropertyNamedID() {
 			continue
 		}
-		// TODO: validate that the data returned by the API matches the data configured by the user. This is a edge case scenario but can likely happen with inconsistent APIs
-		if err := r.setResourceDataProperty(propertyName, propertyValue, resourceLocalData); err != nil {
+		value, err := r.convertPayloadToLocalStateDataValue(property, propertyValue)
+		if err != nil {
+			return err
+		}
+		if err := r.setResourceDataProperty(propertyName, value, resourceLocalData); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}) (interface{}, error) {
+	if propertyValue == nil {
+		return nil, nil
+	}
+	dataValueKind := reflect.TypeOf(propertyValue).Kind()
+	switch dataValueKind {
+	case reflect.Map:
+		objectInput := map[string]interface{}{}
+		mapValue := propertyValue.(map[string]interface{})
+		for propertyName, propertyValue := range mapValue {
+			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
+			if err != nil {
+				return nil, err
+			}
+			propValue, err := r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue)
+			if err != nil {
+				return nil, err
+			}
+			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
+		}
+		return objectInput, nil
+	case reflect.Slice, reflect.Array:
+		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+			return propertyValue.([]interface{}), nil
+		}
+		if property.isArrayOfObjectsProperty() {
+			arrayInput := []interface{}{}
+			arrayValue := propertyValue.([]interface{})
+			for _, arrayItem := range arrayValue {
+				objectValue, err := r.convertPayloadToLocalStateDataValue(property, arrayItem)
+				if err != nil {
+					return err, nil
+				}
+				arrayInput = append(arrayInput, objectValue)
+			}
+			return arrayInput, nil
+		}
+		return nil, fmt.Errorf("property '%s' is supposed to be an array objects", property.Name)
+	case reflect.String:
+		return propertyValue.(string), nil
+	case reflect.Int:
+		return propertyValue.(int), nil
+	case reflect.Float64:
+		return propertyValue.(float64), nil
+	case reflect.Bool:
+		return propertyValue.(bool), nil
+	default:
+		return nil, fmt.Errorf("'%s' type not supported", dataValueKind)
+	}
 }
 
 // createPayloadFromLocalStateData is in charge of translating the values saved in the local state into a payload that can be posted/put
@@ -395,26 +452,61 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			continue
 		}
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
-			switch reflect.TypeOf(dataValue).Kind() {
-			case reflect.Map:
-				input[propertyName] = dataValue.(map[string]interface{})
-			case reflect.Slice, reflect.Array:
-				input[propertyName] = dataValue.([]interface{})
-			case reflect.String:
-				input[propertyName] = dataValue.(string)
-			case reflect.Int:
-				input[propertyName] = dataValue.(int)
-			case reflect.Float64:
-				input[propertyName] = dataValue.(float64)
-			case reflect.Bool:
-				input[propertyName] = dataValue.(bool)
-			default:
-				log.Printf("[WARN] [resource='%s'] createPayloadFromLocalStateData unkown dataValue type [propertyName: %s; propertyValueType: %+v;]", r.openAPIResource.getResourceName(), propertyName, reflect.TypeOf(dataValue).Kind())
+			r.getPropertyPayload(input, property, dataValue)
+		}
+		log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
+	}
+	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
+	return input
+}
+
+func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+	dataValueKind := reflect.TypeOf(dataValue).Kind()
+	switch dataValueKind {
+	case reflect.Map:
+		objectInput := map[string]interface{}{}
+		mapValue := dataValue.(map[string]interface{})
+		for propertyName, propertyValue := range mapValue {
+			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getPropertyBasedOnTerraformName(propertyName)
+			if err != nil {
+				return err
+			}
+			if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
+				return err
 			}
 		}
-		log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
+		input[property.Name] = objectInput
+	case reflect.Slice, reflect.Array:
+		//input[propertyName] = dataValue.([]interface{})
+		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+			input[property.Name] = dataValue.([]interface{})
+		} else {
+			arrayInput := []interface{}{}
+			arrayValue := dataValue.([]interface{})
+			for _, arrayItem := range arrayValue {
+				objectInput := map[string]interface{}{}
+				if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
+					return err
+				}
+				// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example
+				// [propertyName: listeners; propertyValue: [map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]]]
+				// Here we just want to assign as value: map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]
+				arrayInput = append(arrayInput, objectInput[property.Name])
+			}
+			input[property.Name] = arrayInput
+		}
+	case reflect.String:
+		input[property.Name] = dataValue.(string)
+	case reflect.Int:
+		input[property.Name] = dataValue.(int)
+	case reflect.Float64:
+		input[property.Name] = dataValue.(float64)
+	case reflect.Bool:
+		input[property.Name] = dataValue.(bool)
+	default:
+		return fmt.Errorf("'%s' type not supported", dataValueKind)
 	}
-	return input
+	return nil
 }
 
 func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{}) (string, error) {
