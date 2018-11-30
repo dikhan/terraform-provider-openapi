@@ -216,7 +216,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 			return nil, err
 		}
 		schemaDefinitionProperty.SpecSchemaDefinition = objectSchemaDefinition
-		log.Printf("[DEBUG] found object type property '%s' with the following schema: %+v", propertyName, objectSchemaDefinition)
+		log.Printf("[DEBUG] found object type property '%s'", propertyName)
 	} else if isArray, itemsType, itemsSchema, err := o.isArrayProperty(property); isArray || err != nil {
 		if err != nil {
 			return nil, fmt.Errorf("failed to process array type property '%s': %s", propertyName, err)
