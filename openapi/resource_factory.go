@@ -452,7 +452,10 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			continue
 		}
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
-			r.getPropertyPayload(input, property, dataValue)
+			err := r.getPropertyPayload(input, property, dataValue)
+			if err != nil {
+				log.Printf("[ERROR] [resource='%s'] error when creating the property payload for propertyName '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
+			}
 		}
 		log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 	}
@@ -461,6 +464,10 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 }
 
 func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+	if dataValue == nil {
+		log.Printf("[WARN] [resource='%s'] property '%s' has a nil state dataValue", r.openAPIResource.getResourceName(),property.Name)
+		return nil
+	}
 	dataValueKind := reflect.TypeOf(dataValue).Kind()
 	switch dataValueKind {
 	case reflect.Map:
@@ -477,7 +484,6 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 		}
 		input[property.Name] = objectInput
 	case reflect.Slice, reflect.Array:
-		//input[propertyName] = dataValue.([]interface{})
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			input[property.Name] = dataValue.([]interface{})
 		} else {
