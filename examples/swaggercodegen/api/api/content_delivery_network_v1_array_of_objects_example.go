@@ -12,5 +12,8 @@ package api
 
 type ContentDeliveryNetworkV1ArrayOfObjectsExample struct {
 
-	Protocol string `json:"protocol,omitempty"`
+	Protocol string `json:"protocol"`
+
+	OriginPort int32 `json:"originPort"`
+
 }

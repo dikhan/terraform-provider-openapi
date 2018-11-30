@@ -375,14 +375,21 @@ definitions:
           properties:
             protocol:
               type: string
+            originPort:
+              type: integer
+              x-terraform-field-name: "origin_port"
 
   ObjectProperty:
     type: object
     required:
     - message
+    - detailedMessage
     properties:
       message:
         type: string
+      detailedMessage:
+        type: string
+        x-terraform-field-name: "detailed_message"
 
   LBV1:
     type: "object"

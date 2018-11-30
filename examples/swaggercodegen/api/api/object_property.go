@@ -11,5 +11,7 @@
 package api
 
 type ObjectProperty struct {
-	Message string `json:"message,omitempty"`
+	Message string `json:"message"`
+
+	DetailedMessage string `json:"detailedMessage"`
 }
