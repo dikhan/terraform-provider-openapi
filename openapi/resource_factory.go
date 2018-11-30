@@ -454,7 +454,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 			err := r.getPropertyPayload(input, property, dataValue)
 			if err != nil {
-				log.Printf("[ERROR] [resource='%s'] error when creating the property payload for propertyName '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
+				log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
 			}
 		}
 		log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
@@ -465,8 +465,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 
 func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
 	if dataValue == nil {
-		log.Printf("[WARN] [resource='%s'] property '%s' has a nil state dataValue", r.openAPIResource.getResourceName(),property.Name)
-		return nil
+		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name)
 	}
 	dataValueKind := reflect.TypeOf(dataValue).Kind()
 	switch dataValueKind {
