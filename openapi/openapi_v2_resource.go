@@ -327,21 +327,21 @@ func (o *SpecV2Resource) getPropertyType(property spec.Schema) (schemaDefinition
 }
 
 func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
-	// Case of nested object schema
-	if o.isObjectTypeProperty(property) {
+
+	if o.isObjectTypeProperty(property) || property.Ref.Ref.GetURL() != nil {
+		// Case of nested object schema
 		if len(property.Properties) != 0 {
 			return true, &property, nil
 		}
-		return false, nil, fmt.Errorf("object is missing the nested schema definition")
-	}
-
-	// Case of external ref to the object schema
-	if property.Ref.Ref.GetURL() != nil {
-		schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
-		if err != nil {
-			return false, nil, err
+		// Case of external ref - in this case the type could be populated or not
+		if property.Ref.Ref.GetURL() != nil {
+			schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
+			if err != nil {
+				return true, nil, fmt.Errorf("object ref is poitning to a non existing schema definition: %s", err)
+			}
+			return true, schema, nil
 		}
-		return true, schema, nil
+		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
 	}
 	return false, nil, nil
 }
