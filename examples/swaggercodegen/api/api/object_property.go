@@ -14,4 +14,10 @@ type ObjectProperty struct {
 	Message string `json:"message"`
 
 	DetailedMessage string `json:"detailedMessage"`
+
+	ExampleInt int32 `json:"exampleInt"`
+
+	ExampleNumber float32 `json:"exampleNumber"`
+
+	ExampleBoolean bool `json:"example_boolean"`
 }

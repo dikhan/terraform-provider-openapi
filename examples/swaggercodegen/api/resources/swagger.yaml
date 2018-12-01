@@ -384,12 +384,21 @@ definitions:
     required:
     - message
     - detailedMessage
+    - exampleInt
+    - exampleNumber
+    - example_boolean
     properties:
       message:
         type: string
       detailedMessage:
         type: string
         x-terraform-field-name: "detailed_message"
+      exampleInt:
+        type: integer
+      exampleNumber:
+        type: number
+      example_boolean:
+        type: boolean
 
   LBV1:
     type: "object"

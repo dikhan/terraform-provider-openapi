@@ -15,12 +15,21 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   example_boolean = true
 
   object_property = {
-    message = "some message news"
+    message = "some message news2"
+    detailed_message = "some message news with details"
+    example_int = 10
+    example_number = 12.22
+    example_boolean = true
   }
 
   array_of_objects_example = [
     {
-      protocol = "%s"
+      protocol = "http"
+      origin_port = 80
+    },
+    {
+      protocol = "https"
+      origin_port = 443
     }
   ]
 }
