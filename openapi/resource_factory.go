@@ -3,8 +3,10 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/mitchellh/hashstructure"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -375,7 +377,7 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 		if property.isPropertyNamedID() {
 			continue
 		}
-		value, err := r.convertPayloadToLocalStateDataValue(property, propertyValue)
+		value, err := r.convertPayloadToLocalStateDataValue(property, propertyValue, true)
 		if err != nil {
 			return err
 		}
@@ -386,42 +388,65 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 	return nil
 }
 
-func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}) (interface{}, error) {
+func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useSetStructure bool) (interface{}, error) {
 	if propertyValue == nil {
 		return nil, nil
 	}
 	dataValueKind := reflect.TypeOf(propertyValue).Kind()
 	switch dataValueKind {
 	case reflect.Map:
-		objectInput := map[string]interface{}{}
-		mapValue := propertyValue.(map[string]interface{})
-		for propertyName, propertyValue := range mapValue {
-			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
-			if err != nil {
-				return nil, err
+		// For object types, sets must be used. However, if it's this map is an elem of a list then a map should be used instead
+		if useSetStructure {
+			mapValue := propertyValue.(map[string]interface{})
+			setItem := map[string]interface{}{}
+			for propertyName, propertyValue := range mapValue {
+				schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
+				if err != nil {
+					return nil, err
+				}
+				propValue, err := r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
+				if err != nil {
+					return nil, err
+				}
+				setItem[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
 			}
-			propValue, err := r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue)
-			if err != nil {
-				return nil, err
+			hashFunc := func(inputMap interface{}) int {
+				hash, _ := hashstructure.Hash(inputMap, nil)
+				return hashcode.String(strconv.FormatUint(hash, 32))
 			}
-			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
+			objectStateDataValue := schema.NewSet(hashFunc, []interface{}{setItem})
+			return objectStateDataValue, nil
+		} else { // Only in the case of list elements (objects)
+			objectInput := map[string]interface{}{}
+			mapValue := propertyValue.(map[string]interface{})
+			for propertyName, propertyValue := range mapValue {
+				schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
+				if err != nil {
+					return nil, err
+				}
+				propValue, err := r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
+				if err != nil {
+					return nil, err
+				}
+				objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
+			}
+			return objectInput, nil
 		}
-		return objectInput, nil
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			return propertyValue.([]interface{}), nil
 		}
 		if property.isArrayOfObjectsProperty() {
-			arrayInput := []interface{}{}
+			arrayStateDataValue := []interface{}{}
 			arrayValue := propertyValue.([]interface{})
 			for _, arrayItem := range arrayValue {
-				objectValue, err := r.convertPayloadToLocalStateDataValue(property, arrayItem)
+				objectValue, err := r.convertPayloadToLocalStateDataValue(property, arrayItem, false)
 				if err != nil {
 					return err, nil
 				}
-				arrayInput = append(arrayInput, objectValue)
+				arrayStateDataValue = append(arrayStateDataValue, objectValue)
 			}
-			return arrayInput, nil
+			return arrayStateDataValue, nil
 		}
 		return nil, fmt.Errorf("property '%s' is supposed to be an array objects", property.Name)
 	case reflect.String:
@@ -469,6 +494,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 	}
 	dataValueKind := reflect.TypeOf(dataValue).Kind()
 	switch dataValueKind {
+	// Maps is only used for Terraform List Elems
 	case reflect.Map:
 		objectInput := map[string]interface{}{}
 		mapValue := dataValue.(map[string]interface{})
@@ -482,6 +508,28 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			}
 		}
 		input[property.Name] = objectInput
+	// Ptr is only used for Terraform Set types
+	case reflect.Ptr:
+		schemaSet := dataValue.(*schema.Set)
+		objectInput := map[string]interface{}{}
+		for _, setItem := range schemaSet.List() {
+			mapValue := setItem.(map[string]interface{})
+			for propertyName, propertyValue := range mapValue {
+				schemaDefinitionProperty, err := property.SpecSchemaDefinition.getPropertyBasedOnTerraformName(propertyName)
+				if err != nil {
+					return err
+				}
+				if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
+					return err
+				}
+			}
+			// this is only meant for objects, using SETs due to the limitation of having other types than string
+			// hence, it is expected that if we reached this point, all the properties from the object have been covered
+			// and no more elements need to be processed...otherwise the property should be an array
+			break
+		}
+		input[property.Name] = objectInput
+	// Ptr is only used for Terraform List types
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			input[property.Name] = dataValue.([]interface{})
