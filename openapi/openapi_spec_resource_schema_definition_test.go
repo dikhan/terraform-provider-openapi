@@ -202,7 +202,7 @@ func TestCreateResourceSchema(t *testing.T) {
 			Convey("And the resulted tfResourceSchema should contain the array property", func() {
 				So(tfResourceSchema, ShouldContainKey, "listeners")
 			})
-			Convey("And the resulted tfResourceSchema listeners field should be of type list and contain the right elem schema of type resource with the protocol field", func() {
+			Convey("And the resulted tfResourceSchema should contain a field of type list and the list should have the right object elem schema of type Resource", func() {
 				So(tfResourceSchema["listeners"].Type, ShouldEqual, schema.TypeList)
 				So(tfResourceSchema["listeners"].Elem.(*schema.Resource).Schema, ShouldContainKey, "protocol")
 				So(tfResourceSchema["listeners"].Elem.(*schema.Resource).Schema["protocol"].Type, ShouldEqual, schema.TypeString)
