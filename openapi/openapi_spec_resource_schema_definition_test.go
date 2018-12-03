@@ -157,7 +157,7 @@ func TestCreateResourceSchema(t *testing.T) {
 			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
 			})
-			Convey("And the resulted tfResourceSchema should contain listeners property", func() {
+			Convey("And the resulted tfResourceSchema should contain the array property", func() {
 				So(tfResourceSchema, ShouldContainKey, "listeners")
 			})
 			Convey("And the resulted tfResourceSchema listeners field should be of type list and contain the right item schema string type", func() {
@@ -199,7 +199,7 @@ func TestCreateResourceSchema(t *testing.T) {
 			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
 			})
-			Convey("And the resulted tfResourceSchema should contain listeners property", func() {
+			Convey("And the resulted tfResourceSchema should contain the array property", func() {
 				So(tfResourceSchema, ShouldContainKey, "listeners")
 			})
 			Convey("And the resulted tfResourceSchema listeners field should be of type list and contain the right elem schema of type resource with the protocol field", func() {
