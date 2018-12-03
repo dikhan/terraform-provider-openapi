@@ -3,10 +3,8 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/mitchellh/hashstructure"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -377,7 +375,7 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 		if property.isPropertyNamedID() {
 			continue
 		}
-		value, err := r.convertPayloadToLocalStateDataValue(property, propertyValue, true)
+		value, err := r.convertPayloadToLocalStateDataValue(property, propertyValue, false)
 		if err != nil {
 			return err
 		}
@@ -388,74 +386,76 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 	return nil
 }
 
-func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useSetStructure bool) (interface{}, error) {
+func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
 	if propertyValue == nil {
 		return nil, nil
 	}
 	dataValueKind := reflect.TypeOf(propertyValue).Kind()
 	switch dataValueKind {
 	case reflect.Map:
-		// For object types, sets must be used. However, if it's this map is an elem of a list then a map should be used instead
-		if useSetStructure {
-			mapValue := propertyValue.(map[string]interface{})
-			setItem := map[string]interface{}{}
-			for propertyName, propertyValue := range mapValue {
-				schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
-				if err != nil {
-					return nil, err
-				}
-				propValue, err := r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
-				if err != nil {
-					return nil, err
-				}
-				setItem[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
+		objectInput := map[string]interface{}{}
+		mapValue := propertyValue.(map[string]interface{})
+		for propertyName, propertyValue := range mapValue {
+			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
+			if err != nil {
+				return nil, err
 			}
-			hashFunc := func(inputMap interface{}) int {
-				hash, _ := hashstructure.Hash(inputMap, nil)
-				return hashcode.String(strconv.FormatUint(hash, 32))
+			var propValue interface{}
+			// Here we are processing the items of the list which are objects. In this case we need to keep the original
+			// types as Terraform honors property types for resource schemas attached to typeList properties
+			if property.isArrayOfObjectsProperty() {
+				propValue, err = r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, false)
+			} else { // Here we need to use strings as values as terraform typeMap only supports string items
+				propValue, err = r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
 			}
-			objectStateDataValue := schema.NewSet(hashFunc, []interface{}{setItem})
-			return objectStateDataValue, nil
-		} else { // Only in the case of list elements (objects)
-			objectInput := map[string]interface{}{}
-			mapValue := propertyValue.(map[string]interface{})
-			for propertyName, propertyValue := range mapValue {
-				schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
-				if err != nil {
-					return nil, err
-				}
-				propValue, err := r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
-				if err != nil {
-					return nil, err
-				}
-				objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
+			if err != nil {
+				return nil, err
 			}
-			return objectInput, nil
+			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
 		}
+		return objectInput, nil
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			return propertyValue.([]interface{}), nil
 		}
 		if property.isArrayOfObjectsProperty() {
-			arrayStateDataValue := []interface{}{}
+			arrayInput := []interface{}{}
 			arrayValue := propertyValue.([]interface{})
 			for _, arrayItem := range arrayValue {
 				objectValue, err := r.convertPayloadToLocalStateDataValue(property, arrayItem, false)
 				if err != nil {
 					return err, nil
 				}
-				arrayStateDataValue = append(arrayStateDataValue, objectValue)
+				arrayInput = append(arrayInput, objectValue)
 			}
-			return arrayStateDataValue, nil
+			return arrayInput, nil
 		}
 		return nil, fmt.Errorf("property '%s' is supposed to be an array objects", property.Name)
 	case reflect.String:
 		return propertyValue.(string), nil
 	case reflect.Int:
+		if useString {
+			return fmt.Sprintf("%d", propertyValue.(int)), nil
+		}
 		return propertyValue.(int), nil
 	case reflect.Float64:
+		if useString {
+			// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
+			// an actual int or if not then casting to float64
+			if property.Type == typeInt {
+				return fmt.Sprintf("%d", int(propertyValue.(float64))), nil
+			}
+			return fmt.Sprintf("%.2f", propertyValue.(float64)), nil
+		}
 		return propertyValue.(float64), nil
 	case reflect.Bool:
+		if useString {
+			// this is only applicable to objects
+			if propertyValue.(bool) {
+				return fmt.Sprintf("1"), nil
+			}
+			return fmt.Sprintf("0"), nil
+		}
 		return propertyValue.(bool), nil
 	default:
 		return nil, fmt.Errorf("'%s' type not supported", dataValueKind)
@@ -494,7 +494,6 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 	}
 	dataValueKind := reflect.TypeOf(dataValue).Kind()
 	switch dataValueKind {
-	// Maps is only used for Terraform List Elems
 	case reflect.Map:
 		objectInput := map[string]interface{}{}
 		mapValue := dataValue.(map[string]interface{})
@@ -508,28 +507,6 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			}
 		}
 		input[property.Name] = objectInput
-	// Ptr is only used for Terraform Set types
-	case reflect.Ptr:
-		schemaSet := dataValue.(*schema.Set)
-		objectInput := map[string]interface{}{}
-		for _, setItem := range schemaSet.List() {
-			mapValue := setItem.(map[string]interface{})
-			for propertyName, propertyValue := range mapValue {
-				schemaDefinitionProperty, err := property.SpecSchemaDefinition.getPropertyBasedOnTerraformName(propertyName)
-				if err != nil {
-					return err
-				}
-				if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
-					return err
-				}
-			}
-			// this is only meant for objects, using SETs due to the limitation of having other types than string
-			// hence, it is expected that if we reached this point, all the properties from the object have been covered
-			// and no more elements need to be processed...otherwise the property should be an array
-			break
-		}
-		input[property.Name] = objectInput
-	// Ptr is only used for Terraform List types
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			input[property.Name] = dataValue.([]interface{})
@@ -549,7 +526,30 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			input[property.Name] = arrayInput
 		}
 	case reflect.String:
-		input[property.Name] = dataValue.(string)
+		// This is so when object fields are processed, map values, they come as string so need to do the proper translation base
+		// on the origin type of the property
+		switch property.Type {
+		case typeInt:
+			v, err := strconv.ParseInt(dataValue.(string), 0, 0)
+			if err != nil {
+				return err
+			}
+			input[property.Name] = v
+		case typeFloat:
+			v, err := strconv.ParseFloat(dataValue.(string), 64)
+			if err != nil {
+				return err
+			}
+			input[property.Name] = v
+		case typeBool:
+			v, err := strconv.ParseBool(dataValue.(string))
+			if err != nil {
+				return err
+			}
+			input[property.Name] = v
+		default:
+			input[property.Name] = dataValue.(string)
+		}
 	case reflect.Int:
 		input[property.Name] = dataValue.(int)
 	case reflect.Float64:
@@ -557,7 +557,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 	case reflect.Bool:
 		input[property.Name] = dataValue.(bool)
 	default:
-		return fmt.Errorf("'%s' type not supported", dataValueKind)
+		return fmt.Errorf("'%s' type not supported", property.Type)
 	}
 	return nil
 }

@@ -1297,7 +1297,7 @@ func TestGetResourceTerraformName(t *testing.T) {
 				PathItemProps: spec.PathItemProps{
 					Post: &spec.Operation{
 						VendorExtensible: spec.VendorExtensible{
-							extensions,
+							Extensions: extensions,
 						},
 					},
 				},

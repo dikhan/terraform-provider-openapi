@@ -78,7 +78,7 @@ func (s *specSchemaDefinitionProperty) isReadOnly() bool {
 func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
 	switch s.Type {
 	case typeObject:
-		return schema.TypeSet, nil
+		return schema.TypeMap, nil
 	case typeString:
 		return schema.TypeString, nil
 	case typeInt:
