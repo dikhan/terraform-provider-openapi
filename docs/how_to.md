@@ -654,7 +654,7 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
 - Arrays of complex values (objects):
 
 The example below shows how the property named 'arrayOfObjectsExample' is configured with type 'array' and the 'items'
-are object type object, meaning that the array holds objects inside as described in the object 'properties' section.
+are of type object, meaning that the array holds objects inside as described in the object 'properties' section.
 
 ````
 definitions:
@@ -716,7 +716,7 @@ definitions:
 
 ####### Ref schema definition
 
-A property that has a $ref attribute is considered automatically and object so defining the type 'object' is optional (although
+A property that has a $ref attribute is considered automatically an object so defining the type 'object' is optional (although
 it's recommended).
 
 ````
