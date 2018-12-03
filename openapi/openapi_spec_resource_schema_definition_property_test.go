@@ -277,7 +277,7 @@ func TestTerraformType(t *testing.T) {
 			Convey("Then error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And valye type should be string", func() {
+			Convey("And value type should be string", func() {
 				So(valueType, ShouldEqual, schema.TypeString)
 			})
 		})
