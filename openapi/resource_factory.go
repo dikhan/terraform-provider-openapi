@@ -439,11 +439,19 @@ func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchem
 		}
 		return propertyValue.(int), nil
 	case reflect.Float64:
-		if useString {
-			// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
-			// an actual int or if not then casting to float64
-			if property.Type == typeInt {
+		// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
+		// an actual int or if not then casting to float64
+		if property.Type == typeInt {
+			if useString {
 				return fmt.Sprintf("%d", int(propertyValue.(float64))), nil
+			}
+			return int(propertyValue.(float64)), nil
+		}
+		if useString {
+			// For some reason after apply the state for object configurations is saved with values "0.00" but subsequent plans find diffs saying that the value changed from "0.00" to "0"
+			// Adding this check for the time being to avoid the above diffs
+			if propertyValue.(float64) == 0 {
+				return "0", nil
 			}
 			return fmt.Sprintf("%.2f", propertyValue.(float64)), nil
 		}
