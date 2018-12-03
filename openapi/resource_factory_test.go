@@ -999,7 +999,7 @@ func TestGetPropertyPayload(t *testing.T) {
 			Convey("And then payload returned should have the object property", func() {
 				So(payload, ShouldContainKey, sliceObjectProperty.Name)
 			})
-			Convey("And then payload returned should have the data value from the state file", func() {
+			Convey("And then payload returned should have the data value from the state file properly formatter with the right types", func() {
 				// For some reason the data values in the terraform state file are all strings
 				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})[sliceObjectProperty.SpecSchemaDefinition.Properties[0].Name], ShouldEqual, sliceObjectProperty.SpecSchemaDefinition.Properties[0].Default.(int))
 				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})[sliceObjectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, sliceObjectProperty.SpecSchemaDefinition.Properties[1].Default)
