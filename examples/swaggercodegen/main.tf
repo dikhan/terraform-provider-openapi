@@ -10,14 +10,55 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   ips = ["127.0.0.1"] ## This is a force-new property (refer to swagger file)
   hostnames = ["origin.com"]
 
-  example_int = 12
-  better_example_number_field_name = 1.12
+  example_int = 25
+  better_example_number_field_name = 15.78
   example_boolean = true
 
   object_property = {
-    message = "some message news"
+    message = "some message news2"
+    detailed_message = "some message news with details"
+    example_int = 11
+    example_number = 12.23
+    example_boolean = true
   }
+
+  array_of_objects_example = [
+    {
+      protocol = "http"
+      origin_port = 81
+    },
+    {
+      protocol = "https"
+      origin_port = 443
+    }
+  ]
 }
+
+# This is an example on how to use interpolation for 'object' types like the object_property and be able to pass
+# along to other resources property values from objects
+resource "swaggercodegen_cdn_v1" "my_cdn2" {
+  label = "label" ## This is an immutable property (refer to swagger file)
+  ips = ["127.0.0.2"] ## This is a force-new property (refer to swagger file)
+  hostnames = ["origin.com"]
+
+  example_int = "${swaggercodegen_cdn_v1.my_cdn.object_property.example_int}"
+  better_example_number_field_name = "${swaggercodegen_cdn_v1.my_cdn.object_property.example_number}"
+  example_boolean = "${swaggercodegen_cdn_v1.my_cdn.object_property.example_boolean}"
+
+  object_property = {
+    message = "some message news2"
+    detailed_message = "some message news with details"
+    example_int = "${swaggercodegen_cdn_v1.my_cdn.object_property.example_int}"
+    example_number = "${swaggercodegen_cdn_v1.my_cdn.object_property.example_number}"
+    example_boolean = "${swaggercodegen_cdn_v1.my_cdn.object_property.example_boolean}"
+  }
+
+  array_of_objects_example = [
+    "${swaggercodegen_cdn_v1.my_cdn.array_of_objects_example[0]}",
+    "${swaggercodegen_cdn_v1.my_cdn.array_of_objects_example[1]}",
+  ]
+}
+
 
 resource "swaggercodegen_lbs_v1" "my_lb" {
   name = "some_name"

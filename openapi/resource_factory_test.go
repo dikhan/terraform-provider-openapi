@@ -793,7 +793,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
 	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, sliceProperty)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty)
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
 			payload := r.createPayloadFromLocalStateData(resourceData)
 			Convey("Then the map returned should not be empty", func() {
@@ -808,14 +808,52 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				So(payload, ShouldContainKey, intProperty.Name)
 				So(payload, ShouldContainKey, numberProperty.Name)
 				So(payload, ShouldContainKey, boolProperty.Name)
-				So(payload, ShouldContainKey, sliceProperty.Name)
+				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
 			})
 			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
 				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
 				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
 				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
 				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
-				So(payload[sliceProperty.Name], ShouldContain, sliceProperty.Default.([]string)[0])
+				So(payload[slicePrimitiveProperty.Name], ShouldContain, slicePrimitiveProperty.Default.([]string)[0])
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with some schema definition containing an array of objects", t, func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, nil),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, nil),
+			},
+		}
+		arrayObjectDefault := []map[string]interface{}{
+			{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
+		}
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, slicePrimitiveProperty, sliceObjectProperty)
+		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
+			payload := r.createPayloadFromLocalStateData(resourceData)
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should not include the following keys as they are either an identifier or read only (computed) properties", func() {
+				So(payload, ShouldNotContainKey, idProperty.Name)
+				So(payload, ShouldNotContainKey, computedProperty.Name)
+			})
+			Convey("And then payload returned should include the following keys ", func() {
+				So(payload, ShouldContainKey, stringProperty.Name)
+				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
+				So(payload, ShouldContainKey, sliceObjectProperty.Name)
+			})
+			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
+				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
+				So(payload[slicePrimitiveProperty.Name], ShouldContain, slicePrimitiveProperty.Default.([]string)[0])
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, arrayObjectDefault[0]["origin_port"])
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, arrayObjectDefault[0]["protocol"])
 			})
 		})
 	})
@@ -837,6 +875,359 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				So(payload[intZeroValueProperty.Name], ShouldEqual, intZeroValueProperty.Default)
 				So(payload[numberZeroValueProperty.Name], ShouldEqual, numberZeroValueProperty.Default)
 				So(payload[boolZeroValueProperty.Name], ShouldEqual, boolZeroValueProperty.Default)
+			})
+		})
+	})
+}
+
+func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When convertPayloadToLocalStateDataValue is called with a string property and a string value", func() {
+			property := newStringSchemaDefinitionPropertyWithDefaults("string_property", "", false, false, nil)
+			dataValue := "someValue"
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type string", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with a bool property and a bool value", func() {
+			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
+			dataValue := true
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type boolean", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with a bool property, a bool value true and the desired output is string", func() {
+			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
+			dataValue := true
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type boolean", func() {
+				So(resultValue, ShouldEqual, "1")
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with a int property, a bool value false and the desired output is string", func() {
+			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
+			dataValue := false
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type boolean", func() {
+				So(resultValue, ShouldEqual, "0")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an int property and a int value", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 10
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type int", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an int property and a int value and the desired output is string", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 10
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
+				So(resultValue, ShouldEqual, "10")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value", func() {
+			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
+			dataValue := 45.23
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type float", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value Zero and the desired output is string", func() {
+			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
+			dataValue := 0
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value 0 formatted string with the right type float", func() {
+				So(resultValue, ShouldEqual, "0")
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value and the desired output is string", func() {
+			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
+			dataValue := 10.12
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type float", func() {
+				So(resultValue, ShouldEqual, "10.12")
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value but the swagger property is an integer", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 45
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type integer", func() {
+				So(resultValue, ShouldEqual, dataValue)
+				So(resultValue, ShouldHaveSameTypeAs, int(dataValue))
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value but the swagger property is an integer and the expected output format is string", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 45
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type integer", func() {
+				So(resultValue, ShouldEqual, "45")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an list property and a with items object", func() {
+			objectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
+				},
+			}
+			objectDefault := map[string]interface{}{
+				"example_int":    80,
+				"example_string": "http",
+				"example_bool":   true,
+				"example_float":  10.45,
+			}
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, nil, typeObject, objectSchemaDefinition)
+			dataValue := []interface{}{objectDefault}
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the list containing the object items with the expected types (int, string, bool and float)", func() {
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_int")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_int"].(int), ShouldEqual, objectDefault["example_int"])
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_string")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_string"].(string), ShouldEqual, objectDefault["example_string"])
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_bool")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_bool"].(bool), ShouldEqual, objectDefault["example_bool"])
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_float")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_float"].(float64), ShouldEqual, objectDefault["example_float"])
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with items string value", func() {
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, nil, typeString, nil)
+			dataValue := []interface{}{"value1"}
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type array", func() {
+				So(resultValue.([]interface{}), ShouldContain, dataValue[0])
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an object", func() {
+			objectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
+				},
+			}
+			dataValue := map[string]interface{}{
+				"example_int":    80,
+				"example_string": "http",
+				"example_bool":   true,
+				"example_float":  10.45,
+			}
+			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, nil, objectSchemaDefinition)
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_int")
+				So(resultValue.(map[string]interface{})["example_int"].(string), ShouldEqual, "80")
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_string")
+				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_bool")
+				So(resultValue.(map[string]interface{})["example_bool"].(string), ShouldEqual, "1")
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_float")
+				So(resultValue.(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
+			})
+		})
+	})
+}
+
+func TestGetPropertyPayload(t *testing.T) {
+	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		objectDefault := map[string]interface{}{
+			"origin_port": 80,
+			"protocol":    "http",
+		}
+		arrayObjectDefault := []map[string]interface{}{
+			objectDefault,
+		}
+		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, objectDefault, objectSchemaDefinition)
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, sliceObjectProperty)
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the string property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(stringProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, stringProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the string property", func() {
+				So(payload, ShouldContainKey, stringProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
+			})
+		})
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the int property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(intProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, intProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the integer property", func() {
+				So(payload, ShouldContainKey, intProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
+			})
+		})
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the number property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(numberProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, numberProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the number property", func() {
+				So(payload, ShouldContainKey, numberProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
+			})
+		})
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the bool property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(boolProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, boolProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the bool property", func() {
+				So(payload, ShouldContainKey, boolProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
+			})
+		})
+
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the object property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(objectProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, objectProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the object property", func() {
+				So(payload, ShouldContainKey, objectProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[objectProperty.Name].(map[string]interface{})[objectProperty.SpecSchemaDefinition.Properties[0].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[0].Default.(int))
+				So(payload[objectProperty.Name].(map[string]interface{})[objectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[1].Default)
+			})
+		})
+
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the object property", func() {
+				So(payload, ShouldContainKey, sliceObjectProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file properly formatter with the right types", func() {
+				// For some reason the data values in the terraform state file are all strings
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})[sliceObjectProperty.SpecSchemaDefinition.Properties[0].Name], ShouldEqual, sliceObjectProperty.SpecSchemaDefinition.Properties[0].Default.(int))
+				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})[sliceObjectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, sliceObjectProperty.SpecSchemaDefinition.Properties[1].Default)
+			})
+		})
+
+		Convey("When createPayloadFromLocalStateData is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, slicePrimitiveProperty, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("And then payload returned should have the object property", func() {
+				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
+			})
+			Convey("And then payload returned should have the data value from the state file", func() {
+				So(payload[slicePrimitiveProperty.Name].([]interface{})[0], ShouldEqual, slicePrimitiveProperty.Default.([]string)[0])
 			})
 		})
 	})

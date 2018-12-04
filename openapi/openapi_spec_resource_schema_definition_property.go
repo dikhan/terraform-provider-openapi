@@ -27,6 +27,7 @@ type specSchemaDefinitionProperty struct {
 	Name               string
 	PreferredName      string
 	Type               schemaDefinitionPropertyType
+	ArrayItemsType     schemaDefinitionPropertyType
 	Required           bool
 	ReadOnly           bool
 	ForceNew           bool
@@ -35,64 +36,8 @@ type specSchemaDefinitionProperty struct {
 	IsIdentifier       bool
 	IsStatusIdentifier bool
 	Default            interface{}
-	// only for object type properties
+	// only for object type properties or arrays type properties with array items of type object
 	SpecSchemaDefinition *specSchemaDefinition
-}
-
-func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newStringSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
-}
-
-func newStringSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeString, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
-}
-
-func newIntSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newIntSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
-}
-
-func newIntSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeInt, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
-}
-
-func newNumberSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newNumberSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
-}
-
-func newNumberSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeFloat, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
-}
-
-func newBoolSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newBoolSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
-}
-
-func newBoolSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeBool, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
-}
-
-func newListSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newListSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
-}
-
-func newListSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return newSchemaDefinitionProperty(name, preferredName, typeList, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
-}
-
-func newSchemaDefinitionProperty(name, preferredName string, propertyType schemaDefinitionPropertyType, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
-	return &specSchemaDefinitionProperty{
-		Name:               name,
-		PreferredName:      preferredName,
-		Type:               propertyType,
-		Required:           required,
-		ReadOnly:           readOnly,
-		ForceNew:           forceNew,
-		Sensitive:          sensitive,
-		Immutable:          immutable,
-		IsIdentifier:       isIdentifier,
-		IsStatusIdentifier: isStatusIdentifier,
-		Default:            defaultValue,
-	}
 }
 
 func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() string {
@@ -118,6 +63,10 @@ func (s *specSchemaDefinitionProperty) isArrayProperty() bool {
 	return s.Type == typeList
 }
 
+func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
+	return s.Type == typeList && s.ArrayItemsType == typeObject
+}
+
 func (s *specSchemaDefinitionProperty) isRequired() bool {
 	return s.Required
 }
@@ -126,32 +75,80 @@ func (s *specSchemaDefinitionProperty) isReadOnly() bool {
 	return s.ReadOnly
 }
 
-// terraformSchema returns the terraform schema for a the given specSchemaDefinitionProperty
-func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error) {
-	var terraformSchema = &schema.Schema{}
+func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
 	switch s.Type {
 	case typeObject:
+		return schema.TypeMap, nil
+	case typeString:
+		return schema.TypeString, nil
+	case typeInt:
+		return schema.TypeInt, nil
+	case typeFloat:
+		return schema.TypeFloat, nil
+	case typeBool:
+		return schema.TypeBool, nil
+	case typeList:
+		return schema.TypeList, nil
+	}
+	return schema.TypeInvalid, fmt.Errorf("non supported type %s", s.Type)
+}
+
+func (s *specSchemaDefinitionProperty) isTerraformListOfSimpleValues() (bool, *schema.Schema) {
+	switch s.ArrayItemsType {
+	case typeString:
+		return true, &schema.Schema{Type: schema.TypeString}
+	case typeInt:
+		return true, &schema.Schema{Type: schema.TypeInt}
+	case typeFloat:
+		return true, &schema.Schema{Type: schema.TypeFloat}
+	case typeBool:
+		return true, &schema.Schema{Type: schema.TypeBool}
+	}
+	return false, nil
+}
+
+func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource, error) {
+	if s.Type == typeObject || (s.Type == typeList && s.ArrayItemsType == typeObject) {
 		objectSchema, err := s.SpecSchemaDefinition.createResourceSchemaKeepID()
 		if err != nil {
 			return nil, err
 		}
-		terraformSchema = &schema.Schema{
-			Type: schema.TypeMap,
-			Elem: &schema.Resource{
-				Schema: objectSchema,
-			},
+		elem := &schema.Resource{
+			Schema: objectSchema,
 		}
-	case typeString:
-		terraformSchema.Type = schema.TypeString
-	case typeInt:
-		terraformSchema.Type = schema.TypeInt
-	case typeFloat:
-		terraformSchema.Type = schema.TypeFloat
-	case typeBool:
-		terraformSchema.Type = schema.TypeBool
+		return elem, nil
+	}
+	return nil, fmt.Errorf("object schema can only be formed for types %s or types %s with elems of type %s: found type='%s' elemType='%s' instead", typeObject, typeList, typeObject, s.Type, s.ArrayItemsType)
+}
+
+// terraformSchema returns the terraform schema for a the given specSchemaDefinitionProperty
+func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error) {
+	var terraformSchema = &schema.Schema{}
+
+	schemaType, err := s.terraformType()
+	if err != nil {
+		return nil, err
+	}
+	terraformSchema.Type = schemaType
+
+	// complex data structures
+	switch s.Type {
+	case typeObject:
+		objectSchema, err := s.terraformObjectSchema()
+		if err != nil {
+			return nil, err
+		}
+		terraformSchema.Elem = objectSchema
 	case typeList:
-		terraformSchema.Type = schema.TypeList
-		terraformSchema.Elem = &schema.Schema{Type: schema.TypeString}
+		if isListOfPrimitives, elemSchema := s.isTerraformListOfSimpleValues(); isListOfPrimitives {
+			terraformSchema.Elem = elemSchema
+		} else {
+			objectSchema, err := s.terraformObjectSchema()
+			if err != nil {
+				return nil, err
+			}
+			terraformSchema.Elem = objectSchema
+		}
 	}
 
 	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but

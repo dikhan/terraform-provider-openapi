@@ -368,13 +368,37 @@ definitions:
         properties:
           name:
             type: string
+      arrayOfObjectsExample: # This is an example of an array of objects
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            protocol:
+              type: string
+            originPort:
+              type: integer
+              x-terraform-field-name: "origin_port"
+
   ObjectProperty:
     type: object
     required:
     - message
+    - detailedMessage
+    - exampleInt
+    - exampleNumber
+    - example_boolean
     properties:
       message:
         type: string
+      detailedMessage:
+        type: string
+        x-terraform-field-name: "detailed_message"
+      exampleInt:
+        type: integer
+      exampleNumber:
+        type: number
+      example_boolean:
+        type: boolean
 
   LBV1:
     type: "object"
@@ -415,6 +439,7 @@ definitions:
         $ref: "#/definitions/Status"
         x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
         readOnly: true
+
   Status:
     type: object
     properties:

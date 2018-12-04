@@ -138,36 +138,6 @@ func (o *SpecV2Resource) getHost() (string, error) {
 	return overrideHost, nil
 }
 
-func getMultiRegionHost(overrideHost string, region string) (string, error) {
-	isMultiRegionHost, regex := isMultiRegionHost(overrideHost)
-	if isMultiRegionHost {
-		if region == "" {
-			return "", fmt.Errorf("region can not be empty for multiregion resources")
-		}
-		repStr := fmt.Sprintf("${1}%s$4", region)
-		return regex.ReplaceAllString(overrideHost, repStr), nil
-	}
-	return "", nil
-}
-
-// getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
-// value will override the global host value, and the API calls for this resource will be made against the value returned
-func getResourceOverrideHost(rootPathItem *spec.Operation) string {
-	if resourceURL, exists := rootPathItem.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
-		return resourceURL
-	}
-	return ""
-}
-
-func isMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
-	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
-	if err != nil {
-		log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
-		return false, nil
-	}
-	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
-}
-
 func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
 	return specResourceOperations{
 		Post:   o.createResourceOperation(o.RootPathItem.Post),
@@ -207,27 +177,30 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
 	schemaDefinitionProperty := &specSchemaDefinitionProperty{}
 
-	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject {
+	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject || err != nil {
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to process object type property '%s': %s", propertyName, err)
 		}
 		objectSchemaDefinition, err := o.getSchemaDefinition(schemaDefinition)
 		if err != nil {
 			return nil, err
 		}
 		schemaDefinitionProperty.SpecSchemaDefinition = objectSchemaDefinition
-		schemaDefinitionProperty.Type = typeObject
-	} else if o.isArrayProperty(property) {
-		schemaDefinitionProperty.Type = typeList
-	} else if property.Type.Contains("string") {
-		schemaDefinitionProperty.Type = typeString
-	} else if property.Type.Contains("integer") {
-		schemaDefinitionProperty.Type = typeInt
-	} else if property.Type.Contains("number") {
-		schemaDefinitionProperty.Type = typeFloat
-	} else if property.Type.Contains("boolean") {
-		schemaDefinitionProperty.Type = typeBool
+		log.Printf("[DEBUG] found object type property '%s'", propertyName)
+	} else if isArray, itemsType, itemsSchema, err := o.isArrayProperty(property); isArray || err != nil {
+		if err != nil {
+			return nil, fmt.Errorf("failed to process array type property '%s': %s", propertyName, err)
+		}
+		schemaDefinitionProperty.ArrayItemsType = itemsType
+		schemaDefinitionProperty.SpecSchemaDefinition = itemsSchema // only diff than nil if type is object
+		log.Printf("[DEBUG] found array type property '%s' with items of type '%s'", propertyName, itemsType)
 	}
+
+	propertyType, err := o.getPropertyType(property)
+	if err != nil {
+		return nil, err
+	}
+	schemaDefinitionProperty.Type = propertyType
 
 	schemaDefinitionProperty.Name = propertyName
 
@@ -285,23 +258,88 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	return schemaDefinitionProperty, nil
 }
 
-func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
+func (o *SpecV2Resource) isArrayItemPrimitiveType(propertyType schemaDefinitionPropertyType) bool {
+	return propertyType == typeString || propertyType == typeInt || propertyType == typeFloat || propertyType == typeBool
+}
 
-	if o.isObjectTypeProperty(property) && len(property.Properties) != 0 {
-		return true, &property, nil
+func (o *SpecV2Resource) validateArrayItems(property spec.Schema) (schemaDefinitionPropertyType, error) {
+	if property.Items == nil || property.Items.Schema == nil {
+		return "", fmt.Errorf("array property is missing items schema definition")
 	}
+	if o.isArrayTypeProperty(*property.Items.Schema) {
+		return "", fmt.Errorf("array property can not have items of type 'array'")
+	}
+	itemsType, err := o.getPropertyType(*property.Items.Schema)
+	if err != nil {
+		return "", err
+	}
+	if !o.isArrayItemPrimitiveType(itemsType) && !(itemsType == typeObject) {
+		return "", fmt.Errorf("array item type '%s' not supported", itemsType)
+	}
+	return itemsType, nil
+}
 
-	if property.Ref.Ref.GetURL() != nil {
-		schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
-		if err != nil {
-			return true, nil, err
+func (o *SpecV2Resource) getPropertyType(property spec.Schema) (schemaDefinitionPropertyType, error) {
+	if o.isArrayTypeProperty(property) {
+		return typeList, nil
+	} else if isObject, _, err := o.isObjectProperty(property); isObject || err != nil {
+		return typeObject, err
+	} else if property.Type.Contains("string") {
+		return typeString, nil
+	} else if property.Type.Contains("integer") {
+		return typeInt, nil
+	} else if property.Type.Contains("number") {
+		return typeFloat, nil
+	} else if property.Type.Contains("boolean") {
+		return typeBool, nil
+	}
+	return "", fmt.Errorf("non supported '%+v' type", property.Type)
+}
+
+func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
+	if o.isObjectTypeProperty(property) || property.Ref.Ref.GetURL() != nil {
+		// Case of nested object schema
+		if len(property.Properties) != 0 {
+			return true, &property, nil
 		}
-		return true, schema, nil
+		// Case of external ref - in this case the type could be populated or not
+		if property.Ref.Ref.GetURL() != nil {
+			schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
+			if err != nil {
+				return true, nil, fmt.Errorf("object ref is poitning to a non existing schema definition: %s", err)
+			}
+			return true, schema, nil
+		}
+		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
 	}
 	return false, nil, nil
 }
 
-func (o *SpecV2Resource) isArrayProperty(property spec.Schema) bool {
+func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefinitionPropertyType, *specSchemaDefinition, error) {
+	if o.isArrayTypeProperty(property) {
+		itemsType, err := o.validateArrayItems(property)
+		if err != nil {
+			return false, "", nil, err
+		}
+		if o.isArrayItemPrimitiveType(itemsType) {
+			return true, itemsType, nil, nil
+		}
+		// This is the case where items must be object
+		if isObject, schemaDefinition, err := o.isObjectProperty(*property.Items.Schema); isObject || err != nil {
+			if err != nil {
+				return true, itemsType, nil, err
+			}
+			objectSchemaDefinition, err := o.getSchemaDefinition(schemaDefinition)
+			if err != nil {
+				return true, itemsType, nil, err
+			}
+			return true, itemsType, objectSchemaDefinition, nil
+		}
+	}
+	return false, "", nil, nil
+}
+
+func (o *SpecV2Resource) isArrayTypeProperty(property spec.Schema) bool {
 	return o.isOfType(property, "array")
 }
 
@@ -324,6 +362,9 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 }
 
 func (o *SpecV2Resource) getResourceTerraformName() string {
+	if o.RootPathItem.Post == nil {
+		return ""
+	}
 	return o.getExtensionStringValue(o.RootPathItem.Post.Extensions, extTfResourceName)
 }
 
@@ -436,4 +477,34 @@ func (o *SpecV2Resource) getTimeDuration(extensions spec.Extensions, extension s
 func (o *SpecV2Resource) getDuration(t string) (*time.Duration, error) {
 	duration, err := time.ParseDuration(t)
 	return &duration, err
+}
+
+func getMultiRegionHost(overrideHost string, region string) (string, error) {
+	isMultiRegionHost, regex := isMultiRegionHost(overrideHost)
+	if isMultiRegionHost {
+		if region == "" {
+			return "", fmt.Errorf("region can not be empty for multiregion resources")
+		}
+		repStr := fmt.Sprintf("${1}%s$4", region)
+		return regex.ReplaceAllString(overrideHost, repStr), nil
+	}
+	return "", nil
+}
+
+// getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
+// value will override the global host value, and the API calls for this resource will be made against the value returned
+func getResourceOverrideHost(rootPathItem *spec.Operation) string {
+	if resourceURL, exists := rootPathItem.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
+		return resourceURL
+	}
+	return ""
+}
+
+func isMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
+	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
+	if err != nil {
+		log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
+		return false, nil
+	}
+	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
 }

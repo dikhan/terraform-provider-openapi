@@ -116,15 +116,96 @@ func TestCreateResourceSchema(t *testing.T) {
 			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
 			})
-			Convey("And the resulted tfResourceSchema should contain string_prop property", func() {
+			Convey("And the resulted tfResourceSchema should contain string_prop property of type string", func() {
 				So(tfResourceSchema, ShouldContainKey, "string_prop")
+				So(tfResourceSchema["string_prop"].Type, ShouldEqual, schema.TypeString)
 			})
 			Convey("And the resulted tfResourceSchema should contain status property", func() {
 				So(tfResourceSchema, ShouldContainKey, statusDefaultPropertyName)
 			})
+			Convey("And the resulted tfResourceSchema status field be of type map", func() {
+				So(tfResourceSchema[statusDefaultPropertyName].Type, ShouldEqual, schema.TypeMap)
+			})
 			Convey("And the resulted tfResourceSchema status field should contain all the sub-properties including the id property", func() {
 				So(tfResourceSchema[statusDefaultPropertyName].Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
 				So(tfResourceSchema[statusDefaultPropertyName].Elem.(*schema.Resource).Schema, ShouldContainKey, "name")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has few properties including an array of string primitives", t, func() {
+		s := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				&specSchemaDefinitionProperty{
+					Name:     "id",
+					Type:     typeString,
+					ReadOnly: false,
+					Required: true,
+				},
+				&specSchemaDefinitionProperty{
+					Name:           "listeners",
+					Type:           typeList,
+					ArrayItemsType: typeString,
+				},
+			},
+		}
+		Convey("When createResourceSchema method is called", func() {
+			tfResourceSchema, err := s.createResourceSchema()
+			Convey("Then the  err returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
+				So(tfResourceSchema, ShouldNotContainKey, "id")
+			})
+			Convey("And the resulted tfResourceSchema should contain the array property", func() {
+				So(tfResourceSchema, ShouldContainKey, "listeners")
+			})
+			Convey("And the resulted tfResourceSchema listeners field should be of type list and contain the right item schema string type", func() {
+				So(tfResourceSchema["listeners"].Type, ShouldEqual, schema.TypeList)
+				So(tfResourceSchema["listeners"].Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has few properties including an array of objects", t, func() {
+		s := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				&specSchemaDefinitionProperty{
+					Name:     "id",
+					Type:     typeString,
+					ReadOnly: false,
+					Required: true,
+				},
+				&specSchemaDefinitionProperty{
+					Name:           "listeners",
+					Type:           typeList,
+					ArrayItemsType: typeObject,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							&specSchemaDefinitionProperty{
+								Name: "protocol",
+								Type: typeString,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When createResourceSchema method is called", func() {
+			tfResourceSchema, err := s.createResourceSchema()
+			Convey("Then the  err returned should not be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
+				So(tfResourceSchema, ShouldNotContainKey, "id")
+			})
+			Convey("And the resulted tfResourceSchema should contain the array property", func() {
+				So(tfResourceSchema, ShouldContainKey, "listeners")
+			})
+			Convey("And the resulted tfResourceSchema should contain a field of type list and the list should have the right object elem schema of type Resource", func() {
+				So(tfResourceSchema["listeners"].Type, ShouldEqual, schema.TypeList)
+				So(tfResourceSchema["listeners"].Elem.(*schema.Resource).Schema, ShouldContainKey, "protocol")
+				So(tfResourceSchema["listeners"].Elem.(*schema.Resource).Schema["protocol"].Type, ShouldEqual, schema.TypeString)
 			})
 		})
 	})

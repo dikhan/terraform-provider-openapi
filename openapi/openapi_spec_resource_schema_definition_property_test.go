@@ -184,7 +184,7 @@ func TestIsArrayProperty(t *testing.T) {
 			Type:     typeList,
 			Required: true,
 		}
-		Convey("When isArrayProperty method is called", func() {
+		Convey("When isArrayTypeProperty method is called", func() {
 			isArrayProperty := s.isArrayProperty()
 			Convey("Then the resulted bool should be true", func() {
 				So(isArrayProperty, ShouldBeTrue)
@@ -198,7 +198,7 @@ func TestIsArrayProperty(t *testing.T) {
 			Type:     typeString,
 			Required: false,
 		}
-		Convey("When isArrayProperty method is called", func() {
+		Convey("When isArrayTypeProperty method is called", func() {
 			isArrayProperty := s.isArrayProperty()
 			Convey("Then the resulted bool should be false", func() {
 				So(isArrayProperty, ShouldBeFalse)
@@ -267,6 +267,242 @@ func TestIsReadOnly(t *testing.T) {
 	})
 }
 
+func TestTerraformType(t *testing.T) {
+	Convey("Given a swagger schema definition that has a property of type string", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeString,
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And value type should be string", func() {
+				So(valueType, ShouldEqual, schema.TypeString)
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type int", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeInt,
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And valye type should be int", func() {
+				So(valueType, ShouldEqual, schema.TypeInt)
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type float", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeFloat,
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And valye type should be float", func() {
+				So(valueType, ShouldEqual, schema.TypeFloat)
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type bool", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeBool,
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And valye type should be bool", func() {
+				So(valueType, ShouldEqual, schema.TypeBool)
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type object", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeObject,
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And valye type should be map", func() {
+				So(valueType, ShouldEqual, schema.TypeMap)
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type list", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeList,
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And valye type should be int", func() {
+				So(valueType, ShouldEqual, schema.TypeList)
+			})
+		})
+	})
+}
+
+func TestIsTerraformListOfSimpleValues(t *testing.T) {
+	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type string", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "list_prop",
+			Type:           typeList,
+			ArrayItemsType: typeString,
+		}
+		Convey("When isTerraformListOfSimpleValues method is called", func() {
+			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
+			Convey("Then the result should be true", func() {
+				So(isTerraformListOfSimpleValues, ShouldBeTrue)
+			})
+			Convey("And the returned schema should be of tupe schema.Schema", func() {
+				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type int", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "list_prop",
+			Type:           typeList,
+			ArrayItemsType: typeInt,
+		}
+		Convey("When isTerraformListOfSimpleValues method is called", func() {
+			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
+			Convey("Then the result should be true", func() {
+				So(isTerraformListOfSimpleValues, ShouldBeTrue)
+			})
+			Convey("And the returned schema should be of tupe schema.Schema", func() {
+				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type float", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "list_prop",
+			Type:           typeList,
+			ArrayItemsType: typeFloat,
+		}
+		Convey("When isTerraformListOfSimpleValues method is called", func() {
+			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
+			Convey("Then the result should be true", func() {
+				So(isTerraformListOfSimpleValues, ShouldBeTrue)
+			})
+			Convey("And the returned schema should be of tupe schema.Schema", func() {
+				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type bool", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "list_prop",
+			Type:           typeList,
+			ArrayItemsType: typeBool,
+		}
+		Convey("When isTerraformListOfSimpleValues method is called", func() {
+			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
+			Convey("Then the result should be true", func() {
+				So(isTerraformListOfSimpleValues, ShouldBeTrue)
+			})
+			Convey("And the returned schema should be of tupe schema.Schema", func() {
+				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type 'list' with non primitive element", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "list_prop",
+			Type:           typeList,
+			ArrayItemsType: typeObject,
+		}
+		Convey("When isTerraformListOfSimpleValues method is called", func() {
+			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
+			Convey("Then the result should be true", func() {
+				So(isTerraformListOfSimpleValues, ShouldBeFalse)
+			})
+			Convey("And the returned schema should be of tupe schema.Schema", func() {
+				So(listSchema, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestTerraformObjectSchema(t *testing.T) {
+	Convey("Given a swagger schema definition that has a property of type 'object'", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "object_prop",
+			Type: typeObject,
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name: "protocol",
+						Type: typeString,
+					},
+				},
+			},
+		}
+		Convey("When terraformObjectSchema method is called", func() {
+			tfPropSchema, err := s.terraformObjectSchema()
+			Convey("Then the resulted tfPropSchema should be of type string too", func() {
+				So(err, ShouldBeNil)
+				So(reflect.TypeOf(*tfPropSchema), ShouldEqual, reflect.TypeOf(schema.Resource{}))
+				So(tfPropSchema.Schema, ShouldContainKey, "protocol")
+			})
+		})
+	})
+	Convey("Given a swagger schema definition that has a property of type 'list' and arrays items type object", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "array_prop",
+			Type:           typeList,
+			ArrayItemsType: typeObject,
+			ReadOnly:       false,
+			Required:       true,
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name: "protocol",
+						Type: typeString,
+					},
+				},
+			},
+		}
+		Convey("When terraformObjectSchema method is called", func() {
+			tfPropSchema, err := s.terraformObjectSchema()
+			Convey("Then the resulted tfPropSchema should be of type string too", func() {
+				So(err, ShouldBeNil)
+				So(reflect.TypeOf(*tfPropSchema), ShouldEqual, reflect.TypeOf(schema.Resource{}))
+				So(tfPropSchema.Schema, ShouldContainKey, "protocol")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a non supported property type for building object schmea", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "prop",
+			Type: typeString,
+		}
+		Convey("When terraformObjectSchema method is called", func() {
+			_, err := s.terraformObjectSchema()
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "object schema can only be formed for types object or types list with elems of type object: found type='string' elemType='' instead")
+			})
+		})
+	})
+}
+
 func TestTerraformSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has a property of type 'string' which is required", t, func() {
 		s := &specSchemaDefinitionProperty{
@@ -275,7 +511,7 @@ func TestTerraformSchema(t *testing.T) {
 			ReadOnly: false,
 			Required: true,
 		}
-		Convey("When createResourceSchema method is called", func() {
+		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 			Convey("Then the resulted tfPropSchema should be of type string too", func() {
 				So(err, ShouldBeNil)
@@ -292,7 +528,7 @@ func TestTerraformSchema(t *testing.T) {
 			ReadOnly: false,
 			Required: true,
 		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
@@ -308,7 +544,7 @@ func TestTerraformSchema(t *testing.T) {
 			ReadOnly: false,
 			Required: true,
 		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 			Convey("Then the resulted terraform property schema should be of type float too", func() {
 				So(err, ShouldBeNil)
@@ -324,7 +560,7 @@ func TestTerraformSchema(t *testing.T) {
 			ReadOnly: false,
 			Required: true,
 		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 			Convey("Then the resulted terraform property schema should be of type int too", func() {
 				So(err, ShouldBeNil)
@@ -333,22 +569,133 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger schema definition that has a property of type 'array'", t, func() {
+	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type string", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "array_prop",
+			Type:           typeList,
+			ArrayItemsType: typeString,
+			ReadOnly:       false,
+			Required:       true,
+		}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulted terraform property schema should be of type array too", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And the array elements are of type string", func() {
+				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type integer", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "array_prop",
+			Type:           typeList,
+			ArrayItemsType: typeInt,
+			ReadOnly:       false,
+			Required:       true,
+		}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulted terraform property schema should be of type array too", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And the array elements are of type int", func() {
+				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeInt)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type number", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "array_prop",
+			Type:           typeList,
+			ArrayItemsType: typeFloat,
+			ReadOnly:       false,
+			Required:       true,
+		}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulted terraform property schema should be of type array too", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And the array elements are of type float", func() {
+				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeFloat)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type bool", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "array_prop",
+			Type:           typeList,
+			ArrayItemsType: typeBool,
+			ReadOnly:       false,
+			Required:       true,
+		}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulted terraform property schema should be of type array too", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And the array elements are of type bool", func() {
+				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeBool)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type object", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:           "array_prop",
+			Type:           typeList,
+			ArrayItemsType: typeObject,
+			ReadOnly:       false,
+			Required:       true,
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name: "protocol",
+						Type: typeString,
+					},
+				},
+			},
+		}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulted terraform property schema should be of type array too", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And the array elements are of type object (resource object) containing the object schema properties", func() {
+				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Resource{}))
+				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "protocol")
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are not set", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "array_prop",
 			Type:     typeList,
 			ReadOnly: false,
 			Required: true,
 		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+		Convey("When terraformSchema method is called", func() {
+			_, err := s.terraformSchema()
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
 			})
-			Convey("And the array elements are of the default type string (only supported type for now)", func() {
-				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
-				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
+			Convey("Then the error message returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "object schema can only be formed for types object or types list with elems of type object: found type='list' elemType='' instead")
 			})
 		})
 	})
@@ -368,7 +715,7 @@ func TestTerraformSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -401,7 +748,7 @@ func TestTerraformSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When createTerraformPropertyBasicSchema method is called", func() {
+		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -448,7 +795,7 @@ func TestTerraformSchema(t *testing.T) {
 
 	Convey("Given a schemaDefinitionProperty that is computed", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, "")
-		Convey("When createTerraformPropertySchema is called with a schema definition property that is readonly", func() {
+		Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -464,7 +811,7 @@ func TestTerraformSchema(t *testing.T) {
 
 	Convey("Given a schemaDefinitionProperty that is computed and has a default value set", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, "defaultValue")
-		Convey("When createTerraformPropertySchema is called with a schema definition property that validation fails due to read only field having a default value", func() {
+		Convey("When terraformSchema is called with a schema definition property that validation fails due to read only field having a default value", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -486,7 +833,7 @@ func TestTerraformSchema(t *testing.T) {
 
 	Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, true, false, false, "")
-		Convey("When createTerraformPropertySchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
+		Convey("When terraformSchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -505,7 +852,7 @@ func TestTerraformSchema(t *testing.T) {
 
 	Convey("Given a schemaDefinitionProperty that is computed and required", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, nil)
-		Convey("When createTerraformPropertySchema is called with a schema definition property that validation fails due to required and computed set", func() {
+		Convey("When terraformSchema is called with a schema definition property that validation fails due to required and computed set", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)

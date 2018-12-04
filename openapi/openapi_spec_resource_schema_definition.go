@@ -134,3 +134,12 @@ func (s *specSchemaDefinition) getProperty(name string) (*specSchemaDefinitionPr
 	}
 	return nil, fmt.Errorf("property with name '%s' not existing in resource schema definition", name)
 }
+
+func (s *specSchemaDefinition) getPropertyBasedOnTerraformName(terraformName string) (*specSchemaDefinitionProperty, error) {
+	for _, property := range s.Properties {
+		if property.getTerraformCompliantPropertyName() == terraformName {
+			return property, nil
+		}
+	}
+	return nil, fmt.Errorf("property with terraform name '%s' not existing in resource schema definition", terraformName)
+}

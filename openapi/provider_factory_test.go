@@ -225,7 +225,7 @@ func TestCreateTerraformProviderResourceMap(t *testing.T) {
 							intProperty,
 							numberProperty,
 							boolProperty,
-							sliceProperty,
+							slicePrimitiveProperty,
 							computedProperty,
 							optionalProperty,
 							sensitiveProperty,
@@ -250,7 +250,7 @@ func TestCreateTerraformProviderResourceMap(t *testing.T) {
 				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, intProperty.Name)
 				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, numberProperty.Name)
 				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, boolProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, sliceProperty.Name)
+				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, slicePrimitiveProperty.Name)
 				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, optionalProperty.Name)
 				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, sensitiveProperty.Name)
 				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, forceNewProperty.Name)
@@ -260,7 +260,7 @@ func TestCreateTerraformProviderResourceMap(t *testing.T) {
 				So(schemaResource[expectedResourceName].Schema[intProperty.Name].Type, ShouldEqual, schema.TypeInt)
 				So(schemaResource[expectedResourceName].Schema[numberProperty.Name].Type, ShouldEqual, schema.TypeFloat)
 				So(schemaResource[expectedResourceName].Schema[boolProperty.Name].Type, ShouldEqual, schema.TypeBool)
-				So(schemaResource[expectedResourceName].Schema[sliceProperty.Name].Type, ShouldEqual, schema.TypeList)
+				So(schemaResource[expectedResourceName].Schema[slicePrimitiveProperty.Name].Type, ShouldEqual, schema.TypeList)
 			})
 			Convey("And the schema property options should match the expected configuration", func() {
 				So(schemaResource[expectedResourceName].Schema[computedProperty.Name].Computed, ShouldBeTrue)

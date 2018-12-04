@@ -15,7 +15,7 @@ var stringProperty = newStringSchemaDefinitionPropertyWithDefaults("string_prope
 var intProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 12)
 var numberProperty = newNumberSchemaDefinitionPropertyWithDefaults("number_property", "", true, false, 13.99)
 var boolProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, true)
-var sliceProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, []string{"value1"})
+var slicePrimitiveProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, []string{"value1"}, typeString, nil)
 
 // testing properties with special configuration
 var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_preferred_property", true, false, "updatedValue")
@@ -32,7 +32,76 @@ var statusProperty = newStringSchemaDefinitionPropertyWithDefaults("status", "",
 var intZeroValueProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 0)
 var numberZeroValueProperty = newNumberSchemaDefinitionPropertyWithDefaults("number_property", "", true, false, 0)
 var boolZeroValueProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, false)
-var sliceZeroValueProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, []string{""})
+var sliceZeroValueProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, []string{""}, typeString, nil)
+
+func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newStringSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
+}
+
+func newStringSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeString, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
+}
+
+func newIntSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newIntSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
+}
+
+func newIntSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeInt, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
+}
+
+func newNumberSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newNumberSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
+}
+
+func newNumberSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeFloat, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
+}
+
+func newBoolSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newBoolSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue)
+}
+
+func newBoolSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return newSchemaDefinitionProperty(name, preferredName, typeBool, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
+}
+
+func newObjectSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
+	return newObjectSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue, objectSpecSchemaDefinition)
+}
+
+func newObjectSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
+	schemaDefProperty := newSchemaDefinitionProperty(name, preferredName, typeObject, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
+	schemaDefProperty.SpecSchemaDefinition = objectSpecSchemaDefinition
+	return schemaDefProperty
+}
+
+func newListSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}, itemsType schemaDefinitionPropertyType, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
+	return newListSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, defaultValue, itemsType, objectSpecSchemaDefinition)
+}
+
+func newListSchemaDefinitionProperty(name, preferredName string, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}, itemsType schemaDefinitionPropertyType, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
+	schemaDefProperty := newSchemaDefinitionProperty(name, preferredName, typeList, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
+	schemaDefProperty.ArrayItemsType = itemsType
+	schemaDefProperty.SpecSchemaDefinition = objectSpecSchemaDefinition
+	return schemaDefProperty
+}
+
+func newSchemaDefinitionProperty(name, preferredName string, propertyType schemaDefinitionPropertyType, required, readOnly, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	return &specSchemaDefinitionProperty{
+		Name:               name,
+		Type:               propertyType,
+		PreferredName:      preferredName,
+		Required:           required,
+		ReadOnly:           readOnly,
+		ForceNew:           forceNew,
+		Sensitive:          sensitive,
+		Immutable:          immutable,
+		IsIdentifier:       isIdentifier,
+		IsStatusIdentifier: isStatusIdentifier,
+		Default:            defaultValue,
+	}
+}
 
 func newTestSchema(schemaDefinitionProperty ...*specSchemaDefinitionProperty) *testSchemaDefinition {
 	testSchema := &testSchemaDefinition{}

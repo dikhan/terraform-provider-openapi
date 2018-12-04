@@ -44,6 +44,8 @@ func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+	//log.Printf("[DEBUG] '%s' terraform schema: %+v", r.openAPIResource.getResourceName(), s)
+	//spew.Dump(s)
 	timeouts, err := r.createSchemaResourceTimeout()
 	if err != nil {
 		return nil, err
@@ -79,6 +81,7 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[DEBUG] resource '%s' schemaDefinition: %s", r.openAPIResource.getResourceName(), sPrettyPrint(schemaDefinition))
 	return schemaDefinition.createResourceSchema()
 }
 
@@ -372,12 +375,99 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 		if property.isPropertyNamedID() {
 			continue
 		}
-		// TODO: validate that the data returned by the API matches the data configured by the user. This is a edge case scenario but can likely happen with inconsistent APIs
-		if err := r.setResourceDataProperty(propertyName, propertyValue, resourceLocalData); err != nil {
+		value, err := r.convertPayloadToLocalStateDataValue(property, propertyValue, false)
+		if err != nil {
+			return err
+		}
+		if err := r.setResourceDataProperty(propertyName, value, resourceLocalData); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
+	if propertyValue == nil {
+		return nil, nil
+	}
+	dataValueKind := reflect.TypeOf(propertyValue).Kind()
+	switch dataValueKind {
+	case reflect.Map:
+		objectInput := map[string]interface{}{}
+		mapValue := propertyValue.(map[string]interface{})
+		for propertyName, propertyValue := range mapValue {
+			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
+			if err != nil {
+				return nil, err
+			}
+			var propValue interface{}
+			// Here we are processing the items of the list which are objects. In this case we need to keep the original
+			// types as Terraform honors property types for resource schemas attached to typeList properties
+			if property.isArrayOfObjectsProperty() {
+				propValue, err = r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, false)
+			} else { // Here we need to use strings as values as terraform typeMap only supports string items
+				propValue, err = r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
+			}
+			if err != nil {
+				return nil, err
+			}
+			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
+		}
+		return objectInput, nil
+	case reflect.Slice, reflect.Array:
+		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+			return propertyValue.([]interface{}), nil
+		}
+		if property.isArrayOfObjectsProperty() {
+			arrayInput := []interface{}{}
+			arrayValue := propertyValue.([]interface{})
+			for _, arrayItem := range arrayValue {
+				objectValue, err := r.convertPayloadToLocalStateDataValue(property, arrayItem, false)
+				if err != nil {
+					return err, nil
+				}
+				arrayInput = append(arrayInput, objectValue)
+			}
+			return arrayInput, nil
+		}
+		return nil, fmt.Errorf("property '%s' is supposed to be an array objects", property.Name)
+	case reflect.String:
+		return propertyValue.(string), nil
+	case reflect.Int:
+		if useString {
+			return fmt.Sprintf("%d", propertyValue.(int)), nil
+		}
+		return propertyValue.(int), nil
+	case reflect.Float64:
+		// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
+		// an actual int or if not then casting to float64
+		if property.Type == typeInt {
+			if useString {
+				return fmt.Sprintf("%d", int(propertyValue.(float64))), nil
+			}
+			return int(propertyValue.(float64)), nil
+		}
+		if useString {
+			// For some reason after apply the state for object configurations is saved with values "0.00" but subsequent plans find diffs saying that the value changed from "0.00" to "0"
+			// Adding this check for the time being to avoid the above diffs
+			if propertyValue.(float64) == 0 {
+				return "0", nil
+			}
+			return fmt.Sprintf("%.2f", propertyValue.(float64)), nil
+		}
+		return propertyValue.(float64), nil
+	case reflect.Bool:
+		if useString {
+			// this is only applicable to objects
+			if propertyValue.(bool) {
+				return fmt.Sprintf("1"), nil
+			}
+			return fmt.Sprintf("0"), nil
+		}
+		return propertyValue.(bool), nil
+	default:
+		return nil, fmt.Errorf("'%s' type not supported", dataValueKind)
+	}
 }
 
 // createPayloadFromLocalStateData is in charge of translating the values saved in the local state into a payload that can be posted/put
@@ -395,24 +485,91 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			continue
 		}
 		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
-			switch reflect.TypeOf(dataValue).Kind() {
-			case reflect.Map:
-				input[propertyName] = dataValue.(map[string]interface{})
-			case reflect.Slice:
-				input[propertyName] = dataValue.([]interface{})
-			case reflect.String:
-				input[propertyName] = dataValue.(string)
-			case reflect.Int:
-				input[propertyName] = dataValue.(int)
-			case reflect.Float64:
-				input[propertyName] = dataValue.(float64)
-			case reflect.Bool:
-				input[propertyName] = dataValue.(bool)
+			err := r.getPropertyPayload(input, property, dataValue)
+			if err != nil {
+				log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
 			}
 		}
-		log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
+		log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 	}
+	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
 	return input
+}
+
+func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+	if dataValue == nil {
+		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name)
+	}
+	dataValueKind := reflect.TypeOf(dataValue).Kind()
+	switch dataValueKind {
+	case reflect.Map:
+		objectInput := map[string]interface{}{}
+		mapValue := dataValue.(map[string]interface{})
+		for propertyName, propertyValue := range mapValue {
+			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getPropertyBasedOnTerraformName(propertyName)
+			if err != nil {
+				return err
+			}
+			if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
+				return err
+			}
+		}
+		input[property.Name] = objectInput
+	case reflect.Slice, reflect.Array:
+		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+			input[property.Name] = dataValue.([]interface{})
+		} else {
+			arrayInput := []interface{}{}
+			arrayValue := dataValue.([]interface{})
+			for _, arrayItem := range arrayValue {
+				objectInput := map[string]interface{}{}
+				if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
+					return err
+				}
+				// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example
+				// [propertyName: listeners; propertyValue: [map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]]]
+				// Here we just want to assign as value: map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]
+				arrayInput = append(arrayInput, objectInput[property.Name])
+			}
+			input[property.Name] = arrayInput
+		}
+	case reflect.String:
+		// This is so when object fields are processed, map values, they come as string so need to do the proper translation base
+		// on the origin type of the property
+		switch property.Type {
+		case typeInt:
+			v, err := strconv.ParseInt(dataValue.(string), 0, 0)
+			if err != nil {
+				return err
+			}
+			input[property.Name] = v
+		case typeFloat:
+			v, err := strconv.ParseFloat(dataValue.(string), 64)
+			if err != nil {
+				return err
+			}
+			input[property.Name] = v
+		case typeBool:
+			v, err := strconv.ParseBool(dataValue.(string))
+			if err != nil {
+				return err
+			}
+			input[property.Name] = v
+		case typeString:
+			input[property.Name] = dataValue.(string)
+		default:
+			return fmt.Errorf("property '%s' type not supported for reflect value string", property.Type)
+		}
+	case reflect.Int:
+		input[property.Name] = dataValue.(int)
+	case reflect.Float64:
+		input[property.Name] = dataValue.(float64)
+	case reflect.Bool:
+		input[property.Name] = dataValue.(bool)
+	default:
+		return fmt.Errorf("'%s' type not supported", property.Type)
+	}
+	return nil
 }
 
 func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{}) (string, error) {

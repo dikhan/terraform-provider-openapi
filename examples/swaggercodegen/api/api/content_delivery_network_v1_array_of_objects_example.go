@@ -10,14 +10,10 @@
 
 package api
 
-type ObjectProperty struct {
-	Message string `json:"message"`
+type ContentDeliveryNetworkV1ArrayOfObjectsExample struct {
 
-	DetailedMessage string `json:"detailedMessage"`
+	Protocol string `json:"protocol"`
 
-	ExampleInt int32 `json:"exampleInt"`
+	OriginPort int32 `json:"originPort"`
 
-	ExampleNumber float32 `json:"exampleNumber"`
-
-	ExampleBoolean bool `json:"example_boolean"`
 }

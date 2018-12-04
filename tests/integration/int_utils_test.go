@@ -25,6 +25,9 @@ func createPluginConfigFile(content string) *os.File {
 }
 
 func floatToString(number float32) string {
+	if number == 0 {
+		return "0"
+	}
 	return fmt.Sprintf("%.2f", number)
 }
 

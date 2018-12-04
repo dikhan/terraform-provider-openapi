@@ -23,6 +23,12 @@ func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
+
+	if err := validateMandatoryFields(cdn); err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
+
 	populateComputePropertiesCDN(cdn)
 	db[cdn.Id] = cdn
 	log.Printf("POST [%+v\n]", cdn)
@@ -69,6 +75,22 @@ func populateComputePropertiesCDN(cdn *ContentDeliveryNetworkV1) {
 	}
 }
 
+func validateMandatoryFields(cdn *ContentDeliveryNetworkV1) error {
+	if cdn.Label == "" {
+		return fmt.Errorf("mandatory 'label' field not populated")
+	}
+	if len(cdn.Ips) <= 0 {
+		return fmt.Errorf("mandatory 'ips' list field not populated")
+	}
+	if len(cdn.Hostnames) <= 0 {
+		return fmt.Errorf("mandatory 'hostnames' field not populated")
+	}
+	if cdn.Label == "" {
+		return fmt.Errorf("mandatory label field not populated")
+	}
+	return nil
+}
+
 func updateCDN(dbCDN, updatedCDN *ContentDeliveryNetworkV1) {
 	dbCDN.Label = updatedCDN.Label
 	dbCDN.Ips = updatedCDN.Ips
@@ -77,6 +99,7 @@ func updateCDN(dbCDN, updatedCDN *ContentDeliveryNetworkV1) {
 	dbCDN.ExampleNumber = updatedCDN.ExampleNumber
 	dbCDN.ExampleBoolean = updatedCDN.ExampleBoolean
 	dbCDN.ObjectProperty = updatedCDN.ObjectProperty
+	dbCDN.ArrayOfObjectsExample = updatedCDN.ArrayOfObjectsExample
 	db[dbCDN.Id] = dbCDN
 }
 
