@@ -85,13 +85,13 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
 The OpenAPI provider offers a flexible means of providing credentials for authentication as well as any other header
 that might be required by any resource exposed.
 
-- [What can be configured?](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#what_can_be_configured?)
-- [How can it be configured?](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#how_can_it_be_configured?) 
+- [What can be configured?](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#what-can-be-configured)
+- [How can it be configured?](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#how-can-it-be-configured) 
 
 #### What can be configured?
 
-- [Authentication](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#authentication_configuration)
-- [Headers](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#headers_configuration)
+- [Authentication](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#authentication-configuration)
+- [Headers](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#headers-configuration)
 
 ##### Authentication configuration
 
@@ -165,9 +165,9 @@ paths:
 
 The following methods to configure the properties of the OpenAPI provider are supported, in this order, and explained below:
 
-- [Static credentials](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#static_credentials)
-- [Environment variables](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#environment_variables)
-- [Shared OpenAPI Plugin Configuration file](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#shared_openapi_plugin_configuration_file)
+- [Static credentials](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#static-credentials)
+- [Environment variables](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#environment-variables)
+- [Shared OpenAPI Plugin Configuration file](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#shared-openapi-plugin-configuration-file)
 
 The above will only be available if the swagger file describes the authentication and headers accordingly as described below.
 
