@@ -880,6 +880,213 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 	})
 }
 
+func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When convertPayloadToLocalStateDataValue is called with a string property and a string value", func() {
+			property := newStringSchemaDefinitionPropertyWithDefaults("string_property", "", false, false, nil)
+			dataValue := "someValue"
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type string", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with a bool property and a bool value", func() {
+			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
+			dataValue := true
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type boolean", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with a bool property, a bool value true and the desired output is string", func() {
+			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
+			dataValue := true
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type boolean", func() {
+				So(resultValue, ShouldEqual, "1")
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with a int property, a bool value false and the desired output is string", func() {
+			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
+			dataValue := false
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type boolean", func() {
+				So(resultValue, ShouldEqual, "0")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an int property and a int value", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 10
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type int", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an int property and a int value and the desired output is string", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 10
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
+				So(resultValue, ShouldEqual, "10")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value", func() {
+			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
+			dataValue := 45.23
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type float", func() {
+				So(resultValue, ShouldEqual, dataValue)
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value Zero and the desired output is string", func() {
+			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
+			dataValue := 0
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value 0 formatted string with the right type float", func() {
+				So(resultValue, ShouldEqual, "0")
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value and the desired output is string", func() {
+			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
+			dataValue := 10.12
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type float", func() {
+				So(resultValue, ShouldEqual, "10.12")
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value but the swagger property is an integer", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 45
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type integer", func() {
+				So(resultValue, ShouldEqual, dataValue)
+				So(resultValue, ShouldHaveSameTypeAs, int(dataValue))
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value but the swagger property is an integer and the expected output format is string", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 45
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type integer", func() {
+				So(resultValue, ShouldEqual, "45")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an list property and a with items object", func() {
+			objectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
+				},
+			}
+			objectDefault := map[string]interface{}{
+				"example_int":    80,
+				"example_string": "http",
+				"example_bool":   true,
+				"example_float":  10.45,
+			}
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, nil, typeObject, objectSchemaDefinition)
+			dataValue := []interface{}{objectDefault}
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the list containing the object items with the expected types (int, string, bool and float)", func() {
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_int")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_int"].(int), ShouldEqual, objectDefault["example_int"])
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_string")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_string"].(string), ShouldEqual, objectDefault["example_string"])
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_bool")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_bool"].(bool), ShouldEqual, objectDefault["example_bool"])
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_float")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_float"].(float64), ShouldEqual, objectDefault["example_float"])
+			})
+		})
+		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with items string value", func() {
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, nil, typeString, nil)
+			dataValue := []interface{}{"value1"}
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type array", func() {
+				So(resultValue.([]interface{}), ShouldContain, dataValue[0])
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an object", func() {
+			objectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
+				},
+			}
+			dataValue := map[string]interface{}{
+				"example_int":    80,
+				"example_string": "http",
+				"example_bool":   true,
+				"example_float":  10.45,
+			}
+			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, nil, objectSchemaDefinition)
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_int")
+				So(resultValue.(map[string]interface{})["example_int"].(string), ShouldEqual, "80")
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_string")
+				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_bool")
+				So(resultValue.(map[string]interface{})["example_bool"].(string), ShouldEqual, "1")
+				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_float")
+				So(resultValue.(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
+			})
+		})
+	})
+}
+
 func TestGetPropertyPayload(t *testing.T) {
 	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
 		objectSchemaDefinition := &specSchemaDefinition{
