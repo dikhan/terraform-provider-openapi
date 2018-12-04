@@ -327,6 +327,22 @@ securityDefinitions:
     type: "apiKey"
     name: "Authorization"
     in: "header"
+  apikey_header_auth_bearer:
+    type: "apiKey"
+    in: "header"
+    x-terraform-authentication-scheme-bearer: true
+  apikey_header_auth:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+  apikey_query_auth_bearer:
+    type: "apiKey"
+    in: "query"
+    x-terraform-authentication-scheme-bearer: true
+  apikey_query_auth:
+    type: "apiKey"
+    name: "Authorization"
+    in: "query"
 
 definitions:
   ContentDeliveryNetworkV1:
