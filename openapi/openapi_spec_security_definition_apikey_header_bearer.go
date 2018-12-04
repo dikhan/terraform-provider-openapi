@@ -3,7 +3,10 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+	"strings"
 )
+
+const bearerScheme = "Bearer"
 
 type specAPIKeyHeaderBearerSecurityDefinition struct {
 	Name string
@@ -32,5 +35,8 @@ func (s specAPIKeyHeaderBearerSecurityDefinition) getAPIKey() specAPIKey {
 }
 
 func (s specAPIKeyHeaderBearerSecurityDefinition) buildValue(value string) string {
+	if strings.Contains(value, bearerScheme) {
+		return value
+	}
 	return fmt.Sprintf("Bearer %s", value)
 }

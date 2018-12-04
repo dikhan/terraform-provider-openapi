@@ -89,5 +89,12 @@ func TestAPIKeyHeaderBearerSecurityDefinitionBuildValue(t *testing.T) {
 				So(returnedValue, ShouldEqual, fmt.Sprintf("Bearer %s", value))
 			})
 		})
+		Convey("When getTerraformConfigurationName method is called with a value that alreayd has the bearer scheme", func() {
+			value := "Bearer jwtToken"
+			returnedValue := specAPIKeyHeaderBearerSecurityDefinition.buildValue(value)
+			Convey("Then the value should be the expected value with Bearer included", func() {
+				So(returnedValue, ShouldEqual, value)
+			})
+		})
 	})
 }
