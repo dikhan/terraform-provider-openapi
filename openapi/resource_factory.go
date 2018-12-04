@@ -558,7 +558,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 		case typeString:
 			input[property.Name] = dataValue.(string)
 		default:
-			return fmt.Errorf("'%s' type not supported", property.Type)
+			return fmt.Errorf("property '%s' type not supported for reflect value string", property.Type)
 		}
 	case reflect.Int:
 		input[property.Name] = dataValue.(int)
