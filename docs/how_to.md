@@ -625,7 +625,7 @@ boolean | schema.TypeBool | boolean value
 
 Arrays can be constructed containing simple values like primitive types (string, integer, number or bool) or complex
 types defined by the object definition. In any case, the swagger property 'items' must be populated when describing
-an array property. 
+an array property.
 
 - Arrays of primitive values (string, integer, number or bool primitives):
 
@@ -634,7 +634,7 @@ definitions:
   ContentDeliveryNetworkV1:
     type: "object"
     ...
-    properties:    
+    properties:
       arrayOfOStringsExample: # This is an example of an array of strings
         type: "array"
         items:
@@ -661,7 +661,7 @@ definitions:
   ContentDeliveryNetworkV1:
     type: "object"
     ...
-    properties:    
+    properties:
       arrayOfObjectsExample: # This is an example of an array of objects
         type: "array"
         items:
@@ -689,7 +689,7 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
 ````
 
 **Note**: The items support both nested object definitions (in which case the type **must** be object) and ref to other schema
-definitions as described in the [Object definitions](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions) 
+definitions as described in the [Object definitions](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions)
 section.
 
 ###### Object definitions
