@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 )
 
@@ -32,4 +33,11 @@ func (s specAPIKeyQueryBearerSecurityDefinition) getTerraformConfigurationName()
 
 func (s specAPIKeyQueryBearerSecurityDefinition) buildValue(value string) string {
 	return value
+}
+
+func (s specAPIKeyQueryBearerSecurityDefinition) validate() error {
+	if s.Name == "" {
+		return fmt.Errorf("specAPIKeyQueryBearerSecurityDefinition missing mandatory security definition name")
+	}
+	return nil
 }

@@ -18,24 +18,27 @@ func (s *specV2Security) GetAPIKeySecurityDefinitions() (*SpecSecurityDefinition
 	securityDefinitions := &SpecSecurityDefinitions{}
 	for secDefName, secDef := range s.SecurityDefinitions {
 		if secDef.Type == "apiKey" {
-
+			var securityDefinition SpecSecurityDefinition
 			switch secDef.In {
 			case "header":
 				if s.isBearerScheme(secDef) {
-					*securityDefinitions = append(*securityDefinitions, newAPIKeyHeaderBearerSecurityDefinition(secDefName))
+					securityDefinition = newAPIKeyHeaderBearerSecurityDefinition(secDefName)
 				} else {
-					*securityDefinitions = append(*securityDefinitions, newAPIKeyHeaderSecurityDefinition(secDefName, secDef.Name))
+					securityDefinition = newAPIKeyHeaderSecurityDefinition(secDefName, secDef.Name)
 				}
 			case "query":
 				if s.isBearerScheme(secDef) {
-					*securityDefinitions = append(*securityDefinitions, newAPIKeyQueryBearerSecurityDefinition(secDefName))
+					securityDefinition = newAPIKeyQueryBearerSecurityDefinition(secDefName)
 				} else {
-					*securityDefinitions = append(*securityDefinitions, newAPIKeyQuerySecurityDefinition(secDefName, secDef.Name))
+					securityDefinition = newAPIKeyQuerySecurityDefinition(secDefName, secDef.Name)
 				}
 			default:
 				return nil, fmt.Errorf("apiKey In value '%s' not supported, only 'header' and 'query' values are valid", secDef.In)
 			}
-
+			if err := securityDefinition.validate(); err != nil {
+				return nil, err
+			}
+			*securityDefinitions = append(*securityDefinitions, securityDefinition)
 		}
 	}
 	return securityDefinitions, nil

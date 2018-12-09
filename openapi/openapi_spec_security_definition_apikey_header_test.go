@@ -93,3 +93,39 @@ func TestAPIKeyHeaderSecurityDefinitionBuildValue(t *testing.T) {
 		})
 	})
 }
+
+func TestAPIKeyHeaderSecurityDefinitionValidate(t *testing.T) {
+	Convey("Given an APIKeyHeaderSecurityDefinition with a security definition name and an apiKeyName", t, func() {
+		apiKeyHeaderSecurityDefinition := newAPIKeyHeaderSecurityDefinition("apiKeyName", "Authorization")
+		Convey("When validate method is called", func() {
+			err := apiKeyHeaderSecurityDefinition.validate()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given an APIKeyHeaderSecurityDefinition with an empty security definition name and an apiKeyName", t, func() {
+		apiKeyHeaderSecurityDefinition := newAPIKeyHeaderSecurityDefinition("", "Authorization")
+		Convey("When validate method is called", func() {
+			err := apiKeyHeaderSecurityDefinition.validate()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should match the expected", func() {
+				So(err.Error(), ShouldEqual, "specAPIKeyHeaderSecurityDefinition missing mandatory security definition name")
+			})
+		})
+	})
+	Convey("Given an APIKeyHeaderSecurityDefinition with a security definition name and an empty apiKeyName", t, func() {
+		apiKeyHeaderSecurityDefinition := newAPIKeyHeaderSecurityDefinition("apiKeyName", "")
+		Convey("When validate method is called", func() {
+			err := apiKeyHeaderSecurityDefinition.validate()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should match the expected", func() {
+				So(err.Error(), ShouldEqual, "specAPIKeyHeaderSecurityDefinition missing mandatory apiKey name")
+			})
+		})
+	})
+}

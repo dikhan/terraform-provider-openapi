@@ -20,7 +20,7 @@ func TestNewAPIKeyQuerySecurityDefinition(t *testing.T) {
 }
 
 func TestAPIKeyQuerySecurityDefinitionGetName(t *testing.T) {
-	Convey("Given an APIKeyHeaderSecurityDefinition", t, func() {
+	Convey("Given an APIKeyQuerySecurityDefinition", t, func() {
 		expectedName := "apikey_name"
 		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition(expectedName, "Authorization")
 		Convey("When getTerraformConfigurationName method is called", func() {
@@ -33,7 +33,7 @@ func TestAPIKeyQuerySecurityDefinitionGetName(t *testing.T) {
 }
 
 func TestAPIKeyQuerySecurityDefinitionGetType(t *testing.T) {
-	Convey("Given an APIKeyHeaderSecurityDefinition", t, func() {
+	Convey("Given an APIKeyQuerySecurityDefinition", t, func() {
 		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("apikey_name", "Authorization")
 		Convey("When getType method is called", func() {
 			secDefType := apiKeyQuerySecurityDefinition.getType()
@@ -45,7 +45,7 @@ func TestAPIKeyQuerySecurityDefinitionGetType(t *testing.T) {
 }
 
 func TestAPIKeyQuerySecurityDefinitionGetTerraformConfigurationName(t *testing.T) {
-	Convey("Given an APIKeyHeaderSecurityDefinition with a compliant name", t, func() {
+	Convey("Given an APIKeyQuerySecurityDefinition with a compliant name", t, func() {
 		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("apikey_name", "Authorization")
 		Convey("When getTerraformConfigurationName method is called", func() {
 			secDefTfName := apiKeyQuerySecurityDefinition.getTerraformConfigurationName()
@@ -55,7 +55,7 @@ func TestAPIKeyQuerySecurityDefinitionGetTerraformConfigurationName(t *testing.T
 		})
 	})
 
-	Convey("Given an APIKeyHeaderSecurityDefinition with a NON compliant name", t, func() {
+	Convey("Given an APIKeyQuerySecurityDefinition with a NON compliant name", t, func() {
 		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("nonCompliantName", "Authorization")
 		Convey("When getTerraformConfigurationName method is called", func() {
 			secDefTfName := apiKeyQuerySecurityDefinition.getTerraformConfigurationName()
@@ -67,7 +67,7 @@ func TestAPIKeyQuerySecurityDefinitionGetTerraformConfigurationName(t *testing.T
 }
 
 func TestAPIKeyQuerySecurityDefinitionGetAPIKey(t *testing.T) {
-	Convey("Given an APIKeyHeaderSecurityDefinition", t, func() {
+	Convey("Given an APIKeyQuerySecurityDefinition", t, func() {
 		expectedAPIKey := "Authorization"
 		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("apiKeyName", expectedAPIKey)
 		Convey("When getTerraformConfigurationName method is called", func() {
@@ -81,7 +81,7 @@ func TestAPIKeyQuerySecurityDefinitionGetAPIKey(t *testing.T) {
 }
 
 func TestAPIKeyQuerySecurityDefinitionBuildValue(t *testing.T) {
-	Convey("Given an APIKeyHeaderSecurityDefinition", t, func() {
+	Convey("Given an APIKeyQuerySecurityDefinition", t, func() {
 		expectedAPIKey := "Authorization"
 		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("apiKeyName", expectedAPIKey)
 		Convey("When getTerraformConfigurationName method is called", func() {
@@ -89,6 +89,42 @@ func TestAPIKeyQuerySecurityDefinitionBuildValue(t *testing.T) {
 			value := apiKeyQuerySecurityDefinition.buildValue("someValue")
 			Convey("Then the value should be the expected value with no modifications", func() {
 				So(value, ShouldEqual, expectedValue)
+			})
+		})
+	})
+}
+
+func TestAPIKeyQuerySecurityDefinitionValidate(t *testing.T) {
+	Convey("Given an APIKeyQuerySecurityDefinition with a security definition name and an apiKeyName", t, func() {
+		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("apiKeyName", "Authorization")
+		Convey("When validate method is called", func() {
+			err := apiKeyQuerySecurityDefinition.validate()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given an APIKeyQuerySecurityDefinition with an empty security definition name and an apiKeyName", t, func() {
+		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("", "Authorization")
+		Convey("When validate method is called", func() {
+			err := apiKeyQuerySecurityDefinition.validate()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should match the expected", func() {
+				So(err.Error(), ShouldEqual, "specAPIKeyQuerySecurityDefinition missing mandatory security definition name")
+			})
+		})
+	})
+	Convey("Given an APIKeyQuerySecurityDefinition with a security definition name and an empty apiKeyName", t, func() {
+		apiKeyQuerySecurityDefinition := newAPIKeyQuerySecurityDefinition("apiKeyName", "")
+		Convey("When validate method is called", func() {
+			err := apiKeyQuerySecurityDefinition.validate()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should match the expected", func() {
+				So(err.Error(), ShouldEqual, "specAPIKeyQuerySecurityDefinition missing mandatory apiKey name")
 			})
 		})
 	})

@@ -1,13 +1,14 @@
 package openapi
 
 import (
+	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 )
 
 // specAPIKeyHeaderSecurityDefinition defines a security definition. This struct serves as a translation between the OpenAPI document
 // and the scheme that will be used by the OpenAPI Terraform provider when making API calls to the backend
 type specAPIKeyHeaderSecurityDefinition struct {
-	Name   string
+	name   string
 	apiKey specAPIKey
 }
 
@@ -18,7 +19,7 @@ func newAPIKeyHeaderSecurityDefinition(secDefName, apiKeyName string) specAPIKey
 }
 
 func (s specAPIKeyHeaderSecurityDefinition) getName() string {
-	return s.Name
+	return s.name
 }
 
 func (s specAPIKeyHeaderSecurityDefinition) getType() securityDefinitionType {
@@ -26,7 +27,7 @@ func (s specAPIKeyHeaderSecurityDefinition) getType() securityDefinitionType {
 }
 
 func (s specAPIKeyHeaderSecurityDefinition) getTerraformConfigurationName() string {
-	return terraformutils.ConvertToTerraformCompliantName(s.Name)
+	return terraformutils.ConvertToTerraformCompliantName(s.name)
 }
 
 func (s specAPIKeyHeaderSecurityDefinition) getAPIKey() specAPIKey {
@@ -35,4 +36,14 @@ func (s specAPIKeyHeaderSecurityDefinition) getAPIKey() specAPIKey {
 
 func (s specAPIKeyHeaderSecurityDefinition) buildValue(value string) string {
 	return value
+}
+
+func (s specAPIKeyHeaderSecurityDefinition) validate() error {
+	if s.name == "" {
+		return fmt.Errorf("specAPIKeyHeaderSecurityDefinition missing mandatory security definition name")
+	}
+	if s.apiKey.Name == "" {
+		return fmt.Errorf("specAPIKeyHeaderSecurityDefinition missing mandatory apiKey name")
+	}
+	return nil
 }

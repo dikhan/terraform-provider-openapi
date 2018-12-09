@@ -90,3 +90,27 @@ func TestAPIKeyQueryBearerSecurityDefinitionBuildValue(t *testing.T) {
 		})
 	})
 }
+
+func TestAPIKeyQueryBearerSecurityDefinitionValidate(t *testing.T) {
+	Convey("Given an APIKeyQueryBearerSecurityDefinition with a security definition name", t, func() {
+		specAPIKeyQueryBearerSecurityDefinition := newAPIKeyQueryBearerSecurityDefinition("apikey_name")
+		Convey("When validate method is called", func() {
+			err := specAPIKeyQueryBearerSecurityDefinition.validate()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given an APIKeyQueryBearerSecurityDefinition with a security definition name", t, func() {
+		specAPIKeyQueryBearerSecurityDefinition := newAPIKeyQueryBearerSecurityDefinition("")
+		Convey("When validate method is called", func() {
+			err := specAPIKeyQueryBearerSecurityDefinition.validate()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message should match the expected", func() {
+				So(err.Error(), ShouldEqual, "specAPIKeyQueryBearerSecurityDefinition missing mandatory security definition name")
+			})
+		})
+	})
+}

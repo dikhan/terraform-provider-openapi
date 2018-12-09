@@ -9,7 +9,7 @@ import (
 const bearerScheme = "Bearer"
 
 type specAPIKeyHeaderBearerSecurityDefinition struct {
-	Name string
+	name string
 }
 
 // newAPIKeyHeaderBearerSecurityDefinition constructs a SpecSecurityDefinition of Header type using the Bearer authentication
@@ -19,7 +19,7 @@ func newAPIKeyHeaderBearerSecurityDefinition(secDefName string) specAPIKeyHeader
 }
 
 func (s specAPIKeyHeaderBearerSecurityDefinition) getName() string {
-	return s.Name
+	return s.name
 }
 
 func (s specAPIKeyHeaderBearerSecurityDefinition) getType() securityDefinitionType {
@@ -27,7 +27,7 @@ func (s specAPIKeyHeaderBearerSecurityDefinition) getType() securityDefinitionTy
 }
 
 func (s specAPIKeyHeaderBearerSecurityDefinition) getTerraformConfigurationName() string {
-	return terraformutils.ConvertToTerraformCompliantName(s.Name)
+	return terraformutils.ConvertToTerraformCompliantName(s.name)
 }
 
 func (s specAPIKeyHeaderBearerSecurityDefinition) getAPIKey() specAPIKey {
@@ -39,4 +39,11 @@ func (s specAPIKeyHeaderBearerSecurityDefinition) buildValue(value string) strin
 		return value
 	}
 	return fmt.Sprintf("Bearer %s", value)
+}
+
+func (s specAPIKeyHeaderBearerSecurityDefinition) validate() error {
+	if s.name == "" {
+		return fmt.Errorf("specAPIKeyHeaderBearerSecurityDefinition missing mandatory security definition name")
+	}
+	return nil
 }

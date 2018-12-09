@@ -131,6 +131,52 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a specV2Security loaded with a header security definition that is missing the apiKeyName", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "header",
+						Type: "apiKey",
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			_, err := specV2Security.GetAPIKeySecurityDefinitions()
+			Convey("Then the the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "specAPIKeyHeaderSecurityDefinition missing mandatory apiKey name")
+			})
+		})
+	})
+
+	Convey("Given a specV2Security loaded with a query security definition that is missing the apiKeyName", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "query",
+						Type: "apiKey",
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			_, err := specV2Security.GetAPIKeySecurityDefinitions()
+			Convey("Then the the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "specAPIKeyQuerySecurityDefinition missing mandatory apiKey name")
+			})
+		})
+	})
 }
 
 func TestGetGlobalSecuritySchemes(t *testing.T) {
@@ -147,6 +193,7 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "header",
 						Type: "apiKey",
+						Name: "Authorization",
 					},
 				},
 			},
@@ -176,6 +223,7 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "header",
 						Type: "apiKey",
+						Name: "Authorization",
 					},
 				},
 			},

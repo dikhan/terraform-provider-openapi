@@ -35,4 +35,7 @@ type SpecSecurityDefinition interface {
 	// buildValue accepts a value that then can be used to join with other values (e,g: auth schemes such as bearer)
 	// to form the final value returned
 	buildValue(value string) string
+	// validate performs a check on the security definition to verify that it's well formed nad has the right mandatory configuration
+	// including security definition name and any extra validation on the specAPIKey
+	validate() error
 }
