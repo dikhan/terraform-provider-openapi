@@ -35,6 +35,8 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 			Convey("And the security schemes should be of type header bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderBearerSecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "Authorization")
+				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "Bearer jwtToken")
 			})
 		})
 	})
@@ -46,6 +48,7 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "header",
 						Type: "apiKey",
+						Name: "headerName",
 					},
 				},
 			},
@@ -61,6 +64,8 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 			Convey("And the security schemes should be of type header bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderSecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "headerName")
+				So(secDefs[0].buildValue("someToken"), ShouldEqual, "someToken")
 			})
 		})
 	})
@@ -92,6 +97,8 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 			Convey("And the security schemes should be of type query bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQueryBearerSecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "access_token")
+				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "jwtToken")
 			})
 		})
 	})
@@ -103,6 +110,7 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "query",
 						Type: "apiKey",
+						Name: "queryParamName",
 					},
 				},
 			},
@@ -118,6 +126,8 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 			Convey("And the security schemes should be of type query bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQuerySecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "queryParamName")
+				So(secDefs[0].buildValue("someToken"), ShouldEqual, "someToken")
 			})
 		})
 	})
