@@ -873,9 +873,18 @@ to the security definition as the example below.
 
 Attribute Name | Type | Description
 ---|:---:|---
-x-terraform-authentication-scheme-bearer | boolean |  A security definition with this attribute enabled will enable the Bearer auth scheme. This means that the provider will automatically add to the value of the header/query the Bearer scheme. Note when using this extension the 'name' param will be ignored as this will automatically use the Bearer specification names behind the scenes, that being "Authorization" for header type and "access_token" for the query type.
+[x-terraform-authentication-scheme-bearer](#xTerraformAuthenticationSchemeBearer) | boolean |  A security definition with this attribute enabled will enable the Bearer auth scheme. This means that the provider will automatically use the header/query names specified in the Auth Bearer specification. Note when using this extension the 'name' param will be ignored as this will automatically use the Bearer specification names behind the scenes, that being "Authorization" for header type and "access_token" for the query type.
 
-###### ApiKey Bearer Header Auth
+###### <a name="xTerraformAuthenticationSchemeBearer"x-terraform-authentication-scheme-bearer</a>
+
+The 'x-terraform-authentication-scheme-bearer' extension can be applied to
+a security definition of type 'apiKey' in both header as well as query locations
+ (as described in the 'in' parameter). The extension enables the bearer scheme authentication
+ following the the [OAuth 2.0 Authorization Framework: Bearer Token Usage RFC](https://tools.ietf.org/html/rfc6750#page-5)
+
+The following sections describe more details about header and query options:
+
+####### ApiKey Bearer Header Auth
 
 The Bearer scheme for header authentication can be used as follows:
 
@@ -884,6 +893,7 @@ securityDefinitions:
   apikey_auth:
     type: "apiKey"
     in: "header"
+    # name: "something" the name paramter will be ignored when using the 'x-terraform-authentication-scheme-bearer' extension, "Authorization" name will be use as default value
     x-terraform-authentication-scheme-bearer: true
 ```
 
@@ -896,7 +906,12 @@ the implementation also handles the case where the user has provided as the
 auth value the Bearer plus the token in which case no extra Bearer will be added to the header
 value avoiding duplications.
 
-###### ApiKey Bearer Query Auth
+####### ApiKey Bearer Query Auth
+
+The 'x-terraform-authentication-scheme-bearer' extension can be applied to
+ an 'apiKey' type authentication of type query (as described in the 'in'
+ parameter). The extension enables the bearer scheme authentication
+ following the the [OAuth 2.0 Authorization Framework: Bearer Token Usage RFC](https://tools.ietf.org/html/rfc6750#page-5)
 
 The Bearer scheme for header authentication can be used as follows:
 
@@ -905,6 +920,7 @@ securityDefinitions:
   apikey_auth:
     type: "apiKey"
     in: "query"
+    # name: "something" the name paramter will be ignored when using the 'x-terraform-authentication-scheme-bearer' extension, "access_token" name will be use as default value
     x-terraform-authentication-scheme-bearer: true
 ```
 
