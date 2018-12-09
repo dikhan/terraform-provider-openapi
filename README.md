@@ -87,6 +87,9 @@ Please follow the guidelines from:
 
 - [go-swagger](https://github.com/go-swagger/go-swagger): Api terraform provider makes extensive use of this library 
 which offers a very convenient implementation to serialize and deserialize swagger specifications.
+- [JsonPath](https://github.com/oliveagle/jsonpath): Json path is used in
+the plugin external configuration file to define values for provider schema
+properties that are coming from external files.
 
 ## Authors
 

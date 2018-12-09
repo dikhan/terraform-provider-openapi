@@ -8,11 +8,11 @@ type specAPIKeyAuthenticator interface {
 }
 
 func createAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) specAPIKeyAuthenticator {
-	switch secDef.apiKey.In {
+	switch secDef.getAPIKey().In {
 	case inHeader:
-		return apiKeyHeaderAuthenticator{apiKey{secDef.apiKey.Name, value}}
+		return newAPIKeyHeaderAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value))
 	case inQuery:
-		return apiKeyQueryAuthenticator{apiKey{secDef.apiKey.Name, value}}
+		return newAPIKeyQueryAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value))
 	}
 	return nil
 }

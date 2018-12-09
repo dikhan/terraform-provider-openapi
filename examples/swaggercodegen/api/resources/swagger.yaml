@@ -323,10 +323,28 @@ paths:
           description: "Monitor not found"
 
 securityDefinitions:
-  apikey_auth:
+  apikey_auth: # basic apikey header auth, the header name will be the value used in the name property, in this case "Authorization", when calling the applicable resource API
     type: "apiKey"
     name: "Authorization"
     in: "header"
+#  apikey_header_auth_bearer: // example of header auth using the bearer schema as per the specification
+#    type: "apiKey"
+#    in: "header"
+#    x-terraform-authentication-scheme-bearer: true # this extension would make the auth use the Bearer schema, so
+# there will be no need to specify the name property as internally the provider will take care of using the right header name
+# following the bearer spec, hence it will use as header name "Authorization", and the token value will be prefixed with
+# Bearer schema automatically without needing that input from the user, just the token
+#  apikey_query_auth_bearer:  // example of query auth using the bearer schema as per the specification
+#    type: "apiKey"
+#    in: "query"
+#    x-terraform-authentication-scheme-bearer: true # this extension would make the auth use the Bearer schema, so
+# there will be no need to specify the name property as internally the provider will take care of using the right header name
+# following the bearer spec, hence it will use as header name "Authorization", and the token value will be the one provided
+# by the user
+#  apikey_query_auth: // basic apikey query auth, the call to the API will attach to the URI the query param, e,g: http://hostname.com?Authorization="value provided by the user"
+#    type: "apiKey"
+#    name: "Authorization"
+#    in: "query"
 
 definitions:
   ContentDeliveryNetworkV1:

@@ -12,7 +12,7 @@ type SpecHeaderParam struct {
 }
 
 // GetHeaderTerraformConfigurationName returns the terraform compliant name of the header. If the header TerraformName
-// field is populated it takes preference over the Name field.
+// field is populated it takes preference over the name field.
 func (h SpecHeaderParam) GetHeaderTerraformConfigurationName() string {
 	if h.TerraformName != "" {
 		return terraformutils.ConvertToTerraformCompliantName(h.TerraformName)

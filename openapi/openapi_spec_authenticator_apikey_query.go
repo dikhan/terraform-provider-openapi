@@ -7,6 +7,15 @@ type apiKeyQueryAuthenticator struct {
 	apiKey
 }
 
+func newAPIKeyQueryAuthenticator(name, value string) apiKeyQueryAuthenticator {
+	return apiKeyQueryAuthenticator{
+		apiKey: apiKey{
+			name:  name,
+			value: value,
+		},
+	}
+}
+
 func (a apiKeyQueryAuthenticator) getContext() interface{} {
 	return a.apiKey
 }

@@ -60,11 +60,10 @@ func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 func getPluginConfigurationPath(providerName string) (string, error) {
 	pluginConfigurationFileEnvVar := fmt.Sprintf(otfVarPluginConfigurationFile, providerName)
 	pluginConfigurationFileEnvVars := []string{pluginConfigurationFileEnvVar, strings.ToUpper(pluginConfigurationFileEnvVar)}
-	configurationFile, err := terraformutils.MultiEnvDefaultFunc(pluginConfigurationFileEnvVars, "")()
+	pluginConfigurationFile, err := terraformutils.MultiEnvDefaultString(pluginConfigurationFileEnvVars, "")
 	if err != nil {
 		return "", err
 	}
-	pluginConfigurationFile := configurationFile.(string)
 	if pluginConfigurationFile != "" {
 		return pluginConfigurationFile, nil
 	}
@@ -88,11 +87,10 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 
 	swaggerURLEnvVar := fmt.Sprintf(otfVarSwaggerURL, p.ProviderName)
 	swaggerURLEnvVars := []string{swaggerURLEnvVar, strings.ToUpper(swaggerURLEnvVar)}
-	discoveryURL, err := terraformutils.MultiEnvDefaultFunc(swaggerURLEnvVars, "")()
+	apiDiscoveryURL, err := terraformutils.MultiEnvDefaultString(swaggerURLEnvVars, "")
 	if err != nil {
 		return nil, err
 	}
-	apiDiscoveryURL := discoveryURL.(string)
 	// Found OTF_VAR_%s_SWAGGER_URL env variable
 	if apiDiscoveryURL != "" {
 		log.Printf("[INFO] %s set with value %s", swaggerURLEnvVar, apiDiscoveryURL)
