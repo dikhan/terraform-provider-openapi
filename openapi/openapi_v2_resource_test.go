@@ -380,9 +380,11 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And schema definition should contain the schema of the array items", func() {
 				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldNotBeNil)
-				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties, ShouldNotBeEmpty)
-				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "prop1")
-				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[1].Name, ShouldEqual, "prop2")
+				exists, _ := assertPropertyExists(schemaDefinitionProperty.SpecSchemaDefinition.Properties, "prop1")
+				So(exists, ShouldBeTrue)
+				exists, _ = assertPropertyExists(schemaDefinitionProperty.SpecSchemaDefinition.Properties, "prop2")
+				So(exists, ShouldBeTrue)
+
 			})
 		})
 
