@@ -346,8 +346,6 @@ securityDefinitions:
 #    name: "Authorization"
 #    in: "query"
 
-
-
 definitions:
   ContentDeliveryNetworkV1:
     type: "object"

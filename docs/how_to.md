@@ -830,14 +830,6 @@ security section on the root level (global security schemes) or operation level,
 The API terraform provider supports apiKey type authentication in the header as well as a query parameter. The
 location can be specified in the 'in' parameter of the security definition.
 
-The following terraform specific extensions are supported to complement the lack of support
-for authentication schemes in the OpenAPI 2.0 specification. To use them, just add the extension
-to the security definition as the example below.
-
-Attribute Name | Type | Description
----|:---:|---
-x-terraform-authentication-scheme-bearer | boolean |  A security definition with this attribute enabled will enable the Bearer auth scheme. This means that the provider will automatically add to the value of the header/query the Bearer scheme. Note when using this extension the 'name' param will be ignored as this will automatically use the Bearer specification names behind the scenes, that being "Authorization" for header type and "access_token" for the query type.
-
 If an API has a security policy attached to it (as shown below), the API provider will use the corresponding policy
 when performing the HTTP request to the API.
 
@@ -848,7 +840,7 @@ paths:
       ...
       security:
         - apikey_auth: []
-      ...          
+      ...
 ```
 
 ```yml
@@ -857,33 +849,70 @@ securityDefinitions:
     type: "apiKey"
     name: "Authorization"
     in: "header"
-```
-
-An example on how the supported security definition extension can be used
-is as follows:
-
-```yml
-securityDefinitions:
-  apikey_auth:
-    type: "apiKey"
-    name: "Authorization"
-    in: "header"
-    x-terraform-authentication-scheme-bearer: true
 ```
 
 The provider automatically identifies header/query based auth policies and exposes them as part of the provider
-TF configuration so the actual token can be injected into the HTTP calls. The following is an example on how a user would 
+TF configuration so the actual token can be injected into the HTTP calls. The following is an example on how a user would
 be able to configure the provider with the auth header key. Internally, the provider will use this value for every API that has
- the 'apikey_auth' attach to it. Moreover, the name of the header/query parameter will be the one specified in the 
+ the 'apikey_auth' attach to it. Moreover, the name of the header/query parameter will be the one specified in the
  'name' property of the security definition, in the above example 'Authorization'.
 
-Below is the corresponding TF configuration, for a provider that has a header based authentication in the swagger file 
+Below is the corresponding TF configuration, for a provider that has a header based authentication in the swagger file
 (as the example above):
 ```
 provider "sp" {
   apikey_auth = "apiKeyValue"
 }
 ```
+
+##### Security Definitions extensions
+
+The following terraform specific extensions are supported to complement the lack of support
+for authentication schemes in the OpenAPI 2.0 specification. To use them, just add the extension
+to the security definition as the example below.
+
+Attribute Name | Type | Description
+---|:---:|---
+x-terraform-authentication-scheme-bearer | boolean |  A security definition with this attribute enabled will enable the Bearer auth scheme. This means that the provider will automatically add to the value of the header/query the Bearer scheme. Note when using this extension the 'name' param will be ignored as this will automatically use the Bearer specification names behind the scenes, that being "Authorization" for header type and "access_token" for the query type.
+
+###### ApiKey Bearer Header Auth
+
+The Bearer scheme for header authentication can be used as follows:
+
+```yml
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    in: "header"
+    x-terraform-authentication-scheme-bearer: true
+```
+
+In the example above, the 'name' property does not need to be specified
+as using the 'x-terraform-authentication-scheme-bearer' extension the provider internally will take care of
+honoring the Bearer specification attaching the right header name to the API request ("Authorization")
+and adding the 'Bearer' keyword before the JWT token for the header value. In this
+case the user is expected to add just the value of the JWT token. For compatibility reasons
+the implementation also handles the case where the user has provided as the
+auth value the Bearer plus the token in which case no extra Bearer will be added to the header
+value avoiding duplications.
+
+###### ApiKey Bearer Query Auth
+
+The Bearer scheme for header authentication can be used as follows:
+
+```yml
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    in: "query"
+    x-terraform-authentication-scheme-bearer: true
+```
+
+In the example above, the 'name' property does not need to be specified
+as using the 'x-terraform-authentication-scheme-bearer' extension the provider internally will take care of
+honoring the Bearer specification attaching the right query name to the API request ("access_token")
+and the value provided by the user.
+
 Note that the TF property name inside the provider's configuration is exactly the same as the one configured in the swagger
 file.
 
