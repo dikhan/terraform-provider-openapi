@@ -696,7 +696,7 @@ section.
 
 Object types can be defined in two fashions:
 
-####### Nested properties
+- Nested properties
 
 Properties can have their schema definition in place or nested; and they must be of type 'object'.
 
@@ -714,7 +714,19 @@ definitions:
             type: string
 ````
 
-####### Ref schema definition
+This would translate into the following terraform configuration:
+
+````
+resource "swaggercodegen_cdn_v1" "my_cdn" {
+  ....
+  object_nested_scheme_property = {
+    name = ""
+  }
+  ....
+}
+````
+
+- Ref schema definition
 
 A property that has a $ref attribute is considered automatically an object so defining the type 'object' is optional (although
 it's recommended).
@@ -738,14 +750,17 @@ definitions:
         type: string
 ````
 
-Additionally, properties can be flagged as required as follows:
+This would translate into the following terraform configuration:
 
-```
-    required:
-      - mandatoryProperty
-```
-The provider will configure these properties as required accordingly. Any other property not enlisted in the required field
-will be considered optional.
+````
+resource "swaggercodegen_cdn_v1" "my_cdn" {
+  ....
+  object_property = {
+    name = ""
+  }
+  ....
+}
+````
 
 ##### <a name="attributeDetails">Attribute details</a>
 
