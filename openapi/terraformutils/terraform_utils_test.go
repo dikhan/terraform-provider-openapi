@@ -1,6 +1,7 @@
 package terraformutils
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
 	"os"
@@ -9,28 +10,79 @@ import (
 )
 
 func TestTerraformUtilsGetTerraformPluginsVendorDir(t *testing.T) {
-	Convey("Given a TerraformUtils init with linux runtime", t, func() {
-		t := TerraformUtils{Runtime: "linux"}
-		Convey("When GetTerraformPluginsVendorDir method is called", func() {
+	Convey("Given an TerraformUtils set up with a homeDir and darwin platform", t, func() {
+		t := TerraformUtils{
+			HomeDir: "/Users/username",
+			Platform: "darwin",
+		}
+		Convey("When GetTerraformPluginsVendorDir is called", func() {
 			vendorDir, err := t.GetTerraformPluginsVendorDir()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the vendorDir should contain", func() {
-				So(vendorDir, ShouldContainSubstring, "/.terraform.d/plugins")
+			Convey("And vendor dir should be the default one as no os was specified`", func() {
+				So(vendorDir, ShouldEqual,"/Users/username/.terraform.d/plugins")
 			})
 		})
 	})
-
-	Convey("Given a TerraformUtils init with windows runtime", t, func() {
-		t := TerraformUtils{Runtime: "windows"}
-		Convey("When GetTerraformPluginsVendorDir method is called", func() {
+	Convey("Given an TerraformUtils set up with a homeDir and linux platform", t, func() {
+		t := TerraformUtils{
+			HomeDir: "/Users/username",
+			Platform: "linux",
+		}
+		Convey("When GetTerraformPluginsVendorDir is called", func() {
 			vendorDir, err := t.GetTerraformPluginsVendorDir()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the vendorDir should contain", func() {
-				So(vendorDir, ShouldContainSubstring, "/terraform.d/plugins")
+			Convey("And vendor dir should be the default one as no os was specified`", func() {
+				So(vendorDir, ShouldEqual,"/Users/username/.terraform.d/plugins")
+			})
+		})
+	})
+	Convey("Given an TerraformUtils set up with a homeDir and windows platform", t, func() {
+		homeDir := "C:\\Users\\username\\"
+		t := TerraformUtils{
+			Platform: "windows",
+			HomeDir: homeDir,
+		}
+		Convey("When GetTerraformPluginsVendorDir is called", func() {
+			vendorDir, err := t.GetTerraformPluginsVendorDir()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And vendor dir should be the windows specific path`", func() {
+				So(vendorDir, ShouldEqual,fmt.Sprintf("%s\\AppData\\terraform.d\\plugins", homeDir))
+			})
+		})
+	})
+	Convey("Given an TerraformUtils missing the homeDir configuration", t, func() {
+		t := TerraformUtils{
+			HomeDir: "",
+			Platform: "darwin",
+		}
+		Convey("When GetTerraformPluginsVendorDir is called", func() {
+			_, err := t.GetTerraformPluginsVendorDir()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And error message should match the expected one`", func() {
+				So(err.Error(), ShouldEqual,"mandatory HomeDir value missing")
+			})
+		})
+	})
+	Convey("Given an TerraformUtils missing the platform configuration", t, func() {
+		t := TerraformUtils{
+			HomeDir: "/Users/username",
+			Platform: "",
+		}
+		Convey("When GetTerraformPluginsVendorDir is called", func() {
+			_, err := t.GetTerraformPluginsVendorDir()
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And error message should match the expected one`", func() {
+				So(err.Error(), ShouldEqual,"mandatory platform information is missing")
 			})
 		})
 	})

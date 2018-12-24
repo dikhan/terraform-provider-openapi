@@ -5,33 +5,55 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/go-homedir"
-	"log"
 	"os"
+	"runtime"
 	"strings"
 )
 
-const terraformPluginVendorDir = "terraform.d/plugins"
+// TerraformPluginVendorDir defines the location where Terraform plugins are installed as per Terraform documentation:
+// https://www.terraform.io/docs/extend/how-terraform-works.html#discovery
+// https://www.terraform.io/docs/configuration/providers.html#third-party-plugins
+const TerraformPluginVendorDir = ".terraform.d/plugins"
+// TerraformPluginVendorDirWindows defines the path under which third party terraform plugins are to be installed
+const TerraformPluginVendorDirWindows = "AppData\\terraform.d\\plugins"
 
 // TerraformUtils defines a struct that exposes some handy terraform utils functions
 type TerraformUtils struct {
-	Runtime string
+	// Platform defines the OS (darwin, linux, windows) depending on which Terraform Vendor dir paths will be built differently
+	Platform string
+	// HomeDir defines the user's home directory
+	HomeDir string
+}
+
+// NewTerraformUtils is a handy constructor to build a TerraformUtils object with default platform and homeDir values
+// based on the user's computer settings
+func NewTerraformUtils() (*TerraformUtils, error) {
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		return nil, fmt.Errorf("failure occurred when getting the user's home directory: %s", err)
+	}
+	return &TerraformUtils{
+		Platform: runtime.GOOS,
+		HomeDir: homeDir,
+	}, nil
 }
 
 // GetTerraformPluginsVendorDir returns Terraform's global plugin vendor directory where Terraform suggests installing
 // custom plugins such as the OopenAPI Terraform provider. This function supports the most used platforms including
-// windows, darwin and linux
+// darwin, linux and windows.
 func (t *TerraformUtils) GetTerraformPluginsVendorDir() (string, error) {
 	var terraformPluginsFolder string
-	homeDir, err := homedir.Dir()
-	if err != nil {
-		log.Printf("[ERROR] A failure occurred when getting the user's home directory. Error = %s", err)
-		return "", err
+	if t.Platform == "" {
+		return "", fmt.Errorf("mandatory platform information is missing")
+	}
+	if t.HomeDir == "" {
+		return "", fmt.Errorf("mandatory HomeDir value missing")
 	}
 	// On all other systems, in the sub-path .terraform.d/plugins in your user's home directory.
-	terraformPluginsFolder = fmt.Sprintf("%s/.%s", homeDir, terraformPluginVendorDir)
-	// On Windows, in the sub-path terraform.d/plugins beneath your user's "Application Data" directory.
-	if t.Runtime == "windows" {
-		terraformPluginsFolder = fmt.Sprintf("%s/%s", homeDir, terraformPluginVendorDir)
+	terraformPluginsFolder = fmt.Sprintf("%s/%s", t.HomeDir, TerraformPluginVendorDir)
+	// On Windows, in the sub-path (%APPDATA%\terraform.d\plugins) beneath your user's "Application Data" directory.
+	if t.Platform == "windows" {
+		terraformPluginsFolder = fmt.Sprintf("%s\\%s", t.HomeDir, TerraformPluginVendorDirWindows)
 	}
 	return terraformPluginsFolder, nil
 }

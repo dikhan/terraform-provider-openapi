@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 )
@@ -68,7 +67,10 @@ func getPluginConfigurationPath(providerName string) (string, error) {
 		return pluginConfigurationFile, nil
 	}
 
-	terraformUtils := terraformutils.TerraformUtils{Runtime: runtime.GOOS}
+	terraformUtils, err := terraformutils.NewTerraformUtils()
+	if err != nil {
+		return "", err
+	}
 	expandedTerraformVendorDir, err := terraformUtils.GetTerraformPluginsVendorDir()
 	if err != nil {
 		return "", err
