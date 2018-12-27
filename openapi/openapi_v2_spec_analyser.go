@@ -141,14 +141,7 @@ func (specAnalyser *specV2Analyser) GetSecurity() SpecSecurity {
 // - path level parameters (not supported)
 // - operation level parameters (supported)
 func (specAnalyser *specV2Analyser) GetAllHeaderParameters() (SpecHeaderParameters, error) {
-	specHeaderParameters := SpecHeaderParameters{}
-	// add header configuration names/values defined per path operation
-	for _, path := range specAnalyser.d.Spec().Paths.Paths {
-		for _, headerParam := range getPathHeaderParams(path) {
-			specHeaderParameters = append(specHeaderParameters, headerParam)
-		}
-	}
-	return specHeaderParameters, nil
+	return getAllHeaderParameters(specAnalyser.d.Spec().Paths.Paths), nil
 }
 
 func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {
