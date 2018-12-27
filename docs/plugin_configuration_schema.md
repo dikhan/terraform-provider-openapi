@@ -80,6 +80,8 @@ Describes the schema configuration for the service provider:
 Field Name | Type | Description
 ---|:---:|---
 schema_property_name | `string` | Defines the name of the provider's schema property. For more info refer to [OpenAPI Provider Configuration](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#configuration)
+cmd | `[]string` | Defines the command to execute (using exec form: ```["executable","param1","param2"]```) before the value is assigned to the schema property. Note, there must be at least one value in the array for the cmd to be executed.
+cmd_timeout | `int` | Defines the max timeout, in seconds, for the command to execute. If the timeout is not specified the default value is 10s.
 default_value | `string` | Defines the default value for the property. If ```schema_property_external_configuration``` is defined, it takes preference over this value.
 schema_property_external_configuration | [Schema Property External Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-property-external-configuration) | Schema Property External Configuration Object
 
@@ -108,6 +110,8 @@ services:
       swagger-url: /Users/user/go/src/github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/resources/swagger.yaml
       schema_configuration:
       - schema_property_name: "apikey_auth"
+        cmd: ["date"]
+        cmd_timeout: 10
         default_value: "apiKeyValue"
         schema_property_external_configuration:
           content_type: raw
