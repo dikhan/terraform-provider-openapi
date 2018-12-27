@@ -102,6 +102,10 @@ func (p providerFactory) addSchemaProperty(providerSchema map[string]*schema.Sch
 	var err error
 	schemaPropertyConfiguration := p.serviceConfiguration.GetSchemaPropertyConfiguration(schemaPropertyName)
 	if schemaPropertyConfiguration != nil {
+		err = schemaPropertyConfiguration.ExecuteCommand()
+		if err != nil {
+			return err
+		}
 		defaultValue, err = schemaPropertyConfiguration.GetDefaultValue()
 		if err != nil {
 			return err

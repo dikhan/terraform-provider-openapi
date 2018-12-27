@@ -114,7 +114,7 @@ func TestCreateProvider(t *testing.T) {
 					}),
 				},
 			},
-			serviceConfiguration: serviceConfigStub{},
+			serviceConfiguration: &serviceConfigStub{},
 		}
 		Convey("When createProvider is called ", func() {
 			p, err := p.createProvider()
@@ -129,9 +129,22 @@ func TestCreateProvider(t *testing.T) {
 }
 
 func TestCreateTerraformProviderSchema(t *testing.T) {
-	Convey("Given a provider factory", t, func() {
+	Convey("Given a provider factory containing couple properties with commands (that exit with no error) set up", t, func() {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
+
+		serviceConfig := &serviceConfigStub{
+			schemaConfiguration: []*serviceSchemaPropertyConfigurationStub{
+				{
+					schemaPropertyName:   "apikey_auth",
+					executeCommandCalled: false,
+				},
+				{
+					schemaPropertyName:   "header_name",
+					executeCommandCalled: false,
+				},
+			},
+		}
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
@@ -151,7 +164,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					}),
 				},
 			},
-			serviceConfiguration: serviceConfigStub{},
+			serviceConfiguration: serviceConfig,
 		}
 		Convey("When createTerraformProviderSchema is called ", func() {
 			providerSchema, err := p.createTerraformProviderSchema()
@@ -164,6 +177,52 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			})
 			Convey("And the provider schema default function should not be nil", func() {
 				So(providerSchema[apiKeyAuthProperty.Name].DefaultFunc, ShouldNotBeNil)
+			})
+			Convey("And the provider schema properties commands should have been executed", func() {
+				So(serviceConfig.schemaConfiguration[0].executeCommandCalled, ShouldBeTrue)
+				So(serviceConfig.schemaConfiguration[1].executeCommandCalled, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given a provider factory containing a property with command (that exit with error) set up", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		expectedError := "some error executing the command"
+		serviceConfig := &serviceConfigStub{
+			schemaConfiguration: []*serviceSchemaPropertyConfigurationStub{
+				{
+					schemaPropertyName:   "apikey_auth",
+					executeCommandCalled: false,
+					err:                  fmt.Errorf(expectedError),
+				},
+			},
+		}
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+			},
+			serviceConfiguration: serviceConfig,
+		}
+		Convey("When createTerraformProviderSchema is called ", func() {
+			_, err := p.createTerraformProviderSchema()
+			Convey("Then the expectedValue returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+			Convey("And the provider schema properties commands should have been executed", func() {
+				So(serviceConfig.schemaConfiguration[0].executeCommandCalled, ShouldBeTrue)
 			})
 		})
 	})
@@ -187,7 +246,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					}),
 				},
 			},
-			serviceConfiguration: serviceConfigStub{},
+			serviceConfiguration: &serviceConfigStub{},
 		}
 		Convey("When createTerraformProviderSchema is called ", func() {
 			providerSchema, err := p.createTerraformProviderSchema()
