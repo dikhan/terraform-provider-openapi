@@ -158,7 +158,6 @@ func TestGetHeaderConfigurations(t *testing.T) {
 	})
 }
 
-
 func TestGetAllHeaderParameters(t *testing.T) {
 	Convey("Given a swagger doc containing paths with header type parameters and different header names", t, func() {
 		spec := &spec.Swagger{
@@ -265,7 +264,6 @@ func TestGetAllHeaderParameters(t *testing.T) {
 		})
 	})
 }
-
 
 func TestGetPathHeaderParams(t *testing.T) {
 	Convey("Given a swagger doc containing a path that contains one POST operation with a header parameter", t, func() {

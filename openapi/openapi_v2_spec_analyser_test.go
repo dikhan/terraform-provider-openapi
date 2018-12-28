@@ -199,7 +199,7 @@ func TestGetAPIBackendConfiguration(t *testing.T) {
    "swagger":"2.0"
 }`
 		r := initAPISpecAnalyser(swaggerJSON)
-		r.openAPIDocumentURL= "http://hostname.com/swagger.json"
+		r.openAPIDocumentURL = "http://hostname.com/swagger.json"
 		Convey("When GetAPIBackendConfiguration method is called", func() {
 			specBackedConfig, err := r.GetAPIBackendConfiguration()
 			Convey("Then the err returned should be nil", func() {

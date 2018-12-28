@@ -40,7 +40,7 @@ func TestSecuritySchemeExists(t *testing.T) {
 			secDef := newAPIKeyHeaderSecurityDefinition("secDef1", "secDef1")
 			exists := specSecuritySchemes.securitySchemeExists(secDef)
 			Convey("Then the specSecuritySchemes should be true", func() {
-				So(exists , ShouldBeTrue)
+				So(exists, ShouldBeTrue)
 			})
 		})
 	})
@@ -56,7 +56,7 @@ func TestSecuritySchemeExists(t *testing.T) {
 			secDef := newAPIKeyHeaderSecurityDefinition("secDefNonExisting", "secDefNonExisting")
 			exists := specSecuritySchemes.securitySchemeExists(secDef)
 			Convey("Then the specSecuritySchemes should be false", func() {
-				So(exists , ShouldBeFalse)
+				So(exists, ShouldBeFalse)
 			})
 		})
 	})
