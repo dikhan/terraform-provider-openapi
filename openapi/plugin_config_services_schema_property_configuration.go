@@ -71,6 +71,7 @@ func (s ServiceSchemaPropertyConfigurationV1) GetDefaultValue() (string, error) 
 // a timeout error will be returned
 // - Otherwise, a nil error will be returned should the command executes successfully with a clean exit code
 func (s ServiceSchemaPropertyConfigurationV1) ExecuteCommand() error {
+	start := time.Now()
 	doneChan := make(chan error)
 	go s.exec(doneChan)
 	timeout := cmdTimeout
@@ -85,7 +86,7 @@ func (s ServiceSchemaPropertyConfigurationV1) ExecuteCommand() error {
 		if err != nil {
 			return err
 		}
-		log.Printf("[INFO] provider schema property '%s' command '%s' succesfully executed", s.SchemaPropertyName, s.Command)
+		log.Printf("[INFO] provider schema property '%s' command '%s' succesfully executed (time:%s)", s.SchemaPropertyName, s.Command, time.Since(start))
 		return nil
 	}
 }
