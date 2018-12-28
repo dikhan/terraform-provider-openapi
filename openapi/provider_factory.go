@@ -61,6 +61,12 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 
+	// Override security definitions to required if they are global security schemes
+	globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
+	if err != nil {
+		return nil, err
+	}
+
 	// Add all security definitions as optional properties
 	securityDefinitions, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
 	if err != nil {
@@ -68,22 +74,15 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 	for _, securityDefinition := range *securityDefinitions {
 		secDefName := securityDefinition.getTerraformConfigurationName()
-		if err := p.addSchemaProperty(s, secDefName, false); err != nil {
+		required := false
+		if globalSecuritySchemes.securitySchemeExists(securityDefinition) {
+			required = true
+		}
+		if err := p.addSchemaProperty(s, secDefName, required); err != nil {
 			return nil, err
 		}
 	}
 
-	// Override security definitions to required if they are global security schemes
-	globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
-	if err != nil {
-		return nil, err
-	}
-	for _, securityScheme := range globalSecuritySchemes {
-		securityScheme := securityScheme.getTerraformConfigurationName()
-		if err := p.addSchemaProperty(s, securityScheme, true); err != nil {
-			return nil, err
-		}
-	}
 	headers, err := p.specAnalyser.GetAllHeaderParameters()
 	if err != nil {
 		return nil, err
