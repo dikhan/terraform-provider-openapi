@@ -58,3 +58,38 @@ func TestGetHeaderTerraformConfigurationName(t *testing.T) {
 		})
 	})
 }
+
+func TestSpecHeaderExists(t *testing.T) {
+	Convey("Given a list of SpecHeaderParameters", t, func() {
+		alreadyExistingHeaderName := "alreadyExistingHeaderName"
+		specHeaderParameters := SpecHeaderParameters{
+			SpecHeaderParam{
+				Name:          alreadyExistingHeaderName,
+				TerraformName: "",
+			},
+		}
+		Convey("When specHeaderExists method is called with an existing header param", func() {
+			header := SpecHeaderParam{Name: alreadyExistingHeaderName}
+			exists := specHeaderParameters.specHeaderExists(header)
+			Convey("Then the specSecuritySchemes should be true", func() {
+				So(exists, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given a list of SpecHeaderParameters", t, func() {
+		specHeaderParameters := SpecHeaderParameters{
+			SpecHeaderParam{
+				Name:          "alreadyExistingHeaderName",
+				TerraformName: "",
+			},
+		}
+		Convey("When securitySchemeExists method is called with a NON existing header param", func() {
+			header := SpecHeaderParam{Name: "nonExistingHeaderName"}
+			exists := specHeaderParameters.specHeaderExists(header)
+			Convey("Then the specSecuritySchemes should be false", func() {
+				So(exists, ShouldBeFalse)
+			})
+		})
+	})
+}

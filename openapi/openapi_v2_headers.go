@@ -53,13 +53,11 @@ func getPathHeaderParams(path spec.PathItem) SpecHeaderParameters {
 
 func getAllHeaderParameters(paths map[string]spec.PathItem) SpecHeaderParameters {
 	specHeaderParameters := SpecHeaderParameters{}
-	headers := map[string]SpecHeaderParam{}
 	for _, path := range paths {
 		for _, headerParam := range getPathHeaderParams(path) {
 			// The below statement avoids dup headers in the list. Note subsequent encounters with a header type that has
 			// already been registered will be ignored
-			if _, exists := headers[headerParam.Name]; !exists {
-				headers[headerParam.Name] = headerParam
+			if !specHeaderParameters.specHeaderExists(headerParam) {
 				specHeaderParameters = append(specHeaderParameters, headerParam)
 			}
 		}

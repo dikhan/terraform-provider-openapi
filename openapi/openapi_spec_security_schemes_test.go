@@ -52,7 +52,7 @@ func TestSecuritySchemeExists(t *testing.T) {
 			},
 		}
 		specSecuritySchemes := createSecuritySchemes(securitySchemes)
-		Convey("When securitySchemeExists method is called with an existing security definition", func() {
+		Convey("When securitySchemeExists method is called with a NON existing security definition", func() {
 			secDef := newAPIKeyHeaderSecurityDefinition("secDefNonExisting", "secDefNonExisting")
 			exists := specSecuritySchemes.securitySchemeExists(secDef)
 			Convey("Then the specSecuritySchemes should be false", func() {

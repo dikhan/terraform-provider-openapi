@@ -85,6 +85,7 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 
 	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	log.Printf("[DEBUG] all header parameters: %+v", headers)
 	if err != nil {
 		return nil, err
 	}
