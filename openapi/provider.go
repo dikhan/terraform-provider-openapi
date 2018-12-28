@@ -11,8 +11,17 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+var provider *schema.Provider = nil
+var err error = nil
+
 // ProviderOpenAPI returns a terraform.ResourceProvider.
 func ProviderOpenAPI(providerName string) (*schema.Provider, error) {
+	if err != nil {
+		return nil, err
+	}
+	if provider != nil {
+		return provider, nil
+	}
 	serviceConfiguration, err := getServiceConfiguration(providerName)
 	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
@@ -30,7 +39,7 @@ func ProviderOpenAPI(providerName string) (*schema.Provider, error) {
 		return nil, fmt.Errorf("plugin provider factory init error: %s", err)
 	}
 
-	provider, err := providerFactory.createProvider()
+	provider, err = providerFactory.createProvider()
 	if err != nil {
 		return nil, fmt.Errorf("plugin terraform-provider-%s init error while creating schema provider: %s", providerName, err)
 	}
