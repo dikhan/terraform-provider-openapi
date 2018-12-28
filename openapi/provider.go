@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-var provider *schema.Provider = nil
-var err error = nil
+var provider *schema.Provider
+var err error
 
 // ProviderOpenAPI returns a terraform.ResourceProvider.
 func ProviderOpenAPI(providerName string) (*schema.Provider, error) {

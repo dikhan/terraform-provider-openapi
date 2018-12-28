@@ -93,7 +93,7 @@ func (s ServiceSchemaPropertyConfigurationV1) exec(doneChan chan error) {
 		}
 
 		// Create a new context and add a timeout to it
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout) * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 		defer cancel() // The cancel should be deferred so resources are cleaned up
 
 		// Create the command with our context
