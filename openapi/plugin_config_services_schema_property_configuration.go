@@ -93,6 +93,7 @@ func (s ServiceSchemaPropertyConfigurationV1) ExecuteCommand() error {
 
 func (s ServiceSchemaPropertyConfigurationV1) exec(doneChan chan error) {
 	if len(s.Command) > 0 {
+		log.Printf("[INFO] executing '%s' command '%s'", s.SchemaPropertyName, s.Command)
 		cmd := exec.Command(s.Command[0], s.Command[1:]...)
 		var stdout, stderr bytes.Buffer
 		cmd.Stdout = &stdout
