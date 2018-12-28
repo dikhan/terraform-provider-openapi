@@ -70,7 +70,7 @@ func TestServiceSchemaConfigurationV1ExecuteCommand(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the err message returned should be the expected", func() {
-				So(err.Error(), ShouldEqual, "command '[sleep 2]' did not finish executing within the expected time 1s")
+				So(err.Error(), ShouldEqual, "command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
 			})
 		})
 	})
@@ -105,6 +105,24 @@ func TestServiceSchemaConfigurationV1Exec(t *testing.T) {
 			})
 			Convey("And the err message returned should be the expected", func() {
 				So(err.Error(), ShouldEqual, "failed to execute 'some_property_name' command '[cat nonexistingfile]': cat: nonexistingfile: No such file or directory\n(exit status 1)")
+			})
+		})
+	})
+	Convey("Given a ServiceSchemaPropertyConfigurationV1 with a command (that timeouts) and a channel", t, func() {
+		serviceSchemaConfigurationV1 := ServiceSchemaPropertyConfigurationV1{
+			SchemaPropertyName: "some_property_name",
+			Command:            []string{"sleep", "2"},
+			CommandTimeout:     1,
+		}
+		doneChan := make(chan error)
+		Convey("When exec method is called", func() {
+			go serviceSchemaConfigurationV1.exec(doneChan)
+			err := <-doneChan
+			Convey("And the err returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err message returned should be the expected", func() {
+				So(err.Error(), ShouldEqual, "command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
 			})
 		})
 	})
