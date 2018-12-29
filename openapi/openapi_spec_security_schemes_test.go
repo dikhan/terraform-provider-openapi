@@ -28,6 +28,40 @@ func TestSpecSecuritySchemeGetTerraformConfigurationName(t *testing.T) {
 	})
 }
 
+func TestSecuritySchemeExists(t *testing.T) {
+	Convey("Given a list of specSecuritySchemes", t, func() {
+		securitySchemes := []map[string][]string{
+			map[string][]string{
+				"secDef1": []string{},
+			},
+		}
+		specSecuritySchemes := createSecuritySchemes(securitySchemes)
+		Convey("When securitySchemeExists method is called with an existing security definition", func() {
+			secDef := newAPIKeyHeaderSecurityDefinition("secDef1", "secDef1")
+			exists := specSecuritySchemes.securitySchemeExists(secDef)
+			Convey("Then the specSecuritySchemes should be true", func() {
+				So(exists, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given a list of specSecuritySchemes", t, func() {
+		securitySchemes := []map[string][]string{
+			map[string][]string{
+				"secDef1": []string{},
+			},
+		}
+		specSecuritySchemes := createSecuritySchemes(securitySchemes)
+		Convey("When securitySchemeExists method is called with a NON existing security definition", func() {
+			secDef := newAPIKeyHeaderSecurityDefinition("secDefNonExisting", "secDefNonExisting")
+			exists := specSecuritySchemes.securitySchemeExists(secDef)
+			Convey("Then the specSecuritySchemes should be false", func() {
+				So(exists, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestCreateSecuritySchemes(t *testing.T) {
 	Convey("Given a map of securitySchemes with multi auth AND support", t, func() {
 		securitySchemes := []map[string][]string{

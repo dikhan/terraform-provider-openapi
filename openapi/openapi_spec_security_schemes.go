@@ -19,6 +19,15 @@ func createSecuritySchemes(securitySchemes []map[string][]string) SpecSecuritySc
 	return schemes
 }
 
+func (s SpecSecuritySchemes) securitySchemeExists(secDef SpecSecurityDefinition) bool {
+	for _, securityScheme := range s {
+		if securityScheme.getTerraformConfigurationName() == secDef.getTerraformConfigurationName() {
+			return true
+		}
+	}
+	return false
+}
+
 // SpecSecurityScheme defines a security scheme. This struct serves as a translation between the OpenAPI document
 // and the scheme that will be used by the OpenAPI Terraform provider when making API calls to the backend
 type SpecSecurityScheme struct {

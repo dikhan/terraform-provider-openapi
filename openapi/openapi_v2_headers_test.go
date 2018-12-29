@@ -159,6 +159,113 @@ func TestGetHeaderConfigurations(t *testing.T) {
 }
 
 func TestGetAllHeaderParameters(t *testing.T) {
+	Convey("Given a swagger doc containing paths with header type parameters and different header names", t, func() {
+		spec := &spec.Swagger{
+			SwaggerProps: spec.SwaggerProps{
+				Paths: &spec.Paths{
+					Paths: map[string]spec.PathItem{
+						"/v1/cdns": {
+							PathItemProps: spec.PathItemProps{
+								Post: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID-cdn",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"/v1/lbs": {
+							PathItemProps: spec.PathItemProps{
+								Post: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID-lb",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getPathHeaderParams method is called", func() {
+			headerConfigProps := getAllHeaderParameters(spec.Paths.Paths)
+			Convey("Then the header configs returned should contain all the different headers found", func() {
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-cdn"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-lb"})
+			})
+		})
+	})
+	Convey("Given a swagger doc containing paths with header type parameters and same header names", t, func() {
+		spec := &spec.Swagger{
+			SwaggerProps: spec.SwaggerProps{
+				Paths: &spec.Paths{
+					Paths: map[string]spec.PathItem{
+						"/v1/cdns": {
+							PathItemProps: spec.PathItemProps{
+								Post: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"/v1/lbs": {
+							PathItemProps: spec.PathItemProps{
+								Post: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getPathHeaderParams method is called", func() {
+			headerConfigProps := getAllHeaderParameters(spec.Paths.Paths)
+			Convey("Then the headers shoud contain just one header since the other header names were the same", func() {
+				So(len(headerConfigProps), ShouldEqual, 1)
+			})
+			Convey("Then the header configs returned ", func() {
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID"})
+			})
+		})
+	})
+}
+
+func TestGetPathHeaderParams(t *testing.T) {
 	Convey("Given a swagger doc containing a path that contains one POST operation with a header parameter", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
@@ -190,7 +297,7 @@ func TestGetAllHeaderParameters(t *testing.T) {
 				},
 			},
 		}
-		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
+		Convey("When getPathHeaderParams method is called", func() {
 			headerConfigProps := getPathHeaderParams(spec.Paths.Paths["/v1/cdns"])
 			Convey("Then the header configs returned should contain 'x_request_id'", func() {
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id"})
@@ -198,7 +305,7 @@ func TestGetAllHeaderParameters(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger doc containing a path that contains all CRUD operations with a header parameter", t, func() {
+	Convey("Given a swagger doc containing a path that contains all CRUD operations with header type parameter and different name", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Paths: &spec.Paths{
@@ -263,13 +370,89 @@ func TestGetAllHeaderParameters(t *testing.T) {
 				},
 			},
 		}
-		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
+		Convey("When getPathHeaderParams method is called", func() {
 			headerConfigProps := getPathHeaderParams(spec.Paths.Paths["/v1/cdns"])
 			Convey("Then the header configs returned should contain all header parameters specified in the path operation", func() {
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-post"})
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-get"})
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-put"})
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-delete"})
+			})
+		})
+	})
+
+	Convey("Given a swagger doc containing a path that contains all CRUD operations with header type parameter and the same name", t, func() {
+		spec := &spec.Swagger{
+			SwaggerProps: spec.SwaggerProps{
+				Paths: &spec.Paths{
+					Paths: map[string]spec.PathItem{
+						"/v1/cdns": {
+							PathItemProps: spec.PathItemProps{
+								Post: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+								Get: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+								Put: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+								Delete: &spec.Operation{
+									OperationProps: spec.OperationProps{
+										Parameters: []spec.Parameter{
+											{
+												ParamProps: spec.ParamProps{
+													Name:     "X-Request-ID",
+													In:       "header",
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getPathHeaderParams method is called", func() {
+			headerConfigProps := getPathHeaderParams(spec.Paths.Paths["/v1/cdns"])
+			Convey("Then the headers size should be 1", func() {
+				So(len(headerConfigProps), ShouldEqual, 1)
+			})
+			Convey("Then the header configs returned should contain all header parameters specified in the path operation", func() {
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID"})
 			})
 		})
 	})

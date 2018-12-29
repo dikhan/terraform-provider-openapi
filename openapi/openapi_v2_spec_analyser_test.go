@@ -25,6 +25,194 @@ func TestSpecV2Analyser(t *testing.T) {
 	})
 }
 
+func TestSpecV2AnalyserGetAllHeaderParameters(t *testing.T) {
+	Convey("Given a specV2Analyser loaded with a resources that has a header parameter", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               },
+               {
+                  "in":"header",
+                  "name":"header_name",
+                  "description":"some header to be passed in the POST request"
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		r := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetAllHeaderParameters method is called", func() {
+			specHeaderParameters, err := r.GetAllHeaderParameters()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the specHeaderParameters size should be one", func() {
+				So(len(specHeaderParameters), ShouldEqual, 1)
+			})
+			Convey("Then the specBackedConfig returned should not be nil", func() {
+				So(specHeaderParameters, ShouldContain, SpecHeaderParam{Name: "header_name"})
+			})
+		})
+	})
+
+	Convey("Given a specV2Analyser loaded with few resources that have header parameters", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               },
+               {
+                  "in":"header",
+                  "name":"header_name",
+                  "description":"some header to be passed in the POST request"
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      },
+      "/v1/lbs":{
+         "post":{
+            "summary":"Create lb",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created LB",
+                  "schema":{
+                     "$ref":"#/definitions/LB"
+                  }
+               },
+               {
+                  "in":"header",
+                  "name":"header_name",
+                  "description":"some header to be passed in the POST request"
+               }
+            ]
+         }
+      },
+      "/v1/lbs/{id}":{
+         "get":{
+            "summary":"Get lb by id"
+         },
+         "put":{
+            "summary":"Updated lb"
+         },
+         "delete":{
+            "summary":"Delete lb"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      },
+      "LB":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		r := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetAllHeaderParameters method is called", func() {
+			specHeaderParameters, err := r.GetAllHeaderParameters()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the specHeaderParameters should have size one since the same header is present in multiple resources", func() {
+				So(len(specHeaderParameters), ShouldEqual, 1)
+			})
+			Convey("Then the specBackedConfig returned should not be nil", func() {
+				So(specHeaderParameters, ShouldContain, SpecHeaderParam{Name: "header_name"})
+			})
+		})
+	})
+}
+
+func TestGetAPIBackendConfiguration(t *testing.T) {
+	Convey("Given a specV2Analyser", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0"
+}`
+		r := initAPISpecAnalyser(swaggerJSON)
+		r.openAPIDocumentURL = "http://hostname.com/swagger.json"
+		Convey("When GetAPIBackendConfiguration method is called", func() {
+			specBackedConfig, err := r.GetAPIBackendConfiguration()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the specBackedConfig returned should not be nil", func() {
+				So(specBackedConfig, ShouldNotBeNil)
+			})
+		})
+
+	})
+}
+
 func TestIsMultiRegionResource(t *testing.T) {
 	Convey("Given a specV2Analyser and a resource root has a POST operation containing the x-terraform-resource-host with a parametrized host containing region variable", t, func() {
 		serviceProviderName := "serviceProviderName"

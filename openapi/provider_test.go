@@ -11,7 +11,8 @@ func TestOpenAPIProvider(t *testing.T) {
 	Convey("Given a provider name missing the service configuration", t, func() {
 		providerName := "nonExistingProvider"
 		Convey("When getServiceConfiguration method is called", func() {
-			tfProvider, err := ProviderOpenAPI(providerName)
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProvider()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -30,7 +31,8 @@ func TestOpenAPIProvider(t *testing.T) {
 		os.Setenv(fmt.Sprintf(otfVarSwaggerURL, providerName), expectedSwaggerURL)
 		os.Setenv(otfVarInsecureSkipVerify, "false")
 		Convey("When getServiceConfiguration method is called", func() {
-			tfProvider, err := ProviderOpenAPI(providerName)
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProvider()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})

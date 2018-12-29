@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"net/http"
+	"time"
 
 	"github.com/dikhan/http_goclient"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -61,6 +62,12 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 
+	// Override security definitions to required if they are global security schemes
+	globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
+	if err != nil {
+		return nil, err
+	}
+
 	// Add all security definitions as optional properties
 	securityDefinitions, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
 	if err != nil {
@@ -68,23 +75,17 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 	for _, securityDefinition := range *securityDefinitions {
 		secDefName := securityDefinition.getTerraformConfigurationName()
-		if err := p.addSchemaProperty(s, secDefName, false); err != nil {
+		required := false
+		if globalSecuritySchemes.securitySchemeExists(securityDefinition) {
+			required = true
+		}
+		if err := p.addSchemaProperty(s, secDefName, required); err != nil {
 			return nil, err
 		}
 	}
 
-	// Override security definitions to required if they are global security schemes
-	globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
-	if err != nil {
-		return nil, err
-	}
-	for _, securityScheme := range globalSecuritySchemes {
-		securityScheme := securityScheme.getTerraformConfigurationName()
-		if err := p.addSchemaProperty(s, securityScheme, true); err != nil {
-			return nil, err
-		}
-	}
 	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	log.Printf("[DEBUG] all header parameters: %+v", headers)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +103,10 @@ func (p providerFactory) addSchemaProperty(providerSchema map[string]*schema.Sch
 	var err error
 	schemaPropertyConfiguration := p.serviceConfiguration.GetSchemaPropertyConfiguration(schemaPropertyName)
 	if schemaPropertyConfiguration != nil {
+		err = schemaPropertyConfiguration.ExecuteCommand()
+		if err != nil {
+			return err
+		}
 		defaultValue, err = schemaPropertyConfiguration.GetDefaultValue()
 		if err != nil {
 			return err
@@ -119,6 +124,7 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 		return nil, err
 	}
 	for _, openAPIResource := range openAPIResources {
+		start := time.Now()
 		if openAPIResource.shouldIgnoreResource() {
 			log.Printf("[WARN] '%s' is marked as to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
 			continue
@@ -132,7 +138,7 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("[INFO] resource '%s' successfully registered in the provider", resourceName)
+		log.Printf("[INFO] resource '%s' successfully registered in the provider (time:%s)", resourceName, time.Since(start))
 		resourceMap[resourceName] = resource
 	}
 	return resourceMap, nil

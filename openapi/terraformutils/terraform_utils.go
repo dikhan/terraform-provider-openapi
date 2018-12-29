@@ -14,6 +14,7 @@ import (
 // https://www.terraform.io/docs/extend/how-terraform-works.html#discovery
 // https://www.terraform.io/docs/configuration/providers.html#third-party-plugins
 const TerraformPluginVendorDir = ".terraform.d/plugins"
+
 // TerraformPluginVendorDirWindows defines the path under which third party terraform plugins are to be installed
 const TerraformPluginVendorDirWindows = "AppData\\terraform.d\\plugins"
 
@@ -34,7 +35,7 @@ func NewTerraformUtils() (*TerraformUtils, error) {
 	}
 	return &TerraformUtils{
 		Platform: runtime.GOOS,
-		HomeDir: homeDir,
+		HomeDir:  homeDir,
 	}, nil
 }
 

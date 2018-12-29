@@ -19,3 +19,12 @@ func (h SpecHeaderParam) GetHeaderTerraformConfigurationName() string {
 	}
 	return terraformutils.ConvertToTerraformCompliantName(h.Name)
 }
+
+func (s SpecHeaderParameters) specHeaderExists(specHeader SpecHeaderParam) bool {
+	for _, registeredHeader := range s {
+		if registeredHeader.GetHeaderTerraformConfigurationName() == specHeader.GetHeaderTerraformConfigurationName() {
+			return true
+		}
+	}
+	return false
+}
