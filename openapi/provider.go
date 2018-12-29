@@ -11,18 +11,22 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-var provider *schema.Provider
-var err error
+// ProviderOpenAPI defines the struct for the OpenAPI Terraform Provider
+type ProviderOpenAPI struct {
+	ProviderName string
+	provider     *schema.Provider
+	err          error
+}
 
-// ProviderOpenAPI returns a terraform.ResourceProvider.
-func ProviderOpenAPI(providerName string) (*schema.Provider, error) {
-	if err != nil {
-		return nil, err
+// CreateSchemaProvider returns a terraform.ResourceProvider.
+func (p *ProviderOpenAPI) CreateSchemaProvider() (*schema.Provider, error) {
+	if p.err != nil {
+		return nil, p.err
 	}
-	if provider != nil {
-		return provider, nil
+	if p.provider != nil {
+		return p.provider, nil
 	}
-	serviceConfiguration, err := getServiceConfiguration(providerName)
+	serviceConfiguration, err := getServiceConfiguration(p.ProviderName)
 	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
@@ -34,16 +38,16 @@ func ProviderOpenAPI(providerName string) (*schema.Provider, error) {
 		return nil, fmt.Errorf("plugin OpenAPI spec analyser error: %s", err)
 	}
 
-	providerFactory, err := newProviderFactory(providerName, openAPISpecAnalyser, serviceConfiguration)
+	providerFactory, err := newProviderFactory(p.ProviderName, openAPISpecAnalyser, serviceConfiguration)
 	if err != nil {
 		return nil, fmt.Errorf("plugin provider factory init error: %s", err)
 	}
 
-	provider, err = providerFactory.createProvider()
+	p.provider, err = providerFactory.createProvider()
 	if err != nil {
-		return nil, fmt.Errorf("plugin terraform-provider-%s init error while creating schema provider: %s", providerName, err)
+		return nil, fmt.Errorf("plugin terraform-provider-%s init error while creating schema provider: %s", p.ProviderName, err)
 	}
-	return provider, nil
+	return p.provider, nil
 }
 
 // This function is implemented with temporary code thus it can serve as an example

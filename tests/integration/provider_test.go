@@ -46,7 +46,8 @@ func getTestAccProviderInitWithPluginConfigurationFile(pluginConfigFile string) 
 }
 
 func getAPIProvider() *schema.Provider {
-	testAccProvider, err := openapi.ProviderOpenAPI(providerName)
+	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
+	testAccProvider, err := p.CreateSchemaProvider()
 	if err != nil {
 		log.Fatalf("err: %s", err)
 	}

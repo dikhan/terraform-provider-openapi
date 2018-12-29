@@ -302,7 +302,9 @@ services:
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	initPluginWithExternalConfigFile(file.Name())
-	_, err := openapi.ProviderOpenAPI(providerName)
+
+	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
+	_, err := p.CreateSchemaProvider()
 	if !strings.Contains(err.Error(), "plugin terraform-provider-openapi init error while creating schema provider: failed to execute 'apikey_auth' command '[cat nonExistingFile]': cat: nonExistingFile: No such file or directory") {
 		log.Fatalf("test failed, non expected output: %s", err)
 	}
@@ -312,17 +314,18 @@ services:
 func TestAccProviderConfiguration_PluginExternalFile_SchemaProperty_ExternalConfiguration_With_Command_With_Timeout(t *testing.T) {
 	testPluginConfig := fmt.Sprintf(`version: '1'
 services:
-  openapi:
-    swagger-url: https://localhost:8443/swagger.yaml
-    insecure_skip_verify: true
-    schema_configuration:
-    - schema_property_name: "apikey_auth"
-      cmd: ["sleep", "2"]
-      cmd_timeout: 1`)
+ openapi:
+   swagger-url: https://localhost:8443/swagger.yaml
+   insecure_skip_verify: true
+   schema_configuration:
+   - schema_property_name: "apikey_auth"
+     cmd: ["sleep", "2"]
+     cmd_timeout: 1`)
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	initPluginWithExternalConfigFile(file.Name())
-	_, err := openapi.ProviderOpenAPI(providerName)
+	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
+	_, err := p.CreateSchemaProvider()
 	if !strings.Contains(err.Error(), "plugin terraform-provider-openapi init error while creating schema provider: command '[sleep 2]' did not finish executing within the expected time 1s") {
 		log.Fatalf("test failed, non expected output: %s", err)
 	}
@@ -331,7 +334,8 @@ services:
 
 func TestAccProviderConfiguration_PluginExternalFile_NotFound(t *testing.T) {
 	initPluginWithExternalConfigFile("/some/non/existing/path")
-	_, err := openapi.ProviderOpenAPI(providerName)
+	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
+	_, err := p.CreateSchemaProvider()
 	if !strings.Contains(err.Error(), "swagger url not provided, please export OTF_VAR_<provider_name>_SWAGGER_URL env variable with the URL where 'openapi' service provider is exposing the swagger file OR create a plugin configuration file at ~/.terraform.d/plugins following the Plugin configuration schema specifications") {
 		log.Fatalf("test failed, non expected output: %s", err)
 	}
