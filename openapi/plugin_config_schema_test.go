@@ -214,6 +214,19 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 			serviceConfigName: {
 				SwaggerURL:         expectedURL,
 				InsecureSkipVerify: expectedInscureSkipVerify,
+				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
+					ServiceSchemaPropertyConfigurationV1{
+						SchemaPropertyName: "apikey_auth",
+						DefaultValue: "apiKeyValue",
+						Command: []string{"echo", "something"},
+						CommandTimeout: 10,
+						ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
+							File: "some_file",
+							KeyName: "some_key_name",
+							ContentType: "json",
+						},
+					},
+				},
 			},
 		}
 		pluginConfigSchema = NewPluginConfigSchemaV1(services)
@@ -222,13 +235,21 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 			Convey("Then the error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the marshalConfig should containt the right marshal configuration", func() {
+			Convey("And the marshalConfig should contain the right marshal configuration", func() {
 				expectedConfig := fmt.Sprintf(`version: "1"
 services:
   test:
     swagger-url: %s
     insecure_skip_verify: %t
-    schema_configuration: []
+    schema_configuration:
+    - schema_property_name: apikey_auth
+      default_value: apiKeyValue
+      cmd: [echo, something]
+      cmd_timeout: 10
+      schema_property_external_configuration:
+        file: some_file
+        key_name: some_key_name
+        content_type: json
 `, expectedURL, expectedInscureSkipVerify)
 				So(string(marshalConfig), ShouldEqual, expectedConfig)
 			})
