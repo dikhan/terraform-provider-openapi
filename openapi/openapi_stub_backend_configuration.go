@@ -3,14 +3,14 @@ package openapi
 import "fmt"
 
 type specStubBackendConfiguration struct {
-	host        string
-	basePath    string
-	httpSchemes []string
-	regions     []string
-	err error
-	hostErr error
+	host             string
+	basePath         string
+	httpSchemes      []string
+	regions          []string
+	err              error
+	hostErr          error
 	defaultRegionErr error
-	hostByRegionErr error
+	hostByRegionErr  error
 }
 
 func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *specStubBackendConfiguration {

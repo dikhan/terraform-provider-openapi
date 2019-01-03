@@ -133,7 +133,7 @@ func TestGetHostByRegion(t *testing.T) {
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions: "rst1",
+					extTfProviderRegions:         "rst1",
 				},
 			},
 		}
@@ -172,7 +172,7 @@ func TestGetHostByRegion(t *testing.T) {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",
-				Host: "www.some-backend.com",
+				Host:    "www.some-backend.com",
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
@@ -194,7 +194,7 @@ func TestValidateRegion(t *testing.T) {
 		region := "allowed"
 		allowedRegions := []string{region}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(&spec.Swagger{SwaggerProps: spec.SwaggerProps{Swagger: "2.0",},}, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(&spec.Swagger{SwaggerProps: spec.SwaggerProps{Swagger: "2.0"}}, openAPIDocumentURL)
 		Convey("When validateRegion method is called with a region that is allowed", func() {
 			err := specV2BackendConfiguration.validateRegion(region, allowedRegions)
 			Convey("Then the error returned should be nil", func() {
@@ -222,7 +222,7 @@ func TestGetDefaultRegion(t *testing.T) {
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions: "rst1, dub1",
+					extTfProviderRegions:         "rst1, dub1",
 				},
 			},
 		}
@@ -264,7 +264,7 @@ func TestGetDefaultRegion(t *testing.T) {
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions: "",
+					extTfProviderRegions:         "",
 				},
 			},
 		}
@@ -291,7 +291,7 @@ func TestIsMultiRegion(t *testing.T) {
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions: "rst1, dub1",
+					extTfProviderRegions:         "rst1, dub1",
 				},
 			},
 		}
@@ -322,7 +322,7 @@ func TestIsMultiRegion(t *testing.T) {
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions: "rst1,dub1",
+					extTfProviderRegions:         "rst1,dub1",
 				},
 			},
 		}
@@ -371,7 +371,7 @@ func TestIsMultiRegion(t *testing.T) {
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.some-backend.com",
-					extTfProviderRegions: "rst1",
+					extTfProviderRegions:         "rst1",
 				},
 			},
 		}
@@ -399,7 +399,7 @@ func TestIsMultiRegion(t *testing.T) {
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions: "",
+					extTfProviderRegions:         "",
 				},
 			},
 		}

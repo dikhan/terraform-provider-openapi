@@ -460,11 +460,11 @@ func TestGetResourceURL(t *testing.T) {
 				host:        "wwww.%s.host.com",
 				basePath:    "/api",
 				httpSchemes: []string{"http"},
-				regions: []string{expectedRegion},
+				regions:     []string{expectedRegion},
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration,
-			apiAuthenticator: &specStubAuthenticator{},
+			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			expectedPath := "/v1/resource"
@@ -502,11 +502,11 @@ func TestGetResourceURL(t *testing.T) {
 				host:        "wwww.%s.host.com",
 				basePath:    "/api",
 				httpSchemes: []string{"http"},
-				regions: []string{expectedRegion},
+				regions:     []string{expectedRegion},
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration,
-			apiAuthenticator: &specStubAuthenticator{},
+			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			expectedPath := "/v1/resource"
@@ -538,12 +538,12 @@ func TestGetResourceURL(t *testing.T) {
 				host:        "wwww.%s.host.com",
 				basePath:    "/api",
 				httpSchemes: []string{"http"},
-				regions: []string{""},
-				err: fmt.Errorf(expectedError),
+				regions:     []string{""},
+				err:         fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
-			apiAuthenticator: &specStubAuthenticator{},
+			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
@@ -567,15 +567,15 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.%s.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
-				regions: []string{"us-east1"},
+				host:             "wwww.%s.host.com",
+				basePath:         "/api",
+				httpSchemes:      []string{"http"},
+				regions:          []string{"us-east1"},
 				defaultRegionErr: fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration,
-			apiAuthenticator: &specStubAuthenticator{},
+			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
@@ -598,15 +598,15 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.%s.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
-				regions: []string{"us-east1"},
+				host:            "wwww.%s.host.com",
+				basePath:        "/api",
+				httpSchemes:     []string{"http"},
+				regions:         []string{"us-east1"},
 				hostByRegionErr: fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration,
-			apiAuthenticator: &specStubAuthenticator{},
+			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
@@ -627,12 +627,12 @@ func TestGetResourceURL(t *testing.T) {
 				host:        "wwww.%s.host.com",
 				basePath:    "/api",
 				httpSchemes: []string{"http"},
-				regions: []string{},
-				hostErr: fmt.Errorf(expectedError),
+				regions:     []string{},
+				hostErr:     fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
-			apiAuthenticator: &specStubAuthenticator{},
+			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
