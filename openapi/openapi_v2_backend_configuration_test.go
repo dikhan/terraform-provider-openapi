@@ -283,7 +283,7 @@ func TestGetDefaultRegion(t *testing.T) {
 }
 
 func TestIsMultiRegion(t *testing.T) {
-	Convey("Given a specV2BackendConfiguration that is multi-region", t, func() {
+	Convey("Given a specV2BackendConfiguration that is multi-region (with 'x-terraform-provider-regions' extension values being comma separated with spaces)", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",
@@ -292,6 +292,37 @@ func TestIsMultiRegion(t *testing.T) {
 				Extensions: spec.Extensions{
 					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
 					extTfProviderRegions: "rst1, dub1",
+				},
+			},
+		}
+		openAPIDocumentURL := "www.domain.com"
+		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		Convey("When isMultiRegion() method is called", func() {
+			isMultiRegion, host, regions, err := specV2BackendConfiguration.isMultiRegion()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then it should be multi region", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+			Convey("Then host should be the parametrised host", func() {
+				So(host, ShouldEqual, "www.${region}.some-backend.com")
+			})
+			Convey("Then regions should contain the right regions", func() {
+				So(regions, ShouldContain, "rst1")
+				So(regions, ShouldContain, "dub1")
+			})
+		})
+	})
+	Convey("Given a specV2BackendConfiguration that is multi-region (with 'x-terraform-provider-regions' extension values being comma separated with NO spaces)", t, func() {
+		spec := &spec.Swagger{
+			SwaggerProps: spec.SwaggerProps{
+				Swagger: "2.0",
+			},
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
+					extTfProviderRegions: "rst1,dub1",
 				},
 			},
 		}
