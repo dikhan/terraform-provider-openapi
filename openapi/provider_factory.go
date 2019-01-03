@@ -42,7 +42,12 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	var resourceMap map[string]*schema.Resource
 	var err error
 
-	if providerSchema, err = p.createTerraformProviderSchema(); err != nil {
+	openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
+	if err != nil {
+		return nil, err
+	}
+
+	if providerSchema, err = p.createTerraformProviderSchema(openAPIBackendConfiguration); err != nil {
 		return nil, err
 	}
 	if resourceMap, err = p.createTerraformProviderResourceMap(); err != nil {
@@ -51,7 +56,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	provider := &schema.Provider{
 		Schema:        providerSchema,
 		ResourcesMap:  resourceMap,
-		ConfigureFunc: p.configureProvider(),
+		ConfigureFunc: p.configureProvider(openAPIBackendConfiguration),
 	}
 	return provider, nil
 }
@@ -59,8 +64,18 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 // createTerraformProviderSchema adds support for specific provider configuration such as:
 // - api key auth which will be used as the authentication mechanism when making http requests to the service provider
 // - specific headers used in operations
-func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Schema, error) {
+func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfiguration SpecBackendConfiguration) (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
+
+	isMultiRegion, _, regions, err := openAPIBackendConfiguration.isMultiRegion()
+	if err != nil {
+		return nil, err
+	}
+	if isMultiRegion {
+		if err := p.configureProviderProperty(s, providerPropertyRegion, regions[0], true, regions); err != nil {
+			return nil, err
+		}
+	}
 
 	// Override security definitions to required if they are global security schemes
 	globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
@@ -79,7 +94,7 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 		if globalSecuritySchemes.securitySchemeExists(securityDefinition) {
 			required = true
 		}
-		if err := p.addSchemaProperty(s, secDefName, required); err != nil {
+		if err := p.configureProviderPropertyFromPluginConfig(s, secDefName, required); err != nil {
 			return nil, err
 		}
 	}
@@ -91,14 +106,14 @@ func (p providerFactory) createTerraformProviderSchema() (map[string]*schema.Sch
 	}
 	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
-		if err := p.addSchemaProperty(s, headerTerraformCompliantName, false); err != nil {
+		if err := p.configureProviderPropertyFromPluginConfig(s, headerTerraformCompliantName, false); err != nil {
 			return nil, err
 		}
 	}
 	return s, nil
 }
 
-func (p providerFactory) addSchemaProperty(providerSchema map[string]*schema.Schema, schemaPropertyName string, required bool) error {
+func (p providerFactory) configureProviderPropertyFromPluginConfig(providerSchema map[string]*schema.Schema, schemaPropertyName string, required bool) error {
 	var defaultValue = ""
 	var err error
 	schemaPropertyConfiguration := p.serviceConfiguration.GetSchemaPropertyConfiguration(schemaPropertyName)
@@ -114,6 +129,28 @@ func (p providerFactory) addSchemaProperty(providerSchema map[string]*schema.Sch
 	}
 	providerSchema[schemaPropertyName] = terraformutils.CreateStringSchemaProperty(schemaPropertyName, required, defaultValue)
 	log.Printf("[DEBUG] registered new property '%s' into provider schema", schemaPropertyName)
+	return nil
+}
+
+func (p providerFactory) configureProviderProperty(providerSchema map[string]*schema.Schema, schemaPropertyName string, defaultValue string, required bool, allowedValues []string) error {
+	providerSchema[schemaPropertyName] = terraformutils.CreateStringSchemaProperty(schemaPropertyName, required, defaultValue)
+	providerSchema[schemaPropertyName].ValidateFunc = p.createValidateFunc(allowedValues)
+	log.Printf("[DEBUG] registered new property '%s' into provider schema", schemaPropertyName)
+	return nil
+}
+
+func (p providerFactory) createValidateFunc(allowedValues []string) func(val interface{}, key string) (warns []string, errs []error) {
+	if len(allowedValues) > 0 {
+		return func(value interface{}, key string) ([]string, []error) {
+			userValue := value.(string)
+			for _, allowedValue := range allowedValues {
+				if userValue == allowedValue {
+					return nil, nil
+				}
+			}
+			return nil, []error{fmt.Errorf("property %s value %s is not valid, please make sure the value is one of %+v", key, userValue, allowedValues)}
+		}
+	}
 	return nil
 }
 
@@ -144,7 +181,7 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 	return resourceMap, nil
 }
 
-func (p providerFactory) configureProvider() schema.ConfigureFunc {
+func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBackendConfiguration) schema.ConfigureFunc {
 	return func(data *schema.ResourceData) (interface{}, error) {
 		globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
 		if err != nil {
@@ -152,10 +189,6 @@ func (p providerFactory) configureProvider() schema.ConfigureFunc {
 		}
 		authenticator := newAPIAuthenticator(&globalSecuritySchemes)
 		config, err := p.createProviderConfig(data)
-		if err != nil {
-			return nil, err
-		}
-		openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
 		if err != nil {
 			return nil, err
 		}

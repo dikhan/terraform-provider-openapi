@@ -122,9 +122,32 @@ func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderPara
 }
 
 func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
-	host, err := o.openAPIBackendConfiguration.getHost()
+	var host string
+	var err error
+
+	isMultiRegion, _, _, err := o.openAPIBackendConfiguration.isMultiRegion()
 	if err != nil {
 		return "", err
+	}
+	if isMultiRegion {
+		// get region value provided by user in the terraform configuration file
+		region := o.providerConfiguration.getRegion()
+		// otherwise, if not provided falling back to the default value specified in the service provider swagger file
+		if region == "" {
+			region, err = o.openAPIBackendConfiguration.getDefaultRegion()
+			if err != nil {
+				return "", err
+			}
+		}
+		host, err = o.openAPIBackendConfiguration.getHostByRegion(region)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		host, err = o.openAPIBackendConfiguration.getHost()
+		if err != nil {
+			return "", err
+		}
 	}
 
 	basePath := o.openAPIBackendConfiguration.getBasePath()

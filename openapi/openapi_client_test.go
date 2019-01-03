@@ -138,7 +138,7 @@ func TestGetResourceIDURL(t *testing.T) {
 }
 
 func TestGetResourceURL(t *testing.T) {
-	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
+	Convey("Given a providerClient set up with stub auth that injects some headers to the request and is not multiregion", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:        "wwww.host.com",
@@ -446,6 +446,204 @@ func TestGetResourceURL(t *testing.T) {
 			})
 		})
 
+	})
+
+	Convey("Given a providerClient set up with a backend configuration that is multi-region and the region field being filled in (pretending user provided us-west1 in the provider's region property)", t, func() {
+		expectedRegion := "us-west1"
+		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, expectedRegion)
+		s := newTestSchema(regionProperty)
+		providerConfiguration := providerConfiguration{
+			data: s.getResourceData(t),
+		}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.%s.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+				regions: []string{expectedRegion},
+			},
+			httpClient:            &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration,
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When getResourceURL with a specResource with a resource path", func() {
+			expectedPath := "/v1/resource"
+			specStubResource := &specStubResource{
+				path: expectedPath,
+				resourcePostOperation: &specResourceOperation{
+					HeaderParameters: SpecHeaderParameters{},
+					responses:        specResponses{},
+					SecuritySchemes:  SpecSecuritySchemes{},
+				},
+			}
+			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then resourceURL should equal", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, fmt.Sprintf(expectedHost, expectedRegion), expectedBasePath, expectedPath))
+			})
+		})
+	})
+
+	Convey("Given a providerClient set up with a backend configuration that is multi-region and the region field being the default (pretending user did not provide value for provider's region property)", t, func() {
+		emptyRegionProvidedByUser := ""
+		expectedRegion := "us-east1"
+		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, emptyRegionProvidedByUser)
+		s := newTestSchema(regionProperty)
+		providerConfiguration := providerConfiguration{
+			data: s.getResourceData(t),
+		}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.%s.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+				regions: []string{expectedRegion},
+			},
+			httpClient:            &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration,
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When getResourceURL with a specResource with a resource path", func() {
+			expectedPath := "/v1/resource"
+			specStubResource := &specStubResource{
+				path: expectedPath,
+				resourcePostOperation: &specResourceOperation{
+					HeaderParameters: SpecHeaderParameters{},
+					responses:        specResponses{},
+					SecuritySchemes:  SpecSecuritySchemes{},
+				},
+			}
+			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then resourceURL should equal", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, fmt.Sprintf(expectedHost, expectedRegion), expectedBasePath, expectedPath))
+			})
+		})
+	})
+
+	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration isMultiRegion() call throws an error", t, func() {
+		expectedError := "someError"
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.%s.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+				regions: []string{""},
+				err: fmt.Errorf(expectedError),
+			},
+			httpClient:            &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When getResourceURL with a specResource with a resource path", func() {
+			specStubResource := &specStubResource{}
+			_, err := providerClient.getResourceURL(specStubResource)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error returned should match the expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
+
+	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration getDefaultRegion() call throws an error", t, func() {
+		expectedError := "some error thrown by default region method"
+		emptyRegionProvidedByUser := ""
+		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, emptyRegionProvidedByUser)
+		s := newTestSchema(regionProperty)
+		providerConfiguration := providerConfiguration{
+			data: s.getResourceData(t),
+		}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.%s.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+				regions: []string{"us-east1"},
+				defaultRegionErr: fmt.Errorf(expectedError),
+			},
+			httpClient:            &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration,
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When getResourceURL with a specResource with a resource path", func() {
+			specStubResource := &specStubResource{}
+			_, err := providerClient.getResourceURL(specStubResource)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error returned should match the expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
+
+	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration getHostByRegion(region) call throws an error", t, func() {
+		expectedError := "some error thrown by default host by region method"
+		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, "us-east1")
+		s := newTestSchema(regionProperty)
+		providerConfiguration := providerConfiguration{
+			data: s.getResourceData(t),
+		}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.%s.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+				regions: []string{"us-east1"},
+				hostByRegionErr: fmt.Errorf(expectedError),
+			},
+			httpClient:            &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration,
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When getResourceURL with a specResource with a resource path", func() {
+			specStubResource := &specStubResource{}
+			_, err := providerClient.getResourceURL(specStubResource)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error returned should match the expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
+
+	Convey("Given a providerClient set up with a backend configuration but the openAPIBackendConfiguration getHost() call throws an error", t, func() {
+		expectedError := "some error thrown by default host method"
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.%s.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+				regions: []string{},
+				hostErr: fmt.Errorf(expectedError),
+			},
+			httpClient:            &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When getResourceURL with a specResource with a resource path", func() {
+			specStubResource := &specStubResource{}
+			_, err := providerClient.getResourceURL(specStubResource)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error returned should match the expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
 	})
 }
 
