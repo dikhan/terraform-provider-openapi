@@ -5,6 +5,8 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+const providerPropertyRegion = "region"
+
 // providerConfiguration contains all the configuration related to the OpenAPI provider. The configuration at the moment
 // supports:
 // - Headers: The headers map contains the header names as well as the values provided by the user in the terraform configuration
@@ -14,12 +16,14 @@ import (
 type providerConfiguration struct {
 	Headers                   map[string]string
 	SecuritySchemaDefinitions map[string]specAPIKeyAuthenticator
+	data                      *schema.ResourceData
 }
 
 // createProviderConfig returns a providerConfiguration populated with the values provided by the user in the provider's terraform
 // configuration mapped to the corresponding
 func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefinitions *SpecSecurityDefinitions, data *schema.ResourceData) (*providerConfiguration, error) {
 	providerConfiguration := &providerConfiguration{}
+	providerConfiguration.data = data
 	providerConfiguration.Headers = map[string]string{}
 	providerConfiguration.SecuritySchemaDefinitions = map[string]specAPIKeyAuthenticator{}
 
@@ -55,4 +59,14 @@ func (p *providerConfiguration) getAuthenticatorFor(s SpecSecurityScheme) specAP
 func (p *providerConfiguration) getHeaderValueFor(s SpecHeaderParam) string {
 	headerConfigName := s.GetHeaderTerraformConfigurationName()
 	return p.Headers[headerConfigName]
+}
+
+// getRegion returns empty if region is not provided by the user, the client of this function will have to figure out the
+// default region value. otherwise the region value provided by the user in the terraform provider configuration will be
+// returned.
+func (p *providerConfiguration) getRegion() string {
+	if p.data.Get(providerPropertyRegion) == nil {
+		return ""
+	}
+	return p.data.Get(providerPropertyRegion).(string)
 }

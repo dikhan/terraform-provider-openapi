@@ -217,12 +217,12 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
 					ServiceSchemaPropertyConfigurationV1{
 						SchemaPropertyName: "apikey_auth",
-						DefaultValue: "apiKeyValue",
-						Command: []string{"echo", "something"},
-						CommandTimeout: 10,
+						DefaultValue:       "apiKeyValue",
+						Command:            []string{"echo", "something"},
+						CommandTimeout:     10,
 						ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
-							File: "some_file",
-							KeyName: "some_key_name",
+							File:        "some_file",
+							KeyName:     "some_key_name",
 							ContentType: "json",
 						},
 					},

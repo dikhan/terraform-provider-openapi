@@ -25,7 +25,7 @@ const cmdTimeout = 10
 type ServiceSchemaPropertyConfigurationV1 struct {
 	SchemaPropertyName    string                                       `yaml:"schema_property_name"`
 	DefaultValue          string                                       `yaml:"default_value"`
-	Command               []string                                   `yaml:"cmd,flow"`
+	Command               []string                                     `yaml:"cmd,flow"`
 	CommandTimeout        int                                          `yaml:"cmd_timeout"`
 	ExternalConfiguration ServiceSchemaPropertyExternalConfigurationV1 `yaml:"schema_property_external_configuration"`
 }
