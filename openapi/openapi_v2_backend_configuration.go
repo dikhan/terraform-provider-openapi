@@ -5,7 +5,11 @@ import (
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/go-openapi/spec"
 	"log"
+	"strings"
 )
+
+const extTfProviderMultiRegionFQDN = "x-terraform-provider-multiregion-fqdn"
+const extTfProviderRegions = "x-terraform-provider-regions"
 
 type specV2BackendConfiguration struct {
 	openAPIDocumentURL string
@@ -32,6 +36,66 @@ func (o specV2BackendConfiguration) getHost() (string, error) {
 		return hostFromURL, nil
 	}
 	return o.spec.Host, nil
+}
+
+func (o specV2BackendConfiguration) getHostByRegion(region string) (string, error) {
+	if region == "" {
+		return "", fmt.Errorf("can't get host by region, missing region value")
+	}
+	isMultiRegion, host, allowedRegions, err := o.isMultiRegion()
+	if err != nil {
+		return "", err
+	}
+	if !isMultiRegion {
+		return "", fmt.Errorf("missing '%s' extension or value provided not matching multiregion host format", extTfProviderMultiRegionFQDN)
+	}
+	if err := o.validateRegion(region, allowedRegions); err != nil {
+		return "", err
+	}
+	overrideHost, err := openapiutils.GetMultiRegionHost(host, region)
+	if err != nil {
+		return "", err
+	}
+	return overrideHost, nil
+}
+
+func (o specV2BackendConfiguration) validateRegion(region string, allowedRegions []string) error {
+	for _, r := range allowedRegions {
+		if r == region {
+			return nil
+		}
+	}
+	return fmt.Errorf("region %s not matching allowed ones %+v", region, allowedRegions)
+}
+
+func (o specV2BackendConfiguration) getDefaultRegion() (string, error) {
+	isMultiRegion, _, regions, err := o.isMultiRegion()
+	if !isMultiRegion {
+		if err != nil {
+			return "", fmt.Errorf("failed to get default region value: %s", err)
+		}
+		return "", fmt.Errorf("failed to get default region value: service is not multi-region")
+	}
+	if err != nil {
+		return "", err
+	}
+	return regions[0], nil
+}
+
+func (o specV2BackendConfiguration) isMultiRegion() (bool, string, []string, error) {
+	if host, exists := o.spec.Extensions.GetString(extTfProviderMultiRegionFQDN); exists {
+		isMultiRegion, _ := openapiutils.IsMultiRegionHost(host)
+		if !isMultiRegion {
+			return false, "", nil, fmt.Errorf("'%s' extension value provided not matching multiregion host format", extTfProviderMultiRegionFQDN)
+		}
+		regionsExtensionValue, regionsExtensionExists := o.spec.Extensions.GetString(extTfProviderRegions)
+		if !regionsExtensionExists || regionsExtensionValue == "" {
+			return false, "", nil, fmt.Errorf("'%s' extension missing or empty value provided", extTfProviderRegions)
+		}
+		regions := strings.Split(strings.Replace(regionsExtensionValue, " ", "", -1), ",")
+		return true, host, regions, nil
+	}
+	return false, "", nil, nil
 }
 
 func (o specV2BackendConfiguration) getBasePath() string {
