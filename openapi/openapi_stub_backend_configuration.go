@@ -42,9 +42,12 @@ func (s *specStubBackendConfiguration) getHostByRegion(region string) (string, e
 	return fmt.Sprintf(s.host, region), nil
 }
 
-func (s *specStubBackendConfiguration) getDefaultRegion() (string, error) {
+func (s *specStubBackendConfiguration) getDefaultRegion(regions []string) (string, error) {
 	if s.defaultRegionErr != nil {
 		return "", s.defaultRegionErr
+	}
+	if len(regions) == 0 {
+		return "", fmt.Errorf("empty regions provided")
 	}
 	return s.regions[0], nil
 }

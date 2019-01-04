@@ -125,7 +125,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 	var host string
 	var err error
 
-	isMultiRegion, _, _, err := o.openAPIBackendConfiguration.isMultiRegion()
+	isMultiRegion, _, regions, err := o.openAPIBackendConfiguration.isMultiRegion()
 	if err != nil {
 		return "", err
 	}
@@ -134,7 +134,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 		region := o.providerConfiguration.getRegion()
 		// otherwise, if not provided falling back to the default value specified in the service provider swagger file
 		if region == "" {
-			region, err = o.openAPIBackendConfiguration.getDefaultRegion()
+			region, err = o.openAPIBackendConfiguration.getDefaultRegion(regions)
 			if err != nil {
 				return "", err
 			}

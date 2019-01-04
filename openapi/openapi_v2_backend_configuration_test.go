@@ -214,22 +214,13 @@ func TestValidateRegion(t *testing.T) {
 }
 
 func TestGetDefaultRegion(t *testing.T) {
-	Convey("Given a specV2BackendConfiguration that is multi-region", t, func() {
-		spec := &spec.Swagger{
-			SwaggerProps: spec.SwaggerProps{
-				Swagger: "2.0",
-			},
-			VendorExtensible: spec.VendorExtensible{
-				Extensions: spec.Extensions{
-					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions:         "rst1, dub1",
-				},
-			},
-		}
+	Convey("Given a specV2BackendConfiguration", t, func() {
+		spec := &spec.Swagger{SwaggerProps: spec.SwaggerProps{Swagger: "2.0"}}
 		openAPIDocumentURL := "www.domain.com"
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When getDefaultRegion() method is called", func() {
-			region, err := specV2BackendConfiguration.getDefaultRegion()
+		Convey("When getDefaultRegion() method is called with an array of regions", func() {
+			regions := []string{"rst1", "dub1"}
+			region, err := specV2BackendConfiguration.getDefaultRegion(regions)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -237,46 +228,23 @@ func TestGetDefaultRegion(t *testing.T) {
 				So(region, ShouldEqual, "rst1")
 			})
 		})
-	})
-	Convey("Given a specV2BackendConfiguration that is NOT multi-region", t, func() {
-		spec := &spec.Swagger{
-			SwaggerProps: spec.SwaggerProps{
-				Swagger: "2.0",
-			},
-		}
-		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When getDefaultRegion() method is called", func() {
-			_, err := specV2BackendConfiguration.getDefaultRegion()
+		Convey("When getDefaultRegion() method is called with an empty array", func() {
+			regions := []string{}
+			_, err := specV2BackendConfiguration.getDefaultRegion(regions)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error should match the expected message", func() {
-				So(err.Error(), ShouldEqual, "failed to get default region value: service is not multi-region")
+				So(err.Error(), ShouldEqual, "empty regions provided")
 			})
 		})
-	})
-	Convey("Given a specV2BackendConfiguration that is multi-region", t, func() {
-		spec := &spec.Swagger{
-			SwaggerProps: spec.SwaggerProps{
-				Swagger: "2.0",
-			},
-			VendorExtensible: spec.VendorExtensible{
-				Extensions: spec.Extensions{
-					extTfProviderMultiRegionFQDN: "www.${region}.some-backend.com",
-					extTfProviderRegions:         "",
-				},
-			},
-		}
-		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When getDefaultRegion() method is called", func() {
-			_, err := specV2BackendConfiguration.getDefaultRegion()
+		Convey("When getDefaultRegion() method is called with a nil array", func() {
+			_, err := specV2BackendConfiguration.getDefaultRegion(nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error should match the expected message", func() {
-				So(err.Error(), ShouldEqual, "failed to get default region value: 'x-terraform-provider-regions' extension missing or empty value provided")
+				So(err.Error(), ShouldEqual, "empty regions provided")
 			})
 		})
 	})

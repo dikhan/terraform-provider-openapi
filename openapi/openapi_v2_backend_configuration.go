@@ -68,16 +68,9 @@ func (o specV2BackendConfiguration) validateRegion(region string, allowedRegions
 	return fmt.Errorf("region %s not matching allowed ones %+v", region, allowedRegions)
 }
 
-func (o specV2BackendConfiguration) getDefaultRegion() (string, error) {
-	isMultiRegion, _, regions, err := o.isMultiRegion()
-	if !isMultiRegion {
-		if err != nil {
-			return "", fmt.Errorf("failed to get default region value: %s", err)
-		}
-		return "", fmt.Errorf("failed to get default region value: service is not multi-region")
-	}
-	if err != nil {
-		return "", err
+func (o specV2BackendConfiguration) getDefaultRegion(regions []string) (string, error) {
+	if regions == nil || len(regions) == 0 {
+		return "", fmt.Errorf("empty regions provided")
 	}
 	return regions[0], nil
 }
