@@ -67,11 +67,12 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfiguration SpecBackendConfiguration) (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 
-	isMultiRegion, _, regions, err := openAPIBackendConfiguration.isMultiRegion()
+	isMultiRegion, host, regions, err := openAPIBackendConfiguration.isMultiRegion()
 	if err != nil {
 		return nil, err
 	}
 	if isMultiRegion {
+		log.Printf("[DEBUG] service provider is configured with multi-region. API calls will be made against %s and the region provided by the user (or the default value otherwise, being the first element of supported region list: %+v), unless overriden by specific resources", host, regions)
 		if err := p.configureProviderProperty(s, providerPropertyRegion, regions[0], true, regions); err != nil {
 			return nil, err
 		}
