@@ -3,7 +3,6 @@ package openapiutils
 import (
 	"fmt"
 	"github.com/go-openapi/spec"
-	"log"
 	"regexp"
 	"strings"
 )
@@ -90,10 +89,6 @@ func GetMultiRegionHost(overrideHost string, region string) (string, error) {
 
 // IsMultiRegionHost checks whether the override host is parametrised following the format expected
 func IsMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
-	regex, err := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
-	if err != nil {
-		log.Printf("[DEBUG] failed to compile region identifier regex: %s", err)
-		return false, nil
-	}
+	regex, _ := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
 	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex
 }
