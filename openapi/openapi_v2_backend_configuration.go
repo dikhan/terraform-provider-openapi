@@ -76,19 +76,41 @@ func (o specV2BackendConfiguration) getDefaultRegion(regions []string) (string, 
 }
 
 func (o specV2BackendConfiguration) isMultiRegion() (bool, string, []string, error) {
-	if host, exists := o.spec.Extensions.GetString(extTfProviderMultiRegionFQDN); exists {
-		isMultiRegion, _ := openapiutils.IsMultiRegionHost(host)
-		if !isMultiRegion {
-			return false, "", nil, fmt.Errorf("'%s' extension value provided not matching multiregion host format", extTfProviderMultiRegionFQDN)
+	isHostMultiRegion, host, err := o.isHostMultiRegion()
+	if err != nil {
+		return false, "", nil, err
+	}
+	if isHostMultiRegion {
+		regions, err := o.getProviderRegions()
+		if err != nil {
+			return false, "", nil, err
 		}
-		regionsExtensionValue, regionsExtensionExists := o.spec.Extensions.GetString(extTfProviderRegions)
-		if !regionsExtensionExists || regionsExtensionValue == "" {
-			return false, "", nil, fmt.Errorf("'%s' extension missing or empty value provided", extTfProviderRegions)
-		}
-		regions := strings.Split(strings.Replace(regionsExtensionValue, " ", "", -1), ",")
 		return true, host, regions, nil
 	}
 	return false, "", nil, nil
+}
+
+func (o specV2BackendConfiguration) isHostMultiRegion() (bool, string, error) {
+	if host, exists := o.spec.Extensions.GetString(extTfProviderMultiRegionFQDN); exists {
+		isMultiRegion, _ := openapiutils.IsMultiRegionHost(host)
+		if !isMultiRegion {
+			return false, "", fmt.Errorf("'%s' extension value provided not matching multiregion host format", extTfProviderMultiRegionFQDN)
+		}
+		return true, host, nil
+	}
+	return false, "", nil
+}
+
+func (o specV2BackendConfiguration) getProviderRegions() ([]string, error) {
+	regionsExtensionValue, regionsExtensionExists := o.spec.Extensions.GetString(extTfProviderRegions)
+	if !regionsExtensionExists {
+		return nil, fmt.Errorf("mandatory multiregion '%s' extension missing", extTfProviderRegions)
+	}
+	if regionsExtensionValue == "" {
+		return nil, fmt.Errorf("mandatory multiregion '%s' extension empty value provided", extTfProviderRegions)
+	}
+	regions := strings.Split(strings.Replace(regionsExtensionValue, " ", "", -1), ",")
+	return regions, nil
 }
 
 func (o specV2BackendConfiguration) getBasePath() string {
