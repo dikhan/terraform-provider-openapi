@@ -305,6 +305,85 @@ definitions:
 	})
 }
 
+func TestGetMultiRegionHost(t *testing.T) {
+	Convey("Given a host that is not multiregion and a region", t, func() {
+		expectedHost := "some.api.domain.com"
+		region := "some-region"
+		Convey("When GetMultiRegionHost method is called", func() {
+			multiRegionHost, err := GetMultiRegionHost(expectedHost, region)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be empty", func() {
+				So(multiRegionHost, ShouldBeEmpty)
+			})
+		})
+	})
+	Convey("Given a multi region host and a region", t, func() {
+		expectedHost := "some.api.${%s}.domain.com"
+		region := "some-region"
+		Convey("When GetMultiRegionHost method is called", func() {
+			multiRegionHost, err := GetMultiRegionHost(expectedHost, region)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be true", func() {
+				So(multiRegionHost, ShouldEqual, "some.api.some-region.domain.com")
+			})
+		})
+	})
+
+	Convey("Given a multi region host that has the region part at the beginning and a region", t, func() {
+		expectedHost := "${%s}.domain.com"
+		region := "some-region"
+		Convey("When GetMultiRegionHost method is called", func() {
+			multiRegionHost, err := GetMultiRegionHost(expectedHost, region)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be false", func() {
+				So(multiRegionHost, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a multiregion host and an empty region", t, func() {
+		expectedHost := "some.api.${%s}.domain.com"
+		Convey("When GetMultiRegionHost method is called", func() {
+			_, err := GetMultiRegionHost(expectedHost, "")
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestIsMultiRegionHost(t *testing.T) {
+	Convey("Given a resourceInfo", t, func() {
+		Convey("When isMultiRegionHost method is called with a non multi region host", func() {
+			expectedHost := "some.api.domain.com"
+			isMultiRegion, _ := IsMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host", func() {
+			expectedHost := "some.api.${%s}.domain.com"
+			isMultiRegion, _ := IsMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be true", func() {
+				So(isMultiRegion, ShouldBeTrue)
+			})
+		})
+		Convey("When isMultiRegionHost method is called with a multi region host that has region at the beginning", func() {
+			expectedHost := "${%s}.domain.com"
+			isMultiRegion, _ := IsMultiRegionHost(expectedHost)
+			Convey("Then the value returned should be false", func() {
+				So(isMultiRegion, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func initSwagger(swaggerContent string) *spec.Swagger {
 	swagger := json.RawMessage([]byte(swaggerContent))
 	d, _ := loads.Analyzed(swagger, "2.0")

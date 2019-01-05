@@ -113,6 +113,7 @@ func TestCreateProvider(t *testing.T) {
 						},
 					}),
 				},
+				backendConfiguration: &specStubBackendConfiguration{},
 			},
 			serviceConfiguration: &serviceConfigStub{},
 		}
@@ -123,6 +124,96 @@ func TestCreateProvider(t *testing.T) {
 			})
 			Convey("And the provider returned should NOT be nil", func() {
 				So(p, ShouldNotBeNil)
+			})
+			Convey("And the provider should have a property for the auth", func() {
+				So(p.Schema[apiKeyAuthProperty.Name], ShouldNotBeNil)
+			})
+			Convey("And the provider should have a property for the header", func() {
+				So(p.Schema[headerProperty.Name], ShouldNotBeNil)
+			})
+			Convey("And the provider should NOT have a property called region since the backend is NOT multi-region", func() {
+				So(p.Schema["region"], ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a provider factory with multi-region backend configuration", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{
+						Name: headerProperty.Name,
+					},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+				backendConfiguration: &specStubBackendConfiguration{
+					host:    "some-service.${region}.api.com",
+					regions: []string{"rst", "dub"},
+				},
+			},
+			serviceConfiguration: &serviceConfigStub{},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider returned should NOT be nil", func() {
+				So(p, ShouldNotBeNil)
+			})
+			Convey("And the provider should have a property called region since the backend is multi-region", func() {
+				So(p.Schema["region"], ShouldNotBeNil)
+			})
+			Convey("And the provider region property default value should be the first item of the regions list", func() {
+				value, err := p.Schema["region"].DefaultFunc()
+				So(err, ShouldBeNil)
+				So(value.(string), ShouldEqual, "rst")
+			})
+			Convey("And the provider validator function for the region property should exist and be functional (existing valid regions should NOT throw an error)", func() {
+				warns, errors := p.Schema["region"].ValidateFunc("rst", "")
+				So(warns, ShouldBeNil)
+				So(errors, ShouldBeNil)
+			})
+			Convey("And the provider validator function for the region property should exist and be functional (non existing regions should throw an error)", func() {
+				_, errors := p.Schema["region"].ValidateFunc("nonExisting", "region")
+				So(errors, ShouldNotBeNil)
+				So(errors[0].Error(), ShouldEqual, "property region value nonExisting is not valid, please make sure the value is one of [rst dub]")
+			})
+		})
+	})
+}
+
+func TestCreateValidateFunc(t *testing.T) {
+	Convey("Given a provider factory", t, func() {
+		p := providerFactory{}
+		allowedValues := []string{"allowed"}
+		Convey("When createValidateFunc is called ", func() {
+			validate := p.createValidateFunc(allowedValues)
+			Convey("Then the validate function should not be nil", func() {
+				So(validate, ShouldNotBeNil)
+			})
+			Convey("And when the function is called with a valid value it should return nil errors", func() {
+				warns, errors := validate("allowed", "")
+				So(warns, ShouldBeNil)
+				So(errors, ShouldBeNil)
+			})
+			Convey("And when the function is called with an invalid value it should return nil errors", func() {
+				warns, errors := validate("notAllowed", "region")
+				So(warns, ShouldBeNil)
+				So(errors, ShouldNotBeNil)
+				So(errors[0].Error(), ShouldEqual, "property region value notAllowed is not valid, please make sure the value is one of [allowed]")
 			})
 		})
 	})
@@ -166,8 +257,9 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			},
 			serviceConfiguration: serviceConfig,
 		}
-		Convey("When createTerraformProviderSchema is called ", func() {
-			providerSchema, err := p.createTerraformProviderSchema()
+		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
+			backendConfig := &specStubBackendConfiguration{}
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldBeNil)
 			})
@@ -213,8 +305,9 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			},
 			serviceConfiguration: serviceConfig,
 		}
-		Convey("When createTerraformProviderSchema is called ", func() {
-			_, err := p.createTerraformProviderSchema()
+		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
+			backendConfig := &specStubBackendConfiguration{}
+			_, err := p.createTerraformProviderSchema(backendConfig)
 			Convey("Then the expectedValue returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -248,8 +341,9 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			},
 			serviceConfiguration: &serviceConfigStub{},
 		}
-		Convey("When createTerraformProviderSchema is called ", func() {
-			providerSchema, err := p.createTerraformProviderSchema()
+		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
+			backendConfig := &specStubBackendConfiguration{}
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldBeNil)
 			})
@@ -377,8 +471,9 @@ func TestConfigureProvider(t *testing.T) {
 			},
 		}
 		testProviderSchema := newTestSchema(apiKeyAuthProperty, headerProperty)
-		Convey("When configureProvider is called and the returned configureFunc is invoked upon ", func() {
-			configureFunc := p.configureProvider()
+		Convey("When configureProvider is called with a backend that is not multi-region and the returned configureFunc is invoked upon ", func() {
+			backendConfig := &specStubBackendConfiguration{}
+			configureFunc := p.configureProvider(backendConfig)
 			client, err := configureFunc(testProviderSchema.getResourceData(t))
 			providerClient := client.(*ProviderClient)
 			Convey("Then error returned should be nil", func() {

@@ -947,7 +947,81 @@ and the value provided by the user.
 Note that the TF property name inside the provider's configuration is exactly the same as the one configured in the swagger
 file.
 
-##### <a name="swaggerSecurityDefinitionsRequirements">Requirements</a>
+#### <a name="multiRegionConfiguration">Multi-region configuration</a>
+
+This section describes how to configure the swagger file for a service that operates multi-region, meaning there's an API for each region.
+
+The example below shows how terraform configuration will look like if the swagger file contains multiregion support:
+
+Assuming the following swagger configuration:
+
+````
+swagger: 2.0
+...
+x-terraform-provider-multiregion-fqdn: "service.api.${region}.hostname.com"
+x-terraform-provider-regions: "rst, dub"
+....
+````
+
+The above will be translated into the following terraform configuration:
+
+````
+provider "provider" {}
+
+provider "provider" {
+  alias = "dub"
+  region = "dub"
+}
+
+
+## this resource will be managed in the default provider region, in this case rst (as it's the first element in the 'x-terraform-provider-regions' comma separated value) and API calls will be made against service.api.rst.hostname.com
+resource "provider_resource" "my_resource_rst" {
+  name = "resource in rst"
+}
+
+## this resource will be managed with the provider with alias dub, hence the region will be dub and API calls will be made against service.api.dub.hostname.com
+resource "provider_resource" "my_resource_dub" {
+  provider = "provider.dub"
+  name = "resource in dub"
+}
+
+````
+
+In order to support multi-region configuration, the following extensions must be set with the right values:
+
+#### Multi-region Extensions
+
+The following extensions can be used in the root level. Read the according extension section for more information
+
+Extension Name | Type | Description
+---|:---:|---
+[x-terraform-provider-multiregion-fqdn](#xTerraformProviderMultiregionFQDN) | string | Defines the host that should be used when managing the resources exposed. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make the API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration. The value must be parametrised following the expected format (regex: (S+)(${(S+)})(S+)) where the ${region} section identifies the spot that will be replaced by the region value. E,g: service.api.${region}.hostname.com.
+[x-terraform-provider-regions](#xTerraformProviderRegions) | string | Defines the regions the service has APIs exposed and will be translated into the terraform provider 'region' property. The value must be a comma separated list of strings. The default region value set in the provider will be the first element in the comma separated string. The value set, either the default or the one provider by the user, will be used to build the right FQDN based on the 'x-terraform-provider-multiregion-fqdn' value. In the example above, if the region value was 'uswest1', the API calls will be made against the following hostL: service.api.uswest1.hostname.com 
+
+##### <a name="xTerraformProviderMultiregionFQDN">x-terraform-provider-multiregion-fqdn</a>
+
+This extension defines the FQDN to be used by Terraform when managing the service resources. The value must be parametrised
+following the pattern (S+)(${(S+)})(S+) where the ${} section identifies the location that will be replaced by the region value. 
+
+````
+x-terraform-provider-multiregion-fqdn: "service.api.${region}.hostname.com"
+````
+
+This extension must be present with the correct parametrised value in order for multi-region to be enabled.
+
+##### <a name="xTerraformProviderRegions">x-terraform-provider-regions</a>
+
+This extension defines the different regions supported by the service provider. The values will be used in the 'x-terraform-provider-multiregion-fqdn'
+value to build the final FQDN with the right region. The default value set in the terraform provider will be the first
+element in the command separated list, in the example below that will be 'rst':
+
+````
+x-terraform-provider-regions: "rst, dub"
+````
+
+Note: This extension will be ignored if the ``x-terraform-provider-multiregion-fqdn`` is not present.
+
+### <a name="swaggerSecurityDefinitionsRequirements">Requirements</a>
 
 - Terraform requires field names to be lower case and follow the snake_case pattern (my_sec_definition). Thus, security definitions 
  must follow this naming convention.

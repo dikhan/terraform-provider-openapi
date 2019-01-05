@@ -23,6 +23,9 @@ func TestNewProviderConfiguration(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			Convey("Then the provider configuration data should not be nil", func() {
+				So(providerConfiguration.data, ShouldNotPointTo, providerConfiguration)
+			})
 			Convey("Then the providerConfiguration headers should contain the configured header with the right value", func() {
 				So(providerConfiguration.Headers, ShouldContainKey, headerProperty.getTerraformCompliantPropertyName())
 				So(providerConfiguration.Headers[headerProperty.getTerraformCompliantPropertyName()], ShouldEqual, headerProperty.Default)
@@ -119,6 +122,35 @@ func TestGetHeaderValueFor(t *testing.T) {
 			value := providerConfiguration.getHeaderValueFor(SpecHeaderParam{Name: "nontExistingHeader"})
 			Convey("Then the value returned should be empty", func() {
 				So(value, ShouldEqual, "")
+			})
+		})
+	})
+}
+
+func TestGetRegion(t *testing.T) {
+	Convey("Given a providerConfiguration with data that has no values for the region property", t, func() {
+		s := newTestSchema()
+		providerConfiguration := providerConfiguration{
+			data: s.getResourceData(t),
+		}
+		Convey("When getRegion() method is called", func() {
+			value := providerConfiguration.getRegion()
+			Convey("Then the value returned should be empty", func() {
+				So(value, ShouldEqual, "")
+			})
+		})
+	})
+	Convey("Given a providerConfiguration with data that has a value for the region property", t, func() {
+		expectedRegion := "us-west1"
+		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, expectedRegion)
+		s := newTestSchema(regionProperty)
+		providerConfiguration := providerConfiguration{
+			data: s.getResourceData(t),
+		}
+		Convey("When getRegion() method is called", func() {
+			value := providerConfiguration.getRegion()
+			Convey("Then the value returned should match the value set in the resource data for region field", func() {
+				So(value, ShouldEqual, expectedRegion)
 			})
 		})
 	})

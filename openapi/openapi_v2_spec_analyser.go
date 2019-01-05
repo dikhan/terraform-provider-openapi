@@ -94,7 +94,7 @@ func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.Pat
 	if overrideHost == "" {
 		return false, nil, nil
 	}
-	isMultiRegionHost, regex := isMultiRegionHost(overrideHost)
+	isMultiRegionHost, regex := openapiutils.IsMultiRegionHost(overrideHost)
 	if !isMultiRegionHost {
 		return false, nil, nil
 	}
@@ -112,7 +112,7 @@ func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.Pat
 		}
 		apiRegionsMap := map[string]string{}
 		for _, region := range regions {
-			multiRegionHost, err := getMultiRegionHost(overrideHost, region)
+			multiRegionHost, err := openapiutils.GetMultiRegionHost(overrideHost, region)
 			if err != nil {
 				return false, nil, err
 			}

@@ -36,6 +36,13 @@ produces:
 security:
   - apikey_auth: []
 
+# This make the provider multiregional, so API calls will be make against the specific region as per the value provided
+# provided by the user according to the 'x-terraform-provider-regions' regions. If non is provided, the default value will
+# be the first item in the 'x-terraform-provider-regions' list of strings. in the case below that will be 'rst1'
+x-terraform-provider-multiregion-fqdn: "some.api.${region}.domain.com"
+x-terraform-provider-regions: "rst1,dub1"
+
+# This is legacy configuration that will be deprecated soon
 x-terraform-resource-regions-monitor: "rst1,dub1"
 
 paths:
@@ -61,7 +68,7 @@ paths:
   /v1/cdns:
     post:
       x-terraform-resource-name: "cdn"
-#      x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
+      x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
       - "cdn"
       summary: "Create cdn"
@@ -170,6 +177,7 @@ paths:
 
   /v1/lbs:
     post:
+      x-terraform-resource-host: localhost:8443
       tags:
       - "lb"
       summary: "Create lb v1"
@@ -270,7 +278,7 @@ paths:
 
 
   ############################
-  ##### Monitors Resource ####
+  ##### Monitors Multiregion Resource name based ####
   ############################
 
   # The monitor resource is not implemented in the backed, it only serves as an example on how the global host can be overridden
@@ -303,6 +311,58 @@ paths:
     get:
       tags:
       - "monitor"
+      summary: "Get monitor by id"
+      description: ""
+      operationId: "MonitorV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The monitor v1 id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitorV1"
+        400:
+          description: "Invalid monitor id supplied"
+        404:
+          description: "Monitor not found"
+
+  ############################
+  ##### Monitors MultiRegion Resource ####
+  ############################
+
+  # The monitor resource is not implemented in the backed, it only serves as an example on how the resource not overriding
+  # the global host configuration will use by default the multi-region host
+
+  /v1/multiregionmonitors:
+    post:
+      tags:
+      - "multi_region_monitor"
+      summary: "Create monitor v1"
+      operationId: "MonitorV1"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Monitor v1 payload object to be posted as part of the POST request"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitorV1"
+      responses:
+        200:
+          description: "this operation is asynchronous, to check the status of the deployment call GET operation and check the status field returned in the payload"
+          schema:
+            $ref: "#/definitions/MonitorV1"
+        default:
+          description: "generic error response"
+          schema:
+            $ref: "#/definitions/Error"
+  /v1/multiregionmonitors/{id}:
+    get:
+      tags:
+      - "multi_region_monitor"
       summary: "Get monitor by id"
       description: ""
       operationId: "MonitorV1"
