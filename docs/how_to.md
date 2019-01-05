@@ -989,7 +989,7 @@ resource "provider_resource" "my_resource_dub" {
 
 In order to support multi-region configuration, the following extensions must be set with the right values:
 
-#### Extensions
+#### Multi-region Extensions
 
 The following extensions can be used in the root level. Read the according extension section for more information
 
@@ -1018,6 +1018,8 @@ element in the command separated list, in the example below that will be 'rst':
 ````
 x-terraform-provider-regions: "rst, dub"
 ````
+
+Note: This extension will be ignored if the ``x-terraform-provider-multiregion-fqdn`` is not present.
 
 ### <a name="swaggerSecurityDefinitionsRequirements">Requirements</a>
 
