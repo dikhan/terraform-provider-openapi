@@ -357,6 +357,17 @@ func TestDelete(t *testing.T) {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] DELETE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [204 200 202] ()")
 			})
 		})
+
+		Convey("When update is called with resource data and a client returns a 404 status code; hence the resource effectively no longer exists", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{},
+				returnHTTPCode:  http.StatusNotFound,
+			}
+			err := r.delete(resourceData, client)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
 	})
 
 	Convey("Given a resource factory with no delete operation configured", t, func() {

@@ -132,7 +132,7 @@ func TestGetRegion(t *testing.T) {
 	Convey("Given a providerConfiguration with data that has no values for the region property", t, func() {
 		s := newTestSchema()
 		providerConfiguration := providerConfiguration{
-			data: s.getResourceData(t),
+			data:  s.getResourceData(t),
 			mutex: &sync.Mutex{},
 		}
 		Convey("When getRegion() method is called", func() {
