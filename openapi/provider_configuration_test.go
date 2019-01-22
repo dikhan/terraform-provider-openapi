@@ -133,6 +133,7 @@ func TestGetRegion(t *testing.T) {
 		s := newTestSchema()
 		providerConfiguration := providerConfiguration{
 			data: s.getResourceData(t),
+			mutex: &sync.Mutex{},
 		}
 		Convey("When getRegion() method is called", func() {
 			value := providerConfiguration.getRegion()
