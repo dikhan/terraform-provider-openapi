@@ -2,6 +2,7 @@ package openapi
 
 import (
 	. "github.com/smartystreets/goconvey/convey"
+	"sync"
 	"testing"
 )
 
@@ -132,6 +133,7 @@ func TestGetRegion(t *testing.T) {
 		s := newTestSchema()
 		providerConfiguration := providerConfiguration{
 			data: s.getResourceData(t),
+			mutex: &sync.Mutex{},
 		}
 		Convey("When getRegion() method is called", func() {
 			value := providerConfiguration.getRegion()
@@ -145,7 +147,8 @@ func TestGetRegion(t *testing.T) {
 		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, expectedRegion)
 		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data: s.getResourceData(t),
+			data:  s.getResourceData(t),
+			mutex: &sync.Mutex{},
 		}
 		Convey("When getRegion() method is called", func() {
 			value := providerConfiguration.getRegion()
