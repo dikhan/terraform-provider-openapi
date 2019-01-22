@@ -181,6 +181,11 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
+		if openapiErr, ok := err.(openapierr.Error); ok {
+			if openapierr.NotFound == openapiErr.Code() {
+				return nil
+			}
+		}
 		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
 	}
 
