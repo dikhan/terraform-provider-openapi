@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
+	"sync"
 )
 
 const providerPropertyRegion = "region"
@@ -17,6 +18,7 @@ type providerConfiguration struct {
 	Headers                   map[string]string
 	SecuritySchemaDefinitions map[string]specAPIKeyAuthenticator
 	data                      *schema.ResourceData
+	mutex                     *sync.Mutex
 }
 
 // createProviderConfig returns a providerConfiguration populated with the values provided by the user in the provider's terraform
@@ -24,6 +26,7 @@ type providerConfiguration struct {
 func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefinitions *SpecSecurityDefinitions, data *schema.ResourceData) (*providerConfiguration, error) {
 	providerConfiguration := &providerConfiguration{}
 	providerConfiguration.data = data
+	providerConfiguration.mutex = &sync.Mutex{}
 	providerConfiguration.Headers = map[string]string{}
 	providerConfiguration.SecuritySchemaDefinitions = map[string]specAPIKeyAuthenticator{}
 
@@ -65,8 +68,11 @@ func (p *providerConfiguration) getHeaderValueFor(s SpecHeaderParam) string {
 // default region value. otherwise the region value provided by the user in the terraform provider configuration will be
 // returned.
 func (p *providerConfiguration) getRegion() string {
-	if p.data.Get(providerPropertyRegion) == nil {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	region := p.data.Get(providerPropertyRegion)
+	if region == nil {
 		return ""
 	}
-	return p.data.Get(providerPropertyRegion).(string)
+	return region.(string)
 }

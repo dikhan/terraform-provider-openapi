@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -453,7 +454,8 @@ func TestGetResourceURL(t *testing.T) {
 		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, expectedRegion)
 		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data: s.getResourceData(t),
+			data:  s.getResourceData(t),
+			mutex: &sync.Mutex{},
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
@@ -495,7 +497,8 @@ func TestGetResourceURL(t *testing.T) {
 		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, emptyRegionProvidedByUser)
 		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data: s.getResourceData(t),
+			data:  s.getResourceData(t),
+			mutex: &sync.Mutex{},
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
@@ -563,7 +566,8 @@ func TestGetResourceURL(t *testing.T) {
 		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, emptyRegionProvidedByUser)
 		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data: s.getResourceData(t),
+			data:  s.getResourceData(t),
+			mutex: &sync.Mutex{},
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
@@ -594,7 +598,8 @@ func TestGetResourceURL(t *testing.T) {
 		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, "us-east1")
 		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data: s.getResourceData(t),
+			data:  s.getResourceData(t),
+			mutex: &sync.Mutex{},
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
