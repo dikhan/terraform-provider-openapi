@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"encoding/json"
+	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
 	"log"
 )
@@ -21,7 +22,11 @@ func sPrettyPrint(v interface{}) string {
 }
 
 func getFileContent(filePath string) (string, error) {
-	data, err := ioutil.ReadFile(filePath)
+	fullPath, err := homedir.Expand(filePath)
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadFile(fullPath)
 	if err != nil {
 		return "", err
 	}
