@@ -2,7 +2,9 @@ package openapi
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
+	"io/ioutil"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -137,4 +139,10 @@ func (s *testSchemaDefinition) getResourceData(t *testing.T) *schema.ResourceDat
 	}
 	resourceLocalData := schema.TestResourceDataRaw(t, resourceSchema, resourceDataMap)
 	return resourceLocalData
+}
+
+func createTmpFile(data string) (*os.File, error) {
+	f, err := ioutil.TempFile("", "")
+	f.Write([]byte(data))
+	return f, err
 }
