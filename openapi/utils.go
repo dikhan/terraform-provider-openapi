@@ -21,8 +21,16 @@ func sPrettyPrint(v interface{}) string {
 	return string(b)
 }
 
-func getFileContent(filePath string) (string, error) {
+func expandPath(filePath string) (string, error) {
 	fullPath, err := homedir.Expand(filePath)
+	if err != nil {
+		return "", err
+	}
+	return fullPath, err
+}
+
+func getFileContent(filePath string) (string, error) {
+	fullPath, err := expandPath(filePath)
 	if err != nil {
 		return "", err
 	}
