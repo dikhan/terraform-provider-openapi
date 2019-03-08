@@ -437,6 +437,11 @@ definitions:
         x-terraform-field-name: betterExampleNumberFieldName  # overriding exampleNumber with a different name 'betterExampleNumberFieldName'; the preferred name is not terraform compliant either so the provider will perform the name conversion automatically when translating the name into the provider resource configuration and when saving the field into the state file
       example_boolean:
         type: boolean
+      optional_property:
+        type: "string"
+      optional_computed:
+        type: "string"
+        x-terraform-optional-computed: true
       object_property:
         #type: object - type is optional for properties of object type that use $ref
         $ref: "#/definitions/ObjectProperty"

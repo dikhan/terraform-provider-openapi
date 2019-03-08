@@ -29,6 +29,7 @@ type specSchemaDefinitionProperty struct {
 	Type               schemaDefinitionPropertyType
 	ArrayItemsType     schemaDefinitionPropertyType
 	Required           bool
+	OptionalComputed   bool
 	ReadOnly           bool
 	ForceNew           bool
 	Sensitive          bool
@@ -69,6 +70,10 @@ func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
 
 func (s *specSchemaDefinitionProperty) isRequired() bool {
 	return s.Required
+}
+
+func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
+	return s.OptionalComputed
 }
 
 func (s *specSchemaDefinitionProperty) isReadOnly() bool {
@@ -153,7 +158,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 
 	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
 	// it comes back from the api and is stored in the state. This properties are mostly informative.
-	terraformSchema.Computed = s.ReadOnly
+	terraformSchema.Computed = s.ReadOnly || s.OptionalComputed
 	// A sensitive property means that the expectedValue will not be disclosed in the state file, preventing secrets from
 	// being leaked
 	terraformSchema.Sensitive = s.Sensitive
@@ -169,9 +174,10 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		terraformSchema.Optional = true
 	}
 	if s.Default != nil {
-		if s.ReadOnly {
+		if s.ReadOnly || s.OptionalComputed {
 			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
-			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
+			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error:
+			// * resource swaggercodegen_cdn_v1: optional_computed: Default must be nil if computed]
 			log.Printf("[WARN] '%s' is readOnly and can not have a default expectedValue. The expectedValue is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", s.Name)
 		} else {
 			terraformSchema.Default = s.Default
@@ -189,14 +195,17 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
 		if s.Default != nil {
-			if s.ReadOnly {
+			if s.ReadOnly || s.OptionalComputed {
 				err := fmt.Errorf(
 					"'%s.%s' is configured as 'readOnly' and can not have a default expectedValue. The expectedValue is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
 						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default expectedValue '%v' can be applied. Default must be nil if computed\n"+
 						"OR\n"+
-						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the expectedValue as specified by the 'readOnly' attribute\n", s.Name, k, k, s.Default, k)
+						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the expectedValue as described with the 'readOnly' attribute\n", s.Name, k, k, s.Default, k)
 				errors = append(errors, err)
 			}
+		}
+		if s.ReadOnly && s.OptionalComputed {
+			errors = append(errors, fmt.Errorf("property '%s' is configured as readOnly and can not be configured with '%s' too", s.Name, extTfComputed))
 		}
 		if s.ForceNew && s.Immutable {
 			errors = append(errors, fmt.Errorf("property '%s' is configured as immutable and can not be configured with forceNew too", s.Name))

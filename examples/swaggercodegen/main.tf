@@ -14,6 +14,9 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   better_example_number_field_name = 15.78
   example_boolean = true
 
+  optional_property = "some value for optional property"
+  optional_computed = "some updates!!"
+
   object_property = {
     message = "some message news2"
     detailed_message = "some message news with details"

@@ -22,6 +22,7 @@ const extTfSensitive = "x-terraform-sensitive"
 const extTfFieldName = "x-terraform-field-name"
 const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
+const extTfComputed = "x-terraform-optional-computed"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"
@@ -208,10 +209,15 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
 	}
 
-	// Set the property as required or optional
+	// Set the property as required (if not required the property will be considered optional)
 	required := o.isRequired(propertyName, requiredProperties)
 	if required {
 		schemaDefinitionProperty.Required = true
+	} else {
+		// This covers the use case where a property is not marked as readOnly but still is optional value that can come from the user or if not provided will be computed by the API
+		if optionalComputed, ok := property.Extensions.GetBool(extTfComputed); ok && optionalComputed {
+			schemaDefinitionProperty.OptionalComputed = true
+		}
 	}
 
 	// If the value of the property is changed, it will force the deletion of the previous generated resource and
@@ -246,15 +252,8 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.IsStatusIdentifier = true
 	}
 
-	if property.Default != nil {
-		if property.ReadOnly {
-			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
-			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
-			log.Printf("[WARN] '%s' is readOnly and can not have a default value. The value is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", propertyName)
-		} else {
-			schemaDefinitionProperty.Default = property.Default
-		}
-	}
+	schemaDefinitionProperty.Default = property.Default
+
 	return schemaDefinitionProperty, nil
 }
 
