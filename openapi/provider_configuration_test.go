@@ -9,18 +9,25 @@ import (
 func TestNewProviderConfiguration(t *testing.T) {
 	Convey("Given a headers a SpecHeaderParameters, securitySchemaDefinitions and a schema ResourceData", t, func() {
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("headerProperty", "header_property", true, false, "updatedValue")
-		headers := SpecHeaderParameters{
-			SpecHeaderParam{
-				Name: headerProperty.getTerraformCompliantPropertyName(),
+
+		specAnalyser := &specAnalyserStub{
+			headers:   SpecHeaderParameters{
+				SpecHeaderParam{
+					Name: headerProperty.getTerraformCompliantPropertyName(),
+				},
+			},
+			security: &specSecurityStub{
+				securityDefinitions:   &SpecSecurityDefinitions{
+					newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
+					newAPIKeyQuerySecurityDefinition(stringWithPreferredNameProperty.getTerraformCompliantPropertyName(), "someQuerySecDefName"),
+				},
+				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 			},
 		}
-		securitySchemaDefinitions := &SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
-			newAPIKeyQuerySecurityDefinition(stringWithPreferredNameProperty.getTerraformCompliantPropertyName(), "someQuerySecDefName"),
-		}
+
 		data := newTestSchema(stringProperty, stringWithPreferredNameProperty, headerProperty).getResourceData(t)
 		Convey("When newProviderConfiguration method is called", func() {
-			providerConfiguration, err := newProviderConfiguration(headers, securitySchemaDefinitions, data)
+			providerConfiguration, err := newProviderConfiguration(specAnalyser, data)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -43,13 +50,18 @@ func TestNewProviderConfiguration(t *testing.T) {
 	})
 
 	Convey("Given securitySchemaDefinitions and a schema ResourceData not containing values for the security definitions", t, func() {
-		headers := SpecHeaderParameters{}
-		securitySchemaDefinitions := &SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
-		}
 		data := newTestSchema().getResourceData(t)
+		specAnalyser := &specAnalyserStub{
+			headers: SpecHeaderParameters{},
+			security: &specSecurityStub{
+				securityDefinitions: &SpecSecurityDefinitions{
+					newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
+				},
+				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
+			},
+		}
 		Convey("When newProviderConfiguration method is called", func() {
-			_, err := newProviderConfiguration(headers, securitySchemaDefinitions, data)
+			_, err := newProviderConfiguration(specAnalyser, data)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -61,15 +73,20 @@ func TestNewProviderConfiguration(t *testing.T) {
 
 	Convey("Given a headers a SpecHeaderParameters and a schema ResourceData not containing values for the security definitions", t, func() {
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("headerProperty", "header_property", true, false, "updatedValue")
-		headers := SpecHeaderParameters{
-			SpecHeaderParam{
-				Name: headerProperty.getTerraformCompliantPropertyName(),
+		specAnalyser := &specAnalyserStub{
+			headers: SpecHeaderParameters{
+				SpecHeaderParam{
+					Name: headerProperty.getTerraformCompliantPropertyName(),
+				},
+			},
+			security: &specSecurityStub{
+				securityDefinitions: &SpecSecurityDefinitions{},
+				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 			},
 		}
-		securitySchemaDefinitions := &SpecSecurityDefinitions{}
 		data := newTestSchema().getResourceData(t)
 		Convey("When newProviderConfiguration method is called", func() {
-			_, err := newProviderConfiguration(headers, securitySchemaDefinitions, data)
+			_, err := newProviderConfiguration(specAnalyser, data)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -154,6 +171,30 @@ func TestGetRegion(t *testing.T) {
 			value := providerConfiguration.getRegion()
 			Convey("Then the value returned should match the value set in the resource data for region field", func() {
 				So(value, ShouldEqual, expectedRegion)
+			})
+		})
+	})
+}
+
+func TestGetEndPoint(t *testing.T) {
+	Convey("Given a providerConfiguration configured with some endpoints", t, func() {
+		expectedResource := "cdn_v1"
+		expectedResourceValue := "www.endpoint.com"
+		providerConfiguration := providerConfiguration{
+			Endpoints: map[string]string{
+				expectedResource: expectedResourceValue,
+			},
+		}
+		Convey("When getEndPoint method is called with an existing resource name", func() {
+			value := providerConfiguration.getEndPoint(expectedResource)
+			Convey("Then the value returned should be the expected value", func() {
+				So(value, ShouldEqual, expectedResourceValue)
+			})
+		})
+		Convey("When getEndPoint method is called with an NON existing resource name", func() {
+			value := providerConfiguration.getEndPoint("nonExistingResource")
+			Convey("Then the value returned should be empty", func() {
+				So(value, ShouldEqual, "")
 			})
 		})
 	})

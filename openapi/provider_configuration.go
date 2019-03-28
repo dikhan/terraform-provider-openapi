@@ -7,6 +7,7 @@ import (
 )
 
 const providerPropertyRegion = "region"
+const providerPropertyEndPoints = "endpoints"
 
 // providerConfiguration contains all the configuration related to the OpenAPI provider. The configuration at the moment
 // supports:
@@ -17,19 +18,25 @@ const providerPropertyRegion = "region"
 type providerConfiguration struct {
 	Headers                   map[string]string
 	SecuritySchemaDefinitions map[string]specAPIKeyAuthenticator
+	Endpoints 				  map[string]string
 	data                      *schema.ResourceData
 	mutex                     *sync.Mutex
 }
 
 // createProviderConfig returns a providerConfiguration populated with the values provided by the user in the provider's terraform
 // configuration mapped to the corresponding
-func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefinitions *SpecSecurityDefinitions, data *schema.ResourceData) (*providerConfiguration, error) {
+func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceData) (*providerConfiguration, error) {
 	providerConfiguration := &providerConfiguration{}
 	providerConfiguration.data = data
 	providerConfiguration.mutex = &sync.Mutex{}
 	providerConfiguration.Headers = map[string]string{}
+	providerConfiguration.Endpoints = map[string]string{}
 	providerConfiguration.SecuritySchemaDefinitions = map[string]specAPIKeyAuthenticator{}
 
+	securitySchemaDefinitions, err := specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
+	if err != nil {
+		return nil, err
+	}
 	if securitySchemaDefinitions != nil {
 		for _, secDef := range *securitySchemaDefinitions {
 			secDefTerraformCompliantName := secDef.getTerraformConfigurationName()
@@ -41,6 +48,10 @@ func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefini
 		}
 	}
 
+	headers, err := specAnalyser.GetAllHeaderParameters()
+	if err != nil {
+		return nil, err
+	}
 	if headers != nil {
 		for _, headerParam := range headers {
 			headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
@@ -51,6 +62,20 @@ func newProviderConfiguration(headers SpecHeaderParameters, securitySchemaDefini
 			}
 		}
 	}
+
+	providerConfigurationEndPoints, err := newProviderConfigurationEndPoints(specAnalyser)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints, err := providerConfigurationEndPoints.configureEndpoints(data)
+	if err != nil {
+		return nil, err
+	}
+	if endpoints != nil {
+		providerConfiguration.Endpoints = endpoints
+	}
+
 	return providerConfiguration, nil
 }
 
@@ -75,4 +100,11 @@ func (p *providerConfiguration) getRegion() string {
 		return ""
 	}
 	return region.(string)
+}
+
+func (p *providerConfiguration) getEndPoint(resourceName string) string {
+	 if endpoint, ok := p.Endpoints[resourceName]; ok {
+	 	return endpoint
+	 }
+	 return ""
 }
