@@ -111,6 +111,18 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 			return nil, err
 		}
 	}
+
+	providerConfigurationEndPoints, err := newProviderConfigurationEndPoints(p.specAnalyser)
+	if err != nil {
+		return nil, err
+	}
+	endpoints, err := providerConfigurationEndPoints.endpointsSchema()
+	if err != nil {
+		return nil, err
+	}
+	if endpoints != nil {
+		s[providerPropertyEndPoints] = endpoints
+	}
 	return s, nil
 }
 
@@ -208,15 +220,7 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 // - Security definition values that might be required by API operations (or globally)
 // configuration mapped to the corresponding
 func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*providerConfiguration, error) {
-	securityDefinitions, err := p.specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
-	if err != nil {
-		return nil, err
-	}
-	headers, err := p.specAnalyser.GetAllHeaderParameters()
-	if err != nil {
-		return nil, err
-	}
-	providerConfiguration, err := newProviderConfiguration(headers, securityDefinitions, data)
+	providerConfiguration, err := newProviderConfiguration(p.specAnalyser, data)
 	if err != nil {
 		return nil, err
 	}
