@@ -9,7 +9,7 @@ import (
 
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-Z]{2,63}|(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))?(?:[:]\d+)?|localhost(?:[:]\d+)?\b`
-
+const hostnameRegex = "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?:[:]\\d+)?$"
 // GetHostFromURL returns the fqdn of a given string (localhost including port number is also handled).
 // Example domains that would match:
 // - http://domain.com/
@@ -20,11 +20,28 @@ const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-
 // - www.domain.com
 // - localhost
 // - localhost:8080
-// Example domains that would not match:
-// - http://domain.com:8080 (this use case is not support at the moment, it is assumed that actual domains will use standard ports)
+// - 127.0.0.1
+// - 127.0.0.1:8080
+// - 127.0.0.1
+// - http://127.0.0.1:8080/swagger.com
 func GetHostFromURL(url string) string {
 	re := regexp.MustCompile(fqdnInURLRegex)
 	return re.FindString(url)
+}
+
+// IsValidHost checks whether the given string is a valid host. A valid host is considered a FQDN or IP. The latter
+// may include also non starndar ports in the strings e,g:
+// - domain.com
+// - domain.com:8080
+// - localhost
+// - localhost:8443
+// - 127.0.0.1
+// - 127.0.0.1:8080
+// Note that if custom ports are used, the protocol used woudl still be the one defined in the swagger doc. Hence, if
+// https is the default protocol as specified in swagger, a host like www.domain.com:8080 would still use https protocol.
+func IsValidHost(url string) bool {
+	re := regexp.MustCompile(hostnameRegex)
+	return re.MatchString(url)
 }
 
 // StringExtensionExists tries to find a match using the built-in extensions GetString method and if there is no match

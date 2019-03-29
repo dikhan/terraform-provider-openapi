@@ -3,6 +3,7 @@ package openapi
 import (
 	"bytes"
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -47,6 +48,7 @@ func (p *providerConfigurationEndPoints) endpointsSchema() (*schema.Schema, erro
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "",
+				ValidateFunc: p.endpointsValidateFunc(),
 				Description: "Use this to override the resource endpoint URL (the default one or the one constructed from the `region`).\n",
 			}
 		}
@@ -60,6 +62,16 @@ func (p *providerConfigurationEndPoints) endpointsSchema() (*schema.Schema, erro
 		}, nil
 	}
 	return nil, nil
+}
+
+func (p *providerConfigurationEndPoints) endpointsValidateFunc() schema.SchemaValidateFunc {
+	return func(value interface{}, key string) (warns []string, errs []error) {
+		userValue := value.(string)
+		if openapiutils.IsValidHost(userValue) {
+			return nil, nil
+		}
+		return nil, []error{fmt.Errorf("property '%s' value '%s' is not valid, please make sure the value is a valid FQDN or well formed IP (the host may contain non standard ports too followed by a colon - e,g: www.api.com:8080). The protocol used when performing the API call will be populated based on the swagger specification", key, userValue)}
+	}
 }
 
 // endpointsToHash calculates the unique ID used to store the endpoints element in a hash.

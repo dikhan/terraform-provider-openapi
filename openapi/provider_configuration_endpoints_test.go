@@ -66,7 +66,7 @@ func TestGetResourceNames(t *testing.T) {
 }
 
 func TestEndpointsSchema(t *testing.T) {
-	Convey("Given a provider factory with a spec analyser that has one resource", t, func() {
+	Convey("Given a provider configuration endpoints configured with a spec analyser that has one resource", t, func() {
 		resourceName := "resource_name_v1"
 		resource := newSpecStubResource(resourceName, "", false, nil)
 		p := providerConfigurationEndPoints{
@@ -105,7 +105,7 @@ func TestEndpointsSchema(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a provider factory with a spec analyser that has no resources", t, func() {
+	Convey("Given a provider configuration endpoints configured withh a spec analyser that has no resources", t, func() {
 		p := providerConfigurationEndPoints{
 			specAnalyser: &specAnalyserStub{
 				resources: []SpecResource{},
@@ -129,7 +129,7 @@ func TestEndpointsSchema(t *testing.T) {
 }
 
 func TestEndpointsToHash(t *testing.T) {
-	Convey("Given a provider factory", t, func() {
+	Convey("Given a provider configuration endpoints configured", t, func() {
 		p := providerConfigurationEndPoints{
 			specAnalyser: &specAnalyserStub{
 				headers: SpecHeaderParameters{},
@@ -155,6 +155,53 @@ func TestEndpointsToHash(t *testing.T) {
 		})
 	})
 }
+
+func TestEndpointsValidateFunc(t *testing.T) {
+	Convey("Given a provider configuration endpoints configured", t, func() {
+		p := providerConfigurationEndPoints{}
+		Convey("When endpointsValidateFunc is invoked with a valid domain host", func() {
+			warns, errs := p.endpointsValidateFunc()("www.valid-domain.com", "something")
+			Convey("Then the warns should be nil", func() {
+				So(warns, ShouldBeNil)
+			})
+			Convey("Then the errs should be nil", func() {
+				So(errs, ShouldBeNil)
+			})
+		})
+		Convey("When endpointsValidateFunc is invoked with a valid IP host", func() {
+			warns, errs := p.endpointsValidateFunc()("127.0.0.1", "something")
+			Convey("Then the warns should be nil", func() {
+				So(warns, ShouldBeNil)
+			})
+			Convey("Then the errs should be nil", func() {
+				So(errs, ShouldBeNil)
+			})
+		})
+		Convey("When endpointsValidateFunc is invoked with a valid host using custom ports", func() {
+			warns, errs := p.endpointsValidateFunc()("192.168.1.1:8080", "something")
+			Convey("Then the warns should be nil", func() {
+				So(warns, ShouldBeNil)
+			})
+			Convey("Then the errs should be nil", func() {
+				So(errs, ShouldBeNil)
+			})
+		})
+		Convey("When endpointsValidateFunc is invoked with a whole URL (only hostnames are valid)", func() {
+			warns, errs := p.endpointsValidateFunc()("http://www.valid-domain.com", "something")
+			Convey("Then the warns should be nil", func() {
+				So(warns, ShouldBeNil)
+			})
+			Convey("Then the errs should be nil", func() {
+				So(errs, ShouldNotBeNil)
+			})
+			Convey("And the error message should be the expected one", func() {
+				So(errs[0].Error(), ShouldEqual, "property 'something' value 'http://www.valid-domain.com' is not valid, please make sure the value is a valid FQDN or well formed IP (the host may contain non standard ports too followed by a colon - e,g: www.api.com:8080). The protocol used when performing the API call will be populated based on the swagger specification")
+			})
+		})
+	})
+}
+
+
 
 //func TestGetProviderConfigEndPointsFromData(t *testing.T) {
 //	Convey("Given a provider factory", t, func() {
