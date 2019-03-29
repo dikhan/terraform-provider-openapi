@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
 	"testing"
 )
 
@@ -451,18 +450,15 @@ func TestGetResourceURL(t *testing.T) {
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region and the region field being filled in (pretending user provided us-west1 in the provider's region property)", t, func() {
 		expectedRegion := "us-west1"
-		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, expectedRegion)
-		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data:  s.getResourceData(t),
-			mutex: &sync.Mutex{},
+			Region: expectedRegion,
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:        "wwww.%s.host.com",
 				basePath:    "/api",
 				httpSchemes: []string{"http"},
-				regions:     []string{expectedRegion},
+				regions:     []string{expectedRegion, "someOtherRegion"},
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration,
@@ -492,13 +488,9 @@ func TestGetResourceURL(t *testing.T) {
 	})
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region and the region field being the default (pretending user did not provide value for provider's region property)", t, func() {
-		emptyRegionProvidedByUser := ""
 		expectedRegion := "us-east1"
-		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, emptyRegionProvidedByUser)
-		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data:  s.getResourceData(t),
-			mutex: &sync.Mutex{},
+			Region: "", //emptyRegionProvidedByUser
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
@@ -562,13 +554,7 @@ func TestGetResourceURL(t *testing.T) {
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration getDefaultRegion() call throws an error", t, func() {
 		expectedError := "some error thrown by default region method"
-		emptyRegionProvidedByUser := ""
-		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, emptyRegionProvidedByUser)
-		s := newTestSchema(regionProperty)
-		providerConfiguration := providerConfiguration{
-			data:  s.getResourceData(t),
-			mutex: &sync.Mutex{},
-		}
+		providerConfiguration := providerConfiguration{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:             "wwww.%s.host.com",
@@ -595,12 +581,7 @@ func TestGetResourceURL(t *testing.T) {
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration getHostByRegion(region) call throws an error", t, func() {
 		expectedError := "some error thrown by default host by region method"
-		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, "us-east1")
-		s := newTestSchema(regionProperty)
-		providerConfiguration := providerConfiguration{
-			data:  s.getResourceData(t),
-			mutex: &sync.Mutex{},
-		}
+		providerConfiguration := providerConfiguration{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:            "wwww.%s.host.com",

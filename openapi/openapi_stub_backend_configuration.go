@@ -1,6 +1,9 @@
 package openapi
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+)
 
 type specStubBackendConfiguration struct {
 	host             string
@@ -18,6 +21,17 @@ func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *s
 		host:        host,
 		basePath:    basePath,
 		httpSchemes: httpSchemes,
+	}
+}
+
+func newStubBackendMultiRegionConfiguration(host string, regions []string) *specStubBackendConfiguration {
+	isMultiRegion, _ := openapiutils.IsMultiRegionHost(host)
+	if !isMultiRegion {
+		return nil
+	}
+	return &specStubBackendConfiguration{
+		host:    host,
+		regions: regions,
 	}
 }
 

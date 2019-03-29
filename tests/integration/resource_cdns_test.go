@@ -87,6 +87,35 @@ func TestAccCDN_Create(t *testing.T) {
 	})
 }
 
+func TestAccCDN_Create_EndPointOverride(t *testing.T) {
+	endpoint := "www.endpoint.com"
+	testCreateConfigCDNWithResourceEndpointOverride := fmt.Sprintf(`provider "%s" {
+  apikey_auth = "apiKeyValue"
+  x_request_id = "some value..."
+  endpoints = {
+    %s = "%s" # this effectively overrides the default endpoint for 'cdn_v1', and API calls will be made against the value for this property
+  }
+}
+
+resource "%s" "%s" {
+  label = "some label"
+  ips = ["0.0.0.0"]
+  hostnames = ["www.hostname.com"]
+}`, providerName, resourceCDNName, endpoint, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
+	expectedValidationError, _ := regexp.Compile(".*openapi_cdn_v1.my_cdn: unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://www\\.endpoint\\.com/v1/cdns HTTP/1\\.1'. Response = '404 Not Found'.*")
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckCDNsV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testCreateConfigCDNWithResourceEndpointOverride,
+				ExpectError: expectedValidationError,
+			},
+		},
+	})
+}
+
 func TestAccCDN_Create_Using_Provider_Env_Variables(t *testing.T) {
 	os.Setenv("APIKEY_AUTH", "apiKeyValue")
 	testCDNCreateConfigWithoutProviderAuthProperty := fmt.Sprintf(`provider "%s" {
@@ -638,6 +667,7 @@ func populateTemplateConfigurationCDN(label string, ips, hostnames []string, exa
 	return fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
+  endpoints = {}
 }
 
 resource "%s" "%s" {

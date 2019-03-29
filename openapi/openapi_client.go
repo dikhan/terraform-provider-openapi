@@ -163,6 +163,11 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 		host = hostOverride
 	}
 
+	if endPointHost := o.providerConfiguration.getEndPoint(resource.getResourceName()); endPointHost != "" {
+		log.Printf("[INFO] resource '%s' is configured with endpoint override, API calls will be made against '%s' instead of '%s'", resourceRelativePath, endPointHost, host)
+		host = endPointHost
+	}
+
 	if host == "" || resourceRelativePath == "" {
 		return "", fmt.Errorf("host and path are mandatory attributes to get the resource URL - host['%s'], path['%s']", host, resourceRelativePath)
 	}
