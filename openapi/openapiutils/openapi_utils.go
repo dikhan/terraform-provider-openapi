@@ -10,6 +10,7 @@ import (
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 const fqdnInURLRegex = `\b(?:(?:[^.-/]{0,1})[\w-]{1,63}[-]{0,1}[.]{1})+(?:[a-zA-Z]{2,63}|(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))?(?:[:]\d+)?|localhost(?:[:]\d+)?\b`
 const hostnameRegex = "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?:[:]\\d+)?$"
+
 // GetHostFromURL returns the fqdn of a given string (localhost including port number is also handled).
 // Example domains that would match:
 // - http://domain.com/

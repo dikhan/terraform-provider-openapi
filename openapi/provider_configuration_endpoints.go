@@ -45,11 +45,11 @@ func (p *providerConfigurationEndPoints) endpointsSchema() (*schema.Schema, erro
 		endpoints := map[string]*schema.Schema{}
 		for _, name := range resourceNames {
 			endpoints[name] = &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "",
 				ValidateFunc: p.endpointsValidateFunc(),
-				Description: "Use this to override the resource endpoint URL (the default one or the one constructed from the `region`).\n",
+				Description:  "Use this to override the resource endpoint URL (the default one or the one constructed from the `region`).\n",
 			}
 		}
 		return &schema.Schema{
