@@ -98,9 +98,9 @@ func TestAccCDN_Create_EndPointOverride(t *testing.T) {
 }
 
 resource "%s" "%s" {
-  label = "%s"
-  ips = ["%s"]
-  hostnames = ["%s"]
+  label = "some label"
+  ips = ["0.0.0.0"]
+  hostnames = ["www.hostname.com"]
 }`, providerName, resourceCDNName, endpoint, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
 	expectedValidationError, _ := regexp.Compile(".*openapi_cdn_v1.my_cdn: unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://www\\.endpoint\\.com/v1/cdns HTTP/1\\.1'. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
