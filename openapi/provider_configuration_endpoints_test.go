@@ -156,7 +156,6 @@ func TestEndpointsToHash(t *testing.T) {
 	})
 }
 
-
 //func TestGetProviderConfigEndPointsFromData(t *testing.T) {
 //	Convey("Given a provider factory", t, func() {
 //		expectedResource := "resource_name"

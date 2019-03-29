@@ -19,8 +19,8 @@ const providerPropertyEndPoints = "endpoints"
 type providerConfiguration struct {
 	Headers                   map[string]string
 	SecuritySchemaDefinitions map[string]specAPIKeyAuthenticator
-	Endpoints 				  map[string]string
-	Region string
+	Endpoints                 map[string]string
+	Region                    string
 }
 
 // createProviderConfig returns a providerConfiguration populated with the values provided by the user in the provider's terraform
@@ -99,8 +99,8 @@ func (p *providerConfiguration) getRegion() string {
 
 // getEndPoint resolves the endpoint value for a given resource name
 func (p *providerConfiguration) getEndPoint(resourceName string) string {
-	 if endpoint, ok := p.Endpoints[resourceName]; ok {
-	 	return endpoint
-	 }
-	 return ""
+	if endpoint, ok := p.Endpoints[resourceName]; ok {
+		return endpoint
+	}
+	return ""
 }
