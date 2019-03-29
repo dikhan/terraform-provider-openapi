@@ -2,7 +2,6 @@ package openapi
 
 import (
 	. "github.com/smartystreets/goconvey/convey"
-	"sync"
 	"testing"
 )
 
@@ -11,13 +10,13 @@ func TestNewProviderConfiguration(t *testing.T) {
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("headerProperty", "header_property", true, false, "updatedValue")
 
 		specAnalyser := &specAnalyserStub{
-			headers:   SpecHeaderParameters{
+			headers: SpecHeaderParameters{
 				SpecHeaderParam{
 					Name: headerProperty.getTerraformCompliantPropertyName(),
 				},
 			},
 			security: &specSecurityStub{
-				securityDefinitions:   &SpecSecurityDefinitions{
+				securityDefinitions: &SpecSecurityDefinitions{
 					newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
 					newAPIKeyQuerySecurityDefinition(stringWithPreferredNameProperty.getTerraformCompliantPropertyName(), "someQuerySecDefName"),
 				},
@@ -30,9 +29,6 @@ func TestNewProviderConfiguration(t *testing.T) {
 			providerConfiguration, err := newProviderConfiguration(specAnalyser, data)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the provider configuration data should not be nil", func() {
-				So(providerConfiguration.data, ShouldNotPointTo, providerConfiguration)
 			})
 			Convey("Then the providerConfiguration headers should contain the configured header with the right value", func() {
 				So(providerConfiguration.Headers, ShouldContainKey, headerProperty.getTerraformCompliantPropertyName())
@@ -80,7 +76,7 @@ func TestNewProviderConfiguration(t *testing.T) {
 				},
 			},
 			security: &specSecurityStub{
-				securityDefinitions: &SpecSecurityDefinitions{},
+				securityDefinitions:   &SpecSecurityDefinitions{},
 				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 			},
 		}
@@ -147,11 +143,7 @@ func TestGetHeaderValueFor(t *testing.T) {
 
 func TestGetRegion(t *testing.T) {
 	Convey("Given a providerConfiguration with data that has no values for the region property", t, func() {
-		s := newTestSchema()
-		providerConfiguration := providerConfiguration{
-			data:  s.getResourceData(t),
-			mutex: &sync.Mutex{},
-		}
+		providerConfiguration := providerConfiguration{}
 		Convey("When getRegion() method is called", func() {
 			value := providerConfiguration.getRegion()
 			Convey("Then the value returned should be empty", func() {
@@ -161,11 +153,8 @@ func TestGetRegion(t *testing.T) {
 	})
 	Convey("Given a providerConfiguration with data that has a value for the region property", t, func() {
 		expectedRegion := "us-west1"
-		regionProperty := newStringSchemaDefinitionPropertyWithDefaults(providerPropertyRegion, "", true, false, expectedRegion)
-		s := newTestSchema(regionProperty)
 		providerConfiguration := providerConfiguration{
-			data:  s.getResourceData(t),
-			mutex: &sync.Mutex{},
+			Region: expectedRegion,
 		}
 		Convey("When getRegion() method is called", func() {
 			value := providerConfiguration.getRegion()
