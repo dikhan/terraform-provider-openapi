@@ -667,6 +667,7 @@ func populateTemplateConfigurationCDN(label string, ips, hostnames []string, exa
 	return fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
+  endpoints = {}
 }
 
 resource "%s" "%s" {
