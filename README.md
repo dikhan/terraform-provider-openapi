@@ -40,8 +40,8 @@ rather than the tooling around it.
 
 ### Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.10.x (to execute the terraform provider plugin)
--	[Go](https://golang.org/doc/install) 1.9 (to build the provider plugin)
+-	[Terraform](https://www.terraform.io/downloads.html) 0.11.8 (to execute the terraform provider plugin)
+-	[Go](https://golang.org/doc/install) 1.12 (to build the provider plugin)
 -	[Docker](https://www.docker.com/) 17.09.0-ce (to run service provider example)
 -	[Docker-compose](https://docs.docker.com/compose/) 1.16.1 (to run service provider example)
 
