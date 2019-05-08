@@ -15,10 +15,13 @@ func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
 	if AuthenticateRequest(r, w) != nil {
 		return
 	}
-	xRequestID := r.Header.Get("X-Request-ID")
-	log.Printf("Header [X-Request-ID]: %s", xRequestID)
+	err := validateExpectedHeaders(r.Header,"X-Request-Id", "User-Agent")
+	if err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
 	cdn := &ContentDeliveryNetworkV1{}
-	err := readRequest(r, cdn)
+	err = readRequest(r, cdn)
 	if err != nil {
 		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
@@ -39,6 +42,11 @@ func ContentDeliveryNetworkGetV1(w http.ResponseWriter, r *http.Request) {
 	if AuthenticateRequest(r, w) != nil {
 		return
 	}
+	err := validateExpectedHeaders(r.Header, "User-Agent")
+	if err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
 	cdn, err := retrieveCdn(r)
 	log.Printf("GET [%+v\n]", cdn)
 	if err != nil {
@@ -50,6 +58,11 @@ func ContentDeliveryNetworkGetV1(w http.ResponseWriter, r *http.Request) {
 
 func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
 	if AuthenticateRequest(r, w) != nil {
+		return
+	}
+	err := validateExpectedHeaders(r.Header, "User-Agent")
+	if err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
 	cdn, err := retrieveCdn(r)
@@ -66,6 +79,25 @@ func ContentDeliveryNetworkUpdateV1(w http.ResponseWriter, r *http.Request) {
 	log.Printf("UPDATE [%+v\n]", newCDN)
 	updateCDN(cdn, newCDN)
 	sendResponse(http.StatusOK, w, newCDN)
+}
+
+func ContentDeliveryNetworkDeleteV1(w http.ResponseWriter, r *http.Request) {
+	if AuthenticateRequest(r, w) != nil {
+		return
+	}
+	err := validateExpectedHeaders(r.Header, "User-Agent")
+	if err != nil {
+		sendErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
+	cdn, err := retrieveCdn(r)
+	if err != nil {
+		sendErrorResponse(http.StatusNotFound, err.Error(), w)
+		return
+	}
+	delete(db, cdn.Id)
+	log.Printf("DELETE [%s]", cdn.Id)
+	updateResponseHeaders(http.StatusNoContent, w)
 }
 
 func populateComputePropertiesCDN(cdn *ContentDeliveryNetworkV1) {
@@ -103,18 +135,23 @@ func updateCDN(dbCDN, updatedCDN *ContentDeliveryNetworkV1) {
 	db[dbCDN.Id] = dbCDN
 }
 
-func ContentDeliveryNetworkDeleteV1(w http.ResponseWriter, r *http.Request) {
-	if AuthenticateRequest(r, w) != nil {
-		return
+func validateExpectedHeaders(headers map[string][]string, expectedHeaders ...string) error {
+	for _, header := range expectedHeaders {
+		err := validateHeader(headers, header)
+		if err != nil {
+			return err
+		}
 	}
-	cdn, err := retrieveCdn(r)
-	if err != nil {
-		sendErrorResponse(http.StatusNotFound, err.Error(), w)
-		return
+	return nil
+}
+
+func validateHeader(headers map[string][]string, expectedHeader string) error {
+	value, exists := headers[expectedHeader]
+	log.Printf("validating header %s = %s", expectedHeader, value)
+	if !exists {
+		return fmt.Errorf("expected header [%s] is missing", expectedHeader)
 	}
-	delete(db, cdn.Id)
-	log.Printf("DELETE [%s]", cdn.Id)
-	updateResponseHeaders(http.StatusNoContent, w)
+	return nil
 }
 
 func retrieveCdn(r *http.Request) (*ContentDeliveryNetworkV1, error) {
