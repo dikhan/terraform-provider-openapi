@@ -91,6 +91,7 @@ func TestAppendUserAgentHeader(t *testing.T) {
 				value, exists := headers["User-Agent"]
 				So(exists, ShouldBeTrue)
 				So(value, ShouldEqual, expectedHeaderValue)
+				So(headers["Some-Header"], ShouldEqual, "some header value")
 			})
 		})
 		Convey("When appendUserAgentHeader with header map containing User-Agent and new header value", func() {
@@ -103,22 +104,6 @@ func TestAppendUserAgentHeader(t *testing.T) {
 			})
 		})
 	})
-	//Convey("Given a providerClient", t, func() {
-	//	providerClient := &ProviderClient{}
-	//	Convey("When appendUserAgentHeader with empty header map and some header value", t, func() {
-	//		headers := map[string]string{}
-	//		expectedHeaderValue := "some user agent header value"
-	//		providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
-	//		Convey("Then the header value should exist in the header map with correct value", func() {
-	//			//value, exists := headers["User-Agent"]
-	//			//So(exists, ShouldBeTrue)
-	//			//So(value, ShouldEqual, expectedHeaderValue)
-	//		})
-	//	})
-	//	//Convey("When appendUserAgentHeader with non-empty header map and some header value", t, func() {
-	//	//
-	//	//})
-	//})
 }
 
 func TestGetResourceIDURL(t *testing.T) {
@@ -737,6 +722,7 @@ func TestPerformRequest(t *testing.T) {
 			Convey("And then client should have received the right Headers with the right values", func() {
 				So(httpClient.Headers, ShouldContainKey, expectedHeader)
 				So(httpClient.Headers[expectedHeader], ShouldEqual, expectedHeaderValue)
+				So(httpClient.Headers, ShouldContainKey, "User-Agent")
 			})
 			Convey("And then client should have received the right request payload", func() {
 				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty1)
