@@ -4,7 +4,7 @@ RELEASE_TAG?="$(GITHUB_VERSION)"
 RELEASE_MESSAGE?="$(GITHUB_VERSION)"
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
-LDFLAGS = '-s -w -extldflags "-static" -X "main.version=$(VERSION)" -X "main.commit=$(COMMIT)" -X "main.date=$(DATE)"'
+LDFLAGS = '-s -w -extldflags "-static" -X "github.com/dikhan/terraform-provider-openapi/openapi/version.Version=$(VERSION)" -X "github.com/dikhan/terraform-provider-openapi/openapi/version.Commit=$(COMMIT)" -X "github.com/dikhan/terraform-provider-openapi/openapi/version.Date=$(DATE)"'
 
 PROVIDER_NAME?=""
 TF_CMD?="plan"
