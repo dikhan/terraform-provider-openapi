@@ -2,11 +2,11 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"log"
 	"net/http"
 	"runtime"
 	"strings"
-	"terraform-provider-openapi/openapi/version"
 
 	"github.com/dikhan/http_goclient"
 )
