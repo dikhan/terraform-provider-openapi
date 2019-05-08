@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
-	"terraform-provider-openapi/openapi/version"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 
 	"github.com/dikhan/http_goclient"
 )

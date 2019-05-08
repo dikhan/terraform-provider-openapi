@@ -672,7 +672,10 @@ func TestGetResourceURL(t *testing.T) {
 func TestPerformRequest(t *testing.T) {
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		providerConfiguration := providerConfiguration{}
+		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		providerConfiguration := providerConfiguration{
+			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
+		}
 		expectedHeader := "Authentication"
 		expectedHeaderValue := "Bearer secret!"
 		apiAuthenticator := &specStubAuthenticator{
@@ -693,9 +696,9 @@ func TestPerformRequest(t *testing.T) {
 			providerConfiguration: providerConfiguration,
 			apiAuthenticator:      apiAuthenticator,
 		}
-		Convey("When performRequest POST method is called with a resourceURL, a requestPayload and an empty responsePayload", func() {
+		Convey("When performRequest POST method is called with a resourceURL, a requestPayload, an empty responsePayload, and header parameters", func() {
 			resourcePostOperation := &specResourceOperation{
-				HeaderParameters: SpecHeaderParameters{},
+				HeaderParameters: SpecHeaderParameters{headerParameter},
 				responses:        specResponses{},
 				SecuritySchemes:  SpecSecuritySchemes{},
 			}
@@ -722,6 +725,8 @@ func TestPerformRequest(t *testing.T) {
 			Convey("And then client should have received the right Headers with the right values", func() {
 				So(httpClient.Headers, ShouldContainKey, expectedHeader)
 				So(httpClient.Headers[expectedHeader], ShouldEqual, expectedHeaderValue)
+				So(httpClient.Headers, ShouldContainKey, headerParameter.Name)
+				So(httpClient.Headers[headerParameter.Name], ShouldEqual, providerConfiguration.Headers[headerParameter.TerraformName])
 				So(httpClient.Headers, ShouldContainKey, "User-Agent")
 			})
 			Convey("And then client should have received the right request payload", func() {
