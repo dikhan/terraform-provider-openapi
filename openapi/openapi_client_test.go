@@ -2,12 +2,13 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/http_goclient"
-	. "github.com/smartystreets/goconvey/convey"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/dikhan/http_goclient"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestProviderClient(t *testing.T) {
@@ -68,6 +69,56 @@ func TestAppendOperationHeaders(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestAppendUserAgentHeader(t *testing.T) {
+	Convey("Given a providerClient and user agent header value", t, func() {
+		providerClient := &ProviderClient{}
+		expectedHeaderValue := "some user agent header value"
+		Convey("When appendUserAgentHeader with empty header map and header value", func() {
+			headers := map[string]string{}
+			providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
+			Convey("Then the user agent header value should exist in the header map with correct value", func() {
+				value, exists := headers["User-Agent"]
+				So(exists, ShouldBeTrue)
+				So(value, ShouldEqual, expectedHeaderValue)
+			})
+		})
+		Convey("When appendUserAgentHeader with non-empty header map and header value", func() {
+			headers := map[string]string{"Some-Header": "some header value"}
+			providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
+			Convey("Then the user agent header should exist in the header map with correct value", func() {
+				value, exists := headers["User-Agent"]
+				So(exists, ShouldBeTrue)
+				So(value, ShouldEqual, expectedHeaderValue)
+			})
+		})
+		Convey("When appendUserAgentHeader with header map containing User-Agent and new header value", func() {
+			headers := map[string]string{"User-Agent": "some existing user agent header value"}
+			providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
+			Convey("Then the user agent header should exist in the header map with correct value", func() {
+				value, exists := headers["User-Agent"]
+				So(exists, ShouldBeTrue)
+				So(value, ShouldEqual, expectedHeaderValue)
+			})
+		})
+	})
+	//Convey("Given a providerClient", t, func() {
+	//	providerClient := &ProviderClient{}
+	//	Convey("When appendUserAgentHeader with empty header map and some header value", t, func() {
+	//		headers := map[string]string{}
+	//		expectedHeaderValue := "some user agent header value"
+	//		providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
+	//		Convey("Then the header value should exist in the header map with correct value", func() {
+	//			//value, exists := headers["User-Agent"]
+	//			//So(exists, ShouldBeTrue)
+	//			//So(value, ShouldEqual, expectedHeaderValue)
+	//		})
+	//	})
+	//	//Convey("When appendUserAgentHeader with non-empty header map and some header value", t, func() {
+	//	//
+	//	//})
+	//})
 }
 
 func TestGetResourceIDURL(t *testing.T) {
