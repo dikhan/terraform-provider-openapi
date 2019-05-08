@@ -35,7 +35,7 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 			Convey("And the security schemes should be of type header bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderBearerSecurityDefinition{})
-				So(secDefs[0].getAPIKey().Name, ShouldEqual, "Authorization")
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, authorization)
 				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "Bearer jwtToken")
 			})
 		})
@@ -193,7 +193,7 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "header",
 						Type: "apiKey",
-						Name: "Authorization",
+						Name: authorization,
 					},
 				},
 			},
@@ -223,7 +223,7 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "header",
 						Type: "apiKey",
-						Name: "Authorization",
+						Name: authorization,
 					},
 				},
 			},

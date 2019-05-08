@@ -79,7 +79,7 @@ func TestAppendUserAgentHeader(t *testing.T) {
 			headers := map[string]string{}
 			providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
 			Convey("Then the user agent header value should exist in the header map with correct value", func() {
-				value, exists := headers["User-Agent"]
+				value, exists := headers[userAgent]
 				So(exists, ShouldBeTrue)
 				So(value, ShouldEqual, expectedHeaderValue)
 			})
@@ -88,17 +88,17 @@ func TestAppendUserAgentHeader(t *testing.T) {
 			headers := map[string]string{"Some-Header": "some header value"}
 			providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
 			Convey("Then the user agent header should exist in the header map with correct value", func() {
-				value, exists := headers["User-Agent"]
+				value, exists := headers[userAgent]
 				So(exists, ShouldBeTrue)
 				So(value, ShouldEqual, expectedHeaderValue)
 				So(headers["Some-Header"], ShouldEqual, "some header value")
 			})
 		})
 		Convey("When appendUserAgentHeader with header map containing User-Agent and new header value", func() {
-			headers := map[string]string{"User-Agent": "some existing user agent header value"}
+			headers := map[string]string{userAgent: "some existing user agent header value"}
 			providerClient.appendUserAgentHeader(headers, expectedHeaderValue)
 			Convey("Then the user agent header should exist in the header map with correct value", func() {
-				value, exists := headers["User-Agent"]
+				value, exists := headers[userAgent]
 				So(exists, ShouldBeTrue)
 				So(value, ShouldEqual, expectedHeaderValue)
 			})
@@ -727,7 +727,7 @@ func TestPerformRequest(t *testing.T) {
 				So(httpClient.Headers[expectedHeader], ShouldEqual, expectedHeaderValue)
 				So(httpClient.Headers, ShouldContainKey, headerParameter.Name)
 				So(httpClient.Headers[headerParameter.Name], ShouldEqual, providerConfiguration.Headers[headerParameter.TerraformName])
-				So(httpClient.Headers, ShouldContainKey, "User-Agent")
+				So(httpClient.Headers, ShouldContainKey, userAgent)
 			})
 			Convey("And then client should have received the right request payload", func() {
 				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty1)
@@ -833,8 +833,8 @@ func TestProviderClientPost(t *testing.T) {
 				So(httpClient.Headers[headerParameter.Name], ShouldEqual, providerConfiguration.Headers[headerParameter.TerraformName])
 			})
 			Convey("And then client should have received the right User-Agent header and the expected value", func() {
-				So(httpClient.Headers, ShouldContainKey, "User-Agent")
-				So(httpClient.Headers["User-Agent"], ShouldContainSubstring, "OpenAPI Terraform Provider")
+				So(httpClient.Headers, ShouldContainKey, userAgent)
+				So(httpClient.Headers[userAgent], ShouldContainSubstring, "OpenAPI Terraform Provider")
 			})
 			Convey("And then client should have received the right request payload", func() {
 				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty1)

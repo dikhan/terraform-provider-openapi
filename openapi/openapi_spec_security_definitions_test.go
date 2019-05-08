@@ -10,7 +10,7 @@ func TestFindSecurityDefinitionFor(t *testing.T) {
 	Convey("Given a SpecSecurityDefinitions", t, func() {
 		expectedSecDefName := "secDefName"
 		s := SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition(expectedSecDefName, "Authorization"),
+			newAPIKeyHeaderSecurityDefinition(expectedSecDefName, authorization),
 		}
 		Convey("When findSecurityDefinitionFor method is called with an existing sec def name", func() {
 			secDef := s.findSecurityDefinitionFor(expectedSecDefName)

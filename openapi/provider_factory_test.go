@@ -105,7 +105,7 @@ func TestCreateProvider(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -150,7 +150,7 @@ func TestCreateProvider(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -246,7 +246,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -294,7 +294,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			specAnalyser: &specAnalyserStub{
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -329,7 +329,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				headers: SpecHeaderParameters{},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(globalSecurityDefinitionName, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(globalSecurityDefinitionName, authorization),
 						newAPIKeyHeaderSecurityDefinition(otherSecurityDefinitionName, "Authorization2"),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
@@ -549,7 +549,7 @@ func TestConfigureProvider(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -580,7 +580,7 @@ func TestCreateProviderConfig(t *testing.T) {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		expectedSecurityDefinitions := SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+			newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 		}
 		p := providerFactory{
 			name: "provider",
@@ -623,7 +623,7 @@ func TestCreateProviderConfig(t *testing.T) {
 		var headerNonCompliantNameProperty = newStringSchemaDefinitionPropertyWithDefaults("headerName", "", true, false, "someHeaderValue")
 
 		expectedSecurityDefinitions := SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition(apiKeyAuthPreferredNonCompliantNameProperty.Name, "Authorization"),
+			newAPIKeyHeaderSecurityDefinition(apiKeyAuthPreferredNonCompliantNameProperty.Name, authorization),
 		}
 		p := providerFactory{
 			name: "provider",
