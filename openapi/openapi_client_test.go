@@ -770,7 +770,10 @@ func TestPerformRequest(t *testing.T) {
 func TestProviderClientPost(t *testing.T) {
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		providerConfiguration := providerConfiguration{}
+		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		providerConfiguration := providerConfiguration{
+			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
+		}
 		expectedHeader := "Authentication"
 		expectedHeaderValue := "Bearer secret!"
 		apiAuthenticator := &specStubAuthenticator{
@@ -795,7 +798,7 @@ func TestProviderClientPost(t *testing.T) {
 			specStubResource := &specStubResource{
 				path: "/v1/resource",
 				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
+					HeaderParameters: SpecHeaderParameters{headerParameter},
 					responses:        specResponses{},
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
@@ -821,9 +824,17 @@ func TestProviderClientPost(t *testing.T) {
 				expectedPath := specStubResource.path
 				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
 			})
-			Convey("And then client should have received the right Headers with the right values", func() {
+			Convey("And then client should have received the right Authentication header and expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, expectedHeader)
 				So(httpClient.Headers[expectedHeader], ShouldEqual, expectedHeaderValue)
+			})
+			Convey("And then client should have received the right operation header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, headerParameter.Name)
+				So(httpClient.Headers[headerParameter.Name], ShouldEqual, providerConfiguration.Headers[headerParameter.TerraformName])
+			})
+			Convey("And then client should have received the right User-Agent header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, "User-Agent")
+				So(httpClient.Headers["User-Agent"], ShouldContainSubstring, "OpenAPI Terraform Provider")
 			})
 			Convey("And then client should have received the right request payload", func() {
 				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty1)
