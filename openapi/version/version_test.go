@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-
 func TestBuildUserAgent(t *testing.T) {
 	Convey("Given a version and a commit hash", t, func() {
 		Version = "someVersion"
