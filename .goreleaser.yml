@@ -13,7 +13,7 @@ builds:
     - -a
     - -tags="netgo"
     ldflags:
-    - -s -w -extldflags "-static" -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}"
+    - -s -w -extldflags "-static" -X "github.com/dikhan/terraform-provider-openapi/version.Version={{.Version}}" -X "github.com/dikhan/terraform-provider-openapi/openapi/version.Commit={{.Commit}}" -X "github.com/dikhan/terraform-provider-openapi/openapi/version.Date={{.Date}}"
 
 release:
   name_template: "v{{.Version}}"
