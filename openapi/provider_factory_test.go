@@ -105,7 +105,7 @@ func TestCreateProvider(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -150,7 +150,7 @@ func TestCreateProvider(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -246,7 +246,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -294,7 +294,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			specAnalyser: &specAnalyserStub{
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -320,7 +320,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a provider factory tht is configured with security definitions that are not all part of the global schemes", t, func() {
+	Convey("Given a provider factory that is configured with security definitions that are not all part of the global schemes", t, func() {
 		var globalSecurityDefinitionName = "apiKeyAuth"
 		var otherSecurityDefinitionName = "otherSecurityDefinitionName"
 		p := providerFactory{
@@ -329,7 +329,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				headers: SpecHeaderParameters{},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(globalSecurityDefinitionName, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(globalSecurityDefinitionName, authorization),
 						newAPIKeyHeaderSecurityDefinition(otherSecurityDefinitionName, "Authorization2"),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
@@ -360,6 +360,95 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			Convey("And the provider schema default function for all the properties", func() {
 				So(providerSchema["api_key_auth"].DefaultFunc, ShouldNotBeNil)
 				So(providerSchema["other_security_definition_name"].DefaultFunc, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a provider factory", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				headers: SpecHeaderParameters{},
+				security: &specSecurityStub{
+					securityDefinitions:   &SpecSecurityDefinitions{},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
+				},
+			},
+			serviceConfiguration: &serviceConfigStub{},
+		}
+		Convey("When createTerraformProviderSchema is called with a backend configuration that IS multi-region", func() {
+			multiRegionHost := "api.${region}.server.com"
+			expectedDefaultRegion := "rst1"
+			backendConfig := newStubBackendMultiRegionConfiguration(multiRegionHost, []string{expectedDefaultRegion})
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider schema for the resource should contain the region property", func() {
+				So(providerSchema, ShouldContainKey, providerPropertyRegion)
+			})
+
+			Convey("And the provider region property default function should not be nil", func() {
+				So(providerSchema[providerPropertyRegion].DefaultFunc, ShouldNotBeNil)
+			})
+			Convey("And the provider schema region property should match the first element of the regions array", func() {
+				value, err := providerSchema[providerPropertyRegion].DefaultFunc()
+				So(err, ShouldBeNil)
+				So(value, ShouldEqual, expectedDefaultRegion)
+			})
+		})
+	})
+
+	Convey("Given a provider factory with an spec analyser containing one resource (testing endpoints)", t, func() {
+		resourceName := "resource_name_v1"
+		resource := newSpecStubResource(resourceName, "", false, nil)
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				resources: []SpecResource{resource},
+				headers:   SpecHeaderParameters{},
+				security: &specSecurityStub{
+					securityDefinitions:   &SpecSecurityDefinitions{},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
+				},
+			},
+			serviceConfiguration: &serviceConfigStub{},
+		}
+		Convey("When createTerraformProviderSchema is called with some backend configuration", func() {
+			backendConfig := &specStubBackendConfiguration{}
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey(fmt.Sprintf("And the provider schema should contain %s property", providerPropertyEndPoints), func() {
+				So(providerSchema, ShouldContainKey, providerPropertyEndPoints)
+			})
+			Convey(fmt.Sprintf("And the provider schema %s property should not be nil", providerPropertyEndPoints), func() {
+				So(providerSchema[providerPropertyEndPoints], ShouldNotBeNil)
+			})
+		})
+	})
+	Convey("Given a provider factory with an spec analyser with no resources (testing endpoints)", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				resources: []SpecResource{},
+				headers:   SpecHeaderParameters{},
+				security: &specSecurityStub{
+					securityDefinitions:   &SpecSecurityDefinitions{},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
+				},
+			},
+			serviceConfiguration: &serviceConfigStub{},
+		}
+		Convey("When createTerraformProviderSchema is called with some backend configuration (non related)", func() {
+			backendConfig := &specStubBackendConfiguration{}
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey(fmt.Sprintf("And the provider schema should NOT contain the %s property", providerPropertyEndPoints), func() {
+				So(providerSchema, ShouldNotContainKey, providerPropertyEndPoints)
 			})
 		})
 	})
@@ -460,7 +549,7 @@ func TestConfigureProvider(t *testing.T) {
 				},
 				security: &specSecurityStub{
 					securityDefinitions: &SpecSecurityDefinitions{
-						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 					},
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
 						{
@@ -491,7 +580,7 @@ func TestCreateProviderConfig(t *testing.T) {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		expectedSecurityDefinitions := SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, "Authorization"),
+			newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
 		}
 		p := providerFactory{
 			name: "provider",
@@ -534,7 +623,7 @@ func TestCreateProviderConfig(t *testing.T) {
 		var headerNonCompliantNameProperty = newStringSchemaDefinitionPropertyWithDefaults("headerName", "", true, false, "someHeaderValue")
 
 		expectedSecurityDefinitions := SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition(apiKeyAuthPreferredNonCompliantNameProperty.Name, "Authorization"),
+			newAPIKeyHeaderSecurityDefinition(apiKeyAuthPreferredNonCompliantNameProperty.Name, authorization),
 		}
 		p := providerFactory{
 			name: "provider",

@@ -2,10 +2,14 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/http_goclient"
 	"log"
 	"net/http"
+	"runtime"
 	"strings"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
+
+	"github.com/dikhan/http_goclient"
 )
 
 type httpMethodSupported string
@@ -83,6 +87,9 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 	o.appendOperationHeaders(operation.HeaderParameters, o.providerConfiguration, reqContext.headers)
 	log.Printf("[DEBUG] Performing %s %s", method, reqContext.url)
 
+	userAgentHeader := version.BuildUserAgent(runtime.GOOS, runtime.GOARCH)
+	o.appendUserAgentHeader(reqContext.headers, userAgentHeader)
+
 	o.logHeadersSafely(reqContext.headers)
 
 	switch method {
@@ -96,6 +103,10 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 		return o.httpClient.Delete(reqContext.url, reqContext.headers)
 	}
 	return nil, fmt.Errorf("method '%s' not supported", method)
+}
+
+func (o *ProviderClient) appendUserAgentHeader(headers map[string]string, value string) {
+	headers[userAgent] = value
 }
 
 // logHeadersSafely logs the header names sent to the APIs but the values are redacted for security reasons in case
@@ -161,6 +172,11 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 	if hostOverride != "" {
 		log.Printf("[INFO] resource '%s' is configured with host override, API calls will be made against '%s' instead of '%s'", resourceRelativePath, hostOverride, host)
 		host = hostOverride
+	}
+
+	if endPointHost := o.providerConfiguration.getEndPoint(resource.getResourceName()); endPointHost != "" {
+		log.Printf("[INFO] resource '%s' is configured with endpoint override, API calls will be made against '%s' instead of '%s'", resourceRelativePath, endPointHost, host)
+		host = endPointHost
 	}
 
 	if host == "" || resourceRelativePath == "" {

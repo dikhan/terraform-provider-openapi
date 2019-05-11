@@ -65,7 +65,7 @@ by your service provider.
 ### Example Usage
 
 The example below describes a resource of type 'cdn_v1' provided by the 'swaggercodegen' service provider. For full details about this
-example refer to [goa example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen).
+example refer to [swaggercodegen example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen).
 
 ````
 provider "swaggercodegen" {
@@ -92,6 +92,8 @@ that might be required by any resource exposed.
 
 - [Authentication](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#authentication-configuration)
 - [Headers](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#headers-configuration)
+- [Region](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#region-configuration)
+- [Endpoints](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#endpoints-configuration)
 
 ##### Authentication configuration
 
@@ -161,6 +163,119 @@ paths:
   ...
 ````
 
+##### Region configuration
+
+Providers that are multiregional following the [Multi-region configuration](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#multi-region-configuration) 
+specification will benefit from a region property exposed in the provider configuration.
+
+By default, if region property is not populated, the value choose will be the first element showing in the list of
+regions of the multiregion configuration. In the [swaggercodegen example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen),
+the swagger configuration contains the following ```x-terraform-provider-regions: "rst1,dub1"```, which makes ```rst1```
+the default region. So resources that do not specify any specific provider, will default to the default provider. 
+
+The examples below and the following will produce the same API calls behind the scenes.
+
+- Example of provider with no configuration in which case the default region value is applied (rst1):
+````
+provider "swaggercodegen" {}
+````
+
+- Example of provider specifying region configuration which matches the default value (rst1):
+
+````
+provider "swaggercodegen" {
+  region = "rst1"
+}
+````
+
+Alternatively, a provider can also be configured with an specific region value as shown below. The region must be a valid
+region as described in the swagger doc. In this case ```dub1``` is a supported region.
+
+````
+provider "swaggercodegen" {
+  region = "dub1"
+  alias = "dub1"
+}
+````
+
+The following resource configuration, which is using the ```provider``` property with value ```swaggercodegen.dub1``` will effectively
+make the API calls be done against ```some.api.dub1.domain.com``` after the domain is resolved with the corresponding region
+to use.
+
+````
+resource "swaggercodegen_cdn_v1" "my_cdn" {
+  provider = "swaggercodegen.dub1" # This defines what provider alias to use, in this case the dub1 region: some.api.dub1.domain.com
+  
+  label = "label" ## This is an immutable property (refer to swagger file)
+  ips = ["127.0.0.1"] ## This is a force-new property (refer to swagger file)
+  hostnames = ["origin.com"]
+````
+
+##### Endpoints configuration
+
+The OpenAPI Terraform plugin on start up registers all the terraform compliant resources available in the input swagger file
+and exposes them so the resources can be managed via Terraform. This resources will be configured with the default API they
+point to, which can be defined via:
+
+- The global host defined in the swagger file
+- An override host specified per resource 
+
+In order to allow also for runtime overrides, support for endpoints have been added so the terraform plugin configuration
+can now effectively override what API endpoint will a given resource be pointing to.
+
+Let's look at the [swaggercodegen example](https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen)
+provider. This provider exposes a number of resources enlisted below each of them pointing to a specific API as specified
+in the swagger file:
+
+- multiregionmonitors_v1 -> some.api.rst1.domain.com
+- monitors_v1_rst1 -> some.api.rst1.domain.com
+- monitors_v1_dub1 -> some.api.dub1.domain.com 
+- lbs_v1 -> localhost:8443
+- cdn_v1 -> localhost:8443
+
+With endpoint support configuration, we can now go ahead and override on the provider configuration itself the endpoint
+a given resource is pointing at. This enables reusing the same resource configuration with different provider profiles
+pointing at different environments.
+
+For instance, if we wanted to have the 'cdn_v1' resource pointing at the staging API, the following shows how that will look
+like in the provider configuration:
+
+````
+provider "swaggercodegen" {
+  apikey_auth = "..."
+  endpoints = {
+    cdn_v1 = "www.staging-api.com" # this effectively overrides the default endpoint for 'cdn_v1', and API calls will be made against the value for this property
+  }
+  alias = "staging"
+}
+````
+
+````
+resource "swaggercodegen_cdn_v1" "my_cdn" {
+  provider = "swaggercodegen.staging" # This defines what provider alias to use, in this case the staging one defined above
+  
+  label = "label" ## This is an immutable property (refer to swagger file)
+  ips = ["127.0.0.1"] ## This is a force-new property (refer to swagger file)
+  hostnames = ["origin.com"]
+````
+
+And the resource above, since it's using the provider with alias "staging" will be managed against the staging API at: www.staging-api.com.
+
+Things to keep in mind:
+
+- The endpoints property is a set containing as keys the resource names (which may contain versions and regions in their names)
+and the values is the hostname the resource will be pointing at.
+- The value for an endpoint  must be a valid hostname, which can be a FQDN or an IP. Additionally, custom ports are also allowed. 
+- The protocol used when making the API calls will honour the swagger configuration
+
+Examples of valid host can be seen below:
+  - www.domain.com
+  - domain.com:8080
+  - localhost
+  - localhost:8443
+  - 127.0.0.1
+  - 127.0.0.1:8080 
+  
 #### How can it be configured?
 
 The following methods to configure the properties of the OpenAPI provider are supported, in this order, and explained below:

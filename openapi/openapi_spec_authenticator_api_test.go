@@ -63,7 +63,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 	Convey("Given a provider configuration containing an 'apiKey' type security definition with name 'apikey_auth' and an operation that requires api key header authentication", t, func() {
 		securityPolicyName := "apikey_auth"
 		expectedAPIKey := apiKey{
-			name:  "Authorization",
+			name:  authorization,
 			value: "superSecretKey",
 		}
 		providerConfig := providerConfiguration{
@@ -95,7 +95,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
-						name:  "Authorization",
+						name:  authorization,
 						value: "superSecretKey",
 					},
 				},
@@ -122,7 +122,7 @@ func TestPrepareAuth(t *testing.T) {
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
-						name:  "Authorization",
+						name:  authorization,
 						value: "superSecretKey",
 					},
 				},
@@ -137,10 +137,10 @@ func TestPrepareAuth(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the map returned should contain a key 'Authorization'", func() {
-				So(authContext.headers, ShouldContainKey, "Authorization")
+				So(authContext.headers, ShouldContainKey, authorization)
 			})
 			Convey("And the value of the 'Authorization' entry should be superSecretKey", func() {
-				So(authContext.headers["Authorization"], ShouldEqual, "superSecretKey")
+				So(authContext.headers[authorization], ShouldEqual, "superSecretKey")
 			})
 			Convey("And the url returned should be the same as the input parameter ", func() {
 				So(authContext.url, ShouldEqual, url)
@@ -154,7 +154,7 @@ func TestPrepareAuth(t *testing.T) {
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyQueryAuthenticator{
 					apiKey{
-						name:  "Authorization",
+						name:  authorization,
 						value: "superSecretKey",
 					},
 				},
@@ -172,7 +172,7 @@ func TestPrepareAuth(t *testing.T) {
 				So(authContext.headers, ShouldBeEmpty)
 			})
 			Convey("And the url returned should be the same as the input parameter ", func() {
-				So(authContext.url, ShouldEqual, fmt.Sprintf("%s?%s=%s", url, "Authorization", "superSecretKey"))
+				So(authContext.url, ShouldEqual, fmt.Sprintf("%s?%s=%s", url, authorization, "superSecretKey"))
 			})
 		})
 	})
@@ -184,7 +184,7 @@ func TestPrepareAuth(t *testing.T) {
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				apiKeyHeaderSecurityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
-						name:  "Authorization",
+						name:  authorization,
 						value: "superSecretKeyInHeader",
 					},
 				},
@@ -207,8 +207,8 @@ func TestPrepareAuth(t *testing.T) {
 			Convey("Then both security policies (apikey_header_auth) and (apikey_query_auth), should be the used for auth", func() {
 				// Checking whether the apiKey query mechanism has been picked; otherwise apiKey header must be present - either or
 				So(authContext.url, ShouldEqual, fmt.Sprintf("%s?someQueryParam=superSecretKeyInQuery", url))
-				So(authContext.headers, ShouldContainKey, "Authorization")
-				So(authContext.headers["Authorization"], ShouldEqual, "superSecretKeyInHeader")
+				So(authContext.headers, ShouldContainKey, authorization)
+				So(authContext.headers[authorization], ShouldEqual, "superSecretKeyInHeader")
 			})
 		})
 	})

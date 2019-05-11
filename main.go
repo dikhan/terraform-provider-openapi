@@ -5,21 +5,16 @@ import (
 
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"github.com/hashicorp/terraform/plugin"
 	"github.com/hashicorp/terraform/terraform"
 	"os"
 	"regexp"
 )
 
-var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-)
-
 func main() {
 
-	log.Printf("Running OpenAPI Terraform Provider v%s-%s; Released on: %s", version, commit, date)
+	log.Printf("Running OpenAPI Terraform Provider v%s-%s; Released on: %s", version.Version, version.Commit, version.Date)
 
 	ex, err := os.Executable()
 	if err != nil {

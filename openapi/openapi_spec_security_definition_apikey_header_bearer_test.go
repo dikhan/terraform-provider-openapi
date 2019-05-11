@@ -72,7 +72,7 @@ func TestAPIKeyHeaderBearerSecurityDefinitionGetAPIKey(t *testing.T) {
 		Convey("When getTerraformConfigurationName method is called", func() {
 			apiKey := specAPIKeyHeaderBearerSecurityDefinition.getAPIKey()
 			Convey("Then the result should contain the right apikey name and location", func() {
-				So(apiKey.Name, ShouldEqual, "Authorization")
+				So(apiKey.Name, ShouldEqual, authorization)
 				So(apiKey.In, ShouldEqual, inHeader)
 			})
 		})

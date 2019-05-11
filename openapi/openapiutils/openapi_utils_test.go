@@ -141,7 +141,28 @@ func TestGetHostFromURL(t *testing.T) {
 				So(domain, ShouldEqual, expectedResult)
 			})
 		})
+	})
 
+	Convey("Given a url with containing an IP and a port", t, func() {
+		expectedResult := "192.168.1.1:8443"
+		url := fmt.Sprintf("https://%s/swagger.yaml", expectedResult)
+		Convey("When GetHostFromURL method is called", func() {
+			domain := GetHostFromURL(url)
+			Convey("Then the string returned should contain both the IP and the non standard port", func() {
+				So(domain, ShouldEqual, expectedResult)
+			})
+		})
+	})
+
+	Convey("Given a url with containing just an IP", t, func() {
+		expectedResult := "127.0.0.1"
+		url := fmt.Sprintf("https://%s/swagger.yaml", expectedResult)
+		Convey("When GetHostFromURL method is called", func() {
+			domain := GetHostFromURL(url)
+			Convey("Then the string returned should contain both the IP", func() {
+				So(domain, ShouldEqual, expectedResult)
+			})
+		})
 	})
 }
 
