@@ -683,6 +683,34 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 	})
 }
 
+func TestOpenAPIPropertyIsComputed(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isComputed method is called with a property that is readOnly", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+			}
+			isComputed := r.isComputed(property)
+			Convey("The the result returned should be true since the property is readOnly", func() {
+				So(isComputed, ShouldBeTrue)
+			})
+		})
+		Convey("When isComputed method is called with a property that is NOT readOnly", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+			}
+			isComputed := r.isComputed(property)
+			Convey("The the result returned should be false since the property is NOT readOnly", func() {
+				So(isComputed, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestIsOptionalComputed(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
