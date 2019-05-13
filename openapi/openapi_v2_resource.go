@@ -316,6 +316,9 @@ func (o *SpecV2Resource) isOptionalComputed(propertyName string, property spec.S
 		if property.ReadOnly {
 			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not be readOnly", propertyName, extTfComputed)
 		}
+		if property.Default != nil {
+			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not have the default value as the value cannot be know at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated", propertyName, extTfComputed)
+		}
 		return true, nil
 	}
 	return false, nil
