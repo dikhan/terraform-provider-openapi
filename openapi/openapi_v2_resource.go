@@ -268,29 +268,51 @@ func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, propert
 		return false, nil
 	}
 
-	// If the property does not have explicitly the 'x-terraform-optional-computed', it could also be a optional computed property
-	// if it meets the OpenAPI spec for properties that are optional and still can be computed. This can be done
-	// by specifying the default attribute. Example:
-	//
-	// optional_computed_with_default:  # optional property that the default value is known at runtime
-	//  type: "string"
-	//  default: “some known default value”
-	if !property.ReadOnly && property.Default != nil {
+	if o.isOptionalComputedWithDefault(property) {
 		return true, nil
 	}
 
-	// This covers the use case where a property is not marked as readOnly but still is optional value that can come from the user or if not provided will be computed by the API. Example
-	//
-	// optional_computed: # optional property that the default value is NOT known at runtime
-	//  type: "string"
-	//  x-terraform-optional-computed: true
+	isOptionalComputed, err := o.isOptionalComputed(propertyName, property)
+	if err != nil {
+		return false, err
+	}
+
+	if isOptionalComputed {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// isOptionalComputedWithDefault returns true if the property matches the OpenAPI spec to mark a property as optioanl
+// and computed
+// If the property does not have explicitly the 'x-terraform-optional-computed', it could also be a optional computed property
+// if it meets the OpenAPI spec for properties that are optional and still can be computed. This can be done
+// by specifying the default attribute. Example:
+//
+// optional_computed_with_default:  # optional property that the default value is known at runtime, hence service provider documents it
+//  type: "string"
+//  default: “some known default value”
+func (o *SpecV2Resource) isOptionalComputedWithDefault(property spec.Schema) bool {
+	if !property.ReadOnly && property.Default != nil {
+		return true
+	}
+	return false
+}
+
+// isOptionalComputed returns true if the property is marked with the extension 'x-terraform-optional-computed'
+// This covers the use case where a property is not marked as readOnly but still is optional value that can come from the user or if not provided will be computed by the API. Example
+//
+// optional_computed: # optional property that the default value is NOT known at runtime
+//  type: "string"
+//  x-terraform-optional-computed: true
+func (o *SpecV2Resource) isOptionalComputed(propertyName string, property spec.Schema) (bool, error) {
 	if optionalComputed, ok := property.Extensions.GetBool(extTfComputed); ok && optionalComputed {
 		if property.ReadOnly {
 			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not be readOnly", propertyName, extTfComputed)
 		}
 		return true, nil
 	}
-
 	return false, nil
 }
 
