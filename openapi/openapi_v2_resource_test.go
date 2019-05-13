@@ -621,6 +621,68 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 	})
 }
 
+func TestIsOptionalComputedWithDefault(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isOptionalComputedWithDefault method is called with a property that is NOT readOnly and has a default attribute", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: "some_defaul_value",
+				},
+			}
+			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			Convey("The the result returned should be true since the property matches the requirements to be an optional computed property", func() {
+				So(isOptionalComputedWithDefault, ShouldBeTrue)
+			})
+		})
+		Convey("When isOptionalComputedWithDefault method is called with a property that is readOnly and has a default attribute", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: "some_defaul_value",
+				},
+			}
+			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+				So(isOptionalComputedWithDefault, ShouldBeFalse)
+			})
+		})
+		Convey("When isOptionalComputedWithDefault method is called with a property that is NOT readOnly and has NO default attribute", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: nil,
+				},
+			}
+			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+				So(isOptionalComputedWithDefault, ShouldBeFalse)
+			})
+		})
+		Convey("When isOptionalComputedWithDefault method is called with a property that is just readOnly", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: nil,
+				},
+			}
+			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+				So(isOptionalComputedWithDefault, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestIsOptionalComputed(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
