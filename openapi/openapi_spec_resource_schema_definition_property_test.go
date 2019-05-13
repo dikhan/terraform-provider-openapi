@@ -237,15 +237,15 @@ func TestIsRequired(t *testing.T) {
 	})
 }
 
-func TestIsReadOnly(t *testing.T) {
+func TestIsComputed(t *testing.T) {
 	Convey("Given a specSchemaDefinitionProperty that is readonly", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
 			Type:     typeString,
 			ReadOnly: true,
 		}
-		Convey("When isReadOnly method is called", func() {
-			isReadOnly := s.isReadOnly()
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
 			Convey("Then the resulted bool should be true", func() {
 				So(isReadOnly, ShouldBeTrue)
 			})
@@ -258,8 +258,8 @@ func TestIsReadOnly(t *testing.T) {
 			Type:     typeString,
 			ReadOnly: false,
 		}
-		Convey("When isReadOnly method is called", func() {
-			isReadOnly := s.isReadOnly()
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
 			Convey("Then the resulted bool should be false", func() {
 				So(isReadOnly, ShouldBeFalse)
 			})

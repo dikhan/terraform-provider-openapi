@@ -213,11 +213,12 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	required := o.isRequired(propertyName, requiredProperties)
 	if required {
 		schemaDefinitionProperty.Required = true
-	} else {
-		// This covers the use case where a property is not marked as readOnly but still is optional value that can come from the user or if not provided will be computed by the API
-		if optionalComputed, ok := property.Extensions.GetBool(extTfComputed); ok && optionalComputed {
-			schemaDefinitionProperty.OptionalComputed = true
+	} else { // Optional property case
+		isOptionalComputed, err := o.isOptionalComputedProperty(propertyName, property, requiredProperties)
+		if err != nil {
+			return nil, err
 		}
+		schemaDefinitionProperty.OptionalComputed = isOptionalComputed
 	}
 
 	// If the value of the property is changed, it will force the deletion of the previous generated resource and
@@ -227,7 +228,8 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	}
 
 	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
-	// it comes back from the api and is stored in the state. This properties are mostly informative.
+	// it comes back in the response from the api and it is stored in the state.
+	// Link: https://swagger.io/docs/specification/data-models/data-types#readonly-writeonly
 	if property.ReadOnly {
 		schemaDefinitionProperty.ReadOnly = true
 	}
@@ -252,9 +254,44 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.IsStatusIdentifier = true
 	}
 
+	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default
+	// value is the one that the server uses if the client does not supply the parameter value in the request.
+	// Link: https://swagger.io/docs/specification/describing-parameters#default
 	schemaDefinitionProperty.Default = property.Default
 
 	return schemaDefinitionProperty, nil
+}
+
+func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, property spec.Schema, requiredProperties []string) (bool, error) {
+	required := o.isRequired(propertyName, requiredProperties)
+	if required {
+		return false, nil
+	}
+
+	// If the property does not have explicitly the 'x-terraform-optional-computed', it could also be a optional computed property
+	// if it meets the OpenAPI spec for properties that are optional and still can be computed. This can be done
+	// by specifying the default attribute. Example:
+	//
+	// optional_computed_with_default:  # optional property that the default value is known at runtime
+	//  type: "string"
+	//  default: “some known default value”
+	if !property.ReadOnly && property.Default != nil {
+		return true, nil
+	}
+
+	// This covers the use case where a property is not marked as readOnly but still is optional value that can come from the user or if not provided will be computed by the API. Example
+	//
+	// optional_computed: # optional property that the default value is NOT known at runtime
+	//  type: "string"
+	//  x-terraform-optional-computed: true
+	if optionalComputed, ok := property.Extensions.GetBool(extTfComputed); ok && optionalComputed {
+		if property.ReadOnly {
+			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not be readOnly", propertyName, extTfComputed)
+		}
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (o *SpecV2Resource) isArrayItemPrimitiveType(propertyType schemaDefinitionPropertyType) bool {

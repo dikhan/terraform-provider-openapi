@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 // schemaDefinitionPropertyType defines the type of a property
@@ -28,15 +27,17 @@ type specSchemaDefinitionProperty struct {
 	PreferredName      string
 	Type               schemaDefinitionPropertyType
 	ArrayItemsType     schemaDefinitionPropertyType
-	Required           bool
 	OptionalComputed   bool
+	Required           bool
 	ReadOnly           bool
 	ForceNew           bool
 	Sensitive          bool
 	Immutable          bool
 	IsIdentifier       bool
 	IsStatusIdentifier bool
-	Default            interface{}
+	// Default field is only for informative purposes to know what the openapi spec for the property stated the default value is
+	// As per the openapi spec default attributes, the value is expected to be computed by the API
+	Default interface{}
 	// only for object type properties or arrays type properties with array items of type object
 	SpecSchemaDefinition *specSchemaDefinition
 }
@@ -72,11 +73,15 @@ func (s *specSchemaDefinitionProperty) isRequired() bool {
 	return s.Required
 }
 
+func (s *specSchemaDefinitionProperty) isOptional() bool {
+	return !s.Required
+}
+
 func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
 	return s.OptionalComputed
 }
 
-func (s *specSchemaDefinitionProperty) isReadOnly() bool {
+func (s *specSchemaDefinitionProperty) isComputed() bool {
 	return s.ReadOnly
 }
 
@@ -156,32 +161,24 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		}
 	}
 
-	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
+	// A readOnly property is not used to create a resource (property is not exposed to the user); but
 	// it comes back from the api and is stored in the state. This properties are mostly informative.
-	terraformSchema.Computed = s.ReadOnly || s.OptionalComputed
+	// A optional computed property is exposed to the user and if the value is not provided by the user, the API
+	// will compute the value itself. Considering that, setting the property schema as computed, which allows also
+	// for the value to be provided as input.
+	terraformSchema.Computed = s.isComputed() || s.isOptionalComputed()
 	// A sensitive property means that the expectedValue will not be disclosed in the state file, preventing secrets from
 	// being leaked
 	terraformSchema.Sensitive = s.Sensitive
 	// If the expectedValue of the property is changed, it will force the deletion of the previous generated resource and
 	// a new resource with this new expectedValue will be created
 	terraformSchema.ForceNew = s.ForceNew
-	terraformSchema.Default = s.Default
 
 	// Set the property as required or optional
 	if s.Required {
 		terraformSchema.Required = true
 	} else {
 		terraformSchema.Optional = true
-	}
-	if s.Default != nil {
-		if s.ReadOnly || s.OptionalComputed {
-			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
-			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error:
-			// * resource swaggercodegen_cdn_v1: optional_computed: Default must be nil if computed]
-			log.Printf("[WARN] '%s' is readOnly and can not have a default expectedValue. The expectedValue is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", s.Name)
-		} else {
-			terraformSchema.Default = s.Default
-		}
 	}
 
 	// ValidateFunc is not yet supported on lists or sets
@@ -194,19 +191,6 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 
 func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
-		if s.Default != nil {
-			if s.ReadOnly || s.OptionalComputed {
-				err := fmt.Errorf(
-					"'%s.%s' is configured as 'readOnly' and can not have a default expectedValue. The expectedValue is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
-						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default expectedValue '%v' can be applied. Default must be nil if computed\n"+
-						"OR\n"+
-						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the expectedValue as described with the 'readOnly' attribute\n", s.Name, k, k, s.Default, k)
-				errors = append(errors, err)
-			}
-		}
-		if s.ReadOnly && s.OptionalComputed {
-			errors = append(errors, fmt.Errorf("property '%s' is configured as readOnly and can not be configured with '%s' too", s.Name, extTfComputed))
-		}
 		if s.ForceNew && s.Immutable {
 			errors = append(errors, fmt.Errorf("property '%s' is configured as immutable and can not be configured with forceNew too", s.Name))
 		}
