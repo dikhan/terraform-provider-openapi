@@ -728,7 +728,10 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					Default: "some_defaul_value",
 				},
 			}
-			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("The the result returned should be true since the property matches the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeTrue)
 			})
@@ -742,7 +745,10 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					Default: "some_defaul_value",
 				},
 			}
-			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
@@ -756,7 +762,10 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					Default: nil,
 				},
 			}
-			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
@@ -770,7 +779,35 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					Default: nil,
 				},
 			}
-			isOptionalComputedWithDefault := r.isOptionalComputedWithDefault(property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+				So(isOptionalComputedWithDefault, ShouldBeFalse)
+			})
+		})
+		Convey("When isOptionalComputedWithDefault method is called with a property that does not pass the validation phase since it has a default value AND the extension, this is wrong documentation", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: "some_value",
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfComputed: true,
+					},
+				},
+			}
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error message returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-optional-computed' extension too")
+			})
 			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
