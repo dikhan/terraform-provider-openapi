@@ -621,6 +621,101 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 	})
 }
 
+func TestIsOptionalComputedProperty(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When isOptionalComputedProperty method is called with a property that is NOT optional", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: "some_defaul_value",
+				},
+			}
+			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_required_property_name", property, []string{"some_required_property_name"})
+			Convey("The the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the result returned should be false since the property is not optional", func() {
+				So(isOptionalComputedProperty, ShouldBeFalse)
+			})
+		})
+		Convey("When isOptionalComputedProperty method is called with a property that is optional, and matches the OptionalComputedWithDefault requirements (no computed and has a default value)", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: "some_defaul_value",
+				},
+			}
+			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
+			Convey("The the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the result returned should be true since the property is optional computed ", func() {
+				So(isOptionalComputedProperty, ShouldBeTrue)
+			})
+		})
+		Convey(fmt.Sprintf("When isOptionalComputedProperty method is called with a property that is optional, and matches the isOptionalComputed requirements (no computed and has the %s extension)", extTfComputed), func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfComputed: true,
+					},
+				},
+			}
+			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
+			Convey("The the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the result returned should be true since the property is optional computed ", func() {
+				So(isOptionalComputedProperty, ShouldBeTrue)
+			})
+		})
+		Convey(fmt.Sprintf("When isOptionalComputedProperty method is called with a property that is optional, and DOES NOT pass the validation as far as isOptionalComputed requirements is concerned (properties with %s extension cannot be readOnly)", extTfComputed), func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfComputed: true,
+					},
+				},
+			}
+			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
+			Convey("The the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("The the error message returned should not be the expected one", func() {
+				So(err.Error(), ShouldEqual,"optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not be readOnly")
+			})
+			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
+				So(isOptionalComputedProperty, ShouldBeFalse)
+			})
+		})
+		Convey("When isOptionalComputedProperty method is called with a property that not optional computed at all (e,g: property is just computed)", func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+			}
+			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the result returned should be true since the property is NOT optional computed ", func() {
+				So(isOptionalComputedProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestIsOptionalComputedWithDefault(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
@@ -716,6 +811,9 @@ func TestIsOptionalComputed(t *testing.T) {
 		r := &SpecV2Resource{}
 		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that is NOT computed (readOnly) and has the extension %s with value true", extTfComputed), func() {
 			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
 				VendorExtensible: spec.VendorExtensible{
 					Extensions: spec.Extensions{
 						extTfComputed: true,
