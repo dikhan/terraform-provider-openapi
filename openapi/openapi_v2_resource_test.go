@@ -1049,7 +1049,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("The the error message returned should not be the expected one", func() {
-				So(err.Error(), ShouldEqual,"optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not have the default value as the value cannot be know at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
+				So(err.Error(), ShouldEqual,"optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not have the default value as the value is not known at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
 				So(isOptionalComputedProperty, ShouldBeFalse)
