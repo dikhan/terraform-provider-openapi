@@ -866,6 +866,31 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
+		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that is optional, and DOES NOT pass the validation as far as isOptionalComputed requirements is concerned (properties with %s extension cannot have default value populated)", extTfComputed), func() {
+			property := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: false,
+				},
+				SchemaProps: spec.SchemaProps{
+					Default: "some_defaul_value",
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfComputed: true,
+					},
+				},
+			}
+			isOptionalComputedProperty, err := r.isOptionalComputed("some_optional_property_name", property)
+			Convey("The the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("The the error message returned should not be the expected one", func() {
+				So(err.Error(), ShouldEqual,"optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not have the default value as the value cannot be know at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
+			})
+			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
+				So(isOptionalComputedProperty, ShouldBeFalse)
+			})
+		})
 		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that DOES NOT have the extension %s present", extTfComputed), func() {
 			property := spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{},
