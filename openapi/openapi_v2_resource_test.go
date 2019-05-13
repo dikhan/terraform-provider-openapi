@@ -824,7 +824,7 @@ func TestIsOptionalComputed(t *testing.T) {
 			Convey("The the result returned should not return an error", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be true since the property matches the requirements to be an optioanl computed property", func() {
+			Convey("The the result returned should be true since the property matches the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeTrue)
 			})
 		})
