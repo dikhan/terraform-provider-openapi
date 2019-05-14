@@ -486,7 +486,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 	for _, property := range resourceSchema.Properties {
 		propertyName := property.Name
 		// IDs and ReadOnly properties are not considered for the payload data
-		if !property.isPropertyNamedID() && !property.ReadOnly {
+		if !property.isPropertyNamedID() && !property.isReadOnly() {
 			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 				err := r.getPropertyPayload(input, property, dataValue)
 				if err != nil {
