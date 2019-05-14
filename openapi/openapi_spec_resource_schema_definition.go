@@ -111,7 +111,7 @@ func (s *specSchemaDefinition) getStatusIdentifierFor(schemaDefinition *specSche
 	if statusProperty == nil {
 		return nil, fmt.Errorf("could not find any status property. Please make sure the resource schema definition has either one property named '%s' or one property is marked with IsStatusIdentifier set to true", statusDefaultPropertyName)
 	}
-	if !statusProperty.ReadOnly && shouldEnforceReadOnly {
+	if !statusProperty.Computed && shouldEnforceReadOnly {
 		return nil, fmt.Errorf("schema definition status property '%s' must be readOnly: '%+v' ", statusProperty.Name, statusProperty)
 	}
 

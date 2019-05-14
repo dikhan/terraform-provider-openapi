@@ -547,7 +547,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property should be computed", func() {
-				So(schemaDefinitionProperty.ReadOnly, ShouldBeTrue)
+				So(schemaDefinitionProperty.Computed, ShouldBeTrue)
 			})
 			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
 				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)

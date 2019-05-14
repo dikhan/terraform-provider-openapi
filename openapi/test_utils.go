@@ -95,7 +95,7 @@ func newSchemaDefinitionProperty(name, preferredName string, propertyType schema
 		Type:               propertyType,
 		PreferredName:      preferredName,
 		Required:           required,
-		ReadOnly:           readOnly,
+		Computed:           readOnly,
 		ForceNew:           forceNew,
 		Sensitive:          sensitive,
 		Immutable:          immutable,

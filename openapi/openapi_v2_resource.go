@@ -231,7 +231,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	// it comes back in the response from the api and it is stored in the state.
 	// Link: https://swagger.io/docs/specification/data-models/data-types#readonly-writeonly
 	if property.ReadOnly {
-		schemaDefinitionProperty.ReadOnly = true
+		schemaDefinitionProperty.Computed = true
 	}
 
 	// A sensitive property means that the value will not be disclosed in the state file, preventing secrets from

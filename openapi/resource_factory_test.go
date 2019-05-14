@@ -1255,7 +1255,7 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 					&specSchemaDefinitionProperty{
 						Name:     statusDefaultPropertyName,
 						Type:     typeString,
-						ReadOnly: true,
+						Computed: true,
 					},
 				},
 			})
@@ -1314,18 +1314,18 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 					&specSchemaDefinitionProperty{
 						Name:     "id",
 						Type:     typeString,
-						ReadOnly: true,
+						Computed: true,
 					},
 					&specSchemaDefinitionProperty{
 						Name:     statusDefaultPropertyName,
 						Type:     typeObject,
-						ReadOnly: true,
+						Computed: true,
 						SpecSchemaDefinition: &specSchemaDefinition{
 							Properties: specSchemaDefinitionProperties{
 								&specSchemaDefinitionProperty{
 									Name:               expectedStatusProperty,
 									Type:               typeString,
-									ReadOnly:           true,
+									Computed:           true,
 									IsStatusIdentifier: true,
 								},
 							},
