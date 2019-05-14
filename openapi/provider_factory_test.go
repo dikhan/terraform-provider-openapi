@@ -508,7 +508,6 @@ func TestCreateTerraformProviderResourceMap(t *testing.T) {
 				So(schemaResource[expectedResourceName].Schema[computedProperty.Name].Computed, ShouldBeTrue)
 				So(schemaResource[expectedResourceName].Schema[optionalProperty.Name].Optional, ShouldBeTrue)
 				So(schemaResource[expectedResourceName].Schema[sensitiveProperty.Name].Sensitive, ShouldBeTrue)
-				So(schemaResource[expectedResourceName].Schema[stringProperty.Name].Default, ShouldEqual, stringProperty.Default)
 				So(schemaResource[expectedResourceName].Schema[forceNewProperty.Name].ForceNew, ShouldBeTrue)
 			})
 		})

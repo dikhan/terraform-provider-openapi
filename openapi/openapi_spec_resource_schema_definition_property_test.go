@@ -784,8 +784,9 @@ func TestTerraformSchema(t *testing.T) {
 			Convey("And the schema returned should be configured as sensitive", func() {
 				So(terraformPropertySchema.Sensitive, ShouldBeTrue)
 			})
-			Convey("And the schema returned should be configured with default value", func() {
-				So(terraformPropertySchema.Default, ShouldEqual, s.Default)
+			Convey("And the schema returned should NOT be configured with default value. This is intentional, having a default value means that the openapi spec for the property in openapi either was set to readOnly and the default attribute was set OR the property was optional and the default attribute was set", func() {
+				// In any case, the API will generate the value. So it does not make sense for terraform to push the value
+				So(terraformPropertySchema.Default, ShouldBeNil)
 			})
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)

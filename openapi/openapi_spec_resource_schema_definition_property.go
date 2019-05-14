@@ -177,10 +177,6 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		terraformSchema.Optional = true
 	}
 
-	// Setting this allows terraform to discover the default values on plan time, so users know what the API default values
-	// are.
-	terraformSchema.Default = s.Default
-
 	// ValidateFunc is not yet supported on lists or sets
 	if !s.isArrayProperty() && !s.isObjectProperty() {
 		terraformSchema.ValidateFunc = s.validateFunc()
