@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -484,8 +485,8 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 	resourceSchema, _ := r.openAPIResource.getResourceSchema()
 	for _, property := range resourceSchema.Properties {
 		propertyName := property.Name
-		// IDs and Computed properties are not considered for the payload data
-		if !property.isPropertyNamedID() && !property.Computed {
+		// IDs and ReadOnly properties are not considered for the payload data
+		if !property.isPropertyNamedID() && !property.ReadOnly {
 			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 				err := r.getPropertyPayload(input, property, dataValue)
 				if err != nil {

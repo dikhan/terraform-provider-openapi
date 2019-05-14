@@ -14,13 +14,13 @@ func TestCreateResourceSchema(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "id",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 				&specSchemaDefinitionProperty{
 					Name:     "string_prop",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 			},
@@ -45,13 +45,13 @@ func TestCreateResourceSchema(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "ID",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 				&specSchemaDefinitionProperty{
 					Name:     "stringProp",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 			},
@@ -76,31 +76,31 @@ func TestCreateResourceSchema(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "id",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 				&specSchemaDefinitionProperty{
 					Name:     "string_prop",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 				&specSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
 					Type:     typeObject,
-					Computed: true,
+					ReadOnly: true,
 					SpecSchemaDefinition: &specSchemaDefinition{
 						Properties: specSchemaDefinitionProperties{
 							&specSchemaDefinitionProperty{
 								Name:               "id",
 								Type:               typeString,
-								Computed:           true,
+								ReadOnly:           true,
 								IsStatusIdentifier: true,
 							},
 							&specSchemaDefinitionProperty{
 								Name:               "name",
 								Type:               typeString,
-								Computed:           true,
+								ReadOnly:           true,
 								IsStatusIdentifier: true,
 							},
 						},
@@ -139,7 +139,7 @@ func TestCreateResourceSchema(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "id",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 				&specSchemaDefinitionProperty{
@@ -173,7 +173,7 @@ func TestCreateResourceSchema(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "id",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 					Required: true,
 				},
 				&specSchemaDefinitionProperty{
@@ -218,13 +218,13 @@ func TestGetImmutableProperties(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:      "id",
 					Type:      typeString,
-					Computed:  false,
+					ReadOnly:  false,
 					Immutable: true,
 				},
 				&specSchemaDefinitionProperty{
 					Name:      "immutable_property",
 					Type:      typeString,
-					Computed:  false,
+					ReadOnly:  false,
 					Immutable: true,
 				},
 			},
@@ -246,12 +246,12 @@ func TestGetImmutableProperties(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "id",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 				},
 				&specSchemaDefinitionProperty{
 					Name:      "mutable_property",
 					Type:      typeString,
-					Computed:  false,
+					ReadOnly:  false,
 					Immutable: false,
 				},
 			},
@@ -273,7 +273,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "id",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 				},
 			},
 		}
@@ -294,7 +294,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:         "someOtherID",
 					Type:         typeString,
-					Computed:     true,
+					ReadOnly:     true,
 					IsIdentifier: true,
 				},
 			},
@@ -316,7 +316,7 @@ func TestGetResourceIdentifier(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "someOtherField",
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 				},
 			},
 		}
@@ -339,7 +339,7 @@ func TestGetStatusId(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
 					Type:     typeString,
-					Computed: true,
+					ReadOnly: true,
 				},
 			},
 		}
@@ -365,7 +365,7 @@ func TestGetStatusId(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:               expectedStatusProperty,
 					Type:               typeString,
-					Computed:           true,
+					ReadOnly:           true,
 					IsStatusIdentifier: true,
 				},
 			},
@@ -391,12 +391,12 @@ func TestGetStatusId(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
 					Type:     typeString,
-					Computed: true,
+					ReadOnly: true,
 				},
 				&specSchemaDefinitionProperty{
 					Name:               expectedStatusProperty,
 					Type:               typeString,
-					Computed:           true,
+					ReadOnly:           true,
 					IsStatusIdentifier: true,
 				},
 			},
@@ -422,18 +422,18 @@ func TestGetStatusId(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     "id",
 					Type:     typeString,
-					Computed: true,
+					ReadOnly: true,
 				},
 				&specSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
 					Type:     typeObject,
-					Computed: true,
+					ReadOnly: true,
 					SpecSchemaDefinition: &specSchemaDefinition{
 						Properties: specSchemaDefinitionProperties{
 							&specSchemaDefinitionProperty{
 								Name:               expectedStatusProperty,
 								Type:               typeString,
-								Computed:           true,
+								ReadOnly:           true,
 								IsStatusIdentifier: true,
 							},
 						},
@@ -463,7 +463,7 @@ func TestGetStatusId(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:               expectedStatusProperty,
 					Type:               typeString,
-					Computed:           true,
+					ReadOnly:           true,
 					IsStatusIdentifier: false,
 				},
 			},
@@ -482,13 +482,13 @@ func TestGetStatusId(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:               "prop-that-is-not-status",
 					Type:               typeString,
-					Computed:           true,
+					ReadOnly:           true,
 					IsStatusIdentifier: false,
 				},
 				&specSchemaDefinitionProperty{
 					Name:               "prop-that-is-not-status-and-does-not-have-status-metadata-either",
 					Type:               typeString,
-					Computed:           true,
+					ReadOnly:           true,
 					IsStatusIdentifier: false,
 				},
 			},
@@ -507,7 +507,7 @@ func TestGetStatusId(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 				},
 			},
 		}
@@ -528,7 +528,7 @@ func TestGetStatusIdentifierFor(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:               statusDefaultPropertyName,
 					Type:               typeString,
-					Computed:           false,
+					ReadOnly:           false,
 					IsStatusIdentifier: true,
 				},
 			},
@@ -553,7 +553,7 @@ func TestGetProperty(t *testing.T) {
 				&specSchemaDefinitionProperty{
 					Name:     existingPropertyName,
 					Type:     typeString,
-					Computed: false,
+					ReadOnly: false,
 				},
 			},
 		}

@@ -242,7 +242,7 @@ func TestIsComputed(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
 			Type:     typeString,
-			Computed: true,
+			ReadOnly: true,
 		}
 		Convey("When isComputed method is called", func() {
 			isReadOnly := s.isComputed()
@@ -256,7 +256,7 @@ func TestIsComputed(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
 			Type:     typeString,
-			Computed: false,
+			ReadOnly: false,
 		}
 		Convey("When isComputed method is called", func() {
 			isReadOnly := s.isComputed()
@@ -465,7 +465,7 @@ func TestTerraformObjectSchema(t *testing.T) {
 			Name:           "array_prop",
 			Type:           typeList,
 			ArrayItemsType: typeObject,
-			Computed:       false,
+			ReadOnly:       false,
 			Required:       true,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
@@ -508,7 +508,7 @@ func TestTerraformSchema(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
 			Type:     typeString,
-			Computed: false,
+			ReadOnly: false,
 			Required: true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -525,7 +525,7 @@ func TestTerraformSchema(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "int_prop",
 			Type:     typeInt,
-			Computed: false,
+			ReadOnly: false,
 			Required: true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -541,7 +541,7 @@ func TestTerraformSchema(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "number_prop",
 			Type:     typeFloat,
-			Computed: false,
+			ReadOnly: false,
 			Required: true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -557,7 +557,7 @@ func TestTerraformSchema(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "boolean_prop",
 			Type:     typeBool,
-			Computed: false,
+			ReadOnly: false,
 			Required: true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -574,7 +574,7 @@ func TestTerraformSchema(t *testing.T) {
 			Name:           "array_prop",
 			Type:           typeList,
 			ArrayItemsType: typeString,
-			Computed:       false,
+			ReadOnly:       false,
 			Required:       true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -595,7 +595,7 @@ func TestTerraformSchema(t *testing.T) {
 			Name:           "array_prop",
 			Type:           typeList,
 			ArrayItemsType: typeInt,
-			Computed:       false,
+			ReadOnly:       false,
 			Required:       true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -616,7 +616,7 @@ func TestTerraformSchema(t *testing.T) {
 			Name:           "array_prop",
 			Type:           typeList,
 			ArrayItemsType: typeFloat,
-			Computed:       false,
+			ReadOnly:       false,
 			Required:       true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -637,7 +637,7 @@ func TestTerraformSchema(t *testing.T) {
 			Name:           "array_prop",
 			Type:           typeList,
 			ArrayItemsType: typeBool,
-			Computed:       false,
+			ReadOnly:       false,
 			Required:       true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -658,7 +658,7 @@ func TestTerraformSchema(t *testing.T) {
 			Name:           "array_prop",
 			Type:           typeList,
 			ArrayItemsType: typeObject,
-			Computed:       false,
+			ReadOnly:       false,
 			Required:       true,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
@@ -686,7 +686,7 @@ func TestTerraformSchema(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "array_prop",
 			Type:     typeList,
-			Computed: false,
+			ReadOnly: false,
 			Required: true,
 		}
 		Convey("When terraformSchema method is called", func() {
@@ -704,7 +704,7 @@ func TestTerraformSchema(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "object_prop",
 			Type:     typeObject,
-			Computed: false,
+			ReadOnly: false,
 			Required: true,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
@@ -733,7 +733,7 @@ func TestTerraformSchema(t *testing.T) {
 		s := &specSchemaDefinitionProperty{
 			Name:     "object_prop",
 			Type:     typeObject,
-			Computed: false,
+			ReadOnly: false,
 			Required: true,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{

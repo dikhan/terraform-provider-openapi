@@ -570,7 +570,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property should be computed", func() {
-				So(schemaDefinitionProperty.Computed, ShouldBeTrue)
+				So(schemaDefinitionProperty.ReadOnly, ShouldBeTrue)
 			})
 		})
 
@@ -963,34 +963,6 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			})
 			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
-			})
-		})
-	})
-}
-
-func TestOpenAPIPropertyIsComputed(t *testing.T) {
-	Convey("Given a SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When isComputed method is called with a property that is readOnly", func() {
-			property := spec.Schema{
-				SwaggerSchemaProps: spec.SwaggerSchemaProps{
-					ReadOnly: true,
-				},
-			}
-			isComputed := r.isComputed(property)
-			Convey("The the result returned should be true since the property is readOnly", func() {
-				So(isComputed, ShouldBeTrue)
-			})
-		})
-		Convey("When isComputed method is called with a property that is NOT readOnly", func() {
-			property := spec.Schema{
-				SwaggerSchemaProps: spec.SwaggerSchemaProps{
-					ReadOnly: false,
-				},
-			}
-			isComputed := r.isComputed(property)
-			Convey("The the result returned should be false since the property is NOT readOnly", func() {
-				So(isComputed, ShouldBeFalse)
 			})
 		})
 	})

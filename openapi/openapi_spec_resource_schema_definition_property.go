@@ -28,7 +28,10 @@ type specSchemaDefinitionProperty struct {
 	Type               schemaDefinitionPropertyType
 	ArrayItemsType     schemaDefinitionPropertyType
 	Required           bool
-	Computed           bool
+	// ReadOnly properties are included in responses but not in request
+	ReadOnly           bool
+	// Computed properties describe properties where the value is computed by the API
+	Computed bool
 	ForceNew           bool
 	Sensitive          bool
 	Immutable          bool
@@ -77,7 +80,11 @@ func (s *specSchemaDefinitionProperty) isOptional() bool {
 }
 
 func (s *specSchemaDefinitionProperty) isComputed() bool {
-	return s.Computed
+	return s.ReadOnly
+}
+
+func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
+	return  s.ReadOnly
 }
 
 func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
@@ -190,7 +197,7 @@ func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc 
 		if s.ForceNew && s.Immutable {
 			errors = append(errors, fmt.Errorf("property '%s' is configured as immutable and can not be configured with forceNew too", s.Name))
 		}
-		if s.Required && s.Computed {
+		if s.Required && s.ReadOnly {
 			errors = append(errors, fmt.Errorf("property '%s' is configured as required and can not be configured as computed too", s.Name))
 		}
 		return
