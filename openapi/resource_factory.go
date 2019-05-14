@@ -2,7 +2,6 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -384,8 +383,10 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 		if err != nil {
 			return err
 		}
-		if err := r.setResourceDataProperty(propertyName, value, resourceLocalData); err != nil {
-			return err
+		if value != nil {
+			if err := r.setResourceDataProperty(propertyName, value, resourceLocalData); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
