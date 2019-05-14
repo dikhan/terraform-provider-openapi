@@ -216,19 +216,18 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		if property.ReadOnly {
 			return nil, fmt.Errorf("failed to process property '%s': a required property cannot be readOnly too", propertyName)
 		}
-	} else { // Optional property case
+		schemaDefinitionProperty.Computed = false
+	} else {
 		schemaDefinitionProperty.Required = false
+
 		optionalComputed, err := o.isOptionalComputedProperty(propertyName, property, requiredProperties)
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinitionProperty.Computed = optionalComputed
-	}
 
-	// If the value of the property is changed, it will force the deletion of the previous generated resource and
-	// a new resource with this new value will be created
-	if forceNew, ok := property.Extensions.GetBool(extTfForceNew); ok && forceNew {
-		schemaDefinitionProperty.ForceNew = true
+		// Only set to true if property is computed OR optional-computed, purely optional properties are not computed since
+		// API is not expected to auto-generate any value by default if value is not provided
+		schemaDefinitionProperty.Computed = schemaDefinitionProperty.ReadOnly || optionalComputed
 	}
 
 	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
@@ -236,6 +235,12 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	// Link: https://swagger.io/docs/specification/data-models/data-types#readonly-writeonly
 	// schemaDefinitionProperty.ReadOnly is set to true if the property is explicitly readOnly OR if it's not readOnly but still considered optional computed
 	schemaDefinitionProperty.ReadOnly = property.ReadOnly
+
+	// If the value of the property is changed, it will force the deletion of the previous generated resource and
+	// a new resource with this new value will be created
+	if forceNew, ok := property.Extensions.GetBool(extTfForceNew); ok && forceNew {
+		schemaDefinitionProperty.ForceNew = true
+	}
 
 	// A sensitive property means that the value will not be disclosed in the state file, preventing secrets from
 	// being leaked

@@ -188,7 +188,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 		// Type checks
 		//////////////////
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type string and a list of required properties", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and a propertySchema of type string that is not required", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -204,11 +204,17 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeString)
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
 		})
-		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type integer and a list of required properties", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type integer that is not required", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -224,11 +230,17 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeInt)
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
 		})
-		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type number and a list of required properties", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type number that is not required", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -244,11 +256,17 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeFloat)
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
 		})
-		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type boolean and a list of required properties", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type boolean that is not required", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -264,12 +282,18 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeBool)
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of unknown type and a list of required properties", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of unknown type", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -286,7 +310,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type object with nested properties and a list of required properties", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type object with nested properties that is not required", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -309,12 +333,18 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeObject)
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type object with NO nested properties nor a REF and a list of required properties", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type object with NO nested properties nor a REF", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -332,7 +362,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type string", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and non required propertySchema of type array with items of type string", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -356,12 +386,18 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeString)
 				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldBeNil)
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type object (nested)", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema non required of type array with items of type object (nested)", func() {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -404,12 +440,18 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(exists, ShouldBeTrue)
 
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema of type array with items of type object (external ref definition)", func() {
+		Convey("When createSchemaDefinitionProperty is called with a propertyName and propertySchema non required of type array with items of type object (external ref definition)", func() {
 			r := SpecV2Resource{
 				SchemaDefinitions: map[string]spec.Schema{
 					"Listeners": {
@@ -454,8 +496,166 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
 			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that is required", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			requiredProperties := []string{"propertyName"}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be required", func() {
+				So(schemaDefinitionProperty.Required, ShouldBeTrue)
+			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that is required AND the property is also set as readOnly (nonesense)", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			requiredProperties := []string{"propertyName"}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "failed to process property 'propertyName': a required property cannot be readOnly too")
+			})
+			Convey("Then the result should be nil", func() {
+				So(schemaDefinitionProperty, ShouldBeNil)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with an optional property schema that is computed (readOnly)", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeTrue)
+			})
+			Convey("And the schema definition property should be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with an optional property schema that is computed (readOnly) AND has a default value (meaning the computed value is known at runtime)", func() {
+			expectedDefaultValue := "someDefaultValue"
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+					Default: expectedDefaultValue,
+				},
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeTrue)
+			})
+			Convey("And the schema definition property should be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)
+			})
+			Convey("And the schema definition property should have the right default value", func() {
+				So(schemaDefinitionProperty.Default, ShouldEqual, expectedDefaultValue)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with an optional property schema", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			requiredProperties := []string{}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should not be required", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with an optional property schema that has a default value (this means the property is optional-computed, since the API is expected to honour the default value (known at runtime) if input is not provided by the client)", func() {
+			expectedDefaultValue := "someDefaultValue"
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type:    spec.StringOrArray{"string"},
+					Default: expectedDefaultValue,
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be optional", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)
+			})
+			Convey("And the schema definition property should have the right default value", func() {
+				So(schemaDefinitionProperty.Default, ShouldEqual, expectedDefaultValue)
 			})
 		})
 
@@ -487,49 +687,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a property schema that is required", func() {
-			propertyName := "propertyName"
-			propertySchema := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
-				},
-			}
-			requiredProperties := []string{"propertyName"}
-			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema definition property should be required", func() {
-				So(schemaDefinitionProperty.Required, ShouldBeTrue)
-			})
-			Convey("And the schema definition property should not be computed", func() {
-				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
-			})
-		})
-
-		Convey("When createSchemaDefinitionProperty is called with a property schema that is required AND the property is also set as readOnly (nonesense)", func() {
-			propertyName := "propertyName"
-			propertySchema := spec.Schema{
-				SwaggerSchemaProps: spec.SwaggerSchemaProps{
-					ReadOnly: true,
-				},
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
-				},
-			}
-			requiredProperties := []string{"propertyName"}
-			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error returned should match the expected one", func() {
-				So(err.Error(), ShouldEqual, "failed to process property 'propertyName': a required property cannot be computed too")
-			})
-			Convey("Then the result should be nil", func() {
-				So(schemaDefinitionProperty, ShouldBeNil)
-			})
-		})
-
 		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-force-new' extension", func() {
 			expectedForceNewValue := true
 			propertySchema := spec.Schema{
@@ -551,26 +708,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
-			})
-		})
-
-		Convey("When createSchemaDefinitionProperty is called with a property schema that is computed (readOnly)", func() {
-			propertyName := "propertyName"
-			propertySchema := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
-				},
-				SwaggerSchemaProps: spec.SwaggerSchemaProps{
-					ReadOnly: true,
-				},
-			}
-			requiredProperties := []string{}
-			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema definition property should be computed", func() {
-				So(schemaDefinitionProperty.ReadOnly, ShouldBeTrue)
 			})
 		})
 
@@ -670,30 +807,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with an optional property schema that has a default value", func() {
-			expectedDefaultValue := "someDefaultValue"
-			propertySchema := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type:    spec.StringOrArray{"string"},
-					Default: expectedDefaultValue,
-				},
-			}
-			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema definition property should be optional", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
-			})
-			Convey("And the schema definition property should be computed", func() {
-				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)
-			})
-			Convey("And the schema definition property should have the right default value", func() {
-				So(schemaDefinitionProperty.Default, ShouldEqual, expectedDefaultValue)
-			})
-		})
-
-		Convey(fmt.Sprintf("When createSchemaDefinitionProperty is called with an optional property schema that has the %s extension", extTfComputed), func() {
+		Convey(fmt.Sprintf("When createSchemaDefinitionProperty is called with an optional property schema that has the %s extension (this means the property is optional-computed, and the value computed is not known at runtime)", extTfComputed), func() {
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"string"},
@@ -713,6 +827,9 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be optional", func() {
 				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should not be readOnly", func() {
+				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)

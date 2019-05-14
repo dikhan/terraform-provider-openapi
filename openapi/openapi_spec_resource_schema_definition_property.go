@@ -71,6 +71,10 @@ func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
 	return s.Type == typeList && s.ArrayItemsType == typeObject
 }
 
+func (s *specSchemaDefinitionProperty) isReadOnly() bool {
+	return s.ReadOnly
+}
+
 func (s *specSchemaDefinitionProperty) isRequired() bool {
 	return s.Required
 }
@@ -79,12 +83,20 @@ func (s *specSchemaDefinitionProperty) isOptional() bool {
 	return !s.Required
 }
 
+// isOptionalComputed returns true if one of the following cases is met:
+//- The property is optional (marked as required=false), in which case there few use cases:
+//  - readOnly properties (marked as readOnly=true, computed=true):
+//    - with default (default={some value})
+//    - with no default (default=nil)
+//  - optional-computed (marked as readOnly=false, computed=true):
+//    - with default (default={some value})
+//    - with no default (default=nil)
 func (s *specSchemaDefinitionProperty) isComputed() bool {
-	return s.ReadOnly
+	return s.ReadOnly || s.isOptionalComputed()
 }
 
 func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
-	return  s.ReadOnly
+	return  !s.Required && !s.ReadOnly && s.Computed
 }
 
 func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
