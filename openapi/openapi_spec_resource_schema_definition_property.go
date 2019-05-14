@@ -23,15 +23,15 @@ const statusDefaultPropertyName = "status"
 
 // specSchemaDefinitionProperty defines the attributes for a schema property
 type specSchemaDefinitionProperty struct {
-	Name               string
-	PreferredName      string
-	Type               schemaDefinitionPropertyType
-	ArrayItemsType     schemaDefinitionPropertyType
-	Required           bool
+	Name           string
+	PreferredName  string
+	Type           schemaDefinitionPropertyType
+	ArrayItemsType schemaDefinitionPropertyType
+	Required       bool
 	// ReadOnly properties are included in responses but not in request
-	ReadOnly           bool
+	ReadOnly bool
 	// Computed properties describe properties where the value is computed by the API
-	Computed bool
+	Computed           bool
 	ForceNew           bool
 	Sensitive          bool
 	Immutable          bool
@@ -96,7 +96,7 @@ func (s *specSchemaDefinitionProperty) isComputed() bool {
 }
 
 func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
-	return  !s.Required && !s.ReadOnly && s.Computed
+	return !s.Required && !s.ReadOnly && s.Computed
 }
 
 func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {

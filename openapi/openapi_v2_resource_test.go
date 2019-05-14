@@ -584,7 +584,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			propertyName := "propertyName"
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
+					Type:    spec.StringOrArray{"string"},
 					Default: expectedDefaultValue,
 				},
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
