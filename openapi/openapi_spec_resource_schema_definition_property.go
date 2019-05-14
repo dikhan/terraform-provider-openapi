@@ -27,7 +27,6 @@ type specSchemaDefinitionProperty struct {
 	PreferredName      string
 	Type               schemaDefinitionPropertyType
 	ArrayItemsType     schemaDefinitionPropertyType
-	OptionalComputed   bool
 	Required           bool
 	Computed           bool
 	ForceNew           bool
@@ -75,10 +74,6 @@ func (s *specSchemaDefinitionProperty) isRequired() bool {
 
 func (s *specSchemaDefinitionProperty) isOptional() bool {
 	return !s.Required
-}
-
-func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
-	return s.OptionalComputed
 }
 
 func (s *specSchemaDefinitionProperty) isComputed() bool {
@@ -161,12 +156,13 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		}
 	}
 
-	// A readOnly property is not used to create a resource (property is not exposed to the user); but
-	// it comes back from the api and is stored in the state. This properties are mostly informative.
-	// A optional computed property is exposed to the user and if the value is not provided by the user, the API
-	// will compute the value itself. Considering that, setting the property schema as computed, which allows also
-	// for the value to be provided as input.
-	terraformSchema.Computed = s.isComputed() || s.isOptionalComputed()
+	// A computed property could be one of:
+	// - property that is set as readOnly in the openapi spec
+	// - property that is not readOnly, but it is an optional computed property.  The following will comply with optional computed:
+	//   - the property is not readOnly and has a default attribute
+	//   - the property is not readOnly and has the 'x-terraform-optional-computed' extension set to true
+	terraformSchema.Computed = s.isComputed()
+
 	// A sensitive property means that the expectedValue will not be disclosed in the state file, preventing secrets from
 	// being leaked
 	terraformSchema.Sensitive = s.Sensitive
@@ -180,6 +176,10 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	} else {
 		terraformSchema.Optional = true
 	}
+
+	// Setting this allows terraform to discover the default values on plan time, so users know what the API default values
+	// are.
+	terraformSchema.Default = s.Default
 
 	// ValidateFunc is not yet supported on lists or sets
 	if !s.isArrayProperty() && !s.isObjectProperty() {

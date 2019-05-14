@@ -211,14 +211,19 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 	// Set the property as required (if not required the property will be considered optional)
 	required := o.isRequired(propertyName, requiredProperties)
+	isOptionalComputed := false
 	if required {
 		schemaDefinitionProperty.Required = true
+		if property.ReadOnly {
+			return nil, fmt.Errorf("failed to process property '%s': a required property cannot be computed too", propertyName)
+		}
 	} else { // Optional property case
-		isOptionalComputed, err := o.isOptionalComputedProperty(propertyName, property, requiredProperties)
+		schemaDefinitionProperty.Required = false
+		optionalComputed, err := o.isOptionalComputedProperty(propertyName, property, requiredProperties)
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinitionProperty.OptionalComputed = isOptionalComputed
+		isOptionalComputed = optionalComputed
 	}
 
 	// If the value of the property is changed, it will force the deletion of the previous generated resource and
@@ -230,9 +235,8 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
 	// it comes back in the response from the api and it is stored in the state.
 	// Link: https://swagger.io/docs/specification/data-models/data-types#readonly-writeonly
-	if property.ReadOnly {
-		schemaDefinitionProperty.Computed = true
-	}
+	// schemaDefinitionProperty.Computed is set to true if the property is explicitly readOnly OR if it's not readOnly but still considered optional computed
+	schemaDefinitionProperty.Computed = property.ReadOnly || isOptionalComputed
 
 	// A sensitive property means that the value will not be disclosed in the state file, preventing secrets from
 	// being leaked
@@ -272,7 +276,7 @@ func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, propert
 	if err != nil {
 		return false, err
 	}
-	if isOptionalComputedWithDefault{
+	if isOptionalComputedWithDefault {
 		return true, nil
 	}
 

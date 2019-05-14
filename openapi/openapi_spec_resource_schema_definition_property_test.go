@@ -822,11 +822,9 @@ func TestTerraformSchema(t *testing.T) {
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
-			Convey("And the schema validate function should return an error ", func() {
+			Convey("And the schema validate function should return successfully", func() {
 				_, err := terraformPropertySchema.ValidateFunc(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "'propertyName.' is configured as 'readOnly' and can not have a default expectedValue.")
+				So(err, ShouldBeNil)
 			})
 		})
 	})
@@ -884,11 +882,9 @@ func TestValidateFunc(t *testing.T) {
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(s.validateFunc(), ShouldNotBeNil)
 			})
-			Convey("And the schema validate function should return an error due to read only field having a default value", func() {
+			Convey("And the schema validate function should return successfully", func() {
 				_, err := s.validateFunc()(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "'propertyName.' is configured as 'readOnly' and can not have a default expectedValue.")
+				So(err, ShouldBeNil)
 			})
 		})
 	})

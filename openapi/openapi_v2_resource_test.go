@@ -204,8 +204,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeString)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type integer and a list of required properties", func() {
@@ -224,8 +224,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeInt)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type number and a list of required properties", func() {
@@ -244,8 +244,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeFloat)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type boolean and a list of required properties", func() {
@@ -264,8 +264,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeBool)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -309,8 +309,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
 				So(schemaDefinitionProperty.Type, ShouldEqual, typeObject)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -356,8 +356,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeString)
 				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldBeNil)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -404,8 +404,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(exists, ShouldBeTrue)
 
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -454,8 +454,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -482,8 +482,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("And the schema definition property should be configured with the right", func() {
 				So(schemaDefinitionProperty.PreferredName, ShouldEqual, expectedTerraformName)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -502,8 +502,31 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("And the schema definition property should be required", func() {
 				So(schemaDefinitionProperty.Required, ShouldBeTrue)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that is required AND the property is also set as readOnly (nonesense)", func() {
+			propertyName := "propertyName"
+			propertySchema := spec.Schema{
+				SwaggerSchemaProps: spec.SwaggerSchemaProps{
+					ReadOnly: true,
+				},
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+			}
+			requiredProperties := []string{"propertyName"}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the error returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "failed to process property 'propertyName': a required property cannot be computed too")
+			})
+			Convey("Then the result should be nil", func() {
+				So(schemaDefinitionProperty, ShouldBeNil)
 			})
 		})
 
@@ -526,8 +549,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("And the schema definition property should be have force new enabled", func() {
 				So(schemaDefinitionProperty.ForceNew, ShouldEqual, expectedForceNewValue)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -541,16 +564,13 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 					ReadOnly: true,
 				},
 			}
-			requiredProperties := []string{"propertyName"}
+			requiredProperties := []string{}
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property should be computed", func() {
 				So(schemaDefinitionProperty.Computed, ShouldBeTrue)
-			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -573,8 +593,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("And the schema definition property should be sensitive", func() {
 				So(schemaDefinitionProperty.Sensitive, ShouldEqual, expectedSensitiveValue)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -597,8 +617,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("And the schema definition property should be marked as identifier", func() {
 				So(schemaDefinitionProperty.IsIdentifier, ShouldEqual, expectedIsIdentifierValue)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -621,8 +641,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("And the schema definition property should be immutable", func() {
 				So(schemaDefinitionProperty.Immutable, ShouldEqual, expectedIsImmutableValue)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -645,8 +665,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("And the schema definition property should be marked as the status field", func() {
 				So(schemaDefinitionProperty.IsStatusIdentifier, ShouldEqual, expectedIsStatusFieldValue)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to False, since it's not an optioanl computed property", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeFalse)
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 		})
 
@@ -662,8 +682,11 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to True", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeTrue)
+			Convey("And the schema definition property should be optional", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)
 			})
 			Convey("And the schema definition property should have the right default value", func() {
 				So(schemaDefinitionProperty.Default, ShouldEqual, expectedDefaultValue)
@@ -673,7 +696,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 		Convey(fmt.Sprintf("When createSchemaDefinitionProperty is called with an optional property schema that has the %s extension", extTfComputed), func() {
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Type:    spec.StringOrArray{"string"},
+					Type: spec.StringOrArray{"string"},
 				},
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: false,
@@ -688,8 +711,11 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the schema definition property should have the OptionalComputed field set to True", func() {
-				So(schemaDefinitionProperty.isOptionalComputed(), ShouldBeTrue)
+			Convey("And the schema definition property should be optional", func() {
+				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			})
+			Convey("And the schema definition property should be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)
 			})
 			Convey("And the schema definition property should have a nil default value", func() {
 				So(schemaDefinitionProperty.Default, ShouldBeNil)
@@ -726,7 +752,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 					ReadOnly: true,
 				},
 				SchemaProps: spec.SchemaProps{
-					Type:    spec.StringOrArray{"string"},
+					Type: spec.StringOrArray{"string"},
 				},
 				VendorExtensible: spec.VendorExtensible{
 					Extensions: spec.Extensions{
@@ -820,7 +846,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("The the error message returned should not be the expected one", func() {
-				So(err.Error(), ShouldEqual,"optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not be readOnly")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not be readOnly")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
 				So(isOptionalComputedProperty, ShouldBeFalse)
@@ -872,7 +898,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					Default: "some_defaul_value",
 				},
 			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -889,7 +915,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					Default: nil,
 				},
 			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -906,7 +932,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					Default: nil,
 				},
 			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -928,7 +954,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 					},
 				},
 			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName",property)
+			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -1049,7 +1075,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("The the error message returned should not be the expected one", func() {
-				So(err.Error(), ShouldEqual,"optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not have the default value as the value is not known at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not have the default value as the value is not known at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
 				So(isOptionalComputedProperty, ShouldBeFalse)
