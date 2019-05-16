@@ -8,7 +8,9 @@ services:
     - "8080:80"
     - "8443:443"
     networks:
-    - example
+      example:
+        aliases:
+        - service-provider-api
 
   swagger-ui-swaggercodegen:
     image: swaggerapi/swagger-ui:latest

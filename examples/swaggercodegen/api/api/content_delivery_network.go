@@ -27,6 +27,16 @@ type ContentDeliveryNetworkV1 struct {
 
 	ObjectProperty *ObjectProperty `json:"object_property"`
 
+	Computed string `json:"computed"`
+
+	ComputedWithDefault string `json:"computed_with_default"`
+
+	OptionalComputed string `json:"optional_computed"`
+
+	OptionalComputedWithDefault string `json:"optional_computed_with_default"`
+
+	OptionalProperty string `json:"optional_property"`
+
 	ObjectNestedSchemeProperty *ContentDeliveryNetworkV1ObjectNestedSchemeProperty `json:"object_nested_scheme_property,omitempty"`
 
 	ArrayOfObjectsExample []ContentDeliveryNetworkV1ArrayOfObjectsExample `json:"arrayOfObjectsExample"`

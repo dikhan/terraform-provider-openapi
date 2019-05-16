@@ -207,6 +207,64 @@ func TestIsArrayProperty(t *testing.T) {
 	})
 }
 
+func TestIsReadOnly(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is readOnly", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			ReadOnly: true,
+		}
+		Convey("When isReadOnly method is called", func() {
+			isOptional := s.isReadOnly()
+			Convey("Then the resulted bool should be true", func() {
+				So(isOptional, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is NOT readOnly", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			ReadOnly: false,
+		}
+		Convey("When isReadOnly method is called", func() {
+			isOptional := s.isReadOnly()
+			Convey("Then the resulted bool should be false", func() {
+				So(isOptional, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsOptional(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: false,
+		}
+		Convey("When isOptional method is called", func() {
+			isOptional := s.isOptional()
+			Convey("Then the resulted bool should be true", func() {
+				So(isOptional, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: true,
+		}
+		Convey("When isOptional method is called", func() {
+			isOptional := s.isOptional()
+			Convey("Then the resulted bool should be false", func() {
+				So(isOptional, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestIsRequired(t *testing.T) {
 	Convey("Given a specSchemaDefinitionProperty that is Required", t, func() {
 		s := &specSchemaDefinitionProperty{
@@ -221,7 +279,6 @@ func TestIsRequired(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
@@ -237,31 +294,133 @@ func TestIsRequired(t *testing.T) {
 	})
 }
 
-func TestIsReadOnly(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is readonly", t, func() {
+func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is optional and readonly", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
 			Type:     typeString,
+			Required: false,
 			ReadOnly: true,
 		}
-		Convey("When isReadOnly method is called", func() {
-			isReadOnly := s.isReadOnly()
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
 			Convey("Then the resulted bool should be true", func() {
 				So(isReadOnly, ShouldBeTrue)
 			})
 		})
 	})
-
+	Convey("Given a specSchemaDefinitionProperty that is optional, NOT readonly BUT is optional-computed", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: false,
+			ReadOnly: false,
+			Computed: true,
+			Default: nil,
+		}
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
+			Convey("Then the resulted bool should be true", func() {
+				So(isReadOnly, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that NOT optional", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: true,
+		}
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
+			Convey("Then the resulted bool should be false", func() {
+				So(isReadOnly, ShouldBeFalse)
+			})
+		})
+	})
 	Convey("Given a specSchemaDefinitionProperty that is NOT readonly", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
 			Type:     typeString,
 			ReadOnly: false,
 		}
-		Convey("When isReadOnly method is called", func() {
-			isReadOnly := s.isReadOnly()
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
 			Convey("Then the resulted bool should be false", func() {
 				So(isReadOnly, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
+	Convey("Given a property that is optional, not readOnly, is computed and does not have a default value (optional-computed of property where value is not known at plan time)", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeString,
+			Required: false,
+			ReadOnly: false,
+			Computed: true,
+			Default: nil,
+		}
+		Convey("When isOptionalComputed method is called", func() {
+			isOptionalComputed := s.isOptionalComputed()
+			Convey("Then value returned should be true", func() {
+				So(isOptionalComputed, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a property that is not optional", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeString,
+			Required: true,
+		}
+		Convey("When isOptionalComputed method is called", func() {
+			isOptionalComputed := s.isOptionalComputed()
+			Convey("Then value returned should be false", func() {
+				So(isOptionalComputed, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a property that is optional but readOnly", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeString,
+			Required: false,
+			ReadOnly: true,
+		}
+		Convey("When isOptionalComputed method is called", func() {
+			isOptionalComputed := s.isOptionalComputed()
+			Convey("Then value returned should be false", func() {
+				So(isOptionalComputed, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a property that is optional, not readOnly and it's not computed (purely optional use case)", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeString,
+			Required: false,
+			ReadOnly: false,
+			Computed: false,
+			Default: nil,
+		}
+		Convey("When isOptionalComputed method is called", func() {
+			isOptionalComputed := s.isOptionalComputed()
+			Convey("Then value returned should be false", func() {
+				So(isOptionalComputed, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a property that is optional, not readOnly, computed but has a default value (optional-computed use case, but as far as terraform is concerned the default will be set om the terraform schema, making it available at plan time - this is by design in terraform)", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeString,
+			Required: false,
+			ReadOnly: false,
+			Computed: true,
+			Default: "something",
+		}
+		Convey("When isOptionalComputed method is called", func() {
+			isOptionalComputed := s.isOptionalComputed()
+			Convey("Then value returned should be false", func() {
+				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
 	})
@@ -765,8 +924,8 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a string schemaDefinitionProperty that is required, not computed, forceNew, sensitive, not immutable and has a default value", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", true, false, true, true, false, false, false, "defaultValue")
+	Convey("Given a string schemaDefinitionProperty that is required, not readOnly, forceNew, sensitive, not immutable and has a default value", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", true, false, false, true, true, false, false, false, "default value")
 		Convey("When terraformSchema is called with a schema definition property that is required, force new, sensitive and has a default value", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
@@ -774,6 +933,9 @@ func TestTerraformSchema(t *testing.T) {
 			})
 			Convey("And the schema returned should be configured as required", func() {
 				So(terraformPropertySchema.Required, ShouldBeTrue)
+			})
+			Convey("And the schema returned should not be configured as optional", func() {
+				So(terraformPropertySchema.Optional, ShouldBeFalse)
 			})
 			Convey("And the schema returned should be configured as NOT computed", func() {
 				So(terraformPropertySchema.Computed, ShouldBeFalse)
@@ -784,7 +946,7 @@ func TestTerraformSchema(t *testing.T) {
 			Convey("And the schema returned should be configured as sensitive", func() {
 				So(terraformPropertySchema.Sensitive, ShouldBeTrue)
 			})
-			Convey("And the schema returned should be configured with default value", func() {
+			Convey("And the schema returned should have a default value (note: terraform will complain in this case at runtime since required properties cannot have default values)", func() {
 				So(terraformPropertySchema.Default, ShouldEqual, s.Default)
 			})
 			Convey("And the schema returned should be configured with a validate function", func() {
@@ -793,13 +955,19 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a schemaDefinitionProperty that is computed", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, "")
+	Convey("Given a schemaDefinitionProperty that is readOnly and does not have a default value (meaning the value is not known at plan time)", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "")
 		Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			Convey("And the schema returned should be configured as not required", func() {
+				So(terraformPropertySchema.Required, ShouldBeFalse)
+			})
+			Convey("And the schema returned should be configured as optional", func() {
+				So(terraformPropertySchema.Optional, ShouldBeTrue)
+			})
 			Convey("And the schema returned should be configured as computed", func() {
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
 			})
@@ -809,30 +977,83 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a schemaDefinitionProperty that is computed and has a default value set", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, "defaultValue")
-		Convey("When terraformSchema is called with a schema definition property that validation fails due to read only field having a default value", func() {
+	Convey("Given a schemaDefinitionProperty that is readOnly and does have a default value (meaning the default value is known at plan time)", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "some value")
+		Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			Convey("And the schema returned should be configured as not required", func() {
+				So(terraformPropertySchema.Required, ShouldBeFalse)
+			})
+			Convey("And the schema returned should be configured as optional", func() {
+				So(terraformPropertySchema.Optional, ShouldBeTrue)
+			})
 			Convey("And the schema returned should be configured as computed", func() {
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
+			})
+			Convey("And the schema returned should not be configured since the property is readOnly", func() {
+				So(terraformPropertySchema.Default, ShouldBeNil)
 			})
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
-			Convey("And the schema validate function should return an error ", func() {
-				_, err := terraformPropertySchema.ValidateFunc(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "'propertyName.' is configured as 'readOnly' and can not have a default expectedValue.")
+		})
+	})
+
+	Convey("Given a schemaDefinitionProperty that is optional computed and does not have a default value (meaning the value is not known at plan time)", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, nil)
+		Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
+			terraformPropertySchema, err := s.terraformSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema returned should be configured as not required", func() {
+				So(terraformPropertySchema.Required, ShouldBeFalse)
+			})
+			Convey("And the schema returned should be configured as optional", func() {
+				So(terraformPropertySchema.Optional, ShouldBeTrue)
+			})
+			Convey("And the schema returned should be configured as computed", func() {
+				So(terraformPropertySchema.Computed, ShouldBeTrue)
+			})
+			Convey("And the schema returned should not be configured with a default value", func() {
+				So(terraformPropertySchema.Default, ShouldBeNil)
+			})
+			Convey("And the schema returned should be configured with a validate function", func() {
+				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a schemaDefinitionProperty that is optional computed and does have a default value (meaning the value is known at plan time)", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, "some known value")
+		Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
+			terraformPropertySchema, err := s.terraformSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema returned should be configured as not required", func() {
+				So(terraformPropertySchema.Required, ShouldBeFalse)
+			})
+			Convey("And the schema returned should be configured as optional", func() {
+				So(terraformPropertySchema.Optional, ShouldBeTrue)
+			})
+			Convey("And the schema returned should not be configured as computed since in this case terraform will make use of the default value as input for the user. This makes the default value visible at plan time", func() {
+				So(terraformPropertySchema.Computed, ShouldBeFalse)
+			})
+			Convey("And the schema returned should be configured with a default value", func() {
+				So(terraformPropertySchema.Default, ShouldNotBeNil)
+			})
+			Convey("And the schema returned should be configured with a validate function", func() {
+				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
 		})
 	})
 
 	Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, true, false, false, "")
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
 		Convey("When terraformSchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
@@ -850,8 +1071,8 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a schemaDefinitionProperty that is computed and required", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, nil)
+	Convey("Given a schemaDefinitionProperty that is readOnly and required", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, false, nil)
 		Convey("When terraformSchema is called with a schema definition property that validation fails due to required and computed set", func() {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the error returned should be nil", func() {
@@ -860,8 +1081,8 @@ func TestTerraformSchema(t *testing.T) {
 			Convey("And the schema returned should be configured as required", func() {
 				So(terraformPropertySchema.Required, ShouldBeTrue)
 			})
-			Convey("And the schema returned should be configured as computed", func() {
-				So(terraformPropertySchema.Computed, ShouldBeTrue)
+			Convey("And the schema returned should not be configured as computed as it's not optional property", func() {
+				So(terraformPropertySchema.Computed, ShouldBeFalse)
 			})
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
@@ -879,22 +1100,20 @@ func TestTerraformSchema(t *testing.T) {
 func TestValidateFunc(t *testing.T) {
 
 	Convey("Given a schemaDefinitionProperty that is computed and has a default value set", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, "defaultValue")
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, false, "defaultValue")
 		Convey("When validateFunc is called with a schema definition property", func() {
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(s.validateFunc(), ShouldNotBeNil)
 			})
-			Convey("And the schema validate function should return an error due to read only field having a default value", func() {
+			Convey("And the schema validate function should return successfully", func() {
 				_, err := s.validateFunc()(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "'propertyName.' is configured as 'readOnly' and can not have a default expectedValue.")
+				So(err, ShouldBeNil)
 			})
 		})
 	})
 
 	Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, true, false, false, "")
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
 		Convey("When validateFunc is called with a schema definition property", func() {
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(s.validateFunc(), ShouldNotBeNil)
@@ -909,7 +1128,7 @@ func TestValidateFunc(t *testing.T) {
 	})
 
 	Convey("Given a schemaDefinitionProperty that is computed and required", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, nil)
+		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, false, nil)
 		Convey("When validateFunc is called with a schema definition property", func() {
 			Convey("And the schema returned should be configured with a validate function", func() {
 				So(s.validateFunc(), ShouldNotBeNil)

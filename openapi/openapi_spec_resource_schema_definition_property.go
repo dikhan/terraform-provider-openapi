@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 // schemaDefinitionPropertyType defines the type of a property
@@ -24,18 +23,23 @@ const statusDefaultPropertyName = "status"
 
 // specSchemaDefinitionProperty defines the attributes for a schema property
 type specSchemaDefinitionProperty struct {
-	Name               string
-	PreferredName      string
-	Type               schemaDefinitionPropertyType
-	ArrayItemsType     schemaDefinitionPropertyType
-	Required           bool
-	ReadOnly           bool
+	Name           string
+	PreferredName  string
+	Type           schemaDefinitionPropertyType
+	ArrayItemsType schemaDefinitionPropertyType
+	Required       bool
+	// ReadOnly properties are included in responses but not in request
+	ReadOnly bool
+	// Computed properties describe properties where the value is computed by the API
+	Computed           bool
 	ForceNew           bool
 	Sensitive          bool
 	Immutable          bool
 	IsIdentifier       bool
 	IsStatusIdentifier bool
-	Default            interface{}
+	// Default field is only for informative purposes to know what the openapi spec for the property stated the default value is
+	// As per the openapi spec default attributes, the value is expected to be computed by the API
+	Default interface{}
 	// only for object type properties or arrays type properties with array items of type object
 	SpecSchemaDefinition *specSchemaDefinition
 }
@@ -67,12 +71,37 @@ func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
 	return s.Type == typeList && s.ArrayItemsType == typeObject
 }
 
+func (s *specSchemaDefinitionProperty) isReadOnly() bool {
+	return s.ReadOnly
+}
+
 func (s *specSchemaDefinitionProperty) isRequired() bool {
 	return s.Required
 }
 
-func (s *specSchemaDefinitionProperty) isReadOnly() bool {
-	return s.ReadOnly
+func (s *specSchemaDefinitionProperty) isOptional() bool {
+	return !s.Required
+}
+
+// isOptionalComputed returns true if one of the following cases is met:
+//- The property is optional (marked as required=false), in which case there few use cases:
+//  - readOnly properties (marked as readOnly=true, computed=true):
+//    - with default (default={some value})
+//    - with no default (default=nil)
+//  - optional-computed (marked as readOnly=false, computed=true):
+//    - with no default (default=nil)
+func (s *specSchemaDefinitionProperty) isComputed() bool {
+	return s.isOptional() && (s.isReadOnly() || s.isOptionalComputed())
+}
+
+// isOptionalComputed returns true for properties that are optional and a value (not known at plan time) is computed by the API
+// if the client does not provide a value. In order for a property to be considered optional computed it must meet:
+// - The property must be optional, readOnly, computed and must not have a default value populated
+// Note: optional-computed properties (marked as readOnly=false, computed=true, default={some value}) are not considered
+// as optional computed since the way they will be treated as far as the terraform schema will differ. The terraform schema property
+// for this properties will contain the default value and the property will not be computed
+func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
+	return s.isOptional() && !s.isReadOnly() && s.Computed && s.Default == nil
 }
 
 func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
@@ -151,16 +180,18 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		}
 	}
 
-	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
-	// it comes back from the api and is stored in the state. This properties are mostly informative.
-	terraformSchema.Computed = s.ReadOnly
+	// A computed property could be one of:
+	// - property that is set as readOnly in the openapi spec
+	// - property that is not readOnly, but it is an optional computed property. The following will comply with optional computed:
+	//   - the property is not readOnly and default is nil (only possible when 'x-terraform-computed' extension is set)
+	terraformSchema.Computed = s.isComputed()
+
 	// A sensitive property means that the expectedValue will not be disclosed in the state file, preventing secrets from
 	// being leaked
 	terraformSchema.Sensitive = s.Sensitive
 	// If the expectedValue of the property is changed, it will force the deletion of the previous generated resource and
 	// a new resource with this new expectedValue will be created
 	terraformSchema.ForceNew = s.ForceNew
-	terraformSchema.Default = s.Default
 
 	// Set the property as required or optional
 	if s.Required {
@@ -168,19 +199,17 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	} else {
 		terraformSchema.Optional = true
 	}
-	if s.Default != nil {
-		if s.ReadOnly {
-			// Below we just log a warn message; however, the validateFunc will take care of throwing an error if the following happens
-			// Check r.validateFunc which will handle this use case on runtime and provide the user with a detail description of the error
-			log.Printf("[WARN] '%s' is readOnly and can not have a default expectedValue. The expectedValue is expected to be computed by the API. Terraform will fail on runtime when performing the property validation check", s.Name)
-		} else {
-			terraformSchema.Default = s.Default
-		}
-	}
 
 	// ValidateFunc is not yet supported on lists or sets
 	if !s.isArrayProperty() && !s.isObjectProperty() {
 		terraformSchema.ValidateFunc = s.validateFunc()
+	}
+
+	// Don't populate Default if property is readOnly as the property is expected to be computed by the API. Terraform does
+	// not allow properties with Computed = true having the Default field populated, otherwise the following error will be
+	// thrown at runtime: Default must be nil if computed
+	if !s.isComputed() {
+		terraformSchema.Default = s.Default
 	}
 
 	return terraformSchema, nil
@@ -188,16 +217,6 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 
 func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
-		if s.Default != nil {
-			if s.ReadOnly {
-				err := fmt.Errorf(
-					"'%s.%s' is configured as 'readOnly' and can not have a default expectedValue. The expectedValue is expected to be computed by the API. To fix the issue, pick one of the following options:\n"+
-						"1. Remove the 'readOnly' attribute from %s in the swagger file so the default expectedValue '%v' can be applied. Default must be nil if computed\n"+
-						"OR\n"+
-						"2. Remove the 'default' attribute from %s in the swagger file, this means that the API will compute the expectedValue as specified by the 'readOnly' attribute\n", s.Name, k, k, s.Default, k)
-				errors = append(errors, err)
-			}
-		}
 		if s.ForceNew && s.Immutable {
 			errors = append(errors, fmt.Errorf("property '%s' is configured as immutable and can not be configured with forceNew too", s.Name))
 		}

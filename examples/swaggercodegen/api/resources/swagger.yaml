@@ -437,6 +437,21 @@ definitions:
         x-terraform-field-name: betterExampleNumberFieldName  # overriding exampleNumber with a different name 'betterExampleNumberFieldName'; the preferred name is not terraform compliant either so the provider will perform the name conversion automatically when translating the name into the provider resource configuration and when saving the field into the state file
       example_boolean:
         type: boolean
+      optional_property: # this property is optional as far as input from user is concerned, if the API computes a value if the user does not provider it, see 'optional_computed' or 'optional_computed_with_default' property definitions.
+        type: "string"
+      computed: # the value of this computed property is not known at runtime (e,g: uuid, etc)
+        type: "string"
+        readOnly: true
+      computed_with_default: # computed property that the default value is known at runtime
+        type: "string"
+        readOnly: true
+        default: "computed value known at runtime" # this computed value happens to be known before hand, the default attribute is just for documentation purposes
+      optional_computed: # optional property that the default value is NOT known at runtime
+        type: "string"
+        x-terraform-computed: true
+      optional_computed_with_default: # this computed value happens to be known at runtime, so the service provider decides to document what the default value will be if the client does not provide a value
+        type: "string"
+        default: "some computed value known at runtime" # this default value, will effectively
       object_property:
         #type: object - type is optional for properties of object type that use $ref
         $ref: "#/definitions/ObjectProperty"

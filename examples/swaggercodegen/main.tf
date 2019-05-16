@@ -14,6 +14,10 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   better_example_number_field_name = 15.78
   example_boolean = true
 
+  optional_property = "optional_property value"
+  optional_computed = "optional_computed value"
+  optional_computed_with_default = "optional_computed_with_default value"
+
   object_property = {
     message = "some message news2"
     detailed_message = "some message news with details"

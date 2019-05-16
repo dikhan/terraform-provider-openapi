@@ -293,7 +293,6 @@ func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payl
 	if err != nil {
 		return err
 	}
-	log.Printf("[DEBUG] payload = %+v", payload)
 	if payload[identifierProperty] == nil {
 		return fmt.Errorf("response object returned from the API is missing mandatory identifier property '%s'", identifierProperty)
 	}
@@ -384,8 +383,10 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 		if err != nil {
 			return err
 		}
-		if err := r.setResourceDataProperty(propertyName, value, resourceLocalData); err != nil {
-			return err
+		if value != nil {
+			if err := r.setResourceDataProperty(propertyName, value, resourceLocalData); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -485,17 +486,16 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 	resourceSchema, _ := r.openAPIResource.getResourceSchema()
 	for _, property := range resourceSchema.Properties {
 		propertyName := property.Name
-		// ReadOnly properties are not considered for the payload data
-		if property.isPropertyNamedID() || property.ReadOnly {
-			continue
-		}
-		if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
-			err := r.getPropertyPayload(input, property, dataValue)
-			if err != nil {
-				log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
+		// IDs and ReadOnly properties are not considered for the payload data
+		if !property.isPropertyNamedID() && !property.isReadOnly() {
+			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
+				err := r.getPropertyPayload(input, property, dataValue)
+				if err != nil {
+					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
+				}
 			}
+			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 		}
-		log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 	}
 	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
 	return input
