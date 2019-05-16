@@ -448,7 +448,7 @@ definitions:
         default: "computed value known at runtime" # this computed value happens to be known before hand, the default attribute is just for documentation purposes
       optional_computed: # optional property that the default value is NOT known at runtime
         type: "string"
-        x-terraform-optional-computed: true
+        x-terraform-computed: true
       optional_computed_with_default: # this computed value happens to be known at runtime, so the service provider decides to document what the default value will be if the client does not provide a value
         type: "string"
         default: "some computed value known at runtime" # this default value, will effectively

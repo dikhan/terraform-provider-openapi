@@ -22,7 +22,7 @@ const extTfSensitive = "x-terraform-sensitive"
 const extTfFieldName = "x-terraform-field-name"
 const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
-const extTfComputed = "x-terraform-optional-computed"
+const extTfComputed = "x-terraform-computed"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"
@@ -295,9 +295,9 @@ func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, propert
 	return false, nil
 }
 
-// isOptionalComputedWithDefault returns true if the property matches the OpenAPI spec to mark a property as optioanl
+// isOptionalComputedWithDefault returns true if the property matches the OpenAPI spec to mark a property as optional
 // and computed
-// If the property does not have explicitly the 'x-terraform-optional-computed', it could also be a optional computed property
+// If the property does not have explicitly the 'x-terraform-computed', it could also be a optional computed property
 // if it meets the OpenAPI spec for properties that are optional and still can be computed. This can be done
 // by specifying the default attribute. Example:
 //
@@ -314,19 +314,19 @@ func (o *SpecV2Resource) isOptionalComputedWithDefault(propertyName string, prop
 	return false, nil
 }
 
-// isOptionalComputed returns true if the property is marked with the extension 'x-terraform-optional-computed'
+// isOptionalComputed returns true if the property is marked with the extension 'x-terraform-computed'
 // This covers the use case where a property is not marked as readOnly but still is optional value that can come from the user or if not provided will be computed by the API. Example
 //
 // optional_computed: # optional property that the default value is NOT known at runtime
 //  type: "string"
-//  x-terraform-optional-computed: true
+//  x-terraform-computed: true
 func (o *SpecV2Resource) isOptionalComputed(propertyName string, property spec.Schema) (bool, error) {
 	if optionalComputed, ok := property.Extensions.GetBool(extTfComputed); ok && optionalComputed {
 		if property.ReadOnly {
 			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not be readOnly", propertyName, extTfComputed)
 		}
 		if property.Default != nil {
-			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not have the default value as the value is not known at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated", propertyName, extTfComputed)
+			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not have the default value as the value is not known at plan time. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated", propertyName, extTfComputed)
 		}
 		return true, nil
 	}

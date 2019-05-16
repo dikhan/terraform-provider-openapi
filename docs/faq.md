@@ -151,7 +151,7 @@ field can no longer be populated. The suggested approach as per the Terraform co
 Read more about it here: https://github.com/hashicorp/terraform/issues/21278
 
 
-## <a name="xTerraformOptionalComputed">Why the need for the ‘x-terraform-optional-computed’ extension?</a>
+## <a name="xTerraformOptionalComputed">Why the need for the ‘x-terraform-computed’ extension?</a>
 
 - Without this extension the OpenAPI terraform provider will not be able to identify whether the property is just optional or optional-computed.
 

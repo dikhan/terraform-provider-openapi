@@ -652,7 +652,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should be computed", func() {
-				So(schemaDefinitionProperty.isComputed(), ShouldBeTrue)
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should have the right default value", func() {
 				So(schemaDefinitionProperty.Default, ShouldEqual, expectedDefaultValue)
@@ -856,7 +856,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey(fmt.Sprintf("Then the error message returned should state that properties with the %s extension can not have a default value attached", extTfComputed), func() {
-				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-optional-computed' extension too")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-computed' extension too")
 			})
 			Convey("And the schema definition property returned should be nil", func() {
 				So(schemaDefinitionProperty, ShouldBeNil)
@@ -882,7 +882,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey(fmt.Sprintf("Then the error message returned should state that properties with the %s extension can not be readOnly", extTfComputed), func() {
-				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties marked with 'x-terraform-optional-computed' can not be readOnly")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
 			})
 			Convey("And the schema definition property returned should be nil", func() {
 				So(schemaDefinitionProperty, ShouldBeNil)
@@ -963,7 +963,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("The the error message returned should not be the expected one", func() {
-				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not be readOnly")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
 				So(isOptionalComputedProperty, ShouldBeFalse)
@@ -1076,7 +1076,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("Then the error message returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-optional-computed' extension too")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-computed' extension too")
 			})
 			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
@@ -1139,7 +1139,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties marked with 'x-terraform-optional-computed' can not be readOnly")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
 			})
 			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeFalse)
@@ -1164,7 +1164,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("The the error message returned should not be the expected one", func() {
-				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-optional-computed' can not have the default value as the value is not known at runtime. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
+				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-computed' can not have the default value as the value is not known at plan time. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
 				So(isOptionalComputedProperty, ShouldBeFalse)
