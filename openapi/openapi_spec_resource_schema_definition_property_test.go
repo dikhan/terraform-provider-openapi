@@ -294,11 +294,12 @@ func TestIsRequired(t *testing.T) {
 	})
 }
 
-func TestIsComputed(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is readonly", t, func() {
+func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is optional and readonly", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
 			Type:     typeString,
+			Required: false,
 			ReadOnly: true,
 		}
 		Convey("When isComputed method is called", func() {
@@ -308,7 +309,35 @@ func TestIsComputed(t *testing.T) {
 			})
 		})
 	})
-
+	Convey("Given a specSchemaDefinitionProperty that is optional, NOT readonly BUT is optional-computed", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: false,
+			ReadOnly: false,
+			Computed: true,
+			Default: nil,
+		}
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
+			Convey("Then the resulted bool should be true", func() {
+				So(isReadOnly, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that NOT optional", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: true,
+		}
+		Convey("When isComputed method is called", func() {
+			isReadOnly := s.isComputed()
+			Convey("Then the resulted bool should be false", func() {
+				So(isReadOnly, ShouldBeFalse)
+			})
+		})
+	})
 	Convey("Given a specSchemaDefinitionProperty that is NOT readonly", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
