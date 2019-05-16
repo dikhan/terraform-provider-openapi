@@ -844,7 +844,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				"protocol":    "http",
 			},
 		}
-		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, slicePrimitiveProperty, sliceObjectProperty)
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
 			payload := r.createPayloadFromLocalStateData(resourceData)
@@ -1035,7 +1035,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"example_bool":   true,
 				"example_float":  10.45,
 			}
-			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, nil, typeObject, objectSchemaDefinition)
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeObject, objectSchemaDefinition)
 			dataValue := []interface{}{objectDefault}
 			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
 			Convey("Then the error should be nil", func() {
@@ -1053,7 +1053,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with items string value", func() {
-			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, nil, typeString, nil)
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeString, nil)
 			dataValue := []interface{}{"value1"}
 			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
 			Convey("Then the error should be nil", func() {
@@ -1079,7 +1079,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"example_bool":   true,
 				"example_float":  10.45,
 			}
-			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, nil, objectSchemaDefinition)
+			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
 			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1113,8 +1113,8 @@ func TestGetPropertyPayload(t *testing.T) {
 		arrayObjectDefault := []map[string]interface{}{
 			objectDefault,
 		}
-		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, objectDefault, objectSchemaDefinition)
-		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, sliceObjectProperty)
 		Convey("When createPayloadFromLocalStateData is called with an empty map, the string property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
