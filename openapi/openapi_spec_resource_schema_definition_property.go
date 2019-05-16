@@ -89,14 +89,19 @@ func (s *specSchemaDefinitionProperty) isOptional() bool {
 //    - with default (default={some value})
 //    - with no default (default=nil)
 //  - optional-computed (marked as readOnly=false, computed=true):
-//    - with default (default={some value})
 //    - with no default (default=nil)
 func (s *specSchemaDefinitionProperty) isComputed() bool {
-	return s.ReadOnly || s.isOptionalComputed()
+	return s.isOptional() && (s.isReadOnly() || s.isOptionalComputed())
 }
 
+// isOptionalComputed returns true for properties that are optional and a value (not known at plan time) is computed by the API
+// if the client does not provide a value. In order for a property to be considered optional computed it must meet:
+// - The property must be optional, readOnly, computed and must not have a default value populated
+// Note: optional-computed properties (marked as readOnly=false, computed=true, default={some value}) are not considered
+// as optional computed since the way they will be treated as far as the terraform schema will differ. The terraform schema property
+// for this properties will contain the default value and the property will not be computed
 func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
-	return !s.Required && !s.ReadOnly && s.Computed
+	return s.isOptional() && !s.isReadOnly() && s.Computed && s.Default == nil
 }
 
 func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
@@ -177,9 +182,8 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 
 	// A computed property could be one of:
 	// - property that is set as readOnly in the openapi spec
-	// - property that is not readOnly, but it is an optional computed property.  The following will comply with optional computed:
-	//   - the property is not readOnly and has a default attribute
-	//   - the property is not readOnly and has the 'x-terraform-optional-computed' extension set to true
+	// - property that is not readOnly, but it is an optional computed property. The following will comply with optional computed:
+	//   - the property is not readOnly and default is nil (only possible when 'x-terraform-computed' extension is set)
 	terraformSchema.Computed = s.isComputed()
 
 	// A sensitive property means that the expectedValue will not be disclosed in the state file, preventing secrets from
@@ -199,6 +203,13 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// ValidateFunc is not yet supported on lists or sets
 	if !s.isArrayProperty() && !s.isObjectProperty() {
 		terraformSchema.ValidateFunc = s.validateFunc()
+	}
+
+	// Don't populate Default if property is readOnly as the property is expected to be computed by the API. Terraform does
+	// not allow properties with Computed = true having the Default field populated, otherwise the following error will be
+	// thrown at runtime: Default must be nil if computed
+	if !s.isComputed() {
+		terraformSchema.Default = s.Default
 	}
 
 	return terraformSchema, nil
