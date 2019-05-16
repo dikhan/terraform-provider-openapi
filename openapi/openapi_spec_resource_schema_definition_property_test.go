@@ -207,6 +207,64 @@ func TestIsArrayProperty(t *testing.T) {
 	})
 }
 
+func TestIsReadOnly(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is readOnly", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			ReadOnly: true,
+		}
+		Convey("When isReadOnly method is called", func() {
+			isOptional := s.isReadOnly()
+			Convey("Then the resulted bool should be true", func() {
+				So(isOptional, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is NOT readOnly", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			ReadOnly: false,
+		}
+		Convey("When isReadOnly method is called", func() {
+			isOptional := s.isReadOnly()
+			Convey("Then the resulted bool should be false", func() {
+				So(isOptional, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsOptional(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: false,
+		}
+		Convey("When isOptional method is called", func() {
+			isOptional := s.isOptional()
+			Convey("Then the resulted bool should be true", func() {
+				So(isOptional, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:     "string_prop",
+			Type:     typeString,
+			Required: true,
+		}
+		Convey("When isOptional method is called", func() {
+			isOptional := s.isOptional()
+			Convey("Then the resulted bool should be false", func() {
+				So(isOptional, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestIsRequired(t *testing.T) {
 	Convey("Given a specSchemaDefinitionProperty that is Required", t, func() {
 		s := &specSchemaDefinitionProperty{
@@ -221,7 +279,6 @@ func TestIsRequired(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
