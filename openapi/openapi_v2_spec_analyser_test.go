@@ -187,6 +187,57 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		})
 	})
 
+
+	Convey("Given a swagger doc with a circular ref (ref points to itself)", t, func() {
+		var swaggerJSON = fmt.Sprintf(`{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "$ref":"#/definitions/ContentDeliveryNetwork"
+      }
+   }
+}`)
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specAnalyserV2 struct should not be nil", func() {
+				So(specAnalyserV2, ShouldNotBeNil)
+			})
+			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
+				So(specAnalyserV2.d.Spec().Definitions, ShouldContainKey, "ContentDeliveryNetwork")
+			})
+			Convey("And the ref should NOT be empty as per the go-openapi library documentation", func() {
+				// As per the go-openapi documentation (https://github.com/go-openapi/spec/blob/master/expander.go#L314):
+				// this means there is a cycle in the recursion tree: return the Ref
+				// - circular refs cannot be expanded. We leave them as ref.
+				// - denormalization means that a new local file ref is set relative to the original basePath
+				ref1 := specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Ref.Ref
+				So(ref1.GetURL().String(), ShouldEqual, "#/definitions/ContentDeliveryNetwork")
+			})
+		})
+	})
+
 	Convey("Given an swagger doc with a ref to a nonexistent file", t, func() {
 		var swaggerJSON = createSwaggerWithExternalRef("nosuchfile.json")
 
