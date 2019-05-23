@@ -227,7 +227,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 		// Only set to true if property is computed OR optional-computed, purely optional properties are not computed since
 		// API is not expected to auto-generate any value by default if value is not provided
-		schemaDefinitionProperty.Computed = schemaDefinitionProperty.ReadOnly || optionalComputed
+		schemaDefinitionProperty.Computed = property.ReadOnly || optionalComputed
 	}
 
 	// A readOnly property is the one that is not used to create a resource (property is not exposed to the user); but
