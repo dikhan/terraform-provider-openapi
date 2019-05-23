@@ -3,13 +3,14 @@ package openapi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-openapi/loads"
-	"github.com/go-openapi/spec"
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/go-openapi/loads"
+	"github.com/go-openapi/spec"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestSpecV2Analyser(t *testing.T) {
@@ -100,12 +101,12 @@ func TestNewSpecAnalyserV2(t *testing.T) {
    }
 }`
 
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, externalJSON)
 		}))
 		defer ts.Close()
 
-		var swaggerJSON = createSwaggerWithExternalRef(ts.URL +"/")
+		var swaggerJSON = createSwaggerWithExternalRef(ts.URL + "/")
 
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
@@ -132,7 +133,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			})
 		})
 	})
-
 
 	Convey("Given a swagger doc with circular refs", t, func() {
 		var externalJSON1 = `{
@@ -243,7 +243,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			})
 		})
 	})
-
 
 	Convey("Given a swagger doc with a circular ref (ref points to itself)", t, func() {
 		var swaggerJSON = fmt.Sprintf(`{
@@ -1933,6 +1932,72 @@ definitions:
 					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
 					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
 					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+				})
+			})
+		})
+	})
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref) (in this an HTTP server)", t, func() {
+		var externalJSON = `{
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "required": [
+           "name"
+         ],
+         "properties":{
+            "id":{
+               "type":"string",
+               "readOnly": true,
+            },
+            "name":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintln(w, externalJSON)
+		}))
+		defer ts.Close()
+
+		var swaggerJSON = createSwaggerWithExternalRef(ts.URL + "/")
+
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned by calling newSpecAnalyserV2 should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specAnalyserV2 struct should not be nil", func() {
+				So(specAnalyserV2, ShouldNotBeNil)
+			})
+
+			specResources, err := specAnalyserV2.GetTerraformCompliantResources()
+			Convey("Then the error returned by calling GetTerraformCompliantResources should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specResources slice should not be nil", func() {
+				So(specResources, ShouldNotBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				So(len(specResources), ShouldEqual, 1)
+				So(specResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+
+			Convey("And the resources schema should contain the right configuration", func() {
+				resourceSchema, err := specResources[0].getResourceSchema()
+				So(err, ShouldBeNil)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the name property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "name")
+					So(exists, ShouldBeTrue)
 				})
 			})
 		})
