@@ -208,7 +208,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			s := specAnalyserV2.d.Spec()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
