@@ -50,42 +50,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		externalRefFile := initAPISpecFile(externalJSON)
 		defer os.Remove(externalRefFile.Name())
 
-		var swaggerJSON = fmt.Sprintf(`{
-   "swagger":"2.0",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
-                  }
-               }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "$ref":"%s#/definitions/ContentDeliveryNetwork"
-      }
-   }
-}`, externalRefFile.Name())
+		var swaggerJSON = createSwaggerWithExternalRef(externalRefFile.Name())
 
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
@@ -181,17 +146,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
                }
             ]
          }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
       }
    },
    "definitions":{
@@ -224,46 +178,17 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Properties, ShouldContainKey, "id")
 				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Properties, ShouldContainKey, "name")
 			})
+			Convey("And the ref should be empty", func() {
+				ref1 := specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Ref.Ref
+				So(ref1.GetURL(), ShouldBeNil)
+				ref2 := specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Ref.Ref
+				So(ref2.GetURL(), ShouldBeNil)
+			})
 		})
 	})
 
 	Convey("Given an swagger doc with a ref to a nonexistent file", t, func() {
-		var swaggerJSON = `{
-   "swagger":"2.0",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
-                  }
-               }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "$ref":"nosuchfile.json#/definitions/ContentDeliveryNetwork"
-      }
-   }
-}`
+		var swaggerJSON = createSwaggerWithExternalRef("nosuchfile.json")
 
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
@@ -2085,4 +2010,43 @@ func initAPISpecAnalyser(swaggerContent string) specV2Analyser {
 	swagger := json.RawMessage([]byte(swaggerContent))
 	d, _ := loads.Analyzed(swagger, "2.0")
 	return specV2Analyser{d: d}
+}
+
+func createSwaggerWithExternalRef(filename string) string {
+	return fmt.Sprintf(`{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "$ref":"%s#/definitions/ContentDeliveryNetwork"
+      }
+   }
+}`, filename)
 }
