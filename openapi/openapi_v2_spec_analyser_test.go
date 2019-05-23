@@ -111,6 +111,195 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a swagger doc with circular refs", t, func() {
+		var externalJSON1 = `{
+  "definitions":{
+     "OtherKindOfAThing":{
+        "$ref":"%s#/definitions/OtherKindOfAThing"
+     },
+     "ContentDeliveryNetwork":{
+        "type":"object",
+        "required": [
+          "name"
+        ],
+        "properties":{
+           "id":{
+              "type":"string",
+              "readOnly": true,
+           },
+           "name":{
+              "type":"string"
+           }
+        }
+     }
+  }
+}`
+		externalRefFile1 := initAPISpecFile(externalJSON1)
+		defer os.Remove(externalRefFile1.Name())
+
+		var externalJSON2 = `{
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "$ref":"%s#/definitions/ContentDeliveryNetwork"
+     },
+     "OtherKindOfAThing":{
+        "type":"object",
+        "required": [
+          "name"
+        ],
+        "properties":{
+           "id":{
+              "type":"string",
+              "readOnly": true,
+           },
+           "name":{
+              "type":"string"
+           }
+        }
+     }
+  }
+}`
+		externalRefFile2 := initAPISpecFile(externalJSON2)
+		defer os.Remove(externalRefFile2.Name())
+
+		var swaggerJSON = fmt.Sprintf(`{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork",
+                     "$ref":"#/definitions/OtherKindOfAThing"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "$ref":"%s#/definitions/ContentDeliveryNetwork"
+      },
+      "OtherKindOfAThing":{
+         "$ref":"%s#/definitions/OtherKindOfAThing"
+      }
+   }
+}`, externalRefFile1.Name(), externalRefFile2.Name())
+
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			s := specAnalyserV2.d.Spec()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specAnalyserV2 struct should not be nil", func() {
+				So(specAnalyserV2, ShouldNotBeNil)
+			})
+			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
+				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Required[0], ShouldEqual, "name")
+				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Required[0], ShouldEqual, "name")
+			})
+			Convey("And the new doc should contain the definition ref expanded with the right required properties", func() {
+				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "id")
+				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "name")
+				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Properties, ShouldContainKey, "id")
+				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Properties, ShouldContainKey, "name")
+			})
+		})
+	})
+
+	Convey("Given an swagger doc with a ref to a nonexistent file", t, func() {
+		var swaggerJSON = `{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "$ref":"nosuchfile.json#/definitions/ContentDeliveryNetwork"
+      }
+   }
+}`
+
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned should be not nil", func() {
+				So(err.Error(), ShouldContainSubstring, "failed to expand the OpenAPI document from ")
+				So(err.Error(), ShouldContainSubstring, " - error = open nosuchfile.json: no such file or directory")
+			})
+			Convey("AND the specAnalyserV2 struct should be nil", func() {
+				So(specAnalyserV2, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("When newSpecAnalyserV2 method is called with an empty string for openAPIDocumentFilename", t, func() {
+		specAnalyserV2, err := newSpecAnalyserV2("")
+		Convey("Then the error returned should be not nil", func() {
+			So(err.Error(), ShouldEqual, "open api document filename argument empty, please provide the url of the OpenAPI document")
+		})
+		Convey("AND the specAnalyserV2 struct should be nil", func() {
+			So(specAnalyserV2, ShouldBeNil)
+		})
+	})
+
+	Convey("When newSpecAnalyserV2 method is called with a bogus value openAPIDocumentFilename", t, func() {
+		specAnalyserV2, err := newSpecAnalyserV2("nosuchthing")
+		Convey("Then the error returned should be not nil", func() {
+			So(err.Error(), ShouldEqual, "failed to retrieve the OpenAPI document from 'nosuchthing' - error = open nosuchthing: no such file or directory")
+		})
+		Convey("AND the specAnalyserV2 struct should be nil", func() {
+			So(specAnalyserV2, ShouldBeNil)
+		})
+	})
+
 }
 
 func TestSpecV2AnalyserGetAllHeaderParameters(t *testing.T) {

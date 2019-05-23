@@ -24,21 +24,21 @@ type specV2Analyser struct {
 
 // newSpecAnalyserV2 creates an instance of specV2Analyser which implements the SpecAnalyser interface
 // This implementation provides an analyser that understands an OpenAPI v2 document
-func newSpecAnalyserV2(openAPIDocumentURL string) (*specV2Analyser, error) {
-	if openAPIDocumentURL == "" {
-		return nil, errors.New("open api document url empty, please provide the url of the OpenAPI document")
+func newSpecAnalyserV2(openAPIDocumentFilename string) (*specV2Analyser, error) {
+	if openAPIDocumentFilename == "" {
+		return nil, errors.New("open api document filename argument empty, please provide the url of the OpenAPI document")
 	}
-	apiSpec, err := loads.JSONSpec(openAPIDocumentURL)
+	apiSpec, err := loads.JSONSpec(openAPIDocumentFilename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve the OpenAPI document from '%s' - error = %s", openAPIDocumentURL, err)
+		return nil, fmt.Errorf("failed to retrieve the OpenAPI document from '%s' - error = %s", openAPIDocumentFilename, err)
 	}
 	apiSpec, err = apiSpec.Expanded()
 	if err != nil {
-		return nil, fmt.Errorf("failed to expand the OpenAPI document from '%s' - error = %s", openAPIDocumentURL, err)
+		return nil, fmt.Errorf("failed to expand the OpenAPI document from '%s' - error = %s", openAPIDocumentFilename, err)
 	}
 	return &specV2Analyser{
 		d:                  apiSpec,
-		openAPIDocumentURL: openAPIDocumentURL,
+		openAPIDocumentURL: openAPIDocumentFilename,
 	}, nil
 }
 
