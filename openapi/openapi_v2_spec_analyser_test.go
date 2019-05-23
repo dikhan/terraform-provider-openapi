@@ -94,7 +94,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("AND the specAnalyserV2 struct should contain the expected struct", func() {
+			Convey("AND the specAnalyserV2 struct should not be nil", func() {
 				So(specAnalyserV2, ShouldNotBeNil)
 			})
 			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
