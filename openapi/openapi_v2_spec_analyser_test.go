@@ -6,6 +6,7 @@ import (
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	. "github.com/smartystreets/goconvey/convey"
+	"os"
 	"testing"
 )
 
@@ -20,6 +21,93 @@ func TestSpecV2Analyser(t *testing.T) {
 			}
 			Convey("Then the specV2Analyser should comply with SpecAnalyser interface", func() {
 				var _ SpecAnalyser = specV2Analyser
+			})
+		})
+	})
+}
+
+func TestNewSpecAnalyserV2(t *testing.T) {
+	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case file system)", t, func() {
+		var externalJSON = `{
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "required": [
+           "name"
+         ],
+         "properties":{
+            "id":{
+               "type":"string",
+               "readOnly": true,
+            },
+            "name":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		externalRefFile := initAPISpecFile(externalJSON)
+		defer os.Remove(externalRefFile.Name())
+
+		var swaggerJSON = fmt.Sprintf(`{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "$ref":"%s#/definitions/ContentDeliveryNetwork"
+      }
+   }
+}`, externalRefFile.Name())
+
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specAnalyserV2 struct should contain the expected struct", func() {
+				So(specAnalyserV2, ShouldNotBeNil)
+			})
+			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
+				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Required[0], ShouldEqual, "name")
+			})
+			Convey("And the new doc should contain the definition ref expanded with the right required properties", func() {
+				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "id")
+				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "name")
+
+			})
+			Convey("And the ref should be empty", func() {
+				ref := specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Ref.Ref
+				So(ref.GetURL(), ShouldBeNil)
 			})
 		})
 	})
@@ -664,6 +752,55 @@ definitions:
 			})
 			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "missing schema definition in the swagger file with the supplied ref '#/definitions/Users'")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser and an operation that has an embedded schema in the body parameter (this mimics what getResourcePayloadSchemaDef will get when the spec expansion has been performed)", t, func() {
+		a := specV2Analyser{}
+		operation := &spec.Operation{
+			OperationProps: spec.OperationProps{
+				Parameters: []spec.Parameter{
+					{
+						ParamProps: spec.ParamProps{
+							In:   "body",
+							Name: "body",
+							Schema: &spec.Schema{
+								SchemaProps: spec.SchemaProps{
+									Ref:      spec.Ref{},
+									Required: []string{"name"},
+									Type:     spec.StringOrArray{"object"},
+									Properties: map[string]spec.Schema{
+										"id": spec.Schema{
+											SwaggerSchemaProps: spec.SwaggerSchemaProps{
+												ReadOnly: true,
+											},
+											SchemaProps: spec.SchemaProps{
+												Type: spec.StringOrArray{"string"},
+											},
+										},
+										"name": spec.Schema{
+											SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+											SchemaProps: spec.SchemaProps{
+												Type: spec.StringOrArray{"string"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourcePayloadSchemaDef method is called with an operation containing an expanded schema'", func() {
+			resourcePayloadSchemaDef, err := a.getResourcePayloadSchemaDef(operation)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be a valid schema def", func() {
+				So(len(resourcePayloadSchemaDef.Type), ShouldEqual, 1)
+				So(resourcePayloadSchemaDef.Type, ShouldContain, "object")
 			})
 		})
 	})
