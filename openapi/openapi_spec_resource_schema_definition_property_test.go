@@ -316,7 +316,7 @@ func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 			Required: false,
 			ReadOnly: false,
 			Computed: true,
-			Default: nil,
+			Default:  nil,
 		}
 		Convey("When isComputed method is called", func() {
 			isReadOnly := s.isComputed()
@@ -356,11 +356,11 @@ func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
 	Convey("Given a property that is optional, not readOnly, is computed and does not have a default value (optional-computed of property where value is not known at plan time)", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Type: typeString,
+			Type:     typeString,
 			Required: false,
 			ReadOnly: false,
 			Computed: true,
-			Default: nil,
+			Default:  nil,
 		}
 		Convey("When isOptionalComputed method is called", func() {
 			isOptionalComputed := s.isOptionalComputed()
@@ -371,7 +371,7 @@ func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
 	})
 	Convey("Given a property that is not optional", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Type: typeString,
+			Type:     typeString,
 			Required: true,
 		}
 		Convey("When isOptionalComputed method is called", func() {
@@ -383,7 +383,7 @@ func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
 	})
 	Convey("Given a property that is optional but readOnly", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Type: typeString,
+			Type:     typeString,
 			Required: false,
 			ReadOnly: true,
 		}
@@ -396,11 +396,11 @@ func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
 	})
 	Convey("Given a property that is optional, not readOnly and it's not computed (purely optional use case)", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Type: typeString,
+			Type:     typeString,
 			Required: false,
 			ReadOnly: false,
 			Computed: false,
-			Default: nil,
+			Default:  nil,
 		}
 		Convey("When isOptionalComputed method is called", func() {
 			isOptionalComputed := s.isOptionalComputed()
@@ -411,11 +411,11 @@ func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
 	})
 	Convey("Given a property that is optional, not readOnly, computed but has a default value (optional-computed use case, but as far as terraform is concerned the default will be set om the terraform schema, making it available at plan time - this is by design in terraform)", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Type: typeString,
+			Type:     typeString,
 			Required: false,
 			ReadOnly: false,
 			Computed: true,
-			Default: "something",
+			Default:  "something",
 		}
 		Convey("When isOptionalComputed method is called", func() {
 			isOptionalComputed := s.isOptionalComputed()
