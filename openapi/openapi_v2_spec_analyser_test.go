@@ -49,11 +49,17 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 			resourceRootPostOperation.Parameters = []spec.Parameter{{}}
 			So(unit.getBodyParameterBodySchema(resourceRootPostOperation), ShouldBeNil)
 		})
-		Convey("returns nil when passed an Operation with OperationProps with a Parameter with a ParamProp with In:body", func() {
+		Convey("returns nil when passed an Operation with OperationProps with a Parameter with an In:body ParamProp and no Schema ParamProp", func() {
 			resourceRootPostOperation := &spec.Operation{}
 			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body"}}
 			resourceRootPostOperation.Parameters = []spec.Parameter{param}
 			So(unit.getBodyParameterBodySchema(resourceRootPostOperation), ShouldBeNil)
+		})
+		Convey("returns nil when passed an Operation with OperationProps with a Parameter with an In:body ParamProp and a Schema ParamProp", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: &spec.Schema{}}}
+			resourceRootPostOperation.Parameters = []spec.Parameter{param}
+			So(unit.getBodyParameterBodySchema(resourceRootPostOperation), ShouldNotBeNil)
 		})
 	})
 }
