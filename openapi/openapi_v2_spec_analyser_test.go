@@ -152,24 +152,24 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else that is unavailable (in this case an HTTP server)", t, func() {
 		var externalJSON = `{
-		  "definitions":{
-		     "ContentDeliveryNetwork":{
-		        "type":"object",
-		        "required": [
-		          "name"
-		        ],
-		        "properties":{
-		           "id":{
-		              "type":"string",
-		              "readOnly": true,
-		           },
-		           "name":{
-		              "type":"string"
-		           }
-		        }
-		     }
-		  }
-		}`
+	  "definitions":{
+	     "ContentDeliveryNetwork":{
+	        "type":"object",
+	        "required": [
+	          "name"
+	        ],
+	        "properties":{
+	           "id":{
+	              "type":"string",
+	              "readOnly": true,
+	           },
+	           "name":{
+	              "type":"string"
+	           }
+	        }
+	     }
+	  }
+	}`
 
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, externalJSON)
@@ -194,84 +194,84 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 	Convey("Given a swagger doc with circular refs", t, func() {
 		var externalJSON1 = `{
-	"definitions":{
-	   "OtherKindOfAThing":{
-	      "$ref":"%s#/definitions/OtherKindOfAThing"
-	   },
-	   "ContentDeliveryNetwork":{
-	      "type":"object",
-	      "required": [
-	        "name"
-	      ],
-	      "properties":{
-	         "id":{
-	            "type":"string",
-	            "readOnly": true,
-	         },
-	         "name":{
-	            "type":"string"
-	         }
-	      }
-	   }
-	}
-	}`
+ "definitions":{
+    "OtherKindOfAThing":{
+       "$ref":"%s#/definitions/OtherKindOfAThing"
+    },
+    "ContentDeliveryNetwork":{
+       "type":"object",
+       "required": [
+         "name"
+       ],
+       "properties":{
+          "id":{
+             "type":"string",
+             "readOnly": true,
+          },
+          "name":{
+             "type":"string"
+          }
+       }
+    }
+ }
+}`
 		externalRefFile1 := initAPISpecFile(externalJSON1)
 		defer os.Remove(externalRefFile1.Name())
 
 		var externalJSON2 = `{
-	"definitions":{
-	   "ContentDeliveryNetwork":{
-	      "$ref":"%s#/definitions/ContentDeliveryNetwork"
-	   },
-	   "OtherKindOfAThing":{
-	      "type":"object",
-	      "required": [
-	        "name"
-	      ],
-	      "properties":{
-	         "id":{
-	            "type":"string",
-	            "readOnly": true,
-	         },
-	         "name":{
-	            "type":"string"
-	         }
-	      }
-	   }
-	}
-	}`
+ "definitions":{
+    "ContentDeliveryNetwork":{
+       "$ref":"%s#/definitions/ContentDeliveryNetwork"
+    },
+    "OtherKindOfAThing":{
+       "type":"object",
+       "required": [
+         "name"
+       ],
+       "properties":{
+          "id":{
+             "type":"string",
+             "readOnly": true,
+          },
+          "name":{
+             "type":"string"
+          }
+       }
+    }
+ }
+}`
 		externalRefFile2 := initAPISpecFile(externalJSON2)
 		defer os.Remove(externalRefFile2.Name())
 
 		var swaggerJSON = fmt.Sprintf(`{
-	 "swagger":"2.0",
-	 "paths":{
-	    "/v1/cdns":{
-	       "post":{
-	          "summary":"Create cdn",
-	          "parameters":[
-	             {
-	                "in":"body",
-	                "name":"body",
-	                "description":"Created CDN",
-	                "schema":{
-	                   "$ref":"#/definitions/ContentDeliveryNetwork",
-	                   "$ref":"#/definitions/OtherKindOfAThing"
-	                }
-	             }
-	          ]
-	       }
-	    }
-	 },
-	 "definitions":{
-	    "ContentDeliveryNetwork":{
-	       "$ref":"%s#/definitions/ContentDeliveryNetwork"
-	    },
-	    "OtherKindOfAThing":{
-	       "$ref":"%s#/definitions/OtherKindOfAThing"
-	    }
-	 }
-	}`, externalRefFile1.Name(), externalRefFile2.Name())
+  "swagger":"2.0",
+  "paths":{
+     "/v1/cdns":{
+        "post":{
+           "summary":"Create cdn",
+           "parameters":[
+              {
+                 "in":"body",
+                 "name":"body",
+                 "description":"Created CDN",
+                 "schema":{
+                    "$ref":"#/definitions/ContentDeliveryNetwork",
+                    "$ref":"#/definitions/OtherKindOfAThing"
+                 }
+              }
+           ]
+        }
+     }
+  },
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "$ref":"%s#/definitions/ContentDeliveryNetwork"
+     },
+     "OtherKindOfAThing":{
+        "$ref":"%s#/definitions/OtherKindOfAThing"
+     }
+  }
+}`, externalRefFile1.Name(), externalRefFile2.Name())
 
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
@@ -304,30 +304,30 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 	Convey("Given a swagger doc with a circular ref (ref points to itself)", t, func() {
 		var swaggerJSON = fmt.Sprintf(`{
-	  "swagger":"2.0",
-	  "paths":{
-	     "/v1/cdns":{
-	        "post":{
-	           "summary":"Create cdn",
-	           "parameters":[
-	              {
-	                 "in":"body",
-	                 "name":"body",
-	                 "description":"Created CDN",
-	                 "schema":{
-	                    "$ref":"#/definitions/ContentDeliveryNetwork"
-	                 }
-	              }
-	           ]
-	        }
-	     }
-	  },
-	  "definitions":{
-	     "ContentDeliveryNetwork":{
-	        "$ref":"#/definitions/ContentDeliveryNetwork"
-	     }
-	  }
-	}`)
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "$ref":"#/definitions/ContentDeliveryNetwork"
+      }
+   }
+}`)
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
@@ -354,25 +354,25 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 	Convey("Given a swagger doc with a ref to a definition that does not exists", t, func() {
 		var swaggerJSON = fmt.Sprintf(`{
-	  "swagger":"2.0",
-	  "paths":{
-	     "/v1/cdns":{
-	        "post":{
-	           "summary":"Create cdn",
-	           "parameters":[
-	              {
-	                 "in":"body",
-	                 "name":"body",
-	                 "description":"Created CDN",
-	                 "schema":{
-	                    "$ref":"#/definitions/NonExistingDef"
-	                 }
-	              }
-	           ]
-	        }
-	     }
-	  }
-	}`)
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/NonExistingDef"
+                  }
+               }
+            ]
+         }
+      }
+   }
+}`)
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
@@ -388,25 +388,25 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 	Convey("Given a swagger doc with a ref to a definition is wrongly formatted (no empty string)", t, func() {
 		var swaggerJSON = fmt.Sprintf(`{
-	  "swagger":"2.0",
-	  "paths":{
-	     "/v1/cdns":{
-	        "post":{
-	           "summary":"Create cdn",
-	           "parameters":[
-	              {
-	                 "in":"body",
-	                 "name":"body",
-	                 "description":"Created CDN",
-	                 "schema":{
-	                    "$ref":
-	                 }
-	              }
-	           ]
-	        }
-	     }
-	  }
-	}`)
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":
+                  }
+               }
+            ]
+         }
+      }
+   }
+}`)
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
@@ -1833,85 +1833,85 @@ func TestGetTerraformCompliantResources(t *testing.T) {
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
- /v1/cdns:
-   post:
-	 parameters:
-	 - in: "body"
-	   name: "body"
-	   schema:
-		 $ref: "#/definitions/ContentDeliveryNetwork"
-	 responses:
-	   201:
-		 schema:
-		   $ref: "#/definitions/ContentDeliveryNetwork"
- /v1/cdns/{id}:
-   get:
-	 parameters:
-	 - name: "id"
-	   in: "path"
-	   description: "The cdn id that needs to be fetched."
-	   required: true
-	   type: "string"
-	 responses:
-	   200:
-		 schema:
-		   $ref: "#/definitions/ContentDeliveryNetwork"
-   put:
-	 parameters:
-	 - name: "id"
-	   in: "path"
-	   type: "string"
-	 - in: "body"
-	   name: "body"
-	   schema:
-		 $ref: "#/definitions/ContentDeliveryNetwork"
-	 responses:
-	   200:
-		 description: "successful operation"
-		 schema:
-		   $ref: "#/definitions/ContentDeliveryNetwork"
-   delete:
-	 parameters:
-	 - name: "id"
-	   in: "path"
-	   type: "string"
-	 responses:
-	   204:
-		 description: "successful operation, no content is returned"
- /non/compliant:
-   post: # this path post operation is missing a reference to the schema definition (commented out)
-	 parameters:
-	 - in: "body"
-	   name: "body"
-	 #  schema:
-	 #    $ref: "#/definitions/NonCompliant"
-	 responses:
-	   201:
-		 schema:
-		   $ref: "#/definitions/NonCompliant"
- /non/compliant/{id}:
-   get:
-	 parameters:
-	 - name: "id"
-	   in: "path"
-	   type: "string"
-	 responses:
-	   200:
-		 schema:
-		   $ref: "#/definitions/NonCompliant"
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+    put:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+    delete:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+  /non/compliant:
+    post: # this path post operation is missing a reference to the schema definition (commented out)
+      parameters:
+      - in: "body"
+        name: "body"
+      #  schema:
+      #    $ref: "#/definitions/NonCompliant"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/NonCompliant"
+  /non/compliant/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/NonCompliant"
 definitions:
- ContentDeliveryNetwork:
-   type: "object"
-   properties:
-	 id:
-	   type: "string"
-	   readOnly: true
- NonCompliant:
-   type: "object"
-   properties:
-	 id:
-	   type: "string"
-	   readOnly: true`
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+  NonCompliant:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -1928,40 +1928,40 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array of strings", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
- /v1/cdns:
-   post:
-	 parameters:
-	 - in: "body"
-	   name: "body"
-	   schema:
-		 $ref: "#/definitions/ContentDeliveryNetwork"
-	 responses:
-	   201:
-		 schema:
-		   $ref: "#/definitions/ContentDeliveryNetwork"
- /v1/cdns/{id}:
-   get:
-	 parameters:
-	 - name: "id"
-	   in: "path"
-	   description: "The cdn id that needs to be fetched."
-	   required: true
-	   type: "string"
-	 responses:
-	   200:
-		 schema:
-		   $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
 definitions:
- ContentDeliveryNetwork:
-   type: "object"
-   properties:
-	 id:
-	   type: "string"
-	   readOnly: true
-	 listeners:
-	   type: array
-	   items:
-		 type: "string"`
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      listeners:
+        type: array
+        items:
+          type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -1993,47 +1993,47 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
- /v1/cdns:
-   post:
-	 parameters:
-	 - in: "body"
-	   name: "body"
-	   schema:
-		 $ref: "#/definitions/ContentDeliveryNetwork"
-	 responses:
-	   201:
-		 schema:
-		   $ref: "#/definitions/ContentDeliveryNetwork"
- /v1/cdns/{id}:
-   get:
-	 parameters:
-	 - name: "id"
-	   in: "path"
-	   description: "The cdn id that needs to be fetched."
-	   required: true
-	   type: "string"
-	 responses:
-	   200:
-		 schema:
-		   $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
 definitions:
- ContentDeliveryNetwork:
-   type: "object"
-   properties:
-	 id:
-	   type: "string"
-	   readOnly: true
-	 listeners:
-	   type: array
-	   items:
-		 $ref: '#/definitions/Listener'
- Listener:
-   type: object
-   required:
-	 - protocol
-   properties:
-	 protocol:
-	   type: string`
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      listeners:
+        type: array
+        items:
+          $ref: '#/definitions/Listener'
+  Listener:
+    type: object
+    required:
+      - protocol
+    properties:
+      protocol:
+        type: string`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -2064,24 +2064,24 @@ definitions:
 	})
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref) (in this an HTTP server)", t, func() {
 		var externalJSON = `{
-		  "definitions":{
-		     "ContentDeliveryNetwork":{
-		        "type":"object",
-		        "required": [
-		          "name"
-		        ],
-		        "properties":{
-		           "id":{
-		              "type":"string",
-		              "readOnly": true,
-		           },
-		           "name":{
-		              "type":"string"
-		           }
-		        }
-		     }
-		  }
-		}`
+	  "definitions":{
+	     "ContentDeliveryNetwork":{
+	        "type":"object",
+	        "required": [
+	          "name"
+	        ],
+	        "properties":{
+	           "id":{
+	              "type":"string",
+	              "readOnly": true,
+	           },
+	           "name":{
+	              "type":"string"
+	           }
+	        }
+	     }
+	  }
+	}`
 
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, externalJSON)
@@ -2131,46 +2131,46 @@ definitions:
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (nested configuration)", t, func() {
 		swaggerContent := `swagger: "2.0"
-	paths:
-	 /v1/cdns:
-	   post:
-	     parameters:
-	     - in: "body"
-	       name: "body"
-	       schema:
-	         $ref: "#/definitions/ContentDeliveryNetwork"
-	     responses:
-	       201:
-	         schema:
-	           $ref: "#/definitions/ContentDeliveryNetwork"
-	 /v1/cdns/{id}:
-	   get:
-	     parameters:
-	     - name: "id"
-	       in: "path"
-	       description: "The cdn id that needs to be fetched."
-	       required: true
-	       type: "string"
-	     responses:
-	       200:
-	         schema:
-	           $ref: "#/definitions/ContentDeliveryNetwork"
-	definitions:
-	 ContentDeliveryNetwork:
-	   type: "object"
-	   properties:
-	     id:
-	       type: "string"
-	       readOnly: true
-	     listeners:
-	       type: array
-	       items:
-	         type: object
-	         required:
-	         - protocol
-	         properties:
-	           protocol:
-	             type: string`
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      listeners:
+        type: array
+        items:
+          type: object
+          required:
+          - protocol
+          properties:
+            protocol:
+              type: string`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -2201,32 +2201,32 @@ definitions:
 	})
 	Convey("Given an specV2Analyser loaded with a swagger file containing a non compliant terraform resource /v1/cdns because its missing the post operation", t, func() {
 		var swaggerJSON = `
-	{
-	  "swagger":"2.0",
-	  "paths":{
-	     "/v1/cdns/{id}":{
-	        "get":{
-	           "summary":"Get cdn by id"
-	        },
-	        "put":{
-	           "summary":"Updated cdn"
-	        },
-	        "delete":{
-	           "summary":"Delete cdn"
-	        }
-	     }
-	  },
-	  "definitions":{
-	     "ContentDeliveryNetwork":{
-	        "type":"object",
-	        "properties":{
-	           "id":{
-	              "type":"string"
-	           }
-	        }
-	     }
-	  }
-	}`
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -2241,48 +2241,48 @@ definitions:
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
 		var swaggerJSON = `
-	{
-	  "swagger":"2.0",
-	  "paths":{
-	     "/v1/cdns":{
-	        "post":{
-	           "x-terraform-exclude-resource": true,
-	           "summary":"Create cdn",
-	           "parameters":[
-	              {
-	                 "in":"body",
-	                 "name":"body",
-	                 "description":"Created CDN",
-	                 "schema":{
-	                    "$ref":"#/definitions/ContentDeliveryNetwork"
-	                 }
-	              }
-	           ]
-	        }
-	     },
-	     "/v1/cdns/{id}":{
-	        "get":{
-	           "summary":"Get cdn by id"
-	        },
-	        "put":{
-	           "summary":"Updated cdn"
-	        },
-	        "delete":{
-	           "summary":"Delete cdn"
-	        }
-	     }
-	  },
-	  "definitions":{
-	     "ContentDeliveryNetwork":{
-	        "type":"object",
-	        "properties":{
-	           "id":{
-	              "type":"string"
-	           }
-	        }
-	     }
-	  }
-	}`
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-exclude-resource": true,
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -2297,48 +2297,48 @@ definitions:
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a schema ref that is empty", t, func() {
 		var swaggerJSON = `
-	{
-	  "swagger":"2.0",
-	  "paths":{
-	     "/v1/cdns":{
-	        "post":{
-	           "x-terraform-exclude-resource": true,
-	           "summary":"Create cdn",
-	           "parameters":[
-	              {
-	                 "in":"body",
-	                 "name":"body",
-	                 "description":"Created CDN",
-	                 "schema":{
-	                    "$ref":""
-	                 }
-	              }
-	           ]
-	        }
-	     },
-	     "/v1/cdns/{id}":{
-	        "get":{
-	           "summary":"Get cdn by id"
-	        },
-	        "put":{
-	           "summary":"Updated cdn"
-	        },
-	        "delete":{
-	           "summary":"Delete cdn"
-	        }
-	     }
-	  },
-	  "definitions":{
-	     "ContentDeliveryNetwork":{
-	        "type":"object",
-	        "properties":{
-	           "id":{
-	              "type":"string"
-	           }
-	        }
-	     }
-	  }
-	}`
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-exclude-resource": true,
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":""
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -2353,48 +2353,48 @@ definitions:
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a schema ref that points to a non schema definition", t, func() {
 		var swaggerJSON = `
-	{
-	  "swagger":"2.0",
-	  "paths":{
-	     "/v1/cdns":{
-	        "post":{
-	           "x-terraform-exclude-resource": true,
-	           "summary":"Create cdn",
-	           "parameters":[
-	              {
-	                 "in":"body",
-	                 "name":"body",
-	                 "description":"Created CDN",
-	                 "schema":{
-	                    "$ref":"#/swagger"
-	                 }
-	              }
-	           ]
-	        }
-	     },
-	     "/v1/cdns/{id}":{
-	        "get":{
-	           "summary":"Get cdn by id"
-	        },
-	        "put":{
-	           "summary":"Updated cdn"
-	        },
-	        "delete":{
-	           "summary":"Delete cdn"
-	        }
-	     }
-	  },
-	  "definitions":{
-	     "ContentDeliveryNetwork":{
-	        "type":"object",
-	        "properties":{
-	           "id":{
-	              "type":"string"
-	           }
-	        }
-	     }
-	  }
-	}`
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-exclude-resource": true,
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/swagger"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
