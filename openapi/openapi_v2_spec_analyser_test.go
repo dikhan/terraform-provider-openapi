@@ -65,8 +65,8 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 }
 
 func TestNewSpecAnalyserV2(t *testing.T) {
-	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case file system)", t, func() {
-		var externalJSON = `{
+
+	externalJSON := `{
   "definitions":{
      "ContentDeliveryNetwork":{
         "type":"object",
@@ -85,6 +85,8 @@ func TestNewSpecAnalyserV2(t *testing.T) {
      }
   }
 }`
+
+	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case file system)", t, func() {
 		externalRefFile := initAPISpecFile(externalJSON)
 		defer os.Remove(externalRefFile.Name())
 
@@ -116,25 +118,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 	})
 
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case an HTTP server)", t, func() {
-		var externalJSON = `{
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "required": [
-           "name"
-         ],
-         "properties":{
-            "id":{
-               "type":"string",
-               "readOnly": true,
-            },
-            "name":{
-               "type":"string"
-            }
-         }
-      }
-   }
-}`
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, externalJSON)
 		}))
@@ -186,26 +169,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 	})
 
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else that is unavailable (in this case an HTTP server)", t, func() {
-		var externalJSON = `{
-	  "definitions":{
-	     "ContentDeliveryNetwork":{
-	        "type":"object",
-	        "required": [
-	          "name"
-	        ],
-	        "properties":{
-	           "id":{
-	              "type":"string",
-	              "readOnly": true,
-	           },
-	           "name":{
-	              "type":"string"
-	           }
-	        }
-	     }
-	  }
-	}`
-
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, externalJSON)
 		}))
