@@ -2329,7 +2329,63 @@ definitions:
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the terraformCompliantResources map should be empty since the resource ref is not correct", func() {
+			Convey("And the terraformCompliantResources map should be empty since the resource ref is empty", func() {
+				So(terraformCompliantResources, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a schema ref that points to a non schema definition", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-exclude-resource": true,
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/swagger"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the terraformCompliantResources map should be empty since the resource ref is pointing to a non schema definition location", func() {
 				So(terraformCompliantResources, ShouldBeEmpty)
 			})
 		})
