@@ -369,6 +369,40 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		})
 	})
 
+	Convey("Given a swagger doc with a ref to a definition is wrongly formatted (no empty string)", t, func() {
+		var swaggerJSON = fmt.Sprintf(`{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":
+                  }
+               }
+            ]
+         }
+      }
+   }
+}`)
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldContainSubstring, "error = invalid character '}' looking for beginning of value")
+			})
+			Convey("AND the specAnalyserV2 struct should be nil", func() {
+				So(specAnalyserV2, ShouldBeNil)
+			})
+		})
+	})
+
 	Convey("Given an swagger doc with a ref to a nonexistent file", t, func() {
 		var swaggerJSON = createSwaggerWithExternalRef("nosuchfile.json")
 
