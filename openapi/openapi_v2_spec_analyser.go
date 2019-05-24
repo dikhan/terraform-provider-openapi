@@ -294,7 +294,11 @@ func (specAnalyser *specV2Analyser) getResourcePayloadSchemaDef(resourceRootPost
 
 	// This means the schema is embedded, hence returning the operation body parameter schema directly
 	if ref == "" {
-		return specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation), nil
+		schema, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
+		if err != nil {
+			return nil, err
+		}
+		return schema, nil
 	}
 
 	// The below will cover the use case where the ref to a local definition is used instead
@@ -309,13 +313,19 @@ func (specAnalyser *specV2Analyser) getResourcePayloadSchemaDef(resourceRootPost
 	return &payloadDefinition, nil
 }
 
-func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) *spec.Schema {
+func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
+	if resourceRootPostOperation == nil {
+		return nil, fmt.Errorf("resource root operation does not have a POST operation")
+	}
 	for _, parameter := range resourceRootPostOperation.Parameters {
 		if parameter.In == "body" {
-			return parameter.Schema
+			if parameter.Schema == nil {
+				return nil, fmt.Errorf("resource root operation missing the schema for the POST operation body parameter")
+			}
+			return parameter.Schema, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("resource root operation missing the POST operation")
 }
 
 func (specAnalyser *specV2Analyser) getResourcePayloadSchemaRef(resourceRootPostOperation *spec.Operation) (string, error) {
