@@ -29,6 +29,35 @@ func TestSpecV2Analyser(t *testing.T) {
 	})
 }
 
+func Test_getBodyParameterBodySchema(t *testing.T) {
+	unit := &specV2Analyser{}
+	Convey("getBodyParameterBodySchema", t, func() {
+		Convey("panics when passed a nil arg", func() {
+			So(func() { unit.getBodyParameterBodySchema(nil) }, ShouldPanic)
+		})
+		Convey("returns nil when passed an empty arg", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			So(unit.getBodyParameterBodySchema(resourceRootPostOperation), ShouldBeNil)
+		})
+		Convey("returns nil when passed an Operation with no Parameters", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			resourceRootPostOperation.Parameters = []spec.Parameter{}
+			So(unit.getBodyParameterBodySchema(resourceRootPostOperation), ShouldBeNil)
+		})
+		Convey("returns nil when passed an Operation with an empty Parameter", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			resourceRootPostOperation.Parameters = []spec.Parameter{{}}
+			So(unit.getBodyParameterBodySchema(resourceRootPostOperation), ShouldBeNil)
+		})
+		Convey("returns nil when passed an Operation with OperationProps with a Parameter with a ParamProp with In:body", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body"}}
+			resourceRootPostOperation.Parameters = []spec.Parameter{param}
+			So(unit.getBodyParameterBodySchema(resourceRootPostOperation), ShouldBeNil)
+		})
+	})
+}
+
 func TestNewSpecAnalyserV2(t *testing.T) {
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case file system)", t, func() {
 		var externalJSON = `{

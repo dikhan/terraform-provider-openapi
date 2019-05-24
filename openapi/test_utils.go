@@ -151,12 +151,12 @@ func createTmpFile(data string) (*os.File, error) {
 
 func initAPISpecFile(swaggerContent string) *os.File {
 	file, err := ioutil.TempFile("", "testSpec")
-	if err != nil {
+	if err != nil { //TODO: test
 		log.Fatal(err)
 	}
 	swagger := json.RawMessage([]byte(swaggerContent))
 	_, err = file.Write(swagger)
-	if err != nil {
+	if err != nil { //TODO: test
 		log.Fatal(err)
 	}
 	return file
