@@ -87,28 +87,8 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 
 func TestNewSpecAnalyserV2(t *testing.T) {
 
-	externalJSON := `{
-  "definitions":{
-     "ContentDeliveryNetwork":{
-        "type":"object",
-        "required": [
-          "name"
-        ],
-        "properties":{
-           "id":{
-              "type":"string",
-              "readOnly": true,
-           },
-           "name":{
-              "type":"string"
-           }
-        }
-     }
-  }
-}`
-
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case file system)", t, func() {
-		externalRefFile := initAPISpecFile(externalJSON)
+		externalRefFile := initAPISpecFile(createExternalSwaggerContent())
 		defer os.Remove(externalRefFile.Name())
 
 		var swaggerJSON = createSwaggerWithExternalRef(externalRefFile.Name())
@@ -140,7 +120,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case an HTTP server)", t, func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, externalJSON)
+			fmt.Fprintln(w, createExternalSwaggerContent())
 		}))
 		defer ts.Close()
 
@@ -191,7 +171,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else that is unavailable (in this case an HTTP server)", t, func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, externalJSON)
+			fmt.Fprintln(w, createExternalSwaggerContent())
 		}))
 		defer ts.Close()
 
@@ -2504,4 +2484,27 @@ func createSwaggerWithExternalRef(filename string) string {
       }
    }
 }`, filename)
+}
+
+
+func createExternalSwaggerContent() string {
+	return `{
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "type":"object",
+        "required": [
+          "name"
+        ],
+        "properties":{
+           "id":{
+              "type":"string",
+              "readOnly": true,
+           },
+           "name":{
+              "type":"string"
+           }
+        }
+     }
+  }
+}`
 }
