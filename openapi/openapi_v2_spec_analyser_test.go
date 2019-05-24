@@ -100,7 +100,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
       }
    }
 }`
-
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, externalJSON)
 		}))
@@ -332,6 +331,40 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 				// - denormalization means that a new local file ref is set relative to the original basePath
 				ref1 := specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Ref.Ref
 				So(ref1.GetURL().String(), ShouldEqual, "#/definitions/ContentDeliveryNetwork")
+			})
+		})
+	})
+
+	Convey("Given a swagger doc with a ref to a definition that does not exists", t, func() {
+		var swaggerJSON = fmt.Sprintf(`{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/NonExistingDef"
+                  }
+               }
+            ]
+         }
+      }
+   }
+}`)
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldContainSubstring, "error = object has no key \"NonExistingDef\"")
+			})
+			Convey("AND the specAnalyserV2 struct should be nil", func() {
+				So(specAnalyserV2, ShouldBeNil)
 			})
 		})
 	})
