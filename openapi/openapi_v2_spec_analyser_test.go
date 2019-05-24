@@ -360,7 +360,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldContainSubstring, "error = object has no key \"NonExistingDef\"")
 			})
 			Convey("AND the specAnalyserV2 struct should be nil", func() {
@@ -394,7 +394,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldContainSubstring, "error = invalid character '}' looking for beginning of value")
 			})
 			Convey("AND the specAnalyserV2 struct should be nil", func() {
