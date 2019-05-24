@@ -2486,7 +2486,6 @@ func createSwaggerWithExternalRef(filename string) string {
 }`, filename)
 }
 
-
 func createExternalSwaggerContent() string {
 	return `{
   "definitions":{
