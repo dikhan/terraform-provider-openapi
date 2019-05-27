@@ -294,18 +294,11 @@ func (specAnalyser *specV2Analyser) getResourcePayloadSchemaDef(resourceRootPost
 
 	// This means the schema is embedded, hence returning the operation body parameter schema directly
 	if ref == "" {
-		schema, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
-		if err != nil {
-			return nil, err
-		}
-		return schema, nil
+		return specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
 	}
 
 	// The below will cover the use case where the ref to a local definition is used instead
-	payloadDefName, err := specAnalyser.getPayloadDefName(ref)
-	if err != nil {
-		return nil, err
-	}
+	payloadDefName, _ := specAnalyser.getPayloadDefName(ref)
 	payloadDefinition, exists := specAnalyser.d.Spec().Definitions[payloadDefName]
 	if !exists {
 		return nil, fmt.Errorf("missing schema definition in the swagger file with the supplied ref '%s'", ref)
