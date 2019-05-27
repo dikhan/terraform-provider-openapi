@@ -32,9 +32,16 @@ func TestSpecV2Analyser(t *testing.T) {
 func Test_getBodyParameterBodySchema(t *testing.T) {
 	Convey("Given a specV2Analyser", t, func() {
 		specV2Analyser := &specV2Analyser{}
-		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and a Schema ParamProp", func() {
+		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and a Schema ParamProp with some properties", func() {
 			resourceRootPostOperation := &spec.Operation{}
-			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: &spec.Schema{}}}
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {},
+					},
+				},
+			}
+			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: schema}}
 			resourceRootPostOperation.Parameters = []spec.Parameter{param}
 			schema, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
 			Convey("Then the schema returned should not be empty", func() {
@@ -80,6 +87,41 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 			_, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "resource root operation missing the schema for the POST operation body parameter")
+			})
+		})
+		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and and a schema with a ref not expanded", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			ref := spec.MustCreateRef("#/definitions/Users")
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Ref: spec.Ref(ref),
+				},
+			}
+			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema:s}}
+			resourceRootPostOperation.Parameters = []spec.Parameter{param}
+			schema, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
+			Convey("Then the schema returned should be empty", func() {
+				So(schema, ShouldBeNil)
+			})
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "the operation ref was not expanded properly, check that the ref is valid (no cycles, bogus, etc)")
+			})
+		})
+		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and a Schema ParamProp with NO properties", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{},
+				},
+			}
+			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: schema}}
+			resourceRootPostOperation.Parameters = []spec.Parameter{param}
+			schema, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
+			Convey("Then the schema returned should be empty", func() {
+				So(schema, ShouldBeNil)
+			})
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "POST operation contains an schema with no properties")
 			})
 		})
 	})

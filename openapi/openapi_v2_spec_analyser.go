@@ -295,12 +295,47 @@ func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostO
 			if parameter.Schema == nil {
 				return nil, fmt.Errorf("resource root operation missing the schema for the POST operation body parameter")
 			}
-			return parameter.Schema, nil
+
+			if parameter.Schema.Ref.String() != "" {
+				return nil, fmt.Errorf("the operation ref was not expanded properly, check that the ref is valid (no cycles, bogus, etc)")
+			}
+
+			// This means that either:
+			// - the schema has been expanded OR
+			// - the parameter has the schema embedded (this is not recommended since that might lead to users defining the
+			// embedded schema only considering the parameters for the POST operation and not the computed values that may be
+			// returned by the GET operation resulting into a miss-configured terraform resource. Example:
+			// paths:
+			//  /v1/cdns:
+			//     post:
+			//      summary: Create cdn
+			//      parameters:
+			//        - in: body
+			//          name: body
+			//          description: Created CDN
+			//          schema:
+			//            type: object
+			//            properties:
+			//              name:
+			//                type: string
+			//              last_name:
+			//                type: string
+			//
+			// if the GET operation for the /v1/cdns/{id} path includes readOnly properties terraform will find diffs and fail at runtime
+			// Hence, the previous enforcement on using $ref pointing at a common model definition used across the different resource operations (POST, GET, PUT).
+			// Considering the expansion now happens before this point, there is no way to identify whether the the embedded schema
+			// is result of the expansion (in which case this should work fine, since the expansion was created from a ref link) or the user actually
+			// defining the model embedded.
+			if len(parameter.Schema.Properties) > 0 {
+				return parameter.Schema, nil
+			}
+			return nil, fmt.Errorf("POST operation contains an schema with no properties")
 		}
 	}
 	return nil, fmt.Errorf("resource root operation missing the POST operation")
 }
 
+// TODO: remove as it is no longer applicable (refs should be resolved at this stage)
 func (specAnalyser *specV2Analyser) getResourcePayloadSchemaRef(resourceRootPostOperation *spec.Operation) (string, error) {
 	if len(resourceRootPostOperation.Parameters) <= 0 {
 		return "", fmt.Errorf("operation does not have parameters defined")
