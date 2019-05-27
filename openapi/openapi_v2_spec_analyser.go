@@ -3,13 +3,14 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/loads"
-	"github.com/go-openapi/spec"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/loads"
+	"github.com/go-openapi/spec"
 )
 
 const extTfResourceRegionsFmt = "x-terraform-resource-regions-%s"
@@ -333,66 +334,6 @@ func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostO
 		}
 	}
 	return nil, fmt.Errorf("resource root operation missing the POST operation")
-}
-
-// TODO: remove as it is no longer applicable (refs should be resolved at this stage)
-func (specAnalyser *specV2Analyser) getResourcePayloadSchemaRef(resourceRootPostOperation *spec.Operation) (string, error) {
-	if len(resourceRootPostOperation.Parameters) <= 0 {
-		return "", fmt.Errorf("operation does not have parameters defined")
-	}
-
-	// A given operation might have multiple parameters, looking for required 'body' parameter type
-	var bodyParameter spec.Parameter
-	var bodyParamCounter int
-	for _, parameter := range resourceRootPostOperation.Parameters {
-		if parameter.In == "body" {
-			bodyParamCounter++
-			bodyParameter = parameter
-		}
-	}
-	if bodyParamCounter == 0 {
-		return "", fmt.Errorf("operation is missing required 'body' type parameter")
-	}
-	if bodyParamCounter > 1 {
-		return "", fmt.Errorf("operation contains multiple 'body' parameters")
-	}
-	payloadDefinitionSchemaRef := bodyParameter.Schema
-	if payloadDefinitionSchemaRef == nil {
-		return "", fmt.Errorf("operation is missing the ref to the schema definition")
-	}
-	if payloadDefinitionSchemaRef.Ref.String() == "" {
-		// This means that either:
-		// - the schema has been expanded OR
-		// - the parameter has the schema embedded (this is not recommended since that might lead to users defining the
-		// embedded schema only considering the parameters for the POST operation and not the computed values that may be
-		// returned by the GET operation resulting into a miss-configured terraform resource. Example:
-		// paths:
-		//  /v1/cdns:
-		//     post:
-		//      summary: Create cdn
-		//      parameters:
-		//        - in: body
-		//          name: body
-		//          description: Created CDN
-		//          schema:
-		//            type: object
-		//            properties:
-		//              name:
-		//                type: string
-		//              last_name:
-		//                type: string
-		//
-		// if the GET operation for the /v1/cdns/{id} path includes readOnly properties terraform will find diffs and fail at runtime
-		// Hence, the previous enforcement on using $ref pointing at a common model definition used across the different resource operations (POST, GET, PUT).
-		// Considering the expansion now happens before this point, there is no way to identify whether the the embedded schema
-		// is result of the expansion (in which case this should work fine, since the expansion was created from a ref link) or the user actually
-		// defining the model embedded.
-		if len(payloadDefinitionSchemaRef.Properties) > 0 {
-			return "", nil
-		}
-		return "", fmt.Errorf("operation has an invalid schema definition ref empty OR the embedded schema does not contain any properties")
-	}
-	return payloadDefinitionSchemaRef.Ref.String(), nil
 }
 
 // getPayloadDefName only supports references to the same document. External references like URLs is not supported at the moment
