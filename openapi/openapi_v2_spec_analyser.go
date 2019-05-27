@@ -298,10 +298,7 @@ func (specAnalyser *specV2Analyser) getResourcePayloadSchemaDef(resourceRootPost
 	}
 
 	// The below will cover the use case where the ref to a local definition is used instead
-	payloadDefName, err := specAnalyser.getPayloadDefName(ref)
-	if err != nil { //TODO: test
-		return nil, err
-	}
+	payloadDefName, _ := specAnalyser.getPayloadDefName(ref)
 	payloadDefinition, exists := specAnalyser.d.Spec().Definitions[payloadDefName]
 	if !exists {
 		return nil, fmt.Errorf("missing schema definition in the swagger file with the supplied ref '%s'", ref)
