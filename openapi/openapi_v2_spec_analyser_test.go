@@ -1179,7 +1179,7 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 }
 
 func TestValidateRootPath(t *testing.T) {
-	Convey("Given an specV2Analyser with a terraform compliant root path", t, func() {
+	Convey("Given an specV2Analyser with a terraform compliant root path (and the schema has already been expanded)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -1188,74 +1188,15 @@ paths:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/nonExisting"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/Users"
-  /users/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/Users"`
-		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
-			_, _, _, err := a.validateRootPath("/users/{id}")
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation validation error: missing schema definition in the swagger file with the supplied ref '#/definitions/nonExisting'")
-			})
-		})
-	})
-
-	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' that its root path '/users' DOES NOT expose a POST operation", t, func() {
-		swaggerContent := `swagger: "2.0"
-paths:
-  /users:
-    post:
-  /users/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/Users"`
-		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
-			_, _, _, err := a.validateRootPath("/users/{id}")
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "resource root path '/users' missing required POST operation")
-			})
-		})
-	})
-
-	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' that its root path '/users' is missing the reference to the schea definition", t, func() {
-		swaggerContent := `swagger: "2.0"
-paths:
-  /users:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/Users"
+          type: "object"
+          required:
+            - name
+          properties:
+            id:
+              type: "string"
+              readOnly: true
+            name:
+              type: "string"
       responses:
         201:
           schema:
@@ -1285,12 +1226,106 @@ definitions:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
-			resourceRootPath, _, _, err := a.validateRootPath("/users/{id}")
-			Convey("Then the error returned should NOT be nil", func() {
+			resourceRootPath, _, resourceRootPostSchemaDef, err := a.validateRootPath("/users/{id}")
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the error message should be", func() {
+			Convey("And the resourceRootPath should be", func() {
 				So(resourceRootPath, ShouldContainSubstring, "/users")
+			})
+			Convey("And the resourceRootPostSchemaDef should contain the expected properties", func() {
+				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "id")
+				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "name")
+			})
+		})
+	})
+
+	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' that is missing the root path", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/Users"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/users/{id}")
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "resource instance path '/users/{id}' missing resource root path")
+			})
+		})
+	})
+
+	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' but the root is missing the 'body' parameter", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+      parameters: # no body parameter
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/Users"
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/Users"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/users/{id}")
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation validation error: resource root operation missing the body parameter")
+			})
+		})
+	})
+
+	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' that its root path '/users' DOES NOT expose a POST operation", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/Users"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/users/{id}")
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "resource root path '/users' missing required POST operation")
 			})
 		})
 	})
