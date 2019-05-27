@@ -57,27 +57,38 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 				So(err.Error(), ShouldEqual, "resource root operation does not have a POST operation")
 			})
 		})
-		Convey("When getBodyParameterBodySchema is called with an empty Operation", func() {
+		Convey("When getBodyParameterBodySchema is called with an empty Operation (no params)", func() {
 			resourceRootPostOperation := &spec.Operation{}
 			_, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation missing the POST operation")
+				So(err.Error(), ShouldEqual, "resource root operation missing the body parameter")
 			})
 		})
-		Convey("When getBodyParameterBodySchema is called with an Operation with no Parameters", func() {
-			resourceRootPostOperation := &spec.Operation{}
-			resourceRootPostOperation.Parameters = []spec.Parameter{}
-			_, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
-			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation missing the POST operation")
+		Convey("When getResourcePayloadSchemaRef method is called with an operation that has multiple body parameters", func() {
+			operation := &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Parameters: []spec.Parameter{
+						{
+							ParamProps: spec.ParamProps{
+								In:   "body",
+								Name: "first body",
+							},
+						},
+						{
+							ParamProps: spec.ParamProps{
+								In:   "body",
+								Name: "second body",
+							},
+						},
+					},
+				},
+			}
+			_, err := specV2Analyser.getBodyParameterBodySchema(operation)
+			Convey("Then the error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
 			})
-		})
-		Convey("When getBodyParameterBodySchema is called with an Operation with an empty Parameter", func() {
-			resourceRootPostOperation := &spec.Operation{}
-			resourceRootPostOperation.Parameters = []spec.Parameter{}
-			_, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
-			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation missing the POST operation")
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "operation contains multiple 'body' parameters")
 			})
 		})
 		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and NO Schema ParamProp", func() {
