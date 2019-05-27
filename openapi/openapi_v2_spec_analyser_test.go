@@ -3,6 +3,7 @@ package openapi
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -920,11 +921,7 @@ paths:
         in: "path"
         description: "The cdn id that needs to be fetched."
         required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/Users"`
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called ", func() {
 			_, err := a.findMatchingResourceRootPath("/users/{id}")
@@ -962,7 +959,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called ", func() {
 			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}")
@@ -1000,7 +1008,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called ", func() {
 			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}")
@@ -1038,7 +1057,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called ", func() {
 			resourceRootPath, err := a.findMatchingResourceRootPath("/v1/users/{id}")
@@ -1067,7 +1097,18 @@ paths:
       responses:
         201:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When postDefined method is called'", func() {
 			postIsPresent := a.postDefined("/users")
@@ -1254,7 +1295,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
@@ -1288,7 +1340,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
@@ -1317,7 +1380,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
@@ -1346,7 +1420,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateInstancePath method is called with '/users/{id}'", func() {
 			err := a.validateInstancePath("/users/{id}")
@@ -1370,7 +1455,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateInstancePath method is called with '/users/{id}'", func() {
 			err := a.validateInstancePath("/users/{id}")
@@ -1568,7 +1664,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When isEndPointFullyTerraformResourceCompliant method is called ", func() {
 			_, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
@@ -1581,7 +1688,7 @@ paths:
 		})
 	})
 
-	Convey("Given an specV2Analyser with a resource that fails the schema validation (non existing ref)", t, func() {
+	Convey("Given an specV2Analyser with a resource that fails the schema validation (body schema is empty)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -1589,12 +1696,10 @@ paths:
       parameters:
       - in: "body"
         name: "body"
-        schema:
-          $ref: "#/definitions/Users"
       responses:
         201:
           schema:
-            $ref: "#/definitions/NonExistingDefinition"
+            $ref: "#/definitions/Users"
   /users/{id}:
     get:
       parameters:
@@ -1606,7 +1711,18 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/Users"`
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When isEndPointFullyTerraformResourceCompliant method is called ", func() {
 			_, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
@@ -1614,7 +1730,7 @@ paths:
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation validation error: missing schema definition in the swagger file with the supplied ref '#/definitions/Users'")
+				So(err.Error(), ShouldContainSubstring, "resource root operation missing the schema for the POST operation body parameter")
 			})
 		})
 	})
@@ -2233,9 +2349,14 @@ func assertPropertyExists(properties specSchemaDefinitionProperties, name string
 	return false, -1
 }
 
+// todo: This should be removed as it is duplicating behavior of newSpecAnalyserV2()
 func initAPISpecAnalyser(swaggerContent string) specV2Analyser {
 	swagger := json.RawMessage([]byte(swaggerContent))
 	d, _ := loads.Analyzed(swagger, "2.0")
+	d, err := d.Expanded()
+	if err != nil {
+		log.Panic("initApiSpecAnalyser failed to expand the document: ", err)
+	}
 	return specV2Analyser{d: d}
 }
 
