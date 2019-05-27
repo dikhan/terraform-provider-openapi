@@ -250,7 +250,7 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 	resourceRootPathItem, _ := specAnalyser.d.Spec().Paths.Paths[resourceRootPath]
 	resourceRootPostOperation := resourceRootPathItem.Post
 
-	resourceRootPostSchemaDef, err := specAnalyser.getResourcePayloadSchemaDef(resourceRootPostOperation)
+	resourceRootPostSchemaDef, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
 	}
@@ -284,26 +284,6 @@ func (specAnalyser *specV2Analyser) postDefined(resourceRootPath string) bool {
 		return false
 	}
 	return true
-}
-
-func (specAnalyser *specV2Analyser) getResourcePayloadSchemaDef(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
-	ref, err := specAnalyser.getResourcePayloadSchemaRef(resourceRootPostOperation)
-	if err != nil {
-		return nil, err
-	}
-
-	// This means the schema is embedded, hence returning the operation body parameter schema directly
-	if ref == "" {
-		return specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
-	}
-
-	// The below will cover the use case where the ref to a local definition is used instead
-	payloadDefName, _ := specAnalyser.getPayloadDefName(ref)
-	payloadDefinition, exists := specAnalyser.d.Spec().Definitions[payloadDefName]
-	if !exists {
-		return nil, fmt.Errorf("missing schema definition in the swagger file with the supplied ref '%s'", ref)
-	}
-	return &payloadDefinition, nil
 }
 
 func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
