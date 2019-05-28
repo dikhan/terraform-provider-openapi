@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -2293,15 +2292,14 @@ func assertPropertyExists(properties specSchemaDefinitionProperties, name string
 	return false, -1
 }
 
-// todo: This should be removed as it is duplicating behavior of newSpecAnalyserV2()
 func initAPISpecAnalyser(swaggerContent string) specV2Analyser {
-	swagger := json.RawMessage([]byte(swaggerContent))
-	d, _ := loads.Analyzed(swagger, "2.0")
-	d, err := d.Expanded()
+	file := initAPISpecFile(swaggerContent)
+	defer os.Remove(file.Name())
+	specV2Analyser, err := newSpecAnalyserV2(file.Name())
 	if err != nil {
-		log.Panic("initApiSpecAnalyser failed to expand the document: ", err)
+		log.Panic("newSpecAnalyserV2 failed: ", err)
 	}
-	return specV2Analyser{d: d}
+	return *specV2Analyser
 }
 
 func createSwaggerWithExternalRef(filename string) string {
