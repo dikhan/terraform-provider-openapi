@@ -12,5 +12,5 @@ services:
 install:
 
 script:
-- make test
-- make integration-test
+- env GO111MODULE=on make test
+- env GO111MODULE=on make integration-test
