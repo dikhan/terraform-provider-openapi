@@ -1,10 +1,7 @@
 package openapi
 
 import (
-	"encoding/json"
 	. "github.com/smartystreets/goconvey/convey"
-	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 )
@@ -47,17 +44,4 @@ func TestCreateSpecAnalyser(t *testing.T) {
 			})
 		})
 	})
-}
-
-func initAPISpecFile(swaggerContent string) *os.File {
-	file, err := ioutil.TempFile("", "testSpec")
-	if err != nil {
-		log.Fatal(err)
-	}
-	swagger := json.RawMessage([]byte(swaggerContent))
-	_, err = file.Write(swagger)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return file
 }

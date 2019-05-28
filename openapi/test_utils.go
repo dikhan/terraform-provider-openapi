@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"encoding/json"
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
@@ -146,4 +147,17 @@ func createTmpFile(data string) (*os.File, error) {
 	f, err := ioutil.TempFile("", "")
 	f.Write([]byte(data))
 	return f, err
+}
+
+func initAPISpecFile(swaggerContent string) *os.File {
+	file, err := ioutil.TempFile("", "testSpec")
+	if err != nil {
+		log.Fatal(err)
+	}
+	swagger := json.RawMessage([]byte(swaggerContent))
+	_, err = file.Write(swagger)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return file
 }

@@ -9,6 +9,8 @@ WORKDIR $WORK_DIR
 COPY swagger/swagger.json /opt/goa/swagger/
 COPY swagger/swagger.yaml /opt/goa/swagger/
 
+RUN git clone --branch v1 https://github.com/goadesign/goa.git $GOPATH/src/github.com/goadesign/goa
+
 RUN go get
 RUN go build -o goa-service-provider .
 

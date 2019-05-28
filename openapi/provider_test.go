@@ -3,6 +3,8 @@ package openapi
 import (
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 )
@@ -27,8 +29,11 @@ func TestOpenAPIProvider(t *testing.T) {
 
 	Convey("Given a provider name with service configuration but there is an error with the OpenAPI spec analyser", t, func() {
 		providerName := "providerName"
-		expectedSwaggerURL := "http://www.domain.com/swagger.yaml"
-		os.Setenv(fmt.Sprintf(otfVarSwaggerURL, providerName), expectedSwaggerURL)
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		attemptedSwaggerURL := s.URL + "/swagger.yaml"
+		os.Setenv(fmt.Sprintf(otfVarSwaggerURL, providerName), attemptedSwaggerURL)
 		os.Setenv(otfVarInsecureSkipVerify, "false")
 		Convey("When getServiceConfiguration method is called", func() {
 			p := ProviderOpenAPI{ProviderName: providerName}
@@ -37,7 +42,7 @@ func TestOpenAPIProvider(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message returned should be", func() {
-				So(err.Error(), ShouldEqual, "plugin OpenAPI spec analyser error: failed to retrieve the OpenAPI document from 'http://www.domain.com/swagger.yaml' - error = could not access document at \"http://www.domain.com/swagger.yaml\" [404 Not Found] ")
+				So(err.Error(), ShouldEqual, "plugin OpenAPI spec analyser error: failed to retrieve the OpenAPI document from '"+attemptedSwaggerURL+`' - error = could not access document at "`+attemptedSwaggerURL+`" [404 Not Found] `)
 			})
 			Convey("Then the schema provider returned should also be nil", func() {
 				So(tfProvider, ShouldBeNil)

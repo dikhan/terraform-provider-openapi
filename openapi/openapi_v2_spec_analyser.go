@@ -3,13 +3,14 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/loads"
-	"github.com/go-openapi/spec"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/loads"
+	"github.com/go-openapi/spec"
 )
 
 const extTfResourceRegionsFmt = "x-terraform-resource-regions-%s"
@@ -24,17 +25,21 @@ type specV2Analyser struct {
 
 // newSpecAnalyserV2 creates an instance of specV2Analyser which implements the SpecAnalyser interface
 // This implementation provides an analyser that understands an OpenAPI v2 document
-func newSpecAnalyserV2(openAPIDocumentURL string) (*specV2Analyser, error) {
-	if openAPIDocumentURL == "" {
-		return nil, errors.New("open api document url empty, please provide the url of the OpenAPI document")
+func newSpecAnalyserV2(openAPIDocumentFilename string) (*specV2Analyser, error) {
+	if openAPIDocumentFilename == "" {
+		return nil, errors.New("open api document filename argument empty, please provide the url of the OpenAPI document")
 	}
-	apiSpec, err := loads.JSONSpec(openAPIDocumentURL)
+	apiSpec, err := loads.JSONSpec(openAPIDocumentFilename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve the OpenAPI document from '%s' - error = %s", openAPIDocumentURL, err)
+		return nil, fmt.Errorf("failed to retrieve the OpenAPI document from '%s' - error = %s", openAPIDocumentFilename, err)
+	}
+	apiSpec, err = apiSpec.Expanded()
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand the OpenAPI document from '%s' - error = %s", openAPIDocumentFilename, err)
 	}
 	return &specV2Analyser{
 		d:                  apiSpec,
-		openAPIDocumentURL: openAPIDocumentURL,
+		openAPIDocumentURL: openAPIDocumentFilename,
 	}, nil
 }
 
@@ -246,7 +251,7 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 	resourceRootPathItem, _ := specAnalyser.d.Spec().Paths.Paths[resourceRootPath]
 	resourceRootPostOperation := resourceRootPathItem.Post
 
-	resourceRootPostSchemaDef, err := specAnalyser.getResourcePayloadSchemaDef(resourceRootPostOperation)
+	resourceRootPostSchemaDef, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
 	}
@@ -282,63 +287,39 @@ func (specAnalyser *specV2Analyser) postDefined(resourceRootPath string) bool {
 	return true
 }
 
-func (specAnalyser *specV2Analyser) getResourcePayloadSchemaDef(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
-	ref, err := specAnalyser.getResourcePayloadSchemaRef(resourceRootPostOperation)
-	if err != nil {
-		return nil, err
+func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
+	if resourceRootPostOperation == nil {
+		return nil, fmt.Errorf("resource root operation does not have a POST operation")
 	}
-	payloadDefName, err := specAnalyser.getPayloadDefName(ref)
-	if err != nil {
-		return nil, err
-	}
-	payloadDefinition, exists := specAnalyser.d.Spec().Definitions[payloadDefName]
-	if !exists {
-		return nil, fmt.Errorf("missing schema definition in the swagger file with the supplied ref '%s'", ref)
-	}
-	return &payloadDefinition, nil
-}
-
-func (specAnalyser *specV2Analyser) getResourcePayloadSchemaRef(resourceRootPostOperation *spec.Operation) (string, error) {
-	if len(resourceRootPostOperation.Parameters) <= 0 {
-		return "", fmt.Errorf("operation does not have parameters defined")
-	}
-
-	// A given operation might have multiple parameters, looking for required 'body' parameter type
+	bodyCounter := 0
 	var bodyParameter spec.Parameter
-	var bodyParamCounter int
 	for _, parameter := range resourceRootPostOperation.Parameters {
 		if parameter.In == "body" {
-			bodyParamCounter++
+			bodyCounter = bodyCounter + 1
 			bodyParameter = parameter
 		}
 	}
-	if bodyParamCounter == 0 {
-		return "", fmt.Errorf("operation is missing required 'body' type parameter")
-	}
-	if bodyParamCounter > 1 {
-		return "", fmt.Errorf("operation contains multiple 'body' parameters")
-	}
-	payloadDefinitionSchemaRef := bodyParameter.Schema
-	if payloadDefinitionSchemaRef == nil {
-		return "", fmt.Errorf("operation is missing the ref to the schema definition")
-	}
-	if payloadDefinitionSchemaRef.Ref.String() == "" {
-		return "", fmt.Errorf("operation has an invalid schema definition ref empty")
-	}
-	return payloadDefinitionSchemaRef.Ref.String(), nil
-}
 
-// getPayloadDefName only supports references to the same document. External references like URLs is not supported at the moment
-func (specAnalyser *specV2Analyser) getPayloadDefName(ref string) (string, error) {
-	reg, err := regexp.Compile(swaggerResourcePayloadDefinitionRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the swaggerResourcePayloadDefinitionRegex regex '%s': %s", swaggerResourcePayloadDefinitionRegex, err)
+	if bodyCounter <= 0 {
+		return nil, fmt.Errorf("resource root operation missing the body parameter")
 	}
-	payloadDefName := reg.FindStringSubmatch(ref)[0]
-	if payloadDefName == "" {
-		return "", fmt.Errorf("could not find a valid definition name for '%s'", ref)
+
+	if bodyCounter > 1 {
+		return nil, fmt.Errorf("resource root operation contains multiple 'body' parameters")
 	}
-	return payloadDefName, nil
+
+	if bodyParameter.Schema == nil {
+		return nil, fmt.Errorf("resource root operation missing the schema for the POST operation body parameter")
+	}
+
+	if bodyParameter.Schema.Ref.String() != "" {
+		return nil, fmt.Errorf("the operation ref was not expanded properly, check that the ref is valid (no cycles, bogus, etc)")
+	}
+
+	if len(bodyParameter.Schema.Properties) > 0 {
+		return bodyParameter.Schema, nil
+	}
+	return nil, fmt.Errorf("POST operation contains an schema with no properties")
 }
 
 // resourceInstanceRegex loads up the regex specified in const resourceInstanceRegex
