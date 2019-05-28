@@ -40,10 +40,11 @@ rather than the tooling around it.
 
 ### Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.11.8 (to execute the terraform provider plugin)
--	[Go](https://golang.org/doc/install) 1.12.4 (to build the provider plugin)
--	[Docker](https://www.docker.com/) 17.09.0-ce (to run service provider example)
--	[Docker-compose](https://docs.docker.com/compose/) 1.16.1 (to run service provider example)
+- [Terraform](https://www.terraform.io/downloads.html) 0.11.8 (to execute the terraform provider plugin)
+- [Go](https://golang.org/doc/install) 1.12.4 (to build the provider plugin)
+  - This project uses [go modules](https://github.com/golang/go/wiki/Modules) for dependency management
+- [Docker](https://www.docker.com/) 17.09.0-ce (to run service provider example)
+- [Docker-compose](https://docs.docker.com/compose/) 1.16.1 (to run service provider example)
 
 
 ## How to use Terraform Provider OpenAPI
