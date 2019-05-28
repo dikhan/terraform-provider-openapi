@@ -847,67 +847,6 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 	})
 }
 
-func TestGetPayloadDefName(t *testing.T) {
-	Convey("Given an specV2Analyser", t, func() {
-		a := specV2Analyser{}
-
-		// Local Reference use cases
-		Convey("When getPayloadDefName method is called with a valid internal definition path", func() {
-			defName, err := a.getPayloadDefName("#/definitions/ContentDeliveryNetworkV1")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be true", func() {
-				So(defName, ShouldEqual, "ContentDeliveryNetworkV1")
-			})
-		})
-
-		Convey("When getPayloadDefName method is called with a URL (not supported)", func() {
-			_, err := a.getPayloadDefName("http://path/to/your/resource.json#myElement")
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-
-		// Remote Reference use cases
-		Convey("When getPayloadDefName method is called with an element of the document located on the same server (not supported)", func() {
-			_, err := a.getPayloadDefName("document.json#/myElement")
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-
-		Convey("When getPayloadDefName method is called with an element of the document located in the parent folder (not supported)", func() {
-			_, err := a.getPayloadDefName("../document.json#/myElement")
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-
-		Convey("When getPayloadDefName method is called with an specific element of the document stored on the different server (not supported)", func() {
-			_, err := a.getPayloadDefName("http://path/to/your/resource.json#myElement")
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-
-		// URL Reference use case
-		Convey("When getPayloadDefName method is called with an element of the document located in another folder (not supported)", func() {
-			_, err := a.getPayloadDefName("../another-folder/document.json#/myElement")
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-
-		Convey("When getPayloadDefName method is called with document on the different server, which uses the same protocol (not supported)", func() {
-			_, err := a.getPayloadDefName("//anotherserver.com/files/example.json")
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-	})
-}
-
 func TestFindMatchingResourceRootPath(t *testing.T) {
 
 	Convey("Given an apiSpecAnalyser with a valid resource path such as '/users/{id}' and missing resource root path", t, func() {

@@ -348,19 +348,6 @@ func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostO
 	return nil, fmt.Errorf("POST operation contains an schema with no properties")
 }
 
-// getPayloadDefName only supports references to the same document. External references like URLs is not supported at the moment
-func (specAnalyser *specV2Analyser) getPayloadDefName(ref string) (string, error) {
-	reg, err := regexp.Compile(swaggerResourcePayloadDefinitionRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the swaggerResourcePayloadDefinitionRegex regex '%s': %s", swaggerResourcePayloadDefinitionRegex, err)
-	}
-	payloadDefName := reg.FindStringSubmatch(ref)[0]
-	if payloadDefName == "" {
-		return "", fmt.Errorf("could not find a valid definition name for '%s'", ref)
-	}
-	return payloadDefName, nil
-}
-
 // resourceInstanceRegex loads up the regex specified in const resourceInstanceRegex
 // If the regex is not able to compile the regular expression the function exists calling os.Exit(1) as
 // there is the regex is completely busted
