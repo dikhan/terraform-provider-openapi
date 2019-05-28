@@ -346,8 +346,6 @@ func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostO
 		return bodyParameter.Schema, nil
 	}
 	return nil, fmt.Errorf("POST operation contains an schema with no properties")
-
-	return nil, fmt.Errorf("resource root operation missing the body parameter")
 }
 
 // getPayloadDefName only supports references to the same document. External references like URLs is not supported at the moment
