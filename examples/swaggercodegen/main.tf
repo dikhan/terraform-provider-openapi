@@ -26,16 +26,15 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
     example_boolean = true
   }
 
-  array_of_objects_example = [
-    {
-      protocol = "http"
-      origin_port = 81
-    },
-    {
-      protocol = "https"
-      origin_port = 443
-    }
-  ]
+  array_of_objects_example {
+    protocol = "http"
+    origin_port = 81
+  }
+
+  array_of_objects_example {
+    protocol = "http"
+    origin_port = 81
+  }
 }
 
 # This is an example on how to use interpolation for 'object' types like the object_property and be able to pass
