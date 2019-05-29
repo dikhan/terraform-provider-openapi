@@ -76,7 +76,7 @@ func TestAccCDN_Create(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property.example_number", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property.example_boolean", "1"),
+						openAPIResourceStateCDN, "object_property.example_boolean", "true"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_nested_scheme_property.%", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
@@ -296,7 +296,7 @@ func TestAccCDN_Import(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property.example_number", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property.example_boolean", "1"),
+						openAPIResourceStateCDN, "object_property.example_boolean", "true"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_nested_scheme_property.%", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
@@ -490,7 +490,7 @@ func TestAccCDN_Update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property.example_number", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property.example_boolean", "1"),
+						openAPIResourceStateCDN, "object_property.example_boolean", "true"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_nested_scheme_property.%", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
@@ -548,7 +548,7 @@ func TestAccCDN_Update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property.example_number", floatToString(cdnUpdated.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property.example_boolean", "0"),
+						openAPIResourceStateCDN, "object_property.example_boolean", "false"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_nested_scheme_property.%", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
@@ -608,7 +608,7 @@ func TestAccCDN_CreateWithZeroValues(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property.example_number", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property.example_boolean", "0"),
+						openAPIResourceStateCDN, "object_property.example_boolean", "false"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "array_of_objects_example.#", fmt.Sprintf("%d", len(cdn.ArrayOfObjectsExample))),
 				),
@@ -703,7 +703,7 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property.example_number", floatToString(cdn.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property.example_boolean", "1"),
+						openAPIResourceStateCDN, "object_property.example_boolean", "true"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_nested_scheme_property.%", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
@@ -760,7 +760,7 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property.example_number", floatToString(cdnUpdatedForceNew.ExampleNumber)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property.example_boolean", "1"),
+						openAPIResourceStateCDN, "object_property.example_boolean", "true"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "better_example_number_field_name", floatToString(cdnUpdatedForceNew.ExampleNumber)),
 					resource.TestCheckResourceAttr(
