@@ -105,7 +105,7 @@ func TestAccCDN_CreateJustRequired(t *testing.T) {
 	config := fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
-  endpoints = {}
+  endpoints {}
 }
 
 resource "%s" "%s" {
@@ -187,7 +187,7 @@ func TestAccCDN_Create_EndPointOverride(t *testing.T) {
 	testCreateConfigCDNWithResourceEndpointOverride := fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
-  endpoints = {
+  endpoints {
     %s = "%s" # this effectively overrides the default endpoint for 'cdn_v1', and API calls will be made against the value for this property
   }
 }
@@ -197,7 +197,7 @@ resource "%s" "%s" {
   ips = ["0.0.0.0"]
   hostnames = ["www.hostname.com"]
 }`, providerName, resourceCDNName, endpoint, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
-	expectedValidationError, _ := regexp.Compile(".*openapi_cdn_v1.my_cdn: unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://www\\.endpoint\\.com/v1/cdns HTTP/1\\.1'. Response = '404 Not Found'.*")
+	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://www\\.endpoint\\.com/v1/cdns HTTP/1\\.1'. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -379,7 +379,7 @@ func TestAccCDN_CreateFailsDueToMissingMandatoryApiKeyAuth(t *testing.T) {
 }
 resource "%s" "my_cdn" {}`, providerName, openAPIResourceNameCDN)
 
-	expectedValidationError, _ := regexp.Compile(".*\"apikey_auth\": required field is not set.*")
+	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"apikey_auth\" is required, but no definition was found.*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -429,7 +429,7 @@ resource "%s" "my_cdn" {
   hostnames = ["%s"]
 }`, providerName, openAPIResourceNameCDN, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames))
 
-	expectedValidationError, _ := regexp.Compile(".*\"label\": required field is not set.*")
+	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"label\" is required, but no definition was found.*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -806,7 +806,7 @@ func populateTemplateConfigurationCDN(label string, ips, hostnames []string, exa
 	return fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
-  endpoints = {}
+  endpoints {}
 }
 
 resource "%s" "%s" {
@@ -826,16 +826,15 @@ resource "%s" "%s" {
     example_boolean = %v
   }
 
-  array_of_objects_example = [
-    {
-      protocol = "%s"
-      origin_port = %d
-    },
-    {
-      protocol = "%s"
-      origin_port = %d
-    }
-  ]
+  array_of_objects_example {
+    protocol = "%s"
+    origin_port = %d
+  }
+
+  array_of_objects_example {
+    protocol = "%s"
+    origin_port = %d
+  }
 }`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, label, arrayToString(ips), arrayToString(hostnames), exampleInt, floatToString(exampleNumber), exampleBool, objectPropertyMessage, objectDetailedMessage, exampleInt, floatToString(exampleNumber), exampleBool, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
 }
 
@@ -843,7 +842,7 @@ func populateTemplateConfigurationCDNWithOptionalsPopulated(label string, ips, h
 	return fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
-  endpoints = {}
+  endpoints {}
 }
 
 resource "%s" "%s" {
@@ -867,16 +866,16 @@ resource "%s" "%s" {
     example_boolean = %v
   }
 
-  array_of_objects_example = [
-    {
-      protocol = "%s"
-      origin_port = %d
-    },
-    {
-      protocol = "%s"
-      origin_port = %d
-    }
-  ]
+  array_of_objects_example {
+    protocol = "%s"
+    origin_port = %d
+  }
+
+  array_of_objects_example {
+    protocol = "%s"
+    origin_port = %d
+  }
+
 }`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, label, arrayToString(ips), arrayToString(hostnames), optionalProperty, optionalComputed, optionalComputedWithDefault, exampleInt, floatToString(exampleNumber), exampleBool, objectPropertyMessage, objectDetailedMessage, exampleInt, floatToString(exampleNumber), exampleBool, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
 }
 
