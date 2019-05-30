@@ -466,9 +466,9 @@ func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchem
 		if useString {
 			// this is only applicable to objects
 			if propertyValue.(bool) {
-				return fmt.Sprintf("1"), nil
+				return fmt.Sprintf("true"), nil
 			}
-			return fmt.Sprintf("0"), nil
+			return fmt.Sprintf("false"), nil
 		}
 		return propertyValue.(bool), nil
 	default:

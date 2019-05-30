@@ -925,7 +925,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the result value should be the expected value with the right type boolean", func() {
-				So(resultValue, ShouldEqual, "1")
+				So(resultValue, ShouldEqual, "true")
 			})
 		})
 		Convey("When convertPayloadToLocalStateDataValue is called with a int property, a bool value false and the desired output is string", func() {
@@ -936,7 +936,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the result value should be the expected value formatted string with the right type boolean", func() {
-				So(resultValue, ShouldEqual, "0")
+				So(resultValue, ShouldEqual, "false")
 			})
 		})
 
@@ -1090,7 +1090,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_string")
 				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
 				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_bool")
-				So(resultValue.(map[string]interface{})["example_bool"].(string), ShouldEqual, "1")
+				So(resultValue.(map[string]interface{})["example_bool"].(string), ShouldEqual, "true")
 				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_float")
 				So(resultValue.(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
 			})
