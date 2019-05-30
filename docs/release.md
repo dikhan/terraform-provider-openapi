@@ -5,7 +5,7 @@ is described in this document.
 
 ## Pre-requirements
 
-- [Go 1.10.1](https://golang.org/)
+- [Go 1.12.4](https://golang.org/)
 - [GoReleaser](https://goreleaser.com/)
 
 ## How to release a new version
