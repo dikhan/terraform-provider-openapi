@@ -150,7 +150,7 @@ The following describes the contents of this example and how to use goa to auto-
 
 ## Pre-requisites
 
-- Go go1.10.1
+- Go go1.12.4
 - [goa](https://github.com/goadesign/goa/blob/master/README.md#installation) latest from master
 
 ## Running goagen
