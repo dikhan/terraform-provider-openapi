@@ -76,6 +76,8 @@ Additionally, the following documents provide deep insight regarding OpenAPI and
 
 - [How to](docs/how_to.md) document contains information about how to define a swagger file following good practises that
 make it work seamlessly with this terraform provider. Additionally, learn more about what is currently supported.
+- [Migrating to Terraform 0.12](./docs/terraform_version_upgrades/upgrading_to_terraform_0.12.md). This document describes
+how to update configuration created using Terraform v0.11 to v0.12.
 - [FAQ](./docs/faq.md) document answers for the most frequently asked questions.
 
 ## Contributing
