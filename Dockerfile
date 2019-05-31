@@ -2,7 +2,7 @@ FROM golang:1.8
 
 WORKDIR /openapi
 
-ENV TERRAFORM_VERSION=0.11.8
+ENV TERRAFORM_VERSION=0.12.0
 
 RUN apt-get update && \
     apt-get install unzip openssl ca-certificates && \
