@@ -1,11 +1,11 @@
-FROM golang:1.8
+FROM golang:1.12.5
 
 WORKDIR /openapi
 
 ENV TERRAFORM_VERSION=0.12.0
 
 RUN apt-get update && \
-    apt-get install unzip openssl ca-certificates && \
+    apt-get -yq install unzip openssl ca-certificates && \
     cd /tmp && \
     wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
     unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /usr/bin && \
