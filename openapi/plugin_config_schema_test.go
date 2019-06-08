@@ -3,8 +3,6 @@ package openapi
 import (
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
-	"io/ioutil"
-	"os"
 	"testing"
 )
 
@@ -208,11 +206,13 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
 		var pluginConfigSchema PluginConfigSchema
 		expectedURL := "http://sevice-api.com/swagger.yaml"
+		expectedPluginVersion := "0.14.0"
 		serviceConfigName := "test"
 		expectedInscureSkipVerify := true
 		services := map[string]*ServiceConfigV1{
 			serviceConfigName: {
 				SwaggerURL:         expectedURL,
+				PluginVersion:      expectedPluginVersion,
 				InsecureSkipVerify: expectedInscureSkipVerify,
 				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
 					ServiceSchemaPropertyConfigurationV1{
@@ -236,6 +236,59 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the marshalConfig should contain the right marshal configuration", func() {
+				expectedConfig := fmt.Sprintf(`version: "1"
+services:
+  test:
+    swagger-url: %s
+    plugin_version: %s
+    insecure_skip_verify: %t
+    schema_configuration:
+    - schema_property_name: apikey_auth
+      default_value: apiKeyValue
+      cmd: [echo, something]
+      cmd_timeout: 10
+      schema_property_external_configuration:
+        file: some_file
+        key_name: some_key_name
+        content_type: json
+`, expectedURL, expectedPluginVersion, expectedInscureSkipVerify)
+				So(string(marshalConfig), ShouldEqual, expectedConfig)
+			})
+		})
+	})
+
+	Convey("Given a PluginConfigSchemaV1 containing a version supported and a service that does not specify a fix plugin version", t, func() {
+		var pluginConfigSchema PluginConfigSchema
+		expectedURL := "http://sevice-api.com/swagger.yaml"
+		serviceConfigName := "test"
+		expectedInscureSkipVerify := true
+		services := map[string]*ServiceConfigV1{
+			serviceConfigName: {
+				SwaggerURL: expectedURL,
+				//PluginVersion: expectedPluginVersion,
+				InsecureSkipVerify: expectedInscureSkipVerify,
+				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
+					ServiceSchemaPropertyConfigurationV1{
+						SchemaPropertyName: "apikey_auth",
+						DefaultValue:       "apiKeyValue",
+						Command:            []string{"echo", "something"},
+						CommandTimeout:     10,
+						ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
+							File:        "some_file",
+							KeyName:     "some_key_name",
+							ContentType: "json",
+						},
+					},
+				},
+			},
+		}
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		Convey("When Marshal method is called", func() {
+			marshalConfig, err := pluginConfigSchema.Marshal()
+			Convey("Then the error returned should be nil as configuration is correct", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the marshalConfig should contain the right marshal configuration (and the plugin_version property should not be present)", func() {
 				expectedConfig := fmt.Sprintf(`version: "1"
 services:
   test:
