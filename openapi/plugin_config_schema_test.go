@@ -79,45 +79,6 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 			})
 		})
 	})
-
-	Convey("Given a PluginConfigSchemaV1 containing a version that is supported but some services contain NON valid URLs", t, func() {
-		var pluginConfigSchema PluginConfigSchema
-		services := map[string]*ServiceConfigV1{
-			"test": {
-				SwaggerURL:         "htpt:/non-valid-url",
-				InsecureSkipVerify: true,
-			},
-		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
-		Convey("When Validate method is called", func() {
-			err := pluginConfigSchema.Validate()
-			Convey("Then the error returned should NOT be nil as service URL is not correct", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned be equal to", func() {
-				So(err.Error(), ShouldEqual, "service 'test' found in the provider configuration does not contain a valid SwaggerURL value ('htpt:/non-valid-url'). URL must be either a valid formed URL or a path to an existing swagger file stored in the disk")
-			})
-		})
-	})
-
-	Convey("Given a PluginConfigSchemaV1 containing a version that is supported and a service with a SwaggerURL pointing at a file store in the disk", t, func() {
-		var pluginConfigSchema PluginConfigSchema
-		swaggerFile, _ := ioutil.TempFile("", "")
-		defer os.RemoveAll(swaggerFile.Name()) // clean up
-		services := map[string]*ServiceConfigV1{
-			"test": {
-				SwaggerURL:         swaggerFile.Name(),
-				InsecureSkipVerify: true,
-			},
-		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
-		Convey("When Validate method is called", func() {
-			err := pluginConfigSchema.Validate()
-			Convey("Then the error returned should be nil as service URL is correct", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-	})
 }
 
 func TestPluginConfigSchemaV1GetServiceConfig(t *testing.T) {
