@@ -85,7 +85,10 @@ func TestServiceConfigV1Validate(t *testing.T) {
 	Convey("Given a ServiceConfigV1 containing an invalid swagger URL pointing at a file store in the disk", t, func() {
 		var serviceConfiguration ServiceConfiguration
 		swaggerFile, _ := ioutil.TempFile("", "")
-		defer os.RemoveAll(swaggerFile.Name()) // clean up
+		defer func (swaggerFile *os.File) {
+			_ = swaggerFile.Close()
+			_ = os.RemoveAll(swaggerFile.Name())
+		}(swaggerFile)
 		expectedSwaggerURL := swaggerFile.Name()
 		serviceConfiguration = &ServiceConfigV1{
 			SwaggerURL: expectedSwaggerURL,
