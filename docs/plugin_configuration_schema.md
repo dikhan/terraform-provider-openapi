@@ -70,7 +70,7 @@ Describes the configurations available on a single service.
 Field Name | Type | Description
 ---|:---:|---
 swagger-url | `string` | **Required.** Defines the location where the swagger document is hosted. The value must be either a valid formatted URL or a path to a swagger file stored in the disk
-plugin_version | `string` | Defines the plugin version. If this value is specified, the openapi plugin version executed must match this value; otherwise and error will be thrown at runtime.
+plugin_version | `string` | Defines the plugin version. If this value is specified, the openapi plugin version executed must match this value; otherwise an error will be thrown at runtime.
 insecure_skip_verify | `string` | Defines whether a certificate verification should be performed when retrieving ```swagger-url``` from the server. This is **not recommended** for regular use and should only be set when the server hosting the swagger file is known and trusted but does not have a cert signed by the usually trusted CAs.
 schema_configuration | [][Schema Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-configuration-object) |  | Schema Configuration Object
 
@@ -92,7 +92,7 @@ Describes the schema configuration for the service provider:
 
 Field Name | Type | Description
 ---|:---:|---
-file | `string` | Defines the location where the swagger document is hosted. The value must be either a valid formatted URL or a path to a swagger file stored in the disk. Paths starting with `~` will be expanded to user's home directory
+file | `string` | Defines the location where the swagger document is hosted. The value must be either a valid formatted URL or a path to a swagger file stored on disk. Paths starting with `~` will be expanded to user's home directory
 key_name | `string` | Defines the key name of the property to look for in the `file`. The file must be JSON formatted if this property is populated. The value must be formatted using the [JsonPath syntax](https://github.com/oliveagle/jsonpath)
 content_type | `string` | Defines the type of content in the ```file```. Supported values are: raw, json
 
