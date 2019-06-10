@@ -78,12 +78,12 @@ require (
 	github.com/ulikunitz/xz v0.5.4
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea
 	github.com/zclconf/go-cty v0.0.0-20180616180831-c96d660229f9
-	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
+	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
 	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
-	golang.org/x/sys v0.0.0-20190528183647-3626398d7749
+	golang.org/x/net v0.0.0-20190607181551-461777fb6f67
+	golang.org/x/sys v0.0.0-20190610081024-1e42afee0f76
 	golang.org/x/text v0.3.2
-	golang.org/x/tools v0.0.0-20190528202502-08bd53a4b4c4 // indirect
+	golang.org/x/tools v0.0.0-20190608022120-eacb66d2a7c3 // indirect
 	google.golang.org/genproto v0.0.0-20180627194029-ff3583edef7d
 	google.golang.org/grpc v1.13.0
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528
