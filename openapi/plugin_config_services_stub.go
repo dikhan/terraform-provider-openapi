@@ -2,8 +2,10 @@ package openapi
 
 type serviceConfigStub struct {
 	swaggerURL          string
+	pluginVersion       string
 	insecureSkipVerify  bool
 	schemaConfiguration []*serviceSchemaPropertyConfigurationStub
+	err                 error
 }
 
 type serviceSchemaPropertyConfigurationStub struct {
@@ -17,8 +19,16 @@ func (s *serviceConfigStub) GetSwaggerURL() string {
 	return s.swaggerURL
 }
 
+func (s *serviceConfigStub) GetPluginVersion() string {
+	return s.pluginVersion
+}
+
 func (s *serviceConfigStub) IsInsecureSkipVerifyEnabled() bool {
 	return s.insecureSkipVerify
+}
+
+func (s *serviceConfigStub) Validate(runningPluginVersion string) error {
+	return s.err
 }
 
 func (s serviceConfigStub) GetSchemaPropertyConfiguration(schemaPropertyName string) ServiceSchemaPropertyConfiguration {

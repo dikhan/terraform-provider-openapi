@@ -2,9 +2,7 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 // ServiceConfigurations contains the map with all service configurations
@@ -30,6 +28,7 @@ type PluginConfigSchema interface {
 // services:
 //   monitor:
 //     swagger-url: http://monitor-api.com/swagger.json
+//     plugin_version: 0.14.0
 //     insecure_skip_verify: true
 //   cdn:
 //     swagger-url: https://cdn-api.com/swagger.json
@@ -52,14 +51,6 @@ func NewPluginConfigSchemaV1(services map[string]*ServiceConfigV1) *PluginConfig
 func (p *PluginConfigSchemaV1) Validate() error {
 	if p.Version != "1" {
 		return fmt.Errorf("provider configuration version not matching current implementation, please use version '1' of provider configuration specification")
-	}
-	for k, v := range p.Services {
-		if !govalidator.IsURL(v.SwaggerURL) {
-			// fall back to try to load the swagger file from disk in case the path provided is a path to a file on disk
-			if _, err := os.Stat(v.SwaggerURL); os.IsNotExist(err) {
-				return fmt.Errorf("service '%s' found in the provider configuration does not contain a valid SwaggerURL value ('%s'). URL must be either a valid formed URL or a path to an existing swagger file stored in the disk", k, v.SwaggerURL)
-			}
-		}
 	}
 	return nil
 }

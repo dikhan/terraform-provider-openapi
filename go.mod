@@ -32,11 +32,11 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
 	github.com/spf13/cobra v0.0.3
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
-	golang.org/x/crypto v0.0.0-20190530122614-20be4c3c3ed5 // indirect
+	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5 // indirect
 	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
-	golang.org/x/sys v0.0.0-20190531175056-4c3a928424d2 // indirect
-	golang.org/x/tools v0.0.0-20190531172133-b3315ee88b7d // indirect
+	golang.org/x/net v0.0.0-20190607181551-461777fb6f67 // indirect
+	golang.org/x/sys v0.0.0-20190610081024-1e42afee0f76 // indirect
+	golang.org/x/tools v0.0.0-20190610162940-e6ce0ddf0321 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )

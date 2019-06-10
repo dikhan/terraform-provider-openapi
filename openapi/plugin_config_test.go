@@ -222,4 +222,26 @@ services:
 		})
 	})
 
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service configuration that is invalid (e,g: plugin version is specified but does not match the version of the plugin executing)", t, func() {
+		pluginConfig := fmt.Sprintf(`version: '1'
+services:
+    %s:
+        swagger-url: %s
+        plugin_version: 0.14.0`, providerName, otfVarSwaggerURLValue)
+		configReader := strings.NewReader(pluginConfig)
+		pluginConfiguration := PluginConfiguration{
+			ProviderName:  providerName,
+			Configuration: configReader,
+		}
+		Convey("When getServiceConfiguration is called", func() {
+			_, err := pluginConfiguration.getServiceConfiguration()
+			Convey("The error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error should containing the following message", func() {
+				So(err.Error(), should.ContainSubstring, "service configuration for 'test' not valid: plugin version '0.14.0' in the plugin configuration file does not match the version of the OpenAPI plugin that is running 'dev'")
+			})
+		})
+	})
+
 }
