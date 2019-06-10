@@ -97,6 +97,19 @@ func TestServiceConfigV1Validate(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a ServiceConfigV1 containing an empty plugin version", t, func() {
+		expectedSwaggerURL := "http://a.valid.url"
+		serviceConfiguration := &ServiceConfigV1{
+			SwaggerURL: expectedSwaggerURL,
+			PluginVersion: "",
+		}
+		Convey("When Validate method is called", func() {
+			err := serviceConfiguration.Validate("0.14.0")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
 	Convey("Given a ServiceConfigV1 containing an invalid swagger URL", t, func() {
 		var serviceConfiguration ServiceConfiguration
 		expectedSwaggerURL := "htpt:/non-valid-url"

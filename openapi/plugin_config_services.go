@@ -84,5 +84,6 @@ func (s *ServiceConfigV1) Validate(runningPluginVersion string) error {
 			return fmt.Errorf("plugin version '%s' in the plugin configuration file does not match the version of the OpenAPI plugin that is running '%s'", s.PluginVersion, runningPluginVersion)
 		}
 	}
+
 	return nil
 }
