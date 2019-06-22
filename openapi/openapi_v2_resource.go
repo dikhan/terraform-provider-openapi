@@ -262,12 +262,24 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.IsStatusIdentifier = true
 	}
 
+	if o.isPropertyWithNestedObjects(property) {
+		schemaDefinitionProperty.IsNestedObject = true
+	}
+
 	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default
 	// value is the one that the server uses if the client does not supply the parameter value in the request.
 	// Link: https://swagger.io/docs/specification/describing-parameters#default
 	schemaDefinitionProperty.Default = property.Default
 
 	return schemaDefinitionProperty, nil
+}
+
+// TODO: fill this out and add unit tests
+func (o *SpecV2Resource) isPropertyWithNestedObjects(property spec.Schema) bool {
+	// Here we do the following:
+	// - check if the type is object, if not return false right away
+	// - loop through the property.Properties and if any of the properties is in turn of type object then we return true; false otherwise
+	return false
 }
 
 func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, property spec.Schema, requiredProperties []string) (bool, error) {

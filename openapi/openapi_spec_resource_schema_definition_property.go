@@ -27,6 +27,7 @@ type specSchemaDefinitionProperty struct {
 	PreferredName  string
 	Type           schemaDefinitionPropertyType
 	ArrayItemsType schemaDefinitionPropertyType
+	IsNestedObject bool
 	Required       bool
 	// ReadOnly properties are included in responses but not in request
 	ReadOnly bool
@@ -159,6 +160,17 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		return nil, err
 	}
 	terraformSchema.Type = schemaType
+
+	// As per @apparentlymart comment in https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737, currently (terraform sdk <= v0.12.2) the only
+	// way to configure nested structs is by defining a TypeList property which contains the object schema in the elem
+	// AND the list is restricted to 1 element. The below is a workaround to support this, however this should go away
+	// once the SDK supports this out-of-the-box. Note: When this behaviour changes, it will require a new major release
+	// of the provider since the terraform configuration will most likely be different (as well as the way the data is stored
+	// in the state file) AND the change will NOT be backwards compatible.
+	if s.IsNestedObject {
+		s.Type = typeList
+		terraformSchema.MaxItems = 1
+	}
 
 	// complex data structures
 	switch s.Type {
