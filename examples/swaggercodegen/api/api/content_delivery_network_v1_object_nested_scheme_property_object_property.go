@@ -10,8 +10,6 @@
 
 package api
 
-type ContentDeliveryNetworkV1ObjectNestedSchemeProperty struct {
-	Name string `json:"name,omitempty"`
-
-	ObjectProperty *ContentDeliveryNetworkV1ObjectNestedSchemePropertyObjectProperty `json:"object_property"`
+type ContentDeliveryNetworkV1ObjectNestedSchemePropertyObjectProperty struct {
+	Account string `json:"account,omitempty"`
 }
