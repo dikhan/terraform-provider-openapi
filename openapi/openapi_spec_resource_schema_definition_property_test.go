@@ -686,14 +686,14 @@ func TestTerraformSchema(t *testing.T) {
 					&specSchemaDefinitionProperty{
 						Type: typeFloat,
 						Name: "nested_float2",
-						SpecSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
-									Type: typeFloat,
-									Name: "float_property2",
-								},
-							},
-						},
+						//SpecSchemaDefinition: &specSchemaDefinition{
+						//	Properties: specSchemaDefinitionProperties{
+						//		&specSchemaDefinitionProperty{
+						//			Type: typeFloat,
+						//			Name: "float_property2",
+						//		},
+						//	},
+						//},
 					},
 				},
 			}}
@@ -712,7 +712,6 @@ func TestTerraformSchema(t *testing.T) {
 
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_float_2"]
 				So(nestedObject2.Type, ShouldEqual, schema.TypeFloat)
-				So(nestedObject2.Elem.(*schema.Resource).Schema["string_property_2"].Type, ShouldEqual, schema.TypeString) // TODO: Why is this not string_property2?
 			})
 		})
 	})
@@ -761,11 +760,11 @@ func TestTerraformSchema(t *testing.T) {
 			Convey("And the element in the list is of TypeMap (= object) with basic types properties ", func() {
 				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object_1"]
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
-				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)	// TODO: Why is this not string_property1?
+				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)
 
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object_2"]
 				So(nestedObject2.Type, ShouldEqual, schema.TypeMap)
-				So(nestedObject2.Elem.(*schema.Resource).Schema["string_property_2"].Type, ShouldEqual, schema.TypeString) // TODO: Why is this not string_property2?
+				So(nestedObject2.Elem.(*schema.Resource).Schema["string_property_2"].Type, ShouldEqual, schema.TypeString)
 			})
 		})
 	})
