@@ -275,13 +275,13 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	return schemaDefinitionProperty, nil
 }
 
+// todo : change name to isObjectWithNestedObjects ? <-- ask Dani
 func (o *SpecV2Resource) isPropertyWithNestedObjects(property spec.Schema) bool {
 	// - check if the type is object, if not return false right away
 	isObject, _, _ := o.isObjectProperty(property)
 	if !isObject {
 		return false
 	}
-
 	// - loop through the property.Properties and if any of the properties is in turn of type object then we return true; false otherwise
 	for _, p := range property.Properties {
 		propertyType, _ := o.getPropertyType(p)

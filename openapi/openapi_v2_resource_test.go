@@ -1661,21 +1661,11 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 			})
 		})
 
-		//sad path, property is not an Object
+		//sad path, top level property is not an Object (but an array)
 		Convey("When IsPropertyWithNestedObjects method is called with a property which is NOT of type object", func() {
 			property := spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"array"},
-					Properties: map[string]spec.Schema{
-						"nested_object": spec.Schema{
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"object"},
-								Properties: map[string]spec.Schema{
-									"nested_prop": {},
-								},
-							},
-						},
-					},
 				},
 			}
 			isNestedObject := r.isPropertyWithNestedObjects(property)
