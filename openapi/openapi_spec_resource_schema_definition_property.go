@@ -54,6 +54,12 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 	return terraformutils.ConvertToTerraformCompliantName(s.Name)
 }
 
+// TODO: this function should be responsible to figuring out whether the property is to be considered a property with nested objects or not this should enable the removal of tje property IsNestedObject bool
+func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
+	// put logic here to figure whether the property has nested objects
+	return false
+}
+
 func (s *specSchemaDefinitionProperty) isPropertyNamedID() bool {
 	return s.getTerraformCompliantPropertyName() == idDefaultPropertyName
 }

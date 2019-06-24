@@ -263,6 +263,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.IsStatusIdentifier = true
 	}
 
+	// TODO: remove this logic once the specSchemaDefinitionProperty.isPropertyWithNestedObjects() has been implemented
 	if o.isPropertyWithNestedObjects(property) {
 		schemaDefinitionProperty.IsNestedObject = true
 	}
