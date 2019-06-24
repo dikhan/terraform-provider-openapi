@@ -698,8 +698,8 @@ func TestTerraformSchema(t *testing.T) {
 
 			Convey("And the element in the list is of TypeMap (= object) with basic types properties ", func() {
 				nestedObject := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object"]
-				So(nestedObject, ShouldEqual, schema.TypeMap)
-				So(nestedObject.Elem.(*schema.Resource).Schema["string_property"].Type, ShouldEqual, typeString)
+				So(nestedObject.Type, ShouldEqual, schema.TypeMap)
+				So(nestedObject.Elem.(*schema.Resource).Schema["string_property"].Type, ShouldEqual, schema.TypeString)
 			})
 		})
 	})
