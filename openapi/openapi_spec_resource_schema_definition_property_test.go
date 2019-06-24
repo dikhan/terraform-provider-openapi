@@ -664,7 +664,7 @@ func TestTerraformObjectSchema(t *testing.T) {
 }
 
 func TestTerraformSchema(t *testing.T) {
-	Convey("Given a swagger schema definition that has two nested object properties - non homogenous case ", t, func() {
+	Convey("Given a swagger schema definition that has two nested properties - one being an object and the other one a primitive", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:           "top_level_object",
 			Type:           typeObject,
@@ -686,30 +686,24 @@ func TestTerraformSchema(t *testing.T) {
 					&specSchemaDefinitionProperty{
 						Type: typeFloat,
 						Name: "nested_float2",
-						//SpecSchemaDefinition: &specSchemaDefinition{
-						//	Properties: specSchemaDefinitionProperties{
-						//		&specSchemaDefinitionProperty{
-						//			Type: typeFloat,
-						//			Name: "float_property2",
-						//		},
-						//	},
-						//},
 					},
 				},
 			}}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 
-			Convey("Then the resulted tfPropSchema should have a top level that is a 1 element list", func() {
+			Convey("Then the resulted tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
 			})
-			Convey("And the element in the list is of TypeMap (= object) with basic types properties ", func() {
+			Convey("And the returned terraform schema contains the 'nested_object_1' with the right configuration", func() {
 				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object_1"]
+				So(nestedObject1, ShouldNotBeNil)
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
-				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)	// TODO: Why is this not string_property1?
-
+				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)
+			})
+			Convey("And the returned terraform schema contains the 'nested_float_2' with the right configuration", func() {
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_float_2"]
 				So(nestedObject2.Type, ShouldEqual, schema.TypeFloat)
 			})
