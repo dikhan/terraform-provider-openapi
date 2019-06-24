@@ -665,7 +665,6 @@ func TestTerraformObjectSchema(t *testing.T) {
 
 func TestTerraformSchema(t *testing.T) {
 
-	//todo added fradiben
 	Convey("Given a swagger schema definition that has a nested object property", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:           "top_level_object",
