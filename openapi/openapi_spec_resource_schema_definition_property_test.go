@@ -664,6 +664,55 @@ func TestTerraformObjectSchema(t *testing.T) {
 	})
 }
 
+func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
+	Convey("Given a swagger schema definition property that has nested objects", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "top_level_object",
+			Type: typeObject,
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Type: typeObject,
+						Name: "nested_object_1",
+						SpecSchemaDefinition: &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{
+								&specSchemaDefinitionProperty{
+									Type: typeString,
+									Name: "string_property_1",
+								},
+							},
+						},
+					},
+				},
+			}}
+		Convey("When terraformSchema method is called", func() {
+			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
+			Convey("Then the result should be true", func() {
+				So(isPropertyWithNestedObjects, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a swagger schema definition property that DOES NOT have nested objects", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "top_level_object",
+			Type: typeObject,
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Type: typeString,
+						Name: "some_string",
+					},
+				},
+			}}
+		Convey("When terraformSchema method is called", func() {
+			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
+			Convey("Then the result should be false", func() {
+				So(isPropertyWithNestedObjects, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestTerraformSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has two nested properties - one being an object and the other one a primitive", t, func() {
 		expectedNestedObjectPropertyName := "nested_object_1"
