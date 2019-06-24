@@ -263,34 +263,12 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.IsStatusIdentifier = true
 	}
 
-	// TODO: remove this logic once the specSchemaDefinitionProperty.isPropertyWithNestedObjects() has been implemented
-	if o.isPropertyWithNestedObjects(property) {
-		schemaDefinitionProperty.IsNestedObject = true
-	}
-
 	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default
 	// value is the one that the server uses if the client does not supply the parameter value in the request.
 	// Link: https://swagger.io/docs/specification/describing-parameters#default
 	schemaDefinitionProperty.Default = property.Default
 
 	return schemaDefinitionProperty, nil
-}
-
-// todo : change name to isObjectWithNestedObjects ? <-- ask Dani
-func (o *SpecV2Resource) isPropertyWithNestedObjects(property spec.Schema) bool {
-	// - check if the type is object, if not return false right away
-	isObject, _, _ := o.isObjectProperty(property)
-	if !isObject {
-		return false
-	}
-	// - loop through the property.Properties and if any of the properties is in turn of type object then we return true; false otherwise
-	for _, p := range property.Properties {
-		propertyType, _ := o.getPropertyType(p)
-		if propertyType == typeObject {
-			return true
-		}
-	}
-	return false
 }
 
 func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, property spec.Schema, requiredProperties []string) (bool, error) {

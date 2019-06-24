@@ -717,9 +717,8 @@ func TestTerraformSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has two nested properties - one being an object and the other one a primitive", t, func() {
 		expectedNestedObjectPropertyName := "nested_object_1"
 		s := &specSchemaDefinitionProperty{
-			Name:           "top_level_object",
-			Type:           typeObject,
-			IsNestedObject: true,
+			Name: "top_level_object",
+			Type: typeObject,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
@@ -765,9 +764,8 @@ func TestTerraformSchema(t *testing.T) {
 		expectedNestedObjectPropertyName1 := "nested_object_1"
 		expectedNestedObjectPropertyName2 := "nested_object_2"
 		s := &specSchemaDefinitionProperty{
-			Name:           "top_level_object",
-			Type:           typeObject,
-			IsNestedObject: true,
+			Name: "top_level_object",
+			Type: typeObject,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{

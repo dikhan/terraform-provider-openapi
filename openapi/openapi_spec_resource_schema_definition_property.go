@@ -27,8 +27,6 @@ type specSchemaDefinitionProperty struct {
 	PreferredName  string
 	Type           schemaDefinitionPropertyType
 	ArrayItemsType schemaDefinitionPropertyType
-	// TODO: remove this once the isPropertyWithNestedObjects() method has been implemented
-	IsNestedObject bool
 	Required       bool
 	// ReadOnly properties are included in responses but not in request
 	ReadOnly bool
@@ -184,7 +182,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		// once the SDK supports this out-of-the-box. Note: When this behaviour changes, it will require a new major release
 		// of the provider since the terraform configuration will most likely be different (as well as the way the data is stored
 		// in the state file) AND the change will NOT be backwards compatible.
-		if s.IsNestedObject {
+		if s.isPropertyWithNestedObjects() {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1
 		}
