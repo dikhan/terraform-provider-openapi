@@ -1,16 +1,11 @@
 package openapi
 
 import (
-	"bytes"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/go-openapi/jsonreference"
 	"github.com/go-openapi/spec"
@@ -1666,6 +1661,29 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 			})
 		})
 
+		//sad path, property is not an Object
+		Convey("When IsPropertyWithNestedObjects method is called with a property which is NOT of type object", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+					Properties: map[string]spec.Schema{
+						"nested_object": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"object"},
+								Properties: map[string]spec.Schema{
+									"nested_prop": {},
+								},
+							},
+						},
+					},
+				},
+			}
+			isNestedObject := r.isPropertyWithNestedObjects(property)
+			Convey("the result should be false", func() {
+				So(isNestedObject, ShouldBeFalse)
+			})
+		})
+
 		//sad path, is nested but not object-nested
 		Convey("When IsPropertyWithNestedObjects method is called with a property of type object that HAS NOT nested OBJECT properties", func() {
 			property := spec.Schema{
@@ -1684,7 +1702,7 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 				},
 			}
 			isNestedObject := r.isPropertyWithNestedObjects(property)
-			Convey("the result your be false", func() {
+			Convey("the result should be false", func() {
 				So(isNestedObject, ShouldBeFalse)
 			})
 		})
@@ -1696,38 +1714,9 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 				Type:  spec.StringOrArray{"array"},
 			}}
 			isNestedObject := r.isPropertyWithNestedObjects(property)
-			Convey("the result your be false", func() {
-				So(isNestedObject, ShouldBeFalse)
-			})
-		})
-
-		//sad path, nested object type is not supported
-		Convey("When IsPropertyWithNestedObjects method is called with a nested property of which type is not supported", func() {
-			w := bytes.NewBuffer([]byte{})
-			log.SetOutput(w)
-			defer func() { log.SetOutput(os.Stdout) }()
-
-			property := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"object"},
-					Properties: map[string]spec.Schema{
-						"nested_object": spec.Schema{
-							SchemaProps: spec.SchemaProps{
-								Title: "not-a-supported-property-type",
-								Type:  spec.StringOrArray{"whatever"},
-								Properties: map[string]spec.Schema{
-									"nested_prop": spec.Schema{},
-								},
-							},
-						},
-					},
-				},
-			}
-			isNestedObject := r.isPropertyWithNestedObjects(property)
 			Convey("the result should be false", func() {
 				So(isNestedObject, ShouldBeFalse)
 			})
-			assert.Contains(t, w.String(), "[ERROR] non supported '[whatever]' type")
 		})
 
 	})

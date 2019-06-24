@@ -277,22 +277,14 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 func (o *SpecV2Resource) isPropertyWithNestedObjects(property spec.Schema) bool {
 	// - check if the type is object, if not return false right away
-	isObject, _, err := o.isObjectProperty(property) //todo; how to cover this case?
-	if err != nil {
-		log.Printf("[DEBUG] error while checking for isObject '%s'", property.Title)
-		return false
-	}
+	isObject, _, _ := o.isObjectProperty(property)
 	if !isObject {
 		return false
 	}
 
 	// - loop through the property.Properties and if any of the properties is in turn of type object then we return true; false otherwise
 	for _, p := range property.Properties {
-		propertyType, err := o.getPropertyType(p)
-		if err != nil {
-			log.Println("[ERROR]", err)
-			return false
-		}
+		propertyType, _ := o.getPropertyType(p)
 		if propertyType == typeObject {
 			return true
 		}
