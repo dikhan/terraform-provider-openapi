@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -170,6 +171,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	if s.IsNestedObject {
 		s.Type = typeList
 		terraformSchema.MaxItems = 1
+		s.ArrayItemsType = typeObject // todo: added frdiben
 	}
 
 	// complex data structures

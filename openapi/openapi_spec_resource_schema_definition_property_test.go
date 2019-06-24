@@ -1,9 +1,10 @@
 package openapi
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
 	"reflect"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -663,438 +664,478 @@ func TestTerraformObjectSchema(t *testing.T) {
 }
 
 func TestTerraformSchema(t *testing.T) {
-	Convey("Given a swagger schema definition that has a property of type 'string' which is required", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:     "string_prop",
-			Type:     typeString,
-			ReadOnly: false,
-			Required: true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted tfPropSchema should be of type string too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
-				So(tfPropSchema.Required, ShouldBeTrue)
-			})
-		})
-	})
 
-	Convey("Given a swagger schema definition that has a property of type 'integer'", t, func() {
+	//todo added fradiben
+	Convey("Given a swagger schema definition that has a nested object property", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Name:     "int_prop",
-			Type:     typeInt,
-			ReadOnly: false,
-			Required: true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type int too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeInt)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type 'number'", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:     "number_prop",
-			Type:     typeFloat,
-			ReadOnly: false,
-			Required: true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type float too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeFloat)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type 'boolean'", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:     "boolean_prop",
-			Type:     typeBool,
-			ReadOnly: false,
-			Required: true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type int too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeBool)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type string", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeString,
-			ReadOnly:       false,
-			Required:       true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type string", func() {
-				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
-				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type integer", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeInt,
-			ReadOnly:       false,
-			Required:       true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type int", func() {
-				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
-				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeInt)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type number", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeFloat,
-			ReadOnly:       false,
-			Required:       true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type float", func() {
-				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
-				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeFloat)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type bool", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeBool,
-			ReadOnly:       false,
-			Required:       true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
-				So(err, ShouldBeNil)
-				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type bool", func() {
-				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
-				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeBool)
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type object", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeObject,
-			ReadOnly:       false,
-			Required:       true,
+			Name:           "top_level_object",
+			Type:           typeObject,
+			IsNestedObject: true,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
-						Name: "protocol",
-						Type: typeString,
+						Type: typeObject,
+						Name: "nested_object",
+						SpecSchemaDefinition: &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{
+								&specSchemaDefinitionProperty{
+									Type: typeString,
+									Name: "string_property",
+								},
+							},
+						},
 					},
 				},
-			},
-		}
+			}}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
+
+			Convey("Then the resulted tfPropSchema should have a top level that is a 1 element list", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+				So(tfPropSchema.MaxItems, ShouldEqual, 1)
 			})
-			Convey("And the array elements are of type object (resource object) containing the object schema properties", func() {
-				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Resource{}))
-				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "protocol")
-			})
-		})
-	})
 
-	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are not set", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:     "array_prop",
-			Type:     typeList,
-			ReadOnly: false,
-			Required: true,
-		}
-		Convey("When terraformSchema method is called", func() {
-			_, err := s.terraformSchema()
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "object schema can only be formed for types object or types list with elems of type object: found type='list' elemType='' instead")
+			Convey("And the element in the list is of TypeMap (= object) with basic types properties ", func() {
+				nestedObject := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object"]
+				So(nestedObject, ShouldEqual, schema.TypeMap)
+				So(nestedObject.Elem.(*schema.Resource).Schema["string_property"].Type, ShouldEqual, typeString)
 			})
 		})
 	})
-
-	Convey("Given a swagger schema definition that has a property of type object and a ref pointing to the schema", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:     "object_prop",
-			Type:     typeObject,
-			ReadOnly: false,
-			Required: true,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Name: "message",
-						Type: typeString,
-					},
-				},
-			},
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the tf resource schema returned should not be nil", func() {
-				So(tfPropSchema, ShouldNotBeNil)
-			})
-			Convey("And the tf resource schema returned should contained the sub property - 'message'", func() {
-				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
-			})
-		})
-	})
-
-	Convey("Given a swagger schema definition that has a property of type object that has nested schema and property named id", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name:     "object_prop",
-			Type:     typeObject,
-			ReadOnly: false,
-			Required: true,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Name: "id",
-						Type: typeString,
-					},
-					&specSchemaDefinitionProperty{
-						Name: "message",
-						Type: typeString,
-					},
-				},
-			},
-		}
-		Convey("When terraformSchema method is called", func() {
-			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the tf resource schema returned should not be nil", func() {
-				So(tfPropSchema, ShouldNotBeNil)
-			})
-			Convey("And the tf resource schema returned should contain the sub property - 'message'", func() {
-				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
-			})
-			Convey("And the tf resource schema returned should contain the sub property - 'id' and should not be ignored", func() {
-				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
-			})
-		})
-	})
-
-	Convey("Given a string schemaDefinitionProperty that is required, not readOnly, forceNew, sensitive, not immutable and has a default value", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", true, false, false, true, true, false, false, false, "default value")
-		Convey("When terraformSchema is called with a schema definition property that is required, force new, sensitive and has a default value", func() {
-			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as required", func() {
-				So(terraformPropertySchema.Required, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured as optional", func() {
-				So(terraformPropertySchema.Optional, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as NOT computed", func() {
-				So(terraformPropertySchema.Computed, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as force new", func() {
-				So(terraformPropertySchema.ForceNew, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as sensitive", func() {
-				So(terraformPropertySchema.Sensitive, ShouldBeTrue)
-			})
-			Convey("And the schema returned should have a default value (note: terraform will complain in this case at runtime since required properties cannot have default values)", func() {
-				So(terraformPropertySchema.Default, ShouldEqual, s.Default)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given a schemaDefinitionProperty that is readOnly and does not have a default value (meaning the value is not known at plan time)", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "")
-		Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
-			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
-				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
-				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as computed", func() {
-				So(terraformPropertySchema.Computed, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given a schemaDefinitionProperty that is readOnly and does have a default value (meaning the default value is known at plan time)", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "some value")
-		Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
-			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
-				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
-				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as computed", func() {
-				So(terraformPropertySchema.Computed, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured since the property is readOnly", func() {
-				So(terraformPropertySchema.Default, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given a schemaDefinitionProperty that is optional computed and does not have a default value (meaning the value is not known at plan time)", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, nil)
-		Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
-			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
-				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
-				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as computed", func() {
-				So(terraformPropertySchema.Computed, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured with a default value", func() {
-				So(terraformPropertySchema.Default, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given a schemaDefinitionProperty that is optional computed and does have a default value (meaning the value is known at plan time)", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, "some known value")
-		Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
-			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
-				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
-				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured as computed since in this case terraform will make use of the default value as input for the user. This makes the default value visible at plan time", func() {
-				So(terraformPropertySchema.Computed, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured with a default value", func() {
-				So(terraformPropertySchema.Default, ShouldNotBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
-		Convey("When terraformSchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
-			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-			Convey("And the schema validate function should return an error ", func() {
-				_, err := terraformPropertySchema.ValidateFunc(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as immutable and can not be configured with forceNew too")
-			})
-		})
-	})
-
-	Convey("Given a schemaDefinitionProperty that is readOnly and required", t, func() {
-		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, false, nil)
-		Convey("When terraformSchema is called with a schema definition property that validation fails due to required and computed set", func() {
-			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as required", func() {
-				So(terraformPropertySchema.Required, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured as computed as it's not optional property", func() {
-				So(terraformPropertySchema.Computed, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-			Convey("And the schema validate function should return an error ", func() {
-				_, err := terraformPropertySchema.ValidateFunc(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as required and can not be configured as computed too")
-			})
-		})
-	})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'string' which is required", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:     "string_prop",
+	//		Type:     typeString,
+	//		ReadOnly: false,
+	//		Required: true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted tfPropSchema should be of type string too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeString)
+	//			So(tfPropSchema.Required, ShouldBeTrue)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'integer'", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:     "int_prop",
+	//		Type:     typeInt,
+	//		ReadOnly: false,
+	//		Required: true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type int too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeInt)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'number'", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:     "number_prop",
+	//		Type:     typeFloat,
+	//		ReadOnly: false,
+	//		Required: true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type float too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeFloat)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'boolean'", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:     "boolean_prop",
+	//		Type:     typeBool,
+	//		ReadOnly: false,
+	//		Required: true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type int too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeBool)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type string", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:           "array_prop",
+	//		Type:           typeList,
+	//		ArrayItemsType: typeString,
+	//		ReadOnly:       false,
+	//		Required:       true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type array too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+	//		})
+	//		Convey("And the array elements are of type string", func() {
+	//			So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+	//			So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type integer", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:           "array_prop",
+	//		Type:           typeList,
+	//		ArrayItemsType: typeInt,
+	//		ReadOnly:       false,
+	//		Required:       true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type array too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+	//		})
+	//		Convey("And the array elements are of type int", func() {
+	//			So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+	//			So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeInt)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type number", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:           "array_prop",
+	//		Type:           typeList,
+	//		ArrayItemsType: typeFloat,
+	//		ReadOnly:       false,
+	//		Required:       true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type array too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+	//		})
+	//		Convey("And the array elements are of type float", func() {
+	//			So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+	//			So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeFloat)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type bool", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:           "array_prop",
+	//		Type:           typeList,
+	//		ArrayItemsType: typeBool,
+	//		ReadOnly:       false,
+	//		Required:       true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type array too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+	//		})
+	//		Convey("And the array elements are of type bool", func() {
+	//			So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
+	//			So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeBool)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type object", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:           "array_prop",
+	//		Type:           typeList,
+	//		ArrayItemsType: typeObject,
+	//		ReadOnly:       false,
+	//		Required:       true,
+	//		SpecSchemaDefinition: &specSchemaDefinition{
+	//			Properties: specSchemaDefinitionProperties{
+	//				&specSchemaDefinitionProperty{
+	//					Name: "protocol",
+	//					Type: typeString,
+	//				},
+	//			},
+	//		},
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the resulted terraform property schema should be of type array too", func() {
+	//			So(err, ShouldBeNil)
+	//			So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+	//		})
+	//		Convey("And the array elements are of type object (resource object) containing the object schema properties", func() {
+	//			So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Resource{}))
+	//			So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "protocol")
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type 'array' and the elems are not set", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:     "array_prop",
+	//		Type:     typeList,
+	//		ReadOnly: false,
+	//		Required: true,
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		_, err := s.terraformSchema()
+	//		Convey("Then the error returned should not be nil", func() {
+	//			So(err, ShouldNotBeNil)
+	//		})
+	//		Convey("Then the error message returned should be the expected one", func() {
+	//			So(err.Error(), ShouldEqual, "object schema can only be formed for types object or types list with elems of type object: found type='list' elemType='' instead")
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type object and a ref pointing to the schema", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:     "object_prop",
+	//		Type:     typeObject,
+	//		ReadOnly: false,
+	//		Required: true,
+	//		SpecSchemaDefinition: &specSchemaDefinition{
+	//			Properties: specSchemaDefinitionProperties{
+	//				&specSchemaDefinitionProperty{
+	//					Name: "message",
+	//					Type: typeString,
+	//				},
+	//			},
+	//		},
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the tf resource schema returned should not be nil", func() {
+	//			So(tfPropSchema, ShouldNotBeNil)
+	//		})
+	//		Convey("And the tf resource schema returned should contained the sub property - 'message'", func() {
+	//			So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a swagger schema definition that has a property of type object that has nested schema and property named id", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name:     "object_prop",
+	//		Type:     typeObject,
+	//		ReadOnly: false,
+	//		Required: true,
+	//		SpecSchemaDefinition: &specSchemaDefinition{
+	//			Properties: specSchemaDefinitionProperties{
+	//				&specSchemaDefinitionProperty{
+	//					Name: "id",
+	//					Type: typeString,
+	//				},
+	//				&specSchemaDefinitionProperty{
+	//					Name: "message",
+	//					Type: typeString,
+	//				},
+	//			},
+	//		},
+	//	}
+	//	Convey("When terraformSchema method is called", func() {
+	//		tfPropSchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the tf resource schema returned should not be nil", func() {
+	//			So(tfPropSchema, ShouldNotBeNil)
+	//		})
+	//		Convey("And the tf resource schema returned should contain the sub property - 'message'", func() {
+	//			So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
+	//		})
+	//		Convey("And the tf resource schema returned should contain the sub property - 'id' and should not be ignored", func() {
+	//			So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a string schemaDefinitionProperty that is required, not readOnly, forceNew, sensitive, not immutable and has a default value", t, func() {
+	//	s := newStringSchemaDefinitionProperty("propertyName", "", true, false, false, true, true, false, false, false, "default value")
+	//	Convey("When terraformSchema is called with a schema definition property that is required, force new, sensitive and has a default value", func() {
+	//		terraformPropertySchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured as required", func() {
+	//			So(terraformPropertySchema.Required, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should not be configured as optional", func() {
+	//			So(terraformPropertySchema.Optional, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured as NOT computed", func() {
+	//			So(terraformPropertySchema.Computed, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured as force new", func() {
+	//			So(terraformPropertySchema.ForceNew, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should be configured as sensitive", func() {
+	//			So(terraformPropertySchema.Sensitive, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should have a default value (note: terraform will complain in this case at runtime since required properties cannot have default values)", func() {
+	//			So(terraformPropertySchema.Default, ShouldEqual, s.Default)
+	//		})
+	//		Convey("And the schema returned should be configured with a validate function", func() {
+	//			So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a schemaDefinitionProperty that is readOnly and does not have a default value (meaning the value is not known at plan time)", t, func() {
+	//	s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "")
+	//	Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
+	//		terraformPropertySchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured as not required", func() {
+	//			So(terraformPropertySchema.Required, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured as optional", func() {
+	//			So(terraformPropertySchema.Optional, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should be configured as computed", func() {
+	//			So(terraformPropertySchema.Computed, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should be configured with a validate function", func() {
+	//			So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a schemaDefinitionProperty that is readOnly and does have a default value (meaning the default value is known at plan time)", t, func() {
+	//	s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "some value")
+	//	Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
+	//		terraformPropertySchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured as not required", func() {
+	//			So(terraformPropertySchema.Required, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured as optional", func() {
+	//			So(terraformPropertySchema.Optional, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should be configured as computed", func() {
+	//			So(terraformPropertySchema.Computed, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should not be configured since the property is readOnly", func() {
+	//			So(terraformPropertySchema.Default, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured with a validate function", func() {
+	//			So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a schemaDefinitionProperty that is optional computed and does not have a default value (meaning the value is not known at plan time)", t, func() {
+	//	s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, nil)
+	//	Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
+	//		terraformPropertySchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured as not required", func() {
+	//			So(terraformPropertySchema.Required, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured as optional", func() {
+	//			So(terraformPropertySchema.Optional, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should be configured as computed", func() {
+	//			So(terraformPropertySchema.Computed, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should not be configured with a default value", func() {
+	//			So(terraformPropertySchema.Default, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured with a validate function", func() {
+	//			So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a schemaDefinitionProperty that is optional computed and does have a default value (meaning the value is known at plan time)", t, func() {
+	//	s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, "some known value")
+	//	Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
+	//		terraformPropertySchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured as not required", func() {
+	//			So(terraformPropertySchema.Required, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured as optional", func() {
+	//			So(terraformPropertySchema.Optional, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should not be configured as computed since in this case terraform will make use of the default value as input for the user. This makes the default value visible at plan time", func() {
+	//			So(terraformPropertySchema.Computed, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured with a default value", func() {
+	//			So(terraformPropertySchema.Default, ShouldNotBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured with a validate function", func() {
+	//			So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
+	//	s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
+	//	Convey("When terraformSchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
+	//		terraformPropertySchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured with a validate function", func() {
+	//			So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+	//		})
+	//		Convey("And the schema validate function should return an error ", func() {
+	//			_, err := terraformPropertySchema.ValidateFunc(nil, "")
+	//			So(err, ShouldNotBeNil)
+	//			So(err, ShouldNotBeEmpty)
+	//			So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as immutable and can not be configured with forceNew too")
+	//		})
+	//	})
+	//})
+	//
+	//Convey("Given a schemaDefinitionProperty that is readOnly and required", t, func() {
+	//	s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, false, nil)
+	//	Convey("When terraformSchema is called with a schema definition property that validation fails due to required and computed set", func() {
+	//		terraformPropertySchema, err := s.terraformSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the schema returned should be configured as required", func() {
+	//			So(terraformPropertySchema.Required, ShouldBeTrue)
+	//		})
+	//		Convey("And the schema returned should not be configured as computed as it's not optional property", func() {
+	//			So(terraformPropertySchema.Computed, ShouldBeFalse)
+	//		})
+	//		Convey("And the schema returned should be configured with a validate function", func() {
+	//			So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+	//		})
+	//		Convey("And the schema validate function should return an error ", func() {
+	//			_, err := terraformPropertySchema.ValidateFunc(nil, "")
+	//			So(err, ShouldNotBeNil)
+	//			So(err, ShouldNotBeEmpty)
+	//			So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as required and can not be configured as computed too")
+	//		})
+	//	})
+	//})
 }
 
 func TestValidateFunc(t *testing.T) {
