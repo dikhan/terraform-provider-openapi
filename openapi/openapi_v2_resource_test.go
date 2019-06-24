@@ -2,13 +2,14 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/go-openapi/jsonreference"
-	"github.com/go-openapi/spec"
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-openapi/jsonreference"
+	"github.com/go-openapi/spec"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewSpecV2Resource(t *testing.T) {
@@ -1605,6 +1606,70 @@ func TestResourceIsObjectProperty(t *testing.T) {
 			Convey("And the object schema should be nil", func() {
 				So(objectSchema, ShouldBeNil)
 			})
+		})
+
+	})
+}
+
+func TestIsPropertyWithNestedObjects(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		// Happy path
+		Convey("When IsPropertyWithNestedObjects method is called with a property of type object that has nested OBJECT properties", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Properties: map[string]spec.Schema{
+						"nested_object": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"object"},
+								Properties: map[string]spec.Schema{
+									"nested_prop": spec.Schema{},
+								},
+							},
+						},
+					},
+				},
+			}
+			isNestedObject := r.isPropertyWithNestedObjects(property)
+			Convey("the result should be true", func() {
+				So(isNestedObject, ShouldBeTrue)
+			})
+		})
+
+		//sad path, is nested but not object-nested
+		Convey("When IsPropertyWithNestedObjects method is called with a property of type object that HAS NOT nested OBJECT properties", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Properties: map[string]spec.Schema{
+						"nested_object": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"array"},
+								Properties: map[string]spec.Schema{
+									"nested_prop": spec.Schema{},
+								},
+							},
+						},
+					},
+				},
+			}
+			isNestedObject := r.isPropertyWithNestedObjects(property)
+			Convey("the result your be false", func() {
+				So(isNestedObject, ShouldBeFalse)
+			})
+		})
+
+		//sad path, no top level object
+		Convey("When IsPropertyWithNestedObjects method is called with a property of which type is not  object", func() {
+			property := spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"array"}}}
+			isNestedObject := r.isPropertyWithNestedObjects(property)
+			Convey("the result your be false", func() {
+				So(isNestedObject, ShouldBeFalse)
+			})
+			//Convey("log something", func() { todo
+			//	So(isNestedObject, ShouldBeFalse)
+			//})
 		})
 
 	})

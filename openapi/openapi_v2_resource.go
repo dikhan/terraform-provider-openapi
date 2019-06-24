@@ -2,12 +2,13 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/spec"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/spec"
 )
 
 const resourceVersionRegex = "(/v[0-9]*/)"
@@ -276,9 +277,27 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 // TODO: fill this out and add unit tests
 func (o *SpecV2Resource) isPropertyWithNestedObjects(property spec.Schema) bool {
-	// Here we do the following:
 	// - check if the type is object, if not return false right away
+	isObject, _, err := o.isObjectProperty(property)
+	if err != nil {
+		log.Printf("[DEBUG] error while checking for isObject '%s'", property.Title)
+		return false
+	}
+	if !isObject {
+		log.Printf("[DEBUG] '%s' is not an object", property.Title)
+		return false
+	}
+
 	// - loop through the property.Properties and if any of the properties is in turn of type object then we return true; false otherwise
+	for _, p := range property.Properties {
+		propertyType, err := o.getPropertyType(p)
+		if err != nil {
+			return false
+		}
+		if propertyType == typeObject {
+			return true
+		}
+	}
 	return false
 }
 
