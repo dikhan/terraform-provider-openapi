@@ -674,8 +674,9 @@ func TestTerraformSchema(t *testing.T) {
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
-						Type: typeObject,
-						Name: "nested_object",
+						Type:           typeObject,
+						Name:           "nested_object",
+						IsNestedObject: true, //todo: do we need it here? i guess the need it only at top level
 						SpecSchemaDefinition: &specSchemaDefinition{
 							Properties: specSchemaDefinitionProperties{
 								&specSchemaDefinitionProperty{

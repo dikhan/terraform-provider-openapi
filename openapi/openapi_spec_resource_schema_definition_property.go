@@ -171,7 +171,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	if s.IsNestedObject {
 		s.Type = typeList
 		terraformSchema.MaxItems = 1
-		s.ArrayItemsType = typeObject // todo: added frdiben
+		s.ArrayItemsType = typeObject // todo: added fradiben
 	}
 
 	// complex data structures
