@@ -25,8 +25,8 @@ var testCreateConfigCDN string
 
 func init() {
 	// Setting this up here as it is used by many different tests
-	cdn = newContentDeliveryNetwork("someLabel", []string{"192.168.0.2"}, []string{"www.google.com"}, 10, 12.22, true, "some message news", "some message news with details", "http", 80, "https", 443)
-	testCreateConfigCDN = populateTemplateConfigurationCDN(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
+	cdn = newContentDeliveryNetwork("someLabel", []string{"192.168.0.2"}, []string{"www.google.com"}, 10, 12.22, true, "someAccountValue", "some message news", "some message news with details", "http", 80, "https", 443)
+	testCreateConfigCDN = populateTemplateConfigurationCDN(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
 }
 
 func TestAccCDN_Create(t *testing.T) {
@@ -444,8 +444,8 @@ resource "%s" "my_cdn" {
 }
 
 func TestAccCDN_Update(t *testing.T) {
-	var cdnUpdated = newContentDeliveryNetworkWithOptionalPopulated(cdn.Label, cdn.Ips, cdn.Hostnames, 14, 14.14, false, "some updated message news", "some message news with details", "http", 80, "https", 443, "some value for the optional property", "some value for the optionalComputed property", "some value for the optionalComputedWithDefault property")
-	testCDNUpdatedConfig := populateTemplateConfigurationCDNWithOptionalsPopulated(cdnUpdated.Label, cdnUpdated.Ips, cdnUpdated.Hostnames, cdnUpdated.ExampleInt, cdnUpdated.ExampleNumber, cdnUpdated.ExampleBoolean, cdnUpdated.ObjectProperty.Message, cdnUpdated.ObjectProperty.DetailedMessage, cdnUpdated.ArrayOfObjectsExample[0].Protocol, cdnUpdated.ArrayOfObjectsExample[0].OriginPort, cdnUpdated.ArrayOfObjectsExample[1].Protocol, cdnUpdated.ArrayOfObjectsExample[1].OriginPort, cdnUpdated.OptionalProperty, cdnUpdated.OptionalComputed, cdnUpdated.OptionalComputedWithDefault)
+	var cdnUpdated = newContentDeliveryNetworkWithOptionalPopulated(cdn.Label, cdn.Ips, cdn.Hostnames, 14, 14.14, false, "someOtherAccountValue", "some updated message news", "some message news with details", "http", 80, "https", 443, "some value for the optional property", "some value for the optionalComputed property", "some value for the optionalComputedWithDefault property")
+	testCDNUpdatedConfig := populateTemplateConfigurationCDNWithOptionalsPopulated(cdnUpdated.Label, cdnUpdated.Ips, cdnUpdated.Hostnames, cdnUpdated.ExampleInt, cdnUpdated.ExampleNumber, cdnUpdated.ExampleBoolean, cdnUpdated.ObjectNestedSchemeProperty.ObjectProperty.Account, cdnUpdated.ObjectProperty.Message, cdnUpdated.ObjectProperty.DetailedMessage, cdnUpdated.ArrayOfObjectsExample[0].Protocol, cdnUpdated.ArrayOfObjectsExample[0].OriginPort, cdnUpdated.ArrayOfObjectsExample[1].Protocol, cdnUpdated.ArrayOfObjectsExample[1].OriginPort, cdnUpdated.OptionalProperty, cdnUpdated.OptionalComputed, cdnUpdated.OptionalComputedWithDefault)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -570,8 +570,8 @@ func TestAccCDN_Update(t *testing.T) {
 }
 
 func TestAccCDN_CreateWithZeroValues(t *testing.T) {
-	var cdn = newContentDeliveryNetwork("label", []string{}, []string{}, 0, 0, false, "some message news", "some message news with details", "http", 80, "https", 443)
-	testCDNZeroValuesConfig := populateTemplateConfigurationCDN(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
+	var cdn = newContentDeliveryNetwork("label", []string{}, []string{}, 0, 0, false, "someAccountValue", "some message news", "some message news with details", "http", 80, "https", 443)
+	testCDNZeroValuesConfig := populateTemplateConfigurationCDN(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -618,7 +618,7 @@ func TestAccCDN_CreateWithZeroValues(t *testing.T) {
 }
 
 func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
-	testCDNUpdatedImmutableConfig := populateTemplateConfigurationCDN("label updated", cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
+	testCDNUpdatedImmutableConfig := populateTemplateConfigurationCDN("label updated", cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
 	expectedValidationError, _ := regexp.Compile(".*property label is immutable and therefore can not be updated. Update operation was aborted; no updates were performed.*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -656,8 +656,8 @@ func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 }
 
 func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
-	var cdnUpdatedForceNew = newContentDeliveryNetwork(cdn.Label, []string{"192.168.1.5"}, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, "some message news", "some message news with details", "http", 8080, "https", 8443)
-	testCDNUpdatedForceNewConfig := populateTemplateConfigurationCDN(cdnUpdatedForceNew.Label, cdnUpdatedForceNew.Ips, cdnUpdatedForceNew.Hostnames, cdnUpdatedForceNew.ExampleInt, cdnUpdatedForceNew.ExampleNumber, cdnUpdatedForceNew.ExampleBoolean, cdnUpdatedForceNew.ObjectProperty.Message, cdnUpdatedForceNew.ObjectProperty.DetailedMessage, cdnUpdatedForceNew.ArrayOfObjectsExample[0].Protocol, cdnUpdatedForceNew.ArrayOfObjectsExample[0].OriginPort, cdnUpdatedForceNew.ArrayOfObjectsExample[1].Protocol, cdnUpdatedForceNew.ArrayOfObjectsExample[1].OriginPort)
+	var cdnUpdatedForceNew = newContentDeliveryNetwork(cdn.Label, []string{"192.168.1.5"}, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, "someAccountValue", "some message news", "some message news with details", "http", 8080, "https", 8443)
+	testCDNUpdatedForceNewConfig := populateTemplateConfigurationCDN(cdnUpdatedForceNew.Label, cdnUpdatedForceNew.Ips, cdnUpdatedForceNew.Hostnames, cdnUpdatedForceNew.ExampleInt, cdnUpdatedForceNew.ExampleNumber, cdnUpdatedForceNew.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdnUpdatedForceNew.ObjectProperty.Message, cdnUpdatedForceNew.ObjectProperty.DetailedMessage, cdnUpdatedForceNew.ArrayOfObjectsExample[0].Protocol, cdnUpdatedForceNew.ArrayOfObjectsExample[0].OriginPort, cdnUpdatedForceNew.ArrayOfObjectsExample[1].Protocol, cdnUpdatedForceNew.ArrayOfObjectsExample[1].OriginPort)
 	var originalID string
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -781,28 +781,33 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 	})
 }
 
-func newContentDeliveryNetwork(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32) api.ContentDeliveryNetworkV1 {
+func newContentDeliveryNetwork(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, nestedObjectPropertyAccount, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32) api.ContentDeliveryNetworkV1 {
 	return api.ContentDeliveryNetworkV1{
-		Label:                 label,
-		Ips:                   ips,
-		Hostnames:             hostnames,
-		ExampleInt:            exampleInt,
-		ExampleNumber:         exampleNumber,
-		ExampleBoolean:        exampleBool,
-		ObjectProperty:        &api.ObjectProperty{Message: objectPropertyMessage, DetailedMessage: objectDetailedMessage},
+		Label:          label,
+		Ips:            ips,
+		Hostnames:      hostnames,
+		ExampleInt:     exampleInt,
+		ExampleNumber:  exampleNumber,
+		ExampleBoolean: exampleBool,
+		ObjectProperty: &api.ObjectProperty{Message: objectPropertyMessage, DetailedMessage: objectDetailedMessage},
+		ObjectNestedSchemeProperty: &api.ContentDeliveryNetworkV1ObjectNestedSchemeProperty{
+			ObjectProperty: &api.ContentDeliveryNetworkV1ObjectNestedSchemePropertyObjectProperty{
+				Account: nestedObjectPropertyAccount,
+			},
+		},
 		ArrayOfObjectsExample: []api.ContentDeliveryNetworkV1ArrayOfObjectsExample{{Protocol: listObjectProtocol, OriginPort: listObjectOriginPort}, {Protocol: listObject2Protocol, OriginPort: listObject2OriginPort}},
 	}
 }
 
-func newContentDeliveryNetworkWithOptionalPopulated(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32, optionalProperty, optionalComputed, optionalComputedWithDefault string) api.ContentDeliveryNetworkV1 {
-	cdn := newContentDeliveryNetwork(label, ips, hostnames, exampleInt, exampleNumber, exampleBool, objectPropertyMessage, objectDetailedMessage, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
+func newContentDeliveryNetworkWithOptionalPopulated(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, nestedObjectPropertyAccount, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32, optionalProperty, optionalComputed, optionalComputedWithDefault string) api.ContentDeliveryNetworkV1 {
+	cdn := newContentDeliveryNetwork(label, ips, hostnames, exampleInt, exampleNumber, exampleBool, nestedObjectPropertyAccount, objectPropertyMessage, objectDetailedMessage, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
 	cdn.OptionalProperty = optionalProperty
 	cdn.OptionalComputed = optionalComputed
 	cdn.OptionalComputedWithDefault = optionalComputedWithDefault
 	return cdn
 }
 
-func populateTemplateConfigurationCDN(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32) string {
+func populateTemplateConfigurationCDN(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, nestedObjectPropertyAccount, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32) string {
 	return fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
@@ -817,6 +822,12 @@ resource "%s" "%s" {
   example_int = %d
   better_example_number_field_name = %s
   example_boolean = %v
+
+  object_nested_scheme_property {
+    object_property = {
+      account = "%s"
+    }
+  }
 
   object_property = {
     message = "%s"
@@ -835,10 +846,10 @@ resource "%s" "%s" {
     protocol = "%s"
     origin_port = %d
   }
-}`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, label, arrayToString(ips), arrayToString(hostnames), exampleInt, floatToString(exampleNumber), exampleBool, objectPropertyMessage, objectDetailedMessage, exampleInt, floatToString(exampleNumber), exampleBool, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
+}`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, label, arrayToString(ips), arrayToString(hostnames), exampleInt, floatToString(exampleNumber), exampleBool, nestedObjectPropertyAccount, objectPropertyMessage, objectDetailedMessage, exampleInt, floatToString(exampleNumber), exampleBool, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
 }
 
-func populateTemplateConfigurationCDNWithOptionalsPopulated(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32, optionalProperty, optionalComputed, optionalComputedWithDefault string) string {
+func populateTemplateConfigurationCDNWithOptionalsPopulated(label string, ips, hostnames []string, exampleInt int32, exampleNumber float32, exampleBool bool, nestedObjectPropertyAccount, objectPropertyMessage, objectDetailedMessage, listObjectProtocol string, listObjectOriginPort int32, listObject2Protocol string, listObject2OriginPort int32, optionalProperty, optionalComputed, optionalComputedWithDefault string) string {
 	return fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
@@ -858,6 +869,12 @@ resource "%s" "%s" {
   better_example_number_field_name = %s
   example_boolean = %v
 
+  object_nested_scheme_property {
+    object_property = {
+      account = "%s"
+    }
+  }
+
   object_property = {
     message = "%s"
     detailed_message = "%s"
@@ -876,7 +893,7 @@ resource "%s" "%s" {
     origin_port = %d
   }
 
-}`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, label, arrayToString(ips), arrayToString(hostnames), optionalProperty, optionalComputed, optionalComputedWithDefault, exampleInt, floatToString(exampleNumber), exampleBool, objectPropertyMessage, objectDetailedMessage, exampleInt, floatToString(exampleNumber), exampleBool, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
+}`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, label, arrayToString(ips), arrayToString(hostnames), optionalProperty, optionalComputed, optionalComputedWithDefault, exampleInt, floatToString(exampleNumber), exampleBool, nestedObjectPropertyAccount, objectPropertyMessage, objectDetailedMessage, exampleInt, floatToString(exampleNumber), exampleBool, listObjectProtocol, listObjectOriginPort, listObject2Protocol, listObject2OriginPort)
 }
 
 // Acceptance test resource-destruction for openapi_cdn_v1:
