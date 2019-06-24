@@ -1641,10 +1641,6 @@ func TestResourceIsObjectProperty(t *testing.T) {
 }
 
 func TestIsPropertyWithNestedObjects(t *testing.T) {
-	w := bytes.NewBuffer([]byte{})
-	log.SetOutput(w)
-	defer func() { log.SetOutput(os.Stdout) }()
-
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
 		// Happy path
@@ -1695,7 +1691,6 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 
 		//sad path, no top level object
 		Convey("When IsPropertyWithNestedObjects method is called with a property of which type is not  object", func() {
-
 			property := spec.Schema{SchemaProps: spec.SchemaProps{
 				Title: "not-an-obj-property",
 				Type:  spec.StringOrArray{"array"},
@@ -1704,11 +1699,14 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 			Convey("the result your be false", func() {
 				So(isNestedObject, ShouldBeFalse)
 			})
-			//assert.Contains(t, w.String(), "[DEBUG] 'not-an-obj-property' is not an object", "debug message not--property is bing logged correctly")
 		})
 
 		//sad path, nested object type is not supported
 		Convey("When IsPropertyWithNestedObjects method is called with a nested property of which type is not supported", func() {
+			w := bytes.NewBuffer([]byte{})
+			log.SetOutput(w)
+			defer func() { log.SetOutput(os.Stdout) }()
+
 			property := spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
@@ -1725,7 +1723,6 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 					},
 				},
 			}
-
 			isNestedObject := r.isPropertyWithNestedObjects(property)
 			Convey("the result should be false", func() {
 				So(isNestedObject, ShouldBeFalse)

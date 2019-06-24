@@ -283,7 +283,6 @@ func (o *SpecV2Resource) isPropertyWithNestedObjects(property spec.Schema) bool 
 		return false
 	}
 	if !isObject {
-		//log.Printf("[DEBUG] '%s' is not an object", property.Title)
 		return false
 	}
 
