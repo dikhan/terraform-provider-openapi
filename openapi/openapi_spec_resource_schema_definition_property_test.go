@@ -666,6 +666,7 @@ func TestTerraformObjectSchema(t *testing.T) {
 
 func TestTerraformSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has two nested properties - one being an object and the other one a primitive", t, func() {
+		expectedNestedObjectPropertyName := "nested_object_1"
 		s := &specSchemaDefinitionProperty{
 			Name:           "top_level_object",
 			Type:           typeObject,
@@ -674,7 +675,7 @@ func TestTerraformSchema(t *testing.T) {
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
 						Type: typeObject,
-						Name: "nested_object1",
+						Name: expectedNestedObjectPropertyName,
 						SpecSchemaDefinition: &specSchemaDefinition{
 							Properties: specSchemaDefinitionProperties{
 								&specSchemaDefinitionProperty{
@@ -698,8 +699,8 @@ func TestTerraformSchema(t *testing.T) {
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
 			})
-			Convey("And the returned terraform schema contains the 'nested_object_1' with the right configuration", func() {
-				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object_1"]
+			Convey(fmt.Sprintf("And the returned terraform schema contains the '%s' with the right configuration", expectedNestedObjectPropertyName), func() {
+				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema[expectedNestedObjectPropertyName]
 				So(nestedObject1, ShouldNotBeNil)
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
 				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)
