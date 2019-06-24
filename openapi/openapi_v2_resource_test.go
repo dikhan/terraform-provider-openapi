@@ -1683,6 +1683,33 @@ func TestIsPropertyWithNestedObjects(t *testing.T) {
 			assert.Contains(t, w.String(), "[DEBUG] 'not-an-obj-property' is not an object", "debug message not--property is bing logged correctly")
 		})
 
+		//sad path, nested object type is not supported
+		Convey("When IsPropertyWithNestedObjects method is called with a nested property of which type is not supported", func() {
+			property := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"object"},
+					Properties: map[string]spec.Schema{
+						"nested_object": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Title: "not-a-supported-property-type",
+								Type:  spec.StringOrArray{"whatever"},
+								Properties: map[string]spec.Schema{
+									"nested_prop": spec.Schema{},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			isNestedObject := r.isPropertyWithNestedObjects(property)
+			Convey("the result should be false", func() {
+				So(isNestedObject, ShouldBeFalse)
+			})
+			fmt.Println(w.String())
+			assert.Contains(t, w.String(), "[ERROR] non supported '[whatever]' type")
+		})
+
 	})
 }
 
