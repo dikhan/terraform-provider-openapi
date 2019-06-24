@@ -680,14 +680,14 @@ func TestTerraformSchema(t *testing.T) {
 							Properties: specSchemaDefinitionProperties{
 								&specSchemaDefinitionProperty{
 									Type: typeString,
-									Name: "string_property1",
+									Name: "string_property_1",
 								},
 							},
 						},
 					},
 					&specSchemaDefinitionProperty{
 						Type: typeFloat,
-						Name: "nested_float2",
+						Name: "nested_float_2",
 					},
 				},
 			}}
