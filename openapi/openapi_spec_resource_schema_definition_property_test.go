@@ -675,12 +675,24 @@ func TestTerraformSchema(t *testing.T) {
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
 						Type: typeObject,
-						Name: "nested_object",
+						Name: "nested_object1",
 						SpecSchemaDefinition: &specSchemaDefinition{
 							Properties: specSchemaDefinitionProperties{
 								&specSchemaDefinitionProperty{
 									Type: typeString,
-									Name: "string_property",
+									Name: "string_property1",
+								},
+							},
+						},
+					},
+					&specSchemaDefinitionProperty{
+						Type: typeObject,
+						Name: "nested_object2",
+						SpecSchemaDefinition: &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{
+								&specSchemaDefinitionProperty{
+									Type: typeString,
+									Name: "string_property2",
 								},
 							},
 						},
@@ -695,11 +707,14 @@ func TestTerraformSchema(t *testing.T) {
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
 			})
-
 			Convey("And the element in the list is of TypeMap (= object) with basic types properties ", func() {
-				nestedObject := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object"]
-				So(nestedObject.Type, ShouldEqual, schema.TypeMap)
-				So(nestedObject.Elem.(*schema.Resource).Schema["string_property"].Type, ShouldEqual, schema.TypeString)
+				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object_1"]
+				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
+				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)	// TODO: Why is this not string_property1?
+
+				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object_2"]
+				So(nestedObject2.Type, ShouldEqual, schema.TypeMap)
+				So(nestedObject2.Elem.(*schema.Resource).Schema["string_property_2"].Type, ShouldEqual, schema.TypeString) // TODO: Why is this not string_property2?
 			})
 		})
 	})
