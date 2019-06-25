@@ -543,11 +543,11 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 				fmt.Println("apiServer request>>>>", r.URL, r.Method)
 				switch r.Method {
 				case http.MethodGet:
-					w.Write([]byte(`{"id":1337,"name":"Bottle #1337"}`))
+					w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977}`))
 				case http.MethodPut:
-					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw"}`))
+					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977}`))
 				case http.MethodDelete:
-					w.Write([]byte(`{"id":1337,"name":"deleeted bottle"}`))
+					w.Write([]byte(`{}`))
 				}
 			}))
 
@@ -580,12 +580,16 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 	initialInstanceState := instanceStates[0]
 	assert.Equal(t, "1337", initialInstanceState.ID)
 	assert.Equal(t, "Bottle #1337", initialInstanceState.Attributes["name"])
+	assert.Equal(t, "17", initialInstanceState.Attributes["rating"])
+	assert.Equal(t, "1977", initialInstanceState.Attributes["vintage"])
 
 	updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
 	assert.NoError(t, updateError)
 	assert.NotNil(t, updatedInstanceState)
 	assert.Equal(t, "1337", updatedInstanceState.ID)
 	assert.Equal(t, "leet bottle ftw", updatedInstanceState.Attributes["name"])
+	assert.Equal(t, "17", updatedInstanceState.Attributes["rating"])
+	assert.Equal(t, "1977", updatedInstanceState.Attributes["vintage"])
 
 	deletedInstanceState, deleteError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Destroy: true})
 	assert.NoError(t, deleteError)
