@@ -152,6 +152,7 @@ func updateCDN(dbCDN, updatedCDN *ContentDeliveryNetworkV1) {
 	if updatedCDN.OptionalProperty != "" {
 		dbCDN.OptionalProperty = updatedCDN.OptionalProperty
 	}
+	dbCDN.ObjectNestedSchemeProperty.ObjectProperty.Account = updatedCDN.ObjectNestedSchemeProperty.ObjectProperty.Account
 	db[dbCDN.Id] = dbCDN
 }
 
