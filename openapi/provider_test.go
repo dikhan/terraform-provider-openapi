@@ -168,7 +168,13 @@ const swaggerTemplate = `{
           "description": "Vintage of bottle",
           "example": 2653,
           "minimum": 1900
-        }
+        },
+		"anotherbottle": {
+		  "type": "string",
+		  "description": "another bottle within a bottle",
+		  "example": "nestedbottle",
+		  "minLength": 1
+		}
       },
       "description": "BottlePayload is the type used to create bottles",
       "example": {
@@ -180,7 +186,8 @@ const swaggerTemplate = `{
       "required": [
         "name",
         "vintage",
-        "rating"
+        "rating",
+		"anotherbottle"
       ]
     },
     "bottle": {
@@ -205,36 +212,33 @@ const swaggerTemplate = `{
           "minimum": 1,
           "maximum": 5
         },
-        "nestedftw": {
-          "type": "object",
-		  "properties": {
-        	"name": {
-        	  "type": "string",
-        	  "description": "Name of bottle",
-        	  "example": "x",
-        	  "minLength": 1
-        	},
-		  },
-        },
         "vintage": {
           "type": "integer",
           "description": "Vintage of bottle",
           "example": 1932,
           "minimum": 1900
-        }
+        },
+		"anotherbottle": {
+		  "type": "string",
+		  "description": "another bottle within a bottle",
+		  "example": "nestedbottle",
+		  "minLength": 1
+		}
       },
       "description": "bottle media type (default view)",
       "example": {
         "id": "Voluptates non excepturi.",
         "name": "krt",
         "rating": 3,
-        "vintage": 1932
+        "vintage": 1932,
+		"anotherbottle": "somebottlename"
       },
       "required": [
         "id",
         "name",
         "vintage",
-        "rating"
+        "rating",
+		"anotherbottle"
       ]
     },
     "error": {
@@ -554,7 +558,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 				fmt.Println("apiServer request>>>>", r.URL, r.Method)
 				switch r.Method {
 				case http.MethodGet:
-					w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977}`))
+					w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977,"anotherbottle":"nestedbottle"}`))
 				case http.MethodPut:
 					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977}`))
 				case http.MethodDelete:
@@ -593,6 +597,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 	assert.Equal(t, "Bottle #1337", initialInstanceState.Attributes["name"])
 	assert.Equal(t, "17", initialInstanceState.Attributes["rating"])
 	assert.Equal(t, "1977", initialInstanceState.Attributes["vintage"])
+	assert.Equal(t, "nestedbottle", initialInstanceState.Attributes["anotherbottle"])
 
 	updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
 	assert.NoError(t, updateError)
