@@ -584,7 +584,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 				case http.MethodGet:
 					w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977,"anotherbottle":{"id":"nestedid1","name":"nestedname1"}}`))
 				case http.MethodPut:
-					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977}`))
+					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977,"anotherbottle":{"id":"updatednested1","name":"updatednestedname1"}}`))
 				case http.MethodDelete:
 					w.Write([]byte(`{}`))
 				}
@@ -631,6 +631,8 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 	assert.Equal(t, "leet bottle ftw", updatedInstanceState.Attributes["name"])
 	assert.Equal(t, "17", updatedInstanceState.Attributes["rating"])
 	assert.Equal(t, "1977", updatedInstanceState.Attributes["vintage"])
+	assert.Equal(t, "updatednested1", updatedInstanceState.Attributes["anotherbottle.id"])
+	assert.Equal(t, "updatednestedname1", updatedInstanceState.Attributes["anotherbottle.name"])
 
 	deletedInstanceState, deleteError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Destroy: true})
 	assert.NoError(t, deleteError)
