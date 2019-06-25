@@ -18,35 +18,18 @@ import (
 const swaggerTemplate = `{
   "swagger": "2.0",
   "host": "%s",
-  "info": {
-    "description": "The wine review service",
-    "version": ""
-  },
   "consumes": [
-    "application\/json",
-    "application\/xml",
-    "application\/gob",
-    "application\/x-gob"
+    "application\/json"
   ],
   "produces": [
-    "application\/json",
-    "application\/xml",
-    "application\/gob",
-    "application\/x-gob"
+    "application\/json"
   ],
   "paths": {
-    "\/bottles\/": {
+    "/bottles/": {
       "post": {
-        "tags": [
-          "bottle"
-        ],
         "summary": "create bottle",
         "description": "creates a bottle",
         "operationId": "bottle#create",
-        "produces": [
-          "application\/vnd.goa.error",
-          "application\/vnd.gophercon.goa.bottle"
-        ],
         "parameters": [
           {
             "name": "payload",
@@ -54,7 +37,7 @@ const swaggerTemplate = `{
             "description": "BottlePayload is the type used to create bottles",
             "required": true,
             "schema": {
-              "$ref": "#\/definitions\/BottlePayload"
+              "$ref": "#/definitions/BottlePayload"
             }
           }
         ],
@@ -62,13 +45,13 @@ const swaggerTemplate = `{
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#\/definitions\/bottle"
+              "$ref": "#/definitions/bottle"
             }
           },
           "400": {
             "description": "Bad Request",
             "schema": {
-              "$ref": "#\/definitions\/error"
+              "$ref": "#/definitions/error"
             }
           },
           "500": {
@@ -77,7 +60,7 @@ const swaggerTemplate = `{
         }
       }
     },
-    "\/bottles\/{id}": {
+    "/bottles/{id}": {
       "get": {
         "tags": [
           "bottle"
@@ -85,9 +68,6 @@ const swaggerTemplate = `{
         "summary": "show bottle",
         "description": "shows a bottle",
         "operationId": "bottle#show",
-        "produces": [
-          "application\/vnd.gophercon.goa.bottle"
-        ],
         "parameters": [
           {
             "name": "id",
@@ -109,24 +89,9 @@ const swaggerTemplate = `{
         }
       }
     },
-    "\/swagger\/swagger.json": {
+    "/swagger/swagger.json": {
       "get": {
-        "summary": "Download \/opt\/goa\/swagger\/swagger.json",
-        "operationId": "Spec#\/swagger\/swagger.json",
-        "responses": {
-          "200": {
-            "description": "File downloaded",
-            "schema": {
-              "type": "file"
-            }
-          }
-        }
-      }
-    },
-    "\/swagger\/swagger.yaml": {
-      "get": {
-        "summary": "Download \/opt\/goa\/swagger\/swagger.yaml",
-        "operationId": "Spec#\/swagger\/swagger.yaml",
+        "operationId": "Spec#/swagger/swagger.json",
         "responses": {
           "200": {
             "description": "File downloaded",
@@ -183,7 +148,6 @@ const swaggerTemplate = `{
       ]
     },
     "bottle": {
-      "title": "Mediatype identifier: application\/vnd.gophercon.goa.bottle; view=default",
       "type": "object",
       "properties": {
         "id": {
@@ -227,7 +191,6 @@ const swaggerTemplate = `{
       ]
     },
     "error": {
-      "title": "Mediatype identifier: application\/vnd.goa.error; view=default",
       "type": "object",
       "properties": {
         "code": {
