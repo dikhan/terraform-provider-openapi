@@ -608,7 +608,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 	assert.Equal(t, 1, len(provider.ResourcesMap))
 
 	instanceInfo := &terraform.InstanceInfo{Type: "bob_bottles"}
-	//assert.Panics(t, func() { provider.ImportState(instanceInfo, "my fancy id") }, "ImportState panics if Configure hasn't been called first")
+	assert.Panics(t, func() { provider.ImportState(instanceInfo, "my fancy id") }, "ImportState panics if Configure hasn't been called first")
 
 	assert.NoError(t, provider.Configure(&terraform.ResourceConfig{}))
 
