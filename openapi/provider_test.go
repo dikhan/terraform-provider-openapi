@@ -61,13 +61,28 @@ const swaggerTemplate = `{
       }
     },
     "/bottles/{id}": {
-      "put": {
-        "tags": [
-          "bottle"
+      "delete": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
         ],
-        "summary": "show bottle",
-        "description": "shows a bottle",
-        "operationId": "bottle#show",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#\/definitions\/bottle"
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "put": {
         "parameters": [
           {
             "name": "id",
@@ -89,12 +104,6 @@ const swaggerTemplate = `{
         }
       },
       "get": {
-        "tags": [
-          "bottle"
-        ],
-        "summary": "show bottle",
-        "description": "shows a bottle",
-        "operationId": "bottle#show",
         "parameters": [
           {
             "name": "id",
@@ -538,7 +547,14 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 		getSwaggerURL: func() string {
 			apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("apiServer request>>>>", r.URL, r.Method)
-				w.Write([]byte(`{"id":1337,"name":"Bottle #1337"}`))
+				switch r.Method {
+				case http.MethodGet:
+					w.Write([]byte(`{"id":1337,"name":"Bottle #1337"}`))
+				case http.MethodPut:
+					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw"}`))
+				case http.MethodDelete:
+					w.Write([]byte(`{"id":1337,"name":"deleeted bottle"}`))
+				}
 			}))
 
 			apiHost := apiServer.URL[7:]
@@ -567,14 +583,19 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 	assert.NoError(t, e)
 	assert.NotNil(t, instanceStates)
 	assert.Equal(t, 1, len(instanceStates))
+	initialInstanceState := instanceStates[0]
+	assert.Equal(t, "1337", initialInstanceState.ID)
+	assert.Equal(t, "Bottle #1337", initialInstanceState.Attributes["name"])
 
-	updatedInstanceState, updateError := provider.Apply(instanceInfo, instanceStates[0], &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "Bottle #1337", New: "leet bottle"}}})
+	updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
 	assert.NoError(t, updateError)
 	assert.NotNil(t, updatedInstanceState)
-	fmt.Println(">>>>", updatedInstanceState)
+	assert.Equal(t, "1337", updatedInstanceState.ID)
+	assert.Equal(t, "leet bottle ftw", updatedInstanceState.Attributes["name"])
 
-	_, deleteError := provider.Apply(instanceInfo, instanceStates[0], &terraform.InstanceDiff{Destroy: true})
-	assert.Contains(t, deleteError.Error(), "does not support DELETE ")
+	deletedInstanceState, deleteError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Destroy: true})
+	assert.NoError(t, deleteError)
+	assert.Nil(t, deletedInstanceState)
 }
 
 func Test_ImportState_panics_if_swagger_defines_put_without_response_status_codes(t *testing.T) {
