@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"net/http"
 	"strings"
 
@@ -35,6 +36,7 @@ func ContentDeliveryNetworkCreateV1(w http.ResponseWriter, r *http.Request) {
 	populateComputePropertiesCDN(cdn)
 	db[cdn.Id] = cdn
 	log.Printf("POST [%+v\n]", cdn)
+	spew.Dump(cdn)
 	sendResponse(http.StatusCreated, w, cdn)
 }
 
