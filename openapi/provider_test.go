@@ -61,6 +61,33 @@ const swaggerTemplate = `{
       }
     },
     "/bottles/{id}": {
+      "put": {
+        "tags": [
+          "bottle"
+        ],
+        "summary": "show bottle",
+        "description": "shows a bottle",
+        "operationId": "bottle#show",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#\/definitions\/bottle"
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
       "get": {
         "tags": [
           "bottle"
@@ -246,36 +273,19 @@ const swaggerTemplate = `{
 
 const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
   "swagger": "2.0",
-  "host": "some-host",
-  "info": {
-    "description": "The wine review service",
-    "version": ""
-  },
+  "host": "whatever-host",
   "consumes": [
-    "application\/json",
-    "application\/xml",
-    "application\/gob",
-    "application\/x-gob"
+    "application\/json"
   ],
   "produces": [
-    "application\/json",
-    "application\/xml",
-    "application\/gob",
-    "application\/x-gob"
+    "application\/json"
   ],
   "paths": {
-    "\/bottles\/": {
+    "/bottles/": {
       "post": {
-        "tags": [
-          "bottle"
-        ],
         "summary": "create bottle",
         "description": "creates a bottle",
         "operationId": "bottle#create",
-        "produces": [
-          "application\/vnd.goa.error",
-          "application\/vnd.gophercon.goa.bottle"
-        ],
         "parameters": [
           {
             "name": "payload",
@@ -283,7 +293,7 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
             "description": "BottlePayload is the type used to create bottles",
             "required": true,
             "schema": {
-              "$ref": "#\/definitions\/BottlePayload"
+              "$ref": "#/definitions/BottlePayload"
             }
           }
         ],
@@ -291,13 +301,13 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#\/definitions\/bottle"
+              "$ref": "#/definitions/bottle"
             }
           },
           "400": {
             "description": "Bad Request",
             "schema": {
-              "$ref": "#\/definitions\/error"
+              "$ref": "#/definitions/error"
             }
           },
           "500": {
@@ -306,7 +316,7 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
         }
       }
     },
-    "\/bottles\/{id}": {
+    "/bottles/{id}": {
       "put": {},
       "get": {
         "tags": [
@@ -315,9 +325,6 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
         "summary": "show bottle",
         "description": "shows a bottle",
         "operationId": "bottle#show",
-        "produces": [
-          "application\/vnd.gophercon.goa.bottle"
-        ],
         "parameters": [
           {
             "name": "id",
@@ -339,24 +346,9 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
         }
       }
     },
-    "\/swagger\/swagger.json": {
+    "/swagger/swagger.json": {
       "get": {
-        "summary": "Download \/opt\/goa\/swagger\/swagger.json",
-        "operationId": "Spec#\/swagger\/swagger.json",
-        "responses": {
-          "200": {
-            "description": "File downloaded",
-            "schema": {
-              "type": "file"
-            }
-          }
-        }
-      }
-    },
-    "\/swagger\/swagger.yaml": {
-      "get": {
-        "summary": "Download \/opt\/goa\/swagger\/swagger.yaml",
-        "operationId": "Spec#\/swagger\/swagger.yaml",
+        "operationId": "Spec#/swagger/swagger.json",
         "responses": {
           "200": {
             "description": "File downloaded",
@@ -413,7 +405,6 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
       ]
     },
     "bottle": {
-      "title": "Mediatype identifier: application\/vnd.gophercon.goa.bottle; view=default",
       "type": "object",
       "properties": {
         "id": {
@@ -457,7 +448,6 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
       ]
     },
     "error": {
-      "title": "Mediatype identifier: application\/vnd.goa.error; view=default",
       "type": "object",
       "properties": {
         "code": {
@@ -578,19 +568,16 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 	assert.NotNil(t, instanceStates)
 	assert.Equal(t, 1, len(instanceStates))
 
+	updatedInstanceState, updateError := provider.Apply(instanceInfo, instanceStates[0], &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "Bottle #1337", New: "leet bottle"}}})
+	assert.NoError(t, updateError)
+	assert.NotNil(t, updatedInstanceState)
+	fmt.Println(">>>>", updatedInstanceState)
+
 	_, deleteError := provider.Apply(instanceInfo, instanceStates[0], &terraform.InstanceDiff{Destroy: true})
 	assert.Contains(t, deleteError.Error(), "does not support DELETE ")
-
-	_, updateError := provider.Apply(instanceInfo, instanceStates[0], &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "Bottle #1337", New: "leet bottle"}}})
-	assert.Contains(t, updateError.Error(), "does not support PUT ")
-
-	//instanceState1, e := provider.Apply(instanceInfo, instanceStates[0], &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "Bottle #1337", New: "leet bottle"}}})
-	//assert.Contains(t, updateError.Error(), "does not support PUT ")
-	//assert.NoError(t, e)
-	//assert.NotNil(t, instanceState1)
 }
 
-func Test_ImportState_panics_if_swagger_defines_put_without_status_codes(t *testing.T) {
+func Test_ImportState_panics_if_swagger_defines_put_without_response_status_codes(t *testing.T) {
 	o := &ProviderOpenAPI{ProviderName: "bob"}
 
 	provider, e := o.createSchemaProviderFromServiceConfiguration(fakeServiceConfiguration{
