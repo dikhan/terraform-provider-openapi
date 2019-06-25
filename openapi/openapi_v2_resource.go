@@ -2,12 +2,13 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/spec"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/spec"
 )
 
 const resourceVersionRegex = "(/v[0-9]*/)"
@@ -465,7 +466,7 @@ func (o *SpecV2Resource) createResourceOperation(operation *spec.Operation) *spe
 
 func (o *SpecV2Resource) createResponses(operation *spec.Operation) specResponses {
 	responses := specResponses{}
-	for statusCode, response := range operation.Responses.StatusCodeResponses {
+	for statusCode, response := range operation.Responses.StatusCodeResponses { //panics on ImportState if the swagger doesn't define status code responses
 		responses[statusCode] = &specResponse{
 			isPollingEnabled:    o.isResourcePollingEnabled(response),
 			pollTargetStatuses:  o.getResourcePollTargetStatuses(response),
