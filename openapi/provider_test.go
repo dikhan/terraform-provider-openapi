@@ -328,12 +328,6 @@ const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
     "/bottles/{id}": {
       "put": {},
       "get": {
-        "tags": [
-          "bottle"
-        ],
-        "summary": "show bottle",
-        "description": "shows a bottle",
-        "operationId": "bottle#show",
         "parameters": [
           {
             "name": "id",
