@@ -528,7 +528,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 				return err
 			}
 		}
-		input[property.Name] = &objectInput
+		input[property.Name] = objectInput
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			input[property.Name] = dataValue.([]interface{})
