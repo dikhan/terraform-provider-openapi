@@ -205,6 +205,17 @@ const swaggerTemplate = `{
           "minimum": 1,
           "maximum": 5
         },
+        "nestedftw": {
+          "type": "object",
+		  "properties": {
+        	"name": {
+        	  "type": "string",
+        	  "description": "Name of bottle",
+        	  "example": "x",
+        	  "minLength": 1
+        	},
+		  },
+        },
         "vintage": {
           "type": "integer",
           "description": "Vintage of bottle",
