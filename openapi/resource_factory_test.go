@@ -784,6 +784,9 @@ func TestCheckImmutableFields(t *testing.T) {
 }
 
 func TestUpdateStateWithPayloadData(t *testing.T) {
+
+	// TODO: Add test coverage for nested structs use case - e,g: remoteData and resourceData contain multiple properties including an property object with a nested object
+
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
 		Convey("When  is called with a map containing some properties", func() {
@@ -803,6 +806,9 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 }
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
+
+	// TODO: Add test coverage for nested structs use case - e,g: resourceData containing a property object with nested objects, see unit tests below to get a feeling on how to set up the resourceData
+
 	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
 		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty)
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
@@ -892,6 +898,9 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 }
 
 func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
+
+	// TODO: Add test coverage for nested structs use case - e,g: the property and data value must correlate. Also, keep in mind that a json object (even if it contains other objects inside) is represented as a reflect.Map in go
+
 	Convey("Given a resource factory", t, func() {
 		r := resourceFactory{}
 		Convey("When convertPayloadToLocalStateDataValue is called with a string property and a string value", func() {
@@ -1099,6 +1108,9 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 }
 
 func TestGetPropertyPayload(t *testing.T) {
+
+	// TODO: Add test coverage for object with nested objects
+
 	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
 		objectSchemaDefinition := &specSchemaDefinition{
 			Properties: specSchemaDefinitionProperties{
@@ -1116,7 +1128,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
 		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, sliceObjectProperty)
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the string property in the resource schema and it's state data value", func() {
+		Convey("When getPropertyPayload is called with an empty map, the string property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(stringProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, stringProperty, dataValue)
@@ -1133,7 +1145,7 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
 			})
 		})
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the int property in the resource schema and it's state data value", func() {
+		Convey("When getPropertyPayload is called with an empty map, the int property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(intProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, intProperty, dataValue)
@@ -1150,7 +1162,7 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
 			})
 		})
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the number property in the resource schema and it's state data value", func() {
+		Convey("When getPropertyPayload is called with an empty map, the number property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(numberProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, numberProperty, dataValue)
@@ -1167,7 +1179,7 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
 			})
 		})
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the bool property in the resource schema and it's state data value", func() {
+		Convey("When getPropertyPayload is called with an empty map, the bool property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(boolProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, boolProperty, dataValue)
@@ -1185,7 +1197,7 @@ func TestGetPropertyPayload(t *testing.T) {
 			})
 		})
 
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the object property in the resource schema and it's state data value", func() {
+		Convey("When getPropertyPayload is called with an empty map, the object property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(objectProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, objectProperty, dataValue)
@@ -1204,7 +1216,7 @@ func TestGetPropertyPayload(t *testing.T) {
 			})
 		})
 
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
+		Convey("When getPropertyPayload is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
@@ -1224,7 +1236,7 @@ func TestGetPropertyPayload(t *testing.T) {
 			})
 		})
 
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
+		Convey("When getPropertyPayload is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, slicePrimitiveProperty, dataValue)
