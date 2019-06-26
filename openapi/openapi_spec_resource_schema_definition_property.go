@@ -151,7 +151,9 @@ func (s *specSchemaDefinitionProperty) isTerraformListOfSimpleValues() (bool, *s
 
 func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource, error) {
 	if s.Type == typeObject || (s.Type == typeList && s.ArrayItemsType == typeObject) {
-		// FIXME: This blows up if SpecSchemaDefinition is nil
+		if s.SpecSchemaDefinition == nil {
+			return nil, fmt.Errorf("missing spec schema definition for property '%s' of type '%s'", s.Name, s.Type)
+		}
 		objectSchema, err := s.SpecSchemaDefinition.createResourceSchemaKeepID()
 		if err != nil {
 			return nil, err
