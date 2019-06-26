@@ -467,8 +467,7 @@ definitions:
               x-terraform-field-name: "origin_port"
       object_nested_scheme_property: # this also covers object within objects
         type: "object"
-        required:
-        - object_property
+        x-terraform-computed: true
         properties:
           name:
             type: "string"
