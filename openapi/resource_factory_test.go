@@ -1108,6 +1108,19 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
+		Convey("When convertPayloadToLocalStateDataValue is called with an rune property and a rune value and the desired output is nil", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 'f'
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should not be nil", func() {
+				//So(err, ShouldEqual, errors.New("'int32' type not supported"))	// TODO: Why does this not work?
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
+				So(resultValue, ShouldEqual, nil)
+			})
+		})
+
 		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value", func() {
 			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
 			dataValue := 45.23
