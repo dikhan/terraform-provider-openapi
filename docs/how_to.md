@@ -624,6 +624,73 @@ number | schema.TypeFloat | float value
 boolean | schema.TypeBool | boolean value
 [object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions) | schema.TypeMap | map value
 [array](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#array-definitions) | schema.TypeList | list of values of the same type. The list item types can be primitives (string, integer, number or bool) or complex data structures (objects)
+[object with nested objects](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-with-nested-objects) | schema.TypeList | list with just one element. The element will be object that contains other objects
+
+
+###### Object with nested objects
+
+As per [Terraform maintainer suggestion](https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737) and 
+the current version of Terraform SDK (<=0.12.3 at the time of writing), the only way to support objects with nested objects 
+is to configure the property schema as schema.TypeList limiting the items to one item. The OpenAPI Terraform plugin supports
+this enabling service providers to describe properties of type object that in turn contain other objects and expose that
+into the corresponding Terraform configuration. The following shows an example on how the translation will be done internally:
+
+Given the following definition model containing one property named ```object_nested_scheme_property``` that contains two properties,
+```name``` a string property and ```object_property``` which is the nested object (with other properties).
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      ...
+      object_nested_scheme_property: # this proeprty contains other object properties
+        type: "object"
+        properties:
+          name:
+            type: "string"
+          object_property:
+            type: "object"
+            properties:
+              account:
+                type: string
+      ...
+````
+
+The above will be translated into the following Terraform schema:
+
+````
+&schema.Resource{
+        # This will be the schema of the resource using the ContentDeliveryNetworkV1 model definition
+		Schema: map[string]*schema.Schema {
+		    "object_nested_scheme_property": *schema.Schema {
+                Type:TypeList 
+                Optional:true 
+                Required:false 
+                ...
+                Elem: &{
+                          Schema:map[name:0xc0005ee700 object_property:0xc0005ee800] 
+                          SchemaVersion:0 
+                          MigrateState:<nil> 
+                          StateUpgraders:[] 
+                          Create:<nil> 
+                          Read:<nil> 
+                          Update:<nil> 
+                          Delete:<nil> 
+                          Exists:<nil> 
+                          CustomizeDiff:<nil> 
+                          Importer:<nil> 
+                          DeprecationMessage: 
+                          Timeouts:<nil>
+                } 
+                MaxItems:1 
+                MinItems:0 
+                ...		    
+		    }
+		},
+		...
+	}
+````
 
 ###### Array definitions
 
