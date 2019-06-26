@@ -485,6 +485,20 @@ func TestTerraformType(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a swagger schema definition that has a property of type rune", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: "rune",
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And value type should be invalid", func() {
+				So(valueType, ShouldEqual, schema.TypeInvalid)
+			})
+		})
+	})
 	Convey("Given a swagger schema definition that has a property of type object", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Type: typeObject,
