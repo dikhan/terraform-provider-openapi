@@ -151,6 +151,7 @@ func (s *specSchemaDefinitionProperty) isTerraformListOfSimpleValues() (bool, *s
 
 func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource, error) {
 	if s.Type == typeObject || (s.Type == typeList && s.ArrayItemsType == typeObject) {
+		// FIXME: This blows up if SpecSchemaDefinition is nil
 		objectSchema, err := s.SpecSchemaDefinition.createResourceSchemaKeepID()
 		if err != nil {
 			return nil, err
