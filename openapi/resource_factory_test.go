@@ -3,13 +3,14 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -1548,6 +1549,16 @@ func TestGetPropertyPayload(t *testing.T) {
 		expectedPropertyWithNestedObjectName := "property_with_nested_object"
 		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
+		Convey("When getPropertyPayload is called a slice with >1 dataValue, it complains", func() {
+			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"})
+			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
+
+		})
+		Convey("When getPropertyPayload is called a slice with <1 dataValue, it complains", func() {
+			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{})
+			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
+
+		})
 		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
