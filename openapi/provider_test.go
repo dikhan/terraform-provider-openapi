@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/schema"
+
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -612,10 +614,11 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 		},
 	})
 	assert.NoError(t, e)
-	assert.NotNil(t, provider)
-
-	assert.Equal(t, 1, len(provider.Schema))
-	assert.Equal(t, 1, len(provider.ResourcesMap))
+	assert.Equal(t, schema.TypeString, provider.ResourcesMap["bob_bottles"].Schema["name"].Type)
+	assert.Equal(t, schema.TypeInt, provider.ResourcesMap["bob_bottles"].Schema["vintage"].Type)
+	assert.Equal(t, schema.TypeInt, provider.ResourcesMap["bob_bottles"].Schema["rating"].Type)
+	assert.Equal(t, schema.TypeMap, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Type)
+	assert.Equal(t, schema.TypeString, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Elem.(*schema.Resource).Schema["name"].Type)
 
 	instanceInfo := &terraform.InstanceInfo{Type: "bob_bottles"}
 	assert.Panics(t, func() { provider.ImportState(instanceInfo, "whatever") }, "ImportState panics if Configure hasn't been called first")
