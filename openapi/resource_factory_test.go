@@ -3,13 +3,14 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -1108,6 +1109,19 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
+		Convey("When convertPayloadToLocalStateDataValue is called with an rune property and a rune value and the desired output is nil", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 'f'
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should not be nil", func() {
+				//So(err, ShouldEqual, errors.New("'int32' type not supported"))	// TODO: Why does this not work?
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
+				So(resultValue, ShouldEqual, nil)
+			})
+		})
+
 		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value", func() {
 			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
 			dataValue := 45.23
@@ -1208,6 +1222,28 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				So(resultValue.([]interface{}), ShouldContain, dataValue[0])
 			})
 		})
+
+		// FIXME: This blows up, not runtime safe
+		//Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with non objects inside", func() {
+		//	property := &specSchemaDefinitionProperty{
+		//		Name:               "blowup",
+		//		Type:               typeObject,
+		//		Required:           true,
+		//	}
+		//	_, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
+		//	Convey("Then the error should be nil", func() {
+		//		So(err, ShouldBeNil)
+		//	})
+		//})
+
+		// FIXME: This blows up, not runtime safe
+		//Convey("When convertPayloadToLocalStateDataValue is called with a slice of map interfaces", func() {
+		//	property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeString, nil)
+		//	_, err := r.convertPayloadToLocalStateDataValue(property, []map[string]interface{}{}, false)
+		//	Convey("Then the error should be nil", func() {
+		//		So(err, ShouldBeNil)
+		//	})
+		//})
 
 		Convey("When convertPayloadToLocalStateDataValue is called with an object", func() {
 			objectSchemaDefinition := &specSchemaDefinition{
@@ -1535,6 +1571,16 @@ func TestGetPropertyPayload(t *testing.T) {
 		expectedPropertyWithNestedObjectName := "property_with_nested_object"
 		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
+		Convey("When getPropertyPayload is called a slice with >1 dataValue, it complains", func() {
+			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"})
+			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
+
+		})
+		Convey("When getPropertyPayload is called a slice with <1 dataValue, it complains", func() {
+			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{})
+			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
+
+		})
 		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())

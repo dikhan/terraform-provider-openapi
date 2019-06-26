@@ -2,15 +2,16 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type resourceFactory struct {
@@ -539,7 +540,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			if property.isPropertyWithNestedObjects() {
 				arrayValue := dataValue.([]interface{})
 				if len(arrayValue) != 1 {
-					return fmt.Errorf("something is really wrong here...an object property with nested objects should never have more than one elem in the terraform state list")
+					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 				}
 				if err := r.getPropertyPayload(input, property, arrayValue[0]); err != nil {
 					return err

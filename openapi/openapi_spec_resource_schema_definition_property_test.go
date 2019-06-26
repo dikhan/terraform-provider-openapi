@@ -485,6 +485,20 @@ func TestTerraformType(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a swagger schema definition that has a property of type rune", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: "rune",
+		}
+		Convey("When terraformType method is called", func() {
+			valueType, err := s.terraformType()
+			Convey("Then error returned should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And value type should be invalid", func() {
+				So(valueType, ShouldEqual, schema.TypeInvalid)
+			})
+		})
+	})
 	Convey("Given a swagger schema definition that has a property of type object", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Type: typeObject,
@@ -662,6 +676,23 @@ func TestTerraformObjectSchema(t *testing.T) {
 			})
 		})
 	})
+
+	// FIXME: This blows up
+	//Convey("Given a swagger schema definition that has a object property type for building object schmea", t, func() {
+	//	s := &specSchemaDefinitionProperty{
+	//		Name: "prop",
+	//		Type: typeObject,
+	//	}
+	//	Convey("When terraformObjectSchema method is called", func() {
+	//		_, err := s.terraformObjectSchema()
+	//		Convey("Then the error returned should not be nil", func() {
+	//			So(err, ShouldNotBeNil)
+	//		})
+	//		Convey("Then the error message returned should match the expected one", func() {
+	//			So(err.Error(), ShouldEqual, "object schema can only be formed for types object or types list with elems of type object: found type='string' elemType='' instead")
+	//		})
+	//	})
+	//})
 }
 
 func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
