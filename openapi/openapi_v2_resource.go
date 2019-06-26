@@ -386,7 +386,6 @@ func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Sch
 			}
 			return true, schema, nil
 		}
-		fmt.Printf(">>>> %+v\n", property)
 		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
 	}
 	return false, nil, nil
