@@ -951,8 +951,6 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 
 func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 
-	// TODO: Add test coverage for nested structs use case - e,g: the property and data value must correlate. Also, keep in mind that a json object (even if it contains other objects inside) is represented as a reflect.Map in go
-
 	Convey("Given a resource factory", t, func() {
 		r := resourceFactory{}
 		Convey("When convertPayloadToLocalStateDataValue is called with a string property and a string value", func() {
