@@ -716,7 +716,10 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 				},
 			}}
 		Convey("When terraformSchema method is called", func() {
-			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
+			isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
+			Convey("Then the err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("Then the result should be true", func() {
 				So(isPropertyWithNestedObjects, ShouldBeTrue)
 			})
@@ -735,9 +738,26 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 				},
 			}}
 		Convey("When terraformSchema method is called", func() {
-			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
+			isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
+			Convey("Then the err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("Then the result should be false", func() {
 				So(isPropertyWithNestedObjects, ShouldBeFalse)
+			})
+		})
+	})
+
+	Convey("Given a spec definition property of type object that does not have a corresponding spec schema definition", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:                 "top_level_object",
+			Type:                 typeObject,
+			SpecSchemaDefinition: nil,
+		}
+		Convey("When terraformSchema method is called", func() {
+			_, err := s.isPropertyWithNestedObjects()
+			Convey("Then the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "missing spec schema definition for object property 'top_level_object'")
 			})
 		})
 	})

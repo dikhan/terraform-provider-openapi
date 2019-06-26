@@ -51,17 +51,19 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 	return terraformutils.ConvertToTerraformCompliantName(s.Name)
 }
 
-func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
+func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() (bool, error) {
 	if !s.isObjectProperty() {
-		return false
+		return false, nil
 	}
-	// FIXME: this blows up if SpecSchemaDefinition is nil
+	if s.SpecSchemaDefinition == nil {
+		return false, fmt.Errorf("missing spec schema definition for object property '%s'", s.Name)
+	}
 	for _, p := range s.SpecSchemaDefinition.Properties {
 		if p.isObjectProperty() {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 func (s *specSchemaDefinitionProperty) isPropertyNamedID() bool {
@@ -186,7 +188,11 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		// once the SDK supports this out-of-the-box. Note: When this behaviour changes, it will require a new major release
 		// of the provider since the terraform configuration will most likely be different (as well as the way the data is stored
 		// in the state file) AND the change will NOT be backwards compatible.
-		if s.isPropertyWithNestedObjects() {
+		isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
+		if err != nil {
+			return nil, err
+		}
+		if isPropertyWithNestedObjects {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1
 		}
