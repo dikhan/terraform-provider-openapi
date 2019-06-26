@@ -1223,18 +1223,17 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
-		// FIXME: This blows up, not runtime safe
-		//Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with non objects inside", func() {
-		//	property := &specSchemaDefinitionProperty{
-		//		Name:               "blowup",
-		//		Type:               typeObject,
-		//		Required:           true,
-		//	}
-		//	_, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
-		//	Convey("Then the error should be nil", func() {
-		//		So(err, ShouldBeNil)
-		//	})
-		//})
+		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with non objects inside", func() {
+			property := &specSchemaDefinitionProperty{
+				Name:     "blowup",
+				Type:     typeObject,
+				Required: true,
+			}
+			_, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
+			Convey("Then the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "missing spec schema definition for object property 'blowup'")
+			})
+		})
 
 		// FIXME: This blows up, not runtime safe
 		//Convey("When convertPayloadToLocalStateDataValue is called with a slice of map interfaces", func() {
