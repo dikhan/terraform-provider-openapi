@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1153,6 +1154,59 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				So(resultValue.(map[string]interface{})["example_bool"].(string), ShouldEqual, "true")
 				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_float")
 				So(resultValue.(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an object containing objects", func() {
+			nestedObjectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+					newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+				},
+			}
+			nestedObjectDefault := map[string]interface{}{
+				"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+				"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+			}
+			nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+			propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					idProperty,
+					nestedObject,
+				},
+			}
+			// The below represents the JSON representation of the response payload received by the API
+			dataValue := map[string]interface{}{
+				"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+				"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+			}
+
+			expectedPropertyWithNestedObjectName := "property_with_nested_object"
+			propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+			resultValue, err := r.convertPayloadToLocalStateDataValue(propertyWithNestedObject, dataValue, false)
+
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result value should be the list containing just one element (as per the nested struct workaround)", func() {
+				// Tag(NestedStructsWorkaround)
+				// Note: This is the workaround needed to support properties with nested structs. The current Terraform sdk version
+				// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
+				// with the list containing just one element. The below represents the internal representation of the terraform state
+				// for an object property that contains other objects
+				So(resultValue.([]interface{}), ShouldNotBeEmpty)
+				So(len(resultValue.([]interface{})), ShouldEqual, 1)
+			})
+			Convey("AND the object should have the expected properties including the nested object", func() {
+				So(resultValue.([]interface{})[0], ShouldContainKey, propertyWithNestedObjectSchemaDefinition.Properties[0].Name)
+				So(resultValue.([]interface{})[0], ShouldContainKey, propertyWithNestedObjectSchemaDefinition.Properties[1].Name)
+			})
+			Convey("AND the object property with nested object should have the expected configuration", func() {
+				nestedObject := propertyWithNestedObjectSchemaDefinition.Properties[1]
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name], ShouldContainKey, nestedObjectSchemaDefinition.Properties[0].Name)
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].(map[string]interface{})[nestedObjectSchemaDefinition.Properties[0].Name], ShouldEqual, strconv.Itoa(nestedObjectSchemaDefinition.Properties[0].Default.(int)))
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name], ShouldContainKey, nestedObjectSchemaDefinition.Properties[1].Name)
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].(map[string]interface{})[nestedObjectSchemaDefinition.Properties[1].Name], ShouldEqual, nestedObjectSchemaDefinition.Properties[1].Default)
 			})
 		})
 	})
