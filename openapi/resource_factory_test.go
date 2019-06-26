@@ -785,14 +785,63 @@ func TestCheckImmutableFields(t *testing.T) {
 }
 
 func TestUpdateStateWithPayloadData(t *testing.T) {
-
-	// TODO: Add test coverage for nested structs use case - e,g: remoteData and resourceData contain multiple properties including an property object with a nested object
-
 	Convey("Given a resource factory", t, func() {
-		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
-		Convey("When  is called with a map containing some properties", func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		objectStateValue := map[string]interface{}{
+			"origin_port": objectSchemaDefinition.Properties[0].Default,
+			"protocol":    objectSchemaDefinition.Properties[1].Default,
+		}
+		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectStateValue, objectSchemaDefinition)
+		arrayObjectStateValue := []map[string]interface{}{
+			{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
+		}
+		listOfObjectsProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectStateValue, typeObject, objectSchemaDefinition)
+
+		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				objectProperty,
+			},
+		}
+		objectWithNestedObjectStateValue := map[string]interface{}{
+			"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+			"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+		}
+
+		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, objectWithNestedObjectStateValue, propertyWithNestedObjectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, listOfObjectsProperty, propertyWithNestedObject)
+		Convey("When  is called with a map containing all property types supported (string, int, number, bool, slice of primitives, objects, list of objects and property with nested objects)", func() {
 			remoteData := map[string]interface{}{
 				stringWithPreferredNameProperty.Name: "someUpdatedStringValue",
+				intProperty.Name:                     15,
+				numberProperty.Name:                  26.45,
+				boolProperty.Name:                    true,
+				slicePrimitiveProperty.Name:          []interface{}{"value1"},
+				objectProperty.Name: map[string]interface{}{
+					"origin_port": 80,
+					"protocol":    "http",
+				},
+				listOfObjectsProperty.Name: []interface{}{
+					map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+				propertyWithNestedObject.Name: map[string]interface{}{
+					idProperty.Name: propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+					objectProperty.Name: map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
 			}
 			err := r.updateStateWithPayloadData(remoteData, resourceData)
 			Convey("Then the err returned should be nil", func() {
@@ -800,7 +849,44 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			})
 			Convey("And the expectedValue should equal to the expectedValue coming from remote, and also the key expectedValue should be the preferred as defined in the property", func() {
 				// keys stores in the resource data struct are always snake case
-				So(resourceData.Get(stringWithPreferredNameProperty.PreferredName), ShouldEqual, "someUpdatedStringValue")
+				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
+				So(resourceData.Get(intProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[intProperty.Name])
+				So(resourceData.Get(numberProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[numberProperty.Name])
+				So(resourceData.Get(boolProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[boolProperty.Name])
+				So(len(resourceData.Get(slicePrimitiveProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(slicePrimitiveProperty.getTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, remoteData[slicePrimitiveProperty.Name].([]interface{})[0])
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{})["protocol"], ShouldEqual, remoteData[objectProperty.Name].(map[string]interface{})["protocol"])
+
+				So(len(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"])
+
+				So(len(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, idProperty.Name)
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, objectProperty.Name)
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"], ShouldEqual, remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"])
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
+		Convey("When is called with a map remoteData containing more properties than then ones specified in the schema (this means the API is returning more info than the one specified in the swagger file)", func() {
+			remoteData := map[string]interface{}{
+				stringWithPreferredNameProperty.Name:                "someUpdatedStringValue",
+				"some_other_property_not_documented_in_openapi_doc": 15,
+			}
+			err := r.updateStateWithPayloadData(remoteData, resourceData)
+			Convey("Then the err returned should matched the expected one", func() {
+				So(err.Error(), ShouldEqual, "failed to update state with remote data. This usually happends when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'some_other_property_not_documented_in_openapi_doc' not existing in resource schema definition")
 			})
 		})
 	})
