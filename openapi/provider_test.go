@@ -574,9 +574,7 @@ func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
 }
 
 func Test_create_and_use_provider_from_json(t *testing.T) {
-	o := &ProviderOpenAPI{ProviderName: "bob"}
-
-	provider, e := o.createSchemaProviderFromServiceConfiguration(fakeServiceConfiguration{
+	provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
 			apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("apiServer request>>>>", r.URL, r.Method)
@@ -652,9 +650,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 }
 
 func Test_ImportState_panics_if_swagger_defines_put_without_response_status_codes(t *testing.T) {
-	o := &ProviderOpenAPI{ProviderName: "bob"}
-
-	provider, e := o.createSchemaProviderFromServiceConfiguration(fakeServiceConfiguration{
+	provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
 			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes))
