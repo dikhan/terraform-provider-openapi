@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -582,10 +583,22 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 				fmt.Println("apiServer request>>>>", r.URL, r.Method)
 				switch r.Method {
 				case http.MethodGet:
+					assert.Equal(t, "/bottles/1337", r.RequestURI)
+					bs, e := ioutil.ReadAll(r.Body)
+					require.NoError(t, e)
+					assert.Empty(t, string(bs))
 					w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977,"anotherbottle":{"id":"nestedid1","name":"nestedname1"}}`))
 				case http.MethodPut:
+					assert.Equal(t, "/bottles/1337", r.RequestURI)
+					bs, e := ioutil.ReadAll(r.Body)
+					require.NoError(t, e)
+					assert.Equal(t, `{"anotherbottle":{"id":"nestedid1","name":"nestedname1"},"name":"whatever","rating":17,"vintage":1977}`, string(bs))
 					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977,"anotherbottle":{"id":"updatednested1","name":"updatednestedname1"}}`))
 				case http.MethodDelete:
+					assert.Equal(t, "/bottles/1337", r.RequestURI)
+					bs, e := ioutil.ReadAll(r.Body)
+					require.NoError(t, e)
+					assert.Empty(t, string(bs))
 					w.Write([]byte(`{}`))
 				}
 			}))
@@ -608,7 +621,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 	assert.Equal(t, 1, len(provider.ResourcesMap))
 
 	instanceInfo := &terraform.InstanceInfo{Type: "bob_bottles"}
-	assert.Panics(t, func() { provider.ImportState(instanceInfo, "my fancy id") }, "ImportState panics if Configure hasn't been called first")
+	assert.Panics(t, func() { provider.ImportState(instanceInfo, "whatever") }, "ImportState panics if Configure hasn't been called first")
 
 	assert.NoError(t, provider.Configure(&terraform.ResourceConfig{}))
 
