@@ -55,6 +55,7 @@ func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
 	if !s.isObjectProperty() {
 		return false
 	}
+	// FIXME: this blows up if SpecSchemaDefinition is nil
 	for _, p := range s.SpecSchemaDefinition.Properties {
 		if p.isObjectProperty() {
 			return true
