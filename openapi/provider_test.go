@@ -8,12 +8,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform/terraform"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hashicorp/terraform/terraform"
-
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stretchr/testify/assert"
 )
 
 const swaggerTemplate = `{

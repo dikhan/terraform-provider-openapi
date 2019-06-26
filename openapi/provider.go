@@ -20,11 +20,12 @@ type ProviderOpenAPI struct {
 
 // CreateSchemaProvider returns a terraform.ResourceProvider.
 func (p *ProviderOpenAPI) CreateSchemaProvider() (*schema.Provider, error) {
-	if serviceConfiguration, err := getServiceConfiguration(p.ProviderName); err != nil {
-		return p.createSchemaProviderFromServiceConfiguration(serviceConfiguration)
-	} else {
+	serviceConfiguration, err := getServiceConfiguration(p.ProviderName)
+	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
+
+	return p.createSchemaProviderFromServiceConfiguration(serviceConfiguration)
 }
 
 func (p *ProviderOpenAPI) createSchemaProviderFromServiceConfiguration(serviceConfiguration ServiceConfiguration) (*schema.Provider, error) {
