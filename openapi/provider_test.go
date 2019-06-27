@@ -56,14 +56,6 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 			apiServerBehaviors[r.Method](w, r)
 		}))
 
-		apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "/bottles/1337", r.RequestURI)
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			assert.Empty(t, string(bs))
-			w.Write([]byte(`{}`))
-		}
-
 		Convey("And given a swagger URL describing the API", func() {
 			apiHost := apiServer.URL[7:]
 			fmt.Println("apiHost>>>>", apiHost)
@@ -110,6 +102,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 					var instanceStates []*terraform.InstanceState
 					var importStateError error
 					instanceStates, importStateError = provider.ImportState(instanceInfo, "1337")
+					So(importStateError, ShouldBeNil)
 
 					Convey("And the API server should receive the appropriate request", func() {
 						So(receivedGetToURI, ShouldEqual, "/bottles/1337")
@@ -120,7 +113,6 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 					initialInstanceState = instanceStates[0]
 
 					Convey("And the instance state returned should reflect the content of the API server's response", func() {
-						So(importStateError, ShouldBeNil)
 						So(1, ShouldEqual, len(instanceStates))
 						So("1337", ShouldEqual, initialInstanceState.ID)
 						So("Bottle #1337", ShouldEqual, initialInstanceState.Attributes["name"])
@@ -130,7 +122,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 						So("nestedname1", ShouldEqual, initialInstanceState.Attributes["anotherbottle.name"])
 					})
 
-					Convey("And changes can then be applied by calling Apply", func() {
+					Convey("And changes can then be made to the resource by calling Apply", func() {
 
 						var receivedPutToURI string
 						var receivedPutBody string
@@ -143,14 +135,14 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 						}
 
 						updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
+						So(updateError, ShouldBeNil)
 
 						Convey("And the API server should receive the appropriate request", func() {
-							assert.Equal(t, "/bottles/1337", receivedPutToURI)
-							assert.Equal(t, `{"anotherbottle":{"id":"nestedid1","name":"nestedname1"},"name":"whatever","rating":17,"vintage":1977}`, receivedPutBody)
+							So("/bottles/1337", ShouldEqual, receivedPutToURI)
+							So(receivedPutBody, ShouldEqual, `{"anotherbottle":{"id":"nestedid1","name":"nestedname1"},"name":"whatever","rating":17,"vintage":1977}`)
 						})
 
 						Convey("And the instance state returned should reflect the content of the API server's response", func() {
-							So(updateError, ShouldBeNil)
 							So("1337", ShouldEqual, updatedInstanceState.ID)
 							So("leet bottle ftw", ShouldEqual, updatedInstanceState.Attributes["name"])
 							So("17", ShouldEqual, updatedInstanceState.Attributes["rating"])
@@ -161,8 +153,25 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 					})
 
 					Convey("And the resouce can be deleted", func() {
+						var receivedDeleteToURI string
+						var receivedDeleteBody string
+
+						apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
+							receivedDeleteToURI = r.RequestURI
+							bs, e := ioutil.ReadAll(r.Body)
+							require.NoError(t, e)
+							receivedDeleteBody = string(bs)
+							w.Write([]byte(`{}`))
+						}
+
 						deletedInstanceState, deleteError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Destroy: true})
 						So(deleteError, ShouldBeNil)
+
+						Convey("And the API server should receive the appropriate request", func() {
+							So("/bottles/1337", ShouldEqual, receivedDeleteToURI)
+							So(receivedDeleteBody, ShouldBeEmpty)
+						})
+
 						So(deletedInstanceState, ShouldBeNil)
 					})
 				})
