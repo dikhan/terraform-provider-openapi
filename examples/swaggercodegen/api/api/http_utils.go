@@ -14,7 +14,8 @@ func readRequest(r *http.Request, in interface{}) error {
 		return fmt.Errorf("failed to read request body - %s", err)
 	}
 	if err := json.Unmarshal(body, in); err != nil {
-		return fmt.Errorf("payload does not match cdn spec - %s", err)
+		log.Printf("payload (%s) does not match cdn spec - %s", string(body), err)
+		return fmt.Errorf("payload (%s) does not match cdn spec - %s", string(body), err)
 	}
 	return nil
 }

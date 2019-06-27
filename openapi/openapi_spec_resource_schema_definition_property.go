@@ -51,6 +51,21 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 	return terraformutils.ConvertToTerraformCompliantName(s.Name)
 }
 
+func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() (bool, error) {
+	if !s.isObjectProperty() {
+		return false, nil
+	}
+	if s.SpecSchemaDefinition == nil {
+		return false, fmt.Errorf("missing spec schema definition for object property '%s'", s.Name)
+	}
+	for _, p := range s.SpecSchemaDefinition.Properties {
+		if p.isObjectProperty() {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (s *specSchemaDefinitionProperty) isPropertyNamedID() bool {
 	return s.getTerraformCompliantPropertyName() == idDefaultPropertyName
 }
@@ -138,6 +153,9 @@ func (s *specSchemaDefinitionProperty) isTerraformListOfSimpleValues() (bool, *s
 
 func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource, error) {
 	if s.Type == typeObject || (s.Type == typeList && s.ArrayItemsType == typeObject) {
+		if s.SpecSchemaDefinition == nil {
+			return nil, fmt.Errorf("missing spec schema definition for property '%s' of type '%s'", s.Name, s.Type)
+		}
 		objectSchema, err := s.SpecSchemaDefinition.createResourceSchemaKeepID()
 		if err != nil {
 			return nil, err
@@ -163,11 +181,27 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// complex data structures
 	switch s.Type {
 	case typeObject:
+
+		// As per @apparentlymart comment in https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737, currently (terraform sdk <= v0.12.2) the only
+		// way to configure nested structs is by defining a TypeList property which contains the object schema in the elem
+		// AND the list is restricted to 1 element. The below is a workaround to support this, however this should go away
+		// once the SDK supports this out-of-the-box. Note: When this behaviour changes, it will require a new major release
+		// of the provider since the terraform configuration will most likely be different (as well as the way the data is stored
+		// in the state file) AND the change will NOT be backwards compatible.
+		isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
+		if err != nil {
+			return nil, err
+		}
+		if isPropertyWithNestedObjects {
+			terraformSchema.Type = schema.TypeList
+			terraformSchema.MaxItems = 1
+		}
 		objectSchema, err := s.terraformObjectSchema()
 		if err != nil {
 			return nil, err
 		}
 		terraformSchema.Elem = objectSchema
+
 	case typeList:
 		if isListOfPrimitives, elemSchema := s.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			terraformSchema.Elem = elemSchema

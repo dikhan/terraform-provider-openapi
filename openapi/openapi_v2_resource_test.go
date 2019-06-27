@@ -2,13 +2,14 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/go-openapi/jsonreference"
-	"github.com/go-openapi/spec"
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-openapi/jsonreference"
+	"github.com/go-openapi/spec"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewSpecV2Resource(t *testing.T) {
@@ -610,27 +611,51 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
+		// TODO: test for createSchemaDefinitionProperty added by fradiben
 		Convey("When createSchemaDefinitionProperty is called with an optional property schema", func() {
-			propertyName := "propertyName"
+			propertyName := "propertyWithNestedObj"
+
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
-				},
-			}
+					Type: spec.StringOrArray{"object"},
+					Properties: map[string]spec.Schema{
+						"nested_obj": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"object"},
+								Properties: map[string]spec.Schema{
+									"nested_prop": spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{"string"},
+										},
+									},
+								},
+							},
+						},
+					},
+				}}
+
 			requiredProperties := []string{}
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
+
+			fmt.Println(schemaDefinitionProperty, err)
+
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+			Convey("And the schema definition property type should be an object", func() {
+				So(schemaDefinitionProperty.Type, ShouldEqual, typeObject)
 			})
-			Convey("And the schema definition property should not be readOnly", func() {
-				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
+
+			Convey("And the schema definition property specs should contain only 1 item of type object", func() {
+				So(len(schemaDefinitionProperty.SpecSchemaDefinition.Properties), ShouldEqual, 1)
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeObject)
 			})
-			Convey("And the schema definition property should not be computed", func() {
-				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
+
+			Convey("And the nested object's property is a string", func() {
+				nestedSpecSchema := *(schemaDefinitionProperty.SpecSchemaDefinition.Properties)[0]
+				So(nestedSpecSchema.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
 			})
+
 		})
 
 		Convey("When createSchemaDefinitionProperty is called with an optional property schema that has a default value (this means the property is optional-computed, since the API is expected to honour the default value (known at runtime) if input is not provided by the client)", func() {

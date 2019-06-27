@@ -2,15 +2,16 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type resourceFactory struct {
@@ -419,10 +420,23 @@ func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchem
 			}
 			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
 		}
+
+		// This is the work around put in place to have support for nested structs. In this case, we need to make sure
+		// that the json (which reflects to a map) gets translated to the expected array of one item that terraform expects.
+		isPropertyWithNestedObjects, err := property.isPropertyWithNestedObjects()
+		if err != nil {
+			return nil, err
+		}
+		if isPropertyWithNestedObjects {
+			arrayInput := []interface{}{}
+			arrayInput = append(arrayInput, objectInput)
+			return arrayInput, nil
+		}
+
 		return objectInput, nil
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
-			return propertyValue.([]interface{}), nil
+			return propertyValue, nil
 		}
 		if property.isArrayOfObjectsProperty() {
 			arrayInput := []interface{}{}
@@ -524,19 +538,36 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			input[property.Name] = dataValue.([]interface{})
 		} else {
-			arrayInput := []interface{}{}
-			arrayValue := dataValue.([]interface{})
-			for _, arrayItem := range arrayValue {
-				objectInput := map[string]interface{}{}
-				if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
+			// This is the work around put in place to have support for nested structs. In this case, because the
+			// state representation of nested objects is an array, we need to make sure we don't end up constructing an
+			// array but rather just a json object
+			isPropertyWithNestedObjects, err := property.isPropertyWithNestedObjects()
+			if err != nil {
+				return err
+			}
+			if isPropertyWithNestedObjects {
+				arrayValue := dataValue.([]interface{})
+				if len(arrayValue) != 1 {
+					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
+				}
+				if err := r.getPropertyPayload(input, property, arrayValue[0]); err != nil {
 					return err
 				}
-				// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example
-				// [propertyName: listeners; propertyValue: [map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]]]
-				// Here we just want to assign as value: map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]
-				arrayInput = append(arrayInput, objectInput[property.Name])
+			} else {
+				arrayInput := []interface{}{}
+				arrayValue := dataValue.([]interface{})
+				for _, arrayItem := range arrayValue {
+					objectInput := map[string]interface{}{}
+					if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
+						return err
+					}
+					// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example
+					// [propertyName: listeners; propertyValue: [map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]]]
+					// Here we just want to assign as value: map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]
+					arrayInput = append(arrayInput, objectInput[property.Name])
+				}
+				input[property.Name] = arrayInput
 			}
-			input[property.Name] = arrayInput
 		}
 	case reflect.String:
 		// This is so when object fields are processed, map values, they come as string so need to do the proper translation base

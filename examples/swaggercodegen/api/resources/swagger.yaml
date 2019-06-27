@@ -455,12 +455,6 @@ definitions:
       object_property:
         #type: object - type is optional for properties of object type that use $ref
         $ref: "#/definitions/ObjectProperty"
-      object_nested_scheme_property:
-        type: object # nested properties required type equal object to be considered as object
-        readOnly: true
-        properties:
-          name:
-            type: string
       arrayOfObjectsExample: # This is an example of an array of objects
         type: "array"
         items:
@@ -471,6 +465,18 @@ definitions:
             originPort:
               type: integer
               x-terraform-field-name: "origin_port"
+      object_nested_scheme_property: # this also covers object within objects
+        type: "object"
+        x-terraform-computed: true
+        properties:
+          name:
+            type: "string"
+            readOnly: true
+          object_property:
+            type: "object" # nested properties required type equal object to be considered as object
+            properties:
+              account:
+                type: string
 
   ObjectProperty:
     type: object
