@@ -56,14 +56,6 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 			apiServerBehaviors[r.Method](w, r)
 		}))
 
-		apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "/bottles/1337", r.RequestURI)
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			assert.Empty(t, string(bs))
-			w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977,"anotherbottle":{"id":"nestedid1","name":"nestedname1"}}`))
-		}
-
 		apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, "/bottles/1337", r.RequestURI)
 			bs, e := ioutil.ReadAll(r.Body)
@@ -110,22 +102,43 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 				})
 
 				Convey("But ImportState works fine if Configure is called first", func() {
-
 					e := provider.Configure(&terraform.ResourceConfig{})
 					So(e, ShouldBeNil)
 
-					instanceStates, e := provider.ImportState(instanceInfo, "1337")
-					So(e, ShouldBeNil)
-					So(1, ShouldEqual, len(instanceStates))
-					initialInstanceState := instanceStates[0]
-					So("1337", ShouldEqual, initialInstanceState.ID)
-					So("Bottle #1337", ShouldEqual, initialInstanceState.Attributes["name"])
-					So("17", ShouldEqual, initialInstanceState.Attributes["rating"])
-					So("1977", ShouldEqual, initialInstanceState.Attributes["vintage"])
-					So("nestedid1", ShouldEqual, initialInstanceState.Attributes["anotherbottle.id"])
-					So("nestedname1", ShouldEqual, initialInstanceState.Attributes["anotherbottle.name"])
+					var receivedGetToURI string
+					var receivedBodyInGetRequest string
+					apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
+						receivedGetToURI = r.RequestURI
+						bs, e := ioutil.ReadAll(r.Body)
+						require.NoError(t, e)
+						receivedBodyInGetRequest = string(bs)
+						w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977,"anotherbottle":{"id":"nestedid1","name":"nestedname1"}}`))
+					}
 
-					Convey("And changes can then be applied", func() {
+					var instanceStates []*terraform.InstanceState
+					var importStateError error
+					instanceStates, importStateError = provider.ImportState(instanceInfo, "1337")
+
+					Convey("And the API server should receive the appropriate request", func() {
+						So(receivedGetToURI, ShouldEqual, "/bottles/1337")
+						So(receivedBodyInGetRequest, ShouldBeEmpty)
+					})
+
+					var initialInstanceState *terraform.InstanceState
+					initialInstanceState = instanceStates[0]
+
+					Convey("And the instance state returned from ImportState should reflect the content of the API server's response", func() {
+						So(importStateError, ShouldBeNil)
+						So(1, ShouldEqual, len(instanceStates))
+						So("1337", ShouldEqual, initialInstanceState.ID)
+						So("Bottle #1337", ShouldEqual, initialInstanceState.Attributes["name"])
+						So("17", ShouldEqual, initialInstanceState.Attributes["rating"])
+						So("1977", ShouldEqual, initialInstanceState.Attributes["vintage"])
+						So("nestedid1", ShouldEqual, initialInstanceState.Attributes["anotherbottle.id"])
+						So("nestedname1", ShouldEqual, initialInstanceState.Attributes["anotherbottle.name"])
+					})
+
+					Convey("And changes can then be applied by calling Apply", func() {
 						updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
 						So(updateError, ShouldBeNil)
 						So("1337", ShouldEqual, updatedInstanceState.ID)
