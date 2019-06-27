@@ -56,14 +56,6 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 			apiServerBehaviors[r.Method](w, r)
 		}))
 
-		apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "/bottles/1337", r.RequestURI)
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			assert.Equal(t, `{"anotherbottle":{"id":"nestedid1","name":"nestedname1"},"name":"whatever","rating":17,"vintage":1977}`, string(bs))
-			w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977,"anotherbottle":{"id":"updatednested1","name":"updatednestedname1"}}`))
-		}
-
 		apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, "/bottles/1337", r.RequestURI)
 			bs, e := ioutil.ReadAll(r.Body)
@@ -127,7 +119,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 					var initialInstanceState *terraform.InstanceState
 					initialInstanceState = instanceStates[0]
 
-					Convey("And the instance state returned from ImportState should reflect the content of the API server's response", func() {
+					Convey("And the instance state returned should reflect the content of the API server's response", func() {
 						So(importStateError, ShouldBeNil)
 						So(1, ShouldEqual, len(instanceStates))
 						So("1337", ShouldEqual, initialInstanceState.ID)
@@ -139,20 +131,39 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 					})
 
 					Convey("And changes can then be applied by calling Apply", func() {
-						updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
-						So(updateError, ShouldBeNil)
-						So("1337", ShouldEqual, updatedInstanceState.ID)
-						So("leet bottle ftw", ShouldEqual, updatedInstanceState.Attributes["name"])
-						So("17", ShouldEqual, updatedInstanceState.Attributes["rating"])
-						So("1977", ShouldEqual, updatedInstanceState.Attributes["vintage"])
-						So("updatednested1", ShouldEqual, updatedInstanceState.Attributes["anotherbottle.id"])
-						So("updatednestedname1", ShouldEqual, updatedInstanceState.Attributes["anotherbottle.name"])
 
-						Convey("And the resouce can be deleted", func() {
-							deletedInstanceState, deleteError := provider.Apply(instanceInfo, updatedInstanceState, &terraform.InstanceDiff{Destroy: true})
-							So(deleteError, ShouldBeNil)
-							So(deletedInstanceState, ShouldBeNil)
+						var receivedPutToURI string
+						var receivedPutBody string
+						apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
+							receivedPutToURI = r.RequestURI
+							bs, e := ioutil.ReadAll(r.Body)
+							require.NoError(t, e)
+							receivedPutBody = string(bs)
+							w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977,"anotherbottle":{"id":"updatednested1","name":"updatednestedname1"}}`))
+						}
+
+						updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
+
+						Convey("And the API server should receive the appropriate request", func() {
+							assert.Equal(t, "/bottles/1337", receivedPutToURI)
+							assert.Equal(t, `{"anotherbottle":{"id":"nestedid1","name":"nestedname1"},"name":"whatever","rating":17,"vintage":1977}`, receivedPutBody)
 						})
+
+						Convey("And the instance state returned should reflect the content of the API server's response", func() {
+							So(updateError, ShouldBeNil)
+							So("1337", ShouldEqual, updatedInstanceState.ID)
+							So("leet bottle ftw", ShouldEqual, updatedInstanceState.Attributes["name"])
+							So("17", ShouldEqual, updatedInstanceState.Attributes["rating"])
+							So("1977", ShouldEqual, updatedInstanceState.Attributes["vintage"])
+							So("updatednested1", ShouldEqual, updatedInstanceState.Attributes["anotherbottle.id"])
+							So("updatednestedname1", ShouldEqual, updatedInstanceState.Attributes["anotherbottle.name"])
+						})
+					})
+
+					Convey("And the resouce can be deleted", func() {
+						deletedInstanceState, deleteError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Destroy: true})
+						So(deleteError, ShouldBeNil)
+						So(deletedInstanceState, ShouldBeNil)
 					})
 				})
 			})
