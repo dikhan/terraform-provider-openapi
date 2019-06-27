@@ -1114,8 +1114,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			dataValue := 'f'
 			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
 			Convey("Then the error should not be nil", func() {
-				//So(err, ShouldEqual, errors.New("'int32' type not supported"))	// TODO: Why does this not work?
-				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "'int32' type not supported")
 			})
 			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
 				So(resultValue, ShouldEqual, nil)
