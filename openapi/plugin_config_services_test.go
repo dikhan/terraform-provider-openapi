@@ -85,7 +85,7 @@ func TestServiceConfigV1Validate(t *testing.T) {
 	Convey("Given a ServiceConfigV1 containing an invalid swagger URL pointing at a file store in the disk", t, func() {
 		var serviceConfiguration ServiceConfiguration
 		swaggerFile, _ := ioutil.TempFile("", "")
-		defer func (swaggerFile *os.File) {
+		defer func(swaggerFile *os.File) {
 			_ = swaggerFile.Close()
 			_ = os.RemoveAll(swaggerFile.Name())
 		}(swaggerFile)
@@ -103,7 +103,7 @@ func TestServiceConfigV1Validate(t *testing.T) {
 	Convey("Given a ServiceConfigV1 containing an empty plugin version", t, func() {
 		expectedSwaggerURL := "http://a.valid.url"
 		serviceConfiguration := &ServiceConfigV1{
-			SwaggerURL: expectedSwaggerURL,
+			SwaggerURL:    expectedSwaggerURL,
 			PluginVersion: "",
 		}
 		Convey("When Validate method is called", func() {

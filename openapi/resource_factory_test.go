@@ -3,12 +3,14 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -785,10 +787,62 @@ func TestCheckImmutableFields(t *testing.T) {
 
 func TestUpdateStateWithPayloadData(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
-		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
-		Convey("When  is called with a map containing some properties", func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		objectStateValue := map[string]interface{}{
+			"origin_port": objectSchemaDefinition.Properties[0].Default,
+			"protocol":    objectSchemaDefinition.Properties[1].Default,
+		}
+		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectStateValue, objectSchemaDefinition)
+		arrayObjectStateValue := []map[string]interface{}{
+			{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
+		}
+		listOfObjectsProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectStateValue, typeObject, objectSchemaDefinition)
+
+		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				objectProperty,
+			},
+		}
+		objectWithNestedObjectStateValue := map[string]interface{}{
+			"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+			"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+		}
+
+		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, objectWithNestedObjectStateValue, propertyWithNestedObjectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, listOfObjectsProperty, propertyWithNestedObject)
+		Convey("When  is called with a map containing all property types supported (string, int, number, bool, slice of primitives, objects, list of objects and property with nested objects)", func() {
 			remoteData := map[string]interface{}{
 				stringWithPreferredNameProperty.Name: "someUpdatedStringValue",
+				intProperty.Name:                     15,
+				numberProperty.Name:                  26.45,
+				boolProperty.Name:                    true,
+				slicePrimitiveProperty.Name:          []interface{}{"value1"},
+				objectProperty.Name: map[string]interface{}{
+					"origin_port": 80,
+					"protocol":    "http",
+				},
+				listOfObjectsProperty.Name: []interface{}{
+					map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+				propertyWithNestedObject.Name: map[string]interface{}{
+					idProperty.Name: propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+					objectProperty.Name: map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
 			}
 			err := r.updateStateWithPayloadData(remoteData, resourceData)
 			Convey("Then the err returned should be nil", func() {
@@ -796,15 +850,113 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			})
 			Convey("And the expectedValue should equal to the expectedValue coming from remote, and also the key expectedValue should be the preferred as defined in the property", func() {
 				// keys stores in the resource data struct are always snake case
-				So(resourceData.Get(stringWithPreferredNameProperty.PreferredName), ShouldEqual, "someUpdatedStringValue")
+				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
+				So(resourceData.Get(intProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[intProperty.Name])
+				So(resourceData.Get(numberProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[numberProperty.Name])
+				So(resourceData.Get(boolProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[boolProperty.Name])
+				So(len(resourceData.Get(slicePrimitiveProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(slicePrimitiveProperty.getTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, remoteData[slicePrimitiveProperty.Name].([]interface{})[0])
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
+				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{})["protocol"], ShouldEqual, remoteData[objectProperty.Name].(map[string]interface{})["protocol"])
+
+				So(len(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"])
+
+				So(len(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, idProperty.Name)
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, objectProperty.Name)
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
+				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"], ShouldEqual, remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"])
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
+		Convey("When is called with a map remoteData containing more properties than then ones specified in the schema (this means the API is returning more info than the one specified in the swagger file)", func() {
+			remoteData := map[string]interface{}{
+				stringWithPreferredNameProperty.Name:                "someUpdatedStringValue",
+				"some_other_property_not_documented_in_openapi_doc": 15,
+			}
+			err := r.updateStateWithPayloadData(remoteData, resourceData)
+			Convey("Then the err returned should matched the expected one", func() {
+				So(err.Error(), ShouldEqual, "failed to update state with remote data. This usually happends when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'some_other_property_not_documented_in_openapi_doc' not existing in resource schema definition")
 			})
 		})
 	})
 }
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
-	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty)
+
+	Convey("Given a resource factory initialized with a spec resource with schema definitions for each of the supported property types (string, int, number, bool, slice of primitive, slice of objects, object and object with nested objects)", t, func() {
+
+		// - Object property configuration
+		// object_property {
+		//	 origin_port = 80
+		//	 protocol = "http"
+		// }
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		objectDefault := map[string]interface{}{
+			"origin_port": objectSchemaDefinition.Properties[0].Default,
+			"protocol":    objectSchemaDefinition.Properties[1].Default,
+		}
+		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
+
+		// - Object property with nested objects configuration
+		// property_with_nested_object {
+		//	id = "id",
+		//	nested_object {
+		//		origin_port = 80
+		//		protocol = "http"
+		//	}
+		//}
+		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				objectProperty,
+			},
+		}
+		// Tag(NestedStructsWorkaround)
+		// Note: This is the workaround needed to support properties with nested structs. The current Terraform sdk version
+		// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
+		// with the list containing just one element. The below represents the internal representation of the terraform state
+		// for an object property that contains other objects
+		propertyWithNestedObjectDefault := []map[string]interface{}{
+			{
+				"id":              propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+				"object_property": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+			},
+		}
+		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
+
+		// - Array of objects property configuration
+		// slice_object_property [
+		//   {
+		//	   origin_port = 80
+		//     protocol = "http"
+		//   }
+		// ]
+		arrayObjectDefault := []map[string]interface{}{
+			{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
+		}
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, sliceObjectProperty, objectProperty, propertyWithNestedObject)
+
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
 			payload := r.createPayloadFromLocalStateData(resourceData)
 			Convey("Then the map returned should not be empty", func() {
@@ -820,51 +972,44 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				So(payload, ShouldContainKey, numberProperty.Name)
 				So(payload, ShouldContainKey, boolProperty.Name)
 				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
-			})
-			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
-				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
-				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
-				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
-				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
-				So(payload[slicePrimitiveProperty.Name], ShouldContain, slicePrimitiveProperty.Default.([]string)[0])
-			})
-		})
-	})
-
-	Convey("Given a resource factory initialized with a spec resource with some schema definition containing an array of objects", t, func() {
-		objectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, nil),
-				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, nil),
-			},
-		}
-		arrayObjectDefault := []map[string]interface{}{
-			{
-				"origin_port": 80,
-				"protocol":    "http",
-			},
-		}
-		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, slicePrimitiveProperty, sliceObjectProperty)
-		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
-			payload := r.createPayloadFromLocalStateData(resourceData)
-			Convey("Then the map returned should not be empty", func() {
-				So(payload, ShouldNotBeEmpty)
-			})
-			Convey("And then payload returned should not include the following keys as they are either an identifier or read only (computed) properties", func() {
-				So(payload, ShouldNotContainKey, idProperty.Name)
-				So(payload, ShouldNotContainKey, computedProperty.Name)
-			})
-			Convey("And then payload returned should include the following keys ", func() {
-				So(payload, ShouldContainKey, stringProperty.Name)
-				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
 				So(payload, ShouldContainKey, sliceObjectProperty.Name)
+				So(payload, ShouldContainKey, objectProperty.Name)
+				So(payload, ShouldContainKey, propertyWithNestedObject.Name)
 			})
-			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
+			Convey("And then payload returned should contain the expected data values for the string property", func() {
 				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
+			})
+			Convey("And then payload returned should contain the expected data values for the int property", func() {
+				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
+			})
+			Convey("And then payload returned should contain the expected data values for the number property", func() {
+				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
+			})
+			Convey("And then payload returned should contain the expected data values for the bool property", func() {
+				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
+			})
+			Convey("And then payload returned should contain the expected data values for the slice of primitive property", func() {
 				So(payload[slicePrimitiveProperty.Name], ShouldContain, slicePrimitiveProperty.Default.([]string)[0])
-				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, arrayObjectDefault[0]["origin_port"])
-				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, arrayObjectDefault[0]["protocol"])
+			})
+			Convey("And then payload returned should contain the expected data values for the slice of objects property", func() {
+				arrayObject := payload[sliceObjectProperty.Name].([]interface{})
+				object := arrayObject[0].(map[string]interface{})
+				So(object["origin_port"], ShouldEqual, arrayObjectDefault[0]["origin_port"])
+				So(object["protocol"], ShouldEqual, arrayObjectDefault[0]["protocol"])
+			})
+			Convey("And then payload returned should cotnain the expected data values for the object properties", func() {
+				object := payload[objectProperty.Name].(map[string]interface{})
+				So(object[objectProperty.SpecSchemaDefinition.Properties[0].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[0].Default.(int))
+				So(object[objectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[1].Default)
+			})
+			Convey("And then payload returned should contain the expected data values for the object property with nested object", func() {
+				topLevel := payload[propertyWithNestedObject.Name].(map[string]interface{})
+				So(topLevel, ShouldContainKey, objectProperty.Name)
+				So(topLevel, ShouldContainKey, idProperty.Name)
+				So(topLevel[idProperty.Name], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[0].Default)
+				nestedLevel := topLevel[objectProperty.Name].(map[string]interface{})
+				So(nestedLevel["origin_port"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["origin_port"])
+				So(nestedLevel["protocol"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["protocol"])
 			})
 		})
 	})
@@ -892,6 +1037,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 }
 
 func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
+
 	Convey("Given a resource factory", t, func() {
 		r := resourceFactory{}
 		Convey("When convertPayloadToLocalStateDataValue is called with a string property and a string value", func() {
@@ -960,6 +1106,18 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
 				So(resultValue, ShouldEqual, "10")
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an rune property and a rune value and the desired output is nil", func() {
+			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
+			dataValue := 'f'
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, true)
+			Convey("Then the error should not be nil", func() {
+				So(err.Error(), ShouldEqual, "'int32' type not supported")
+			})
+			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
+				So(resultValue, ShouldEqual, nil)
 			})
 		})
 
@@ -1064,6 +1222,39 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
+		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with non objects inside", func() {
+			property := &specSchemaDefinitionProperty{
+				Name:     "blowup",
+				Type:     typeObject,
+				Required: true,
+			}
+			_, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
+			Convey("Then the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "missing spec schema definition for object property 'blowup'")
+			})
+		})
+
+		// Edge case
+		Convey("When convertPayloadToLocalStateDataValue is called with a slice of map interfaces", func() {
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeString, nil)
+			_, err := r.convertPayloadToLocalStateDataValue(property, []map[string]interface{}{}, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with a property list that the array items are of unknown type", func() {
+			property := &specSchemaDefinitionProperty{
+				Name:           "not_well_configured_property",
+				Type:           typeList,
+				ArrayItemsType: schemaDefinitionPropertyType("unknown"),
+			}
+			_, err := r.convertPayloadToLocalStateDataValue(property, []interface{}{}, false)
+			Convey("Then the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "property 'not_well_configured_property' is supposed to be an array objects")
+			})
+		})
+
 		Convey("When convertPayloadToLocalStateDataValue is called with an object", func() {
 			objectSchemaDefinition := &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
@@ -1095,28 +1286,69 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				So(resultValue.(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
 			})
 		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with an object containing objects", func() {
+			nestedObjectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+					newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+				},
+			}
+			nestedObjectDefault := map[string]interface{}{
+				"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+				"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+			}
+			nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+			propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					idProperty,
+					nestedObject,
+				},
+			}
+			// The below represents the JSON representation of the response payload received by the API
+			dataValue := map[string]interface{}{
+				"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+				"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+			}
+
+			expectedPropertyWithNestedObjectName := "property_with_nested_object"
+			propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+			resultValue, err := r.convertPayloadToLocalStateDataValue(propertyWithNestedObject, dataValue, false)
+
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the result value should be the list containing just one element (as per the nested struct workaround)", func() {
+				// Tag(NestedStructsWorkaround)
+				// Note: This is the workaround needed to support properties with nested structs. The current Terraform sdk version
+				// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
+				// with the list containing just one element. The below represents the internal representation of the terraform state
+				// for an object property that contains other objects
+				So(resultValue.([]interface{}), ShouldNotBeEmpty)
+				So(len(resultValue.([]interface{})), ShouldEqual, 1)
+			})
+			Convey("AND the object should have the expected properties including the nested object", func() {
+				So(resultValue.([]interface{})[0], ShouldContainKey, propertyWithNestedObjectSchemaDefinition.Properties[0].Name)
+				So(resultValue.([]interface{})[0], ShouldContainKey, propertyWithNestedObjectSchemaDefinition.Properties[1].Name)
+			})
+			Convey("AND the object property with nested object should have the expected configuration", func() {
+				nestedObject := propertyWithNestedObjectSchemaDefinition.Properties[1]
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name], ShouldContainKey, nestedObjectSchemaDefinition.Properties[0].Name)
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].(map[string]interface{})[nestedObjectSchemaDefinition.Properties[0].Name], ShouldEqual, strconv.Itoa(nestedObjectSchemaDefinition.Properties[0].Default.(int)))
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name], ShouldContainKey, nestedObjectSchemaDefinition.Properties[1].Name)
+				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].(map[string]interface{})[nestedObjectSchemaDefinition.Properties[1].Name], ShouldEqual, nestedObjectSchemaDefinition.Properties[1].Default)
+			})
+		})
 	})
 }
 
 func TestGetPropertyPayload(t *testing.T) {
-	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
-		objectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
-				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
-			},
-		}
-		objectDefault := map[string]interface{}{
-			"origin_port": 80,
-			"protocol":    "http",
-		}
-		arrayObjectDefault := []map[string]interface{}{
-			objectDefault,
-		}
-		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
-		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, sliceObjectProperty)
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the string property in the resource schema and it's state data value", func() {
+
+	Convey("Given a resource factory initialized with a spec resource with a schema definition containing a string property", t, func() {
+		// Use case - string property (terraform configuration pseudo representation below):
+		// string_property = "some value"
+		r, resourceData := testCreateResourceFactory(t, stringProperty)
+		Convey("When getPropertyPayload is called with an empty map, the string property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(stringProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, stringProperty, dataValue)
@@ -1133,7 +1365,13 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
 			})
 		})
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the int property in the resource schema and it's state data value", func() {
+	})
+
+	Convey("Given a resource factory initialized with a schema definition containing an int property", t, func() {
+		// Use case - int property (terraform configuration pseudo representation below):
+		// int_property = 1234
+		r, resourceData := testCreateResourceFactory(t, intProperty)
+		Convey("When getPropertyPayload is called with an empty map, the int property in the resource schema  and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(intProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, intProperty, dataValue)
@@ -1150,7 +1388,13 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
 			})
 		})
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the number property in the resource schema and it's state data value", func() {
+	})
+
+	Convey("Given a resource factory initialized with a schema definition containing a number property", t, func() {
+		// Use case - number property (terraform configuration pseudo representation below):
+		// number_property = 1.1234
+		r, resourceData := testCreateResourceFactory(t, numberProperty)
+		Convey("When getPropertyPayload is called with an empty map, the number property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(numberProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, numberProperty, dataValue)
@@ -1167,7 +1411,13 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
 			})
 		})
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the bool property in the resource schema and it's state data value", func() {
+	})
+
+	Convey("Given a resource factory initialized with a schema definition containing a bool property", t, func() {
+		// Use case - bool property (terraform configuration pseudo representation below):
+		// bool_property = true
+		r, resourceData := testCreateResourceFactory(t, boolProperty)
+		Convey("When getPropertyPayload is called with an empty map, the bool property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(boolProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, boolProperty, dataValue)
@@ -1184,8 +1434,27 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
 			})
 		})
+	})
 
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the object property in the resource schema and it's state data value", func() {
+	Convey("Given a resource factory initialized with a schema definition containing an object property", t, func() {
+		// Use case - object property (terraform configuration pseudo representation below):
+		// object_property {
+		//	 origin_port = 80
+		//	 protocol = "http"
+		// }
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		objectDefault := map[string]interface{}{
+			"origin_port": 80,
+			"protocol":    "http",
+		}
+		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, objectProperty)
+		Convey("When getPropertyPayload is called with an empty map, the object property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(objectProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, objectProperty, dataValue)
@@ -1203,8 +1472,32 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[objectProperty.Name].(map[string]interface{})[objectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[1].Default)
 			})
 		})
+	})
 
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
+	Convey("Given a resource factory initialized with a schema definition containing an array ob objects property", t, func() {
+		// Use case - object property (terraform configuration pseudo representation below):
+		// slice_object_property [
+		//{
+		//	 origin_port = 80
+		//	 protocol = "http"
+		// }
+		// ]
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		objectDefault := map[string]interface{}{
+			"origin_port": 80,
+			"protocol":    "http",
+		}
+		arrayObjectDefault := []map[string]interface{}{
+			objectDefault,
+		}
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
+		Convey("When getPropertyPayload is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
@@ -1223,8 +1516,13 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload[sliceObjectProperty.Name].([]interface{})[0].(map[string]interface{})[sliceObjectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, sliceObjectProperty.SpecSchemaDefinition.Properties[1].Default)
 			})
 		})
+	})
 
-		Convey("When createPayloadFromLocalStateData is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
+	Convey("Given a resource factory initialized with a schema definition containing a slice of strings property", t, func() {
+		// Use case - slice of srings (terraform configuration pseudo representation below):
+		// slice_property = ["some_value"]
+		r, resourceData := testCreateResourceFactory(t, slicePrimitiveProperty)
+		Convey("When getPropertyPayload is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, slicePrimitiveProperty, dataValue)
@@ -1239,6 +1537,83 @@ func TestGetPropertyPayload(t *testing.T) {
 			})
 			Convey("And then payload returned should have the data value from the state file", func() {
 				So(payload[slicePrimitiveProperty.Name].([]interface{})[0], ShouldEqual, slicePrimitiveProperty.Default.([]string)[0])
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing one nested struct", t, func() {
+		// Use case - object with nested objects (terraform configuration pseudo representation below):
+		// property_with_nested_object {
+		//	id = "id",
+		//	nested_object {
+		//		origin_port = 80
+		//		protocol = "http"
+		//	}
+		//}
+		nestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		nestedObjectDefault := map[string]interface{}{
+			"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+			"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+		}
+		nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				nestedObject,
+			},
+		}
+		// Tag(NestedStructsWorkaround)
+		// Note: This is the workaround needed to support properties with nested structs. The current Terraform sdk version
+		// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
+		// with the list containing just one element. The below represents the internal representation of the terraform state
+		// for an object property that contains other objects
+		propertyWithNestedObjectDefault := []map[string]interface{}{
+			{
+				"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+				"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+			},
+		}
+		expectedPropertyWithNestedObjectName := "property_with_nested_object"
+		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
+		Convey("When getPropertyPayload is called a slice with >1 dataValue, it complains", func() {
+			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"})
+			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
+
+		})
+		Convey("When getPropertyPayload is called a slice with <1 dataValue, it complains", func() {
+			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{})
+			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
+
+		})
+		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, propertyWithNestedObject, dataValue)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the map returned should not be empty", func() {
+				So(payload, ShouldNotBeEmpty)
+			})
+			Convey("Then the map returned should contain the 'property_with_nested_object' property", func() {
+				So(payload, ShouldContainKey, expectedPropertyWithNestedObjectName)
+			})
+			topLevel := payload[expectedPropertyWithNestedObjectName].(map[string]interface{})
+			Convey("And then payload returned should have the id property with the right value", func() {
+				So(topLevel, ShouldContainKey, idProperty.Name)
+				So(topLevel[idProperty.Name], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[0].Default)
+			})
+			Convey("And then payload returned should have the nested_object object property with the right value", func() {
+				So(topLevel, ShouldContainKey, nestedObject.Name)
+				nestedLevel := topLevel[nestedObject.Name].(map[string]interface{})
+				So(nestedLevel["origin_port"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["origin_port"])
+				So(nestedLevel["protocol"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["protocol"])
 			})
 		})
 	})
