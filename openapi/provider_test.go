@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -128,6 +129,7 @@ func Test_ImportState_panics_if_swagger_defines_put_without_response_status_code
 	provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
 			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes := strings.Replace(fmt.Sprintf(swaggerTemplate, "whatever.api.host"), bottlePut, `"put": {},`, 1)
 				w.Write([]byte(swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes))
 			}))
 			return swaggerServer.URL
@@ -267,28 +269,7 @@ const swaggerTemplate = `{
             "description": "Not Found"
           }
         }
-      },
-      "put": {
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#\/definitions\/bottle"
-            }
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        }
-      },
+      },` + bottlePut + `
       "get": {
         "parameters": [
           {
@@ -422,206 +403,25 @@ const swaggerTemplate = `{
   }
 }`
 
-const swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes = `{
-  "swagger": "2.0",
-  "host": "whatever-host",
-  "consumes": [
-    "application\/json"
-  ],
-  "produces": [
-    "application\/json"
-  ],
-  "paths": {
-    "/bottles/": {
-      "post": {
-        "summary": "create bottle",
-        "description": "creates a bottle",
-        "operationId": "bottle#create",
+const bottlePut = `
+      "put": {
         "parameters": [
           {
-            "name": "payload",
-            "in": "body",
-            "description": "BottlePayload is the type used to create bottles",
+            "name": "id",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/BottlePayload"
-            }
+            "type": "string"
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/bottle"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/bottles/{id}": {
-      "put": {},
-      "get": {}
-    },
-    "/swagger/swagger.json": {
-      "get": {
-        "operationId": "Spec#/swagger/swagger.json",
-        "responses": {
           "200": {
-            "description": "File downloaded",
             "schema": {
-              "type": "file"
+              "$ref": "#\/definitions\/bottle"
             }
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
-      }
-    }
-  },
-  "definitions": {
-    "BottlePayload": {
-      "title": "BottlePayload",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique bottle ID",
-          "example": "Enim sapiente expedita sit.",
-          "readOnly": true
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of bottle",
-          "example": "x",
-          "minLength": 1
-        },
-        "rating": {
-          "type": "integer",
-          "description": "Rating of bottle",
-          "example": 4,
-          "minimum": 1,
-          "maximum": 5
-        },
-        "vintage": {
-          "type": "integer",
-          "description": "Vintage of bottle",
-          "example": 2653,
-          "minimum": 1900
-        }
       },
-      "description": "BottlePayload is the type used to create bottles",
-      "example": {
-        "id": "Enim sapiente expedita sit.",
-        "name": "x",
-        "rating": 4,
-        "vintage": 2653
-      },
-      "required": [
-        "name",
-        "vintage",
-        "rating"
-      ]
-    },
-    "bottle": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique bottle ID",
-          "example": "Voluptates non excepturi.",
-          "readOnly": true
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of bottle",
-          "example": "krt",
-          "minLength": 1
-        },
-        "rating": {
-          "type": "integer",
-          "description": "Rating of bottle",
-          "example": 3,
-          "minimum": 1,
-          "maximum": 5
-        },
-        "vintage": {
-          "type": "integer",
-          "description": "Vintage of bottle",
-          "example": 1932,
-          "minimum": 1900
-        }
-      },
-      "description": "bottle media type (default view)",
-      "example": {
-        "id": "Voluptates non excepturi.",
-        "name": "krt",
-        "rating": 3,
-        "vintage": 1932
-      },
-      "required": [
-        "id",
-        "name",
-        "vintage",
-        "rating"
-      ]
-    },
-    "error": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string",
-          "description": "an application-specific error code, expressed as a string value.",
-          "example": "invalid_value"
-        },
-        "detail": {
-          "type": "string",
-          "description": "a human-readable explanation specific to this occurrence of the problem.",
-          "example": "Value of ID must be an integer"
-        },
-        "id": {
-          "type": "string",
-          "description": "a unique identifier for this particular occurrence of the problem.",
-          "example": "3F1FKVRR"
-        },
-        "meta": {
-          "type": "object",
-          "description": "a meta object containing non-standard meta-information about the error.",
-          "example": {
-            "timestamp": 1458609066
-          },
-          "additionalProperties": true
-        },
-        "status": {
-          "type": "string",
-          "description": "the HTTP status code applicable to this problem, expressed as a string value.",
-          "example": "400"
-        }
-      },
-      "description": "Error response media type (default view)",
-      "example": {
-        "code": "invalid_value",
-        "detail": "Value of ID must be an integer",
-        "id": "3F1FKVRR",
-        "meta": {
-          "timestamp": 1458609066
-        },
-        "status": "400"
-      }
-    }
-  },
-  "responses": {
-    "InternalServerError": {
-      "description": "Internal Server Error"
-    },
-    "NotFound": {
-      "description": "Not Found"
-    }
-  }
-}`
+`
