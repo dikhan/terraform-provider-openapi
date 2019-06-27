@@ -49,32 +49,38 @@ func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
 }
 
 func Test_create_and_use_provider_from_json(t *testing.T) {
-	provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
-		getSwaggerURL: func() string {
-			apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Println("apiServer request>>>>", r.URL, r.Method)
-				switch r.Method {
-				case http.MethodGet:
-					assert.Equal(t, "/bottles/1337", r.RequestURI)
-					bs, e := ioutil.ReadAll(r.Body)
-					require.NoError(t, e)
-					assert.Empty(t, string(bs))
-					w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977,"anotherbottle":{"id":"nestedid1","name":"nestedname1"}}`))
-				case http.MethodPut:
-					assert.Equal(t, "/bottles/1337", r.RequestURI)
-					bs, e := ioutil.ReadAll(r.Body)
-					require.NoError(t, e)
-					assert.Equal(t, `{"anotherbottle":{"id":"nestedid1","name":"nestedname1"},"name":"whatever","rating":17,"vintage":1977}`, string(bs))
-					w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977,"anotherbottle":{"id":"updatednested1","name":"updatednestedname1"}}`))
-				case http.MethodDelete:
-					assert.Equal(t, "/bottles/1337", r.RequestURI)
-					bs, e := ioutil.ReadAll(r.Body)
-					require.NoError(t, e)
-					assert.Empty(t, string(bs))
-					w.Write([]byte(`{}`))
-				}
-			}))
+	Convey("Given an API server", t, func() {
+		apiServerBehaviors := map[string]http.HandlerFunc{}
+		apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println("apiServer request>>>>", r.URL, r.Method)
+			apiServerBehaviors[r.Method](w, r)
+		}))
 
+		apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/bottles/1337", r.RequestURI)
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			assert.Empty(t, string(bs))
+			w.Write([]byte(`{"id":1337,"name":"Bottle #1337","rating":17,"vintage":1977,"anotherbottle":{"id":"nestedid1","name":"nestedname1"}}`))
+		}
+
+		apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/bottles/1337", r.RequestURI)
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			assert.Equal(t, `{"anotherbottle":{"id":"nestedid1","name":"nestedname1"},"name":"whatever","rating":17,"vintage":1977}`, string(bs))
+			w.Write([]byte(`{"id":1337,"name":"leet bottle ftw","rating":17,"vintage":1977,"anotherbottle":{"id":"updatednested1","name":"updatednestedname1"}}`))
+		}
+
+		apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/bottles/1337", r.RequestURI)
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			assert.Empty(t, string(bs))
+			w.Write([]byte(`{}`))
+		}
+
+		Convey("And given a swagger URL describing the API", func() {
 			apiHost := apiServer.URL[7:]
 			fmt.Println("apiHost>>>>", apiHost)
 
@@ -83,46 +89,62 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 			}))
 
 			fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
-			return swaggerServer.URL
-		},
+
+			Convey("A provider can be built from that swagger", func() {
+				provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
+					getSwaggerURL: func() string {
+						return swaggerServer.URL
+					},
+				})
+				So(e, ShouldBeNil)
+				So(schema.TypeString, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["name"].Type)
+				So(schema.TypeInt, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["vintage"].Type)
+				So(schema.TypeInt, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["rating"].Type)
+				So(schema.TypeMap, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Type)
+				So(schema.TypeString, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Elem.(*schema.Resource).Schema["name"].Type)
+
+				instanceInfo := &terraform.InstanceInfo{Type: "bob_bottles"}
+
+				Convey("And calling ImportState before Configure will panic", func() {
+					assert.Panics(t, func() { provider.ImportState(instanceInfo, "whatever") }, "ImportState panics if Configure hasn't been called first")
+				})
+
+				Convey("But ImportState works fine if Configure is called first", func() {
+
+					e := provider.Configure(&terraform.ResourceConfig{})
+					So(e, ShouldBeNil)
+
+					instanceStates, e := provider.ImportState(instanceInfo, "1337")
+					So(e, ShouldBeNil)
+					So(1, ShouldEqual, len(instanceStates))
+					initialInstanceState := instanceStates[0]
+					So("1337", ShouldEqual, initialInstanceState.ID)
+					So("Bottle #1337", ShouldEqual, initialInstanceState.Attributes["name"])
+					So("17", ShouldEqual, initialInstanceState.Attributes["rating"])
+					So("1977", ShouldEqual, initialInstanceState.Attributes["vintage"])
+					So("nestedid1", ShouldEqual, initialInstanceState.Attributes["anotherbottle.id"])
+					So("nestedname1", ShouldEqual, initialInstanceState.Attributes["anotherbottle.name"])
+
+					Convey("And changes can then be applied", func() {
+						updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
+						So(updateError, ShouldBeNil)
+						So("1337", ShouldEqual, updatedInstanceState.ID)
+						So("leet bottle ftw", ShouldEqual, updatedInstanceState.Attributes["name"])
+						So("17", ShouldEqual, updatedInstanceState.Attributes["rating"])
+						So("1977", ShouldEqual, updatedInstanceState.Attributes["vintage"])
+						So("updatednested1", ShouldEqual, updatedInstanceState.Attributes["anotherbottle.id"])
+						So("updatednestedname1", ShouldEqual, updatedInstanceState.Attributes["anotherbottle.name"])
+
+						Convey("And the resouce can be deleted", func() {
+							deletedInstanceState, deleteError := provider.Apply(instanceInfo, updatedInstanceState, &terraform.InstanceDiff{Destroy: true})
+							So(deleteError, ShouldBeNil)
+							So(deletedInstanceState, ShouldBeNil)
+						})
+					})
+				})
+			})
+		})
 	})
-	assert.NoError(t, e)
-	assert.Equal(t, schema.TypeString, provider.ResourcesMap["bob_bottles"].Schema["name"].Type)
-	assert.Equal(t, schema.TypeInt, provider.ResourcesMap["bob_bottles"].Schema["vintage"].Type)
-	assert.Equal(t, schema.TypeInt, provider.ResourcesMap["bob_bottles"].Schema["rating"].Type)
-	assert.Equal(t, schema.TypeMap, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Type)
-	assert.Equal(t, schema.TypeString, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Elem.(*schema.Resource).Schema["name"].Type)
-
-	instanceInfo := &terraform.InstanceInfo{Type: "bob_bottles"}
-	assert.Panics(t, func() { provider.ImportState(instanceInfo, "whatever") }, "ImportState panics if Configure hasn't been called first")
-
-	assert.NoError(t, provider.Configure(&terraform.ResourceConfig{}))
-
-	instanceStates, e := provider.ImportState(instanceInfo, "1337")
-	assert.NoError(t, e)
-	assert.NotNil(t, instanceStates)
-	assert.Equal(t, 1, len(instanceStates))
-	initialInstanceState := instanceStates[0]
-	assert.Equal(t, "1337", initialInstanceState.ID)
-	assert.Equal(t, "Bottle #1337", initialInstanceState.Attributes["name"])
-	assert.Equal(t, "17", initialInstanceState.Attributes["rating"])
-	assert.Equal(t, "1977", initialInstanceState.Attributes["vintage"])
-	assert.Equal(t, "nestedid1", initialInstanceState.Attributes["anotherbottle.id"])
-	assert.Equal(t, "nestedname1", initialInstanceState.Attributes["anotherbottle.name"])
-
-	updatedInstanceState, updateError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{"name": {Old: "whatever", New: "whatever"}}})
-	assert.NoError(t, updateError)
-	assert.NotNil(t, updatedInstanceState)
-	assert.Equal(t, "1337", updatedInstanceState.ID)
-	assert.Equal(t, "leet bottle ftw", updatedInstanceState.Attributes["name"])
-	assert.Equal(t, "17", updatedInstanceState.Attributes["rating"])
-	assert.Equal(t, "1977", updatedInstanceState.Attributes["vintage"])
-	assert.Equal(t, "updatednested1", updatedInstanceState.Attributes["anotherbottle.id"])
-	assert.Equal(t, "updatednestedname1", updatedInstanceState.Attributes["anotherbottle.name"])
-
-	deletedInstanceState, deleteError := provider.Apply(instanceInfo, initialInstanceState, &terraform.InstanceDiff{Destroy: true})
-	assert.NoError(t, deleteError)
-	assert.Nil(t, deletedInstanceState)
 }
 
 func Test_ImportState_panics_if_swagger_defines_put_without_response_status_codes(t *testing.T) {
