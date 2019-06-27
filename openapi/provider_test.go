@@ -126,23 +126,24 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 }
 
 func Test_ImportState_panics_if_swagger_defines_put_without_response_status_codes(t *testing.T) {
-	provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
-		getSwaggerURL: func() string {
-			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes := strings.Replace(fmt.Sprintf(swaggerTemplate, "whatever.api.host"), bottlePut, `"put": {},`, 1)
-				w.Write([]byte(swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes))
-			}))
-			return swaggerServer.URL
-		},
+	Convey("Given a provider built from a swagger crafted with an empty method block", t, func() {
+		provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
+			getSwaggerURL: func() string {
+				swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes := strings.Replace(fmt.Sprintf(swaggerTemplate, "whatever.api.host"), bottlePut, `"put": {},`, 1)
+					w.Write([]byte(swaggerToCauseAPanicByDefiningPUTWithoutStatusCodes))
+				}))
+				return swaggerServer.URL
+			},
+		})
+		require.NoError(t, e)
+		require.NotNil(t, provider)
+		require.NoError(t, provider.Configure(&terraform.ResourceConfig{}))
+
+		Convey("When ImportState is called, it will panic", func() {
+			assert.Panics(t, func() { provider.ImportState(&terraform.InstanceInfo{Type: "bob_bottles"}, "1337") })
+		})
 	})
-	require.NoError(t, e)
-	require.NotNil(t, provider)
-
-	instanceInfo := &terraform.InstanceInfo{Type: "bob_bottles"}
-
-	require.NoError(t, provider.Configure(&terraform.ResourceConfig{}))
-
-	assert.Panics(t, func() { provider.ImportState(instanceInfo, "1337") })
 }
 
 func TestOpenAPIProvider(t *testing.T) {
