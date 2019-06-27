@@ -436,7 +436,7 @@ func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchem
 		return objectInput, nil
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
-			return propertyValue.([]interface{}), nil
+			return propertyValue, nil
 		}
 		if property.isArrayOfObjectsProperty() {
 			arrayInput := []interface{}{}

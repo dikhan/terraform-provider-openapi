@@ -1235,14 +1235,26 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
-		// FIXME: This blows up, not runtime safe
-		//Convey("When convertPayloadToLocalStateDataValue is called with a slice of map interfaces", func() {
-		//	property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeString, nil)
-		//	_, err := r.convertPayloadToLocalStateDataValue(property, []map[string]interface{}{}, false)
-		//	Convey("Then the error should be nil", func() {
-		//		So(err, ShouldBeNil)
-		//	})
-		//})
+		// Edge case
+		Convey("When convertPayloadToLocalStateDataValue is called with a slice of map interfaces", func() {
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeString, nil)
+			_, err := r.convertPayloadToLocalStateDataValue(property, []map[string]interface{}{}, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with a property list that the array items are of unknown type", func() {
+			property := &specSchemaDefinitionProperty{
+				Name:           "not_well_configured_property",
+				Type:           typeList,
+				ArrayItemsType: schemaDefinitionPropertyType("unknown"),
+			}
+			_, err := r.convertPayloadToLocalStateDataValue(property, []interface{}{}, false)
+			Convey("Then the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "property 'not_well_configured_property' is supposed to be an array objects")
+			})
+		})
 
 		Convey("When convertPayloadToLocalStateDataValue is called with an object", func() {
 			objectSchemaDefinition := &specSchemaDefinition{
