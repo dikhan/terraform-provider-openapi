@@ -882,17 +882,15 @@ func TestTerraformSchema(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a swagger schema definition that has a property of type 'rune'", t, func() {
+	Convey("Given a swagger schema definition that has an unsupported property type", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Name:     "rune_prop",
-			Type:     "rune",
-			ReadOnly: false,
-			Required: true,
+			Name: "rune_prop",
+			Type: "unsupported",
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
 			Convey("Then the resulted terraform property schema should be nil", func() {
-				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "non supported type unsupported")
 				So(tfPropSchema, ShouldBeNil)
 			})
 		})
