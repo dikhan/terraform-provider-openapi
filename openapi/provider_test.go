@@ -56,7 +56,7 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 			apiServerBehaviors[r.Method](w, r)
 		}))
 
-		Convey("And given a swagger URL describing the API", func() {
+		Convey("And given the URL for a swagger document describing the API", func() {
 			apiHost := apiServer.URL[7:]
 			fmt.Println("apiHost>>>>", apiHost)
 
@@ -73,11 +73,14 @@ func Test_create_and_use_provider_from_json(t *testing.T) {
 					},
 				})
 				So(e, ShouldBeNil)
-				So(schema.TypeString, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["name"].Type)
-				So(schema.TypeInt, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["vintage"].Type)
-				So(schema.TypeInt, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["rating"].Type)
-				So(schema.TypeMap, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Type)
-				So(schema.TypeString, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Elem.(*schema.Resource).Schema["name"].Type)
+
+				Convey("And the resulting provider should reflect the resource definitions from that swagger", func() {
+					So(schema.TypeString, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["name"].Type)
+					So(schema.TypeInt, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["vintage"].Type)
+					So(schema.TypeInt, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["rating"].Type)
+					So(schema.TypeMap, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Type)
+					So(schema.TypeString, ShouldEqual, provider.ResourcesMap["bob_bottles"].Schema["anotherbottle"].Elem.(*schema.Resource).Schema["name"].Type)
+				})
 
 				instanceInfo := &terraform.InstanceInfo{Type: "bob_bottles"}
 
