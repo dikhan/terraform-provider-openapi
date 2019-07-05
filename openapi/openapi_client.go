@@ -204,6 +204,10 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 	return fmt.Sprintf("%s://%s%s", defaultScheme, host, path), nil
 }
 
+// TODO: Expand (o ProviderClient) getResourceIDURL(resource SpecResource, id string) (string, error) function to handle
+// TODO: subresourc URLs including parent ids. The expectation here is that given a spec resource that is subresource,
+// TODO: the URL returned should have the path's path params already resolved with the right parent IDs. In order to achieve this,
+// TODO: the function will need to accept a new parameter being an array of IDs (array so we support not just one level subresource but multiple).
 func (o ProviderClient) getResourceIDURL(resource SpecResource, id string) (string, error) {
 	url, err := o.getResourceURL(resource)
 	if err != nil {

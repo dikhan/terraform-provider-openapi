@@ -107,6 +107,8 @@ func TestAppendUserAgentHeader(t *testing.T) {
 }
 
 func TestGetResourceIDURL(t *testing.T) {
+	// TODO: - Add test coverage in TestGetResourceIDURL to handle subresource paths
+
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
