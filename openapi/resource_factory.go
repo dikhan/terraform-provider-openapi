@@ -144,6 +144,21 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (ma
 	return responsePayload, nil
 }
 
+// TODO: This method is in charge of getting the corresponding IDs from the terraform state file. For normal top level resources the
+// TODO: array returned will contain just one elem which is data.Id() AND for subresources it will contain an array of IDs with the
+// TODO: different IDs in the path, being the first the one at the very left of the URI.
+// TODO: Add corresponding unit tests too
+func (r resourceFactory) getIds(data *schema.ResourceData) []string {
+	// Make use of the helper function isSubResource to detect if we are dealing with a subresource in which case
+	// the data object should contain the expected properties populated by the user with the ID values
+
+	//if r.openAPIResource.isSubResource() {
+	//	// TODO: build the appropriate array of strings containing the IDs
+	//	return []string{"", data.Id()}
+	//}
+	return []string{data.Id()}
+}
+
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 	operation := r.openAPIResource.getResourceOperations().Put
