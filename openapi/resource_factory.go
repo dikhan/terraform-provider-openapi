@@ -223,6 +223,23 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
+
+			// TODO: if rsource is a subresource (call isSubresouce) then data needs to be populated with the corresponding
+			// properties so the read operation will be able to call the API appropiately. The values will need to be parsed
+			// from the input provided by the user, and since the terraform import command only accepts ADDR and ID, the id in
+			// this case will need to be formatted in a specific way so the user can provide the parent ids as well as the
+			// resource instance id...the following represent a proposal on how the ID string could represent multiple IDs -
+			// Example: terraform import "swaggercodegen_cdn_v1_firewalls_v1" "parentID:resourceID" where parentID will be
+			// the UUID for the parent ID and the resourceID will be the subresource ID. the colon will mark the different
+			// IDs separation
+			// Once the above is done, then the 'data' object will need to be set with the parent properties and their values.
+			// For example:
+			// data.Set("cdn_v1", "parentID")
+			// data.Set("firewalls_v1", "resourceID")
+
+			// If the resources is NOT a subresource and just a top level resource then the array passed in will just contain
+			// the data object we get from terraform core without any updates.
+
 			err := r.read(data, i)
 			return results, err
 		},
