@@ -119,6 +119,10 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	return resourceName, nil
 }
 
+// TODO: update signature to accept array of ids, if path is not parametrised then the path shoudl be returned, if it is
+// TODO:parametrised the parameters should be replaced wih the IDs contained in the array. The array will contain the different IDs
+// TODO:in the path, being the first element in the array the ID at the very left of the URI and so on so forth.
+// TODO:For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234"} where 567 will be the firewall instance ID.
 func (o *SpecV2Resource) getResourcePath() string {
 	return o.Path
 }

@@ -8,6 +8,7 @@ import (
 type SpecResource interface {
 	getResourceName() string
 	getHost() (string, error)
+	// TODO: update signature to accept array of ids,
 	getResourcePath() string
 	getResourceSchema() (*specSchemaDefinition, error)
 	shouldIgnoreResource() bool

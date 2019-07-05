@@ -243,6 +243,30 @@ func TestGetResourceSchema(t *testing.T) {
 	// TODO: Note: For this first iteration of the subresource support implementation it is not expected that the property names will honor the preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
 }
 
+// TODO: Add test coverate for subresource use case. if o.Path o.Path contains path parameters which will be the case for
+// TODO: subresources then the URI should be resolved automatically based on the array of IDs provided (the function should
+// TODO: now accept an array of strings that represent the IDs to be used in the path). Currently the function returns the o.Path
+// TODO: directly as it is expected that the ROOT path will not have any parameters. However, now that we want support for subresources,
+// TODO: this function should be able to accept an array of IDs and resolve the URI accordingly if it's parametrised. The array will contain
+// TODO: the different IDs in the path, being the first element in the array the ID at the very left of the URI and so on so forth.
+// TODO: For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234"} where 567 will be the firewall instance ID.
+func TestGetResourcePath(t *testing.T) {
+
+	// TODO: add missing test for the rest of the use cases that are not subresources
+
+	Convey("Given a SpecV2Resource with a sub-resource root path (just one level)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v1/firewalls",
+		}
+		Convey("When getResourcePath is called with a list of IDs", func() {
+			resourcePath := r.getResourcePath() // TODO: the call to getResourcePath should accept a list of strings
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, "")
+			})
+		})
+	})
+}
+
 func TestCreateSchemaDefinitionProperty(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := SpecV2Resource{}
