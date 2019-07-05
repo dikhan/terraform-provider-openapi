@@ -183,6 +183,9 @@ func TestRead(t *testing.T) {
 }
 
 func TestReadRemote(t *testing.T) {
+
+	// TODO: Add test coverage in TestReadRemote for subresources
+
 	Convey("Given a resource factory", t, func() {
 		r, _ := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
 		Convey("When readRemote is called with resource data and a client that returns ", func() {

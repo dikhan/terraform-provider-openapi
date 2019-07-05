@@ -129,6 +129,8 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	return r.updateStateWithPayloadData(remoteData, data)
 }
 
+// TODO: Update func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) to accept array of IDs instead of id string.
+// TODO: providerClient.Get should expect a list of IDs
 func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
