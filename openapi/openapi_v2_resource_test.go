@@ -193,7 +193,7 @@ func TestBuildResourceName(t *testing.T) {
 
 	// TODO: add missing test for the rest of the use cases that are not subresources
 
-	Convey("Given a SpecV2Resource with a subresource root path", t, func() {
+	Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v1/firewalls",
 		}
@@ -208,6 +208,39 @@ func TestBuildResourceName(t *testing.T) {
 			})
 		})
 	})
+}
+
+// TODO: Add coverage for sub-resource use case. The acceptance criteria will be that given a configured SpecV2Resource that is
+// TODO: a sub-resource, then the returned specSchemaDefinition will contain the expected parent properties (which should be marked as COMPUTED).
+// TODO: For instance, for /v1/cdns/{id}/v1/firewalls the intermediate schema returned we should have a property called "cdns_v1_id" AND whatever
+// TODO: properties the resource model object may have.
+func TestGetResourceSchema(t *testing.T) {
+
+	Convey("Given a SpecV2Resource with a sub-resource root path (just one level)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v1/firewalls",
+		}
+
+		Convey("When getResourceSchema is called", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition should contain the right configuration including the parent id", func() {
+				So(specSchemaDefinition, ShouldNotBeNil)
+				specSchemaDefinitionProperty, err := specSchemaDefinition.getProperty("cdns_v1_id")
+				So(err, ShouldBeNil)
+				So(specSchemaDefinitionProperty.Computed, ShouldBeTrue)
+			})
+		})
+	})
+
+	// TODO: add more use cases, examples:
+	// - more than one subresource: "/v1/cdns/{id}/v1/firewalls/{fw_id}/rules" here the schema should contain two properties (besides the ones specified in the resource model): cdns_v1_id and firewalls_v1_id
+	// - use case where versions are not present
+	// - use case where versions are only present in either the root or the subresource
+
+	// TODO: Note: For this first iteration of the subresource support implementation it is not expected that the property names will honor the preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
 }
 
 func TestCreateSchemaDefinitionProperty(t *testing.T) {
