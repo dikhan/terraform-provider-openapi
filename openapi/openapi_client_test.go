@@ -775,6 +775,9 @@ func TestPerformRequest(t *testing.T) {
 }
 
 func TestProviderClientPost(t *testing.T) {
+
+	// TODO: Add test coverage for subresource
+
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
@@ -855,6 +858,9 @@ func TestProviderClientPost(t *testing.T) {
 }
 
 func TestProviderClientPut(t *testing.T) {
+
+	// TODO: Add test coverage for subresource
+
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
@@ -918,6 +924,9 @@ func TestProviderClientPut(t *testing.T) {
 }
 
 func TestProviderClientGet(t *testing.T) {
+
+	// TODO: Add test coverage for subresource
+
 	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
 		httpClient := &http_goclient.HttpClientStub{
 			Response: &http.Response{
@@ -977,6 +986,9 @@ func TestProviderClientGet(t *testing.T) {
 }
 
 func TestProviderClientDelete(t *testing.T) {
+
+	// TODO: Add test coverage for subresource
+
 	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
 		httpClient := &http_goclient.HttpClientStub{
 			Response: &http.Response{

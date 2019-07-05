@@ -40,6 +40,7 @@ type ProviderClient struct {
 }
 
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in
+// TODO: This function will have to accept an array of IDs now. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234"} where 1234 will be the cdns parent ID.
 func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
 	resourceURL, err := o.getResourceURL(resource)
 	if err != nil {
@@ -50,6 +51,7 @@ func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{},
 }
 
 // Put performs a PUT request to the server API based on the resource configuration and the payload passed in
+// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, id)
 	if err != nil {
@@ -60,6 +62,7 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 }
 
 // Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
+// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, id)
 	if err != nil {
@@ -70,6 +73,7 @@ func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload i
 }
 
 // Delete performs a DELETE request to the server API based on the resource configuration and the resource instance id passed in
+// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, id)
 	if err != nil {
