@@ -115,6 +115,9 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
+
+	// TODO: call the previously implemented method getIds(data *schema.ResourceData) to get the list of Ids that then it can pass along to readRemote method.
+
 	remoteData, err := r.readRemote(data.Id(), openAPIClient)
 
 	if err != nil {

@@ -162,6 +162,8 @@ func TestCreate(t *testing.T) {
 	})
 }
 
+// TODO: Add subresource use case coverage to TestRead and assert that client is called with the expected input. That should be sufficient to validate behaviour,
+// TODO: the tests covering that the API is called appropriately are handled in ProviderClient tests
 func TestRead(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
