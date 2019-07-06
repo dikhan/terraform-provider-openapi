@@ -1675,6 +1675,92 @@ definitions:
 }
 
 func TestGetTerraformCompliantResources(t *testing.T) {
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
+
+		// TODO - Add unit test in TestGetTerraformCompliantResources that covers the scenario of a sub-resource like the example below. The acceptance
+		// criteria will be that the sub-resource (/v1/cdns/{id}/firewalls) is rightly configured:
+		// - it contains the expected resource name - call to getResourceName()
+		// - it contains the right host
+		// - it contains the right resource path (already translated with the parent/s ids resolved)
+		// - it contains the right resource schema (VERY IMPORTANT: containing the refs to the parent/s property names)
+		//   - the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
+		//     the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
+		//     have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
+		//     That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
+		// - it contains the right operations
+		// - it contains the configured timeout
+
+		swaggerContent := `swagger: "2.0"
+paths:
+ /v1/cdns/{parent_id}/v1/firewalls:
+    post:
+      tags:
+      - "cdn"
+      summary: "Create cdn firewall"
+      operationId: "ContentDeliveryNetworkFirewallCreateV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Created CDN firewall"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+  /v1/cdns/{parent_id}/v1/firewalls/{id}:
+    get:
+      tags:
+      - "cdn"
+      summary: "Get cdn firewall by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkFirewallGetV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - name: "id"
+        in: "path"
+        description: "The cdn firewall id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+definitions:
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1_firewalls_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1_firewalls_v1")
+			})
+		})
+	})
+
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
