@@ -37,6 +37,12 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   }
 }
 
+resource "swaggercodegen_cdn_v1_firewalls_v1" "my_cdn_firewall_v1" {
+  cdns_v1_id = swaggercodegen_cdn_v1.my_cdn.id
+  name = "my firewall fancy name"
+}
+
+
 # This is an example on how to use interpolation for 'object' types like the object_property and be able to pass
 # along to other resources property values from objects
 resource "swaggercodegen_cdn_v1" "my_cdn2" {
