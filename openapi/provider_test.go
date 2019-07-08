@@ -83,7 +83,7 @@ func Test_create_and_use_provider_from_yaml_swagger(t *testing.T) {
 		bs, e := ioutil.ReadAll(r.Body)
 		require.NoError(t, e)
 		fmt.Println("GET request body >>>", string(bs))
-		apiResponse := `{"id":1337,"label":"CDN #1337","ips":[],"hostnames":[],"firewall":"my-fancy-fw"}`
+		apiResponse := `{"id":1337,"label":"CDN #1337","ips":[],"hostnames":[],"firewall":{"id":1338,"label":"my-fancy-fw"}}`
 		w.Write([]byte(apiResponse))
 	}
 
@@ -91,8 +91,10 @@ func Test_create_and_use_provider_from_yaml_swagger(t *testing.T) {
 
 	instanceStates, importStateError := provider.ImportState(instanceInfo, "1337")
 	assert.NoError(t, importStateError)
-	assert.NotNil(t, instanceStates)
-	assert.Equal(t, "my-fancy-fw", instanceStates[0].Attributes["firewall"])
+	assert.Equal(t, "1337", instanceStates[0].ID)
+	assert.Equal(t, "CDN #1337", instanceStates[0].Attributes["label"])
+	assert.Equal(t, "1338.00", instanceStates[0].Attributes["firewall.id"]) //TODO: no decimals
+	assert.Equal(t, "my-fancy-fw", instanceStates[0].Attributes["firewall.label"])
 }
 
 func Test_create_and_use_provider_from_json_swagger(t *testing.T) {
@@ -1001,6 +1003,13 @@ securityDefinitions:
 definitions:
   ContentDeliveryNetworkFirewallV1:
     type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
+                       # to be returned from the api, and will be saved as computed value in the terraform state file
+      label:
+        type: "string"
   ContentDeliveryNetworkV1:
     type: "object"
     required:
@@ -1013,7 +1022,7 @@ definitions:
         readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
                        # to be returned from the api, and will be saved as computed value in the terraform state file
       firewall:
-        type: "string"
+        $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
       label:
         type: "string"
         x-terraform-immutable: true
