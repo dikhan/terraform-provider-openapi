@@ -56,8 +56,8 @@ func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{},
 // TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
 	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	ids := []string{}
-	resourceURL, err := o.getResourceIDURL(resource, ids)
+	parentIDs := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +69,8 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 // TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
 	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	ids := []string{}
-	resourceURL, err := o.getResourceIDURL(resource, ids)
+	parentIDs := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +82,8 @@ func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload i
 // TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Response, error) {
 	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	ids := []string{}
-	resourceURL, err := o.getResourceIDURL(resource, ids)
+	parentIDs := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
 	}
@@ -219,21 +219,16 @@ func (o ProviderClient) getResourceURL(resource SpecResource, ids []string) (str
 	return fmt.Sprintf("%s://%s%s", defaultScheme, host, path), nil
 }
 
-// TODO: Expand (o ProviderClient) getResourceIDURL(resource SpecResource, id string) (string, error) function to handle
-// TODO: subresourc URLs including parent ids. The expectation here is that given a spec resource that is subresource,
-// TODO: the URL returned should have the path's path params already resolved with the right parent IDs. In order to achieve this,
-// TODO: the function will need to accept a new parameter being an array of IDs (array so we support not just one level subresource but multiple).
-func (o ProviderClient) getResourceIDURL(resource SpecResource, ids []string) (string, error) {
-	if len(ids) <= 0 {
-		return "", fmt.Errorf("getResourceIDURL cannot be called without the instance id")
-	}
-
-	url, err := o.getResourceURL(resource, ids)
+func (o ProviderClient) getResourceIDURL(resource SpecResource, parentIDs []string, id string) (string, error) {
+	url, err := o.getResourceURL(resource, parentIDs)
 	if err != nil {
 		return "", err
 	}
-	if strings.HasSuffix(url, "/") {
-		return fmt.Sprintf("%s%s", url, ids[len(ids)-1]), nil
+	if id == "" {
+		return "", fmt.Errorf("could not build the resourceIDURL: required instance id value is missing")
 	}
-	return fmt.Sprintf("%s/%s", url, ids[len(ids)-1]), nil
+	if strings.HasSuffix(url, "/") {
+		return fmt.Sprintf("%s%s", url, id), nil
+	}
+	return fmt.Sprintf("%s/%s", url, id), nil
 }
