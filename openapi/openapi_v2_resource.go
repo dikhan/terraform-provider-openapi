@@ -123,7 +123,8 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 // TODO:parametrised the parameters should be replaced wih the IDs contained in the array. The array will contain the different IDs
 // TODO:in the path, being the first element in the array the ID at the very left of the URI and so on so forth.
 // TODO:For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234"} where 567 will be the firewall instance ID.
-func (o *SpecV2Resource) getResourcePath() string {
+func (o *SpecV2Resource) getResourcePath(ids []string) string {
+	// resolve path here
 	return o.Path
 }
 

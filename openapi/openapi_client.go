@@ -136,7 +136,7 @@ func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderPara
 	}
 }
 
-func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
+func (o ProviderClient) getResourceURL(resource SpecResource, ids []string) (string, error) {
 	var host string
 	var err error
 
