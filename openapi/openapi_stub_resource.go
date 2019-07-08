@@ -34,7 +34,7 @@ func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, sch
 
 func (s *specStubResource) getResourceName() string { return s.name }
 
-func (s *specStubResource) getResourcePath(ids []string) (string, error) { return s.path, nil }
+func (s *specStubResource) getResourcePath(parentIDs []string) (string, error) { return s.path, nil }
 
 func (s *specStubResource) getResourceSchema() (*specSchemaDefinition, error) {
 	return s.schemaDefinition, nil

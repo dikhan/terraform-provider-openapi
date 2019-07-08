@@ -92,7 +92,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
 
-	ids, err := r.getIds(data)
+	ids, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	ids, err := r.getIds(data)
+	ids, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
@@ -170,11 +170,11 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (ma
 	return responsePayload, nil
 }
 
-// TODO: This method is in charge of getting the corresponding IDs from the terraform state file. For normal top level resources the
-// TODO: array returned will contain just one elem which is data.Id() AND for subresources it will contain an array of IDs with the
-// TODO: different IDs in the path, being the first the one at the very left of the URI.
+// TODO: This method is in charge of getting the corresponding resource parent IDs from the terraform state file. For normal top level resources the
+// TODO: array returned will be empty AND for subresources it will contain an array of IDs with the
+// TODO: different parent IDs that need to be resovled into the resource path that is parametrised, being the first the one at the very left of the URI.
 // TODO: Add corresponding unit tests too
-func (r resourceFactory) getIds(data *schema.ResourceData) ([]string, error) {
+func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, error) {
 	// Make use of the helper function isSubResource to detect if we are dealing with a subresource in which case
 	// the data object should contain the expected properties populated by the user with the ID values
 
@@ -182,13 +182,13 @@ func (r resourceFactory) getIds(data *schema.ResourceData) ([]string, error) {
 	//	// TODO: build the appropriate array of strings containing the IDs
 	//	return []string{"", data.Id()}
 	//}
-	return []string{data.Id()}, nil
+	return []string{}, nil
 }
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	ids, err := r.getIds(data)
+	ids, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	ids, err := r.getIds(data)
+	ids, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
@@ -310,7 +310,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		targetStatuses = []string{defaultDestroyStatus}
 	}
 
-	ids, err := r.getIds(resourceLocalData)
+	ids, err := r.getParentIDs(resourceLocalData)
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 	return func() (interface{}, string, error) {
 		remoteData, err := r.readRemote(resourceLocalData.Id(), providerClient)
 
-		ids, err := r.getIds(resourceLocalData)
+		ids, err := r.getParentIDs(resourceLocalData)
 		if err != nil {
 			return nil, "", err
 		}

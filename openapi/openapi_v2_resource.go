@@ -125,18 +125,18 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 // path parameters these will be resolved accordingly based on the ids provided. For instance, considering the given
 // resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
 // If the resource path is not parametrised, then regular path will be returned accordingly
-func (o *SpecV2Resource) getResourcePath(ids []string) (string, error) {
+func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	resolvedPath := o.Path
 
 	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
 	pathParamsMatches := pathParameterRegex.FindAllStringSubmatch(resolvedPath, -1)
 
-	if len(ids) > len(pathParamsMatches) {
-		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - more ids than path params: %s", resolvedPath, pathParamsMatches, ids)
+	if len(parentIDs) > len(pathParamsMatches) {
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - more ids than path params: %s", resolvedPath, pathParamsMatches, parentIDs)
 	}
 
-	if len(ids) < len(pathParamsMatches) {
-		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, pathParamsMatches, ids)
+	if len(parentIDs) < len(pathParamsMatches) {
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, pathParamsMatches, parentIDs)
 	}
 
 	if len(pathParamsMatches) == 0 {
@@ -144,8 +144,8 @@ func (o *SpecV2Resource) getResourcePath(ids []string) (string, error) {
 	}
 
 	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values
-	for idx, _ := range ids {
-		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], ids[idx], 1)
+	for idx, _ := range parentIDs {
+		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], parentIDs[idx], 1)
 	}
 
 	return resolvedPath, nil
