@@ -138,7 +138,7 @@ func TestGetResourceIDURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceIDURL(specStubResource, expectedID)
+			resourceURL, err := providerClient.getResourceIDURL(specStubResource, []string{expectedID})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -161,7 +161,7 @@ func TestGetResourceIDURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceIDURL(specStubResource, expectedID)
+			resourceURL, err := providerClient.getResourceIDURL(specStubResource, []string{expectedID})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -194,7 +194,7 @@ func TestGetResourceURL(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceURL with a specResource with a resource path", func() {
+		Convey("When getResourceURL with a specResource with a resource path that is not parametrised", func() {
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{
 				path: expectedPath,
@@ -204,7 +204,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -216,7 +216,7 @@ func TestGetResourceURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceURL with a specResource with a resource path and overrides the global host", func() {
+		Convey("When getResourceURL with a specResource with a resource path that is not parametrised and overrides the global host", func() {
 			expectedHost := "wwww.host-overriden.com"
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{
@@ -228,7 +228,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -252,7 +252,7 @@ func TestGetResourceURL(t *testing.T) {
 			}
 
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -283,7 +283,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -316,7 +316,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -337,7 +337,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -371,7 +371,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -405,7 +405,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -439,7 +439,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -473,7 +473,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -512,7 +512,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -551,7 +551,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -580,7 +580,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -607,7 +607,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -634,7 +634,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -660,7 +660,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})

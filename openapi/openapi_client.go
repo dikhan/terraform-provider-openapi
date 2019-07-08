@@ -42,7 +42,9 @@ type ProviderClient struct {
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in
 // TODO: This function will have to accept an array of IDs now. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234"} where 1234 will be the cdns parent ID.
 func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-	resourceURL, err := o.getResourceURL(resource)
+	// TODO: pass in the ids args from post method
+	ids := []string{}
+	resourceURL, err := o.getResourceURL(resource, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +55,9 @@ func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{},
 // Put performs a PUT request to the server API based on the resource configuration and the payload passed in
 // TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-	resourceURL, err := o.getResourceIDURL(resource, id)
+	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
+	ids := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +68,9 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 // Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
 // TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
-	resourceURL, err := o.getResourceIDURL(resource, id)
+	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
+	ids := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +81,9 @@ func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload i
 // Delete performs a DELETE request to the server API based on the resource configuration and the resource instance id passed in
 // TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Response, error) {
-	resourceURL, err := o.getResourceIDURL(resource, id)
+	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
+	ids := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +174,10 @@ func (o ProviderClient) getResourceURL(resource SpecResource, ids []string) (str
 	}
 
 	basePath := o.openAPIBackendConfiguration.getBasePath()
-	resourceRelativePath := resource.getResourcePath()
+	resourceRelativePath, err := resource.getResourcePath(ids)
+	if err != nil {
+		return "", err
+	}
 
 	// Fall back to override the host if value is not empty; otherwise global host will be used as usual
 	hostOverride, err := resource.getHost()
@@ -212,13 +223,17 @@ func (o ProviderClient) getResourceURL(resource SpecResource, ids []string) (str
 // TODO: subresourc URLs including parent ids. The expectation here is that given a spec resource that is subresource,
 // TODO: the URL returned should have the path's path params already resolved with the right parent IDs. In order to achieve this,
 // TODO: the function will need to accept a new parameter being an array of IDs (array so we support not just one level subresource but multiple).
-func (o ProviderClient) getResourceIDURL(resource SpecResource, id string) (string, error) {
-	url, err := o.getResourceURL(resource)
+func (o ProviderClient) getResourceIDURL(resource SpecResource, ids []string) (string, error) {
+	if len(ids) <= 0 {
+		return "", fmt.Errorf("getResourceIDURL cannot be called without the instance id")
+	}
+
+	url, err := o.getResourceURL(resource, ids)
 	if err != nil {
 		return "", err
 	}
 	if strings.HasSuffix(url, "/") {
-		return fmt.Sprintf("%s%s", url, id), nil
+		return fmt.Sprintf("%s%s", url, ids[len(ids)-1]), nil
 	}
-	return fmt.Sprintf("%s/%s", url, id), nil
+	return fmt.Sprintf("%s/%s", url, ids[len(ids)-1]), nil
 }

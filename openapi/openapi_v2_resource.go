@@ -11,6 +11,8 @@ import (
 	"github.com/go-openapi/spec"
 )
 
+const pathParameterRegex = "/({[\\w]*})*/"
+
 const resourceVersionRegex = "(/v[0-9]*/)"
 const resourceNameRegex = "((/\\w*[/]?))+$"
 const resourceInstanceRegex = "((?:.*)){.*}"
@@ -119,13 +121,26 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	return resourceName, nil
 }
 
-// TODO: update signature to accept array of ids, if path is not parametrised then the path shoudl be returned, if it is
-// TODO:parametrised the parameters should be replaced wih the IDs contained in the array. The array will contain the different IDs
-// TODO:in the path, being the first element in the array the ID at the very left of the URI and so on so forth.
-// TODO:For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234"} where 567 will be the firewall instance ID.
-func (o *SpecV2Resource) getResourcePath(ids []string) string {
-	// resolve path here
-	return o.Path
+func (o *SpecV2Resource) getResourcePath(ids []string) (string, error) {
+	resolvedPath := o.Path
+
+	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
+	pathParamsMatches := pathParameterRegex.FindAllStringSubmatch(o.Path, -1)
+
+	if len(ids) > len(pathParamsMatches) {
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - more ids than path params: %s", resolvedPath, pathParamsMatches, ids)
+	}
+
+	if len(ids) < len(pathParamsMatches) {
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, pathParamsMatches, ids)
+	}
+
+	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values
+	for idx, _ := range ids {
+		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], ids[idx], 1)
+	}
+
+	return resolvedPath, nil
 }
 
 // getHost can return an empty host in which case the expectation is that the host used will be the one specified in the

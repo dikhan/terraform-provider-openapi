@@ -254,14 +254,76 @@ func TestGetResourcePath(t *testing.T) {
 
 	// TODO: add missing test for the rest of the use cases that are not subresources
 
-	Convey("Given a SpecV2Resource with a sub-resource root path (just one level)", t, func() {
+	Convey("Given a SpecV2Resource with path resource that is not parametrised (root resource)", t, func() {
 		r := SpecV2Resource{
-			Path: "/v1/cdns/{id}/v1/firewalls",
+			Path: "/v1/cdns",
+		}
+		Convey("When getResourcePath is called with an empty list of IDs", func() {
+			resourcePath, err := r.getResourcePath([]string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns")
+			})
+		})
+		Convey("When getResourcePath is called with a nil list of IDs", func() {
+			resourcePath, err := r.getResourcePath(nil)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with path resource that is parametrised (one level sub-resource)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{cdn_id}/v1/firewalls",
 		}
 		Convey("When getResourcePath is called with a list of IDs", func() {
-			resourcePath := r.getResourcePath() // TODO: the call to getResourcePath should accept a list of strings
+			ids := []string{"parentID"}
+			resourcePath, err := r.getResourcePath(ids)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("And the returned resource path should match the expected one", func() {
-				So(resourcePath, ShouldEqual, "")
+				So(resourcePath, ShouldEqual, fmt.Sprintf("/v1/cdns/%s/v1/firewalls", ids[0]))
+			})
+		})
+		Convey("When getResourcePath is called with an empty list of IDs", func() {
+			_, err := r.getResourcePath([]string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - missing ids to resolve the path params properly: []")
+			})
+		})
+		Convey("When getResourcePath is called with an nil list of IDs", func() {
+			_, err := r.getResourcePath(nil)
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - missing ids to resolve the path params properly: []")
+			})
+		})
+		Convey("When getResourcePath is called with a list of IDs that is bigger than the parametrised params in the path", func() {
+			_, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with path resource that is parametrised (few levels sub-resource)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{cdn_id}/v1/firewalls/{fw_id}/rules",
+		}
+		Convey("When getResourcePath is called with a list of IDs", func() {
+			ids := []string{"cdnID", "fwID"}
+			resourcePath, err := r.getResourcePath(ids)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, fmt.Sprintf("/v1/cdns/%s/v1/firewalls/%s/rules", ids[0], ids[1]))
 			})
 		})
 	})

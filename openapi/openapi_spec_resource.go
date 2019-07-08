@@ -8,8 +8,7 @@ import (
 type SpecResource interface {
 	getResourceName() string
 	getHost() (string, error)
-	//getResourcePath(ids []string) string
-	getResourcePath(ids []string) string
+	getResourcePath(ids []string) (string, error)
 	getResourceSchema() (*specSchemaDefinition, error)
 	shouldIgnoreResource() bool
 	getResourceOperations() specResourceOperations
