@@ -255,6 +255,31 @@ func TestGetResourceURL(t *testing.T) {
 			})
 		})
 
+		// Using SpecV2Resource in this specific case to validate this specific scenario. The stub does not have logic
+		// to resolve parameters and it not a good idea to update the mock to have prod logic. Hence, using a real impl SpecV2Resource
+		// in this case so we have the subresource use case covered too.
+		Convey("When getResourceURL with a specResource with a resource path that is parametrised (e,g: subresource)", func() {
+			expectedParentID := "parentID"
+			specStubResource := &SpecV2Resource{
+				Path: "/v1/resource/{resource_id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{expectedParentID})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then resourceURL should equal", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource", expectedProtocol, expectedHost, expectedBasePath, expectedParentID))
+			})
+		})
+
 		Convey("When getResourceURL with a specResource with a resource path that is not parametrised and overrides the global host", func() {
 			expectedHost := "wwww.host-overriden.com"
 			expectedPath := "/v1/resource"
