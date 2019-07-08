@@ -49,25 +49,49 @@ func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
 }
 
 func Test_create_and_use_provider_from_yaml_swagger(t *testing.T) {
-	Convey("Given an API server", t, func() {
-		apiServerBehaviors := map[string]http.HandlerFunc{}
-		apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Println("apiServer request>>>>", r.URL, r.Method)
-			apiServerBehaviors[r.Method](w, r)
-		}))
+	apiServerBehaviors := map[string]http.HandlerFunc{}
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("apiServer request>>>>", r.URL, r.Method)
+		apiServerBehaviors[r.Method](w, r)
+	}))
 
-		Convey("And given the URL for a swagger document describing the API", func() {
-			apiHost := apiServer.URL[7:]
-			fmt.Println("apiHost>>>>", apiHost)
+	apiHost := apiServer.URL[7:]
+	fmt.Println("apiHost>>>>", apiHost)
 
-			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(fmt.Sprintf(cdnSwaggerYAMLTemplate, apiHost)))
-			}))
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(cdnSwaggerYAMLTemplate, apiHost)
+		fmt.Println("swaggerReturned>>>>", swaggerReturned)
+		w.Write([]byte(swaggerReturned))
+	}))
 
-			fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
-
-		})
+	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
+	provider, e := createSchemaProviderFromServiceConfiguration(&ProviderOpenAPI{ProviderName: "bob"}, fakeServiceConfiguration{
+		getSwaggerURL: func() string {
+			return swaggerServer.URL
+		},
 	})
+	assert.NoError(t, e)
+
+	assert.NotNil(t, provider.ResourcesMap["bob_cdn_v1"])
+	//TODO: add'l assertions about provider
+
+	instanceInfo := &terraform.InstanceInfo{Type: "bob_cdn_v1"}
+
+	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(">>> GET")
+		assert.Equal(t, "/v1/cdns/1337", r.RequestURI)
+		bs, e := ioutil.ReadAll(r.Body)
+		require.NoError(t, e)
+		fmt.Println("GET request body >>>", string(bs))
+		apiResponse := `{"id":1337,"label":"CDN #1337","ips":[],"hostnames":[]}`
+		w.Write([]byte(apiResponse))
+	}
+
+	assert.NoError(t, provider.Configure(&terraform.ResourceConfig{}))
+
+	instanceStates, importStateError := provider.ImportState(instanceInfo, "1337")
+	assert.NoError(t, importStateError)
+	assert.NotNil(t, instanceStates)
 }
 
 func Test_create_and_use_provider_from_json_swagger(t *testing.T) {
@@ -83,7 +107,9 @@ func Test_create_and_use_provider_from_json_swagger(t *testing.T) {
 			fmt.Println("apiHost>>>>", apiHost)
 
 			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(fmt.Sprintf(bottlesSwaggerJSONTemplate, apiHost)))
+				swaggerReturned := fmt.Sprintf(bottlesSwaggerJSONTemplate, apiHost)
+				fmt.Println("swagger returned >>>>", swaggerReturned)
+				w.Write([]byte(swaggerReturned))
 			}))
 
 			fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
@@ -117,6 +143,7 @@ func Test_create_and_use_provider_from_json_swagger(t *testing.T) {
 					var receivedGetToURI string
 					var receivedBodyInGetRequest string
 					apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
+						fmt.Println(">>>> GET")
 						receivedGetToURI = r.RequestURI
 						bs, e := ioutil.ReadAll(r.Body)
 						require.NoError(t, e)
@@ -535,7 +562,6 @@ tags:
     url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
 schemes:
 - "http"
-- "https"
 
 consumes:
 - "application/json"
@@ -548,7 +574,6 @@ security:
 # This make the provider multiregional, so API calls will be make against the specific region as per the value provided
 # provided by the user according to the 'x-terraform-provider-regions' regions. If non is provided, the default value will
 # be the first item in the 'x-terraform-provider-regions' list of strings. in the case below that will be 'rst1'
-x-terraform-provider-multiregion-fqdn: "some.api.${region}.domain.com"
 x-terraform-provider-regions: "rst1,dub1"
 
 # This is legacy configuration that will be deprecated soon
@@ -577,7 +602,6 @@ paths:
   /v1/cdns:
     post:
       x-terraform-resource-name: "cdn"
-      x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
       - "cdn"
       summary: "Create cdn"
@@ -686,7 +710,6 @@ paths:
 
   /v1/lbs:
     post:
-      x-terraform-resource-host: localhost:8443
       tags:
       - "lb"
       summary: "Create lb v1"
@@ -799,7 +822,6 @@ paths:
       - "monitor"
       summary: "Create monitor v1"
       operationId: "MonitorV1"
-      x-terraform-resource-host: "some.api.${monitor}.domain.com"
       parameters:
       - in: "body"
         name: "body"
