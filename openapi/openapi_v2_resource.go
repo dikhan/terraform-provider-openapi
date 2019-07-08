@@ -144,7 +144,7 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	}
 
 	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values
-	for idx, _ := range parentIDs {
+	for idx := range parentIDs {
 		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], parentIDs[idx], 1)
 	}
 
