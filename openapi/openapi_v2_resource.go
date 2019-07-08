@@ -121,11 +121,15 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	return resourceName, nil
 }
 
+// getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
+// path parameters these will be resolved accordingly based on the ids provided. For instance, considering the given
+// resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
+// If the resource path is not parametrised, then regular path will be returned accordingly
 func (o *SpecV2Resource) getResourcePath(ids []string) (string, error) {
 	resolvedPath := o.Path
 
 	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
-	pathParamsMatches := pathParameterRegex.FindAllStringSubmatch(o.Path, -1)
+	pathParamsMatches := pathParameterRegex.FindAllStringSubmatch(resolvedPath, -1)
 
 	if len(ids) > len(pathParamsMatches) {
 		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - more ids than path params: %s", resolvedPath, pathParamsMatches, ids)
@@ -133,6 +137,10 @@ func (o *SpecV2Resource) getResourcePath(ids []string) (string, error) {
 
 	if len(ids) < len(pathParamsMatches) {
 		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, pathParamsMatches, ids)
+	}
+
+	if len(pathParamsMatches) == 0 {
+		return resolvedPath, nil
 	}
 
 	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values
