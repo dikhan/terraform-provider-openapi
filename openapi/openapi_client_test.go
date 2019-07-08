@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/go-openapi/spec"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -107,7 +108,6 @@ func TestAppendUserAgentHeader(t *testing.T) {
 }
 
 func TestGetResourceIDURL(t *testing.T) {
-	// TODO: - Add test coverage in TestGetResourceIDURL to handle subresource paths
 
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		providerClient := &ProviderClient{
@@ -130,15 +130,15 @@ func TestGetResourceIDURL(t *testing.T) {
 		Convey("When getResourceIDURL with a specResource and and ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource"
-			specStubResource := &specStubResource{
-				path: expectedPath,
-				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
-					responses:        specResponses{},
-					SecuritySchemes:  SpecSecuritySchemes{},
+			r := &SpecV2Resource{
+				Path: expectedPath,
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
 				},
 			}
-			resourceURL, err := providerClient.getResourceIDURL(specStubResource, []string{expectedID})
+			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, expectedID)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -153,15 +153,15 @@ func TestGetResourceIDURL(t *testing.T) {
 		Convey("When getResourceIDURL with a specResource containing trailing / in the path and and ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource/"
-			specStubResource := &specStubResource{
-				path: expectedPath,
-				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
-					responses:        specResponses{},
-					SecuritySchemes:  SpecSecuritySchemes{},
+			r := &SpecV2Resource{
+				Path: expectedPath,
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
 				},
 			}
-			resourceURL, err := providerClient.getResourceIDURL(specStubResource, []string{expectedID})
+			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, expectedID)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -170,6 +170,45 @@ func TestGetResourceIDURL(t *testing.T) {
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
+			})
+		})
+
+		Convey("When getResourceIDURL with a specResource containing a parametrised path and a parent ID and instance ID", func() {
+			expectedID := "5678"
+			parentIDs := []string{"1234"}
+			r := &SpecV2Resource{
+				Path: "/v1/resource/{resource_id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			resourceURL, err := providerClient.getResourceIDURL(r, parentIDs, expectedID)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then resourceURL should equal", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+			})
+		})
+
+		Convey("When getResourceIDURL with a specResource and an empty ID", func() {
+			expectedPath := "/v1/resource"
+			r := &SpecV2Resource{
+				Path: expectedPath,
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			_, err := providerClient.getResourceIDURL(r, []string{}, "")
+			Convey("Then the error returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "could not build the resourceIDURL: required instance id value is missing")
 			})
 		})
 	})
