@@ -60,7 +60,7 @@ func Test_create_and_use_provider_from_yaml_swagger(t *testing.T) {
 
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		swaggerReturned := fmt.Sprintf(cdnSwaggerYAMLTemplate, apiHost)
-		fmt.Println("swaggerReturned>>>>", swaggerReturned)
+		//fmt.Println("swaggerReturned>>>>", swaggerReturned)
 		w.Write([]byte(swaggerReturned))
 	}))
 
@@ -83,7 +83,7 @@ func Test_create_and_use_provider_from_yaml_swagger(t *testing.T) {
 		bs, e := ioutil.ReadAll(r.Body)
 		require.NoError(t, e)
 		fmt.Println("GET request body >>>", string(bs))
-		apiResponse := `{"id":1337,"label":"CDN #1337","ips":[],"hostnames":[]}`
+		apiResponse := `{"id":1337,"label":"CDN #1337","ips":[],"hostnames":[],"firewall":"my-fancy-fw"}`
 		w.Write([]byte(apiResponse))
 	}
 
@@ -92,6 +92,7 @@ func Test_create_and_use_provider_from_yaml_swagger(t *testing.T) {
 	instanceStates, importStateError := provider.ImportState(instanceInfo, "1337")
 	assert.NoError(t, importStateError)
 	assert.NotNil(t, instanceStates)
+	assert.Equal(t, "my-fancy-fw", instanceStates[0].Attributes["firewall"])
 }
 
 func Test_create_and_use_provider_from_json_swagger(t *testing.T) {
@@ -704,6 +705,66 @@ paths:
       security:
         - apikey_auth: []
 
+  ## CDN sub-resource
+
+  /v1/cdns/{parent_id}/v1/firewalls:
+    post:
+      x-terraform-resource-name: "cdn_v1_firewalls"
+      x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
+      tags:
+      - "cdn"
+      summary: "Create cdn firewall"
+      operationId: "ContentDeliveryNetworkFirewallCreateV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Created CDN firewall"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+        default:
+          description: "generic error response"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v1/cdns/{parent_id}/firewalls/{id}:
+    get:
+      tags:
+      - "cdn"
+      summary: "Get cdn firewall by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkFirewallGetV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - name: "id"
+        in: "path"
+        description: "The cdn firewall id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+        400:
+          description: "Invalid cdn id supplied"
+        404:
+          description: "CDN not found"
+
   ######################
   ##### LB Resource ####
   ######################
@@ -938,6 +999,8 @@ securityDefinitions:
 #    in: "query"
 
 definitions:
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
   ContentDeliveryNetworkV1:
     type: "object"
     required:
@@ -949,6 +1012,8 @@ definitions:
         type: "string"
         readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
                        # to be returned from the api, and will be saved as computed value in the terraform state file
+      firewall:
+        type: "string"
       label:
         type: "string"
         x-terraform-immutable: true
