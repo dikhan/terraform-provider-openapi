@@ -58,3 +58,8 @@ func (s *specStubResource) getTimeouts() (*specTimeouts, error) {
 func (s *specStubResource) getHost() (string, error) {
 	return s.host, nil
 }
+
+func (s *specStubResource) isSubResource() bool {
+	panic("implement")
+	return false
+}

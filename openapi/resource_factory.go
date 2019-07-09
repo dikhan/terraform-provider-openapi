@@ -177,11 +177,14 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (ma
 func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, error) {
 	// Make use of the helper function isSubResource to detect if we are dealing with a subresource in which case
 	// the data object should contain the expected properties populated by the user with the ID values
+	isSub := r.openAPIResource.isSubResource()
 
-	//if r.openAPIResource.isSubResource() {
-	//	// TODO: build the appropriate array of strings containing the IDs
-	//	return []string{"", data.Id()}
-	//}
+	fmt.Println(isSub)
+
+	if r.openAPIResource.isSubResource() {
+		// TODO: build the appropriate array of strings containing the IDs
+		return []string{"", data.Id()}
+	}
 	return []string{}, nil
 }
 
