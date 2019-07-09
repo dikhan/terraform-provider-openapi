@@ -226,8 +226,8 @@ func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
 	case o.isSubResource() != true:
 		return "", errors.New("path did not contain a subresource")
 	}
-	return o.buildResourceName()
-	//return o.Path, nil
+	//return o.buildResourceName()
+	return o.Path, nil
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
