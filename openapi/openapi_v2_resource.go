@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -208,7 +209,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	}
 
 	if o.isSubResource() {
-		propName := o.propertyParentNameFromResourcePath()
+		propName, _ := o.propertyParentNameFromResourcePath()
 		pr, errrr := o.createSchemaDefinitionProperty(propName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
 		pr.Computed = true
 		fmt.Println("errrr>>>", errrr)
@@ -218,9 +219,12 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) propertyParentNameFromResourcePath() string {
-	fmt.Println(">>>", o.Path)
-	return "cdns_v1_id"
+func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
+	fmt.Println(">>> o.Path: ", o.Path)
+	if o.Path == "" {
+		return o.Path, errors.New("path was empty")
+	}
+	return o.Path, nil
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {

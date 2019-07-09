@@ -284,13 +284,17 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 	Convey("Given a SpecV2Resource with no Path", t, func() {
 		r := &SpecV2Resource{}
 		Convey("propertyParentNameFromResourcePath should return an empty string", func() {
-			So(r.propertyParentNameFromResourcePath(), ShouldBeEmpty)
+			p, err := r.propertyParentNameFromResourcePath()
+			So(p, ShouldBeEmpty)
+			So(err, ShouldNotBeNil)
 		})
 	})
 	Convey("Given a SpecV2Resource with some Path", t, func() {
 		r := &SpecV2Resource{Path: "/foo"}
 		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
-			So(r.propertyParentNameFromResourcePath(), ShouldNotBeEmpty)
+			p, err := r.propertyParentNameFromResourcePath()
+			So(p, ShouldNotBeEmpty)
+			So(err, ShouldBeNil)
 		})
 	})
 }
