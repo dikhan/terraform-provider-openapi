@@ -8,6 +8,7 @@ import (
 
 // clientOpenAPIStub is a stubbed client used for testing purposes that implements the ClientOpenAPI interface
 type clientOpenAPIStub struct {
+	ClientOpenAPI
 	responsePayload map[string]interface{}
 	error           error
 	returnHTTPCode  int

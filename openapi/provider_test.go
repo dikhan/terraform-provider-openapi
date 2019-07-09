@@ -83,20 +83,16 @@ func Test_create_and_use_provider_from_yaml_swagger(t *testing.T) {
 		bs, e := ioutil.ReadAll(r.Body)
 		require.NoError(t, e)
 		fmt.Println("GET request body >>>", string(bs))
-		//apiResponse := `{"id":1337,"label":"CDN #1337","ips":[],"hostnames":[],"firewall":{"id":1338,"label":"my-fancy-fw"}}`
-		apiResponse := `{"foo":"bar"}`
+		apiResponse := `{"id":1337,"label":"FW #1337"}`
 		w.Write([]byte(apiResponse))
 	}
 
 	assert.NoError(t, provider.Configure(&terraform.ResourceConfig{}))
 
-	_, importStateError := provider.ImportState(instanceInfo, "1337")
-	assert.EqualError(t, importStateError, "[resource='cdn_v1_firewalls_v1'] GET /v1/cdns/42/v1/firewalls/1337 failed: could not resolve sub-resource path correctly '/v1/cdns/{parent_id}/v1/firewalls' ([[/{parent_id}/ {parent_id}]]) with the given ids - missing ids to resolve the path params properly: []")
-
-	//assert.Equal(t, "1337", instanceStates[0].ID)
-	//assert.Equal(t, "CDN #1337", instanceStates[0].Attributes["label"])
-	//assert.Equal(t, "1338.00", instanceStates[0].Attributes["firewall.id"]) //TODO: no decimals
-	//assert.Equal(t, "my-fancy-fw", instanceStates[0].Attributes["firewall.label"])
+	instanceStates, importStateError := provider.ImportState(instanceInfo, "1337")
+	assert.NoError(t, importStateError)
+	assert.Equal(t, "1337", instanceStates[0].ID)
+	assert.Equal(t, "FW #1337", instanceStates[0].Attributes["label"])
 }
 
 func Test_create_and_use_provider_from_json_swagger(t *testing.T) {

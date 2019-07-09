@@ -129,18 +129,18 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	ids, err := r.getParentIDs(data)
+	parentsIDs, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
-	resourcePath, err := r.openAPIResource.getResourcePath(ids)
+	resourcePath, err := r.openAPIResource.getResourcePath(parentsIDs)
 
 	if err != nil {
 		return err
 	}
 
 	// TODO: pass along the list of ids to readRemote method.
-	remoteData, err := r.readRemote(data.Id(), openAPIClient)
+	remoteData, err := r.readRemote(data.Id(), openAPIClient, parentsIDs...)
 
 	if err != nil {
 		if openapiErr, ok := err.(openapierr.Error); ok {
@@ -156,10 +156,10 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 
 // TODO: Update func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) to accept array of IDs instead of id string.
 // TODO: providerClient.Get should expect a list of IDs
-func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (map[string]interface{}, error) {
+func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, parentIDs ...string) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
-	resp, err := providerClient.Get(r.openAPIResource, id, &responsePayload)
+	resp, err := providerClient.Get2(r.openAPIResource, id, &responsePayload, parentIDs...)
 	if err != nil {
 		return nil, err
 	}

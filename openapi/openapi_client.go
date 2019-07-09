@@ -27,11 +27,12 @@ type ClientOpenAPI interface {
 	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
 	Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error)
 	Delete(resource SpecResource, id string) (*http.Response, error)
+	Get2(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
 // The CRUD operations accept an OpenAPI operation which defines among other things the security scheme applicable to
-// the API when making the HTTP request
+// the API when making the HTTP requests
 type ProviderClient struct {
 	openAPIBackendConfiguration SpecBackendConfiguration
 	httpClient                  http_goclient.HttpClientIface
@@ -65,11 +66,22 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 	return o.performRequest(httpPut, resourceURL, operation, requestPayload, responsePayload)
 }
 
-// Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
-// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
 func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
 	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
 	parentIDs := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
+	if err != nil {
+		return nil, err
+	}
+	operation := resource.getResourceOperations().Get
+	return o.performRequest(httpGet, resourceURL, operation, nil, responsePayload)
+}
+
+// Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
+// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
+func (o *ProviderClient) Get2(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
+	//parentIDs := []string{}
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err

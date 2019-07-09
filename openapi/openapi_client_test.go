@@ -2,11 +2,12 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/go-openapi/spec"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/go-openapi/spec"
 
 	"github.com/dikhan/http_goclient"
 	. "github.com/smartystreets/goconvey/convey"
