@@ -220,11 +220,14 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 }
 
 func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
-	fmt.Println(">>> o.Path: ", o.Path)
-	if o.Path == "" {
+	switch {
+	case o.Path == "":
 		return o.Path, errors.New("path was empty")
+	case o.isSubResource() != true:
+		return "", errors.New("path did not contain a subresource")
 	}
-	return o.Path, nil
+	return o.buildResourceName()
+	//return o.Path, nil
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
