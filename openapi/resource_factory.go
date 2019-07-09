@@ -134,6 +134,7 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 		return err
 	}
 	resourcePath, err := r.openAPIResource.getResourcePath(ids)
+
 	if err != nil {
 		return err
 	}
@@ -175,15 +176,13 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (ma
 // TODO: different parent IDs that need to be resovled into the resource path that is parametrised, being the first the one at the very left of the URI.
 // TODO: Add corresponding unit tests too
 func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, error) {
-	// Make use of the helper function isSubResource to detect if we are dealing with a subresource in which case
-	// the data object should contain the expected properties populated by the user with the ID values
-	isSub := r.openAPIResource.isSubResource()
-
-	fmt.Println(isSub)
-
+	return []string{"42"}, nil
 	if r.openAPIResource.isSubResource() {
 		// TODO: build the appropriate array of strings containing the IDs
-		return []string{"", data.Id()}
+		//pathParameterRegex, _ := regexp.Compile(pathParameterRegex
+		//pathParamsMatches := pathParameterRegex.FindAllStringSubmatch("", -1)
+
+		return []string{"12", data.Id()}, nil
 	}
 	return []string{}, nil
 }

@@ -187,11 +187,9 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-// TODO: Provide implementation for isSubresource(). The o.Path can be used to detect if the path is subresource or not.
-// TODO: That can be done with a regex inspecting whether the path is parametrised. o.Path contains always the ROOT path for the resource, and in the case of subresources the path is expected to be parametrised - the resolution of the path with the ID values it's handled in a different method
 func (o *SpecV2Resource) isSubResource() bool {
-	panic("implement")
-	return false
+	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
+	return pathParameterRegex.MatchString(o.Path)
 }
 
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
