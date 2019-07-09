@@ -192,22 +192,89 @@ func TestNewSpecV2Resource(t *testing.T) {
 func TestBuildResourceName(t *testing.T) {
 
 	// TODO: add missing test for the rest of the use cases that are not subresources
+	///v1/cdns/{id}/v1/firewalls
+	///v1/cdns/{id}/v2/firewalls
+	///v1/cdns/{id}/v2/firewalls/v3/rules
+	///v1/cdns/{id}/v2/firewalls/{id}/v3/rules
+	///v1/cdns/
+	///cdns
+	///v1/cdns/{id}/v2/firewalls/{id}/rules
+	///v1/cdns/{id}/firewalls
+	///cdns/{id}
 
-	Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
-		r := SpecV2Resource{
-			Path: "/v1/cdns/{id}/v1/firewalls",
-		}
+	testCases := []struct{
+		path                 string
+		expectedResourceName string
+		expectedError        error
+	}{
+		//{
+		//	path:                 "/cdns",
+		//	expectedResourceName: "cdns",
+		//	expectedError:        nil,
+		//},
+		//{
+		//	path:                 "/v1/cdns",
+		//	expectedResourceName: "cdns_v1",
+		//	expectedError:        nil,
+		//},
+		//{
+		//	path:                 "/v1/cdns/",
+		//	expectedResourceName: "cdns_v1",
+		//	expectedError:        nil,
+		//},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls",
+			expectedResourceName: "cdns_v1_firewalls_v2",
+			expectedError:        nil,
+		},
+		//{
+		//	path:                 "/v1/cdns/{id}/firewalls",
+		//	expectedResourceName: "firewalls",
+		//	expectedError:        nil,
+		//},
+		//{
+		//	path:                 "/v1/cdns/{id}/v2/firewalls/v3/rules",
+		//	expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
+		//	expectedError:        nil,
+		//},
+	}
 
-		Convey("When buildResourceName is called", func() {
-			resourceName, err := r.buildResourceName()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the resource name should be the expected one", func() {
-				So(resourceName, ShouldEqual, "expectedName")
+	for _, tc := range testCases{
+		Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
+			r := SpecV2Resource{
+				Path: tc.path,
+			}
+
+			Convey("When buildResourceName is called", func() {
+				resourceName, err := r.buildResourceName()
+				if tc.expectedError != nil {
+					Convey("Then the error returned should be the expected one", func() {
+						So(err.Error(), ShouldEqual, tc.expectedError.Error())
+					})
+				}
+				Convey("And the resource name should be the expected one", func() {
+					So(resourceName, ShouldEqual, tc.expectedResourceName)
+				})
 			})
 		})
-	})
+	}
+
+
+	//Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
+	//	r := SpecV2Resource{
+	//		Path: "/v1/cdns/{id}/v1/firewalls",
+	//	}
+	//
+	//	Convey("When buildResourceName is called", func() {
+	//		resourceName, err := r.buildResourceName()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the resource name should be the expected one", func() {
+	//			So(resourceName, ShouldEqual, "cdns_v1_firewalls_v1")
+	//		})
+	//	})
+	//})
 }
 
 // TODO: Add coverage for sub-resource use case. The acceptance criteria will be that given a configured SpecV2Resource that is

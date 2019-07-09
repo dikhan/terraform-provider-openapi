@@ -3,6 +3,7 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"log"
 	"regexp"
 	"strings"
@@ -16,6 +17,7 @@ const pathParameterRegex = "/({[\\w]*})*/"
 
 const resourceVersionRegex = "(/v[0-9]*/)"
 const resourceNameRegex = "((/\\w*[/]?))+$"
+const subResourceParentNameRegex = `(\/v[0-9]*\/\w*\d*\/{\w*\d*})`
 const resourceInstanceRegex = "((?:.*)){.*}"
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
@@ -113,13 +115,31 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
 	}
+
+	fullResourceName := resourceName
 	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
 	if len(versionMatches) != 0 {
-		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
-		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
-		return resourceNameWithVersion, nil
+		v :=versionRegex.FindAllStringSubmatch(resourcePath, -1)
+		version := strings.Replace(v[len(v)-1][1], "/", "", -1)
+		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
+		//return fullResourceName, nil
 	}
-	return resourceName, nil
+
+	subParentRegex, err := regexp.Compile(subResourceParentNameRegex)
+	if err != nil {
+		return "", fmt.Errorf("an error occurred while compiling the subParentRegex regex '%s': %s", subParentRegex, err)
+	}
+
+
+	subParentResourceMatches := subParentRegex.FindStringSubmatch(resourcePath)
+	if len(subParentResourceMatches) > 0 {
+		sp := subParentRegex.FindAllStringSubmatch(resourcePath, -1)
+		spew.Dump(">>> ", sp)
+		parentStuff := strings.Split(sp[0][1], "/")
+		spew.Dump("parentStuff: ", parentStuff)
+		//fullResourceName = parent + fullResourceName
+	}
+	return fullResourceName, nil
 }
 
 // getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
@@ -226,7 +246,7 @@ func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
 	case o.isSubResource() != true:
 		return "", errors.New("path did not contain a subresource")
 	}
-	//return o.buildResourceName()
+	return o.buildResourceName()
 	return o.Path, nil
 }
 
