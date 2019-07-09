@@ -314,7 +314,7 @@ func TestGetResourcePath(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the returned resource path should match the expected one", func() {
-				So(resourcePath, ShouldEqual, fmt.Sprintf("/v1/cdns/%s/v1/firewalls/%s/rules", ids[0], ids[1]))
+				So(resourcePath, ShouldEqual, "/v1/cdns/cdnID/v1/firewalls/fwID/rules")
 			})
 		})
 	})
