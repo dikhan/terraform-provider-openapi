@@ -216,9 +216,9 @@ func TestBuildResourceName(t *testing.T) {
 // TODO: properties the resource model object may have.
 func TestGetResourceSchema(t *testing.T) {
 
-	Convey("Given a SpecV2Resource with a sub-resource root path (just one level)", t, func() {
+	Convey("Given a SpecV2Resource with no sub-resource", t, func() {
 		r := SpecV2Resource{
-			Path: "/v1/cdns/{id}/v1/firewalls",
+			Path: "/v1/cdns",
 		}
 
 		Convey("When getResourceSchema is called", func() {
@@ -229,6 +229,43 @@ func TestGetResourceSchema(t *testing.T) {
 			Convey("And the specSchemaDefinition should contain the right configuration including the parent id", func() {
 				So(specSchemaDefinition, ShouldNotBeNil)
 				specSchemaDefinitionProperty, err := specSchemaDefinition.getProperty("cdns_v1_id")
+				So(err, ShouldNotBeNil)
+				So(specSchemaDefinitionProperty, ShouldBeNil)
+			})
+		})
+	})
+
+	//TODO: improve the criteria for parent id tokens
+	//Convey("Given a SpecV2Resource with no sub-resource but some weird id looking thing", t, func() {
+	//	r := SpecV2Resource{
+	//		Path: "/v1/{notAnID}/cdns",
+	//	}
+	//
+	//	Convey("When getResourceSchema is called", func() {
+	//		specSchemaDefinition, err := r.getResourceSchema()
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the specSchemaDefinition should contain the right configuration including the parent id", func() {
+	//			So(specSchemaDefinition, ShouldNotBeNil)
+	//			So(specSchemaDefinition.Properties, ShouldBeEmpty)
+	//		})
+	//	})
+	//})
+
+	Convey("Given a SpecV2Resource with another sub-resource root path (just one level)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v2/cdns/{id}/v1/firewalls",
+		}
+
+		Convey("When getResourceSchema is called", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition should contain the right configuration including the parent id", func() {
+				So(specSchemaDefinition, ShouldNotBeNil)
+				specSchemaDefinitionProperty, err := specSchemaDefinition.getProperty("cdns_v2_id") //cdn_v1_id?
 				So(err, ShouldBeNil)
 				So(specSchemaDefinitionProperty.Computed, ShouldBeTrue)
 			})
@@ -241,6 +278,21 @@ func TestGetResourceSchema(t *testing.T) {
 	// - use case where versions are only present in either the root or the subresource
 
 	// TODO: Note: For this first iteration of the subresource support implementation it is not expected that the property names will honor the preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
+}
+
+func Test_propertyParentNameFromResourcePath(t *testing.T) {
+	Convey("Given a SpecV2Resource with no Path", t, func() {
+		r := &SpecV2Resource{}
+		Convey("propertyParentNameFromResourcePath should return an empty string", func() {
+			So(r.propertyParentNameFromResourcePath(), ShouldBeEmpty)
+		})
+	})
+	Convey("Given a SpecV2Resource with some Path", t, func() {
+		r := &SpecV2Resource{Path: "/foo"}
+		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
+			So(r.propertyParentNameFromResourcePath(), ShouldNotBeEmpty)
+		})
+	})
 }
 
 func TestGetResourcePath(t *testing.T) {

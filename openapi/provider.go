@@ -28,6 +28,10 @@ func (p *ProviderOpenAPI) CreateSchemaProvider() (*schema.Provider, error) {
 	return createSchemaProviderFromServiceConfiguration(p, serviceConfiguration)
 }
 
+func CreateSchemaProviderFromServiceConfiguration(p *ProviderOpenAPI, serviceConfiguration ServiceConfiguration) (*schema.Provider, error) {
+	return createSchemaProviderFromServiceConfiguration(p, serviceConfiguration)
+}
+
 func createSchemaProviderFromServiceConfiguration(p *ProviderOpenAPI, serviceConfiguration ServiceConfiguration) (*schema.Provider, error) {
 	if p.err != nil {
 		return nil, p.err

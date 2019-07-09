@@ -206,7 +206,21 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		}
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
+
+	if o.isSubResource() {
+		propName := o.propertyParentNameFromResourcePath()
+		pr, errrr := o.createSchemaDefinitionProperty(propName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
+		pr.Computed = true
+		fmt.Println("errrr>>>", errrr)
+		schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
+	}
+
 	return schemaDefinition, nil
+}
+
+func (o *SpecV2Resource) propertyParentNameFromResourcePath() string {
+	fmt.Println(">>>", o.Path)
+	return "cdns_v1_id"
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
