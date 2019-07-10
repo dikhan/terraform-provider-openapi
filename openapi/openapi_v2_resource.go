@@ -154,30 +154,43 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
 	}
 
+	_, fullParentResourceName, err := o.buildParentResourceName()
+	if err != nil {
+		return "", err
+	}
+	fullResourceName = fullParentResourceName + fullResourceName
+
+	return fullResourceName, nil
+}
+
+// buildParentResourceName is responsible for building the parent name based on a given path. This string will then be
+// used to concatenate the parent with the actual resource name resulting into the complete resource name. Considering
+// this method contains the logic related to constructing the parent name it also returns the different levels of parent
+// that if find that can be used in other places to figure out the different parent properties to use in the sub-resource for
+// instance.
+func (o *SpecV2Resource) buildParentResourceName() ([]string, string, error) {
+	resourcePath := o.Path
 	resourceParentRegex, err := regexp.Compile(resourceParentNameRegex)
 	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceParentRegex regex '%s': %s", resourceParentRegex, err)
+		return nil, "", fmt.Errorf("an error occurred while compiling the resourceParentRegex regex '%s': %s", resourceParentRegex, err)
 	}
-
+	parentResourceNames := []string{}
+	fullParentResourceName := ""
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(resourcePath, -1)
 	if len(parentMatches) > 0 {
-		fullParentResourceName := ""
 		for _, match := range parentMatches {
 			//fullMatch := match[0]
 			//parentPath := match[1] // TODO: this path may not be completed, as service providers may attach the base path to the resource path - so this should not be relied on to look up paths in the specAnalyser.d.Spec().Paths.Paths
 			parentVersion := match[2]
-			parentName := match[3]
-
-			parentResourceName := parentName
+			parentResourceName := match[3]
 			if parentVersion != "" {
-				parentResourceName = fmt.Sprintf("%s_%s", parentName, parentVersion)
+				parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
 			}
-
+			parentResourceNames = append(parentResourceNames, parentResourceName)
 			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
 		}
-		fullResourceName = fullParentResourceName + fullResourceName
 	}
-	return fullResourceName, nil
+	return parentResourceNames, fullParentResourceName, nil
 }
 
 // getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
@@ -267,36 +280,38 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	}
 
 	if o.isSubResource() {
-		propName, _ := o.propertyParentNameFromResourcePath()
-		pr, errrr := o.createSchemaDefinitionProperty(propName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
-		pr.Computed = true
-		fmt.Println("errrr>>>", errrr) //TODO: cleanup
-		schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
+		parentPropertyNames, err := o.propertyParentNamesFromResourcePath()
+		if err != nil {
+			return nil, err
+		}
+		for _, parentPropertyName := range parentPropertyNames {
+			pr, err := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
+			if err != nil {
+				return nil, err
+			}
+			pr.Computed = true
+			schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
+		}
 	}
-
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
+func (o *SpecV2Resource) propertyParentNamesFromResourcePath() ([]string, error) {
 	switch {
 	case o.Path == "":
-		return o.Path, errors.New("path was empty")
+		return nil, errors.New("path was empty")
 	case o.isSubResource() != true:
-		return "", errors.New("path did not contain a subresource")
+		return nil, errors.New("path did not contain a subresource")
 	}
-
-	firstMustacheIndex := strings.Index(o.Path, "/{")
-	parentPath := o.Path[0:firstMustacheIndex]
-	parentPathElements := strings.Split(parentPath, "/")
-	primaryParentPathElement := parentPathElements[len(parentPathElements)-1]
-	parentPathVersionElement := parentPathElements[len(parentPathElements)-2]
-
-	switch parentPathVersionElement {
-	case "":
-		return primaryParentPathElement + "_id", nil
-	default:
-		return primaryParentPathElement + "_" + parentPathVersionElement + "_id", nil
+	parentNames, _, err := o.buildParentResourceName()
+	if err != nil {
+		return nil, err
 	}
+	parentPropertyNames := []string{}
+	for _, parentName := range parentNames {
+		parentPropertyNames = append(parentPropertyNames, fmt.Sprintf("%s_id", parentName))
+	}
+	return parentPropertyNames, nil
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {

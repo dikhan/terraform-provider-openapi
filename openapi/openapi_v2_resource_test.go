@@ -376,19 +376,27 @@ func TestGetResourceSchema(t *testing.T) {
 func Test_propertyParentNameFromResourcePath(t *testing.T) {
 	Convey("Given a SpecV2Resource with no Path", t, func() {
 		r := &SpecV2Resource{}
-		Convey("propertyParentNameFromResourcePath should return an empty string", func() {
-			p, err := r.propertyParentNameFromResourcePath()
-			So(p, ShouldBeEmpty)
-			So(err, ShouldNotBeNil)
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then array returned should be empty", func() {
+				So(p, ShouldBeEmpty)
+			})
+			Convey("And the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "path was empty")
+			})
 		})
 	})
 
-	Convey("Given a SpecV2Resource with some Path but not for a subresource", t, func() {
+	Convey("Given a SpecV2Resource with some Path that is not a subresource", t, func() {
 		r := &SpecV2Resource{Path: "/foo"}
-		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
-			p, err := r.propertyParentNameFromResourcePath()
-			So(p, ShouldBeEmpty)
-			So(err.Error(), ShouldEqual, "path did not contain a subresource")
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then array returned should be empty", func() {
+				So(p, ShouldBeEmpty)
+			})
+			Convey("And the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "path did not contain a subresource")
+			})
 		})
 	})
 
@@ -396,10 +404,16 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 		r := &SpecV2Resource{
 			Path: "/v2/cdns/{id}/v1/firewalls",
 		}
-		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
-			p, err := r.propertyParentNameFromResourcePath()
-			So(p, ShouldEqual, "cdns_v2_id")
-			So(err, ShouldBeNil)
+
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the array returned should contain the expected parent name", func() {
+				So(len(p), ShouldEqual, 1)
+				So(p[0], ShouldEqual, "cdns_v2_id")
+			})
 		})
 	})
 
@@ -407,21 +421,83 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 		r := &SpecV2Resource{
 			Path: "/cdns/{id}/v1/firewalls",
 		}
-		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
-			p, err := r.propertyParentNameFromResourcePath()
-			So(p, ShouldEqual, "cdns_id")
-			So(err, ShouldBeNil)
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the array returned should contain the expected parent name", func() {
+				So(len(p), ShouldEqual, 1)
+				So(p[0], ShouldEqual, "cdns_id")
+			})
 		})
 	})
 
-	Convey("Given a SpecV2Resource with some Path for an unversioned parent resource", t, func() {
+	Convey("Given a SpecV2Resource with some Path that contains two parents, the first one using version and the second one without", t, func() {
 		r := &SpecV2Resource{
-			Path: "/cdns/{id}/v1/firewalls",
+			Path: "/v1/cdns/{id}/firewalls/{id}/rules",
 		}
-		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
-			p, err := r.propertyParentNameFromResourcePath()
-			So(p, ShouldEqual, "cdns_id")
-			So(err, ShouldBeNil)
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_v1_id")
+				So(p[1], ShouldEqual, "firewalls_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that contains two parents both using versioning", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls/{id}/rules",
+		}
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_v1_id")
+				So(p[1], ShouldEqual, "firewalls_v2_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that contains two parents; the first one with no version and the second one with it", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns/{id}/v1/firewalls/{id}/rules",
+		}
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_id")
+				So(p[1], ShouldEqual, "firewalls_v1_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that contains two parents that do not use versioning", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns/{id}/firewalls/{id}/rules",
+		}
+		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
+			p, err := r.propertyParentNamesFromResourcePath()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_id")
+				So(p[1], ShouldEqual, "firewalls_id")
+			})
 		})
 	})
 }
