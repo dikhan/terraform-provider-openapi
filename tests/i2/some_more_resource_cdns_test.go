@@ -202,10 +202,10 @@ func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
 }
 
 func TestAccCDN_Subresource(t *testing.T) {
-	apiServerBehaviors := map[string]http.HandlerFunc{}
+	//apiServerBehaviors := map[string]http.HandlerFunc{}
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("apiServer request>>>>", r.URL, r.Method)
-		apiServerBehaviors[r.Method](w, r)
+		//	apiServerBehaviors[r.Method](w, r)
 	}))
 
 	apiHost := apiServer.URL[7:]
@@ -219,14 +219,14 @@ func TestAccCDN_Subresource(t *testing.T) {
 
 	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
 
-	tfFileContents := `# URI /v1/cdns/
-resource "openapi_cdn_v1" "my_cdn" {
-   label = "cdn label"
-}
-
-# URI /v1/cdns/{parent_id}/v1/firewalls/
+	tfFileContents :=
+		//		`# URI /v1/cdns/
+		//resource "openapi_cdn_v1" "my_cdn" {
+		//   label = "cdn label"
+		//}
+		`# URI /v1/cdns/{parent_id}/v1/firewalls/
 resource "openapi_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
-   cdn_v1_id = "{openapi_cdn_v1.my_cdn.id}"
+   cdns_v1_id = "{openapi_cdn_v1.my_cdn.id}"
 }`
 
 	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{

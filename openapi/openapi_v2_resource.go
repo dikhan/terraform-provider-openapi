@@ -190,16 +190,15 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
 	pathParamsMatches := pathParameterRegex.FindAllStringSubmatch(resolvedPath, -1)
 
-	if len(parentIDs) > len(pathParamsMatches) {
-		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - more ids than path params: %s", resolvedPath, pathParamsMatches, parentIDs)
-	}
-
-	if len(parentIDs) < len(pathParamsMatches) {
-		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, pathParamsMatches, parentIDs)
-	}
-
-	if len(pathParamsMatches) == 0 {
+	switch {
+	case len(pathParamsMatches) == 0:
 		return resolvedPath, nil
+
+	case len(parentIDs) > len(pathParamsMatches):
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - more ids than path params: %s", resolvedPath, pathParamsMatches, parentIDs)
+
+	case len(parentIDs) < len(pathParamsMatches):
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' (%s) with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, pathParamsMatches, parentIDs)
 	}
 
 	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values

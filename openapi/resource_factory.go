@@ -103,7 +103,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	}
 
 	// TODO: pass along the list of ids to post method.
-	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload)
+	res, err := providerClient.Post2(r.openAPIResource, requestPayload, &responsePayload, ids...)
 	if err != nil {
 		return err
 	}
@@ -177,13 +177,12 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 // TODO: Add corresponding unit tests too
 func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, error) {
 	return []string{"42"}, nil
+
 	if r.openAPIResource.isSubResource() {
 		// TODO: build the appropriate array of strings containing the IDs
-		//pathParameterRegex, _ := regexp.Compile(pathParameterRegex
-		//pathParamsMatches := pathParameterRegex.FindAllStringSubmatch("", -1)
-
-		return []string{"12", data.Id()}, nil
+		return []string{"", data.Id()}, nil
 	}
+
 	return []string{}, nil
 }
 
