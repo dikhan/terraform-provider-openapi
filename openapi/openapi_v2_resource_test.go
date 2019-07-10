@@ -238,7 +238,8 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
-			path:                 "/v1/cdns/{id}/v2/firewalls",
+			path: "/v1/cdns/{id}/v2/firewalls",
+			//expectedResourceName: "cdns_v1_cdn_v1_firewalls",
 			expectedResourceName: "cdns_v1_firewalls_v2",
 			expectedError:        nil,
 		},
