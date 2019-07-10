@@ -245,7 +245,6 @@ func TestAccCDN_Subresource(t *testing.T) {
 	}
 
 	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(">>> GET")
 		assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", r.RequestURI)
 		bs, e := ioutil.ReadAll(r.Body)
 		require.NoError(t, e)
@@ -256,13 +255,11 @@ func TestAccCDN_Subresource(t *testing.T) {
 	}
 
 	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(">>> DELETE")
 		assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", r.RequestURI)
 		bs, e := ioutil.ReadAll(r.Body)
 		require.NoError(t, e)
 		fmt.Println("DELETE request body >>>", string(bs))
 		w.WriteHeader(http.StatusNoContent)
-		//w.Write([]byte(apiResponse))
 	}
 
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
