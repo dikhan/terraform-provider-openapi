@@ -269,6 +269,9 @@ func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
 }
 
 func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDefinition, error) {
+	if schema == nil {
+		return nil, fmt.Errorf("schema argument must not be nil")
+	}
 	schemaDefinition := &specSchemaDefinition{}
 	schemaDefinition.Properties = specSchemaDefinitionProperties{}
 	for propertyName, property := range schema.Properties {
