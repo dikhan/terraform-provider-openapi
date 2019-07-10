@@ -234,31 +234,62 @@ func TestAccCDN_Subresource(t *testing.T) {
 	fmt.Println("apiHost>>>>", apiHost)
 
 	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/v1/cdns/42/v1/firewalls", r.RequestURI)
-		bs, e := ioutil.ReadAll(r.Body)
-		require.NoError(t, e)
-		fmt.Println("POST request body >>>", string(bs))
-		apiResponse := `{"id":1337,"label":"FW #1337"}`
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(apiResponse))
+		switch r.RequestURI {
+		case "/v1/cdns/42/v1/firewalls":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("POST request body >>>", string(bs))
+			apiResponse := `{"id":1337,"label":"FW #1337"}`
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(apiResponse))
+		case "/v1/cdns":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("GET request body >>>", string(bs))
+			apiResponse := `{"id":42,"label":"CDN #42"}`
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(apiResponse))
+		default:
+			assert.Fail(t, "rx unexpected POST to "+r.RequestURI)
+		}
 	}
 
 	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", r.RequestURI)
-		bs, e := ioutil.ReadAll(r.Body)
-		require.NoError(t, e)
-		fmt.Println("GET request body >>>", string(bs))
-		apiResponse := `{"id":1337,"label":"FW #1337"}`
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(apiResponse))
+		switch r.RequestURI {
+		case "/v1/cdns/42/v1/firewalls/1337":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("GET request body >>>", string(bs))
+			apiResponse := `{"id":1337,"label":"FW #1337"}`
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(apiResponse))
+		case "/v1/cdns/42":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("GET request body >>>", string(bs))
+			apiResponse := `{"id":42,"label":"CDN #42"}`
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(apiResponse))
+		default:
+			assert.Fail(t, "rx unexpected GET to "+r.RequestURI)
+		}
 	}
 
 	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", r.RequestURI)
-		bs, e := ioutil.ReadAll(r.Body)
-		require.NoError(t, e)
-		fmt.Println("DELETE request body >>>", string(bs))
-		w.WriteHeader(http.StatusNoContent)
+		switch r.RequestURI {
+		case "/v1/cdns/42/v1/firewalls/1337":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("DELETE request body >>>", string(bs))
+			w.WriteHeader(http.StatusNoContent)
+		case "/v1/cdns/42":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("DELETE request body >>>", string(bs))
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			assert.Fail(t, "rx unexpected DELETE to "+r.RequestURI)
+		}
 	}
 
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -269,16 +300,15 @@ func TestAccCDN_Subresource(t *testing.T) {
 
 	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
 
-	tfFileContents :=
-		//		`# URI /v1/cdns/
-		//resource "openapi_cdn_v1" "my_cdn" {
-		//   label = "cdn label"
-		//}
-		`# URI /v1/cdns/{parent_id}/v1/firewalls/
-resource "openapi_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
-   cdns_v1_id = "42"
-   label = "FW #1337"
-}`
+	tfFileContents := `# URI /v1/cdns/
+		resource "openapi_cdn_v1" "my_cdn" {
+		  label = "CDN #42"
+		}
+		# URI /v1/cdns/{parent_id}/v1/firewalls/
+        resource "openapi_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
+           cdns_v1_id = openapi_cdn_v1.my_cdn.id
+           label = "FW #1337"
+        }`
 
 	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
