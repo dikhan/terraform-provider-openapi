@@ -258,10 +258,13 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-// TODO: create unit tests for isSubResource
 func (o *SpecV2Resource) isSubResource() bool {
-	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
-	return pathParameterRegex.MatchString(o.Path)
+	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
+	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
+	if len(parentMatches) > 0 {
+		return true
+	}
+	return false
 }
 
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
