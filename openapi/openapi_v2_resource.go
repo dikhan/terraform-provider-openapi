@@ -289,8 +289,8 @@ func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
 	// TODO: By the time we reach this point the SpecV2Resource struct has already been created and its field NAme would have
 	// been populated with the resource name already. Hence, we can just assume the Name is already build, and can get the
 	// parent name from it already
-	return o.buildResourceName()
-	return o.Path, nil
+	parentName, _ := o.buildResourceName() // TODO: strip out subresouce from here...for instance given that o.buildResourceName() returns cdns_v1_firewalls_v2 the expectation is taht the parentName should be cdns_v1
+	return parentName + "_id", nil
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
