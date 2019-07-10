@@ -27,6 +27,7 @@ type ClientOpenAPI interface {
 	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
 	Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error)
 	Delete(resource SpecResource, id string) (*http.Response, error)
+	Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)                                             //TODO: this must take the place of `Delete`
 	Get2(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)                   //TODO: this must take the place of `Get`
 	Post2(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) //TODO: this must take the place of `Post`
 }
@@ -103,6 +104,16 @@ func (o *ProviderClient) Get2(resource SpecResource, id string, responsePayload 
 func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Response, error) {
 	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
 	parentIDs := []string{}
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
+	if err != nil {
+		return nil, err
+	}
+	operation := resource.getResourceOperations().Delete
+	return o.performRequest(httpDelete, resourceURL, operation, nil, nil)
+}
+
+func (o *ProviderClient) Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
+	//parentIDs := []string{}
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err

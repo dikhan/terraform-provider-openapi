@@ -92,18 +92,18 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
 
-	ids, err := r.getParentIDs(data)
+	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
 
-	resourcePath, err := r.openAPIResource.getResourcePath(ids)
+	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
 		return err
 	}
 
-	// TODO: pass along the list of ids to post method.
-	res, err := providerClient.Post2(r.openAPIResource, requestPayload, &responsePayload, ids...)
+	// TODO: pass along the list of parentIDs to post method.
+	res, err := providerClient.Post2(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
 	if err != nil {
 		return err
 	}
@@ -226,11 +226,11 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	ids, err := r.getParentIDs(data)
+	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
-	resourcePath, err := r.openAPIResource.getResourcePath(ids)
+	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
 	}
-	res, err := providerClient.Delete(r.openAPIResource, data.Id())
+	res, err := providerClient.Delete2(r.openAPIResource, data.Id(), parentIDs...)
 	if err != nil {
 		return err
 	}
