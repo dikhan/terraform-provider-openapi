@@ -284,6 +284,11 @@ func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
 	case o.isSubResource() != true:
 		return "", errors.New("path did not contain a subresource")
 	}
+
+	// TODO: I believe at this point if we strip out from o.Name the subresource name leaving the parent ids that should be enough
+	// TODO: By the time we reach this point the SpecV2Resource struct has already been created and its field NAme would have
+	// been populated with the resource name already. Hence, we can just assume the Name is already build, and can get the
+	// parent name from it already
 	return o.buildResourceName()
 	return o.Path, nil
 }
