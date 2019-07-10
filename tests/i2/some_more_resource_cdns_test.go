@@ -29,135 +29,139 @@ import (
 //var cdn api.ContentDeliveryNetworkV1
 //var testCreateConfigCDN string
 
-const cdnSwaggerYAMLTemplate = `definitions: 
-  ContentDeliveryNetworkFirewallV1: 
-    properties: 
-      id: 
-        readOnly: true
-        type: string
-      label: 
-        type: string
-    type: object
-  ContentDeliveryNetworkV1: 
-    properties: 
-      id: 
-        readOnly: true
-        type: string
-      label: 
-        type: string
-    required: 
-      - label
-    type: object
-host: %s
-paths: 
-  /v1/cdns: 
-    post: 
-      operationId: ContentDeliveryNetworkCreateV1
-      parameters: 
-        - 
-          description: "Created CDN"
-          in: body
-          name: body
-          required: true
-          schema: 
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses: 
-        201: 
-          description: "successful operation"
-          schema: 
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+const cdnSwaggerYAMLTemplate = `swagger: "2.0"
+
+host: %s 
+schemes:
+- "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    post:
+      x-terraform-resource-name: "cdn"
       summary: "Create cdn"
-      x-terraform-resource-name: cdn
-  ? "/v1/cdns/{id}"
-  : 
-    delete: 
-      operationId: ContentDeliveryNetworkDeleteV1
-      parameters: 
-        - 
-          description: "The cdn that needs to be deleted"
-          in: path
-          name: id
-          required: true
-          type: string
-      responses: 
-        204: 
-          description: "successful operation, no content is returned"
-      summary: "Delete cdn"
-    get: 
-      description: ""
-      operationId: ContentDeliveryNetworkGetV1
-      parameters: 
-        - 
-          description: "The cdn id that needs to be fetched."
-          in: path
-          name: id
-          required: true
-          type: string
-      responses: 
-        200: 
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
           description: "successful operation"
-          schema: 
+          schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+  /v1/cdns/{id}:
+    get:
       summary: "Get cdn by id"
-    put: 
-      operationId: ContentDeliveryNetworkUpdateV1
-      parameters: 
-        - 
-          description: "cdn that needs to be updated"
-          in: path
-          name: id
-          required: true
-          type: string
-        - 
-          description: "Updated cdn object"
-          in: body
-          name: body
-          required: true
-          schema: 
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses: 
-        200: 
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
           description: "successful operation"
-          schema: 
+          schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+    put:
       summary: "Updated cdn"
-  ? "/v1/cdns/{parent_id}/v1/firewalls"
-  : 
-    post: 
-      operationId: ContentDeliveryNetworkFirewallCreateV1
-      parameters: 
-        - 
-          description: "The cdn id that contains the firewall to be fetched."
-          in: path
-          name: parent_id
-          required: true
-          type: string
-        - 
-          description: "Created CDN firewall"
-          in: body
-          name: body
-          required: true
-          schema: 
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-      responses: 
-        201: 
+      operationId: "ContentDeliveryNetworkUpdateV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "cdn that needs to be updated"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Updated cdn object"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        200:
           description: "successful operation"
-          schema: 
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    delete:
+      summary: "Delete cdn"
+      operationId: "ContentDeliveryNetworkDeleteV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn that needs to be deleted"
+        required: true
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+
+  ## CDN sub-resource
+
+  /v1/cdns/{parent_id}/v1/firewalls:
+    post:
       summary: "Create cdn firewall"
-  ? "/v1/cdns/{parent_id}/v1/firewalls/{id}"
-  : 
+      operationId: "ContentDeliveryNetworkFirewallCreateV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Created CDN firewall"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+
+  /v1/cdns/{parent_id}/v1/firewalls/{id}:
+    get:
+      summary: "Get cdn firewall by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkFirewallGetV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - name: "id"
+        in: "path"
+        description: "The cdn firewall id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
     delete: 
       operationId: ContentDeliveryNetworkFirewallDeleteV1
       parameters: 
-        - 
-          description: "The cdn id that contains the firewall to be fetched."
+        - description: "The cdn id that contains the firewall to be fetched."
           in: path
           name: parent_id
           required: true
           type: string
-        - 
-          description: "The cdn firewall id that needs to be fetched."
+        - description: "The cdn firewall id that needs to be fetched."
           in: path
           name: id
           required: true
@@ -166,31 +170,28 @@ paths:
         204: 
           description: "successful operation, no content is returned"
       summary: "Delete firewall"
-    get: 
-      description: ""
-      operationId: ContentDeliveryNetworkFirewallGetV1
-      parameters: 
-        - 
-          description: "The cdn id that contains the firewall to be fetched."
-          in: path
-          name: parent_id
-          required: true
-          type: string
-        - 
-          description: "The cdn firewall id that needs to be fetched."
-          in: path
-          name: id
-          required: true
-          type: string
-      responses: 
-        200: 
-          description: "successful operation"
-          schema: 
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-      summary: "Get cdn firewall by id"
-schemes: 
-  - http
-swagger: "2.0"`
+
+
+definitions:
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+`
 
 type fakeServiceSchemaPropertyConfiguration struct {
 }
@@ -280,7 +281,7 @@ func TestAccCDN_Subresource(t *testing.T) {
 		`# URI /v1/cdns/{parent_id}/v1/firewalls/
 resource "openapi_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
    cdns_v1_id = "42"
-   label = "FW #1337"q
+   label = "FW #1337"
 }`
 
 	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
