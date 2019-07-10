@@ -270,7 +270,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		propName, _ := o.propertyParentNameFromResourcePath()
 		pr, errrr := o.createSchemaDefinitionProperty(propName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
 		pr.Computed = true
-		fmt.Println("errrr>>>", errrr)
+		fmt.Println("errrr>>>", errrr) //TODO: cleanup
 		schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
 	}
 

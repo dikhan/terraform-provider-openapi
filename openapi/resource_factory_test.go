@@ -1835,3 +1835,48 @@ func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*spec
 	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
 	return newResourceFactory(specResource), resourceData
 }
+
+func Test_getParentIDs(t *testing.T) {
+
+	Convey("Given a resourceFactory with no openAPIResource", t, func() {
+		rf := resourceFactory{}
+		Convey("When getParentIDs is called", func() {
+			ss, e := rf.getParentIDs(nil)
+			Convey("Then an error is raised", func() {
+				So(ss, ShouldBeEmpty)
+				So(e.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+			})
+		})
+	})
+
+	Convey("Given a resourceFactory with a pointer to a blank SpecV2Resource", t, func() {
+		rf := resourceFactory{openAPIResource: &SpecV2Resource{}}
+		Convey("When getParentIDs is called with a nil arg", func() {
+			ss, e := rf.getParentIDs(nil)
+			Convey("Then an error is not raised and the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
+				So(e, ShouldBeNil)
+			})
+		})
+		Convey("When getParentIDs is called with an empty ResourceData", func() {
+			ss, e := rf.getParentIDs(&schema.ResourceData{})
+			Convey("Then an error is not raised and the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
+				So(e, ShouldBeNil)
+			})
+		})
+	})
+
+	//TODO: make this run with cdns_v2_id instead of cdns_v1_id
+	Convey("Given a resourceFactory with a some schema", t, func() {
+		p := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "updatedValue")
+		rf, resourceData := testCreateResourceFactory(t, p)
+		Convey("When getParentIDs is called with non-empty ResourceData", func() {
+			ss, e := rf.getParentIDs(resourceData)
+			Convey("Then an error is not raised and the slice of string returned is empty", func() {
+				So(ss[0], ShouldEqual, "updatedValue")
+				So(e, ShouldBeNil)
+			})
+		})
+	})
+}

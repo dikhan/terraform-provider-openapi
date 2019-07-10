@@ -60,6 +60,5 @@ func (s *specStubResource) getHost() (string, error) {
 }
 
 func (s *specStubResource) isSubResource() bool {
-	panic("implement")
-	return false
+	return true //TODO: get rid of hard-coding
 }
