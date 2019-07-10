@@ -381,7 +381,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 	})
-	Convey("Given a SpecV2Resource with some Path", t, func() {
+
+	Convey("Given a SpecV2Resource with some Path but not for a subresource", t, func() {
 		r := &SpecV2Resource{Path: "/foo"}
 		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
 			p, err := r.propertyParentNameFromResourcePath()
@@ -389,17 +390,39 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 			So(err.Error(), ShouldEqual, "path did not contain a subresource")
 		})
 	})
-	// TODO: Bring this test back
-	//Convey("Given a SpecV2Resource with some moar Path", t, func() {
-	//	r := &SpecV2Resource{
-	//		Path: "/v2/cdns/{id}/v1/firewalls",
-	//	}
-	//	Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
-	//		p, err := r.propertyParentNameFromResourcePath()
-	//		So(p, ShouldEqual, "cdns_v2_id")
-	//		So(err, ShouldBeNil)
-	//	})
-	//})
+
+	Convey("Given a SpecV2Resource with some Path for a versioned parent resource where the path begins with the version", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v2/cdns/{id}/v1/firewalls",
+		}
+		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
+			p, err := r.propertyParentNameFromResourcePath()
+			So(p, ShouldEqual, "cdns_v2_id")
+			So(err, ShouldBeNil)
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path for an unversioned parent resource", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns/{id}/v1/firewalls",
+		}
+		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
+			p, err := r.propertyParentNameFromResourcePath()
+			So(p, ShouldEqual, "cdns_id")
+			So(err, ShouldBeNil)
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path for an unversioned parent resource", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns/{id}/v1/firewalls",
+		}
+		Convey("propertyParentNameFromResourcePath should not return an empty string", func() {
+			p, err := r.propertyParentNameFromResourcePath()
+			So(p, ShouldEqual, "cdns_id")
+			So(err, ShouldBeNil)
+		})
+	})
 }
 
 func TestGetResourcePath(t *testing.T) {

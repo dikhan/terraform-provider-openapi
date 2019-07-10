@@ -278,7 +278,6 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	return schemaDefinition, nil
 }
 
-// TODO: create unit tests for this method
 func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
 	switch {
 	case o.Path == "":
@@ -287,12 +286,18 @@ func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
 		return "", errors.New("path did not contain a subresource")
 	}
 
-	// TODO: I believe at this point if we strip out from o.Name the subresource name leaving the parent ids that should be enough
-	// TODO: By the time we reach this point the SpecV2Resource struct has already been created and its field NAme would have
-	// been populated with the resource name already. Hence, we can just assume the Name is already build, and can get the
-	// parent name from it already
-	parentName, _ := o.buildResourceName() // TODO: strip out subresouce from here...for instance given that o.buildResourceName() returns cdns_v1_firewalls_v2 the expectation is taht the parentName should be cdns_v1
-	return parentName + "_id", nil
+	firstMustacheIndex := strings.Index(o.Path, "/{")
+	parentPath := o.Path[0:firstMustacheIndex]
+	parentPathElements := strings.Split(parentPath, "/")
+	primaryParentPathElement := parentPathElements[len(parentPathElements)-1]
+	parentPathVersionElement := parentPathElements[len(parentPathElements)-2]
+
+	switch parentPathVersionElement {
+	case "":
+		return primaryParentPathElement + "_id", nil
+	default:
+		return primaryParentPathElement + "_" + parentPathVersionElement + "_id", nil
+	}
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
