@@ -2,9 +2,12 @@ package i2
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -26,150 +29,168 @@ import (
 //var cdn api.ContentDeliveryNetworkV1
 //var testCreateConfigCDN string
 
-const cdnSwaggerYAMLTemplate = `swagger: "2.0"
-
-host: %s 
-schemes:
-- "http"
-
-paths:
-  ######################
-  #### CDN Resource ####
-  ######################
-
-  /v1/cdns:
-    post:
-      x-terraform-resource-name: "cdn"
-      summary: "Create cdn"
-      operationId: "ContentDeliveryNetworkCreateV1"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Created CDN"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses:
-        201:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-
-  /v1/cdns/{id}:
-    get:
-      summary: "Get cdn by id"
-      description: ""
-      operationId: "ContentDeliveryNetworkGetV1"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-
-    put:
-      summary: "Updated cdn"
-      operationId: "ContentDeliveryNetworkUpdateV1"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "cdn that needs to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated cdn object"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-    delete:
-      summary: "Delete cdn"
-      operationId: "ContentDeliveryNetworkDeleteV1"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        204:
-          description: "successful operation, no content is returned"
-
-  ## CDN sub-resource
-
-  /v1/cdns/{parent_id}/v1/firewalls:
-    post:
-      summary: "Create cdn firewall"
-      operationId: "ContentDeliveryNetworkFirewallCreateV1"
-      parameters:
-      - name: "parent_id"
-        in: "path"
-        description: "The cdn id that contains the firewall to be fetched."
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Created CDN firewall"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-      responses:
-        201:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-
-  /v1/cdns/{parent_id}/v1/firewalls/{id}:
-    get:
-      summary: "Get cdn firewall by id"
-      description: ""
-      operationId: "ContentDeliveryNetworkFirewallGetV1"
-      parameters:
-      - name: "parent_id"
-        in: "path"
-        description: "The cdn id that contains the firewall to be fetched."
-        required: true
-        type: "string"
-      - name: "id"
-        in: "path"
-        description: "The cdn firewall id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-
-definitions:
-  ContentDeliveryNetworkFirewallV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
+const cdnSwaggerYAMLTemplate = `definitions: 
+  ContentDeliveryNetworkFirewallV1: 
+    properties: 
+      id: 
         readOnly: true
-      label:
-        type: "string"
-  ContentDeliveryNetworkV1:
-    type: "object"
-    required:
+        type: string
+      label: 
+        type: string
+    type: object
+  ContentDeliveryNetworkV1: 
+    properties: 
+      id: 
+        readOnly: true
+        type: string
+      label: 
+        type: string
+    required: 
       - label
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"`
+    type: object
+host: %s
+paths: 
+  /v1/cdns: 
+    post: 
+      operationId: ContentDeliveryNetworkCreateV1
+      parameters: 
+        - 
+          description: "Created CDN"
+          in: body
+          name: body
+          required: true
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses: 
+        201: 
+          description: "successful operation"
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      summary: "Create cdn"
+      x-terraform-resource-name: cdn
+  ? "/v1/cdns/{id}"
+  : 
+    delete: 
+      operationId: ContentDeliveryNetworkDeleteV1
+      parameters: 
+        - 
+          description: "The cdn that needs to be deleted"
+          in: path
+          name: id
+          required: true
+          type: string
+      responses: 
+        204: 
+          description: "successful operation, no content is returned"
+      summary: "Delete cdn"
+    get: 
+      description: ""
+      operationId: ContentDeliveryNetworkGetV1
+      parameters: 
+        - 
+          description: "The cdn id that needs to be fetched."
+          in: path
+          name: id
+          required: true
+          type: string
+      responses: 
+        200: 
+          description: "successful operation"
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      summary: "Get cdn by id"
+    put: 
+      operationId: ContentDeliveryNetworkUpdateV1
+      parameters: 
+        - 
+          description: "cdn that needs to be updated"
+          in: path
+          name: id
+          required: true
+          type: string
+        - 
+          description: "Updated cdn object"
+          in: body
+          name: body
+          required: true
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses: 
+        200: 
+          description: "successful operation"
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      summary: "Updated cdn"
+  ? "/v1/cdns/{parent_id}/v1/firewalls"
+  : 
+    post: 
+      operationId: ContentDeliveryNetworkFirewallCreateV1
+      parameters: 
+        - 
+          description: "The cdn id that contains the firewall to be fetched."
+          in: path
+          name: parent_id
+          required: true
+          type: string
+        - 
+          description: "Created CDN firewall"
+          in: body
+          name: body
+          required: true
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses: 
+        201: 
+          description: "successful operation"
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      summary: "Create cdn firewall"
+  ? "/v1/cdns/{parent_id}/v1/firewalls/{id}"
+  : 
+    delete: 
+      operationId: ContentDeliveryNetworkFirewallDeleteV1
+      parameters: 
+        - 
+          description: "The cdn id that contains the firewall to be fetched."
+          in: path
+          name: parent_id
+          required: true
+          type: string
+        - 
+          description: "The cdn firewall id that needs to be fetched."
+          in: path
+          name: id
+          required: true
+          type: string
+      responses: 
+        204: 
+          description: "successful operation, no content is returned"
+      summary: "Delete firewall"
+    get: 
+      description: ""
+      operationId: ContentDeliveryNetworkFirewallGetV1
+      parameters: 
+        - 
+          description: "The cdn id that contains the firewall to be fetched."
+          in: path
+          name: parent_id
+          required: true
+          type: string
+        - 
+          description: "The cdn firewall id that needs to be fetched."
+          in: path
+          name: id
+          required: true
+          type: string
+      responses: 
+        200: 
+          description: "successful operation"
+          schema: 
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      summary: "Get cdn firewall by id"
+schemes: 
+  - http
+swagger: "2.0"`
 
 type fakeServiceSchemaPropertyConfiguration struct {
 }
@@ -202,14 +223,46 @@ func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
 }
 
 func TestAccCDN_Subresource(t *testing.T) {
-	//apiServerBehaviors := map[string]http.HandlerFunc{}
+	apiServerBehaviors := map[string]http.HandlerFunc{}
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("apiServer request>>>>", r.URL, r.Method)
-		//	apiServerBehaviors[r.Method](w, r)
+		apiServerBehaviors[r.Method](w, r)
 	}))
 
 	apiHost := apiServer.URL[7:]
 	fmt.Println("apiHost>>>>", apiHost)
+
+	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(">>> POST")
+		assert.Equal(t, "/v1/cdns/42/v1/firewalls", r.RequestURI)
+		bs, e := ioutil.ReadAll(r.Body)
+		require.NoError(t, e)
+		fmt.Println("POST request body >>>", string(bs))
+		apiResponse := `{"id":1337,"label":"FW #1337"}`
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(apiResponse))
+	}
+
+	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(">>> GET")
+		assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", r.RequestURI)
+		bs, e := ioutil.ReadAll(r.Body)
+		require.NoError(t, e)
+		fmt.Println("GET request body >>>", string(bs))
+		apiResponse := `{"id":1337,"label":"FW #1337"}`
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(apiResponse))
+	}
+
+	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(">>> DELETE")
+		assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", r.RequestURI)
+		bs, e := ioutil.ReadAll(r.Body)
+		require.NoError(t, e)
+		fmt.Println("DELETE request body >>>", string(bs))
+		w.WriteHeader(http.StatusNoContent)
+		//w.Write([]byte(apiResponse))
+	}
 
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		swaggerReturned := fmt.Sprintf(cdnSwaggerYAMLTemplate, apiHost)
@@ -226,7 +279,8 @@ func TestAccCDN_Subresource(t *testing.T) {
 		//}
 		`# URI /v1/cdns/{parent_id}/v1/firewalls/
 resource "openapi_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
-   cdns_v1_id = "{openapi_cdn_v1.my_cdn.id}"
+   cdns_v1_id = "42"
+   label = "FW #1337"q
 }`
 
 	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
@@ -246,19 +300,20 @@ resource "openapi_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
 	var testAccProviders = map[string]terraform.ResourceProvider{"openapi": provider}
 
 	resource.Test(t, resource.TestCase{
-		IsUnitTest:   true,
-		PreCheck:     nil,
-		Providers:    testAccProviders,
-		CheckDestroy: nil,
+		IsUnitTest:                true,
+		PreCheck:                  nil,
+		Providers:                 testAccProviders,
+		CheckDestroy:              nil,
+		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,
 				Check: resource.ComposeTestCheckFunc(
 					//testAccCheckResourceExistCDN(),
+					//resource.TestCheckResourceAttr(
+					//	"openapi_cdn_v1.my_cdn", "label", "cdn label"),
 					resource.TestCheckResourceAttr(
-						"test_cdn_v1.my_cdn", "label", "cdn label"),
-					resource.TestCheckResourceAttr(
-						"test_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "cdns_v1_id", "???"),
+						"openapi_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "cdns_v1_id", "42"),
 				),
 			},
 		},
