@@ -274,22 +274,32 @@ func TestBuildResourceName(t *testing.T) {
 		})
 	}
 
-
-	//Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
-	//	r := SpecV2Resource{
-	//		Path: "/v1/cdns/{id}/v1/firewalls",
-	//	}
-	//
-	//	Convey("When buildResourceName is called", func() {
-	//		resourceName, err := r.buildResourceName()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the resource name should be the expected one", func() {
-	//			So(resourceName, ShouldEqual, "cdns_v1_firewalls_v1")
-	//		})
-	//	})
-	//})
+	Convey("Given a SpecV2Resource with a path and a preferred terraform resource name", t, func() {
+		expectedResourceName := "user"
+		r := SpecV2Resource{
+			Path: "/users",
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: expectedResourceName,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When buildResourceName is called", func() {
+			resourceName, err := r.buildResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resource name should be the expected one", func() {
+				So(resourceName, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
 }
 
 // TODO: Add coverage for sub-resource use case. The acceptance criteria will be that given a configured SpecV2Resource that is
