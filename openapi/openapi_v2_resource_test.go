@@ -2764,3 +2764,21 @@ func TestGetResourceOverrideHost(t *testing.T) {
 		})
 	})
 }
+
+func Test_getSchemaDefinition(t *testing.T) {
+	Convey("Given a blank SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When getSchemaDefinition is called with a nil arg", func() {
+			Convey("Then it panics", func() {
+				So(func() { r.getSchemaDefinition(nil) }, ShouldPanic)
+			})
+		})
+		Convey("When getSchemaDefinition is called with a blank schema", func() {
+			d, e := r.getSchemaDefinition(&spec.Schema{})
+			Convey("Then the schema definition should not be nil, and the error should be", func() {
+				So(d, ShouldNotBeNil)
+				So(e, ShouldBeNil)
+			})
+		})
+	})
+}
