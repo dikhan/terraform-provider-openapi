@@ -246,6 +246,7 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
+// TODO: create unit tests for isSubResource
 func (o *SpecV2Resource) isSubResource() bool {
 	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
 	return pathParameterRegex.MatchString(o.Path)
@@ -277,6 +278,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	return schemaDefinition, nil
 }
 
+// TODO: create unit tests for this method
 func (o *SpecV2Resource) propertyParentNameFromResourcePath() (string, error) {
 	switch {
 	case o.Path == "":
