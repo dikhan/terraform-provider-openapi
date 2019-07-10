@@ -184,7 +184,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 	if r.openAPIResource.isSubResource() {
 		// TODO: build the appropriate array of strings containing the IDs
 		someParentId := "cdns_v1_id"
-		//r.propertyParentNameFromResourcePath()
+		//r.getParentPropertiesNames()
 		r.openAPIResource.getResourceSchema()
 		return []string{data.Get(someParentId).(string)}, nil //TODO: handle failed type conversion
 	}

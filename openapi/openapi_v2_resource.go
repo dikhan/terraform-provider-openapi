@@ -280,7 +280,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	}
 
 	if o.isSubResource() {
-		parentPropertyNames, err := o.propertyParentNamesFromResourcePath()
+		parentPropertyNames, err := o.getParentPropertiesNames()
 		if err != nil {
 			return nil, err
 		}
@@ -296,7 +296,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) propertyParentNamesFromResourcePath() ([]string, error) {
+func (o *SpecV2Resource) getParentPropertiesNames() ([]string, error) {
 	switch {
 	case o.Path == "":
 		return nil, errors.New("path was empty")

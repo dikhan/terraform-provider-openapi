@@ -373,11 +373,11 @@ func TestGetResourceSchema(t *testing.T) {
 	// TODO: Note: For this first iteration of the subresource support implementation it is not expected that the property names will honor the preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
 }
 
-func Test_propertyParentNameFromResourcePath(t *testing.T) {
+func Test_getParentPropertiesNames(t *testing.T) {
 	Convey("Given a SpecV2Resource with no Path", t, func() {
 		r := &SpecV2Resource{}
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then array returned should be empty", func() {
 				So(p, ShouldBeEmpty)
 			})
@@ -389,8 +389,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 
 	Convey("Given a SpecV2Resource with some Path that is not a subresource", t, func() {
 		r := &SpecV2Resource{Path: "/foo"}
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then array returned should be empty", func() {
 				So(p, ShouldBeEmpty)
 			})
@@ -405,8 +405,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 			Path: "/v2/cdns/{id}/v1/firewalls",
 		}
 
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -421,8 +421,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 		r := &SpecV2Resource{
 			Path: "/cdns/{id}/v1/firewalls",
 		}
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -437,8 +437,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 		r := &SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls/{id}/rules",
 		}
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -454,8 +454,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 		r := &SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/rules",
 		}
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -471,8 +471,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 		r := &SpecV2Resource{
 			Path: "/cdns/{id}/v1/firewalls/{id}/rules",
 		}
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -488,8 +488,8 @@ func Test_propertyParentNameFromResourcePath(t *testing.T) {
 		r := &SpecV2Resource{
 			Path: "/cdns/{id}/firewalls/{id}/rules",
 		}
-		Convey("When the method propertyParentNamesFromResourcePath is called", func() {
-			p, err := r.propertyParentNamesFromResourcePath()
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p, err := r.getParentPropertiesNames()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
