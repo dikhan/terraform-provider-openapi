@@ -180,7 +180,7 @@ func (o *SpecV2Resource) buildParentResourceName() ([]string, string, error) {
 	if len(parentMatches) > 0 {
 		for _, match := range parentMatches {
 			//fullMatch := match[0]
-			//parentPath := match[1] // TODO: this path may not be completed, as service providers may attach the base path to the resource path - so this should not be relied on to look up paths in the specAnalyser.d.Spec().Paths.Paths
+			//parentPath := match[1]
 			parentVersion := match[2]
 			parentResourceName := match[3]
 			if parentVersion != "" {
