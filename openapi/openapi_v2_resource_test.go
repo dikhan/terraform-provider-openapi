@@ -88,7 +88,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		})
 	})
 
-	Convey("Given a root path that is versioned such as '/v1/something/users' and a root path item item", t, func() {
+	Convey("Given a root path such as '/v1/something/users' and a root path item item", t, func() {
 		path := "/v1/something/users"
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
@@ -101,8 +101,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the value returned should still be 'users_v1'", func() {
-				So(r.getResourceName(), ShouldEqual, "users_v1")
+			Convey("And the value returned should still be 'users'", func() {
+				So(r.getResourceName(), ShouldEqual, "users")
 			})
 		})
 	})
@@ -120,8 +120,8 @@ func TestNewSpecV2Resource(t *testing.T) {
 			Convey("The the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the value returned should still be 'proxy_v1'", func() {
-				So(r.getResourceName(), ShouldEqual, "proxy_v1")
+			Convey("And the value returned should still be 'nodes_v1_proxy'", func() {
+				So(r.getResourceName(), ShouldEqual, "nodes_v1_proxy")
 			})
 		})
 	})
@@ -202,44 +202,59 @@ func TestBuildResourceName(t *testing.T) {
 	///v1/cdns/{id}/firewalls
 	///cdns/{id}
 
-	testCases := []struct{
+	testCases := []struct {
 		path                 string
 		expectedResourceName string
 		expectedError        error
 	}{
-		//{
-		//	path:                 "/cdns",
-		//	expectedResourceName: "cdns",
-		//	expectedError:        nil,
-		//},
-		//{
-		//	path:                 "/v1/cdns",
-		//	expectedResourceName: "cdns_v1",
-		//	expectedError:        nil,
-		//},
-		//{
-		//	path:                 "/v1/cdns/",
-		//	expectedResourceName: "cdns_v1",
-		//	expectedError:        nil,
-		//},
+		{
+			path:                 "/cdns",
+			expectedResourceName: "cdns",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/firewalls",
+			expectedResourceName: "cdns_firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/firewalls",
+			expectedResourceName: "cdns_v1_firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/v1/firewalls",
+			expectedResourceName: "cdns_firewalls_v1",
+			expectedError:        nil,
+		},
 		{
 			path:                 "/v1/cdns/{id}/v2/firewalls",
 			expectedResourceName: "cdns_v1_firewalls_v2",
 			expectedError:        nil,
 		},
-		//{
-		//	path:                 "/v1/cdns/{id}/firewalls",
-		//	expectedResourceName: "firewalls",
-		//	expectedError:        nil,
-		//},
-		//{
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
+			expectedError:        nil,
+		},
+		//{ // TODO: make this test pass: This is a negative case case the path does not index on firewalls_ids, which make it impossible to know under what firewall the rules exists
 		//	path:                 "/v1/cdns/{id}/v2/firewalls/v3/rules",
 		//	expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
-		//	expectedError:        nil,
+		//	expectedError:        errors.New("some error that says the subresource path is not well formatted"),
 		//},
 	}
 
-	for _, tc := range testCases{
+	for _, tc := range testCases {
 		Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
 			r := SpecV2Resource{
 				Path: tc.path,

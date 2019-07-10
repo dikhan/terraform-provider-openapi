@@ -3,7 +3,6 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"log"
 	"regexp"
 	"strings"
@@ -15,9 +14,40 @@ import (
 
 const pathParameterRegex = "/({[\\w]*})*/"
 
+// resourceVersionRegexTemplate is used to identify the version attached to the given resource. The parameter in the
+// template will be replaced with the actual resource name so if there is a match the version grabbed is assured to belong
+// to the resource in question and not any other version showing in the path before the resource name
+const resourceVersionRegexTemplate = "/(v[\\d]*)/%s"
+
 const resourceVersionRegex = "(/v[0-9]*/)"
 const resourceNameRegex = "((/\\w*[/]?))+$"
-const subResourceParentNameRegex = `(\/v[0-9]*\/\w*\d*\/{\w*\d*})`
+
+// resourceParentNameRegex is the regex used to identify the different parents from a path that is a sub-resource. If used
+// calling FindStringSubmatch, any match will contain the following groups in the corresponding array index:
+// Index 0: This value will represent the full match containing also the path parameter (e,g: /v1/cdns/{id})
+// Index 1: This value will represent the resource path (without the instance path parameter) - e,g: /v1/cdns
+// Index 2: This value will represent version if it exists in the path (e,g: v1)
+// Index 3: This value will represent the resource path name (e,g: cdns)
+//
+// - Example calling FindAllStringSubmatch with '/v1/cdns/{id}/v1/firewalls' path:
+// matches, _ := resourceParentRegex.FindAllStringSubmatch("/v1/cdns/{id}/v1/firewalls", -1)
+// matches[0][0]: Full match /v1/cdns/{id}
+// matches[0][1]: Group 1. /v1/cdns
+// matches[0][2]: Group 2. v1
+// matches[0][3]: Group 3. cdns
+
+// - Example calling FindAllStringSubmatch with '/v1/cdns/{id}/v2/firewalls/{id}/v3/rules' path
+// matches, _ := resourceParentRegex.FindAllStringSubmatch("/v1/cdns/{id}/v2/firewalls/{id}/v3/rules", -1)
+// matches[0][0]: Full match /v1/cdns/{id}
+// matches[0][1]: Group 1. /v1/cdns
+// matches[0][2]: Group 2. v1
+// matches[0][3]: Group 3. cdns
+// matches[1][0]: Full match /v2/firewalls/{id}
+// matches[1][1]: Group 1. /v2/firewalls
+// matches[1][2]: Group 2. v2
+// matches[1][3]: Group 3. firewalls
+const resourceParentNameRegex = `(\/?([v[\d]*]?)\/(\w+))\/{\w*}`
+
 const resourceInstanceRegex = "((?:.*)){.*}"
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
@@ -95,12 +125,13 @@ func (o *SpecV2Resource) getResourceName() string {
 // along with the version (if applicable)
 // the provider name to build the terraform resource name that will be used in the terraform configuration file
 func (o *SpecV2Resource) buildResourceName() (string, error) {
+	resourcePath := o.Path
+
 	nameRegex, err := regexp.Compile(resourceNameRegex)
 	if err != nil {
 		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
 	}
 	var resourceName string
-	resourcePath := o.Path
 	matches := nameRegex.FindStringSubmatch(resourcePath)
 	if len(matches) < 2 {
 		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
@@ -111,33 +142,40 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 		resourceName = preferredName
 	}
 
-	versionRegex, err := regexp.Compile(resourceVersionRegex)
+	versionRegex, err := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
 	if err != nil {
 		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
 	}
 
 	fullResourceName := resourceName
-	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
-	if len(versionMatches) != 0 {
-		v :=versionRegex.FindAllStringSubmatch(resourcePath, -1)
-		version := strings.Replace(v[len(v)-1][1], "/", "", -1)
+	v := versionRegex.FindAllStringSubmatch(resourcePath, -1)
+	if len(v) > 0 {
+		version := v[0][1]
 		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
-		//return fullResourceName, nil
 	}
 
-	subParentRegex, err := regexp.Compile(subResourceParentNameRegex)
+	resourceParentRegex, err := regexp.Compile(resourceParentNameRegex)
 	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the subParentRegex regex '%s': %s", subParentRegex, err)
+		return "", fmt.Errorf("an error occurred while compiling the resourceParentRegex regex '%s': %s", resourceParentRegex, err)
 	}
 
+	parentMatches := resourceParentRegex.FindAllStringSubmatch(resourcePath, -1)
+	if len(parentMatches) > 0 {
+		fullParentResourceName := ""
+		for _, match := range parentMatches {
+			//fullMatch := match[0]
+			//parentPath := match[1] // TODO: this path may not be completed, as service providers may attach the base path to the resource path - so this should not be relied on to look up paths in the specAnalyser.d.Spec().Paths.Paths
+			parentVersion := match[2]
+			parentName := match[3]
 
-	subParentResourceMatches := subParentRegex.FindStringSubmatch(resourcePath)
-	if len(subParentResourceMatches) > 0 {
-		sp := subParentRegex.FindAllStringSubmatch(resourcePath, -1)
-		spew.Dump(">>> ", sp)
-		parentStuff := strings.Split(sp[0][1], "/")
-		spew.Dump("parentStuff: ", parentStuff)
-		//fullResourceName = parent + fullResourceName
+			parentResourceName := parentName
+			if parentVersion != "" {
+				parentResourceName = fmt.Sprintf("%s_%s", parentName, parentVersion)
+			}
+
+			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
+		}
+		fullResourceName = fullParentResourceName + fullResourceName
 	}
 	return fullResourceName, nil
 }
