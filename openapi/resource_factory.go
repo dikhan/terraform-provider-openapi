@@ -176,7 +176,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 // TODO: different parent IDs that need to be resovled into the resource path that is parametrised, being the first the one at the very left of the URI.
 // TODO: Add corresponding unit tests too
 func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, error) {
-	return []string{"42"}, nil
+	return []string{"42"}, nil //TODO: get rid of this
 
 	if r.openAPIResource.isSubResource() {
 		// TODO: build the appropriate array of strings containing the IDs
