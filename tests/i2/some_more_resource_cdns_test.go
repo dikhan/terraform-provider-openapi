@@ -234,7 +234,6 @@ func TestAccCDN_Subresource(t *testing.T) {
 	fmt.Println("apiHost>>>>", apiHost)
 
 	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(">>> POST")
 		assert.Equal(t, "/v1/cdns/42/v1/firewalls", r.RequestURI)
 		bs, e := ioutil.ReadAll(r.Body)
 		require.NoError(t, e)
