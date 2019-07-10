@@ -337,8 +337,8 @@ func TestAccCDN_Subresource(t *testing.T) {
 				Config: tfFileContents,
 				Check: resource.ComposeTestCheckFunc(
 					//testAccCheckResourceExistCDN(),
-					//resource.TestCheckResourceAttr(
-					//	"openapi_cdn_v1.my_cdn", "label", "cdn label"),
+					resource.TestCheckResourceAttr(
+						"openapi_cdn_v1.my_cdn", "label", "CDN #42"),
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "cdns_v1_id", "42"),
 				),
