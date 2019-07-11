@@ -270,20 +270,20 @@ func TestUpdate(t *testing.T) {
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
 			})
 		})
-		Convey("When update is called with resource data and a client configured to return an error when delete is called", func() {
-			deleteError := fmt.Errorf("some error when deleting")
+		Convey("When update is called with resource data and a client configured to return an error when update is called", func() {
+			updateError := fmt.Errorf("some error when deleting")
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name: idProperty.Default,
 				},
-				error: deleteError,
+				error: updateError,
 			}
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("Then the error returned should be the error returned by the client delete operation", func() {
-				So(err, ShouldEqual, deleteError)
+			Convey("Then the error returned should be the error returned by the client update operation", func() {
+				So(err, ShouldEqual, updateError)
 			})
 		})
 
@@ -302,17 +302,17 @@ func TestUpdate(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory with no delete operation configured", t, func() {
+	Convey("Given a resource factory with no update operation configured", t, func() {
 		specResource := newSpecStubResource("resourceName", "/v1/resource", false, nil)
 		r := newResourceFactory(specResource)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
-			err := r.delete(nil, client)
+			err := r.update(nil, client)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE operation, check the swagger file exposed on '/v1/resource'")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support PUT operation, check the swagger file exposed on '/v1/resource'")
 			})
 		})
 	})
