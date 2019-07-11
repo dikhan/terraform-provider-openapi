@@ -1060,8 +1060,6 @@ func TestProviderClientPut(t *testing.T) {
 
 func TestProviderClientGet(t *testing.T) {
 
-	// TODO: Add test coverage for subresource
-
 	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
 		httpClient := &http_goclient.HttpClientStub{
 			Response: &http.Response{
@@ -1118,6 +1116,79 @@ func TestProviderClientGet(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
+		httpClient := &http_goclient.HttpClientStub{}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+			},
+			httpClient:            httpClient,
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{
+				authContext: &authContext{
+					headers: map[string]string{},
+				},
+			},
+		}
+		Convey("When providerClient GET  method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+			specv2Resource := &SpecV2Resource{
+				Path: "/v1/resource/{id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{},
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{
+									ResponsesProps: spec.ResponsesProps{
+										StatusCodeResponses: map[int]spec.Response{
+											201: spec.Response{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				InstancePathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Get: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{},
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{
+									ResponsesProps: spec.ResponsesProps{
+										StatusCodeResponses: map[int]spec.Response{
+											200: spec.Response{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			responsePayload := map[string]interface{}{}
+			parentIDs := []string{"parentID"}
+			expectedID := "1234"
+			_, err := providerClient.Get(specv2Resource, expectedID, responsePayload, parentIDs...)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then client should have received the right URL", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+			})
+			Convey("And then client should have received the right User-Agent header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, userAgent)
+				So(httpClient.Headers[userAgent], ShouldContainSubstring, "OpenAPI Terraform Provider")
+			})
+		})
+	})
+
 }
 
 func TestProviderClientDelete(t *testing.T) {
