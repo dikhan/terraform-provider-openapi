@@ -40,7 +40,7 @@ func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload
 	return c.generateStubResponse(http.StatusOK), nil
 }
 
-func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}

@@ -159,7 +159,7 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, parentIDs ...string) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
-	resp, err := providerClient.Get2(r.openAPIResource, id, &responsePayload, parentIDs...)
+	resp, err := providerClient.Get(r.openAPIResource, id, &responsePayload, parentIDs...)
 	if err != nil {
 		return nil, err
 	}

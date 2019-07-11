@@ -25,10 +25,9 @@ const (
 type ClientOpenAPI interface {
 	Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
-	Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error)
+	Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Delete(resource SpecResource, id string) (*http.Response, error)
-	Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)                           //TODO: this must take the place of `Delete`
-	Get2(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) //TODO: this must take the place of `Get`
+	Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) //TODO: this must take the place of `Delete`
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
@@ -64,19 +63,7 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 	return o.performRequest(httpPut, resourceURL, operation, requestPayload, responsePayload)
 }
 
-func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
-	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	parentIDs := []string{}
-	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
-	if err != nil {
-		return nil, err
-	}
-	operation := resource.getResourceOperations().Get
-	return o.performRequest(httpGet, resourceURL, operation, nil, responsePayload)
-}
-
-// Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
-func (o *ProviderClient) Get2(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
