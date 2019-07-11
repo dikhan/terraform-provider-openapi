@@ -920,6 +920,76 @@ func TestProviderClientPost(t *testing.T) {
 		})
 
 	})
+
+	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
+		httpClient := &http_goclient.HttpClientStub{}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+			},
+			httpClient:            httpClient,
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{
+				authContext: &authContext{
+					headers: map[string]string{},
+				},
+			},
+		}
+		Convey("When providerClient POST method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+			specv2Resource := &SpecV2Resource{
+				Path: "/v1/resource/{id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{},
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{
+									ResponsesProps: spec.ResponsesProps{
+										StatusCodeResponses: map[int]spec.Response{
+											201: spec.Response{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			expectedReqPayloadProperty1 := "property1"
+			expectedReqPayloadProperty1Value := "someValue"
+			expectedReqPayloadProperty2 := "property2"
+			expectedReqPayloadProperty2Value := 2
+			requestPayload := map[string]interface{}{
+				expectedReqPayloadProperty1: expectedReqPayloadProperty1Value,
+				expectedReqPayloadProperty2: expectedReqPayloadProperty2Value,
+			}
+			responsePayload := map[string]interface{}{}
+
+			_, err := providerClient.Post(specv2Resource, requestPayload, responsePayload, "parentID")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then client should have received the right URL", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/parentID/subresource", expectedProtocol, expectedHost, expectedBasePath))
+			})
+			Convey("And then client should have received the right User-Agent header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, userAgent)
+				So(httpClient.Headers[userAgent], ShouldContainSubstring, "OpenAPI Terraform Provider")
+			})
+			Convey("And then client should have received the right request payload", func() {
+				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty1)
+				So(httpClient.In.(map[string]interface{})[expectedReqPayloadProperty1], ShouldEqual, expectedReqPayloadProperty1Value)
+				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty2)
+				So(httpClient.In.(map[string]interface{})[expectedReqPayloadProperty2], ShouldEqual, expectedReqPayloadProperty2Value)
+			})
+		})
+
+	})
 }
 
 func TestProviderClientPut(t *testing.T) {
