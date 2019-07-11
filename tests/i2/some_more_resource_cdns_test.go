@@ -112,7 +112,9 @@ paths:
         204:
           description: "successful operation, no content is returned"
 
+  ######################
   ## CDN sub-resource
+  ######################
 
   /v1/cdns/{parent_id}/v1/firewalls:
     post:
@@ -227,7 +229,7 @@ func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
 	return nil
 }
 
-func TestAccCDN_Subresource(t *testing.T) {
+func TestAccCDN_CreateSubresource(t *testing.T) {
 	apiServerBehaviors := map[string]http.HandlerFunc{}
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("apiServer request>>>>", r.URL, r.Method)
