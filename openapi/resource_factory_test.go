@@ -3,6 +3,7 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/go-openapi/spec"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -1808,7 +1809,7 @@ func TestSetResourceDataProperty(t *testing.T) {
 		})
 		Convey("When setResourceDataProperty is called with a schema definition property name does NOT exist", func() {
 			err := r.setResourceDataProperty("nonExistingKey", "", resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And then expectedValue should equal", func() {
@@ -1843,8 +1844,10 @@ func Test_getParentIDs(t *testing.T) {
 		Convey("When getParentIDs is called", func() {
 			ss, e := rf.getParentIDs(nil)
 			Convey("Then an error is raised", func() {
-				So(ss, ShouldBeEmpty)
 				So(e.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+			})
+			Convey("And the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
 			})
 		})
 	})
@@ -1852,30 +1855,56 @@ func Test_getParentIDs(t *testing.T) {
 	Convey("Given a resourceFactory with a pointer to a blank SpecV2Resource", t, func() {
 		rf := resourceFactory{openAPIResource: &SpecV2Resource{}}
 		Convey("When getParentIDs is called with a nil arg", func() {
-			ss, e := rf.getParentIDs(nil)
-			Convey("Then an error is not raised and the slice of string returned is empty", func() {
+			ss, err := rf.getParentIDs(nil)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the slice of string returned is empty", func() {
 				So(ss, ShouldBeEmpty)
-				So(e, ShouldBeNil)
 			})
 		})
 		Convey("When getParentIDs is called with an empty ResourceData", func() {
-			ss, e := rf.getParentIDs(&schema.ResourceData{})
-			Convey("Then an error is not raised and the slice of string returned is empty", func() {
+			ss, err := rf.getParentIDs(&schema.ResourceData{})
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the slice of string returned is empty", func() {
 				So(ss, ShouldBeEmpty)
-				So(e, ShouldBeNil)
 			})
 		})
 	})
 
-	//TODO: make this run with cdns_v2_id instead of cdns_v1_id
 	Convey("Given a resourceFactory with a some schema", t, func() {
-		p := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "updatedValue")
-		rf, resourceData := testCreateResourceFactory(t, p)
+		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1", "", true, false, "parentPropertyID")
+
+		// Pretending the data has already been populated with the parent property
+		testSchema := newTestSchema(someFirewallProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		rf := newResourceFactory(&SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewall",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"some_string_prop"},
+					Properties: map[string]spec.Schema{
+						"some_string_prop": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Required: []string{},
+							},
+						},
+					},
+				},
+			},
+		})
+
 		Convey("When getParentIDs is called with non-empty ResourceData", func() {
-			ss, e := rf.getParentIDs(resourceData)
-			Convey("Then an error is not raised and the slice of string returned is empty", func() {
-				So(ss[0], ShouldEqual, "updatedValue")
-				So(e, ShouldBeNil)
+			parentIDs, err := rf.getParentIDs(resourceData)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the parent IDs returned should be populated as expected", func() {
+				So(parentIDs[0], ShouldEqual, "parentPropertyID")
 			})
 		})
 	})

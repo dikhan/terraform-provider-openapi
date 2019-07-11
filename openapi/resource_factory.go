@@ -172,28 +172,25 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 	return responsePayload, nil
 }
 
-// TODO: This method is in charge of getting the corresponding resource parent IDs from the terraform state file. For normal top level resources the
-// TODO: array returned will be empty AND for subresources it will contain an array of IDs with the
-// TODO: different parent IDs that need to be resovled into the resource path that is parametrised, being the first the one at the very left of the URI.
-// TODO: Add corresponding unit tests too
 func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, error) {
 	if r.openAPIResource == nil {
 		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
 	}
-
-	isSubResource, err := r.openAPIResource.isSubResource()
+	isSubResource, parentResourceNames, _, err := r.openAPIResource.isSubResource()
 	if err != nil {
 		return nil, err
 	}
-
+	parentIDs := []string{}
 	if isSubResource {
-		// TODO: build the appropriate array of strings containing the IDs
-		someParentId := "cdns_v1_id"
-		//r.getParentPropertiesNames()
-		r.openAPIResource.getResourceSchema()
-		return []string{data.Get(someParentId).(string)}, nil //TODO: handle failed type conversion
+		for _, parentResourceName := range parentResourceNames {
+			parentResourceID := data.Get(parentResourceName)
+			if parentResourceID == nil {
+				return nil, fmt.Errorf("could not find ID value in the state file for subresource parent property '%s'", parentResourceName)
+			}
+			parentIDs = append(parentIDs, parentResourceID.(string))
+		}
+		return parentIDs, nil
 	}
-
 	return []string{}, nil
 }
 
