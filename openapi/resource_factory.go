@@ -176,12 +176,15 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 	if r.openAPIResource == nil {
 		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
 	}
-	isSubResource, parentResourceNames, _, err := r.openAPIResource.isSubResource()
-	if err != nil {
-		return nil, err
-	}
-	parentIDs := []string{}
+
+	isSubResource, _, _, _ := r.openAPIResource.isSubResource()
 	if isSubResource {
+		parentResourceNames, err := r.openAPIResource.getParentPropertiesNames()
+		if err != nil {
+			return nil, err
+		}
+
+		parentIDs := []string{}
 		for _, parentResourceName := range parentResourceNames {
 			parentResourceID := data.Get(parentResourceName)
 			if parentResourceID == nil {
@@ -191,6 +194,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 		}
 		return parentIDs, nil
 	}
+
 	return []string{}, nil
 }
 

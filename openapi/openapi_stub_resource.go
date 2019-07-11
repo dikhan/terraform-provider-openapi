@@ -62,3 +62,7 @@ func (s *specStubResource) getHost() (string, error) {
 func (s *specStubResource) isSubResource() (bool, []string, string, error) {
 	return true, []string{}, "", nil //TODO: get rid of hard-coding
 }
+
+func (s *specStubResource) getParentPropertiesNames() ([]string, error) {
+	return []string{}, nil
+}
