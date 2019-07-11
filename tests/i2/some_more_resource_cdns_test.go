@@ -3,12 +3,11 @@ package i2
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
-	"io/ioutil"
+	"github.com/hashicorp/terraform/helper/schema"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -29,7 +28,7 @@ const resourceCDNFirewallName = "cdns_v1_firewalls_v1"
 
 var openAPIResourceNameCDNFirewall = fmt.Sprintf("%s_%s", providerName, resourceCDNFirewallName)
 var openAPIResourceInstanceNameCDNFirewall = "my_cdn_firewall_v1"
-var openAPIResourceStateCDNFirewall = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDNFirewall)
+var openAPIResourceStateCDNFirewall = fmt.Sprintf("%s.%s", openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall)
 
 var cdn api.ContentDeliveryNetworkV1
 var testCreateConfigCDN string
@@ -229,104 +228,89 @@ func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
 	return nil
 }
 
-func TestAccCDN_CreateSubresource(t *testing.T) {
-	apiServerBehaviors := map[string]http.HandlerFunc{}
+const expectedCDNID = "42"
+const expectedCDNFirewallID = "1337"
+
+var expectedCDNLabel = fmt.Sprintf("CDN #%s", expectedCDNID)
+var expectedCDNFirewallLabel = fmt.Sprintf("FW #%s", expectedCDNFirewallID)
+
+func initAPI(t *testing.T, swaggerYAMLTemplate string) string {
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("apiServer request>>>>", r.URL, r.Method)
-		apiServerBehaviors[r.Method](w, r)
+		handleRequest(t, w, r)
 	}))
-
 	apiHost := apiServer.URL[7:]
-	fmt.Println("apiHost>>>>", apiHost)
-
-	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
-		switch r.RequestURI {
-		case "/v1/cdns/42/v1/firewalls":
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			fmt.Println("POST request body >>>", string(bs))
-			apiResponse := `{"id":1337,"label":"FW #1337"}`
-			w.WriteHeader(http.StatusCreated)
-			w.Write([]byte(apiResponse))
-		case "/v1/cdns":
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			fmt.Println("GET request body >>>", string(bs))
-			apiResponse := `{"id":42,"label":"CDN #42"}`
-			w.WriteHeader(http.StatusCreated)
-			w.Write([]byte(apiResponse))
-		default:
-			assert.Fail(t, "rx unexpected POST to "+r.RequestURI)
-		}
-	}
-
-	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
-		switch r.RequestURI {
-		case "/v1/cdns/42/v1/firewalls/1337":
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			fmt.Println("GET request body >>>", string(bs))
-			apiResponse := `{"id":1337,"label":"FW #1337"}`
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(apiResponse))
-		case "/v1/cdns/42":
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			fmt.Println("GET request body >>>", string(bs))
-			apiResponse := `{"id":42,"label":"CDN #42"}`
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(apiResponse))
-		default:
-			assert.Fail(t, "rx unexpected GET to "+r.RequestURI)
-		}
-	}
-
-	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
-		switch r.RequestURI {
-		case "/v1/cdns/42/v1/firewalls/1337":
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			fmt.Println("DELETE request body >>>", string(bs))
-			w.WriteHeader(http.StatusNoContent)
-		case "/v1/cdns/42":
-			bs, e := ioutil.ReadAll(r.Body)
-			require.NoError(t, e)
-			fmt.Println("DELETE request body >>>", string(bs))
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			assert.Fail(t, "rx unexpected DELETE to "+r.RequestURI)
-		}
-	}
-
+	fmt.Println("apiServer URL>>>>", apiHost)
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		swaggerReturned := fmt.Sprintf(cdnSwaggerYAMLTemplate, apiHost)
+		swaggerReturned := fmt.Sprintf(swaggerYAMLTemplate, apiHost)
 		fmt.Println("swaggerReturned>>>>", swaggerReturned)
 		w.Write([]byte(swaggerReturned))
 	}))
-
 	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
+	return swaggerServer.URL
+}
 
-	expectedCDNLabel := "CDN #42"
-	expectedFirewallLabel := "FW #1337"
+func handleRequest(t *testing.T, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("apiServer request>>>>", r.URL, r.Method)
+	var cdnEndpoint = regexp.MustCompile(`^/v1/cdns`)
+	var firewallEndpoint = regexp.MustCompile(`^/v1/cdns/[\d]*/v1/firewalls`)
+	switch {
+	case firewallEndpoint.MatchString(r.RequestURI):
+		handleCDNFirewallRequest(t)[r.Method](w, r)
+	case cdnEndpoint.MatchString(r.RequestURI):
+		handleCDNRequest(t)[r.Method](w, r)
+	}
+}
 
-	tfFileContents := createTerraformFile(expectedCDNLabel, expectedFirewallLabel)
+func handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
+	apiServerBehaviors := map[string]http.HandlerFunc{}
+	expectedRequestInstanceURI := fmt.Sprintf("/v1/cdns/%s", expectedCDNID)
+	responseBody := fmt.Sprintf(`{"id":%s,"label":"%s"}`, expectedCDNID, expectedCDNLabel)
+	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, "/v1/cdns", r)
+		apiPostResponse(t, responseBody, w, r)
+	}
+	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+		apiGetResponse(t, responseBody, w, r)
+	}
+	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+		apiDeleteResponse(t, w, r)
+	}
+	return apiServerBehaviors
+}
 
+func handleCDNFirewallRequest(t *testing.T) map[string]http.HandlerFunc {
+	apiServerBehaviors := map[string]http.HandlerFunc{}
+	expectedRequestInstanceURI := fmt.Sprintf("/v1/cdns/%s/v1/firewalls/%s", expectedCDNID, expectedCDNFirewallID)
+	responseBody := fmt.Sprintf(`{"id":%s,"label":"%s"}`, expectedCDNFirewallID, expectedCDNFirewallLabel)
+	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, fmt.Sprintf("/v1/cdns/%s/v1/firewalls", expectedCDNID), r)
+		apiPostResponse(t, responseBody, w, r)
+	}
+	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+		apiGetResponse(t, responseBody, w, r)
+	}
+	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+		apiDeleteResponse(t, w, r)
+	}
+	return apiServerBehaviors
+}
+
+func TestAccCDN_CreateSubresource(t *testing.T) {
+	swaggerURL := initAPI(t, cdnSwaggerYAMLTemplate)
+	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
-			return swaggerServer.URL
+			return swaggerURL
 		},
 	})
-
 	assert.NoError(t, e)
+	assertProviderSchema(t, provider)
 
-	assert.Nil(t, provider.ResourcesMap["openapi_cdn_v1"].Schema["id"]) //TODO: this needs to be not nil
-	assert.NotNil(t, provider.ResourcesMap["openapi_cdn_v1"].Schema["label"])
-	assert.Nil(t, provider.ResourcesMap["openapi_cdns_v1_firewalls_v1"].Schema["id"]) //TODO: this needs to be not nil
-	assert.NotNil(t, provider.ResourcesMap["openapi_cdns_v1_firewalls_v1"].Schema["label"])
-	assert.Nil(t, provider.ResourcesMap["openapi_cdns_v1_firewalls_v1"].Schema["cdn_v1_id"]) //TODO: this needs to be not nil
-
-	var testAccProviders = map[string]terraform.ResourceProvider{"openapi": provider}
-
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:                true,
 		PreCheck:                  nil,
@@ -341,13 +325,21 @@ func TestAccCDN_CreateSubresource(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", expectedCDNLabel),
 					resource.TestCheckResourceAttr(
-						"openapi_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "cdns_v1_id", "42"),
+						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
-						"openapi_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "label", expectedFirewallLabel),
+						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
 				),
 			},
 		},
 	})
+}
+
+func assertProviderSchema(t *testing.T, provider *schema.Provider) {
+	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["id"])
+	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["label"])
+	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["id"])
+	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["label"])
+	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["cdn_v1_id"])
 }
 
 func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
