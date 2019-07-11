@@ -2,6 +2,7 @@ package i2
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,21 +17,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//const resourcePathCDN = "/v1/cdns"
-//const resouceSchemaDefinitionNameCDN = "ContentDeliveryNetworkV1"
+const providerName = "openapi"
 
-//const resourceCDNName = "cdn_v1"
-//const resourceCDNName = "cdn_v1"
+const resourceCDNName = "cdn_v1"
 
-//var openAPIResourceNameCDN = fmt.Sprintf("%s_%s", providerName, resourceCDNName)
-//var openAPIResourceInstanceNameCDN = "my_cdn"
-//var openAPIResourceStateCDN = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
+var openAPIResourceNameCDN = fmt.Sprintf("%s_%s", providerName, resourceCDNName)
+var openAPIResourceInstanceNameCDN = "my_cdn"
+var openAPIResourceStateCDN = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
 
-//var cdn api.ContentDeliveryNetworkV1
-//var testCreateConfigCDN string
+const resourceCDNFirewallName = "cdns_v1_firewalls_v1"
+
+var openAPIResourceNameCDNFirewall = fmt.Sprintf("%s_%s", providerName, resourceCDNFirewallName)
+var openAPIResourceInstanceNameCDNFirewall = "my_cdn_firewall_v1"
+var openAPIResourceStateCDNFirewall = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDNFirewall)
+
+var cdn api.ContentDeliveryNetworkV1
+var testCreateConfigCDN string
 
 const cdnSwaggerYAMLTemplate = `swagger: "2.0"
-
 host: %s 
 schemes:
 - "http"
@@ -300,15 +304,10 @@ func TestAccCDN_Subresource(t *testing.T) {
 
 	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
 
-	tfFileContents := `# URI /v1/cdns/
-		resource "openapi_cdn_v1" "my_cdn" {
-		  label = "CDN #42"
-		}
-		# URI /v1/cdns/{parent_id}/v1/firewalls/
-        resource "openapi_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
-           cdns_v1_id = openapi_cdn_v1.my_cdn.id
-           label = "FW #1337"
-        }`
+	expectedCDNLabel := "CDN #42"
+	expectedFirewallLabel := "FW #1337"
+
+	tfFileContents := createTerraformFile(expectedCDNLabel, expectedFirewallLabel)
 
 	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
@@ -338,12 +337,26 @@ func TestAccCDN_Subresource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					//testAccCheckResourceExistCDN(),
 					resource.TestCheckResourceAttr(
-						"openapi_cdn_v1.my_cdn", "label", "CDN #42"),
+						openAPIResourceStateCDN, "label", expectedCDNLabel),
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "cdns_v1_id", "42"),
+					resource.TestCheckResourceAttr(
+						"openapi_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "label", expectedFirewallLabel),
 				),
 			},
 		},
 	})
+}
 
+func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
+	return fmt.Sprintf(`
+		# URI /v1/cdns/
+		resource "%s" "%s" {
+		  label = "%s"
+		}
+		# URI /v1/cdns/{parent_id}/v1/firewalls/
+        resource "%s" "%s" {
+           cdns_v1_id = %s.id
+           label = "%s"
+        }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
 }
