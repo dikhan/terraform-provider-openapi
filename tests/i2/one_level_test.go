@@ -19,33 +19,16 @@ import (
 )
 
 type fakeServiceSchemaPropertyConfiguration struct {
-}
-
-func (fakeServiceSchemaPropertyConfiguration) GetDefaultValue() (string, error) {
-	return "whatever default value", nil
-}
-func (fakeServiceSchemaPropertyConfiguration) ExecuteCommand() error {
-	return nil
+	openapi.ServiceSchemaPropertyConfiguration
 }
 
 type fakeServiceConfiguration struct {
+	openapi.ServiceConfiguration
 	getSwaggerURL func() string
 }
 
 func (c fakeServiceConfiguration) GetSwaggerURL() string {
 	return c.getSwaggerURL()
-}
-func (fakeServiceConfiguration) GetPluginVersion() string {
-	return "whatever plugin version"
-}
-func (fakeServiceConfiguration) IsInsecureSkipVerifyEnabled() bool {
-	return false
-}
-func (fakeServiceConfiguration) GetSchemaPropertyConfiguration(schemaPropertyName string) openapi.ServiceSchemaPropertyConfiguration {
-	return fakeServiceSchemaPropertyConfiguration{}
-}
-func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
-	return nil
 }
 
 func makeAPIServer(apiServerBehaviors map[string]http.HandlerFunc) (*httptest.Server, string) {
@@ -81,7 +64,7 @@ func createProvider(mSW func() *httptest.Server) *schema.Provider {
 	return provider
 }
 
-func TestOneLevel_CDN_Subresource(t *testing.T) {
+func Test_OneLevel_CDN_Existing_CDN_and_Firewall_only_GET_are_sent(t *testing.T) {
 	/*   API SERVER BEHAVIORS */
 	apiServerBehaviors := map[string]http.HandlerFunc{}
 	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
