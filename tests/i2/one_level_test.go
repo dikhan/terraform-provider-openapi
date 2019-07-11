@@ -64,9 +64,32 @@ func createProvider(mSW func() *httptest.Server) *schema.Provider {
 	return provider
 }
 
-func Test_OneLevel_CDN_Existing_CDN_and_Firewall_only_GET_are_sent(t *testing.T) {
+func Test_OneLevel_CDN_Existing_CDN_and_Firewall_only_two_GET_sent(t *testing.T) {
 	/*   API SERVER BEHAVIORS */
+	getMustBeCalledTwice := 0
 	apiServerBehaviors := map[string]http.HandlerFunc{}
+
+	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
+		switch r.RequestURI {
+		case "/v1/cdns/42/v1/firewalls":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("POST request body >>>", string(bs))
+			apiResponse := `{"id":1337,"label":"FW #1337"}`
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(apiResponse))
+		case "/v1/cdns":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("GET request body >>>", string(bs))
+			apiResponse := `{"id":42,"label":"CDN #42"}`
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(apiResponse))
+		default:
+			assert.Fail(t, "rx unexpected POST to "+r.RequestURI)
+		}
+	}
+
 	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.RequestURI {
 		case "/v1/cdns/42/v1/firewalls/1337":
@@ -87,6 +110,24 @@ func Test_OneLevel_CDN_Existing_CDN_and_Firewall_only_GET_are_sent(t *testing.T)
 			assert.Fail(t, "rx unexpected GET to "+r.RequestURI)
 		}
 	}
+
+	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
+		switch r.RequestURI {
+		case "/v1/cdns/42/v1/firewalls/1337":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("DELETE request body >>>", string(bs))
+			w.WriteHeader(http.StatusNoContent)
+		case "/v1/cdns/42":
+			bs, e := ioutil.ReadAll(r.Body)
+			require.NoError(t, e)
+			fmt.Println("DELETE request body >>>", string(bs))
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			assert.Fail(t, "rx unexpected DELETE to "+r.RequestURI)
+		}
+	}
+
 	apiHost, apiHostURL := makeAPIServer(apiServerBehaviors)
 	defer apiHost.Close()
 
@@ -100,6 +141,8 @@ func Test_OneLevel_CDN_Existing_CDN_and_Firewall_only_GET_are_sent(t *testing.T)
 	assert.Nil(t, provider.ResourcesMap["openapi_cdns_v1_firewalls_v1"].Schema["id"]) //TODO: this needs to be not nil
 	assert.NotNil(t, provider.ResourcesMap["openapi_cdns_v1_firewalls_v1"].Schema["label"])
 	assert.Nil(t, provider.ResourcesMap["openapi_cdns_v1_firewalls_v1"].Schema["cdn_v1_id"]) //TODO: this needs to be not nil
+
+	assert.Equal(t, 2, getMustBeCalledTwice)
 
 	/* TF file definition */
 	tfFileContents := `# URI /v1/cdns/
@@ -115,6 +158,7 @@ func Test_OneLevel_CDN_Existing_CDN_and_Firewall_only_GET_are_sent(t *testing.T)
 	/* Assertion on Terraform operations using the given tfFileContent and the Provider above*/
 	var testAccProviders = map[string]terraform.ResourceProvider{"openapi": provider}
 
+	//technically for this test we could skip to verify the TF state
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:                true,
 		PreCheck:                  nil,
@@ -130,8 +174,7 @@ func Test_OneLevel_CDN_Existing_CDN_and_Firewall_only_GET_are_sent(t *testing.T)
 						"openapi_cdn_v1.my_cdn", "label", "CDN #42"),
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1_firewalls_v1.my_cdn_firewall_v1", "cdns_v1_id", "42"),
-				),
-			},
+				)},
 		},
 	})
 

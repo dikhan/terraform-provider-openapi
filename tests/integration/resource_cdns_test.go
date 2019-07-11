@@ -5,10 +5,11 @@ import (
 	"os"
 	"testing"
 
+	"regexp"
+
 	"github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"regexp"
 )
 
 const resourcePathCDN = "/v1/cdns"
