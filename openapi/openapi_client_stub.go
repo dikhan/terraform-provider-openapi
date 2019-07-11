@@ -14,7 +14,7 @@ type clientOpenAPIStub struct {
 	returnHTTPCode  int
 }
 
-func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}

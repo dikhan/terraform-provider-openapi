@@ -103,8 +103,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	// TODO: pass along the list of parentIDs to post method.
-	res, err := providerClient.Post2(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
+	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
 	if err != nil {
 		return err
 	}
