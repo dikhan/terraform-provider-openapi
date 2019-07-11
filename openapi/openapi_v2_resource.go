@@ -258,13 +258,13 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-func (o *SpecV2Resource) isSubResource() bool {
+func (o *SpecV2Resource) isSubResource() (bool, error) {
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
 		return true
 	}
-	return false
+	return false, nil
 }
 
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
@@ -285,7 +285,11 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
 
-	if o.isSubResource() {
+	isSubResource, err := o.isSubResource()
+	if err != nil {
+		return nil, err
+	}
+	if isSubResource {
 		parentPropertyNames, err := o.getParentPropertiesNames()
 		if err != nil {
 			return nil, err
@@ -303,21 +307,30 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 }
 
 func (o *SpecV2Resource) getParentPropertiesNames() ([]string, error) {
-	switch {
-	case o.Path == "":
+
+	if o.Path == "" {
 		return nil, errors.New("path was empty")
-	case o.isSubResource() != true:
-		return nil, errors.New("path did not contain a subresource")
 	}
-	parentNames, _, err := o.buildParentResourceName()
+
+	isSubResource, err := o.isSubResource()
 	if err != nil {
 		return nil, err
 	}
-	parentPropertyNames := []string{}
-	for _, parentName := range parentNames {
-		parentPropertyNames = append(parentPropertyNames, fmt.Sprintf("%s_id", parentName))
+
+	if isSubResource {
+		parentNames, _, err := o.buildParentResourceName()
+		if err != nil {
+			return nil, err
+		}
+		parentPropertyNames := []string{}
+		for _, parentName := range parentNames {
+			parentPropertyNames = append(parentPropertyNames, fmt.Sprintf("%s_id", parentName))
+		}
+		return parentPropertyNames, nil
 	}
-	return parentPropertyNames, nil
+
+	return nil, fmt.Errorf("can not calculate parent properties from a resource that is not a subresource")
+
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {

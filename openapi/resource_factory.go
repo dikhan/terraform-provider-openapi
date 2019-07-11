@@ -181,7 +181,12 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
 	}
 
-	if r.openAPIResource.isSubResource() {
+	isSubResource, err := r.openAPIResource.isSubResource()
+	if err != nil {
+		return nil, err
+	}
+
+	if isSubResource {
 		// TODO: build the appropriate array of strings containing the IDs
 		someParentId := "cdns_v1_id"
 		//r.getParentPropertiesNames()

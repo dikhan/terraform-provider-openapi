@@ -13,7 +13,7 @@ type SpecResource interface {
 	shouldIgnoreResource() bool
 	getResourceOperations() specResourceOperations
 	getTimeouts() (*specTimeouts, error)
-	isSubResource() bool
+	isSubResource() (bool, error)
 }
 
 type specTimeouts struct {

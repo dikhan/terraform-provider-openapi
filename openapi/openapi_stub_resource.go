@@ -59,6 +59,6 @@ func (s *specStubResource) getHost() (string, error) {
 	return s.host, nil
 }
 
-func (s *specStubResource) isSubResource() bool {
-	return true //TODO: get rid of hard-coding
+func (s *specStubResource) isSubResource() (bool, error) {
+	return true, nil //TODO: get rid of hard-coding
 }
