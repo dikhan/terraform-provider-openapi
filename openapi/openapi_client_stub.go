@@ -54,7 +54,7 @@ func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayloa
 	return c.generateStubResponse(http.StatusOK), nil
 }
 
-func (c *clientOpenAPIStub) Delete(resource SpecResource, id string) (*http.Response, error) {
+func (c *clientOpenAPIStub) Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}

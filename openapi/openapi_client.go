@@ -26,8 +26,7 @@ type ClientOpenAPI interface {
 	Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
-	Delete(resource SpecResource, id string) (*http.Response, error)
-	Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) //TODO: this must take the place of `Delete`
+	Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
@@ -70,20 +69,7 @@ func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload i
 }
 
 // Delete performs a DELETE request to the server API based on the resource configuration and the resource instance id passed in
-// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
-func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Response, error) {
-	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	parentIDs := []string{}
-	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
-	if err != nil {
-		return nil, err
-	}
-	operation := resource.getResourceOperations().Delete
-	return o.performRequest(httpDelete, resourceURL, operation, nil, nil)
-}
-
-func (o *ProviderClient) Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
-	//parentIDs := []string{}
+func (o *ProviderClient) Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
