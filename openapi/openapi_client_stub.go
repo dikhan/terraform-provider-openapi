@@ -27,7 +27,7 @@ func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface
 	return c.generateStubResponse(http.StatusCreated), nil
 }
 
-func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}

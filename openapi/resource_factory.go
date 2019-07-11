@@ -200,11 +200,11 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	ids, err := r.getParentIDs(data)
+	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
-	resourcePath, err := r.openAPIResource.getResourcePath(ids)
+	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
 	}
-	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload)
+	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentIDs...)
 	if err != nil {
 		return err
 	}
