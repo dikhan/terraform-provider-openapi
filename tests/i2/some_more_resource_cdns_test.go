@@ -234,6 +234,7 @@ var expectedCDNFirewallLabel = fmt.Sprintf("FW #%s", expectedCDNFirewallID)
 
 type api struct {
 	swaggerURL string
+	apiHost    string
 	// cachePayloads holds the info posted to the different APIs. If a post has been called then the corresponding
 	// payload response will be cached here so subsequent GET requests will return the same response mimicking the
 	// same behaviour expected form a real API
@@ -256,6 +257,7 @@ func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
 	}))
 	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
 	a.swaggerURL = swaggerServer.URL
+	a.apiHost = apiHost
 	return a
 }
 
@@ -355,6 +357,11 @@ func TestAccCDN_CreateSubresource(t *testing.T) {
 	assert.NoError(t, e)
 	assertProviderSchema(t, provider)
 
+	resourceInstancesToCheck := map[string]string{
+		openAPIResourceNameCDNFirewall: fmt.Sprintf("%s/v1/cdns/%s/v1/firewalls", api.apiHost, expectedCDNID),
+		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
+	}
+
 	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:                true,
@@ -366,7 +373,7 @@ func TestAccCDN_CreateSubresource(t *testing.T) {
 			{
 				Config: tfFileContents,
 				Check: resource.ComposeTestCheckFunc(
-					//testAccCheckResourceExistCDN(),
+					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", expectedCDNLabel),
 					resource.TestCheckResourceAttr(
