@@ -1844,8 +1844,11 @@ definitions:
 				actualResourceSchema, err := firewallV1Resource.getResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 3)
-				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
-				So(actualResourceSchema.Properties[1].Name, ShouldEqual, "label")
+
+				idExists, _ := assertPropertyExists(actualResourceSchema.Properties, "id")
+				So(idExists, ShouldBeTrue)
+				labelExists, _ := assertPropertyExists(actualResourceSchema.Properties, "label")
+				So(labelExists, ShouldBeTrue)
 				// TODO:
 				//   - the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
 				//     the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
