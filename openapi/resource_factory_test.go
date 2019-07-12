@@ -163,8 +163,6 @@ func TestCreate(t *testing.T) {
 	})
 }
 
-// TODO: Add subresource use case coverage to TestRead and assert that client is called with the expected input. That should be sufficient to validate behaviour,
-// TODO: the tests covering that the API is called appropriately are handled in ProviderClient tests
 func TestRead(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
@@ -172,6 +170,45 @@ func TestRead(t *testing.T) {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			err := r.read(resourceData, client)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
+				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a resource that is a subresource", t, func() {
+
+		someOtherProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
+
+		// Pretending the data has already been populated with the parent property
+		testSchema := newTestSchema(idProperty, someOtherProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		r := newResourceFactory(&SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewall",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some_string_prop": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		})
+		Convey("When readRemote is called with resource data (containing the expected state property values) and a provider client configured to return some response payload", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					someOtherProperty.Name: "someOtherStringValue",
 				},
 			}
 			err := r.read(resourceData, client)
