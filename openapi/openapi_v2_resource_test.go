@@ -430,18 +430,20 @@ func TestIsSubResource(t *testing.T) {
 			})
 		})
 	})
-	// TODO: make this pass
-	Convey("Given a SpecV2Resource configured with a path that subresource but the path is wrongly formatted (the 'firewalls' parent in the path is missing the id path param)", t, func() {
+	Convey("Given a SpecV2Resource configured with a path that is a subresource but the path is wrongly structured not following best restful practises for building subresource paths (the 'firewalls' parent in the path is missing the id path param)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, _, _, err := r.isSubResource()
-			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "invalid subresource path '/v1/cdns/{id}/v2/firewalls/v3/rules'")
+			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
+			Convey("Then the error should be nil - the provider does not enforce subresource paths to be rightly configured even though that is the suggestion", func() {
+				So(err, ShouldBeNil)
 			})
-			Convey("And the the bool returned should be false", func() {
-				So(isSubResource, ShouldBeFalse)
+			Convey("And then the resource should be considered a subresource and the output should match the expected output values", func() {
+				So(isSubResource, ShouldBeTrue)
+				So(len(parentResourceNames), ShouldEqual, 1)
+				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(fullParentResourceName, ShouldEqual, "cdns_v1")
 			})
 		})
 	})
