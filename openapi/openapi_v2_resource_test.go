@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -249,10 +248,10 @@ func TestBuildResourceName(t *testing.T) {
 			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
 			expectedError:        nil,
 		},
-		{ // TODO: make this test pass: This is a negative case case the path does not index on firewalls_ids, which make it impossible to know under what firewall the rules exists
-			path:                 "/v1/cdns/{id}/v2/firewalls/v3/rules",
-			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
-			expectedError:        errors.New("some error that says the subresource path is not well formatted"),
+		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
+			path:                 "/v1/cdns/{id}/firewalls/v3/rules",
+			expectedResourceName: "cdns_v1_rules_v3",
+			expectedError:        nil,
 		},
 	}
 
@@ -566,6 +565,42 @@ func TestGetResourceSchema(t *testing.T) {
 				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
 				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
 				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
+				assertSchemaProperty(specSchemaDefinition, "cdns_v1_id", typeString, false, false, true)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non resftul subresource path", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls/v1/rules",
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
 			})
 			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
 				assertSchemaProperty(specSchemaDefinition, "cdns_v1_id", typeString, false, false, true)
