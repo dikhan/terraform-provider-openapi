@@ -617,6 +617,17 @@ definitions:
       name:
         type: "string"
 
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    required:
+    - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"
+
   # Schema for error response body
   Error:
     type: object
