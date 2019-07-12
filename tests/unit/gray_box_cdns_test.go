@@ -175,6 +175,31 @@ paths:
         204: 
           description: "successful operation, no content is returned"
       summary: "Delete firewall"
+    put:
+      summary: "Updated firewall"
+      operationId: "ContentDeliveryNetworkFirewallUpdatedV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "firewall that needs to be updated"
+        required: true
+        type: "string"
+      - name: "parent_id"
+        in: "path"
+        description: "cdn which this firewall belongs to"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Updated firewall object"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
 
 definitions:
@@ -291,7 +316,6 @@ func (a *api) handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
 		a.apiDeleteResponse(t, w, r)
 	}
-	// TODO: add support for update operation
 	apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
 		a.apiPutResponse(t, w, r)
@@ -315,7 +339,6 @@ func (a *api) handleCDNFirewallRequest(t *testing.T) map[string]http.HandlerFunc
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
 		a.apiDeleteResponse(t, w, r)
 	}
-	// TODO: add support for update operation
 	apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
 		a.apiPutResponse(t, w, r)
@@ -417,7 +440,6 @@ func TestAccCDN_CreateSubresource(t *testing.T) {
 	})
 }
 
-// TODO: make this work, the first TestCase will make sure the infra is created and the second one should assert that the update worked as expected
 func TestAccCDN_UpdateSubresource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
