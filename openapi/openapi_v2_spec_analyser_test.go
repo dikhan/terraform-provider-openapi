@@ -1677,20 +1677,6 @@ definitions:
 func TestGetTerraformCompliantResources(t *testing.T) {
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
-
-		// TODO - Add unit test in TestGetTerraformCompliantResources that covers the scenario of a sub-resource like the example below. The acceptance
-		// criteria will be that the sub-resource (/v1/cdns/{id}/firewalls) is rightly configured:
-		// - it contains the expected resource name - call to getResourceName()
-		// - it contains the right host
-		// - it contains the right resource path (already translated with the parent/s ids resolved)
-		// - it contains the right resource schema (VERY IMPORTANT: containing the refs to the parent/s property names)
-		//   - the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
-		//     the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
-		//     have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
-		//     That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
-		// - it contains the right operations
-		// - it contains the configured timeout
-
 		swaggerContent := `swagger: "2.0"
 paths:
   ######################
@@ -1842,7 +1828,6 @@ definitions:
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "127.0.0.1 ")
 			})
-
 			Convey("And the full resource Path is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
 				_, parentID, _, _ := firewallV1Resource.isSubResource()
 				resourcePath, err := firewallV1Resource.getResourcePath(parentID)
@@ -1855,557 +1840,562 @@ definitions:
 				So(len(actualResourceSchema.Properties), ShouldEqual, 3)
 				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
 				So(actualResourceSchema.Properties[1].Name, ShouldEqual, "label")
+				// TODO:
+				//   - the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
+				//     the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
+				//     have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
+				//     That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
 				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdns_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
 			})
 
 		})
 	})
 
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
-	//	swaggerContent := `swagger: "2.0"
-	//paths:
-	// /v1/cdns:
-	//   post:
-	//     parameters:
-	//     - in: "body"
-	//       name: "body"
-	//       schema:
-	//         $ref: "#/definitions/ContentDeliveryNetwork"
-	//     responses:
-	//       201:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	// /v1/cdns/{id}:
-	//   get:
-	//     parameters:
-	//     - name: "id"
-	//       in: "path"
-	//       description: "The cdn id that needs to be fetched."
-	//       required: true
-	//       type: "string"
-	//     responses:
-	//       200:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	//   put:
-	//     parameters:
-	//     - name: "id"
-	//       in: "path"
-	//       type: "string"
-	//     - in: "body"
-	//       name: "body"
-	//       schema:
-	//         $ref: "#/definitions/ContentDeliveryNetwork"
-	//     responses:
-	//       200:
-	//         description: "successful operation"
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	//   delete:
-	//     parameters:
-	//     - name: "id"
-	//       in: "path"
-	//       type: "string"
-	//     responses:
-	//       204:
-	//         description: "successful operation, no content is returned"
-	// /non/compliant:
-	//   post: # this path post operation is missing a reference to the schema definition (commented out)
-	//     parameters:
-	//     - in: "body"
-	//       name: "body"
-	//     #  schema:
-	//     #    $ref: "#/definitions/NonCompliant"
-	//     responses:
-	//       201:
-	//         schema:
-	//           $ref: "#/definitions/NonCompliant"
-	// /non/compliant/{id}:
-	//   get:
-	//     parameters:
-	//     - name: "id"
-	//       in: "path"
-	//       type: "string"
-	//     responses:
-	//       200:
-	//         schema:
-	//           $ref: "#/definitions/NonCompliant"
-	//definitions:
-	// ContentDeliveryNetwork:
-	//   type: "object"
-	//   properties:
-	//     id:
-	//       type: "string"
-	//       readOnly: true
-	// NonCompliant:
-	//   type: "object"
-	//   properties:
-	//     id:
-	//       type: "string"
-	//       readOnly: true`
-	//	a := initAPISpecAnalyser(swaggerContent)
-	//	Convey("When GetTerraformCompliantResources method is called ", func() {
-	//		terraformCompliantResources, err := a.GetTerraformCompliantResources()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the resources info map should only contain a resource called cdns_v1", func() {
-	//			So(len(terraformCompliantResources), ShouldEqual, 1)
-	//			So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
-	//		})
-	//	})
-	//})
-	//
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array of strings", t, func() {
-	//	swaggerContent := `swagger: "2.0"
-	//paths:
-	// /v1/cdns:
-	//   post:
-	//     parameters:
-	//     - in: "body"
-	//       name: "body"
-	//       schema:
-	//         $ref: "#/definitions/ContentDeliveryNetwork"
-	//     responses:
-	//       201:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	// /v1/cdns/{id}:
-	//   get:
-	//     parameters:
-	//     - name: "id"
-	//       in: "path"
-	//       description: "The cdn id that needs to be fetched."
-	//       required: true
-	//       type: "string"
-	//     responses:
-	//       200:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	//definitions:
-	// ContentDeliveryNetwork:
-	//   type: "object"
-	//   properties:
-	//     id:
-	//       type: "string"
-	//       readOnly: true
-	//     listeners:
-	//       type: array
-	//       items:
-	//         type: "string"`
-	//	a := initAPISpecAnalyser(swaggerContent)
-	//	Convey("When GetTerraformCompliantResources method is called ", func() {
-	//		terraformCompliantResources, err := a.GetTerraformCompliantResources()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the resources info map should only contain a resource called cdns_v1", func() {
-	//			So(len(terraformCompliantResources), ShouldEqual, 1)
-	//			So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
-	//		})
-	//		Convey("And the resources schema should contain the right configuration", func() {
-	//			resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
-	//			So(err, ShouldBeNil)
-	//			Convey("And the resources schema should contain the id property", func() {
-	//				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-	//				So(exists, ShouldBeTrue)
-	//			})
-	//			Convey("And the resources schema should contain the listeners property", func() {
-	//				exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
-	//				So(exists, ShouldBeTrue)
-	//				So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
-	//				So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeString)
-	//			})
-	//		})
-	//
-	//	})
-	//})
-	//
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref)", t, func() {
-	//	swaggerContent := `swagger: "2.0"
-	//paths:
-	// /v1/cdns:
-	//   post:
-	//     parameters:
-	//     - in: "body"
-	//       name: "body"
-	//       schema:
-	//         $ref: "#/definitions/ContentDeliveryNetwork"
-	//     responses:
-	//       201:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	// /v1/cdns/{id}:
-	//   get:
-	//     parameters:
-	//     - name: "id"
-	//       in: "path"
-	//       description: "The cdn id that needs to be fetched."
-	//       required: true
-	//       type: "string"
-	//     responses:
-	//       200:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	//definitions:
-	// ContentDeliveryNetwork:
-	//   type: "object"
-	//   properties:
-	//     id:
-	//       type: "string"
-	//       readOnly: true
-	//     listeners:
-	//       type: array
-	//       items:
-	//         $ref: '#/definitions/Listener'
-	// Listener:
-	//   type: object
-	//   required:
-	//     - protocol
-	//   properties:
-	//     protocol:
-	//       type: string`
-	//	a := initAPISpecAnalyser(swaggerContent)
-	//	Convey("When GetTerraformCompliantResources method is called ", func() {
-	//		terraformCompliantResources, err := a.GetTerraformCompliantResources()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the resources info map should only contain a resource called cdns_v1", func() {
-	//			So(len(terraformCompliantResources), ShouldEqual, 1)
-	//			So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
-	//		})
-	//		Convey("And the resources schema should contain the right configuration", func() {
-	//			resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
-	//			So(err, ShouldBeNil)
-	//			Convey("And the resources schema should contain the id property", func() {
-	//				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-	//				So(exists, ShouldBeTrue)
-	//			})
-	//			Convey("And the resources schema should contain the listeners property", func() {
-	//				exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
-	//				So(exists, ShouldBeTrue)
-	//				So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
-	//				So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
-	//				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
-	//				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
-	//			})
-	//		})
-	//	})
-	//})
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref) (in this an HTTP server)", t, func() {
-	//	var externalJSON = `{
-	//	  "definitions":{
-	//	     "ContentDeliveryNetwork":{
-	//	        "type":"object",
-	//	        "required": [
-	//	          "name"
-	//	        ],
-	//	        "properties":{
-	//	           "id":{
-	//	              "type":"string",
-	//	              "readOnly": true,
-	//	           },
-	//	           "name":{
-	//	              "type":"string"
-	//	           }
-	//	        }
-	//	     }
-	//	  }
-	//	}`
-	//
-	//	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	//		fmt.Fprintln(w, externalJSON)
-	//	}))
-	//	defer ts.Close()
-	//
-	//	var swaggerJSON = createSwaggerWithExternalRef(ts.URL + "/")
-	//
-	//	swaggerFile := initAPISpecFile(swaggerJSON)
-	//	defer os.Remove(swaggerFile.Name())
-	//
-	//	Convey("When newSpecAnalyserV2 method is called", func() {
-	//		specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-	//		Convey("Then the error returned by calling newSpecAnalyserV2 should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("AND the specAnalyserV2 struct should not be nil", func() {
-	//			So(specAnalyserV2, ShouldNotBeNil)
-	//		})
-	//
-	//		specResources, err := specAnalyserV2.GetTerraformCompliantResources()
-	//		Convey("Then the error returned by calling GetTerraformCompliantResources should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("AND the specResources slice should not be nil", func() {
-	//			So(specResources, ShouldNotBeNil)
-	//		})
-	//		Convey("And the resources info map should only contain a resource called cdns_v1", func() {
-	//			So(len(specResources), ShouldEqual, 1)
-	//			So(specResources[0].getResourceName(), ShouldEqual, "cdns_v1")
-	//		})
-	//
-	//		Convey("And the resources schema should contain the right configuration", func() {
-	//			resourceSchema, err := specResources[0].getResourceSchema()
-	//			So(err, ShouldBeNil)
-	//			Convey("And the resources schema should contain the id property", func() {
-	//				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-	//				So(exists, ShouldBeTrue)
-	//			})
-	//			Convey("And the resources schema should contain the name property", func() {
-	//				exists, _ := assertPropertyExists(resourceSchema.Properties, "name")
-	//				So(exists, ShouldBeTrue)
-	//			})
-	//		})
-	//	})
-	//})
-	//
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (nested configuration)", t, func() {
-	//	swaggerContent := `swagger: "2.0"
-	//paths:
-	// /v1/cdns:
-	//   post:
-	//     parameters:
-	//     - in: "body"
-	//       name: "body"
-	//       schema:
-	//         $ref: "#/definitions/ContentDeliveryNetwork"
-	//     responses:
-	//       201:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	// /v1/cdns/{id}:
-	//   get:
-	//     parameters:
-	//     - name: "id"
-	//       in: "path"
-	//       description: "The cdn id that needs to be fetched."
-	//       required: true
-	//       type: "string"
-	//     responses:
-	//       200:
-	//         schema:
-	//           $ref: "#/definitions/ContentDeliveryNetwork"
-	//definitions:
-	// ContentDeliveryNetwork:
-	//   type: "object"
-	//   properties:
-	//     id:
-	//       type: "string"
-	//       readOnly: true
-	//     listeners:
-	//       type: array
-	//       items:
-	//         type: object
-	//         required:
-	//         - protocol
-	//         properties:
-	//           protocol:
-	//             type: string`
-	//	a := initAPISpecAnalyser(swaggerContent)
-	//	Convey("When GetTerraformCompliantResources method is called ", func() {
-	//		terraformCompliantResources, err := a.GetTerraformCompliantResources()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the resources info map should only contain a resource called cdns_v1", func() {
-	//			So(len(terraformCompliantResources), ShouldEqual, 1)
-	//			So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
-	//		})
-	//		Convey("And the resources schema should contain the right configuration", func() {
-	//			resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
-	//			So(err, ShouldBeNil)
-	//			Convey("And the resources schema should contain the id property", func() {
-	//				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-	//				So(exists, ShouldBeTrue)
-	//			})
-	//			Convey("And the resources schema should contain the listeners property", func() {
-	//				exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
-	//				So(exists, ShouldBeTrue)
-	//				So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
-	//				So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
-	//				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
-	//				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
-	//			})
-	//		})
-	//	})
-	//})
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a non compliant terraform resource /v1/cdns because its missing the post operation", t, func() {
-	//	var swaggerJSON = `
-	//{
-	//  "swagger":"2.0",
-	//  "paths":{
-	//     "/v1/cdns/{id}":{
-	//        "get":{
-	//           "summary":"Get cdn by id"
-	//        },
-	//        "put":{
-	//           "summary":"Updated cdn"
-	//        },
-	//        "delete":{
-	//           "summary":"Delete cdn"
-	//        }
-	//     }
-	//  },
-	//  "definitions":{
-	//     "ContentDeliveryNetwork":{
-	//        "type":"object",
-	//        "properties":{
-	//           "id":{
-	//              "type":"string"
-	//           }
-	//        }
-	//     }
-	//  }
-	//}`
-	//	a := initAPISpecAnalyser(swaggerJSON)
-	//	Convey("When GetTerraformCompliantResources method is called ", func() {
-	//		terraformCompliantResources, err := a.GetTerraformCompliantResources()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the resources info map should contain a resource called cdns_v1", func() {
-	//			So(terraformCompliantResources, ShouldBeEmpty)
-	//		})
-	//	})
-	//})
-	//
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
-	//	var swaggerJSON = `
-	//{
-	//  "swagger":"2.0",
-	//  "paths":{
-	//     "/v1/cdns":{
-	//        "post":{
-	//           "x-terraform-exclude-resource": true,
-	//           "summary":"Create cdn",
-	//           "parameters":[
-	//              {
-	//                 "in":"body",
-	//                 "name":"body",
-	//                 "description":"Created CDN",
-	//                 "schema":{
-	//                    "$ref":"#/definitions/ContentDeliveryNetwork"
-	//                 }
-	//              }
-	//           ]
-	//        }
-	//     },
-	//     "/v1/cdns/{id}":{
-	//        "get":{
-	//           "summary":"Get cdn by id"
-	//        },
-	//        "put":{
-	//           "summary":"Updated cdn"
-	//        },
-	//        "delete":{
-	//           "summary":"Delete cdn"
-	//        }
-	//     }
-	//  },
-	//  "definitions":{
-	//     "ContentDeliveryNetwork":{
-	//        "type":"object",
-	//        "properties":{
-	//           "id":{
-	//              "type":"string"
-	//           }
-	//        }
-	//     }
-	//  }
-	//}`
-	//	a := initAPISpecAnalyser(swaggerJSON)
-	//	Convey("When GetTerraformCompliantResources method is called ", func() {
-	//		terraformCompliantResources, err := a.GetTerraformCompliantResources()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the terraformCompliantResources map should contain one resource with ignore flag set to true", func() {
-	//			So(terraformCompliantResources[0].shouldIgnoreResource(), ShouldBeTrue)
-	//		})
-	//	})
-	//})
-	//
-	//Convey("Given an specV2Analyser loaded with a swagger file containing a schema ref that is empty", t, func() {
-	//	var swaggerJSON = `
-	//{
-	//  "swagger":"2.0",
-	//  "paths":{
-	//     "/v1/cdns":{
-	//        "post":{
-	//           "x-terraform-exclude-resource": true,
-	//           "summary":"Create cdn",
-	//           "parameters":[
-	//              {
-	//                 "in":"body",
-	//                 "name":"body",
-	//                 "description":"Created CDN",
-	//                 "schema":{
-	//                    "$ref":""
-	//                 }
-	//              }
-	//           ]
-	//        }
-	//     },
-	//     "/v1/cdns/{id}":{
-	//        "get":{
-	//           "summary":"Get cdn by id"
-	//        },
-	//        "put":{
-	//           "summary":"Updated cdn"
-	//        },
-	//        "delete":{
-	//           "summary":"Delete cdn"
-	//        }
-	//     }
-	//  },
-	//  "definitions":{
-	//     "ContentDeliveryNetwork":{
-	//        "type":"object",
-	//        "properties":{
-	//           "id":{
-	//              "type":"string"
-	//           }
-	//        }
-	//     }
-	//  }
-	//}`
-	//	a := initAPISpecAnalyser(swaggerJSON)
-	//	Convey("When GetTerraformCompliantResources method is called ", func() {
-	//		terraformCompliantResources, err := a.GetTerraformCompliantResources()
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the terraformCompliantResources map should be empty since the resource ref is empty", func() {
-	//			So(terraformCompliantResources, ShouldBeEmpty)
-	//		})
-	//	})
-	//})
-	//
-	//Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case an HTTP server)", t, func() {
-	//	var swaggerJSON = createSwaggerWithExternalRef("//not.a.user@%66%6f%6f.com/just/a/path/also")
-	//
-	//	swaggerFile := initAPISpecFile(swaggerJSON)
-	//	defer os.Remove(swaggerFile.Name())
-	//
-	//	Convey("When newSpecAnalyserV2 method is called", func() {
-	//		specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-	//		Convey("Then the error returned by calling newSpecAnalyserV2 should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("AND the specAnalyserV2 struct should not be nil", func() {
-	//			So(specAnalyserV2, ShouldNotBeNil)
-	//		})
-	//
-	//		specResources, err := specAnalyserV2.GetTerraformCompliantResources()
-	//		Convey("Then the error returned by calling GetTerraformCompliantResources should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("AND the specResources slice should not be nil", func() {
-	//			So(specResources, ShouldBeEmpty)
-	//		})
-	//	})
-	//})
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+    put:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+    delete:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+  /non/compliant:
+    post: # this path post operation is missing a reference to the schema definition (commented out)
+      parameters:
+      - in: "body"
+        name: "body"
+      #  schema:
+      #    $ref: "#/definitions/NonCompliant"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/NonCompliant"
+  /non/compliant/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/NonCompliant"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+  NonCompliant:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array of strings", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      listeners:
+        type: array
+        items:
+          type: "string"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+			Convey("And the resources schema should contain the right configuration", func() {
+				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
+				So(err, ShouldBeNil)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the listeners property", func() {
+					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+					So(exists, ShouldBeTrue)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeString)
+				})
+			})
+
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref)", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      listeners:
+        type: array
+        items:
+          $ref: '#/definitions/Listener'
+  Listener:
+    type: object
+    required:
+      - protocol
+    properties:
+      protocol:
+        type: string`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+			Convey("And the resources schema should contain the right configuration", func() {
+				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
+				So(err, ShouldBeNil)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the listeners property", func() {
+					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+					So(exists, ShouldBeTrue)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+				})
+			})
+		})
+	})
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref) (in this an HTTP server)", t, func() {
+		var externalJSON = `{
+	  "definitions":{
+	     "ContentDeliveryNetwork":{
+	        "type":"object",
+	        "required": [
+	          "name"
+	        ],
+	        "properties":{
+	           "id":{
+	              "type":"string",
+	              "readOnly": true,
+	           },
+	           "name":{
+	              "type":"string"
+	           }
+	        }
+	     }
+	  }
+	}`
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintln(w, externalJSON)
+		}))
+		defer ts.Close()
+
+		var swaggerJSON = createSwaggerWithExternalRef(ts.URL + "/")
+
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned by calling newSpecAnalyserV2 should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specAnalyserV2 struct should not be nil", func() {
+				So(specAnalyserV2, ShouldNotBeNil)
+			})
+
+			specResources, err := specAnalyserV2.GetTerraformCompliantResources()
+			Convey("Then the error returned by calling GetTerraformCompliantResources should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specResources slice should not be nil", func() {
+				So(specResources, ShouldNotBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				So(len(specResources), ShouldEqual, 1)
+				So(specResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+
+			Convey("And the resources schema should contain the right configuration", func() {
+				resourceSchema, err := specResources[0].getResourceSchema()
+				So(err, ShouldBeNil)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the name property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "name")
+					So(exists, ShouldBeTrue)
+				})
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (nested configuration)", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      listeners:
+        type: array
+        items:
+          type: object
+          required:
+          - protocol
+          properties:
+            protocol:
+              type: string`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+			Convey("And the resources schema should contain the right configuration", func() {
+				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
+				So(err, ShouldBeNil)
+				Convey("And the resources schema should contain the id property", func() {
+					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+					So(exists, ShouldBeTrue)
+				})
+				Convey("And the resources schema should contain the listeners property", func() {
+					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+					So(exists, ShouldBeTrue)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+				})
+			})
+		})
+	})
+	Convey("Given an specV2Analyser loaded with a swagger file containing a non compliant terraform resource /v1/cdns because its missing the post operation", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should contain a resource called cdns_v1", func() {
+				So(terraformCompliantResources, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-exclude-resource": true,
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the terraformCompliantResources map should contain one resource with ignore flag set to true", func() {
+				So(terraformCompliantResources[0].shouldIgnoreResource(), ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a schema ref that is empty", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-exclude-resource": true,
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":""
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the terraformCompliantResources map should be empty since the resource ref is empty", func() {
+				So(terraformCompliantResources, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case an HTTP server)", t, func() {
+		var swaggerJSON = createSwaggerWithExternalRef("//not.a.user@%66%6f%6f.com/just/a/path/also")
+
+		swaggerFile := initAPISpecFile(swaggerJSON)
+		defer os.Remove(swaggerFile.Name())
+
+		Convey("When newSpecAnalyserV2 method is called", func() {
+			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
+			Convey("Then the error returned by calling newSpecAnalyserV2 should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specAnalyserV2 struct should not be nil", func() {
+				So(specAnalyserV2, ShouldNotBeNil)
+			})
+
+			specResources, err := specAnalyserV2.GetTerraformCompliantResources()
+			Convey("Then the error returned by calling GetTerraformCompliantResources should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("AND the specResources slice should not be nil", func() {
+				So(specResources, ShouldBeEmpty)
+			})
+		})
+	})
 }
 
 func assertPropertyExists(properties specSchemaDefinitionProperties, name string) (bool, int) {
