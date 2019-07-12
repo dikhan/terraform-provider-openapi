@@ -289,6 +289,7 @@ func (a *api) handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
 		a.apiDeleteResponse(t, w, r)
 	}
+	// TODO: add support for update operation
 	return apiServerBehaviors
 }
 
@@ -308,6 +309,7 @@ func (a *api) handleCDNFirewallRequest(t *testing.T) map[string]http.HandlerFunc
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
 		a.apiDeleteResponse(t, w, r)
 	}
+	// TODO: add support for update operation
 	return apiServerBehaviors
 }
 
@@ -380,6 +382,59 @@ func TestAccCDN_CreateSubresource(t *testing.T) {
 						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
+				),
+			},
+		},
+	})
+}
+
+// TODO: make this work, the first TestCase will make sure the infra is created and the second one should assert that the update worked as expected
+func TestAccCDN_UpdateSubresource(t *testing.T) {
+	api := initAPI(t, cdnSwaggerYAMLTemplate)
+	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
+	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
+		getSwaggerURL: func() string {
+			return api.swaggerURL
+		},
+	})
+	assert.NoError(t, e)
+	assertProviderSchema(t, provider)
+
+	resourceInstancesToCheck := map[string]string{
+		openAPIResourceNameCDNFirewall: fmt.Sprintf("%s/v1/cdns/%s/v1/firewalls", api.apiHost, expectedCDNID),
+		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
+	}
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		PreCheck:                  nil,
+		Providers:                 testAccProviders,
+		CheckDestroy:              nil,
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				Config: tfFileContents,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", expectedCDNLabel),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
+				),
+			},
+			{
+				Config: createTerraformFile("updatedCDNLabel", "updatedFWLabel"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", "updatedCDNLabel"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDNFirewall, "label", "updatedFWLabel"),
 				),
 			},
 		},
