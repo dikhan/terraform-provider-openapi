@@ -1,14 +1,15 @@
-package i2
+package unit
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"

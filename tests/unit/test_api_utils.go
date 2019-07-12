@@ -1,12 +1,13 @@
-package i2
+package unit
 
 import (
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
 )
 
 func assertExpectedRequestURI(t *testing.T, expectedRequestURI string, r *http.Request) {
