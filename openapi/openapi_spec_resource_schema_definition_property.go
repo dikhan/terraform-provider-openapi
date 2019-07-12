@@ -46,7 +46,7 @@ type specSchemaDefinitionProperty struct {
 
 func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() string {
 	if s.PreferredName != "" {
-		return terraformutils.ConvertToTerraformCompliantName(s.PreferredName)
+		return s.PreferredName
 	}
 	return terraformutils.ConvertToTerraformCompliantName(s.Name)
 }
