@@ -1678,6 +1678,7 @@ func TestGetTerraformCompliantResources(t *testing.T) {
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
 		swaggerContent := `swagger: "2.0"
+host: 127.0.0.1 
 paths:
   ######################
   ## CDN sub-resource
@@ -1685,6 +1686,7 @@ paths:
 
   /v1/cdns/{parent_id}/v1/firewalls:
     post:
+      x-terraform-resource-host: 178.168.3.4
       summary: "Create cdn firewall"
       operationId: "ContentDeliveryNetworkFirewallCreateV1"
       parameters:
@@ -1744,6 +1746,7 @@ paths:
           description: "successful operation, no content is returned"
       summary: "Delete firewall"
     put:
+      x-terraform-resource-timeout: "300s"
       summary: "Updated firewall"
       operationId: "ContentDeliveryNetworkFirewallUpdatedV1"
       parameters:
@@ -1809,31 +1812,36 @@ definitions:
 				So(subRes, ShouldBeTrue)
 				So(parentIDs, ShouldResemble, []string{"cdns_v1"})
 				So(fullParentID, ShouldEqual, "cdns_v1")
+				Convey("And the full resource Path is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
+					parentID := "42"
+					resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
+					So(err, ShouldBeNil)
+					So(resourcePath, ShouldEqual, "/v1/cdns/42/v1/firewalls")
+				})
 			})
-			//todo: this is  expected to fail for now
 			Convey("And the Resource Operation are attached to the Resource Schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
-				subRes := firewallV1Resource.getResourceOperations()
-				So(err, ShouldBeNil)
-				So(subRes, ShouldBeTrue)
+				resOperation := firewallV1Resource.getResourceOperations()
+				So(resOperation.Get.responses, ShouldContainKey, 200)
+				So(resOperation.Post.responses, ShouldContainKey, 201)
+				So(resOperation.Put.responses, ShouldContainKey, 200)
+				So(resOperation.Delete.responses, ShouldContainKey, 204)
 			})
 			//todo: this is  expected to fail for now
 			Convey("And each operation exposed on the resource have it own timeout set", func() {
-				subRes, err := firewallV1Resource.getTimeouts()
+				timeoutSpec, err := firewallV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
-				So(subRes, ShouldBeTrue)
+
+				So(timeoutSpec.Put.String(), ShouldEqual, "5m0s")
+				So(timeoutSpec.Get, ShouldBeNil)
+				So(timeoutSpec.Post, ShouldBeNil)
+				So(timeoutSpec.Delete, ShouldBeNil)
 			})
-			//todo: this is  expected to fail for now
 			Convey("And the host must be correctly configured according to the swagger", func() {
 				host, err := firewallV1Resource.getHost()
 				So(err, ShouldBeNil)
-				So(host, ShouldEqual, "127.0.0.1 ")
+				So(host, ShouldEqual, "178.168.3.4")
 			})
-			Convey("And the full resource Path is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
-				_, parentID, _, _ := firewallV1Resource.isSubResource()
-				resourcePath, err := firewallV1Resource.getResourcePath(parentID)
-				So(err, ShouldBeNil)
-				So(resourcePath, ShouldEqual, "/v1/cdns/42/v1/firewalls") //todo: why this fails
-			})
+
 			Convey("And The Resource Schema of the Resource contains 3 property, 2 from taken the model and one added on the fly as this is a subResource", func() {
 				actualResourceSchema, err := firewallV1Resource.getResourceSchema()
 				So(err, ShouldBeNil)
