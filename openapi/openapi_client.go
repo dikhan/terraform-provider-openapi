@@ -131,7 +131,7 @@ func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderPara
 	}
 }
 
-func (o ProviderClient) getResourceURL(resource SpecResource, ids []string) (string, error) {
+func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string) (string, error) {
 	var host string
 	var err error
 
@@ -161,7 +161,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource, ids []string) (str
 	}
 
 	basePath := o.openAPIBackendConfiguration.getBasePath()
-	resourceRelativePath, err := resource.getResourcePath(ids)
+	resourceRelativePath, err := resource.getResourcePath(parentIDs)
 	if err != nil {
 		return "", err
 	}
