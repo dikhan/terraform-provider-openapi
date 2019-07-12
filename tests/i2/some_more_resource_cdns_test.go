@@ -2,8 +2,9 @@ package i2
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -29,9 +30,6 @@ const resourceCDNFirewallName = "cdns_v1_firewalls_v1"
 var openAPIResourceNameCDNFirewall = fmt.Sprintf("%s_%s", providerName, resourceCDNFirewallName)
 var openAPIResourceInstanceNameCDNFirewall = "my_cdn_firewall_v1"
 var openAPIResourceStateCDNFirewall = fmt.Sprintf("%s.%s", openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall)
-
-var cdn api.ContentDeliveryNetworkV1
-var testCreateConfigCDN string
 
 const cdnSwaggerYAMLTemplate = `swagger: "2.0"
 host: %s 
@@ -234,9 +232,20 @@ const expectedCDNFirewallID = "1337"
 var expectedCDNLabel = fmt.Sprintf("CDN #%s", expectedCDNID)
 var expectedCDNFirewallLabel = fmt.Sprintf("FW #%s", expectedCDNFirewallID)
 
-func initAPI(t *testing.T, swaggerYAMLTemplate string) string {
+type api struct {
+	swaggerURL string
+	// cachePayloads holds the info posted to the different APIs. If a post has been called then the corresponding
+	// payload response will be cached here so subsequent GET requests will return the same response mimicking the
+	// same behaviour expected form a real API
+	cachePayloads map[string]interface{}
+}
+
+func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
+	a := &api{
+		cachePayloads: map[string]interface{}{},
+	}
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handleRequest(t, w, r)
+		a.handleRequest(t, w, r)
 	}))
 	apiHost := apiServer.URL[7:]
 	fmt.Println("apiServer URL>>>>", apiHost)
@@ -246,65 +255,101 @@ func initAPI(t *testing.T, swaggerYAMLTemplate string) string {
 		w.Write([]byte(swaggerReturned))
 	}))
 	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
-	return swaggerServer.URL
+	a.swaggerURL = swaggerServer.URL
+	return a
 }
 
-func handleRequest(t *testing.T, w http.ResponseWriter, r *http.Request) {
+func (a *api) handleRequest(t *testing.T, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("apiServer request>>>>", r.URL, r.Method)
 	var cdnEndpoint = regexp.MustCompile(`^/v1/cdns`)
 	var firewallEndpoint = regexp.MustCompile(`^/v1/cdns/[\d]*/v1/firewalls`)
 	switch {
 	case firewallEndpoint.MatchString(r.RequestURI):
-		handleCDNFirewallRequest(t)[r.Method](w, r)
+		a.handleCDNFirewallRequest(t)[r.Method](w, r)
 	case cdnEndpoint.MatchString(r.RequestURI):
-		handleCDNRequest(t)[r.Method](w, r)
+		a.handleCDNRequest(t)[r.Method](w, r)
 	}
 }
 
-func handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
+func (a *api) handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
 	apiServerBehaviors := map[string]http.HandlerFunc{}
 	expectedRequestInstanceURI := fmt.Sprintf("/v1/cdns/%s", expectedCDNID)
 	responseBody := fmt.Sprintf(`{"id":%s,"label":"%s"}`, expectedCDNID, expectedCDNLabel)
 	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, "/v1/cdns", r)
-		apiPostResponse(t, responseBody, w, r)
+		a.apiPostResponse(t, expectedRequestInstanceURI, responseBody, w, r)
 	}
 	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
-		apiGetResponse(t, responseBody, w, r)
+		a.apiGetResponse(t, w, r)
 	}
 	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
-		apiDeleteResponse(t, w, r)
+		a.apiDeleteResponse(t, w, r)
 	}
 	return apiServerBehaviors
 }
 
-func handleCDNFirewallRequest(t *testing.T) map[string]http.HandlerFunc {
+func (a *api) handleCDNFirewallRequest(t *testing.T) map[string]http.HandlerFunc {
 	apiServerBehaviors := map[string]http.HandlerFunc{}
 	expectedRequestInstanceURI := fmt.Sprintf("/v1/cdns/%s/v1/firewalls/%s", expectedCDNID, expectedCDNFirewallID)
 	responseBody := fmt.Sprintf(`{"id":%s,"label":"%s"}`, expectedCDNFirewallID, expectedCDNFirewallLabel)
 	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, fmt.Sprintf("/v1/cdns/%s/v1/firewalls", expectedCDNID), r)
-		apiPostResponse(t, responseBody, w, r)
+		a.apiPostResponse(t, expectedRequestInstanceURI, responseBody, w, r)
 	}
 	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
-		apiGetResponse(t, responseBody, w, r)
+		a.apiGetResponse(t, w, r)
 	}
 	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
-		apiDeleteResponse(t, w, r)
+		a.apiDeleteResponse(t, w, r)
 	}
 	return apiServerBehaviors
 }
 
+func (a *api) apiPostResponse(t *testing.T, cacheID string, responseBody string, w http.ResponseWriter, r *http.Request) {
+	a.cachePayloads[cacheID] = responseBody
+	a.apiResponse(t, responseBody, http.StatusCreated, w, r)
+}
+
+func (a *api) apiGetResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
+	cachedBody := a.cachePayloads[r.RequestURI]
+	if cachedBody == nil {
+		a.apiResponse(t, "", http.StatusNotFound, w, r)
+		return
+	}
+	a.apiResponse(t, cachedBody.(string), http.StatusOK, w, r)
+}
+
+func (a *api) apiDeleteResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
+	cachedBody := a.cachePayloads[r.RequestURI]
+	if cachedBody == nil {
+		a.apiResponse(t, "", http.StatusNotFound, w, r)
+		return
+	}
+	a.apiResponse(t, "", http.StatusNoContent, w, r)
+}
+
+func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusCode int, w http.ResponseWriter, r *http.Request) {
+	if r.Body != nil {
+		bs, e := ioutil.ReadAll(r.Body)
+		require.NoError(t, e)
+		fmt.Printf("%s request body >>> %s\n", r.Method, string(bs))
+	}
+	w.WriteHeader(httpResponseStatusCode)
+	if responseBody != "" {
+		w.Write([]byte(responseBody))
+	}
+}
+
 func TestAccCDN_CreateSubresource(t *testing.T) {
-	swaggerURL := initAPI(t, cdnSwaggerYAMLTemplate)
+	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
-			return swaggerURL
+			return api.swaggerURL
 		},
 	})
 	assert.NoError(t, e)
