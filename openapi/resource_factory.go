@@ -103,8 +103,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	// TODO: pass along the list of parentIDs to post method.
-	res, err := providerClient.Post2(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
+	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
 	if err != nil {
 		return err
 	}
@@ -140,7 +139,6 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 		return err
 	}
 
-	// TODO: pass along the list of ids to readRemote method.
 	remoteData, err := r.readRemote(data.Id(), openAPIClient, parentsIDs...)
 
 	if err != nil {
@@ -155,12 +153,10 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	return r.updateStateWithPayloadData(remoteData, data)
 }
 
-// TODO: Update func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) to accept array of IDs instead of id string.
-// TODO: providerClient.Get should expect a list of IDs
 func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, parentIDs ...string) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
-	resp, err := providerClient.Get2(r.openAPIResource, id, &responsePayload, parentIDs...)
+	resp, err := providerClient.Get(r.openAPIResource, id, &responsePayload, parentIDs...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,12 +172,15 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 	if r.openAPIResource == nil {
 		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
 	}
-	isSubResource, parentResourceNames, _, err := r.openAPIResource.isSubResource()
-	if err != nil {
-		return nil, err
-	}
-	parentIDs := []string{}
+
+	isSubResource, _, _, _ := r.openAPIResource.isSubResource()
 	if isSubResource {
+		parentResourceNames, err := r.openAPIResource.getParentPropertiesNames()
+		if err != nil {
+			return nil, err
+		}
+
+		parentIDs := []string{}
 		for _, parentResourceName := range parentResourceNames {
 			parentResourceID := data.Get(parentResourceName)
 			if parentResourceID == nil {
@@ -191,17 +190,18 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 		}
 		return parentIDs, nil
 	}
+
 	return []string{}, nil
 }
 
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	ids, err := r.getParentIDs(data)
+	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
 		return err
 	}
-	resourcePath, err := r.openAPIResource.getResourcePath(ids)
+	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
 	}
-	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload)
+	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentIDs...)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
 	}
-	res, err := providerClient.Delete2(r.openAPIResource, data.Id(), parentIDs...)
+	res, err := providerClient.Delete(r.openAPIResource, data.Id(), parentIDs...)
 	if err != nil {
 		return err
 	}

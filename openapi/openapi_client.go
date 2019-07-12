@@ -23,13 +23,10 @@ const (
 
 // ClientOpenAPI defines the behaviour expected to be implemented for the OpenAPI Client used in the Terraform OpenAPI Provider
 type ClientOpenAPI interface {
-	Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
-	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
-	Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error)
-	Delete(resource SpecResource, id string) (*http.Response, error)
-	Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)                                             //TODO: this must take the place of `Delete`
-	Get2(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)                   //TODO: this must take the place of `Get`
-	Post2(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) //TODO: this must take the place of `Post`
+	Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
+	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
+	Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
+	Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
@@ -43,20 +40,7 @@ type ProviderClient struct {
 }
 
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in
-// TODO: This function will have to accept an array of IDs now. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234"} where 1234 will be the cdns parent ID.
-func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-	// TODO: pass in the ids args from post method
-	ids := []string{}
-	resourceURL, err := o.getResourceURL(resource, ids)
-	if err != nil {
-		return nil, err
-	}
-	operation := resource.getResourceOperations().Post
-	return o.performRequest(httpPost, resourceURL, operation, requestPayload, responsePayload)
-}
-
-func (o *ProviderClient) Post2(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
-	//ids := []string{}
+func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceURL(resource, parentIDs)
 	if err != nil {
 		return nil, err
@@ -66,10 +50,7 @@ func (o *ProviderClient) Post2(resource SpecResource, requestPayload interface{}
 }
 
 // Put performs a PUT request to the server API based on the resource configuration and the payload passed in
-// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
-func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	parentIDs := []string{}
+func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
@@ -78,19 +59,7 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 	return o.performRequest(httpPut, resourceURL, operation, requestPayload, responsePayload)
 }
 
-func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
-	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	parentIDs := []string{}
-	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
-	if err != nil {
-		return nil, err
-	}
-	operation := resource.getResourceOperations().Get
-	return o.performRequest(httpGet, resourceURL, operation, nil, responsePayload)
-}
-
-// Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
-func (o *ProviderClient) Get2(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
@@ -100,20 +69,7 @@ func (o *ProviderClient) Get2(resource SpecResource, id string, responsePayload 
 }
 
 // Delete performs a DELETE request to the server API based on the resource configuration and the resource instance id passed in
-// TODO: Replace param from being just a string to being an array of strings. For instance a URI like this /v1/cdns/1234/firewalls will be represented in the array like []string{"1234", "567"} where 1234 will be the cdns parent ID AND 567 will be the firewall ID
-func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Response, error) {
-	// TODO: pass in the ids args from Put method containing both the parent ids as well as the instance id
-	parentIDs := []string{}
-	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
-	if err != nil {
-		return nil, err
-	}
-	operation := resource.getResourceOperations().Delete
-	return o.performRequest(httpDelete, resourceURL, operation, nil, nil)
-}
-
-func (o *ProviderClient) Delete2(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
-	//parentIDs := []string{}
+func (o *ProviderClient) Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err

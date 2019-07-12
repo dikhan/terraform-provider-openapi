@@ -164,33 +164,6 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	return fullResourceName, nil
 }
 
-// buildParentResourceName is responsible for building the parent name based on a given path. This string will then be
-// used to concatenate the parent with the actual resource name resulting into the complete resource name. Considering
-// this method contains the logic related to constructing the parent name it also returns the different levels of parent
-// that if find that can be used in other places to figure out the different parent properties to use in the sub-resource for
-// instance.
-//func (o *SpecV2Resource) buildParentResourceName() ([]string, string, error) {
-//	resourcePath := o.Path
-//	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
-//	parentResourceNames := []string{}
-//	fullParentResourceName := ""
-//	parentMatches := resourceParentRegex.FindAllStringSubmatch(resourcePath, -1)
-//	if len(parentMatches) > 0 {
-//		for _, match := range parentMatches {
-//			//fullMatch := match[0]
-//			//parentPath := match[1]
-//			parentVersion := match[2]
-//			parentResourceName := match[3]
-//			if parentVersion != "" {
-//				parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
-//			}
-//			parentResourceNames = append(parentResourceNames, parentResourceName)
-//			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
-//		}
-//	}
-//	return parentResourceNames, fullParentResourceName, nil
-//}
-
 // getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
 // path parameters these will be resolved accordingly based on the ids provided. For instance, considering the given
 // resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".

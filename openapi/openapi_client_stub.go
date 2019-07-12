@@ -14,7 +14,7 @@ type clientOpenAPIStub struct {
 	returnHTTPCode  int
 }
 
-func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
@@ -27,7 +27,7 @@ func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface
 	return c.generateStubResponse(http.StatusCreated), nil
 }
 
-func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
@@ -40,7 +40,7 @@ func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload
 	return c.generateStubResponse(http.StatusOK), nil
 }
 
-func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
@@ -54,7 +54,7 @@ func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayloa
 	return c.generateStubResponse(http.StatusOK), nil
 }
 
-func (c *clientOpenAPIStub) Delete(resource SpecResource, id string) (*http.Response, error) {
+func (c *clientOpenAPIStub) Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}

@@ -17,6 +17,8 @@ type SpecResource interface {
 	// resource names and the resource parent names merged in one to facilitate parent names processing. If there is an
 	// error it will be returned as last return argument
 	isSubResource() (bool, []string, string, error)
+	// getParentPropertiesNames is responsible to building the parent properties names for a resource that is a subresource
+	getParentPropertiesNames() ([]string, error)
 }
 
 type specTimeouts struct {
