@@ -1772,7 +1772,6 @@ paths:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
-
 definitions:
   ContentDeliveryNetworkFirewallV1:
     type: "object"
@@ -1826,7 +1825,6 @@ definitions:
 				So(resOperation.Put.responses, ShouldContainKey, 200)
 				So(resOperation.Delete.responses, ShouldContainKey, 204)
 			})
-			//todo: this is  expected to fail for now
 			Convey("And each operation exposed on the resource have it own timeout set", func() {
 				timeoutSpec, err := firewallV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
@@ -1864,6 +1862,8 @@ definitions:
 paths:
   /v1/cdns:
     post:
+      x-terraform-resource-timeout: "5s"
+      x-terraform-resource-host: some-host.com
       parameters:
       - in: "body"
         name: "body"
@@ -1950,6 +1950,41 @@ definitions:
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+			cndV1Resource := terraformCompliantResources[0]
+			Convey("And the cndV1Resource should not be considered a subresource", func() {
+				subRes, parentIDs, fullParentID, err := cndV1Resource.isSubResource()
+				So(err, ShouldBeNil)
+				So(subRes, ShouldBeFalse)
+				So(parentIDs, ShouldBeEmpty)
+				So(fullParentID, ShouldBeEmpty)
+			})
+			Convey("And the Resource Operation are attached to the Resource Schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				resOperation := cndV1Resource.getResourceOperations()
+				So(resOperation.Get.responses, ShouldContainKey, 200)
+				So(resOperation.Post.responses, ShouldContainKey, 201)
+				So(resOperation.Put.responses, ShouldContainKey, 200)
+				So(resOperation.Delete.responses, ShouldContainKey, 204)
+			})
+			Convey("And each operation exposed on the resource have it own timeout set", func() {
+				timeoutSpec, err := cndV1Resource.getTimeouts()
+				So(err, ShouldBeNil)
+				So(timeoutSpec.Post.String(), ShouldEqual, "5s")
+				So(timeoutSpec.Get, ShouldBeNil)
+				So(timeoutSpec.Put, ShouldBeNil)
+				So(timeoutSpec.Delete, ShouldBeNil)
+			})
+			Convey("And the host must be correctly configured according to the swagger", func() {
+				host, err := cndV1Resource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldEqual, "some-host.com")
+			})
+
+			Convey("And The Resource Schema of the Resource contain the one property specified in the ContentDeliveryNetwork model definition", func() {
+				actualResourceSchema, err := cndV1Resource.getResourceSchema()
+				So(err, ShouldBeNil)
+				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
+				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
 			})
 		})
 	})
