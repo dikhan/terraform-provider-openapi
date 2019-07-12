@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -291,6 +292,10 @@ func (a *api) handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
 		a.apiDeleteResponse(t, w, r)
 	}
 	// TODO: add support for update operation
+	apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+		a.apiPutResponse(t, w, r)
+	}
 	return apiServerBehaviors
 }
 
@@ -311,6 +316,10 @@ func (a *api) handleCDNFirewallRequest(t *testing.T) map[string]http.HandlerFunc
 		a.apiDeleteResponse(t, w, r)
 	}
 	// TODO: add support for update operation
+	apiServerBehaviors[http.MethodPut] = func(w http.ResponseWriter, r *http.Request) {
+		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+		a.apiPutResponse(t, w, r)
+	}
 	return apiServerBehaviors
 }
 
@@ -335,6 +344,25 @@ func (a *api) apiDeleteResponse(t *testing.T, w http.ResponseWriter, r *http.Req
 		return
 	}
 	a.apiResponse(t, "", http.StatusNoContent, w, r)
+}
+
+func (a *api) apiPutResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
+	cachedBody := a.cachePayloads[r.RequestURI]
+	if cachedBody == nil {
+		a.apiResponse(t, "", http.StatusNotFound, w, r)
+		return
+	}
+	cachedBodyStr := cachedBody.(string)
+	if strings.Contains(cachedBodyStr, `"id":42`) {
+		a.cachePayloads[r.RequestURI] = `{"id":42, "label":"updatedCDNLabel"}`
+		a.apiResponse(t, `{"label":"updatedCDNLabel"}`, http.StatusOK, w, r)
+	} else if strings.Contains(cachedBodyStr, `"id":1337`) {
+		a.cachePayloads[r.RequestURI] = `{"id":1337, "label":"updatedFWLabel"}`
+		a.apiResponse(t, `{"label":"updatedFWLabel"}`, http.StatusOK, w, r)
+	} else {
+		assert.Fail(t, fmt.Sprintf("no PUT implementation in apiServer for %s", cachedBody))
+	}
+
 }
 
 func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusCode int, w http.ResponseWriter, r *http.Request) {
