@@ -187,10 +187,8 @@ func TestRead(t *testing.T) {
 
 func TestReadRemote(t *testing.T) {
 
-	// TODO: Add test coverage in TestReadRemote for subresources
-
 	Convey("Given a resource factory", t, func() {
-		r, _ := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
+		r := newResourceFactory(&specStubResource{name: "resourceName"})
 		Convey("When readRemote is called with resource data and a client that returns ", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
@@ -223,6 +221,30 @@ func TestReadRemote(t *testing.T) {
 			})
 			Convey("And the error returned should be", func() {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
+			})
+		})
+
+		Convey("When readRemote is called with an instance id, a providerClient and a parent ID", func() {
+			expectedID := "someID"
+			expectedParentID := "someParentID"
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			response, err := r.readRemote(expectedID, client, expectedParentID)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider client should have been called with the right argument values", func() {
+				So(client.idReceived, ShouldEqual, expectedID)
+				So(len(client.parentIDsReceived), ShouldEqual, 1)
+				So(client.parentIDsReceived[0], ShouldEqual, expectedParentID)
+			})
+			Convey("And the values of the keys should match the values that came in the response", func() {
+				So(response[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(response[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
 			})
 		})
 	})
