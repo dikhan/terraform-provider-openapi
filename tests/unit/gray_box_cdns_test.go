@@ -403,7 +403,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 func TestAccCDN_CreateSubresource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
-	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
+	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: providerName}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
 			return api.swaggerURL
 		},
@@ -443,7 +443,7 @@ func TestAccCDN_CreateSubresource(t *testing.T) {
 func TestAccCDN_UpdateSubresource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
-	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: "openapi"}, fakeServiceConfiguration{
+	provider, e := openapi.CreateSchemaProviderFromServiceConfiguration(&openapi.ProviderOpenAPI{ProviderName: providerName}, fakeServiceConfiguration{
 		getSwaggerURL: func() string {
 			return api.swaggerURL
 		},
