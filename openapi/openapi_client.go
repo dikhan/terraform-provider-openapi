@@ -59,6 +59,7 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 	return o.performRequest(httpPut, resourceURL, operation, requestPayload, responsePayload)
 }
 
+// Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
 func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
