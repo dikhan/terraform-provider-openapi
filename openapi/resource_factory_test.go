@@ -1935,7 +1935,7 @@ func Test_getParentIDs(t *testing.T) {
 
 	Convey("Given a resourceFactory with a some schema", t, func() {
 		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
-		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1", "", true, false, "parentPropertyID")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
 
 		// Pretending the data has already been populated with the parent property
 		testSchema := newTestSchema(someFirewallProperty, parentProperty)
