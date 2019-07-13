@@ -115,7 +115,7 @@ func TestCreateProvider(t *testing.T) {
 				},
 				backendConfiguration: &specStubBackendConfiguration{},
 			},
-			serviceConfiguration: &serviceConfigStub{},
+			serviceConfiguration: &ServiceConfigStub{},
 		}
 		Convey("When createProvider is called ", func() {
 			p, err := p.createProvider()
@@ -163,7 +163,7 @@ func TestCreateProvider(t *testing.T) {
 					regions: []string{"rst", "dub"},
 				},
 			},
-			serviceConfiguration: &serviceConfigStub{},
+			serviceConfiguration: &ServiceConfigStub{},
 		}
 		Convey("When createProvider is called ", func() {
 			p, err := p.createProvider()
@@ -224,15 +224,15 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 
-		serviceConfig := &serviceConfigStub{
-			schemaConfiguration: []*serviceSchemaPropertyConfigurationStub{
+		serviceConfig := &ServiceConfigStub{
+			SchemaConfiguration: []*ServiceSchemaPropertyConfigurationStub{
 				{
-					schemaPropertyName:   "apikey_auth",
-					executeCommandCalled: false,
+					SchemaPropertyName:   "apikey_auth",
+					ExecuteCommandCalled: false,
 				},
 				{
-					schemaPropertyName:   "header_name",
-					executeCommandCalled: false,
+					SchemaPropertyName:   "header_name",
+					ExecuteCommandCalled: false,
 				},
 			},
 		}
@@ -271,8 +271,8 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				So(providerSchema[apiKeyAuthProperty.Name].DefaultFunc, ShouldNotBeNil)
 			})
 			Convey("And the provider schema properties commands should have been executed", func() {
-				So(serviceConfig.schemaConfiguration[0].executeCommandCalled, ShouldBeTrue)
-				So(serviceConfig.schemaConfiguration[1].executeCommandCalled, ShouldBeTrue)
+				So(serviceConfig.SchemaConfiguration[0].ExecuteCommandCalled, ShouldBeTrue)
+				So(serviceConfig.SchemaConfiguration[1].ExecuteCommandCalled, ShouldBeTrue)
 			})
 		})
 	})
@@ -280,12 +280,12 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 	Convey("Given a provider factory containing a property with command (that exit with error) set up", t, func() {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		expectedError := "some error executing the command"
-		serviceConfig := &serviceConfigStub{
-			schemaConfiguration: []*serviceSchemaPropertyConfigurationStub{
+		serviceConfig := &ServiceConfigStub{
+			SchemaConfiguration: []*ServiceSchemaPropertyConfigurationStub{
 				{
-					schemaPropertyName:   "apikey_auth",
-					executeCommandCalled: false,
-					err:                  fmt.Errorf(expectedError),
+					SchemaPropertyName:   "apikey_auth",
+					ExecuteCommandCalled: false,
+					Err:                  fmt.Errorf(expectedError),
 				},
 			},
 		}
@@ -315,7 +315,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				So(err.Error(), ShouldEqual, expectedError)
 			})
 			Convey("And the provider schema properties commands should have been executed", func() {
-				So(serviceConfig.schemaConfiguration[0].executeCommandCalled, ShouldBeTrue)
+				So(serviceConfig.SchemaConfiguration[0].ExecuteCommandCalled, ShouldBeTrue)
 			})
 		})
 	})
@@ -339,7 +339,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					}),
 				},
 			},
-			serviceConfiguration: &serviceConfigStub{},
+			serviceConfiguration: &ServiceConfigStub{},
 		}
 		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
 			backendConfig := &specStubBackendConfiguration{}
@@ -374,7 +374,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 				},
 			},
-			serviceConfiguration: &serviceConfigStub{},
+			serviceConfiguration: &ServiceConfigStub{},
 		}
 		Convey("When createTerraformProviderSchema is called with a backend configuration that IS multi-region", func() {
 			multiRegionHost := "api.${region}.server.com"
@@ -412,7 +412,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 				},
 			},
-			serviceConfiguration: &serviceConfigStub{},
+			serviceConfiguration: &ServiceConfigStub{},
 		}
 		Convey("When createTerraformProviderSchema is called with some backend configuration", func() {
 			backendConfig := &specStubBackendConfiguration{}
@@ -439,7 +439,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 				},
 			},
-			serviceConfiguration: &serviceConfigStub{},
+			serviceConfiguration: &ServiceConfigStub{},
 		}
 		Convey("When createTerraformProviderSchema is called with some backend configuration (non related)", func() {
 			backendConfig := &specStubBackendConfiguration{}
