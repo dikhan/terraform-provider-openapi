@@ -420,7 +420,7 @@ func TestAccCDN_CreateSubresource(t *testing.T) {
 		IsUnitTest:                true,
 		PreCheck:                  nil,
 		Providers:                 testAccProviders,
-		CheckDestroy:              nil,
+		CheckDestroy:              nil, // TODO: add impl to check destroy so we can verify that the resource deletion works as expected
 		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			{
