@@ -14,6 +14,7 @@ TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
 TEST_PACKAGES?=$$(go list ./... | grep -v "examples\|vendor\|integration")
 INT_TEST_PACKAGES?=$$(go list ./... | grep "/tests/integration")
+E2E_TEST_PACKAGES?=$$(go list ./... | grep "/tests/e2e")
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v 'examples\|vendor')
 
 TF_PROVIDER_NAMING_CONVENTION="terraform-provider-"
@@ -51,6 +52,7 @@ lint:
 test: fmt vet lint
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES)
+	@go test -v -cover $(E2E_TEST_PACKAGES)
 
 # make integration-test
 integration-test: local-env-down local-env
