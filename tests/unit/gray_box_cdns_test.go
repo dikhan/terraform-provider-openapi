@@ -265,7 +265,8 @@ type api struct {
 	// cachePayloads holds the info posted to the different APIs. If a post has been called then the corresponding
 	// payload response will be cached here so subsequent GET requests will return the same response mimicking the
 	// same behaviour expected form a real API
-	cachePayloads map[string]interface{}
+	cachePayloads    map[string]interface{}
+	requestsReceived []*http.Request
 }
 
 func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
@@ -289,6 +290,7 @@ func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
 }
 
 func (a *api) handleRequest(t *testing.T, w http.ResponseWriter, r *http.Request) {
+	a.requestsReceived = append(a.requestsReceived, r)
 	fmt.Println("apiServer request>>>>", r.URL, r.Method)
 	var cdnEndpoint = regexp.MustCompile(`^/v1/cdns`)
 	var firewallEndpoint = regexp.MustCompile(`^/v1/cdns/[\d]*/v1/firewalls`)
@@ -446,6 +448,16 @@ func TestAccCDN_Create_and_UpdateSubresource(t *testing.T) {
 			},
 		},
 	})
+
+	numberOfRequestsRecieved := len(api.requestsReceived)
+
+	lastRequest := api.requestsReceived[numberOfRequestsRecieved-1]
+	assert.Equal(t, http.MethodDelete, lastRequest.Method)
+	assert.Equal(t, "/v1/cdns/42", lastRequest.URL.Path)
+
+	secondToLastRequest := api.requestsReceived[numberOfRequestsRecieved-2]
+	assert.Equal(t, http.MethodDelete, secondToLastRequest.Method)
+	assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
 }
 
 // TODO: make this pass when working on https://www.pivotaltracker.com/story/show/167221970
