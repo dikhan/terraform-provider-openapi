@@ -402,7 +402,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 	}
 }
 
-func TestAccCDN_Create_and_UpdateSubresource(t *testing.T) {
+func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 
@@ -460,7 +460,7 @@ func TestAccCDN_Create_and_UpdateSubresource(t *testing.T) {
 	assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
 }
 
-func TestAccCDN_Import(t *testing.T) {
+func TestAccCDN_ImportSubResource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 
 	api.cachePayloads["/v1/cdns/42/v1/firewalls/1337"] = `{"id":1337, "label":"importedFWLabel"}`
