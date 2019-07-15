@@ -1,8 +1,9 @@
 package openapi
 
 import (
-	"github.com/go-openapi/spec"
 	"testing"
+
+	"github.com/go-openapi/spec"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -251,7 +252,7 @@ func TestGetDefaultRegion(t *testing.T) {
 }
 
 func TestIsMultiRegion(t *testing.T) {
-	Convey("Given a specV2BackendConfiguration that is multi-region (contains x-terraform-provider-multiregion-fqdn with parametrised host) and x-terraform-provider-regions extension with regions", t, func() {
+	Convey("Given a specV2BackendConfiguration that is multi-region (contains x-terraform-provider-multiregion-fqdn with parameterised host) and x-terraform-provider-regions extension with regions", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",
@@ -273,7 +274,7 @@ func TestIsMultiRegion(t *testing.T) {
 			Convey("Then it should be multi region", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("Then host should be the parametrised host", func() {
+			Convey("Then host should be the parameterised host", func() {
 				So(host, ShouldEqual, "www.${region}.some-backend.com")
 			})
 			Convey("Then regions should contain the right regions", func() {
@@ -307,7 +308,7 @@ func TestIsMultiRegion(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a specV2BackendConfiguration that is multi-region but the x-terraform-provider-multiregion-fqdn does not have a parametrised value", t, func() {
+	Convey("Given a specV2BackendConfiguration that is multi-region but the x-terraform-provider-multiregion-fqdn does not have a parameterised value", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",
@@ -463,7 +464,7 @@ func TestIsHostMultiRegion(t *testing.T) {
 			Convey("Then it should be multi region", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("Then host should be the parametrised host", func() {
+			Convey("Then host should be the parameterised host", func() {
 				So(host, ShouldEqual, "www.${region}.some-backend.com")
 			})
 		})
@@ -490,12 +491,12 @@ func TestIsHostMultiRegion(t *testing.T) {
 			Convey("Then it should be multi region", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("Then host should be the parametrised host", func() {
+			Convey("Then host should be the parameterised host", func() {
 				So(host, ShouldEqual, "www.${region}.some-backend.com")
 			})
 		})
 	})
-	Convey("Given a specV2BackendConfiguration that is multi-region but the x-terraform-provider-multiregion-fqdn does not have a parametrised value", t, func() {
+	Convey("Given a specV2BackendConfiguration that is multi-region but the x-terraform-provider-multiregion-fqdn does not have a parameterised value", t, func() {
 		spec := &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger: "2.0",

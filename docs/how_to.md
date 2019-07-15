@@ -543,11 +543,11 @@ paths:
       x-terraform-resource-host: cdn.${cdn}.api.otherdomain.com
 ````
 
-If the ``x-terraform-resource-host`` extension has a value parametrised in the form where the following pattern ```${identifier}```
+If the ``x-terraform-resource-host`` extension has a value parameterised in the form where the following pattern ```${identifier}```
  is found (identifier being any string with no whitspaces - spaces,tabs, line breaks, etc) AND there is a matching
  extension 'x-terraform-resource-regions-**identifier**' defined in the root level that refers to the same identifier
  then the resource will be considered multi region.
-For instance, in the above example, the ```x-terraform-resource-host``` value is parametrised as the ```${identifier}``` pattern
+For instance, in the above example, the ```x-terraform-resource-host``` value is parameterised as the ```${identifier}``` pattern
 is found, and the identifier in this case is ```cdn```. Moreover, there is a matching ```x-terraform-resource-regions-cdn```
 extension containing a list of regions where this resource can be created in.
 
@@ -1130,19 +1130,19 @@ The following extensions can be used in the root level. Read the according exten
 
 Extension Name | Type | Description
 ---|:---:|---
-[x-terraform-provider-multiregion-fqdn](#xTerraformProviderMultiregionFQDN) | string | Defines the host that should be used when managing the resources exposed. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make the API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration. The value must be parametrised following the expected format (regex: (S+)(${(S+)})(S+)) where the ${region} section identifies the spot that will be replaced by the region value. E,g: service.api.${region}.hostname.com.
+[x-terraform-provider-multiregion-fqdn](#xTerraformProviderMultiregionFQDN) | string | Defines the host that should be used when managing the resources exposed. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make the API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration. The value must be parameterised following the expected format (regex: (S+)(${(S+)})(S+)) where the ${region} section identifies the spot that will be replaced by the region value. E,g: service.api.${region}.hostname.com.
 [x-terraform-provider-regions](#xTerraformProviderRegions) | string | Defines the regions the service has APIs exposed and will be translated into the terraform provider 'region' property. The value must be a comma separated list of strings. The default region value set in the provider will be the first element in the comma separated string. The value set, either the default or the one provider by the user, will be used to build the right FQDN based on the 'x-terraform-provider-multiregion-fqdn' value. In the example above, if the region value was 'uswest1', the API calls will be made against the following hostL: service.api.uswest1.hostname.com 
 
 ##### <a name="xTerraformProviderMultiregionFQDN">x-terraform-provider-multiregion-fqdn</a>
 
-This extension defines the FQDN to be used by Terraform when managing the service resources. The value must be parametrised
+This extension defines the FQDN to be used by Terraform when managing the service resources. The value must be parameterised
 following the pattern (S+)(${(S+)})(S+) where the ${} section identifies the location that will be replaced by the region value. 
 
 ````
 x-terraform-provider-multiregion-fqdn: "service.api.${region}.hostname.com"
 ````
 
-This extension must be present with the correct parametrised value in order for multi-region to be enabled.
+This extension must be present with the correct parameterised value in order for multi-region to be enabled.
 
 ##### <a name="xTerraformProviderRegions">x-terraform-provider-regions</a>
 

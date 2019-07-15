@@ -174,7 +174,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL with a specResource containing a parametrised path and a parent ID and instance ID", func() {
+		Convey("When getResourceIDURL with a specResource containing a parameterised path and a parent ID and instance ID", func() {
 			expectedID := "5678"
 			parentIDs := []string{"1234"}
 			r := &SpecV2Resource{
@@ -234,7 +234,7 @@ func TestGetResourceURL(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceURL with a specResource with a resource path that is not parametrised", func() {
+		Convey("When getResourceURL with a specResource with a resource path that is not parameterised", func() {
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{
 				path: expectedPath,
@@ -259,7 +259,7 @@ func TestGetResourceURL(t *testing.T) {
 		// Using SpecV2Resource in this specific case to validate this specific scenario. The stub does not have logic
 		// to resolve parameters and it not a good idea to update the mock to have prod logic. Hence, using a real impl SpecV2Resource
 		// in this case so we have the subresource use case covered too.
-		Convey("When getResourceURL with a specResource with a resource path that is parametrised (e,g: subresource)", func() {
+		Convey("When getResourceURL with a specResource with a resource path that is parameterised (e,g: subresource)", func() {
 			expectedParentID := "parentID"
 			specStubResource := &SpecV2Resource{
 				Path: "/v1/resource/{resource_id}/subresource",
@@ -281,7 +281,7 @@ func TestGetResourceURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceURL with a specResource with a resource path that is not parametrised and overrides the global host", func() {
+		Convey("When getResourceURL with a specResource with a resource path that is not parameterised and overrides the global host", func() {
 			expectedHost := "wwww.host-overriden.com"
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{

@@ -1001,7 +1001,7 @@ func Test_getParentPropertiesNames(t *testing.T) {
 
 func TestGetResourcePath(t *testing.T) {
 
-	Convey("Given a SpecV2Resource with path resource that is not parametrised (root resource)", t, func() {
+	Convey("Given a SpecV2Resource with path resource that is not parameterised (root resource)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns",
 		}
@@ -1025,7 +1025,7 @@ func TestGetResourcePath(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource with path resource that is parametrised (one level sub-resource)", t, func() {
+	Convey("Given a SpecV2Resource with path resource that is parameterised (one level sub-resource)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{cdn_id}/v1/firewalls",
 		}
@@ -1051,7 +1051,7 @@ func TestGetResourcePath(t *testing.T) {
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - missing ids to resolve the path params properly: []")
 			})
 		})
-		Convey("When getResourcePath is called with a list of IDs that is bigger than the parametrised params in the path", func() {
+		Convey("When getResourcePath is called with a list of IDs that is bigger than the parameterised params in the path", func() {
 			_, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
 			Convey("Then the error returned should not be nil", func() {
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
@@ -1059,7 +1059,7 @@ func TestGetResourcePath(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource with path resource that is parametrised (few levels sub-resource)", t, func() {
+	Convey("Given a SpecV2Resource with path resource that is parameterised (few levels sub-resource)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{cdn_id}/v1/firewalls/{fw_id}/rules",
 		}
