@@ -449,13 +449,13 @@ func TestAccCDN_Create_and_UpdateSubresource(t *testing.T) {
 		},
 	})
 
-	numberOfRequestsRecieved := len(api.requestsReceived)
+	numberOfRequestsReceived := len(api.requestsReceived)
 
-	lastRequest := api.requestsReceived[numberOfRequestsRecieved-1]
+	lastRequest := api.requestsReceived[numberOfRequestsReceived-1]
 	assert.Equal(t, http.MethodDelete, lastRequest.Method)
 	assert.Equal(t, "/v1/cdns/42", lastRequest.URL.Path)
 
-	secondToLastRequest := api.requestsReceived[numberOfRequestsRecieved-2]
+	secondToLastRequest := api.requestsReceived[numberOfRequestsReceived-2]
 	assert.Equal(t, http.MethodDelete, secondToLastRequest.Method)
 	assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
 }
