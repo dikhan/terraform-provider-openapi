@@ -223,36 +223,6 @@ definitions:
         type: "string"
 `
 
-type fakeServiceSchemaPropertyConfiguration struct {
-}
-
-func (fakeServiceSchemaPropertyConfiguration) GetDefaultValue() (string, error) {
-	return "whatever default value", nil
-}
-func (fakeServiceSchemaPropertyConfiguration) ExecuteCommand() error {
-	return nil
-}
-
-type fakeServiceConfiguration struct {
-	getSwaggerURL func() string
-}
-
-func (c fakeServiceConfiguration) GetSwaggerURL() string {
-	return c.getSwaggerURL()
-}
-func (fakeServiceConfiguration) GetPluginVersion() string {
-	return "whatever plugin version"
-}
-func (fakeServiceConfiguration) IsInsecureSkipVerifyEnabled() bool {
-	return false
-}
-func (fakeServiceConfiguration) GetSchemaPropertyConfiguration(schemaPropertyName string) openapi.ServiceSchemaPropertyConfiguration {
-	return fakeServiceSchemaPropertyConfiguration{}
-}
-func (fakeServiceConfiguration) Validate(runningPluginVersion string) error {
-	return nil
-}
-
 const expectedCDNID = "42"
 const expectedCDNFirewallID = "1337"
 
@@ -277,13 +247,13 @@ func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
 		a.handleRequest(t, w, r)
 	}))
 	apiHost := apiServer.URL[7:]
-	fmt.Println("apiServer URL>>>>", apiHost)
+	//fmt.Println("apiServer URL>>>>", apiHost)
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		swaggerReturned := fmt.Sprintf(swaggerYAMLTemplate, apiHost)
-		fmt.Println("swaggerReturned>>>>", swaggerReturned)
+		//fmt.Println("swaggerReturned>>>>", swaggerReturned)
 		w.Write([]byte(swaggerReturned))
 	}))
-	fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
+	//fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
 	a.swaggerURL = swaggerServer.URL
 	a.apiHost = apiHost
 	return a
@@ -291,7 +261,7 @@ func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
 
 func (a *api) handleRequest(t *testing.T, w http.ResponseWriter, r *http.Request) {
 	a.requestsReceived = append(a.requestsReceived, r)
-	fmt.Println("apiServer request>>>>", r.URL, r.Method)
+	//fmt.Println("apiServer request>>>>", r.URL, r.Method)
 	var cdnEndpoint = regexp.MustCompile(`^/v1/cdns`)
 	var firewallEndpoint = regexp.MustCompile(`^/v1/cdns/[\d]*/v1/firewalls`)
 	switch {
@@ -392,9 +362,9 @@ func (a *api) apiPutResponse(t *testing.T, w http.ResponseWriter, r *http.Reques
 
 func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusCode int, w http.ResponseWriter, r *http.Request) {
 	if r.Body != nil {
-		bs, e := ioutil.ReadAll(r.Body)
+		_, e := ioutil.ReadAll(r.Body)
 		require.NoError(t, e)
-		fmt.Printf("%s request body >>> %s\n", r.Method, string(bs))
+		//fmt.Printf("%s request body >>> %s\n", r.Method, string(bs))
 	}
 	w.WriteHeader(httpResponseStatusCode)
 	if responseBody != "" {
