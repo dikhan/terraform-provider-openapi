@@ -493,7 +493,7 @@ func TestAccCDN_Import(t *testing.T) {
 			{
 				Config:        tfFileContents,
 				ResourceName:  openAPIResourceStateCDNFirewall,
-				ImportStateId: "42/1337",
+				ImportStateId: fmt.Sprintf("%s/%s", expectedCDNID, expectedCDNFirewallID),
 				ImportState:   true,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
