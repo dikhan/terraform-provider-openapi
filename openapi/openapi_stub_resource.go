@@ -12,6 +12,10 @@ type specStubResource struct {
 	resourcePutOperation    *specResourceOperation
 	resourceDeleteOperation *specResourceOperation
 	timeouts                *specTimeouts
+
+	parentResourceNames    []string
+	parentPropertyNames    []string
+	fullParentResourceName string
 }
 
 func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition) *specStubResource {
@@ -60,9 +64,15 @@ func (s *specStubResource) getHost() (string, error) {
 }
 
 func (s *specStubResource) isSubResource() (bool, []string, string, error) {
-	return true, []string{}, "", nil //TODO: get rid of hard-coding
+	if len(s.parentResourceNames) > 0 && s.fullParentResourceName != "" {
+		return true, s.parentResourceNames, s.fullParentResourceName, nil
+	}
+	return false, []string{}, "", nil
 }
 
 func (s *specStubResource) getParentPropertiesNames() ([]string, error) {
+	if len(s.parentPropertyNames) > 0 {
+		return s.parentPropertyNames, nil
+	}
 	return []string{}, nil
 }
