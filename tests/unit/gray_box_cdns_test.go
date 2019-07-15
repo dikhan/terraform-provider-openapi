@@ -400,46 +400,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 	}
 }
 
-func TestAccCDN_CreateSubresource(t *testing.T) {
-	api := initAPI(t, cdnSwaggerYAMLTemplate)
-	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
-
-	p := openapi.ProviderOpenAPI{ProviderName: providerName}
-	provider, err := p.CreateSchemaProviderWithConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
-
-	assert.NoError(t, err)
-	assertProviderSchema(t, provider)
-
-	resourceInstancesToCheck := map[string]string{
-		openAPIResourceNameCDNFirewall: fmt.Sprintf("%s/v1/cdns/%s/v1/firewalls", api.apiHost, expectedCDNID),
-		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
-	}
-
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
-	resource.Test(t, resource.TestCase{
-		IsUnitTest:                true,
-		PreCheck:                  nil,
-		Providers:                 testAccProviders,
-		CheckDestroy:              nil, // TODO: add impl to check destroy so we can verify that the resource deletion works as expected
-		PreventPostDestroyRefresh: true,
-		Steps: []resource.TestStep{
-			{
-				Config: tfFileContents,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "label", expectedCDNLabel),
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
-				),
-			},
-		},
-	})
-}
-
-func TestAccCDN_UpdateSubresource(t *testing.T) {
+func TestAccCDN_Create_and_UpdateSubresource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 
@@ -456,9 +417,7 @@ func TestAccCDN_UpdateSubresource(t *testing.T) {
 	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:                true,
-		PreCheck:                  nil,
 		Providers:                 testAccProviders,
-		CheckDestroy:              nil,
 		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			{
