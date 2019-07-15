@@ -274,18 +274,35 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
-
-			isSubresource, parentResourceNames, _, _ := r.openAPIResource.isSubResource()
-			ids := strings.Split(data.Id(), "/")
-			if isSubresource && len(ids) == 2 { //TODO: what if len(ids) is wrong?
-				data.Set(parentResourceNames[0]+"_id", ids[0])
-				data.SetId(ids[1])
+			isSubResource, _, _, err := r.openAPIResource.isSubResource()
+			if err != nil {
+				return results, err
 			}
-
-			// If the resources is NOT a subresource and just a top level resource then the array passed in will just contain
+			if isSubResource {
+				parentPropertyNames, err := r.openAPIResource.getParentPropertiesNames()
+				if err != nil {
+					return results, err
+				}
+				// The expected format for the ID provided when importing a sub-resource is 1234/567 where 1234 would be the parentID and 567 the instance ID
+				ids := strings.Split(data.Id(), "/")
+				if len(ids) < 2 {
+					return results, fmt.Errorf("can not import a subresource without providing all the parent IDs (%d) and the instance ID", len(parentPropertyNames))
+				}
+				parentIDsLen := len(ids) - 1
+				if len(parentPropertyNames) < parentIDsLen {
+					return results, fmt.Errorf("the number of parent IDs provided %d is greater than the expected number of parent IDs %d", parentIDsLen, len(parentPropertyNames))
+				}
+				if len(parentPropertyNames) > parentIDsLen {
+					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen)
+				}
+				for idx, parentPropertyName := range parentPropertyNames {
+					data.Set(parentPropertyName, ids[idx])
+				}
+				data.SetId(ids[len(ids)-1])
+			}
+			// If the resources is NOT a sub-resource and just a top level resource then the array passed in will just contain
 			// 	the data object we get from terraform core without any updates.
-
-			err := r.read(data, i)
+			err = r.read(data, i)
 			return results, err
 		},
 	}
