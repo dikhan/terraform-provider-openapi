@@ -229,7 +229,7 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-func (o *SpecV2Resource) isSubResource() (bool, []string, string, error) {
+func (o *SpecV2Resource) isSubResource() (bool, []string, string, error) { //TODO: remove error from return list, as it's always nil
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {

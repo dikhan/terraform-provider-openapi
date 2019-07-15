@@ -460,51 +460,54 @@ func TestAccCDN_Create_and_UpdateSubresource(t *testing.T) {
 	assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
 }
 
-// TODO: make this pass when working on https://www.pivotaltracker.com/story/show/167221970
-//func TestAccCDN_Import(t *testing.T) {
-//	api := initAPI(t, cdnSwaggerYAMLTemplate)
-//	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
-//
-//	p := openapi.ProviderOpenAPI{ProviderName: providerName}
-//	provider, err := p.CreateSchemaProviderWithConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
-//	assert.NoError(t, err)
-//	assertProviderSchema(t, provider)
-//
-//	resourceInstancesToCheck := map[string]string{
-//		openAPIResourceNameCDNFirewall: fmt.Sprintf("%s/v1/cdns/%s/v1/firewalls", api.apiHost, expectedCDNID),
-//		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
-//	}
-//
-//	// TODO: the API should already be populated with the resource so the import will internally be able to call the GET
-//	// operation and fetch the resource propertly
-//
-//	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
-//	resource.Test(t, resource.TestCase{
-//		IsUnitTest:                true,
-//		PreCheck:                  nil,
-//		Providers:                 testAccProviders,
-//		CheckDestroy:              nil,
-//		PreventPostDestroyRefresh: true,
-//		Steps: []resource.TestStep{
-//			{
-//				Config:            tfFileContents,
-//				ResourceName:      openAPIResourceStateCDN,
-//				ImportStateId:     "ID of the resource to be imported", // TODO: use the actual ID of the resource to be imported
-//				ImportState:       true,
-//				ImportStateVerify: true,
-//				Check: resource.ComposeTestCheckFunc(
-//					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
-//					resource.TestCheckResourceAttr(
-//						openAPIResourceStateCDN, "label", expectedCDNLabel),
-//					resource.TestCheckResourceAttr(
-//						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
-//					resource.TestCheckResourceAttr(
-//						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
-//				),
-//			},
-//		},
-//	})
-//}
+func TestAccCDN_Import(t *testing.T) {
+	api := initAPI(t, cdnSwaggerYAMLTemplate)
+
+	api.cachePayloads["/v1/cdns/42/v1/firewalls/1337"] = `{"id":1337, "label":"importedFWLabel"}`
+
+	tfFileContents := fmt.Sprintf(`
+		# URI /v1/cdns/{parent_id}/v1/firewalls/
+	   resource "%s" "%s" {
+	   }`,
+		openAPIResourceNameCDNFirewall,
+		openAPIResourceInstanceNameCDNFirewall)
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderWithConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
+	assert.NoError(t, err)
+	assertProviderSchema(t, provider)
+
+	resourceInstancesToCheck := map[string]string{
+		openAPIResourceNameCDNFirewall: fmt.Sprintf("%s/v1/cdns/%s/v1/firewalls", api.apiHost, expectedCDNID),
+		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
+	}
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		PreCheck:                  nil,
+		Providers:                 testAccProviders,
+		CheckDestroy:              nil,
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				Config:        tfFileContents,
+				ResourceName:  openAPIResourceStateCDNFirewall,
+				ImportStateId: "42/1337",
+				ImportState:   true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", expectedCDNLabel),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
+				),
+			},
+		},
+	})
+}
 
 func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["id"])
