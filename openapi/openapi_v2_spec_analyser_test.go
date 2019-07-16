@@ -1806,7 +1806,7 @@ definitions:
 			firewallV1Resource := terraformCompliantResources[0]
 
 			Convey("And the firewall is SubResource which rightly references to the parent CDN resource", func() {
-				subRes, parentIDs, fullParentID, err := firewallV1Resource.isSubResource()
+				subRes, parentIDs, fullParentID := firewallV1Resource.isSubResource()
 				So(err, ShouldBeNil)
 				So(subRes, ShouldBeTrue)
 				So(parentIDs, ShouldResemble, []string{"cdns_v1"})
@@ -1955,7 +1955,7 @@ definitions:
 			})
 			cndV1Resource := terraformCompliantResources[0]
 			Convey("And the cndV1Resource should not be considered a subresource", func() {
-				subRes, parentIDs, fullParentID, err := cndV1Resource.isSubResource()
+				subRes, parentIDs, fullParentID := cndV1Resource.isSubResource()
 				So(err, ShouldBeNil)
 				So(subRes, ShouldBeFalse)
 				So(parentIDs, ShouldBeEmpty)

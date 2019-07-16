@@ -152,10 +152,7 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
 	}
 
-	isSubResource, _, fullParentResourceName, err := o.isSubResource()
-	if err != nil {
-		return "", err
-	}
+	isSubResource, _, fullParentResourceName := o.isSubResource()
 	if isSubResource {
 		fullResourceName = fullParentResourceName + "_" + fullResourceName
 	}
@@ -227,7 +224,7 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-func (o *SpecV2Resource) isSubResource() (bool, []string, string, error) { //TODO: remove error from return list, as it's always nil
+func (o *SpecV2Resource) isSubResource() (bool, []string, string) {
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
@@ -247,9 +244,9 @@ func (o *SpecV2Resource) isSubResource() (bool, []string, string, error) { //TOD
 			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
 		}
 		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
-		return true, parentResourceNames, fullParentResourceName, nil
+		return true, parentResourceNames, fullParentResourceName
 	}
-	return false, nil, "", nil
+	return false, nil, ""
 }
 
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
@@ -270,10 +267,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
 
-	isSubResource, _, _, err := o.isSubResource()
-	if err != nil {
-		return nil, err
-	}
+	isSubResource, _, _ := o.isSubResource()
 	if isSubResource {
 		parentPropertyNames, err := o.getParentPropertiesNames()
 		if err != nil {
@@ -296,10 +290,7 @@ func (o *SpecV2Resource) getParentPropertiesNames() ([]string, error) {
 		return nil, errors.New("path was empty")
 	}
 
-	isSubResource, parentNames, _, err := o.isSubResource()
-	if err != nil {
-		return nil, err
-	}
+	isSubResource, parentNames, _ := o.isSubResource()
 
 	if isSubResource {
 		parentPropertyNames := []string{}

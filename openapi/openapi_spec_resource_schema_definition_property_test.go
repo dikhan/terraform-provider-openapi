@@ -18,7 +18,7 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulted bool should be the expected one", func() {
+			Convey("Then the resulting bool should be the expected one", func() {
 				So(compliantName, ShouldEqual, "compliant_prop_name")
 			})
 		})
@@ -31,7 +31,7 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulted bool should be the expected one", func() {
+			Convey("Then the resulting bool should be the expected one", func() {
 				So(compliantName, ShouldEqual, "non_compliant_name")
 			})
 		})
@@ -45,7 +45,7 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulted bool should be the expected one", func() {
+			Convey("Then the resulting bool should be the expected one", func() {
 				So(compliantName, ShouldEqual, "preferred_compliant_name")
 			})
 		})
@@ -59,7 +59,7 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulted bool should be the expected one", func() {
+			Convey("Then the resulting bool should be the expected one", func() {
 				// If preferred name is set, whether the value is compliant or not that will be the value configured for
 				// the terraform schema property. If the name is not terraform name compliant, Terraform will complain about
 				// it at runtime

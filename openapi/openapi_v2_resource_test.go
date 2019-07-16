@@ -293,10 +293,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
 			Convey("And the the bool returned should be false", func() {
 				So(isSubResource, ShouldBeFalse)
 			})
@@ -313,10 +310,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
 			Convey("And the the bool returned should be false", func() {
 				So(isSubResource, ShouldBeFalse)
 			})
@@ -333,10 +327,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/firewalls",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
 			Convey("And the the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
@@ -354,10 +345,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns/{id}/firewalls",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
 			Convey("And the the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
@@ -375,10 +363,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns/{id}/firewalls/{id}/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
 			Convey("And the the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
@@ -397,10 +382,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
 			Convey("And the the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
@@ -419,10 +401,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName, err := r.isSubResource()
-			Convey("Then the error should be nil - the provider does not enforce subresource paths to be rightly configured even though that is the suggestion", func() {
-				So(err, ShouldBeNil)
-			})
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
 			Convey("And then the resource should be considered a subresource and the output should match the expected output values", func() {
 				So(isSubResource, ShouldBeTrue)
 				So(len(parentResourceNames), ShouldEqual, 1)

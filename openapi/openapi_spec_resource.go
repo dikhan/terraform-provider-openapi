@@ -14,9 +14,8 @@ type SpecResource interface {
 	getResourceOperations() specResourceOperations
 	getTimeouts() (*specTimeouts, error)
 	// isSubResource returns true if the resource path is a subresource. Additionally, it will return the list of parent
-	// resource names and the resource parent names merged in one to facilitate parent names processing. If there is an
-	// error it will be returned as last return argument
-	isSubResource() (bool, []string, string, error)
+	// resource names and the resource parent names merged in one to facilitate parent names processing.
+	isSubResource() (bool, []string, string)
 	// getParentPropertiesNames is responsible to building the parent properties names for a resource that is a subresource
 	getParentPropertiesNames() ([]string, error)
 }

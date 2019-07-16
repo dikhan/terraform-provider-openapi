@@ -174,7 +174,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
 	}
 
-	isSubResource, _, _, _ := r.openAPIResource.isSubResource()
+	isSubResource, _, _ := r.openAPIResource.isSubResource()
 	if isSubResource {
 		parentResourceNames, err := r.openAPIResource.getParentPropertiesNames()
 		if err != nil {
@@ -274,10 +274,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
-			isSubResource, _, _, err := r.openAPIResource.isSubResource()
-			if err != nil {
-				return results, err
-			}
+			isSubResource, _, _ := r.openAPIResource.isSubResource()
 			if isSubResource {
 				parentPropertyNames, err := r.openAPIResource.getParentPropertiesNames()
 				if err != nil {
@@ -302,7 +299,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 			}
 			// If the resources is NOT a sub-resource and just a top level resource then the array passed in will just contain
 			// 	the data object we get from terraform core without any updates.
-			err = r.read(data, i)
+			err := r.read(data, i)
 			return results, err
 		},
 	}
