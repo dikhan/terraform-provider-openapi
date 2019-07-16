@@ -841,8 +841,6 @@ func TestPerformRequest(t *testing.T) {
 
 func TestProviderClientPost(t *testing.T) {
 
-	// TODO: Add test coverage for subresource
-
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}

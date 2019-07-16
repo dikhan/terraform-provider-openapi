@@ -1849,11 +1849,10 @@ definitions:
 				So(idExists, ShouldBeTrue)
 				labelExists, _ := assertPropertyExists(actualResourceSchema.Properties, "label")
 				So(labelExists, ShouldBeTrue)
-				// TODO:
-				//   - the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
-				//     the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
-				//     have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
-				//     That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
+				// TODO: the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
+				//  the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
+				//  have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
+				//  That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
 				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdns_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
 			})
 

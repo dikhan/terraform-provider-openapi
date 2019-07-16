@@ -181,26 +181,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 	})
 }
 
-// TODO: - Add test coverage for (o *SpecV2Resource) buildResourceName() which is now missing
-// TODO:   - Add coverage for sub-resource use case. The acceptance criteria will be that given a configured SpecV2Resource that is a sub-resource the returned name will be the expected one. For instance: /v1/cdns/{id}/v1/firewalls the expected resource name (automatically built from the path) would be cdns_v1_firewalls_v1.
-// TODO:     Few use cases to cover here in terms of versioning:
-// TODO:	   - /v1/cdns/{id}/v1/firewalls: the expectation here would be a returned name: cdns_v1_firewalls_v1. Having a version for each resousrce ensures the resource can evolve to other versions non backwards compatible and a given parent version can have multiple subresource version so subresources can evolve independently too.
-// TODO:	   - /v1/cdns/{id}/firewalls: the expectation here would be a returned name: cdns_v1_firewalls (if the service provider decides to go this way that's fine, although that will mean that the cdn can only have one version of firewall resulting into a more difficult evolution of the API if the firewall model needs to change with non backwards compatible changes - still up to the service provider but the use case should be supported)
-// TODO:	   - /cdns/{id}/v1/firewalls: the expectation here would be a returned name: cdns_firewalls_v1
-// TODO:	   - /cdns/{id}/firewalls: the expectation here would be a returned name: cdns_firewalls
-// TODO: Note: For this first iteration of the implementation it is not expected that the resource name will contain the preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration. However, if the subresource contains the x-terraform-resource-name, that should be honored. For instance, if /v1/cdns/{id}/v1/firewalls path had the x-terraform-resource-name defined and the value was "cdn_v1_firewall" the expected returned name would be "cdn_v1_firewall_v1" (note the version should be automatically injected)
 func TestBuildResourceName(t *testing.T) {
-
-	// TODO: add missing test for the rest of the use cases that are not subresources
-	///v1/cdns/{id}/v1/firewalls
-	///v1/cdns/{id}/v2/firewalls
-	///v1/cdns/{id}/v2/firewalls/v3/rules
-	///v1/cdns/{id}/v2/firewalls/{id}/v3/rules
-	///v1/cdns/
-	///cdns
-	///v1/cdns/{id}/v2/firewalls/{id}/rules
-	///v1/cdns/{id}/firewalls
-	///cdns/{id}
 
 	testCases := []struct {
 		path                 string
@@ -275,6 +256,9 @@ func TestBuildResourceName(t *testing.T) {
 		})
 	}
 
+	// TODO: Add support for sub-resources names to honour preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
+	//  For instance, if /v1/cdns/{id}/v1/firewalls path had the x-terraform-resource-name defined and the value was "cdn_v1_firewall"
+	// the expected returned name would be "cdn_v1_firewall_v1" (note the version should be automatically injected)
 	Convey("Given a SpecV2Resource with a path and a preferred terraform resource name", t, func() {
 		expectedResourceName := "user"
 		r := SpecV2Resource{
@@ -1506,7 +1490,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		// TODO: test for createSchemaDefinitionProperty added by fradiben
 		Convey("When createSchemaDefinitionProperty is called with an optional property schema", func() {
 			propertyName := "propertyWithNestedObj"
 

@@ -119,11 +119,9 @@ func (o *SpecV2Resource) getResourceName() string {
 	return o.Name
 }
 
-// getResourceName gets the name of the resource from a path /resource/{id}
 // getResourceName returns the name of the resource (including the version if applicable). The name is build from the resource
 // root path /resource/{id} or if specified the value set in the x-terraform-resource-name extension is used instead along
-// along with the version (if applicable)
-// the provider name to build the terraform resource name that will be used in the terraform configuration file
+// with the version (if applicable)
 func (o *SpecV2Resource) buildResourceName() (string, error) {
 	resourcePath := o.Path
 

@@ -65,11 +65,6 @@ resource "swaggercodegen_cdn_v1" "my_cdn2" {
   dynamic "array_of_objects_example" {
     for_each = [swaggercodegen_cdn_v1.my_cdn.array_of_objects_example[0]]
     content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
       origin_port = lookup(array_of_objects_example.value, "origin_port", null)
       protocol    = lookup(array_of_objects_example.value, "protocol", null)
     }
@@ -77,11 +72,6 @@ resource "swaggercodegen_cdn_v1" "my_cdn2" {
   dynamic "array_of_objects_example" {
     for_each = [swaggercodegen_cdn_v1.my_cdn.array_of_objects_example[1]]
     content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
       origin_port = lookup(array_of_objects_example.value, "origin_port", null)
       protocol    = lookup(array_of_objects_example.value, "protocol", null)
     }
