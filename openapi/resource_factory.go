@@ -201,13 +201,9 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentIDs, err := r.getParentIDs(data)
+	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
 	if err != nil {
-		return err //untested
-	}
-	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
-	if err != nil {
-		return err //untested
+		return err
 	}
 
 	operation := r.openAPIResource.getResourceOperations().Put
@@ -219,7 +215,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
 	}
-	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentIDs...)
+	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentsIDs...)
 	if err != nil {
 		return err //untested
 	}
@@ -238,20 +234,16 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentIDs, err := r.getParentIDs(data)
+	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
 	if err != nil {
-		return err //untested
-	}
-	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
-	if err != nil {
-		return err //untested
+		return err
 	}
 
 	operation := r.openAPIResource.getResourceOperations().Delete
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
 	}
-	res, err := providerClient.Delete(r.openAPIResource, data.Id(), parentIDs...)
+	res, err := providerClient.Delete(r.openAPIResource, data.Id(), parentsIDs...)
 	if err != nil {
 		return err
 	}

@@ -398,6 +398,17 @@ func TestUpdate(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When create is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.update(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
 }
 
 func TestDelete(t *testing.T) {
@@ -471,6 +482,17 @@ func TestDelete(t *testing.T) {
 			})
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE operation, check the swagger file exposed on '/v1/resource'")
+			})
+		})
+	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When create is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.delete(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
 			})
 		})
 	})
