@@ -74,5 +74,5 @@ func (s *specStubResource) getParentPropertiesNames() ([]string, error) {
 	if len(s.parentPropertyNames) > 0 {
 		return s.parentPropertyNames, nil
 	}
-	return []string{}, nil
+	return []string{}, nil //untested
 }

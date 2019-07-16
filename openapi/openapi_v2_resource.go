@@ -262,7 +262,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	for propertyName, property := range schema.Properties {
 		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property, schema.Required)
 		if err != nil {
-			return nil, err
+			return nil, err //untested
 		}
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
@@ -271,12 +271,12 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	if isSubResource {
 		parentPropertyNames, err := o.getParentPropertiesNames()
 		if err != nil {
-			return nil, err
+			return nil, err //untested
 		}
 		for _, parentPropertyName := range parentPropertyNames {
 			pr, err := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
 			if err != nil {
-				return nil, err
+				return nil, err //untested
 			}
 			pr.Computed = true
 			schemaDefinition.Properties = append(schemaDefinition.Properties, pr)

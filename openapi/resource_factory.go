@@ -96,12 +96,12 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 
 	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
-		return err
+		return err //untested
 	}
 
 	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
-		return err
+		return err //untested
 	}
 
 	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
@@ -121,7 +121,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 
 	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutCreate)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourcePath, res.StatusCode, err) //untested
 	}
 
 	return r.updateStateWithPayloadData(responsePayload, data)
@@ -137,7 +137,7 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	resourcePath, err := r.openAPIResource.getResourcePath(parentsIDs)
 
 	if err != nil {
-		return err
+		return err //untested
 	}
 
 	remoteData, err := r.readRemote(data.Id(), openAPIClient, parentsIDs...)
@@ -178,7 +178,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 	if isSubResource {
 		parentResourceNames, err := r.openAPIResource.getParentPropertiesNames()
 		if err != nil {
-			return nil, err
+			return nil, err //untested
 		}
 
 		parentIDs := []string{}
@@ -200,11 +200,11 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 
 	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
-		return err
+		return err //untested
 	}
 	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
-		return err
+		return err //untested
 	}
 
 	operation := r.openAPIResource.getResourceOperations().Put
@@ -218,15 +218,15 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	}
 	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentIDs...)
 	if err != nil {
-		return err
+		return err //untested
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
+		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err) //untested
 	}
 
 	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutUpdate)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourcePath, res.StatusCode, err) //untested
 	}
 
 	return r.updateStateWithPayloadData(responsePayload, data)
@@ -237,11 +237,11 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 
 	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
-		return err
+		return err //untested
 	}
 	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
-		return err
+		return err //untested
 	}
 
 	operation := r.openAPIResource.getResourceOperations().Delete
@@ -263,7 +263,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 
 	err = r.handlePollingIfConfigured(nil, data, providerClient, operation, res.StatusCode, schema.TimeoutDelete)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", resourcePath, res.StatusCode, err) //untested
 	}
 
 	return nil
@@ -278,7 +278,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 			if isSubResource {
 				parentPropertyNames, err := r.openAPIResource.getParentPropertiesNames()
 				if err != nil {
-					return results, err
+					return results, err //untested
 				}
 				// The expected format for the ID provided when importing a sub-resource is 1234/567 where 1234 would be the parentID and 567 the instance ID
 				ids := strings.Split(data.Id(), "/")
@@ -290,7 +290,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 					return results, fmt.Errorf("the number of parent IDs provided %d is greater than the expected number of parent IDs %d", parentIDsLen, len(parentPropertyNames))
 				}
 				if len(parentPropertyNames) > parentIDsLen {
-					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen)
+					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen) //untested
 				}
 				for idx, parentPropertyName := range parentPropertyNames {
 					data.Set(parentPropertyName, ids[idx])
@@ -330,11 +330,11 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 
 	ids, err := r.getParentIDs(resourceLocalData)
 	if err != nil {
-		return err
+		return err //untested
 	}
 	resourcePath, err := r.openAPIResource.getResourcePath(ids)
 	if err != nil {
-		return err
+		return err //untested
 	}
 
 	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
@@ -353,14 +353,14 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	// Wait, catching any errors
 	remoteData, err := stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
+		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err) //untested
 	}
 	if responsePayload != nil {
 		remoteDataCasted, ok := remoteData.(map[string]interface{})
 		if ok {
 			*responsePayload = remoteDataCasted
 		} else {
-			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData))
+			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData)) //untested
 		}
 	}
 	return nil
@@ -370,11 +370,11 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 	return func() (interface{}, string, error) {
 		ids, err := r.getParentIDs(resourceLocalData)
 		if err != nil {
-			return nil, "", err
+			return nil, "", err //untested
 		}
 		resourcePath, err := r.openAPIResource.getResourcePath(ids)
 		if err != nil {
-			return nil, "", err
+			return nil, "", err //untested
 		}
 
 		remoteData, err := r.readRemote(resourceLocalData.Id(), providerClient)
