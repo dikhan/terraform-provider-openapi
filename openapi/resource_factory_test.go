@@ -508,7 +508,7 @@ func TestImporter(t *testing.T) {
 			Convey("Then the resource importer returned should Not be nil", func() {
 				So(resourceImporter, ShouldNotBeNil)
 			})
-			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+			Convey("And when the resourceImporter State method is invoked with the provider client and resource data for one item", func() {
 				data, err := resourceImporter.State(resourceData, client)
 				Convey("Then the err returned should be nil", func() {
 					So(err, ShouldBeNil)
