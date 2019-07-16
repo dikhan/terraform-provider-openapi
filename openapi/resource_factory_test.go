@@ -555,6 +555,30 @@ func TestDelete(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (delete) but the status field is missing from the model", t, func() {
+		expectedReturnCode := 204
+		testSchema := newTestSchema(idProperty, stringProperty)
+		resourceData := testSchema.getResourceData(t)
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{responses: specResponses{expectedReturnCode: &specResponse{isPollingEnabled: true}}})
+		r := resourceFactory{
+			openAPIResource: specResource,
+			defaultTimeout:  time.Duration(0 * time.Second),
+		}
+		Convey("When create is called with resource data and a client", func() {
+			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+			}
+			err := r.delete(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "polling mechanism failed after DELETE /v1/resource call with response status code (204): error waiting for resource to reach a completion status ([destroyed]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 204 not matching expected one [200] ()")
+			})
+		})
+	})
 }
 
 func TestGetParentIDsAndResourcePath(t *testing.T) {
