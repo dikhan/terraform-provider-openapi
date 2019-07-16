@@ -247,13 +247,10 @@ func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
 		a.handleRequest(t, w, r)
 	}))
 	apiHost := apiServer.URL[7:]
-	//fmt.Println("apiServer URL>>>>", apiHost)
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		swaggerReturned := fmt.Sprintf(swaggerYAMLTemplate, apiHost)
-		//fmt.Println("swaggerReturned>>>>", swaggerReturned)
 		w.Write([]byte(swaggerReturned))
 	}))
-	//fmt.Println("swaggerServer URL>>>>", swaggerServer.URL)
 	a.swaggerURL = swaggerServer.URL
 	a.apiHost = apiHost
 	return a
@@ -261,7 +258,6 @@ func initAPI(t *testing.T, swaggerYAMLTemplate string) *api {
 
 func (a *api) handleRequest(t *testing.T, w http.ResponseWriter, r *http.Request) {
 	a.requestsReceived = append(a.requestsReceived, r)
-	//fmt.Println("apiServer request>>>>", r.URL, r.Method)
 	var cdnEndpoint = regexp.MustCompile(`^/v1/cdns`)
 	var firewallEndpoint = regexp.MustCompile(`^/v1/cdns/[\d]*/v1/firewalls`)
 	switch {
