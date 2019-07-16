@@ -333,7 +333,7 @@ func TestReadRemote(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
+	Convey("Given a resource factory containing some properties including an immutable property", t, func() {
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, immutableProperty)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
@@ -390,18 +390,33 @@ func TestUpdate(t *testing.T) {
 				So(err, ShouldEqual, updateError)
 			})
 		})
+	})
 
+	Convey("Given a resource factory containing some properties", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
 		Convey("When update is called with resource data and a client returns a non expected http code when reading remote", func() {
 			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{},
-				returnHTTPCode:  http.StatusInternalServerError,
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+				returnHTTPCode: http.StatusInternalServerError,
 			}
 			err := r.update(resourceData, client)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
+			Convey("And the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] UPDATE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 202] ()")
 			})
-			Convey("And the error returned should be", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
+		})
+		Convey("When update is called with resource data and a client returns a non expected error", func() {
+			expectedError := "some error returned by the PUT operation"
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+				error: fmt.Errorf(expectedError),
+			}
+			err := r.update(resourceData, client)
+			Convey("And the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
 			})
 		})
 	})
@@ -428,6 +443,28 @@ func TestUpdate(t *testing.T) {
 			err := r.update(nil, client)
 			Convey("Then the error should not be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (put) but the status field is missing from the model", t, func() {
+		testSchema := newTestSchema(idProperty, stringProperty)
+		resourceData := testSchema.getResourceData(t)
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{responses: specResponses{200: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{})
+		r := resourceFactory{
+			openAPIResource: specResource,
+			defaultTimeout:  time.Duration(0 * time.Second),
+		}
+		Convey("When create is called with resource data and a client", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+			}
+			err := r.update(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (200): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error occurred while retrieving status identifier value from payload for resource 'resourceName' (): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
 			})
 		})
 	})
