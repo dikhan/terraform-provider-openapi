@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -234,7 +235,7 @@ func TestGetResourceURL(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceURL with a specResource with a resource path that is not parameterised", func() {
+		Convey("When getResourceURL is called with a specResource with a resource path that is not parameterised", func() {
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{
 				path: expectedPath,
@@ -253,6 +254,19 @@ func TestGetResourceURL(t *testing.T) {
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
+			})
+		})
+
+		Convey("When getResourceURL is called with a resource which blows up on getResourcePath", func() {
+			specStubResource := &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (string, error) { return "", errors.New("getResourcePath blew up") },
+			}
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldNotBeNil)
+			})
+			Convey("And then resourceURL should be empty", func() {
+				So(resourceURL, ShouldBeEmpty)
 			})
 		})
 

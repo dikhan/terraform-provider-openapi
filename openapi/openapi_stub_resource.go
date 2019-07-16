@@ -16,7 +16,8 @@ type specStubResource struct {
 	parentResourceNames    []string
 	parentPropertyNames    []string
 	fullParentResourceName string
-	funcGetResourcePath    func(parentIDs []string) (string, error)
+
+	funcGetResourcePath func(parentIDs []string) (string, error)
 }
 
 func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition) *specStubResource {

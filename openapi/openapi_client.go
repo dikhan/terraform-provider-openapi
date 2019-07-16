@@ -164,7 +164,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 	basePath := o.openAPIBackendConfiguration.getBasePath()
 	resourceRelativePath, err := resource.getResourcePath(parentIDs)
 	if err != nil {
-		return "", err //untested
+		return "", err
 	}
 
 	// Fall back to override the host if value is not empty; otherwise global host will be used as usual
