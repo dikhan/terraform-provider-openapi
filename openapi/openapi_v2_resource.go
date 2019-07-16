@@ -262,7 +262,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	for propertyName, property := range schema.Properties {
 		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property, schema.Required)
 		if err != nil {
-			return nil, err //untested
+			return nil, err
 		}
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}

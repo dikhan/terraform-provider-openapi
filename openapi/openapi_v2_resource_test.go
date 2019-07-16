@@ -424,6 +424,35 @@ func assertSchemaProperty(actualSpecSchemaDefinition *specSchemaDefinition, expe
 
 func TestGetResourceSchema(t *testing.T) {
 
+	Convey("Given a blank SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When getSchemaDefinition is called passing a blank schema", func() {
+			d, e := r.getSchemaDefinition(&spec.Schema{})
+			Convey("Then the error returned is not nil", func() {
+				So(e, ShouldBeNil)
+			})
+			Convey("And the schema definition contains empty Properties", func() {
+				So(d, ShouldNotBeNil)
+				So(d.Properties, ShouldBeEmpty)
+			})
+		})
+		Convey("When getSchemaDefinition is called passing a schema with a weird property type", func() {
+			schema := spec.Schema{SchemaProps: spec.SchemaProps{Properties: map[string]spec.Schema{"string_readonly_prop": {
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"something weird"},
+				},
+			},
+			}}}
+			d, e := r.getSchemaDefinition(&schema)
+			Convey("Then the error returned is not nil", func() {
+				So(e, ShouldNotBeNil)
+			})
+			Convey("And the schema definition returned is nil", func() {
+				So(d, ShouldBeNil)
+			})
+		})
+
+	})
 	Convey("Given a SpecV2Resource containing a root path", t, func() {
 		r := &SpecV2Resource{
 			Path: "/cdns",
