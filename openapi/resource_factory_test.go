@@ -3,13 +3,14 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/go-openapi/spec"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-openapi/spec"
 
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -515,13 +516,13 @@ func TestImporter(t *testing.T) {
 				Convey("And the data list returned should have one item", func() {
 					So(len(data), ShouldEqual, 1)
 				})
-				Convey("And the data returned should contained the parent id field with the right value", func() {
+				Convey("And the data returned should contain the parent id field with the right value", func() {
 					So(data[0].Get(expectedParentPropertyName), ShouldEqual, expectedParentID)
 				})
-				Convey("And the data returned should contained the expected resource ID", func() {
+				Convey("And the data returned should contain the expected resource ID", func() {
 					So(data[0].Id(), ShouldEqual, expectedResourceInstanceID)
 				})
-				Convey("And the data returned should contained the imported string field with the right value returned from the API", func() {
+				Convey("And the data returned should contain the imported string field with the right value returned from the API", func() {
 					So(data[0].Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 				})
 			})
