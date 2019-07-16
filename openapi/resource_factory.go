@@ -88,6 +88,18 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	return schemaDefinition.createResourceSchema()
 }
 
+func (r resourceFactory) getParentIDsAndResourcePathIfSubResource(data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
+	parentIDs, err = r.getParentIDs(data)
+	if err != nil {
+		return nil, "", err
+	}
+	resourcePath, err = r.openAPIResource.getResourcePath(parentIDs)
+	if err != nil {
+		return nil, "", err //untested
+	}
+	return
+}
+
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 	operation := r.openAPIResource.getResourceOperations().Post
