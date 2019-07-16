@@ -368,7 +368,10 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 
 func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		ids, _ := r.getParentIDs(resourceLocalData)
+		ids, err := r.getParentIDs(resourceLocalData)
+		if err != nil {
+			return nil, "", err //untested
+		}
 		resourcePath, err := r.openAPIResource.getResourcePath(ids)
 		if err != nil {
 			return nil, "", err //untested
