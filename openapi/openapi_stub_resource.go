@@ -77,9 +77,9 @@ func (s *specStubResource) isSubResource() (bool, []string, string) {
 	return false, []string{}, ""
 }
 
-func (s *specStubResource) getParentPropertiesNames() ([]string, error) {
+func (s *specStubResource) getParentPropertiesNames() []string {
 	if len(s.parentPropertyNames) > 0 {
-		return s.parentPropertyNames, nil
+		return s.parentPropertyNames
 	}
-	return []string{}, nil
+	return []string{}
 }

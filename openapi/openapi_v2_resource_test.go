@@ -913,12 +913,9 @@ func Test_getParentPropertiesNames(t *testing.T) {
 	Convey("Given a SpecV2Resource with no Path", t, func() {
 		r := &SpecV2Resource{}
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
+			p := r.getParentPropertiesNames()
 			Convey("Then array returned should be empty", func() {
 				So(p, ShouldBeEmpty)
-			})
-			Convey("And the error should match the expected one", func() {
-				So(err.Error(), ShouldEqual, "path was empty")
 			})
 		})
 	})
@@ -926,12 +923,9 @@ func Test_getParentPropertiesNames(t *testing.T) {
 	Convey("Given a SpecV2Resource with some Path that is not a subresource", t, func() {
 		r := &SpecV2Resource{Path: "/foo"}
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
+			p := r.getParentPropertiesNames()
 			Convey("Then array returned should be empty", func() {
 				So(p, ShouldBeEmpty)
-			})
-			Convey("And the error should match the expected one", func() {
-				So(err.Error(), ShouldEqual, "can not calculate parent properties from a resource that is not a subresource")
 			})
 		})
 	})
@@ -942,10 +936,7 @@ func Test_getParentPropertiesNames(t *testing.T) {
 		}
 
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			p := r.getParentPropertiesNames()
 			Convey("And the array returned should contain the expected parent name", func() {
 				So(len(p), ShouldEqual, 1)
 				So(p[0], ShouldEqual, "cdns_v2_id")
@@ -958,10 +949,7 @@ func Test_getParentPropertiesNames(t *testing.T) {
 			Path: "/cdns/{id}/v1/firewalls",
 		}
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			p := r.getParentPropertiesNames()
 			Convey("And the array returned should contain the expected parent name", func() {
 				So(len(p), ShouldEqual, 1)
 				So(p[0], ShouldEqual, "cdns_id")
@@ -974,10 +962,7 @@ func Test_getParentPropertiesNames(t *testing.T) {
 			Path: "/v1/cdns/{id}/firewalls/{id}/rules",
 		}
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			p := r.getParentPropertiesNames()
 			Convey("And the array returned should contain the expected parent names", func() {
 				So(len(p), ShouldEqual, 2)
 				So(p[0], ShouldEqual, "cdns_v1_id")
@@ -991,10 +976,8 @@ func Test_getParentPropertiesNames(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/rules",
 		}
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			p := r.getParentPropertiesNames()
+
 			Convey("And the array returned should contain the expected parent names", func() {
 				So(len(p), ShouldEqual, 2)
 				So(p[0], ShouldEqual, "cdns_v1_id")
@@ -1008,10 +991,7 @@ func Test_getParentPropertiesNames(t *testing.T) {
 			Path: "/cdns/{id}/v1/firewalls/{id}/rules",
 		}
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			p := r.getParentPropertiesNames()
 			Convey("And the array returned should contain the expected parent names", func() {
 				So(len(p), ShouldEqual, 2)
 				So(p[0], ShouldEqual, "cdns_id")
@@ -1025,10 +1005,7 @@ func Test_getParentPropertiesNames(t *testing.T) {
 			Path: "/cdns/{id}/firewalls/{id}/rules",
 		}
 		Convey("When the method getParentPropertiesNames is called", func() {
-			p, err := r.getParentPropertiesNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			p := r.getParentPropertiesNames()
 			Convey("And the array returned should contain the expected parent names", func() {
 				So(len(p), ShouldEqual, 2)
 				So(p[0], ShouldEqual, "cdns_id")

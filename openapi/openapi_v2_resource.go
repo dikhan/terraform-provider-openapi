@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -269,7 +268,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 
 	isSubResource, _, _ := o.isSubResource()
 	if isSubResource {
-		parentPropertyNames, _ := o.getParentPropertiesNames()
+		parentPropertyNames := o.getParentPropertiesNames()
 		for _, parentPropertyName := range parentPropertyNames {
 			pr, err := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
 			if err != nil {
@@ -282,21 +281,19 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) getParentPropertiesNames() ([]string, error) {
+func (o *SpecV2Resource) getParentPropertiesNames() []string {
 	if o.Path == "" {
-		return nil, errors.New("path was empty")
+		return []string{}
 	}
-
 	isSubResource, parentNames, _ := o.isSubResource()
-
 	if isSubResource {
 		parentPropertyNames := []string{}
 		for _, parentName := range parentNames {
 			parentPropertyNames = append(parentPropertyNames, fmt.Sprintf("%s_id", parentName))
 		}
-		return parentPropertyNames, nil
+		return parentPropertyNames
 	}
-	return nil, fmt.Errorf("can not calculate parent properties from a resource that is not a subresource")
+	return []string{}
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {

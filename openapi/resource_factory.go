@@ -179,10 +179,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 
 	isSubResource, _, _ := r.openAPIResource.isSubResource()
 	if isSubResource {
-		parentResourceNames, err := r.openAPIResource.getParentPropertiesNames()
-		if err != nil {
-			return nil, err //untested
-		}
+		parentResourceNames := r.openAPIResource.getParentPropertiesNames()
 
 		parentIDs := []string{}
 		for _, parentResourceName := range parentResourceNames {
@@ -271,10 +268,8 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 			results[0] = data
 			isSubResource, _, _ := r.openAPIResource.isSubResource()
 			if isSubResource {
-				parentPropertyNames, err := r.openAPIResource.getParentPropertiesNames()
-				if err != nil {
-					return results, err //untested
-				}
+				parentPropertyNames := r.openAPIResource.getParentPropertiesNames()
+
 				// The expected format for the ID provided when importing a sub-resource is 1234/567 where 1234 would be the parentID and 567 the instance ID
 				ids := strings.Split(data.Id(), "/")
 				if len(ids) < 2 {
