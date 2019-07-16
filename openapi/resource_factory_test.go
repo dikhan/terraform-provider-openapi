@@ -174,16 +174,18 @@ func TestCreate(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory that has an asynchronous create operation (post) but the status field is missing from the model", t, func() {
+	Convey("Given a resource factory that has an asynchronous create operation (post) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := 202
 		testSchema := newTestSchema(idProperty, stringProperty)
 		resourceData := testSchema.getResourceData(t)
-		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{responses: specResponses{201: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{responses: specResponses{expectedReturnCode: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
 		r := resourceFactory{
 			openAPIResource: specResource,
 			defaultTimeout:  time.Duration(0 * time.Second),
 		}
 		Convey("When create is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
 				responsePayload: map[string]interface{}{
 					idProperty.Name:     "someID",
 					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
@@ -191,7 +193,7 @@ func TestCreate(t *testing.T) {
 			}
 			err := r.create(resourceData, client)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "polling mechanism failed after POST /v1/resource call with response status code (201): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error occurred while retrieving status identifier value from payload for resource 'resourceName' (someID): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+				So(err.Error(), ShouldEqual, "polling mechanism failed after POST /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' (someID) when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
 			})
 		})
 	})
@@ -447,16 +449,18 @@ func TestUpdate(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory that has an asynchronous create operation (put) but the status field is missing from the model", t, func() {
+	Convey("Given a resource factory that has an asynchronous create operation (put) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := 202
 		testSchema := newTestSchema(idProperty, stringProperty)
 		resourceData := testSchema.getResourceData(t)
-		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{responses: specResponses{200: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{})
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{responses: specResponses{expectedReturnCode: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{})
 		r := resourceFactory{
 			openAPIResource: specResource,
 			defaultTimeout:  time.Duration(0 * time.Second),
 		}
 		Convey("When create is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
 				responsePayload: map[string]interface{}{
 					idProperty.Name:     "someID",
 					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
@@ -464,7 +468,7 @@ func TestUpdate(t *testing.T) {
 			}
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (200): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error occurred while retrieving status identifier value from payload for resource 'resourceName' (): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
 			})
 		})
 	})
@@ -556,8 +560,8 @@ func TestDelete(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory that has an asynchronous create operation (delete) but the status field is missing from the model", t, func() {
-		expectedReturnCode := 204
+	Convey("Given a resource factory that has an asynchronous create operation (delete) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := 202
 		testSchema := newTestSchema(idProperty, stringProperty)
 		resourceData := testSchema.getResourceData(t)
 		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{responses: specResponses{expectedReturnCode: &specResponse{isPollingEnabled: true}}})
@@ -575,7 +579,7 @@ func TestDelete(t *testing.T) {
 			}
 			err := r.delete(resourceData, client)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "polling mechanism failed after DELETE /v1/resource call with response status code (204): error waiting for resource to reach a completion status ([destroyed]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 204 not matching expected one [200] ()")
+				So(err.Error(), ShouldEqual, "polling mechanism failed after DELETE /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([destroyed]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
 			})
 		})
 	})
