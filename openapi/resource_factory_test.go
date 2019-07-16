@@ -454,6 +454,89 @@ func TestDelete(t *testing.T) {
 	})
 }
 
+func TestGetParentIDsAndResourcePathIfSubResource(t *testing.T) {
+	Convey("Given a resource with an empty openapi resource (internal getParentIDs call fails for some reason)", t, func() {
+		r := resourceFactory{}
+		Convey("When getParentIDsAndResourcePathIfSubResource is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePathIfSubResource(nil)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+			})
+			Convey("And the parentIDs should be empty", func() {
+				So(parentIDs, ShouldBeEmpty)
+			})
+			Convey("And the resourcePath should be empty", func() {
+				So(resourcePath, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource with an empty openapi resource (internal getResourcePath() call fails for some reason)", t, func() {
+		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
+		testSchema := newTestSchema(someFirewallProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+					return "", errors.New("getResourcePath() failed")
+				}},
+		}
+
+		Convey("When getParentIDsAndResourcePathIfSubResource is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePathIfSubResource(resourceData)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "getResourcePath() failed")
+			})
+			Convey("And the parentIDs should be empty", func() {
+				So(parentIDs, ShouldBeEmpty)
+			})
+			Convey("And the resourcePath should be empty", func() {
+				So(resourcePath, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource configured with a subreousrce", t, func() {
+		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
+
+		// Pretending the data has already been populated with the parent property
+		testSchema := newTestSchema(someFirewallProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		r := newResourceFactory(&SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewall",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"some_string_prop"},
+					Properties: map[string]spec.Schema{
+						"some_string_prop": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Required: []string{},
+							},
+						},
+					},
+				},
+			},
+		})
+		Convey("When getParentIDsAndResourcePathIfSubResource is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePathIfSubResource(resourceData)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the parentIDs should match the expected", func() {
+				So(len(parentIDs), ShouldEqual, 1)
+				So(parentIDs[0], ShouldEqual, "parentPropertyID")
+			})
+			Convey("And the resourcePath be '/v1/cdns/parentPropertyID/firewall'", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns/parentPropertyID/firewall")
+			})
+		})
+	})
+}
+
 func TestImporter(t *testing.T) {
 	Convey("Given a resource factory configured with a root resource (and the already populated id property value provided by the user)", t, func() {
 		importedIDProperty := idProperty

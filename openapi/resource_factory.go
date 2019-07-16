@@ -88,18 +88,15 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	return schemaDefinition.createResourceSchema()
 }
 
-//TODO: test
-var getParentIdsAndResourcePath = func(r resourceFactory, data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
+func (r resourceFactory) getParentIDsAndResourcePathIfSubResource(data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
 	parentIDs, err = r.getParentIDs(data)
 	if err != nil {
-		return []string{}, "", err //untested
+		return nil, "", err
 	}
-
 	resourcePath, err = r.openAPIResource.getResourcePath(parentIDs)
 	if err != nil {
-		return []string{}, "", err //untested
+		return nil, "", err
 	}
-
 	return
 }
 
@@ -109,18 +106,14 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
 
-	//parentIDs, err := r.getParentIDs(data)
-	//if err != nil {
-	//	return err //untested
-	//}
-	//
-	//resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
-	//if err != nil {
-	//	return err //untested
-	//}
-	parentIDs, resourcePath, err := getParentIdsAndResourcePath(r, data)
+	parentIDs, err := r.getParentIDs(data)
 	if err != nil {
-		return err //TODO: test getParentIdsAndResourcePath with monkey-patching
+		return err //untested
+	}
+
+	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
+	if err != nil {
+		return err //untested
 	}
 
 	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
