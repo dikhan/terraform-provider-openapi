@@ -129,7 +129,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 
 	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutCreate)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourcePath, res.StatusCode, err) //untested
+		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
 	}
 
 	return r.updateStateWithPayloadData(responsePayload, data)

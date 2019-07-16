@@ -173,6 +173,28 @@ func TestCreate(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (post) but the status field is missing from the model", t, func() {
+		testSchema := newTestSchema(idProperty, stringProperty)
+		resourceData := testSchema.getResourceData(t)
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{responses: specResponses{201: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
+		r := resourceFactory{
+			openAPIResource: specResource,
+			defaultTimeout:  time.Duration(0 * time.Second),
+		}
+		Convey("When create is called with resource data and a client", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+			}
+			err := r.create(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "polling mechanism failed after POST /v1/resource call with response status code (201): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error occurred while retrieving status identifier value from payload for resource 'resourceName' (someID): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+			})
+		})
+	})
 }
 
 func TestRead(t *testing.T) {
@@ -488,7 +510,7 @@ func TestDelete(t *testing.T) {
 
 	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
 		r := resourceFactory{}
-		Convey("When create is called with empty data and a empty client", func() {
+		Convey("When delete is called with empty data and a empty client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.delete(nil, client)
 			Convey("Then the error should not be nil", func() {
