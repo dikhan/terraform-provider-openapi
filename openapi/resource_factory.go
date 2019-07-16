@@ -88,7 +88,7 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	return schemaDefinition.createResourceSchema()
 }
 
-func (r resourceFactory) getParentIDsAndResourcePathIfSubResource(data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
+func (r resourceFactory) getParentIDsAndResourcePath(data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
 	parentIDs, err = r.getParentIDs(data)
 	if err != nil {
 		return nil, "", err
@@ -102,19 +102,15 @@ func (r resourceFactory) getParentIDsAndResourcePathIfSubResource(data *schema.R
 
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
+
+	parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	if err != nil {
+		return err
+	}
+
 	operation := r.openAPIResource.getResourceOperations().Post
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-
-	parentIDs, err := r.getParentIDs(data)
-	if err != nil {
-		return err //untested
-	}
-
-	resourcePath, err := r.openAPIResource.getResourcePath(parentIDs)
-	if err != nil {
-		return err //untested
-	}
 
 	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
 	if err != nil {

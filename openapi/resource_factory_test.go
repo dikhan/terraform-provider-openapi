@@ -162,6 +162,17 @@ func TestCreate(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When create is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.create(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
 }
 
 func TestRead(t *testing.T) {
@@ -454,11 +465,11 @@ func TestDelete(t *testing.T) {
 	})
 }
 
-func TestGetParentIDsAndResourcePathIfSubResource(t *testing.T) {
+func TestGetParentIDsAndResourcePath(t *testing.T) {
 	Convey("Given a resource with an empty openapi resource (internal getParentIDs call fails for some reason)", t, func() {
 		r := resourceFactory{}
-		Convey("When getParentIDsAndResourcePathIfSubResource is called", func() {
-			parentIDs, resourcePath, err := r.getParentIDsAndResourcePathIfSubResource(nil)
+		Convey("When getParentIDsAndResourcePath is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(nil)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
 			})
@@ -484,8 +495,8 @@ func TestGetParentIDsAndResourcePathIfSubResource(t *testing.T) {
 				}},
 		}
 
-		Convey("When getParentIDsAndResourcePathIfSubResource is called", func() {
-			parentIDs, resourcePath, err := r.getParentIDsAndResourcePathIfSubResource(resourceData)
+		Convey("When getParentIDsAndResourcePath is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(resourceData)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "getResourcePath() failed")
 			})
@@ -521,8 +532,8 @@ func TestGetParentIDsAndResourcePathIfSubResource(t *testing.T) {
 				},
 			},
 		})
-		Convey("When getParentIDsAndResourcePathIfSubResource is called", func() {
-			parentIDs, resourcePath, err := r.getParentIDsAndResourcePathIfSubResource(resourceData)
+		Convey("When getParentIDsAndResourcePath is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(resourceData)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err, ShouldBeNil)
 			})
