@@ -334,7 +334,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	// Wait, catching any errors
 	remoteData, err := stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err) //untested
+		return fmt.Errorf("error waiting for resource to reach a completion status (%s) [valid pending statuses (%s)]: %s", targetStatuses, pendingStatuses, err)
 	}
 	if responsePayload != nil {
 		remoteDataCasted, ok := remoteData.(map[string]interface{})

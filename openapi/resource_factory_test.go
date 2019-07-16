@@ -916,6 +916,35 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (post) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := http.StatusAccepted
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When create is called with resource data and a client", func() {
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					expectedReturnCode: {
+						isPollingEnabled:    true,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{"deployed"},
+					},
+				},
+			}
+			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+				error: fmt.Errorf("some error"),
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, expectedReturnCode, schema.TimeoutCreate)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "error waiting for resource to reach a completion status ([destroyed]) [valid pending statuses ([pending])]: error on retrieving resource 'resourceName' (id) when waiting: some error")
+			})
+		})
+	})
+
 }
 
 func TestResourceStateRefreshFunc(t *testing.T) {
