@@ -323,17 +323,8 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		targetStatuses = []string{defaultDestroyStatus}
 	}
 
-	ids, err := r.getParentIDs(resourceLocalData)
-	if err != nil {
-		return err //untested
-	}
-	resourcePath, err := r.openAPIResource.getResourcePath(ids)
-	if err != nil {
-		return err //untested
-	}
-
 	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
-	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", resourcePath, targetStatuses)
+	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.openAPIResource.getResourceName(), targetStatuses)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:      pendingStatuses,
@@ -363,14 +354,6 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 
 func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		ids, err := r.getParentIDs(resourceLocalData)
-		if err != nil {
-			return nil, "", err //untested
-		}
-		resourcePath, err := r.openAPIResource.getResourcePath(ids)
-		if err != nil {
-			return nil, "", err //untested
-		}
 
 		remoteData, err := r.readRemote(resourceLocalData.Id(), providerClient)
 		if err != nil {
@@ -379,15 +362,15 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 					return 0, defaultDestroyStatus, nil
 				}
 			}
-			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", resourcePath, resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), err)
 		}
 
 		newStatus, err := r.getStatusValueFromPayload(remoteData)
 		if err != nil {
-			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", resourcePath, resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), err)
 		}
 
-		log.Printf("[DEBUG] resource '%s' status (%s): %s", resourcePath, resourceLocalData.Id(), newStatus)
+		log.Printf("[DEBUG] resource status '%s' (%s): %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
 }
