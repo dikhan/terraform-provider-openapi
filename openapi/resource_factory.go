@@ -138,14 +138,9 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	parentsIDs, err := r.getParentIDs(data)
+	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
 	if err != nil {
 		return err
-	}
-	resourcePath, err := r.openAPIResource.getResourcePath(parentsIDs)
-
-	if err != nil {
-		return err //untested
 	}
 
 	remoteData, err := r.readRemote(data.Id(), openAPIClient, parentsIDs...)

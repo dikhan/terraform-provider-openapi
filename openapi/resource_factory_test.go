@@ -232,6 +232,17 @@ func TestRead(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When create is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.read(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
 }
 
 func TestReadRemote(t *testing.T) {
