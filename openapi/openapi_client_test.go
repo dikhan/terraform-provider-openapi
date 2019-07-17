@@ -110,8 +110,7 @@ func TestAppendUserAgentHeader(t *testing.T) {
 }
 
 func TestGetResourceIDURL(t *testing.T) {
-
-	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
+	Convey("Given a providerClient is set up with stub auth that injects some headers to the request", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:        "wwww.host.com",
@@ -129,7 +128,7 @@ func TestGetResourceIDURL(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceIDURL with a specResource and and ID", func() {
+		Convey("When getResourceIDURL is called with a specResource and and ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource"
 			r := &SpecV2Resource{
@@ -152,7 +151,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL with a specResource containing trailing / in the path and and ID", func() {
+		Convey("When getResourceIDURL is called with a specResource containing trailing / in the path and and ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource/"
 			r := &SpecV2Resource{
@@ -198,7 +197,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL with a specResource and an empty ID", func() {
+		Convey("When getResourceIDURL is called with an empty ID", func() {
 			expectedPath := "/v1/resource"
 			r := &SpecV2Resource{
 				Path: expectedPath,
