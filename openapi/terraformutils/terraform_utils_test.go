@@ -94,7 +94,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		propertyName := "some_prop_name_that_is_terraform_field_name_compliant"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("The string return is terraform field name compliant, ", func() {
+			Convey("The string returned is terraform field name compliant, ", func() {
 				So(fieldName, ShouldEqual, propertyName)
 			})
 		})
@@ -104,7 +104,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		propertyName := "thisIsACamelCaseNameWhichIsNotTerraformNameCompliant"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("The string return is terraform field name compliant, ", func() {
+			Convey("The string returned is terraform field name compliant, ", func() {
 				So(fieldName, ShouldEqual, "this_is_a_camel_case_name_which_is_not_terraform_name_compliant")
 			})
 		})
@@ -115,7 +115,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		expected := "cdns_v1_id"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("The string return is terraform field name compliant, ", func() {
+			Convey("The string returned is terraform field name compliant, ", func() {
 				So(fieldName, ShouldEqual, expected)
 			})
 		})
@@ -125,7 +125,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		propertyName := "cdns_v1_id"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("The string return is terraform field name compliant, ", func() {
+			Convey("The string returned is terraform field name compliant, ", func() {
 				So(fieldName, ShouldEqual, propertyName)
 			})
 		})
@@ -135,7 +135,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		propertyName := "cdns_v1_firewall_v2_id"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("The string return is terraform field name compliant, ", func() {
+			Convey("The string returned is terraform field name compliant, ", func() {
 				So(fieldName, ShouldEqual, propertyName)
 			})
 		})
@@ -145,7 +145,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		propertyName := "cdns_v1"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("The string return is terraform field name compliant, ", func() {
+			Convey("The string returned is terraform field name compliant, ", func() {
 				So(fieldName, ShouldEqual, propertyName)
 			})
 		})
