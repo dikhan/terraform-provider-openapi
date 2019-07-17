@@ -37,7 +37,7 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   }
 }
 
-resource "swaggercodegen_cdn_v1_firewalls_v1" "my_cdn_firewall_v1" {
+resource "swaggercodegen_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
   cdns_v1_id = swaggercodegen_cdn_v1.my_cdn.id
   name = "my firewall fancy name"
 }

@@ -175,7 +175,6 @@ paths:
 
   /v1/cdns/{parent_id}/v1/firewalls:
     post:
-      x-terraform-resource-name: "cdn_v1_firewalls"
       x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
       - "cdn"
