@@ -1805,27 +1805,26 @@ definitions:
 
 			firewallV1Resource := terraformCompliantResources[0]
 
-			Convey("And the firewall is SubResource which rightly references to the parent CDN resource", func() {
+			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
 				subRes, parentIDs, fullParentID := firewallV1Resource.isSubResource()
-				So(err, ShouldBeNil)
 				So(subRes, ShouldBeTrue)
 				So(parentIDs, ShouldResemble, []string{"cdns_v1"})
 				So(fullParentID, ShouldEqual, "cdns_v1")
-				Convey("And the full resource Path is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
+				Convey("And the full resourcePath is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
 					parentID := "42"
 					resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
 					So(err, ShouldBeNil)
 					So(resourcePath, ShouldEqual, "/v1/cdns/42/v1/firewalls")
 				})
 			})
-			Convey("And the Resource Operation are attached to the Resource Schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
 				resOperation := firewallV1Resource.getResourceOperations()
 				So(resOperation.Get.responses, ShouldContainKey, 200)
 				So(resOperation.Post.responses, ShouldContainKey, 201)
 				So(resOperation.Put.responses, ShouldContainKey, 200)
 				So(resOperation.Delete.responses, ShouldContainKey, 204)
 			})
-			Convey("And each operation exposed on the resource have it own timeout set", func() {
+			Convey("And each operation exposed on the resource has its own timeout set", func() {
 				timeoutSpec, err := firewallV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
 
@@ -1834,13 +1833,13 @@ definitions:
 				So(timeoutSpec.Post, ShouldBeNil)
 				So(timeoutSpec.Delete, ShouldBeNil)
 			})
-			Convey("And the host must be correctly configured according to the swagger", func() {
+			Convey("And the host is correctly configured according to the swagger", func() {
 				host, err := firewallV1Resource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "178.168.3.4")
 			})
 
-			Convey("And The Resource Schema of the Resource contains 3 property, 2 from taken the model and one added on the fly as this is a subResource", func() {
+			Convey("And the resource schema contains 3 properties, 2 taken from the model and one added on the fly for the parent resource id", func() {
 				actualResourceSchema, err := firewallV1Resource.getResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 3)
@@ -1961,14 +1960,14 @@ definitions:
 				So(parentIDs, ShouldBeEmpty)
 				So(fullParentID, ShouldBeEmpty)
 			})
-			Convey("And the Resource Operation are attached to the Resource Schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
 				resOperation := cndV1Resource.getResourceOperations()
 				So(resOperation.Get.responses, ShouldContainKey, 200)
 				So(resOperation.Post.responses, ShouldContainKey, 201)
 				So(resOperation.Put.responses, ShouldContainKey, 200)
 				So(resOperation.Delete.responses, ShouldContainKey, 204)
 			})
-			Convey("And each operation exposed on the resource have it own timeout set", func() {
+			Convey("And each operation exposed on the resource has it own timeout set", func() {
 				timeoutSpec, err := cndV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
 				So(timeoutSpec.Post.String(), ShouldEqual, "5s")
@@ -1976,13 +1975,13 @@ definitions:
 				So(timeoutSpec.Put, ShouldBeNil)
 				So(timeoutSpec.Delete, ShouldBeNil)
 			})
-			Convey("And the host must be correctly configured according to the swagger", func() {
+			Convey("And the host is correctly configured according to the swagger", func() {
 				host, err := cndV1Resource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "some-host.com")
 			})
 
-			Convey("And The Resource Schema of the Resource contain the one property specified in the ContentDeliveryNetwork model definition", func() {
+			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
 				actualResourceSchema, err := cndV1Resource.getResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
