@@ -121,6 +121,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			providerConfiguration: providerConfiguration{},
 		}
 		Convey("When getResourceIDURL is called with a specResource and ID", func() {
+			expectedID := "1234"
 			expectedPath := "/v1/resource"
 			r := &SpecV2Resource{
 				Path: expectedPath,
@@ -130,7 +131,7 @@ func TestGetResourceIDURL(t *testing.T) {
 					},
 				},
 			}
-			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, "1234")
+			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, expectedID)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -138,7 +139,7 @@ func TestGetResourceIDURL(t *testing.T) {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s/%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, "1234"))
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s/%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
 			})
 		})
 
