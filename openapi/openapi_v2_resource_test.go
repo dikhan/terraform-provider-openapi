@@ -205,7 +205,7 @@ func TestBuildResourceName(t *testing.T) {
 		},
 		{
 			path:                 "/v1.1.1/cdns",
-			expectedResourceName: "cdns", //TODO: possible bug
+			expectedResourceName: "cdns", // semver in paths is not supported at the moment, this documents the resource output for such use case
 			expectedError:        nil,
 		},
 		{
