@@ -160,7 +160,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And then resourceURL should equal", func() {
+			Convey("And then resourceURL should equal the expected one", func() {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
@@ -1347,7 +1347,7 @@ func TestProviderClientDelete(t *testing.T) {
 			providerConfiguration:       providerConfiguration,
 			apiAuthenticator:            apiAuthenticator,
 		}
-		Convey("When providerClient DELETE method is called with a specStubResource that does not override the host, a requestPayload and an empty responsePayload", func() {
+		Convey("When providerClient DELETE method is called with a specStubResource that does not override the host and the instance ID", func() {
 			specStubResource := &specStubResource{
 				path: "/v1/resource",
 				resourceDeleteOperation: &specResourceOperation{
@@ -1399,7 +1399,7 @@ func TestProviderClientDelete(t *testing.T) {
 				},
 			},
 		}
-		Convey("When providerClient DELETE  method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+		Convey("When providerClient DELETE  method is called with a SpecV2Resource that has a subresource path, an ID and the resource parentID", func() {
 			specv2Resource := &SpecV2Resource{
 				Path: "/v1/resource/{id}/subresource",
 				RootPathItem: spec.PathItem{
