@@ -70,9 +70,9 @@ func ConvertToTerraformCompliantName(name string) string {
 	//convert the name is Snake Case, this is the ONLY operation is needed in most of the case...
 	compliantName := strcase.ToSnake(name)
 
-	// ... however if numbers are present in the `name` toSnake separates number with _X_ ...
+	// ... however if numbers are present in the `name` toSnake separated number with _X_ ...
 	matches := numberInName.FindAllString(compliantName, -1)
-	// ... in this case why we need to remove the ALL the sorrounding underscores for each number found in `name`
+	// ... in this case why we need to remove the ALL the surrounding underscores for each number found in `name`
 	for _, match := range matches {
 		positionInString := strings.Index(compliantName, match)
 		// remove the prepended `_`
@@ -85,8 +85,8 @@ func ConvertToTerraformCompliantName(name string) string {
 		} else {
 			tmpName += compliantName[positionInString+1:]
 		}
-		// removed the sorrounding underscores for the first number match, now tmpName is compliantName
-		// unsless other matches are found (for loop continue)
+		// removed the surrounding underscores for the first number match, now tmpName is compliantName
+		// unless other matches are found (for loop continue)
 		compliantName = tmpName
 	}
 	return compliantName
