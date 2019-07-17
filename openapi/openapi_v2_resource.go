@@ -270,10 +270,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 	if isSubResource {
 		parentPropertyNames := o.getParentPropertiesNames()
 		for _, parentPropertyName := range parentPropertyNames {
-			pr, err := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
-			if err != nil {
-				return nil, err //untested
-			}
+			pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, schema.Required)
 			pr.Computed = true
 			schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
 		}
