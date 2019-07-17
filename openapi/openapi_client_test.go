@@ -1192,10 +1192,7 @@ func TestProviderClientPut(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
-				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
-				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+				So(httpClient.URL, ShouldEqual, "http://wwww.host.com/api/v1/resource/parentID/subresource/1234")
 			})
 			Convey("And then client should have received the right User-Agent header and the expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, userAgent)
