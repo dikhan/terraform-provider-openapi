@@ -110,7 +110,7 @@ func TestAppendUserAgentHeader(t *testing.T) {
 }
 
 func TestGetResourceIDURL(t *testing.T) {
-	Convey("Given a providerClient is set up with stub auth that injects some headers to the request", t, func() {
+	Convey("Given a providerClient", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:        "wwww.host.com",
@@ -119,14 +119,6 @@ func TestGetResourceIDURL(t *testing.T) {
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
-			apiAuthenticator: &specStubAuthenticator{
-				authContext: &authContext{
-					url: "",
-					headers: map[string]string{
-						"Authentication": "Bearer secret!",
-					},
-				},
-			},
 		}
 		Convey("When getResourceIDURL is called with a specResource and ID", func() {
 			expectedID := "1234"
