@@ -298,7 +298,7 @@ func TestGetResourceURL_edge_cases(t *testing.T) {
 }
 
 func TestGetResourceURL(t *testing.T) {
-	Convey("Given a providerClient set up with stub auth that injects some headers to the request and is not multiregion", t, func() {
+	Convey("Given a providerClient set up with auth that injects some headers to the request and is not multiregion", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:        "wwww.host.com",
