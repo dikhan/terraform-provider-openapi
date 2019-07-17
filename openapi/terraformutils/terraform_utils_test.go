@@ -121,7 +121,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		})
 	})
 
-	Convey("Given a name that is terraform name compliant but with one numbers", t, func() {
+	Convey("Given a name that is terraform name compliant with one number in the middle", t, func() {
 		propertyName := "cdns_v1_id"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
@@ -131,7 +131,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		})
 	})
 
-	Convey("Given a name that is terraform name compliant but with multiple numbers", t, func() {
+	Convey("Given a name that is terraform name compliant with multiple numbers", t, func() {
 		propertyName := "cdns_v1_firewall_v2_id"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
@@ -141,7 +141,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		})
 	})
 
-	Convey("Given a name that is terraform name compliant but with multiple numbers", t, func() {
+	Convey("Given a name that is terraform name compliant with one number at the end", t, func() {
 		propertyName := "cdns_v1"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
