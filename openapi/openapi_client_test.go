@@ -128,7 +128,7 @@ func TestGetResourceIDURL(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceIDURL is called with a specResource and and ID", func() {
+		Convey("When getResourceIDURL is called with a specResource and ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource"
 			r := &SpecV2Resource{
@@ -151,7 +151,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL is called with a specResource containing trailing / in the path and and ID", func() {
+		Convey("When getResourceIDURL is called with a specResource containing trailing / in the path and ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource/"
 			r := &SpecV2Resource{
