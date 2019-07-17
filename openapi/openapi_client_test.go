@@ -189,6 +189,26 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
+		Convey("When getResourceIDURL with a specResource containing a parameterized path and instance ID but missing a parent ID", func() {
+			expectedID := "5678"
+			r := &SpecV2Resource{
+				Path: "/v1/resource/{resource_id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, expectedID)
+			Convey("Then an error should be returned", func() {
+				//TODO: possible bug-- should the message contain all this noise: ([[/{resource_id}/ {resource_id}]]) ?
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/resource/{resource_id}/subresource' ([[/{resource_id}/ {resource_id}]]) with the given ids - missing ids to resolve the path params properly: []")
+			})
+			Convey("And then resourceURL should be empty", func() {
+				So(resourceURL, ShouldBeEmpty)
+			})
+		})
+
 		Convey("When getResourceIDURL is called with an empty ID", func() {
 			r := &SpecV2Resource{
 				Path: "whatever",
