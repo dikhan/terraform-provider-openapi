@@ -803,8 +803,7 @@ func TestTerraformSchema(t *testing.T) {
 				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object1"]
 				So(nestedObject1, ShouldNotBeNil)
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
-				// name of the property is converted to a compliant name if there is no preferred name, hence the compliant name for "string_property_1" is "string_property1"
-				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property1"].Type, ShouldEqual, schema.TypeString)
+				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)
 			})
 			Convey("And the returned terraform schema contains the 'nested_float_2' with the right configuration", func() {
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_float_2"]
@@ -858,13 +857,13 @@ func TestTerraformSchema(t *testing.T) {
 				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema[expectedNestedObjectPropertyName1]
 				So(nestedObject1, ShouldNotBeNil)
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
-				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property1"].Type, ShouldEqual, schema.TypeString)
+				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)
 			})
 			Convey("And the returned terraform schema contains the schema for the Second nested object property with the right configuration", func() {
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema[expectedNestedObjectPropertyName2]
 				So(nestedObject2, ShouldNotBeNil)
 				So(nestedObject2.Type, ShouldEqual, schema.TypeMap)
-				So(nestedObject2.Elem.(*schema.Resource).Schema["string_property2"].Type, ShouldEqual, schema.TypeString)
+				So(nestedObject2.Elem.(*schema.Resource).Schema["string_property_2"].Type, ShouldEqual, schema.TypeString)
 			})
 		})
 	})
