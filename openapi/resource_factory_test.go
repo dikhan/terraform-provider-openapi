@@ -796,6 +796,31 @@ func TestImporter(t *testing.T) {
 		})
 	})
 
+	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains less IDs than the resource number of parent properties)", t, func() {
+		importedIDValue := "1234/5647" // missing one of the parent ids
+		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
+		expectedParentProperty := newStringSchemaDefinitionProperty("cdns_v1_firewalls_v1", "", true, true, false, false, false, true, false, false, "")
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewalls/{id}/rules", []string{"cdns_v1", "cdns_v1_firewalls_v1"}, []string{"cdns_v1_id", "cdns_v1_firewalls_v1_id"}, "cdns_v1_firewalls_v1", importedIDProperty, stringProperty, expectedParentProperty)
+
+		Convey("When importer is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				_, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should be the expected one", func() {
+					So(err.Error(), ShouldEqual, "can not import a subresource without all the parent ids, expected 2 and got 1 parent IDs")
+				})
+			})
+		})
+	})
+
 	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains the right IDs but the resource for some reason is not configured correctly and does not have configured the parent id property)", t, func() {
 		expectedParentPropertyName := "cdns_v1_id"
 		importedIDValue := "1234/5678"

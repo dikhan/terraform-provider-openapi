@@ -280,7 +280,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 					return results, fmt.Errorf("the number of parent IDs provided %d is greater than the expected number of parent IDs %d", parentIDsLen, len(parentPropertyNames))
 				}
 				if len(parentPropertyNames) > parentIDsLen {
-					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen) //untested
+					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen)
 				}
 				for idx, parentPropertyName := range parentPropertyNames {
 					data.Set(parentPropertyName, ids[idx])
