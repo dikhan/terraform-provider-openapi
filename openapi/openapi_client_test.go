@@ -226,7 +226,7 @@ func TestGetResourceIDURL(t *testing.T) {
 	})
 }
 
-func TestGetResourceURL_table_driven(t *testing.T) {
+func TestGetResourceURL_edge_cases(t *testing.T) {
 	providerClient := &ProviderClient{
 		openAPIBackendConfiguration: &specStubBackendConfiguration{
 			host:        "wwww.host.com",
