@@ -198,9 +198,8 @@ func TestGetResourceIDURL(t *testing.T) {
 		})
 
 		Convey("When getResourceIDURL is called with an empty ID", func() {
-			expectedPath := "/v1/resource"
 			r := &SpecV2Resource{
-				Path: expectedPath,
+				Path: "whatever",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{},
@@ -959,7 +958,7 @@ func TestProviderClientPost(t *testing.T) {
 								Responses: &spec.Responses{
 									ResponsesProps: spec.ResponsesProps{
 										StatusCodeResponses: map[int]spec.Response{
-											201: spec.Response{},
+											201: {},
 										},
 									},
 								},
@@ -1093,7 +1092,7 @@ func TestProviderClientPut(t *testing.T) {
 								Responses: &spec.Responses{
 									ResponsesProps: spec.ResponsesProps{
 										StatusCodeResponses: map[int]spec.Response{
-											201: spec.Response{},
+											201: {},
 										},
 									},
 								},
@@ -1109,7 +1108,7 @@ func TestProviderClientPut(t *testing.T) {
 								Responses: &spec.Responses{
 									ResponsesProps: spec.ResponsesProps{
 										StatusCodeResponses: map[int]spec.Response{
-											200: spec.Response{},
+											200: {},
 										},
 									},
 								},
@@ -1235,7 +1234,7 @@ func TestProviderClientGet(t *testing.T) {
 								Responses: &spec.Responses{
 									ResponsesProps: spec.ResponsesProps{
 										StatusCodeResponses: map[int]spec.Response{
-											201: spec.Response{},
+											201: {},
 										},
 									},
 								},
@@ -1251,7 +1250,7 @@ func TestProviderClientGet(t *testing.T) {
 								Responses: &spec.Responses{
 									ResponsesProps: spec.ResponsesProps{
 										StatusCodeResponses: map[int]spec.Response{
-											200: spec.Response{},
+											200: {},
 										},
 									},
 								},
@@ -1366,7 +1365,7 @@ func TestProviderClientDelete(t *testing.T) {
 								Responses: &spec.Responses{
 									ResponsesProps: spec.ResponsesProps{
 										StatusCodeResponses: map[int]spec.Response{
-											201: spec.Response{},
+											201: {},
 										},
 									},
 								},
@@ -1382,7 +1381,7 @@ func TestProviderClientDelete(t *testing.T) {
 								Responses: &spec.Responses{
 									ResponsesProps: spec.ResponsesProps{
 										StatusCodeResponses: map[int]spec.Response{
-											204: spec.Response{},
+											204: {},
 										},
 									},
 								},
