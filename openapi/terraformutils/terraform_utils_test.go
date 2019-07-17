@@ -166,6 +166,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		expected := "cdns_v1"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
+			//TODO possible bug?
 			Convey("The underscore between v and 1 is removed", func() {
 				So(fieldName, ShouldEqual, expected)
 			})
@@ -177,6 +178,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		expected := "cdns_1"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
+			//TODO possible bug?
 			Convey("The double underscore is changed to single underscore, ", func() {
 				So(fieldName, ShouldEqual, expected)
 			})
@@ -228,6 +230,7 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 	Convey("Given a name 1", t, func() {
 		propertyName := "1"
 		Convey("ConvertToTerraformCompliantName panics", func() {
+			//TODO possible bug?
 			So(func() { ConvertToTerraformCompliantName(propertyName) }, ShouldPanic)
 		})
 	})
