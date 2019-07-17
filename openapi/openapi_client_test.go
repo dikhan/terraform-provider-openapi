@@ -135,7 +135,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And then resourceURL should equal", func() {
+			Convey("And then the resourceURL returned should be built from the schemes, host, base path, and path in the client and the ID passed", func() {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
@@ -143,7 +143,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL is called with a specResource containing trailing / in the path and ID", func() {
+		Convey("When getResourceIDURL is called with a specResource containing trailing / in the path and an ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource/"
 			r := &SpecV2Resource{
