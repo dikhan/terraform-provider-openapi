@@ -180,7 +180,10 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	}
 
 	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values
-	for idx := range parentIDs {
+	for idx, parentID := range parentIDs {
+		if strings.Contains(parentID, "/") {
+			return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' due to parent IDs (%s) containing not supported characters (forward slashes)", resolvedPath, parentIDs)
+		}
 		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], parentIDs[idx], 1)
 	}
 

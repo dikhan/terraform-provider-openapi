@@ -208,6 +208,9 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 }
 
 func (o ProviderClient) getResourceIDURL(resource SpecResource, parentIDs []string, id string) (string, error) {
+	if strings.Contains(id, "/") {
+		return "", fmt.Errorf("instance ID (%s) contains not supported characters (forward slashes)", id)
+	}
 	url, err := o.getResourceURL(resource, parentIDs)
 	if err != nil {
 		return "", err

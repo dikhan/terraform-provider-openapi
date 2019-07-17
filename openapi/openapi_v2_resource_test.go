@@ -1034,6 +1034,12 @@ func TestGetResourcePath(t *testing.T) {
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
 			})
 		})
+		Convey("When getResourcePath is called with a list of IDs twhere some IDs contain forward slashes", func() {
+			_, err := r.getResourcePath([]string{"cdnID/somethingElse"})
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' due to parent IDs ([cdnID/somethingElse]) containing not supported characters (forward slashes)")
+			})
+		})
 	})
 
 	Convey("Given a SpecV2Resource with path resource that is parameterised (few levels sub-resource)", t, func() {

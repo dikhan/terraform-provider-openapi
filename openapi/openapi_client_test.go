@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/go-openapi/spec"
 
 	"github.com/dikhan/http_goclient"
@@ -227,74 +225,71 @@ func TestGetResourceIDURL(t *testing.T) {
 }
 
 func TestGetResourceURL_edge_cases(t *testing.T) {
-	providerClient := &ProviderClient{
-		openAPIBackendConfiguration: &specStubBackendConfiguration{
-			host:        "wwww.host.com",
-			basePath:    "/api",
-			httpSchemes: []string{"http"},
-		},
+	testCases := []struct {
+		name                string
+		path                string
+		id                  string
+		parentIDs           []string
+		expectedResourceURL string
+		expectedError       string
+	}{
+		// Happy paths
+		{name: "no trailing slash", path: "/v1/resource", id: "1234", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1234"},
+		{name: "different id", path: "/v1/resource", id: "42", expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
+		{name: "with a parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14159/v17/subresource/42"},
+		{name: "with a parent id with mustaches", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"{3.14159}"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{3.14159}/v17/subresource/42"},
+		{name: "with a parent id with a slash", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14/159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14/159/v17/subresource/42", expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' due to parent IDs ([3.14/159]) containing not supported characters (forward slashes)"},
+		{name: "with a token with double mustaches", path: "/v1/resource/{{parent_id}}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{{parent_id}}/v17/subresource/42"},
+		{name: "with a parent id but no tokens", path: "/v1/resource", id: "42", parentIDs: []string{"pi"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
+		{name: "trailing slash", path: "/v1/resource/", id: "1337", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1337"},
+		{name: "id with a slash", path: "/v1/resource/", id: "13/37", expectedResourceURL: "http://wwww.host.com/api/v1/resource/13/37", expectedError: "instance ID (13/37) contains not supported characters (forward slashes)"},
+		{name: "id with mustaches", path: "/v1/resource/", id: "1{33}7", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1{33}7"},
+		// Unhappy paths
+		{name: "empty id", path: "/v1/resource/", id: "", expectedError: "could not build the resourceIDURL: required instance id value is missing"},
+		{name: "double trailing slash", path: "/v1/resource//", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1/resource//' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "double leading slash", path: "//v1/resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '//v1/resource/' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "double slash in the middle", path: "/v1//resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1//resource/' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "with a missing parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "with extra parent ids", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"-1", "-2"}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - more ids than path params: [-1 -2]"},
 	}
 
-	r := &SpecV2Resource{
-		RootPathItem: spec.PathItem{
-			PathItemProps: spec.PathItemProps{
-				Post: &spec.Operation{},
-			},
-		},
+	for _, tc := range testCases {
+		Convey("Given a providerClient configured with some backend configuration including the host, basedPath and http scheme", t, func() {
+			providerClient := &ProviderClient{
+				openAPIBackendConfiguration: &specStubBackendConfiguration{
+					host:        "wwww.host.com",
+					basePath:    "/api",
+					httpSchemes: []string{"http"},
+				},
+			}
+			Convey("When getResourceIDURL is called with a SpecV2Resource configured with some path and the root path item, some parent ids and an instance id", func() {
+				r := &SpecV2Resource{
+					Path: tc.path,
+					RootPathItem: spec.PathItem{
+						PathItemProps: spec.PathItemProps{
+							Post: &spec.Operation{},
+						},
+					},
+				}
+				actualResourceURL, err := providerClient.getResourceIDURL(r, tc.parentIDs, tc.id)
+				if tc.expectedError != "" {
+					Convey("Then the error returned should be the expected one", func() {
+						So(err.Error(), ShouldEqual, tc.expectedError)
+					})
+					Convey("And the resource url returned should be empty", func() {
+						So(actualResourceURL, ShouldBeEmpty)
+					})
+				} else {
+					Convey("Then the error returned should be nil", func() {
+						So(err, ShouldBeNil)
+					})
+					Convey("And the resource URL returned should be the expected one", func() {
+						So(tc.expectedResourceURL, ShouldEqual, tc.expectedResourceURL)
+					})
+				}
+			})
+		})
 	}
-
-	t.Run("no parent ids", func(t *testing.T) {
-		t.Run("happy paths", func(t *testing.T) {
-			testcases := []struct {
-				name                string
-				path                string
-				id                  string
-				parentIDs           []string
-				expectedResourceURL string
-			}{
-				{name: "no trailing slash", path: "/v1/resource", id: "1234", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1234"},
-				{name: "different id", path: "/v1/resource", id: "42", expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
-				{name: "with a parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14159/v17/subresource/42"},
-				{name: "with a parent id with mustaches", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"{3.14159}"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{3.14159}/v17/subresource/42"},        //TODO: possible bug?
-				{name: "with a parent id with a slash", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14/159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14/159/v17/subresource/42"},            //TODO: possible bug?
-				{name: "with a token with double mustaches", path: "/v1/resource/{{parent_id}}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{{parent_id}}/v17/subresource/42"}, //not a bug
-				{name: "with a parent id but no tokens", path: "/v1/resource", id: "42", parentIDs: []string{"pi"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
-				{name: "trailing slash", path: "/v1/resource/", id: "1337", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1337"},
-				{name: "id with a slash", path: "/v1/resource/", id: "13/37", expectedResourceURL: "http://wwww.host.com/api/v1/resource/13/37"},     //TODO: possible bug?
-				{name: "id with mustaches", path: "/v1/resource/", id: "1{33}7", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1{33}7"}, //TODO: possible bug?
-			}
-			for _, tc := range testcases {
-				r.Path = tc.path
-				actualResourceURL, err := providerClient.getResourceIDURL(r, tc.parentIDs, tc.id)
-				assert.NoError(t, err, tc.name)
-				assert.Equal(t, tc.expectedResourceURL, actualResourceURL, tc.name)
-			}
-		})
-
-		t.Run("crappy paths", func(t *testing.T) {
-			testcases := []struct {
-				name          string
-				path          string
-				id            string
-				parentIDs     []string
-				expectedError string
-			}{
-				{name: "empty id", path: "/v1/resource/", id: "", expectedError: "could not build the resourceIDURL: required instance id value is missing"},
-				{name: "double trailing slash", path: "/v1/resource//", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1/resource//' with the given ids - missing ids to resolve the path params properly: []"},
-				{name: "double leading slash", path: "//v1/resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '//v1/resource/' with the given ids - missing ids to resolve the path params properly: []"},
-				{name: "double slash in the middle", path: "/v1//resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1//resource/' with the given ids - missing ids to resolve the path params properly: []"},
-				{name: "with a missing parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - missing ids to resolve the path params properly: []"},
-				{name: "with extra parent ids", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"-1", "-2"}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - more ids than path params: [-1 -2]"},
-			}
-			for _, tc := range testcases {
-				r.Path = tc.path
-				actualResourceURL, err := providerClient.getResourceIDURL(r, tc.parentIDs, tc.id)
-				assert.EqualError(t, err, tc.expectedError, tc.name)
-				assert.Empty(t, actualResourceURL, tc.name)
-			}
-		})
-	})
-
 }
 
 func TestGetResourceURL(t *testing.T) {
