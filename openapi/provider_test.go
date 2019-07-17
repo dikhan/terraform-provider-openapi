@@ -151,7 +151,7 @@ definitions:
 		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
 			providerName := "openapi"
 			p := ProviderOpenAPI{ProviderName: providerName}
-			tfProvider, err := CreateSchemaProviderFromServiceConfiguration(&p, &ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
