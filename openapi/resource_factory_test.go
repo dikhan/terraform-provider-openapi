@@ -1351,7 +1351,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
 
-	Convey("Given a resource factory initialized with a spec resource with schema definitions for each of the supported property types (string, int, number, bool, slice of primitive, slice of objects, object and object with nested objects)", t, func() {
+	Convey("Given a resource factory initialized with a spec resource with schema definitions for each of the supported property types (string, int, number, bool, slice of primitive, slice of objects, object and object with nested objects and a parent property)", t, func() {
 
 		// - Object property configuration
 		// object_property {
@@ -1411,7 +1411,11 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			},
 		}
 		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, sliceObjectProperty, objectProperty, propertyWithNestedObject)
+
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("parentProperty", "", true, false, "http")
+		parentProperty.IsParentProperty = true
+
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, sliceObjectProperty, objectProperty, propertyWithNestedObject, parentProperty)
 
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
 			payload := r.createPayloadFromLocalStateData(resourceData)
@@ -1421,6 +1425,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			Convey("And then payload returned should not include the following keys as they are either an identifier or read only (computed) properties", func() {
 				So(payload, ShouldNotContainKey, idProperty.Name)
 				So(payload, ShouldNotContainKey, computedProperty.Name)
+				So(payload, ShouldNotContainKey, parentProperty.Name)
 			})
 			Convey("And then payload returned should include the following keys ", func() {
 				So(payload, ShouldContainKey, stringProperty.Name)

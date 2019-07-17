@@ -436,6 +436,10 @@ func assertSchemaProperty(actualSpecSchemaDefinition *specSchemaDefinition, expe
 	So(prop.Computed, ShouldEqual, expectedComputed)
 }
 
+func assertSchemaParentProperty(actualSpecSchemaDefinition *specSchemaDefinition, expectedName string) {
+	assertSchemaProperty(actualSpecSchemaDefinition, expectedName, typeString, true, false, false)
+}
+
 func TestGetResourceSchema(t *testing.T) {
 	Convey("Given a SpecV2Resource containing a root path", t, func() {
 		r := &SpecV2Resource{
@@ -641,13 +645,13 @@ func TestGetSchemaDefinition(t *testing.T) {
 				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
 				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
-				assertSchemaProperty(specSchemaDefinition, "cdns_v1_id", typeString, false, false, true)
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 			})
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non resftul subresource path", t, func() {
+	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non restftul subresource path", t, func() {
 		r := &SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls/v1/rules",
 		}
@@ -677,8 +681,8 @@ func TestGetSchemaDefinition(t *testing.T) {
 			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
-				assertSchemaProperty(specSchemaDefinition, "cdns_v1_id", typeString, false, false, true)
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 			})
 		})
 	})
@@ -737,8 +741,8 @@ func TestGetSchemaDefinition(t *testing.T) {
 				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
 			})
 			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
-				assertSchemaProperty(specSchemaDefinition, "cdns_v1_id", typeString, false, false, true)
-				assertSchemaProperty(specSchemaDefinition, "firewalls_v2_id", typeString, false, false, true)
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
+				assertSchemaParentProperty(specSchemaDefinition, "firewalls_v2_id")
 			})
 		})
 	})
@@ -776,17 +780,13 @@ func TestGetSchemaDefinition(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			Convey("And the specSchemaDefinition returned should contain the expected number of properties", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
+			})
 			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-				stringProp, err := specSchemaDefinition.getProperty("string_readonly_prop")
-				So(err, ShouldBeNil)
-				So(stringProp.Type, ShouldEqual, typeString)
-				So(stringProp.ReadOnly, ShouldBeTrue)
-				intProp, err := specSchemaDefinition.getProperty("int_optional_computed_prop")
-				So(err, ShouldBeNil)
-				So(intProp.Name, ShouldEqual, "int_optional_computed_prop")
-				So(intProp.Type, ShouldEqual, typeInt)
-				So(intProp.Computed, ShouldBeTrue)
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
 			})
 		})
 	})
@@ -814,17 +814,14 @@ func TestGetSchemaDefinition(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent one)", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-				So(specSchemaDefinition.Properties[0].Name, ShouldEqual, "string_readonly_prop")
-				So(specSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
-				So(specSchemaDefinition.Properties[0].ReadOnly, ShouldBeTrue)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
 			})
 			Convey("And the specSchemaDefinition returned should also include the parent property", func() {
-				So(specSchemaDefinition.Properties[1].Name, ShouldEqual, "parent_id")
-				So(specSchemaDefinition.Properties[1].Type, ShouldEqual, typeString)
-				So(specSchemaDefinition.Properties[1].Computed, ShouldBeTrue)
-				So(specSchemaDefinition.Properties[1].Required, ShouldBeFalse)
+				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
 			})
 		})
 	})
@@ -852,21 +849,15 @@ func TestGetSchemaDefinition(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent ones)", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
-				So(specSchemaDefinition.Properties[0].Name, ShouldEqual, "string_readonly_prop")
-				So(specSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
-				So(specSchemaDefinition.Properties[0].ReadOnly, ShouldBeTrue)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
 			})
 			Convey("And the specSchemaDefinition returned should also include the parents properties", func() {
-				So(specSchemaDefinition.Properties[1].Name, ShouldEqual, "parent_id")
-				So(specSchemaDefinition.Properties[1].Type, ShouldEqual, typeString)
-				So(specSchemaDefinition.Properties[1].Computed, ShouldBeTrue)
-				So(specSchemaDefinition.Properties[1].Required, ShouldBeFalse)
-				So(specSchemaDefinition.Properties[2].Name, ShouldEqual, "subparent_id")
-				So(specSchemaDefinition.Properties[2].Type, ShouldEqual, typeString)
-				So(specSchemaDefinition.Properties[2].Computed, ShouldBeTrue)
-				So(specSchemaDefinition.Properties[2].Required, ShouldBeFalse)
+				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
+				assertSchemaParentProperty(specSchemaDefinition, "subparent_id")
 			})
 		})
 	})

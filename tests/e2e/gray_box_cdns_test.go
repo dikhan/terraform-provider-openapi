@@ -426,6 +426,40 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
 }
 
+func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testing.T) {
+	api := initAPI(t, cdnSwaggerYAMLTemplate)
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderWithConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
+	assert.NoError(t, err)
+	assertProviderSchema(t, provider)
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	testCDNCreateMissingParentPropertyInFW := fmt.Sprintf(`
+		# URI /v1/cdns/
+		resource "%s" "%s" {
+		  label = "%s"
+		}
+		# URI /v1/cdns/{parent_id}/v1/firewalls/
+        resource "%s" "%s" {
+           # cdns_v1_id = %s.id All parent properties must be specified in subresources
+           label = "%s"
+        }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedCDNFirewallLabel)
+
+	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"cdns_v1_id\" is required, but no definition was found.*")
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		Providers:                 testAccProviders,
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				Config:      testCDNCreateMissingParentPropertyInFW,
+				ExpectError: expectedValidationError,
+			},
+		},
+	})
+}
+
 func TestAccCDN_ImportSubResource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 

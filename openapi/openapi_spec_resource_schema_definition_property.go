@@ -31,7 +31,10 @@ type specSchemaDefinitionProperty struct {
 	// ReadOnly properties are included in responses but not in request
 	ReadOnly bool
 	// Computed properties describe properties where the value is computed by the API
-	Computed           bool
+	Computed bool
+	// IsParentProperty defines whether the property is a parent property in which case it will be treated differently in
+	// different parts of the code. For instance, the property will not be posted to the API.
+	IsParentProperty   bool
 	ForceNew           bool
 	Sensitive          bool
 	Immutable          bool
