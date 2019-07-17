@@ -163,20 +163,22 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 
 	Convey("Given a name that has v_1 on purpose", t, func() {
 		propertyName := "cdns_v_1"
+		expected := "cdns_v1"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
 			Convey("The underscore between v and 1 is removed", func() {
-				So(fieldName, ShouldEqual, propertyName)
+				So(fieldName, ShouldEqual, expected)
 			})
 		})
 	})
 
 	Convey("Given a name that ends with __1", t, func() {
 		propertyName := "cdns__1"
+		expected := "cdns_1"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
 			Convey("The double underscore is changed to single underscore, ", func() {
-				So(fieldName, ShouldEqual, propertyName)
+				So(fieldName, ShouldEqual, expected)
 			})
 		})
 	})
@@ -196,7 +198,8 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		expectedName := "cdns1"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("The string returned has the underscore stripped, ", func() {
+			//TODO possible bug?
+			Convey("The string returned has the underscore removed, ", func() {
 				So(fieldName, ShouldEqual, expectedName)
 			})
 		})
@@ -212,11 +215,29 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		})
 	})
 
+	Convey("Given a name with leading and trailing underscores", t, func() {
+		propertyName := "_cdns_"
+		Convey("When ConvertToTerraformCompliantName method is called", func() {
+			fieldName := ConvertToTerraformCompliantName(propertyName)
+			Convey("The string returned is left intact, ", func() {
+				So(fieldName, ShouldEqual, propertyName)
+			})
+		})
+	})
+
+	Convey("Given a name 1", t, func() {
+		propertyName := "1"
+		Convey("ConvertToTerraformCompliantName panics", func() {
+			So(func() { ConvertToTerraformCompliantName(propertyName) }, ShouldPanic)
+		})
+	})
+
 	Convey("Given a name with a number and an underscore at the end", t, func() {
 		propertyName := "cdns_1_"
 		expectedName := "cdns1_"
 		Convey("When ConvertToTerraformCompliantName method is called", func() {
 			fieldName := ConvertToTerraformCompliantName(propertyName)
+			//TODO possible bug?
 			Convey("The string returned has the first underscore remove and the trailing one left intact, ", func() {
 				So(fieldName, ShouldEqual, expectedName)
 			})
