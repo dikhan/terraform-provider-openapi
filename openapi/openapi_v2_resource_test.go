@@ -1058,19 +1058,19 @@ func TestGetResourcePath(t *testing.T) {
 		Convey("When getResourcePath is called with an empty list of IDs", func() {
 			_, err := r.getResourcePath([]string{})
 			Convey("Then the error returned should not be nil", func() {
-				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - missing ids to resolve the path params properly: []")
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
 			})
 		})
 		Convey("When getResourcePath is called with an nil list of IDs", func() {
 			_, err := r.getResourcePath(nil)
 			Convey("Then the error returned should not be nil", func() {
-				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - missing ids to resolve the path params properly: []")
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
 			})
 		})
 		Convey("When getResourcePath is called with a list of IDs that is bigger than the parameterised params in the path", func() {
 			_, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
 			Convey("Then the error returned should not be nil", func() {
-				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' ([[/{cdn_id}/ {cdn_id}]]) with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
 			})
 		})
 	})

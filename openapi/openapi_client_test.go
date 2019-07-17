@@ -202,8 +202,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			}
 			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, "5678")
 			Convey("Then an error should be returned", func() {
-				//TODO: possible bug-- should the message contain all this noise: ([[/{resource_id}/ {resource_id}]]) ?
-				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/resource/{resource_id}/subresource' ([[/{resource_id}/ {resource_id}]]) with the given ids - missing ids to resolve the path params properly: []")
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/resource/{resource_id}/subresource' with the given ids - missing ids to resolve the path params properly: []")
 			})
 			Convey("And then resourceURL should be empty", func() {
 				So(resourceURL, ShouldBeEmpty)
