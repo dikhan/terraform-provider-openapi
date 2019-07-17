@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -18,7 +17,7 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulting bool should be the expected one", func() {
+			Convey("Then the resulting name should be terraform compliant", func() {
 				So(compliantName, ShouldEqual, "compliant_prop_name")
 			})
 		})
@@ -31,7 +30,7 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulting bool should be the expected one", func() {
+			Convey("Then the resulting name should be terraform compliant", func() {
 				So(compliantName, ShouldEqual, "non_compliant_name")
 			})
 		})
@@ -45,13 +44,13 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulting bool should be the expected one", func() {
+			Convey("Then the resulting name should be the preferred name", func() {
 				So(compliantName, ShouldEqual, "preferred_compliant_name")
 			})
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that has a name AND a preferred name and name is NOT compliant", t, func() {
+	Convey("Given a specSchemaDefinitionProperty that has a name AND a preferred name and preferred name is NOT compliant", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:          "compliant_prop_name",
 			PreferredName: "preferredNonCompliantName",
@@ -59,7 +58,7 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 		}
 		Convey("When getTerraformCompliantPropertyName method is called", func() {
 			compliantName := s.getTerraformCompliantPropertyName()
-			Convey("Then the resulting bool should be the expected one", func() {
+			Convey("Then the resulting name should be preferred name verbatim", func() {
 				// If preferred name is set, whether the value is compliant or not that will be the value configured for
 				// the terraform schema property. If the name is not terraform name compliant, Terraform will complain about
 				// it at runtime
@@ -795,7 +794,7 @@ func TestTerraformSchema(t *testing.T) {
 			}}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
+			Convey("Then the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
@@ -850,18 +849,18 @@ func TestTerraformSchema(t *testing.T) {
 			}}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
+			Convey("Then the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
 			})
-			Convey(fmt.Sprintf("And the returned terraform schema contains the '%s' with the right configuration", expectedNestedObjectPropertyName1), func() {
+			Convey("And the returned terraform schema contains the schema for the first nested object property with the right configuration", func() {
 				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema[expectedNestedObjectPropertyName1]
 				So(nestedObject1, ShouldNotBeNil)
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
 				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property1"].Type, ShouldEqual, schema.TypeString)
 			})
-			Convey(fmt.Sprintf("And the returned terraform schema contains the '%s' with the right configuration", expectedNestedObjectPropertyName2), func() {
+			Convey("And the returned terraform schema contains the schema for the Second nested object property with the right configuration", func() {
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema[expectedNestedObjectPropertyName2]
 				So(nestedObject2, ShouldNotBeNil)
 				So(nestedObject2.Type, ShouldEqual, schema.TypeMap)
