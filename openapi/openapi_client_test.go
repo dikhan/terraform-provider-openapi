@@ -166,7 +166,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL with a specResource containing a parameterised path and a parent ID and instance ID", func() {
+		Convey("When getResourceIDURL is called with a specResource containing a parameterised path and a parent ID and instance ID", func() {
 			expectedID := "5678"
 			parentIDs := []string{"1234"}
 			r := &SpecV2Resource{
@@ -189,7 +189,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL with a specResource containing a parameterized path and instance ID but missing a parent ID", func() {
+		Convey("When getResourceIDURL is called with a specResource containing a parameterized path and instance ID but missing a parent ID", func() {
 			r := &SpecV2Resource{
 				Path: "/v1/resource/{resource_id}/subresource",
 				RootPathItem: spec.PathItem{
