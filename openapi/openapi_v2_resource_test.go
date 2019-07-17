@@ -23,7 +23,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users'", func() {
@@ -41,7 +41,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users'", func() {
@@ -60,7 +60,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users_v1'", func() {
@@ -79,7 +79,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users_v1'", func() {
@@ -88,7 +88,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		})
 	})
 
-	Convey("Given a root path such as '/v1/something/users' and a root path item item", t, func() {
+	Convey("Given a root path such as '/v1/something/users' and a root path item", t, func() {
 		path := "/v1/something/users"
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
@@ -98,7 +98,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should still be 'users'", func() {
@@ -107,7 +107,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		})
 	})
 
-	Convey("Given a root path which has path parameters '/api/v1/nodes/{name}/proxy' and a root path item item", t, func() {
+	Convey("Given a root path which has path parameters '/api/v1/nodes/{name}/proxy' and a root path item", t, func() {
 		path := "/api/v1/nodes/{name}/proxy"
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
@@ -117,7 +117,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should still be 'nodes_v1_proxy'", func() {
@@ -142,7 +142,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			resourceName := r.getResourceName()
@@ -272,7 +272,7 @@ func TestBuildResourceName(t *testing.T) {
 
 	// TODO: Add support for sub-resources names to honour preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
 	//  For instance, if /v1/cdns/{id}/v1/firewalls path had the x-terraform-resource-name defined and the value was "cdn_v1_firewall"
-	// the expected returned name would be "cdn_v1_firewall_v1" (note the version should be automatically injected)
+	//  the expected returned name would be "cdn_v1_firewall_v1" (note the version should be automatically injected)
 	Convey("Given a SpecV2Resource with a path and a preferred terraform resource name", t, func() {
 		expectedResourceName := "user"
 		r := SpecV2Resource{
@@ -308,7 +308,7 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
-			Convey("And the the bool returned should be false", func() {
+			Convey("Then the bool returned should be false", func() {
 				So(isSubResource, ShouldBeFalse)
 			})
 			Convey("And the parentResourceNames should be empty", func() {
@@ -325,7 +325,7 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
-			Convey("And the the bool returned should be false", func() {
+			Convey("Then the bool returned should be false", func() {
 				So(isSubResource, ShouldBeFalse)
 			})
 			Convey("And the parentResourceNames should be empty", func() {
@@ -342,7 +342,7 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
-			Convey("And the the bool returned should be true", func() {
+			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -360,7 +360,7 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
-			Convey("And the the bool returned should be true", func() {
+			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -378,7 +378,7 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
-			Convey("And the the bool returned should be true", func() {
+			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -397,7 +397,7 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
-			Convey("And the the bool returned should be true", func() {
+			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -416,7 +416,7 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
-			Convey("And then the resource should be considered a subresource and the output should match the expected output values", func() {
+			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
 				So(isSubResource, ShouldBeTrue)
 				So(len(parentResourceNames), ShouldEqual, 1)
 				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
@@ -647,7 +647,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non resftul subresource path", t, func() {
+	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non restful subresource path", t, func() {
 		r := &SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls/v1/rules",
 		}
@@ -1853,7 +1853,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_required_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("AND the result returned should be false since the property is not optional", func() {
@@ -1870,7 +1870,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("AND the result returned should be true since the property is optional computed ", func() {
@@ -1889,7 +1889,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("AND the result returned should be true since the property is optional computed ", func() {
@@ -1908,10 +1908,10 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should not be nil", func() {
+			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("The the error message returned should not be the expected one", func() {
+			Convey("Then the error message returned should not be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
@@ -1951,7 +1951,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be true since the property matches the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be true since the property matches the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeTrue)
 			})
 		})
@@ -1968,7 +1968,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -1985,7 +1985,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -2002,7 +2002,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -2027,7 +2027,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error message returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-computed' extension too")
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -2049,10 +2049,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("The the result returned should not return an error", func() {
+			Convey("Then the result returned should not return an error", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be true since the property matches the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be true since the property matches the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeTrue)
 			})
 		})
@@ -2065,10 +2065,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("The the result returned should not return an error", func() {
+			Convey("Then the result returned should not return an error", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -2084,13 +2084,13 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey(fmt.Sprintf("The the result returned should not be nil since properties with the %s extension cannot be computed,", extTfComputed), func() {
+			Convey(fmt.Sprintf("Then the result returned should not be nil since properties with the %s extension cannot be computed,", extTfComputed), func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -2109,10 +2109,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputed("some_optional_property_name", property)
-			Convey("The the error returned should not be nil", func() {
+			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("The the error message returned should not be the expected one", func() {
+			Convey("Then the error message returned should not be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-computed' can not have the default value as the value is not known at plan time. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
@@ -2124,10 +2124,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("The the result returned should not return an error", func() {
+			Convey("Then the result returned should not return an error", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -2139,37 +2139,37 @@ func TestIsArrayItemPrimitiveType(t *testing.T) {
 		r := &SpecV2Resource{}
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeString", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeString)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeInt", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeInt)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeFloat", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeFloat)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeBool", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeBool)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeList", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeList)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isPrimitive, ShouldBeFalse)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeObject", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeObject)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isPrimitive, ShouldBeFalse)
 			})
 		})
@@ -2707,7 +2707,7 @@ func TestIsObjectTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isObjectTypeProperty(property)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isArrayType, ShouldBeTrue)
 			})
 		})
@@ -2718,7 +2718,7 @@ func TestIsObjectTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isObjectTypeProperty(property)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isArrayType, ShouldBeFalse)
 			})
 		})
@@ -2735,7 +2735,7 @@ func TestIsArrayTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isArrayTypeProperty(property)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isArrayType, ShouldBeTrue)
 			})
 		})
@@ -2746,7 +2746,7 @@ func TestIsArrayTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isArrayTypeProperty(property)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isArrayType, ShouldBeFalse)
 			})
 		})
@@ -2763,7 +2763,7 @@ func TestIsOfType(t *testing.T) {
 				},
 			}
 			isString := r.isOfType(property, "string")
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isString, ShouldBeTrue)
 			})
 		})
@@ -2774,7 +2774,7 @@ func TestIsOfType(t *testing.T) {
 				},
 			}
 			isInteger := r.isOfType(property, "integer")
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isInteger, ShouldBeFalse)
 			})
 		})
@@ -2788,14 +2788,14 @@ func TestSwaggerPropIsRequired(t *testing.T) {
 			requiredProp := "requiredProp"
 			requiredProps := []string{requiredProp}
 			isRequired := r.isRequired(requiredProp, requiredProps)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isRequired, ShouldBeTrue)
 			})
 		})
 		Convey("When isRequired is called with a NON required prop", func() {
 			requiredProps := []string{"requiredProp"}
 			isRequired := r.isRequired("nonRequired", requiredProps)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isRequired, ShouldBeFalse)
 			})
 		})
