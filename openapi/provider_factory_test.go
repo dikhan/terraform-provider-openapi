@@ -2,23 +2,12 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-func Test(t *testing.T) {
-	Convey("Given a provider factory", t, func() {
-		//p := providerFactory{}
-		Convey("When  is called ", func() {
-			//exists := p.
-			Convey("Then the expectedValue returned should be true", func() {
-				//So(exists, ShouldBeTrue)
-			})
-		})
-	})
-}
 
 func TestNewProviderFactory(t *testing.T) {
 	Convey("Given a provider name, an analyser and the service config", t, func() {
