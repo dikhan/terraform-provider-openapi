@@ -1037,15 +1037,8 @@ func TestProviderClientPost(t *testing.T) {
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{},
 							OperationProps: spec.OperationProps{
-								Responses: &spec.Responses{
-									ResponsesProps: spec.ResponsesProps{
-										StatusCodeResponses: map[int]spec.Response{
-											201: {},
-										},
-									},
-								},
+								Responses: &spec.Responses{},
 							},
 						},
 					},
@@ -1171,15 +1164,8 @@ func TestProviderClientPut(t *testing.T) {
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{},
 							OperationProps: spec.OperationProps{
-								Responses: &spec.Responses{
-									ResponsesProps: spec.ResponsesProps{
-										StatusCodeResponses: map[int]spec.Response{
-											201: {},
-										},
-									},
-								},
+								Responses: &spec.Responses{},
 							},
 						},
 					},
@@ -1187,15 +1173,8 @@ func TestProviderClientPut(t *testing.T) {
 				InstancePathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Put: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{},
 							OperationProps: spec.OperationProps{
-								Responses: &spec.Responses{
-									ResponsesProps: spec.ResponsesProps{
-										StatusCodeResponses: map[int]spec.Response{
-											200: {},
-										},
-									},
-								},
+								Responses: &spec.Responses{},
 							},
 						},
 					},
@@ -1313,15 +1292,8 @@ func TestProviderClientGet(t *testing.T) {
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{},
 							OperationProps: spec.OperationProps{
-								Responses: &spec.Responses{
-									ResponsesProps: spec.ResponsesProps{
-										StatusCodeResponses: map[int]spec.Response{
-											201: {},
-										},
-									},
-								},
+								Responses: &spec.Responses{},
 							},
 						},
 					},
@@ -1329,15 +1301,8 @@ func TestProviderClientGet(t *testing.T) {
 				InstancePathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Get: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{},
 							OperationProps: spec.OperationProps{
-								Responses: &spec.Responses{
-									ResponsesProps: spec.ResponsesProps{
-										StatusCodeResponses: map[int]spec.Response{
-											200: {},
-										},
-									},
-								},
+								Responses: &spec.Responses{},
 							},
 						},
 					},
@@ -1444,15 +1409,8 @@ func TestProviderClientDelete(t *testing.T) {
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{},
 							OperationProps: spec.OperationProps{
-								Responses: &spec.Responses{
-									ResponsesProps: spec.ResponsesProps{
-										StatusCodeResponses: map[int]spec.Response{
-											201: {},
-										},
-									},
-								},
+								Responses: &spec.Responses{},
 							},
 						},
 					},
@@ -1460,15 +1418,8 @@ func TestProviderClientDelete(t *testing.T) {
 				InstancePathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Delete: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{},
 							OperationProps: spec.OperationProps{
-								Responses: &spec.Responses{
-									ResponsesProps: spec.ResponsesProps{
-										StatusCodeResponses: map[int]spec.Response{
-											204: {},
-										},
-									},
-								},
+								Responses: &spec.Responses{},
 							},
 						},
 					},
