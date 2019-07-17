@@ -151,6 +151,17 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		})
 	})
 
+	Convey("Given a name that ends with _1", t, func() {
+		propertyName := "cdns_1"
+		expecetdName := "cdns1"
+		Convey("When ConvertToTerraformCompliantName method is called", func() {
+			fieldName := ConvertToTerraformCompliantName(propertyName)
+			Convey("The string returned has the underscore stripped, ", func() {
+				So(fieldName, ShouldEqual, expecetdName)
+			})
+		})
+	})
+
 }
 
 func TestCreateSchema(t *testing.T) {
