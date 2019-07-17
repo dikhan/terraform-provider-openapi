@@ -743,54 +743,6 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a root path (no subresource)", t, func() {
-		r := &SpecV2Resource{
-			Path: "/foo",
-		}
-		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-			s := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"string_readonly_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"string"},
-							},
-							SwaggerSchemaProps: spec.SwaggerSchemaProps{
-								ReadOnly: true,
-							},
-						},
-						"int_optional_computed_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"integer"},
-							},
-							VendorExtensible: spec.VendorExtensible{
-								Extensions: spec.Extensions{
-									extTfComputed: true,
-								},
-							},
-						},
-					},
-				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-				stringProp, err := specSchemaDefinition.getProperty("string_readonly_prop")
-				So(err, ShouldBeNil)
-				So(stringProp.Type, ShouldEqual, typeString)
-				So(stringProp.ReadOnly, ShouldBeTrue)
-				intProp, err := specSchemaDefinition.getProperty("int_optional_computed_prop")
-				So(err, ShouldBeNil)
-				So(intProp.Name, ShouldEqual, "int_optional_computed_prop")
-				So(intProp.Type, ShouldEqual, typeInt)
-				So(intProp.Computed, ShouldBeTrue)
-			})
-		})
-	})
-
 	Convey("Given a SpecV2Resource that is a subresource (one level parent)", t, func() {
 		r := &SpecV2Resource{
 			Path: "/parent/{parent_id}/child",
