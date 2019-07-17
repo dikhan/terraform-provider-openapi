@@ -24,15 +24,11 @@ func (p *ProviderOpenAPI) CreateSchemaProvider() (*schema.Provider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("plugin init error: %s", err)
 	}
-	return p.CreateSchemaProviderWithConfiguration(serviceConfiguration)
+	return CreateSchemaProviderFromServiceConfiguration(p, serviceConfiguration)
 }
 
-// CreateSchemaProviderWithConfiguration helper function to enable creation of schema.Provider with the given serviceConfiguration
-func (p *ProviderOpenAPI) CreateSchemaProviderWithConfiguration(serviceConfiguration ServiceConfiguration) (*schema.Provider, error) {
-	return createSchemaProviderFromServiceConfiguration(p, serviceConfiguration)
-}
-
-func createSchemaProviderFromServiceConfiguration(p *ProviderOpenAPI, serviceConfiguration ServiceConfiguration) (*schema.Provider, error) {
+// CreateSchemaProviderFromServiceConfiguration helper function to enable creation of schema.Provider with the given serviceConfiguration
+func CreateSchemaProviderFromServiceConfiguration(p *ProviderOpenAPI, serviceConfiguration ServiceConfiguration) (*schema.Provider, error) {
 	if p.err != nil {
 		return nil, p.err
 	}

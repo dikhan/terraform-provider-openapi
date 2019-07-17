@@ -373,7 +373,7 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
-	provider, err := p.CreateSchemaProviderWithConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
+	provider, err := openapi.CreateSchemaProviderFromServiceConfiguration(&p, &openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
@@ -439,7 +439,7 @@ func TestAccCDN_ImportSubResource(t *testing.T) {
 		openAPIResourceInstanceNameCDNFirewall)
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
-	provider, err := p.CreateSchemaProviderWithConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
+	provider, err := openapi.CreateSchemaProviderFromServiceConfiguration(&p, &openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
