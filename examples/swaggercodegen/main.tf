@@ -37,6 +37,12 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   }
 }
 
+resource "swaggercodegen_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
+  cdns_v1_id = swaggercodegen_cdn_v1.my_cdn.id
+  name = "my firewall fancy name"
+}
+
+
 # This is an example on how to use interpolation for 'object' types like the object_property and be able to pass
 # along to other resources property values from objects
 resource "swaggercodegen_cdn_v1" "my_cdn2" {
@@ -59,11 +65,6 @@ resource "swaggercodegen_cdn_v1" "my_cdn2" {
   dynamic "array_of_objects_example" {
     for_each = [swaggercodegen_cdn_v1.my_cdn.array_of_objects_example[0]]
     content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
       origin_port = lookup(array_of_objects_example.value, "origin_port", null)
       protocol    = lookup(array_of_objects_example.value, "protocol", null)
     }
@@ -71,11 +72,6 @@ resource "swaggercodegen_cdn_v1" "my_cdn2" {
   dynamic "array_of_objects_example" {
     for_each = [swaggercodegen_cdn_v1.my_cdn.array_of_objects_example[1]]
     content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
       origin_port = lookup(array_of_objects_example.value, "origin_port", null)
       protocol    = lookup(array_of_objects_example.value, "protocol", null)
     }

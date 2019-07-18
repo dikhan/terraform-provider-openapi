@@ -23,15 +23,15 @@ const (
 
 // ClientOpenAPI defines the behaviour expected to be implemented for the OpenAPI Client used in the Terraform OpenAPI Provider
 type ClientOpenAPI interface {
-	Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
-	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error)
-	Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error)
-	Delete(resource SpecResource, id string) (*http.Response, error)
+	Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
+	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
+	Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
+	Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
 // The CRUD operations accept an OpenAPI operation which defines among other things the security scheme applicable to
-// the API when making the HTTP request
+// the API when making the HTTP requests
 type ProviderClient struct {
 	openAPIBackendConfiguration SpecBackendConfiguration
 	httpClient                  http_goclient.HttpClientIface
@@ -40,8 +40,8 @@ type ProviderClient struct {
 }
 
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in
-func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-	resourceURL, err := o.getResourceURL(resource)
+func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+	resourceURL, err := o.getResourceURL(resource, parentIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +50,8 @@ func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{},
 }
 
 // Put performs a PUT request to the server API based on the resource configuration and the payload passed in
-func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
-	resourceURL, err := o.getResourceIDURL(resource, id)
+func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +60,8 @@ func (o *ProviderClient) Put(resource SpecResource, id string, requestPayload in
 }
 
 // Get performs a GET request to the server API based on the resource configuration and the resource instance id passed in
-func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
-	resourceURL, err := o.getResourceIDURL(resource, id)
+func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +70,8 @@ func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload i
 }
 
 // Delete performs a DELETE request to the server API based on the resource configuration and the resource instance id passed in
-func (o *ProviderClient) Delete(resource SpecResource, id string) (*http.Response, error) {
-	resourceURL, err := o.getResourceIDURL(resource, id)
+func (o *ProviderClient) Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
+	resourceURL, err := o.getResourceIDURL(resource, parentIDs, id)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderPara
 	}
 }
 
-func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
+func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string) (string, error) {
 	var host string
 	var err error
 
@@ -162,7 +162,10 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 	}
 
 	basePath := o.openAPIBackendConfiguration.getBasePath()
-	resourceRelativePath := resource.getResourcePath()
+	resourceRelativePath, err := resource.getResourcePath(parentIDs)
+	if err != nil {
+		return "", err
+	}
 
 	// Fall back to override the host if value is not empty; otherwise global host will be used as usual
 	hostOverride, err := resource.getHost()
@@ -204,10 +207,16 @@ func (o ProviderClient) getResourceURL(resource SpecResource) (string, error) {
 	return fmt.Sprintf("%s://%s%s", defaultScheme, host, path), nil
 }
 
-func (o ProviderClient) getResourceIDURL(resource SpecResource, id string) (string, error) {
-	url, err := o.getResourceURL(resource)
+func (o ProviderClient) getResourceIDURL(resource SpecResource, parentIDs []string, id string) (string, error) {
+	if strings.Contains(id, "/") {
+		return "", fmt.Errorf("instance ID (%s) contains not supported characters (forward slashes)", id)
+	}
+	url, err := o.getResourceURL(resource, parentIDs)
 	if err != nil {
 		return "", err
+	}
+	if id == "" {
+		return "", fmt.Errorf("could not build the resourceIDURL: required instance id value is missing")
 	}
 	if strings.HasSuffix(url, "/") {
 		return fmt.Sprintf("%s%s", url, id), nil

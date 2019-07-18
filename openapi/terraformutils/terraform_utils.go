@@ -2,12 +2,15 @@ package terraformutils
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/iancoleman/strcase"
-	"github.com/mitchellh/go-homedir"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/iancoleman/strcase"
+
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/mitchellh/go-homedir"
 )
 
 // TerraformPluginVendorDir defines the location where Terraform plugins are installed as per Terraform documentation:
@@ -59,10 +62,37 @@ func (t *TerraformUtils) GetTerraformPluginsVendorDir() (string, error) {
 	return terraformPluginsFolder, nil
 }
 
+var numberInName = regexp.MustCompile("([0-9]+)")
+
 // ConvertToTerraformCompliantName will convert the input string into a terraform compatible field name following
 // Terraform's snake case field name convention (lower case and snake case).
 func ConvertToTerraformCompliantName(name string) string {
+	//convert the name is Snake Case, this is the ONLY operation is needed in most of the case...
 	compliantName := strcase.ToSnake(name)
+
+	if name == compliantName {
+		return compliantName
+	}
+
+	// ... however if numbers are present in the `name` toSnake separated number with _X_ ...
+	matches := numberInName.FindAllString(compliantName, -1)
+	// ... in this case why we need to remove the ALL the surrounding underscores for each number found in `name`
+	for _, match := range matches {
+		positionInString := strings.Index(compliantName, match)
+		// remove the prepended `_`
+		tmpName := compliantName[:positionInString-1] + match
+		// for the postpended `_` there we need to be careful that we don't go out of bound or we don't remove any accidental '_' present in the name
+		if len(compliantName) < positionInString+2 {
+			tmpName += compliantName[positionInString : len(compliantName)-1]
+		} else if len(compliantName) > positionInString+2 && string(compliantName[positionInString+2]) == "_" {
+			tmpName += compliantName[positionInString+2:]
+		} else {
+			tmpName += compliantName[positionInString+1:]
+		}
+		// removed the surrounding underscores for the first number match, now tmpName is compliantName
+		// unless other matches are found (for loop continue)
+		compliantName = tmpName
+	}
 	return compliantName
 }
 

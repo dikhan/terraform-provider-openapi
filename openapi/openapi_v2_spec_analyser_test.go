@@ -1675,11 +1675,196 @@ definitions:
 }
 
 func TestGetTerraformCompliantResources(t *testing.T) {
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
+		swaggerContent := `swagger: "2.0"
+host: 127.0.0.1 
+paths:
+  ######################
+  ## CDN sub-resource
+  ######################
+
+  /v1/cdns/{parent_id}/v1/firewalls:
+    post:
+      x-terraform-resource-host: 178.168.3.4
+      summary: "Create cdn firewall"
+      operationId: "ContentDeliveryNetworkFirewallCreateV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Created CDN firewall"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+
+  /v1/cdns/{parent_id}/v1/firewalls/{id}:
+    get:
+      summary: "Get cdn firewall by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkFirewallGetV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - name: "id"
+        in: "path"
+        description: "The cdn firewall id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+    delete: 
+      operationId: ContentDeliveryNetworkFirewallDeleteV1
+      parameters: 
+        - description: "The cdn id that contains the firewall to be fetched."
+          in: path
+          name: parent_id
+          required: true
+          type: string
+        - description: "The cdn firewall id that needs to be fetched."
+          in: path
+          name: id
+          required: true
+          type: string
+      responses: 
+        204: 
+          description: "successful operation, no content is returned"
+      summary: "Delete firewall"
+    put:
+      x-terraform-resource-timeout: "300s"
+      summary: "Updated firewall"
+      operationId: "ContentDeliveryNetworkFirewallUpdatedV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "firewall that needs to be updated"
+        required: true
+        type: "string"
+      - name: "parent_id"
+        in: "path"
+        description: "cdn which this firewall belongs to"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Updated firewall object"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+
+definitions:
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1_firewalls_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1_firewalls_v1")
+			})
+
+			firewallV1Resource := terraformCompliantResources[0]
+
+			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
+				subRes, parentIDs, fullParentID := firewallV1Resource.isSubResource()
+				So(subRes, ShouldBeTrue)
+				So(parentIDs, ShouldResemble, []string{"cdns_v1"})
+				So(fullParentID, ShouldEqual, "cdns_v1")
+				Convey("And the full resourcePath is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
+					parentID := "42"
+					resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
+					So(err, ShouldBeNil)
+					So(resourcePath, ShouldEqual, "/v1/cdns/42/v1/firewalls")
+				})
+			})
+			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				resOperation := firewallV1Resource.getResourceOperations()
+				So(resOperation.Get.responses, ShouldContainKey, 200)
+				So(resOperation.Post.responses, ShouldContainKey, 201)
+				So(resOperation.Put.responses, ShouldContainKey, 200)
+				So(resOperation.Delete.responses, ShouldContainKey, 204)
+			})
+			Convey("And each operation exposed on the resource has its own timeout set", func() {
+				timeoutSpec, err := firewallV1Resource.getTimeouts()
+				So(err, ShouldBeNil)
+
+				So(timeoutSpec.Put.String(), ShouldEqual, "5m0s")
+				So(timeoutSpec.Get, ShouldBeNil)
+				So(timeoutSpec.Post, ShouldBeNil)
+				So(timeoutSpec.Delete, ShouldBeNil)
+			})
+			Convey("And the host is correctly configured according to the swagger", func() {
+				host, err := firewallV1Resource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldEqual, "178.168.3.4")
+			})
+
+			Convey("And the resource schema contains 3 properties, 2 taken from the model and one added on the fly for the parent resource id", func() {
+				actualResourceSchema, err := firewallV1Resource.getResourceSchema()
+				So(err, ShouldBeNil)
+				So(len(actualResourceSchema.Properties), ShouldEqual, 3)
+
+				idExists, _ := assertPropertyExists(actualResourceSchema.Properties, "id")
+				So(idExists, ShouldBeTrue)
+				labelExists, _ := assertPropertyExists(actualResourceSchema.Properties, "label")
+				So(labelExists, ShouldBeTrue)
+				// TODO: the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
+				//  the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
+				//  have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
+				//  That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
+				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdns_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
+			})
+
+		})
+	})
+
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /v1/cdns:
     post:
+      x-terraform-resource-timeout: "5s"
+      x-terraform-resource-host: some-host.com
       parameters:
       - in: "body"
         name: "body"
@@ -1766,6 +1951,41 @@ definitions:
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+			})
+			cndV1Resource := terraformCompliantResources[0]
+			Convey("And the cndV1Resource should not be considered a subresource", func() {
+				subRes, parentIDs, fullParentID := cndV1Resource.isSubResource()
+				So(err, ShouldBeNil)
+				So(subRes, ShouldBeFalse)
+				So(parentIDs, ShouldBeEmpty)
+				So(fullParentID, ShouldBeEmpty)
+			})
+			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				resOperation := cndV1Resource.getResourceOperations()
+				So(resOperation.Get.responses, ShouldContainKey, 200)
+				So(resOperation.Post.responses, ShouldContainKey, 201)
+				So(resOperation.Put.responses, ShouldContainKey, 200)
+				So(resOperation.Delete.responses, ShouldContainKey, 204)
+			})
+			Convey("And each operation exposed on the resource has it own timeout set", func() {
+				timeoutSpec, err := cndV1Resource.getTimeouts()
+				So(err, ShouldBeNil)
+				So(timeoutSpec.Post.String(), ShouldEqual, "5s")
+				So(timeoutSpec.Get, ShouldBeNil)
+				So(timeoutSpec.Put, ShouldBeNil)
+				So(timeoutSpec.Delete, ShouldBeNil)
+			})
+			Convey("And the host is correctly configured according to the swagger", func() {
+				host, err := cndV1Resource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldEqual, "some-host.com")
+			})
+
+			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
+				actualResourceSchema, err := cndV1Resource.getResourceSchema()
+				So(err, ShouldBeNil)
+				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
+				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
 			})
 		})
 	})

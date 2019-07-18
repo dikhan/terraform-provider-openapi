@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-openapi/spec"
+
 	"github.com/hashicorp/terraform/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -160,6 +162,41 @@ func TestCreate(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When create is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.create(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (post) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := 202
+		testSchema := newTestSchema(idProperty, stringProperty)
+		resourceData := testSchema.getResourceData(t)
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{responses: specResponses{expectedReturnCode: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
+		r := resourceFactory{
+			openAPIResource: specResource,
+			defaultTimeout:  time.Duration(0 * time.Second),
+		}
+		Convey("When create is called with resource data and a client", func() {
+			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+			}
+			err := r.create(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "polling mechanism failed after POST /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' (someID) when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
+			})
+		})
+	})
 }
 
 func TestRead(t *testing.T) {
@@ -180,11 +217,62 @@ func TestRead(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory configured with a resource that is a subresource", t, func() {
+
+		someOtherProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
+
+		// Pretending the data has already been populated with the parent property
+		testSchema := newTestSchema(idProperty, someOtherProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		r := newResourceFactory(&SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewall",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some_string_prop": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"string"},
+							},
+						},
+					},
+				},
+			},
+		})
+		Convey("When readRemote is called with resource data (containing the expected state property values) and a provider client configured to return some response payload", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					someOtherProperty.Name: "someOtherStringValue",
+				},
+			}
+			err := r.read(resourceData, client)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
+				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+			})
+		})
+	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When create is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.read(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
 }
 
 func TestReadRemote(t *testing.T) {
+
 	Convey("Given a resource factory", t, func() {
-		r, _ := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
+		r := newResourceFactory(&specStubResource{name: "resourceName"})
 		Convey("When readRemote is called with resource data and a client that returns ", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
@@ -219,11 +307,35 @@ func TestReadRemote(t *testing.T) {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
 			})
 		})
+
+		Convey("When readRemote is called with an instance id, a providerClient and a parent ID", func() {
+			expectedID := "someID"
+			expectedParentID := "someParentID"
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			response, err := r.readRemote(expectedID, client, expectedParentID)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider client should have been called with the right argument values", func() {
+				So(client.idReceived, ShouldEqual, expectedID)
+				So(len(client.parentIDsReceived), ShouldEqual, 1)
+				So(client.parentIDsReceived[0], ShouldEqual, expectedParentID)
+			})
+			Convey("And the values of the keys should match the values that came in the response", func() {
+				So(response[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
+				So(response[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
+			})
+		})
 	})
 }
 
 func TestUpdate(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
+	Convey("Given a resource factory containing some properties including an immutable property", t, func() {
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, immutableProperty)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
@@ -264,49 +376,99 @@ func TestUpdate(t *testing.T) {
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
 			})
 		})
-		Convey("When update is called with resource data and a client configured to return an error when delete is called", func() {
-			deleteError := fmt.Errorf("some error when deleting")
+		Convey("When update is called with resource data and a client configured to return an error when update is called", func() {
+			updateError := fmt.Errorf("some error when deleting")
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name: idProperty.Default,
 				},
-				error: deleteError,
+				error: updateError,
 			}
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("Then the error returned should be the error returned by the client delete operation", func() {
-				So(err, ShouldEqual, deleteError)
-			})
-		})
-
-		Convey("When update is called with resource data and a client returns a non expected http code when reading remote", func() {
-			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{},
-				returnHTTPCode:  http.StatusInternalServerError,
-			}
-			err := r.update(resourceData, client)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned should be", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
+			Convey("Then the error returned should be the error returned by the client update operation", func() {
+				So(err, ShouldEqual, updateError)
 			})
 		})
 	})
 
-	Convey("Given a resource factory with no delete operation configured", t, func() {
+	Convey("Given a resource factory containing some properties", t, func() {
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty)
+		Convey("When update is called with resource data and a client returns a non expected http code when reading remote", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+				returnHTTPCode: http.StatusInternalServerError,
+			}
+			err := r.update(resourceData, client)
+			Convey("And the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] UPDATE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 202] ()")
+			})
+		})
+		Convey("When update is called with resource data and a client returns a non expected error", func() {
+			expectedError := "some error returned by the PUT operation"
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+				error: fmt.Errorf(expectedError),
+			}
+			err := r.update(resourceData, client)
+			Convey("And the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
+
+	Convey("Given a resource factory with no update operation configured", t, func() {
 		specResource := newSpecStubResource("resourceName", "/v1/resource", false, nil)
 		r := newResourceFactory(specResource)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
-			err := r.delete(nil, client)
+			err := r.update(nil, client)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE operation, check the swagger file exposed on '/v1/resource'")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support PUT operation, check the swagger file exposed on '/v1/resource'")
+			})
+		})
+	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When create is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.update(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (put) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := 202
+		testSchema := newTestSchema(idProperty, stringProperty)
+		resourceData := testSchema.getResourceData(t)
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{responses: specResponses{expectedReturnCode: &specResponse{isPollingEnabled: true}}}, &specResourceOperation{}, &specResourceOperation{})
+		r := resourceFactory{
+			openAPIResource: specResource,
+			defaultTimeout:  time.Duration(0 * time.Second),
+		}
+		Convey("When create is called with resource data and a client", func() {
+			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+			}
+			err := r.update(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
 			})
 		})
 	})
@@ -386,11 +548,130 @@ func TestDelete(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When delete is called with empty data and a empty client", func() {
+			client := &clientOpenAPIStub{}
+			err := r.delete(nil, client)
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (delete) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := 202
+		testSchema := newTestSchema(idProperty, stringProperty)
+		resourceData := testSchema.getResourceData(t)
+		specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{responses: specResponses{expectedReturnCode: &specResponse{isPollingEnabled: true}}})
+		r := resourceFactory{
+			openAPIResource: specResource,
+			defaultTimeout:  time.Duration(0 * time.Second),
+		}
+		Convey("When create is called with resource data and a client", func() {
+			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+			}
+			err := r.delete(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "polling mechanism failed after DELETE /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([destroyed]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
+			})
+		})
+	})
+}
+
+func TestGetParentIDsAndResourcePath(t *testing.T) {
+	Convey("Given a resource with an empty openapi resource (internal getParentIDs call fails for some reason)", t, func() {
+		r := resourceFactory{}
+		Convey("When getParentIDsAndResourcePath is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(nil)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+			})
+			Convey("And the parentIDs should be empty", func() {
+				So(parentIDs, ShouldBeEmpty)
+			})
+			Convey("And the resourcePath should be empty", func() {
+				So(resourcePath, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource with an empty openapi resource (internal getResourcePath() call fails for some reason)", t, func() {
+		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
+		testSchema := newTestSchema(someFirewallProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+					return "", errors.New("getResourcePath() failed")
+				}},
+		}
+
+		Convey("When getParentIDsAndResourcePath is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(resourceData)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "getResourcePath() failed")
+			})
+			Convey("And the parentIDs should be empty", func() {
+				So(parentIDs, ShouldBeEmpty)
+			})
+			Convey("And the resourcePath should be empty", func() {
+				So(resourcePath, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource configured with a subreousrce", t, func() {
+		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
+
+		// Pretending the data has already been populated with the parent property
+		testSchema := newTestSchema(someFirewallProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		r := newResourceFactory(&SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewall",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"some_string_prop"},
+					Properties: map[string]spec.Schema{
+						"some_string_prop": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Required: []string{},
+							},
+						},
+					},
+				},
+			},
+		})
+		Convey("When getParentIDsAndResourcePath is called", func() {
+			parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(resourceData)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the parentIDs should match the expected", func() {
+				So(len(parentIDs), ShouldEqual, 1)
+				So(parentIDs[0], ShouldEqual, "parentPropertyID")
+			})
+			Convey("And the resourcePath be '/v1/cdns/parentPropertyID/firewall'", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns/parentPropertyID/firewall")
+			})
+		})
+	})
 }
 
 func TestImporter(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
-		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
+	Convey("Given a resource factory configured with a root resource (and the already populated id property value provided by the user)", t, func() {
+		importedIDProperty := idProperty
+		r, resourceData := testCreateResourceFactoryWithID(t, importedIDProperty, stringProperty)
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
@@ -409,11 +690,157 @@ func TestImporter(t *testing.T) {
 				Convey("And the data list returned should have one item", func() {
 					So(len(data), ShouldEqual, 1)
 				})
+				Convey("And the data returned should contained the expected resource ID", func() {
+					So(data[0].Id(), ShouldEqual, idProperty.Default)
+				})
 				Convey("And the data returned should contained the imported id field with the right value", func() {
-					So(data[0].Get(idProperty.Name), ShouldEqual, idProperty.Default)
+					So(data[0].Get(importedIDProperty.Name), ShouldEqual, importedIDProperty.Default)
 				})
 				Convey("And the data returned should contained the imported string field with the right value returned from the API", func() {
 					So(data[0].Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+				})
+			})
+		})
+	})
+	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value provided by the user with the correct format)", t, func() {
+		expectedParentID := "32"
+		expectedResourceInstanceID := "159"
+		expectedParentPropertyName := "cdns_v1_id"
+
+		importedIDValue := fmt.Sprintf("%s/%s", expectedParentID, expectedResourceInstanceID)
+		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
+		expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, "")
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
+
+		Convey("When importer is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with the provider client and resource data for one item", func() {
+				data, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should be nil", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("And the data list returned should have one item", func() {
+					So(len(data), ShouldEqual, 1)
+				})
+				Convey("And the data returned should contain the parent id field with the right value", func() {
+					So(data[0].Get(expectedParentPropertyName), ShouldEqual, expectedParentID)
+				})
+				Convey("And the data returned should contain the expected resource ID", func() {
+					So(data[0].Id(), ShouldEqual, expectedResourceInstanceID)
+				})
+				Convey("And the data returned should contain the imported string field with the right value returned from the API", func() {
+					So(data[0].Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+				})
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value provided by the user with incorrect format)", t, func() {
+		expectedParentPropertyName := "cdns_v1_id"
+
+		importedIDValue := "someStringThatDoesNotMatchTheExpectedSubResourceIDFormat"
+		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
+		expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, "")
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
+
+		Convey("When importer is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				_, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should be the expected one", func() {
+					So(err.Error(), ShouldEqual, "can not import a subresource without providing all the parent IDs (1) and the instance ID")
+				})
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains more IDs than the resource number of parent properties)", t, func() {
+		expectedParentPropertyName := "cdns_v1_id"
+		importedIDValue := "/extraID/1234/23564"
+		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
+		expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, "")
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
+
+		Convey("When importer is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				_, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should be the expected one", func() {
+					So(err.Error(), ShouldEqual, "the number of parent IDs provided 3 is greater than the expected number of parent IDs 1")
+				})
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains less IDs than the resource number of parent properties)", t, func() {
+		importedIDValue := "1234/5647" // missing one of the parent ids
+		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
+		expectedParentProperty := newStringSchemaDefinitionProperty("cdns_v1_firewalls_v1", "", true, true, false, false, false, true, false, false, "")
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewalls/{id}/rules", []string{"cdns_v1", "cdns_v1_firewalls_v1"}, []string{"cdns_v1_id", "cdns_v1_firewalls_v1_id"}, "cdns_v1_firewalls_v1", importedIDProperty, stringProperty, expectedParentProperty)
+
+		Convey("When importer is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				_, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should be the expected one", func() {
+					So(err.Error(), ShouldEqual, "can not import a subresource without all the parent ids, expected 2 and got 1 parent IDs")
+				})
+			})
+		})
+	})
+
+	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains the right IDs but the resource for some reason is not configured correctly and does not have configured the parent id property)", t, func() {
+		expectedParentPropertyName := "cdns_v1_id"
+		importedIDValue := "1234/5678"
+		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty)
+
+		Convey("When importer is called", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				_, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should be the expected one", func() {
+					So(err.Error(), ShouldEqual, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
 				})
 			})
 		})
@@ -514,6 +941,35 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory that has an asynchronous create operation (post) but the polling operation fails for some reason", t, func() {
+		expectedReturnCode := http.StatusAccepted
+		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, statusProperty)
+		Convey("When create is called with resource data and a client", func() {
+			operation := &specResourceOperation{
+				responses: map[int]*specResponse{
+					expectedReturnCode: {
+						isPollingEnabled:    true,
+						pollPendingStatuses: []string{"pending"},
+						pollTargetStatuses:  []string{"deployed"},
+					},
+				},
+			}
+			client := &clientOpenAPIStub{
+				returnHTTPCode: expectedReturnCode,
+				responsePayload: map[string]interface{}{
+					idProperty.Name:     "someID",
+					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+				error: fmt.Errorf("some error"),
+			}
+			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, expectedReturnCode, schema.TimeoutCreate)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "error waiting for resource to reach a completion status ([destroyed]) [valid pending statuses ([pending])]: error on retrieving resource 'resourceName' (id) when waiting: some error")
+			})
+		})
+	})
+
 }
 
 func TestResourceStateRefreshFunc(t *testing.T) {
@@ -567,7 +1023,7 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, fmt.Sprintf("error on retrieving resource '/v1/resource' (id) when waiting: %s", expectedError))
+				So(err.Error(), ShouldEqual, fmt.Sprintf("error on retrieving resource 'resourceName' (id) when waiting: %s", expectedError))
 			})
 			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)
@@ -593,7 +1049,7 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource 'resourceName' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
 			})
 			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)
@@ -619,7 +1075,7 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource '/v1/resource' (id): payload does not match resouce schema, could not find the status field: [status]")
+				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource 'resourceName' (id): payload does not match resouce schema, could not find the status field: [status]")
 			})
 			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)
@@ -895,7 +1351,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
 
-	Convey("Given a resource factory initialized with a spec resource with schema definitions for each of the supported property types (string, int, number, bool, slice of primitive, slice of objects, object and object with nested objects)", t, func() {
+	Convey("Given a resource factory initialized with a spec resource with schema definitions for each of the supported property types (string, int, number, bool, slice of primitive, slice of objects, object and object with nested objects and a parent property)", t, func() {
 
 		// - Object property configuration
 		// object_property {
@@ -955,7 +1411,11 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			},
 		}
 		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, sliceObjectProperty, objectProperty, propertyWithNestedObject)
+
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("parentProperty", "", true, false, "http")
+		parentProperty.IsParentProperty = true
+
+		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, sliceObjectProperty, objectProperty, propertyWithNestedObject, parentProperty)
 
 		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
 			payload := r.createPayloadFromLocalStateData(resourceData)
@@ -965,6 +1425,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			Convey("And then payload returned should not include the following keys as they are either an identifier or read only (computed) properties", func() {
 				So(payload, ShouldNotContainKey, idProperty.Name)
 				So(payload, ShouldNotContainKey, computedProperty.Name)
+				So(payload, ShouldNotContainKey, parentProperty.Name)
 			})
 			Convey("And then payload returned should include the following keys ", func() {
 				So(payload, ShouldContainKey, stringProperty.Name)
@@ -1803,7 +2264,7 @@ func TestSetResourceDataProperty(t *testing.T) {
 		})
 		Convey("When setResourceDataProperty is called with a schema definition property name does NOT exist", func() {
 			err := r.setResourceDataProperty("nonExistingKey", "", resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And then expectedValue should equal", func() {
@@ -1829,4 +2290,88 @@ func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*spec
 	resourceData := testSchema.getResourceData(t)
 	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
 	return newResourceFactory(specResource), resourceData
+}
+
+func testCreateSubResourceFactory(t *testing.T, path string, parentResourceNames, parentPropertyNames []string, fullParentResourceName string, idSchemaDefinitionProperty *specSchemaDefinitionProperty, schemaDefinitionProperties ...*specSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+	testSchema := newTestSchema(schemaDefinitionProperties...)
+	resourceData := testSchema.getResourceData(t)
+	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
+	specResource := newSpecStubResourceWithOperations("subResourceName", path, false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
+	specResource.parentResourceNames = parentResourceNames
+	specResource.parentPropertyNames = parentPropertyNames
+	specResource.fullParentResourceName = fullParentResourceName
+	return newResourceFactory(specResource), resourceData
+}
+
+func Test_getParentIDs(t *testing.T) {
+
+	Convey("Given a resourceFactory with no openAPIResource", t, func() {
+		rf := resourceFactory{}
+		Convey("When getParentIDs is called", func() {
+			ss, e := rf.getParentIDs(nil)
+			Convey("Then an error is raised", func() {
+				So(e.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+			})
+			Convey("And the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resourceFactory with a pointer to a blank SpecV2Resource", t, func() {
+		rf := resourceFactory{openAPIResource: &SpecV2Resource{}}
+		Convey("When getParentIDs is called with a nil arg", func() {
+			ss, err := rf.getParentIDs(nil)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
+			})
+		})
+		Convey("When getParentIDs is called with an empty ResourceData", func() {
+			ss, err := rf.getParentIDs(&schema.ResourceData{})
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resourceFactory with a some schema", t, func() {
+		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
+		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
+
+		// Pretending the data has already been populated with the parent property
+		testSchema := newTestSchema(someFirewallProperty, parentProperty)
+		resourceData := testSchema.getResourceData(t)
+
+		rf := newResourceFactory(&SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewall",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"some_string_prop"},
+					Properties: map[string]spec.Schema{
+						"some_string_prop": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Required: []string{},
+							},
+						},
+					},
+				},
+			},
+		})
+
+		Convey("When getParentIDs is called with non-empty ResourceData", func() {
+			parentIDs, err := rf.getParentIDs(resourceData)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the parent IDs returned should be populated as expected", func() {
+				So(parentIDs[0], ShouldEqual, "parentPropertyID")
+			})
+		})
+	})
 }

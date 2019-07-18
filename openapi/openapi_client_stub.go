@@ -8,15 +8,18 @@ import (
 
 // clientOpenAPIStub is a stubbed client used for testing purposes that implements the ClientOpenAPI interface
 type clientOpenAPIStub struct {
-	responsePayload map[string]interface{}
-	error           error
-	returnHTTPCode  int
+	responsePayload   map[string]interface{}
+	error             error
+	returnHTTPCode    int
+	idReceived        string
+	parentIDsReceived []string
 }
 
-func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
+	c.parentIDsReceived = parentIDs
 	switch p := responsePayload.(type) {
 	case *map[string]interface{}:
 		*p = c.responsePayload
@@ -26,10 +29,12 @@ func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface
 	return c.generateStubResponse(http.StatusCreated), nil
 }
 
-func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
+	c.idReceived = id
+	c.parentIDsReceived = parentIDs
 	switch p := responsePayload.(type) {
 	case *map[string]interface{}:
 		*p = c.responsePayload
@@ -39,10 +44,12 @@ func (c *clientOpenAPIStub) Put(resource SpecResource, id string, requestPayload
 	return c.generateStubResponse(http.StatusOK), nil
 }
 
-func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayload interface{}) (*http.Response, error) {
+func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
+	c.idReceived = id
+	c.parentIDsReceived = parentIDs
 	switch p := responsePayload.(type) {
 	case *map[string]interface{}:
 		*p = c.responsePayload
@@ -53,10 +60,12 @@ func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayloa
 	return c.generateStubResponse(http.StatusOK), nil
 }
 
-func (c *clientOpenAPIStub) Delete(resource SpecResource, id string) (*http.Response, error) {
+func (c *clientOpenAPIStub) Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
+	c.idReceived = id
+	c.parentIDsReceived = parentIDs
 	delete(c.responsePayload, id)
 	return c.generateStubResponse(http.StatusNoContent), nil
 }

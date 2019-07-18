@@ -11,8 +11,42 @@ import (
 	"github.com/go-openapi/spec"
 )
 
+const pathParameterRegex = "/({[\\w]*})*/"
+
+// resourceVersionRegexTemplate is used to identify the version attached to the given resource. The parameter in the
+// template will be replaced with the actual resource name so if there is a match the version grabbed is assured to belong
+// to the resource in question and not any other version showing in the path before the resource name
+const resourceVersionRegexTemplate = "/(v[\\d]*)/%s"
+
 const resourceVersionRegex = "(/v[0-9]*/)"
 const resourceNameRegex = "((/\\w*[/]?))+$"
+
+// resourceParentNameRegex is the regex used to identify the different parents from a path that is a sub-resource. If used
+// calling FindStringSubmatch, any match will contain the following groups in the corresponding array index:
+// Index 0: This value will represent the full match containing also the path parameter (e,g: /v1/cdns/{id})
+// Index 1: This value will represent the resource path (without the instance path parameter) - e,g: /v1/cdns
+// Index 2: This value will represent version if it exists in the path (e,g: v1)
+// Index 3: This value will represent the resource path name (e,g: cdns)
+//
+// - Example calling FindAllStringSubmatch with '/v1/cdns/{id}/v1/firewalls' path:
+// matches, _ := resourceParentRegex.FindAllStringSubmatch("/v1/cdns/{id}/v1/firewalls", -1)
+// matches[0][0]: Full match /v1/cdns/{id}
+// matches[0][1]: Group 1. /v1/cdns
+// matches[0][2]: Group 2. v1
+// matches[0][3]: Group 3. cdns
+
+// - Example calling FindAllStringSubmatch with '/v1/cdns/{id}/v2/firewalls/{id}/v3/rules' path
+// matches, _ := resourceParentRegex.FindAllStringSubmatch("/v1/cdns/{id}/v2/firewalls/{id}/v3/rules", -1)
+// matches[0][0]: Full match /v1/cdns/{id}
+// matches[0][1]: Group 1. /v1/cdns
+// matches[0][2]: Group 2. v1
+// matches[0][3]: Group 3. cdns
+// matches[1][0]: Full match /v2/firewalls/{id}
+// matches[1][1]: Group 1. /v2/firewalls
+// matches[1][2]: Group 2. v2
+// matches[1][3]: Group 3. firewalls
+const resourceParentNameRegex = `(\/?([v[\d]*]?)\/(\w+))\/{\w*}`
+
 const resourceInstanceRegex = "((?:.*)){.*}"
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
@@ -84,18 +118,17 @@ func (o *SpecV2Resource) getResourceName() string {
 	return o.Name
 }
 
-// getResourceName gets the name of the resource from a path /resource/{id}
 // getResourceName returns the name of the resource (including the version if applicable). The name is build from the resource
 // root path /resource/{id} or if specified the value set in the x-terraform-resource-name extension is used instead along
-// along with the version (if applicable)
-// the provider name to build the terraform resource name that will be used in the terraform configuration file
+// with the version (if applicable)
 func (o *SpecV2Resource) buildResourceName() (string, error) {
+	resourcePath := o.Path
+
 	nameRegex, err := regexp.Compile(resourceNameRegex)
 	if err != nil {
 		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
 	}
 	var resourceName string
-	resourcePath := o.Path
 	matches := nameRegex.FindStringSubmatch(resourcePath)
 	if len(matches) < 2 {
 		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
@@ -106,21 +139,55 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 		resourceName = preferredName
 	}
 
-	versionRegex, err := regexp.Compile(resourceVersionRegex)
+	versionRegex, err := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
 	if err != nil {
 		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
 	}
-	versionMatches := versionRegex.FindStringSubmatch(resourcePath)
-	if len(versionMatches) != 0 {
-		version := strings.Replace(versionRegex.FindStringSubmatch(resourcePath)[1], "/", "", -1)
-		resourceNameWithVersion := fmt.Sprintf("%s_%s", resourceName, version)
-		return resourceNameWithVersion, nil
+
+	fullResourceName := resourceName
+	v := versionRegex.FindAllStringSubmatch(resourcePath, -1)
+	if len(v) > 0 {
+		version := v[0][1]
+		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
 	}
-	return resourceName, nil
+
+	isSubResource, _, fullParentResourceName := o.isSubResource()
+	if isSubResource {
+		fullResourceName = fullParentResourceName + "_" + fullResourceName
+	}
+	return fullResourceName, nil
 }
 
-func (o *SpecV2Resource) getResourcePath() string {
-	return o.Path
+// getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
+// path parameters these will be resolved accordingly based on the ids provided. For instance, considering the given
+// resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
+// If the resource path is not parameterised, then regular path will be returned accordingly
+func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
+	resolvedPath := o.Path
+
+	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
+	pathParamsMatches := pathParameterRegex.FindAllStringSubmatch(resolvedPath, -1)
+
+	switch {
+	case len(pathParamsMatches) == 0:
+		return resolvedPath, nil
+
+	case len(parentIDs) > len(pathParamsMatches):
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' with the given ids - more ids than path params: %s", resolvedPath, parentIDs)
+
+	case len(parentIDs) < len(pathParamsMatches):
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, parentIDs)
+	}
+
+	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values
+	for idx, parentID := range parentIDs {
+		if strings.Contains(parentID, "/") {
+			return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' due to parent IDs (%s) containing not supported characters (forward slashes)", resolvedPath, parentIDs)
+		}
+		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], parentIDs[idx], 1)
+	}
+
+	return resolvedPath, nil
 }
 
 // getHost can return an empty host in which case the expectation is that the host used will be the one specified in the
@@ -159,11 +226,39 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
+func (o *SpecV2Resource) isSubResource() (bool, []string, string) {
+	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
+	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
+	if len(parentMatches) > 0 {
+		// TODO: if path is deemed subreource but is wrongly formatted return an error
+		// return false, fmt.Errorf("invalid subresource path '%s'", o.Path)
+		parentResourceNames := []string{}
+		fullParentResourceName := ""
+		for _, match := range parentMatches {
+			//fullMatch := match[0]
+			//parentPath := match[1]
+			parentVersion := match[2]
+			parentResourceName := match[3]
+			if parentVersion != "" {
+				parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
+			}
+			parentResourceNames = append(parentResourceNames, parentResourceName)
+			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
+		}
+		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
+		return true, parentResourceNames, fullParentResourceName
+	}
+	return false, nil, ""
+}
+
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
 	return o.getSchemaDefinition(&o.SchemaDefinition)
 }
 
 func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDefinition, error) {
+	if schema == nil {
+		return nil, fmt.Errorf("schema argument must not be nil")
+	}
 	schemaDefinition := &specSchemaDefinition{}
 	schemaDefinition.Properties = specSchemaDefinitionProperties{}
 	for propertyName, property := range schema.Properties {
@@ -173,7 +268,32 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		}
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
+
+	isSubResource, _, _ := o.isSubResource()
+	if isSubResource {
+		parentPropertyNames := o.getParentPropertiesNames()
+		for _, parentPropertyName := range parentPropertyNames {
+			pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
+			pr.IsParentProperty = true
+			schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
+		}
+	}
 	return schemaDefinition, nil
+}
+
+func (o *SpecV2Resource) getParentPropertiesNames() []string {
+	if o.Path == "" {
+		return []string{}
+	}
+	isSubResource, parentNames, _ := o.isSubResource()
+	if isSubResource {
+		parentPropertyNames := []string{}
+		for _, parentName := range parentNames {
+			parentPropertyNames = append(parentPropertyNames, fmt.Sprintf("%s_id", parentName))
+		}
+		return parentPropertyNames
+	}
+	return []string{}
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {

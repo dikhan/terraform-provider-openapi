@@ -2,9 +2,10 @@ package openapiutils
 
 import (
 	"fmt"
-	"github.com/go-openapi/spec"
 	"regexp"
 	"strings"
+
+	"github.com/go-openapi/spec"
 )
 
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
@@ -92,7 +93,7 @@ func GetSchemaDefinition(definitions map[string]spec.Schema, ref string) (*spec.
 	return &payloadDefinition, nil
 }
 
-// GetMultiRegionHost builds a final fqdn based on the given host that is parametrised (${1}%s$4) and injects the given region in it
+// GetMultiRegionHost builds a final fqdn based on the given host that is parameterised (${1}%s$4) and injects the given region in it
 func GetMultiRegionHost(overrideHost string, region string) (string, error) {
 	isMultiRegionHost, regex := IsMultiRegionHost(overrideHost)
 	if isMultiRegionHost {
@@ -105,7 +106,7 @@ func GetMultiRegionHost(overrideHost string, region string) (string, error) {
 	return "", nil
 }
 
-// IsMultiRegionHost checks whether the override host is parametrised following the format expected
+// IsMultiRegionHost checks whether the override host is parameterised following the format expected
 func IsMultiRegionHost(overrideHost string) (bool, *regexp.Regexp) {
 	regex, _ := regexp.Compile("(\\S+)(\\$\\{(\\S+)\\})(\\S+)")
 	return len(regex.FindStringSubmatch(overrideHost)) != 0, regex

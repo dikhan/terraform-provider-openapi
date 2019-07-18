@@ -1,12 +1,14 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
@@ -86,28 +88,48 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	return schemaDefinition.createResourceSchema()
 }
 
+func (r resourceFactory) getParentIDsAndResourcePath(data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
+	parentIDs, err = r.getParentIDs(data)
+	if err != nil {
+		return nil, "", err
+	}
+	resourcePath, err = r.openAPIResource.getResourcePath(parentIDs)
+	if err != nil {
+		return nil, "", err
+	}
+	return
+}
+
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
+
+	parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	if err != nil {
+		return err
+	}
+
 	operation := r.openAPIResource.getResourceOperations().Post
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload)
+
+	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), err)
+
+		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), resourcePath, err)
 	}
 
 	err = r.setStateID(data, responsePayload)
 	if err != nil {
 		return err
 	}
-	log.Printf("[INFO] Resource '%s' ID: %s", r.openAPIResource.getResourcePath(), data.Id())
+	log.Printf("[INFO] Resource '%s' ID: %s", resourcePath, data.Id())
 
 	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutCreate)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", r.openAPIResource.getResourcePath(), res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
 	}
 
 	return r.updateStateWithPayloadData(responsePayload, data)
@@ -115,7 +137,13 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
-	remoteData, err := r.readRemote(data.Id(), openAPIClient)
+
+	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	if err != nil {
+		return err
+	}
+
+	remoteData, err := r.readRemote(data.Id(), openAPIClient, parentsIDs...)
 
 	if err != nil {
 		if openapiErr, ok := err.(openapierr.Error); ok {
@@ -123,16 +151,16 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
+		return fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
 	}
 
 	return r.updateStateWithPayloadData(remoteData, data)
 }
 
-func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (map[string]interface{}, error) {
+func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, parentIDs ...string) (map[string]interface{}, error) {
 	var err error
 	responsePayload := map[string]interface{}{}
-	resp, err := providerClient.Get(r.openAPIResource, id, &responsePayload)
+	resp, err := providerClient.Get(r.openAPIResource, id, &responsePayload, parentIDs...)
 	if err != nil {
 		return nil, err
 	}
@@ -144,28 +172,57 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI) (ma
 	return responsePayload, nil
 }
 
+func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, error) {
+	if r.openAPIResource == nil {
+		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
+	}
+
+	isSubResource, _, _ := r.openAPIResource.isSubResource()
+	if isSubResource {
+		parentResourceNames := r.openAPIResource.getParentPropertiesNames()
+
+		parentIDs := []string{}
+		for _, parentResourceName := range parentResourceNames {
+			parentResourceID := data.Get(parentResourceName)
+			if parentResourceID == nil {
+				return nil, fmt.Errorf("could not find ID value in the state file for subresource parent property '%s'", parentResourceName)
+			}
+			parentIDs = append(parentIDs, parentResourceID.(string))
+		}
+		return parentIDs, nil
+	}
+
+	return []string{}, nil
+}
+
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
+
+	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	if err != nil {
+		return err
+	}
+
 	operation := r.openAPIResource.getResourceOperations().Put
 	if operation == nil {
-		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
+		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
 	}
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
 	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
 	}
-	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload)
+	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentsIDs...)
 	if err != nil {
 		return err
 	}
 	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
+		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
 	}
 
 	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutUpdate)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", r.openAPIResource.getResourcePath(), res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
 	}
 
 	return r.updateStateWithPayloadData(responsePayload, data)
@@ -173,11 +230,17 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
+
+	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	if err != nil {
+		return err
+	}
+
 	operation := r.openAPIResource.getResourceOperations().Delete
 	if operation == nil {
-		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath())
+		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
 	}
-	res, err := providerClient.Delete(r.openAPIResource, data.Id())
+	res, err := providerClient.Delete(r.openAPIResource, data.Id(), parentsIDs...)
 	if err != nil {
 		return err
 	}
@@ -187,12 +250,12 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 				return nil
 			}
 		}
-		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.getResourceName(), r.openAPIResource.getResourcePath(), data.Id(), err)
+		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
 	}
 
 	err = r.handlePollingIfConfigured(nil, data, providerClient, operation, res.StatusCode, schema.TimeoutDelete)
 	if err != nil {
-		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", r.openAPIResource.getResourcePath(), res.StatusCode, err)
+		return fmt.Errorf("polling mechanism failed after DELETE %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
 	}
 
 	return nil
@@ -203,6 +266,29 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
+			isSubResource, _, _ := r.openAPIResource.isSubResource()
+			if isSubResource {
+				parentPropertyNames := r.openAPIResource.getParentPropertiesNames()
+
+				// The expected format for the ID provided when importing a sub-resource is 1234/567 where 1234 would be the parentID and 567 the instance ID
+				ids := strings.Split(data.Id(), "/")
+				if len(ids) < 2 {
+					return results, fmt.Errorf("can not import a subresource without providing all the parent IDs (%d) and the instance ID", len(parentPropertyNames))
+				}
+				parentIDsLen := len(ids) - 1
+				if len(parentPropertyNames) < parentIDsLen {
+					return results, fmt.Errorf("the number of parent IDs provided %d is greater than the expected number of parent IDs %d", parentIDsLen, len(parentPropertyNames))
+				}
+				if len(parentPropertyNames) > parentIDsLen {
+					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen)
+				}
+				for idx, parentPropertyName := range parentPropertyNames {
+					data.Set(parentPropertyName, ids[idx])
+				}
+				data.SetId(ids[len(ids)-1])
+			}
+			// If the resources is NOT a sub-resource and just a top level resource then the array passed in will just contain
+			// 	the data object we get from terraform core without any updates.
 			err := r.read(data, i)
 			return results, err
 		},
@@ -233,7 +319,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	}
 
 	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
-	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.openAPIResource.getResourcePath(), targetStatuses)
+	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.openAPIResource.getResourceName(), targetStatuses)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:      pendingStatuses,
@@ -255,7 +341,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		if ok {
 			*responsePayload = remoteDataCasted
 		} else {
-			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData))
+			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData)) //untested
 		}
 	}
 	return nil
@@ -263,22 +349,23 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 
 func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.ResourceData, providerClient ClientOpenAPI) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		remoteData, err := r.readRemote(resourceLocalData.Id(), providerClient)
 
+		remoteData, err := r.readRemote(resourceLocalData.Id(), providerClient)
 		if err != nil {
 			if openapiErr, ok := err.(openapierr.Error); ok {
 				if openapierr.NotFound == openapiErr.Code() {
 					return 0, defaultDestroyStatus, nil
 				}
 			}
-			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), err)
 		}
 
 		newStatus, err := r.getStatusValueFromPayload(remoteData)
 		if err != nil {
-			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), err)
 		}
-		log.Printf("[DEBUG] resource '%s' status (%s): %s", r.openAPIResource.getResourcePath(), resourceLocalData.Id(), newStatus)
+
+		log.Printf("[DEBUG] resource status '%s' (%s): %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
 }
@@ -501,7 +588,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 	for _, property := range resourceSchema.Properties {
 		propertyName := property.Name
 		// IDs and ReadOnly properties are not considered for the payload data
-		if !property.isPropertyNamedID() && !property.isReadOnly() {
+		if !property.isPropertyNamedID() && !property.isReadOnly() && !property.IsParentProperty {
 			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 				err := r.getPropertyPayload(input, property, dataValue)
 				if err != nil {

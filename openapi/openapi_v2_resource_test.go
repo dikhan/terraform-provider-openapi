@@ -23,7 +23,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users'", func() {
@@ -41,7 +41,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users'", func() {
@@ -60,7 +60,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users_v1'", func() {
@@ -79,7 +79,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users_v1'", func() {
@@ -88,7 +88,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		})
 	})
 
-	Convey("Given a root path that is versioned such as '/v1/something/users' and a root path item item", t, func() {
+	Convey("Given a root path such as '/v1/something/users' and a root path item", t, func() {
 		path := "/v1/something/users"
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
@@ -98,16 +98,16 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the value returned should still be 'users_v1'", func() {
-				So(r.getResourceName(), ShouldEqual, "users_v1")
+			Convey("And the value returned should still be 'users'", func() {
+				So(r.getResourceName(), ShouldEqual, "users")
 			})
 		})
 	})
 
-	Convey("Given a root path which has path parameters '/api/v1/nodes/{name}/proxy' and a root path item item", t, func() {
+	Convey("Given a root path which has path parameters '/api/v1/nodes/{name}/proxy' and a root path item", t, func() {
 		path := "/api/v1/nodes/{name}/proxy"
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
@@ -117,11 +117,11 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the value returned should still be 'proxy_v1'", func() {
-				So(r.getResourceName(), ShouldEqual, "proxy_v1")
+			Convey("And the value returned should still be 'nodes_v1_proxy'", func() {
+				So(r.getResourceName(), ShouldEqual, "nodes_v1_proxy")
 			})
 		})
 	})
@@ -142,7 +142,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			resourceName := r.getResourceName()
@@ -176,6 +176,884 @@ func TestNewSpecV2Resource(t *testing.T) {
 			_, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions)
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestBuildResourceName(t *testing.T) {
+
+	testCases := []struct {
+		path                 string
+		expectedResourceName string
+		expectedError        error
+	}{
+		{
+			path:                 "/cdns",
+			expectedResourceName: "cdns",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v11/cdns",
+			expectedResourceName: "cdns_v11",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1.1.1/cdns",
+			expectedResourceName: "cdns", // semver in paths is not supported at the moment, this documents the resource output for such use case
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1a/cdns",
+			expectedResourceName: "cdns", //TODO: possible bug
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/firewalls",
+			expectedResourceName: "cdns_firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/firewalls",
+			expectedResourceName: "cdns_v1_firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/v1/firewalls",
+			expectedResourceName: "cdns_firewalls_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls",
+			expectedResourceName: "cdns_v1_firewalls_v2",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
+			expectedError:        nil,
+		},
+		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
+			path:                 "/v1/cdns/{id}/firewalls/v3/rules",
+			expectedResourceName: "cdns_v1_rules_v3",
+			expectedError:        nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
+			r := SpecV2Resource{
+				Path: tc.path,
+			}
+
+			Convey("When buildResourceName is called", func() {
+				resourceName, err := r.buildResourceName()
+				if tc.expectedError != nil {
+					Convey("Then the error returned should be the expected one", func() {
+						So(err.Error(), ShouldEqual, tc.expectedError.Error())
+					})
+				}
+				Convey("And the resource name should be the expected one", func() {
+					So(resourceName, ShouldEqual, tc.expectedResourceName)
+				})
+			})
+		})
+	}
+
+	// TODO: Add support for sub-resources names to honour preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
+	//  For instance, if /v1/cdns/{id}/v1/firewalls path had the x-terraform-resource-name defined and the value was "cdn_v1_firewall"
+	//  the expected returned name would be "cdn_v1_firewall_v1" (note the version should be automatically injected)
+	Convey("Given a SpecV2Resource with a path and a preferred terraform resource name", t, func() {
+		expectedResourceName := "user"
+		r := SpecV2Resource{
+			Path: "/users",
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: expectedResourceName,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When buildResourceName is called", func() {
+			resourceName, err := r.buildResourceName()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resource name should be the expected one", func() {
+				So(resourceName, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+}
+
+func TestIsSubResource(t *testing.T) {
+	Convey("Given a SpecV2Resource configured with a root path", t, func() {
+		r := SpecV2Resource{
+			Path: "/cdns",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			Convey("Then the bool returned should be false", func() {
+				So(isSubResource, ShouldBeFalse)
+			})
+			Convey("And the parentResourceNames should be empty", func() {
+				So(parentResourceNames, ShouldBeEmpty)
+			})
+			Convey("And the fullParentResourceName should be empty", func() {
+				So(fullParentResourceName, ShouldBeEmpty)
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource configured with a root path using versioning", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			Convey("Then the bool returned should be false", func() {
+				So(isSubResource, ShouldBeFalse)
+			})
+			Convey("And the parentResourceNames should be empty", func() {
+				So(parentResourceNames, ShouldBeEmpty)
+			})
+			Convey("And the fullParentResourceName should be empty", func() {
+				So(fullParentResourceName, ShouldBeEmpty)
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (with parent using versioning)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			Convey("Then the bool returned should be true", func() {
+				So(isSubResource, ShouldBeTrue)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceNames), ShouldEqual, 1)
+				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(fullParentResourceName, ShouldEqual, "cdns_v1")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (with parent not using versioning)", t, func() {
+		r := SpecV2Resource{
+			Path: "/cdns/{id}/firewalls",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			Convey("Then the bool returned should be true", func() {
+				So(isSubResource, ShouldBeTrue)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceNames), ShouldEqual, 1)
+				So(parentResourceNames[0], ShouldEqual, "cdns")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(fullParentResourceName, ShouldEqual, "cdns")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource configured with a path that is indeed a multiple level sub-resource", t, func() {
+		r := SpecV2Resource{
+			Path: "/cdns/{id}/firewalls/{id}/rules",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			Convey("Then the bool returned should be true", func() {
+				So(isSubResource, ShouldBeTrue)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceNames), ShouldEqual, 2)
+				So(parentResourceNames[0], ShouldEqual, "cdns")
+				So(parentResourceNames[1], ShouldEqual, "firewalls")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(fullParentResourceName, ShouldEqual, "cdns_firewalls")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource configured with a path that is indeed a multiple level sub-resource with versioning", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			Convey("Then the bool returned should be true", func() {
+				So(isSubResource, ShouldBeTrue)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceNames), ShouldEqual, 2)
+				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(parentResourceNames[1], ShouldEqual, "firewalls_v2")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(fullParentResourceName, ShouldEqual, "cdns_v1_firewalls_v2")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource configured with a path that is a subresource but the path is wrongly structured not following best restful practises for building subresource paths (the 'firewalls' parent in the path is missing the id path param)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
+				So(isSubResource, ShouldBeTrue)
+				So(len(parentResourceNames), ShouldEqual, 1)
+				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(fullParentResourceName, ShouldEqual, "cdns_v1")
+			})
+		})
+	})
+}
+
+func assertSchemaProperty(actualSpecSchemaDefinition *specSchemaDefinition, expectedName string, expectedType schemaDefinitionPropertyType, expectedRequired, expectedReadOnly, expectedComputed bool) {
+	prop, err := actualSpecSchemaDefinition.getProperty(expectedName)
+	So(err, ShouldBeNil)
+	fmt.Printf(">>> Validating '%s' property settings\n", prop.Name)
+	So(prop.Type, ShouldEqual, expectedType)
+	So(prop.Required, ShouldEqual, expectedRequired)
+	So(prop.ReadOnly, ShouldEqual, expectedReadOnly)
+	So(prop.Computed, ShouldEqual, expectedComputed)
+}
+
+func assertSchemaParentProperty(actualSpecSchemaDefinition *specSchemaDefinition, expectedName string) {
+	assertSchemaProperty(actualSpecSchemaDefinition, expectedName, typeString, true, false, false)
+}
+
+func TestGetResourceSchema(t *testing.T) {
+	Convey("Given a SpecV2Resource containing a root path", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"int_optional_computed_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"integer"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfComputed: true,
+								},
+							},
+						},
+						"number_required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"number"},
+							},
+						},
+						"bool_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"boolean"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(r.SchemaDefinition.SchemaProps.Properties))
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+			})
+		})
+	})
+}
+
+func TestGetSchemaDefinition(t *testing.T) {
+
+	Convey("Given a blank SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When getSchemaDefinition is called with a nil arg", func() {
+			_, err := r.getSchemaDefinition(nil)
+			Convey("Then the error returned matches the expected one", func() {
+				So(err.Error(), ShouldEqual, "schema argument must not be nil")
+			})
+		})
+		Convey("When getSchemaDefinition is called passing a blank schema", func() {
+			d, e := r.getSchemaDefinition(&spec.Schema{})
+			Convey("Then the error returned is not nil", func() {
+				So(e, ShouldBeNil)
+			})
+			Convey("And the schema definition contains empty Properties", func() {
+				So(d, ShouldNotBeNil)
+				So(d.Properties, ShouldBeEmpty)
+			})
+		})
+		Convey("When getSchemaDefinition is called passing a schema with a weird property type", func() {
+			schema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"something weird"},
+							},
+						},
+					},
+				},
+			}
+			d, e := r.getSchemaDefinition(&schema)
+			Convey("Then the error returned is not nil", func() {
+				So(e, ShouldNotBeNil)
+			})
+			Convey("And the schema definition returned is nil", func() {
+				So(d, ShouldBeNil)
+			})
+		})
+
+	})
+	Convey("Given a SpecV2Resource containing a root path", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns",
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"int_optional_computed_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"integer"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfComputed: true,
+								},
+							},
+						},
+						"number_required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"number"},
+							},
+						},
+						"bool_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"boolean"},
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties))
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a subresource path (one level)", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"int_optional_computed_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"integer"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfComputed: true,
+								},
+							},
+						},
+						"number_required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"number"},
+							},
+						},
+						"bool_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"boolean"},
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non restful subresource path", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls/v1/rules",
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a subresource path (two level)", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"int_optional_computed_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"integer"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfComputed: true,
+								},
+							},
+						},
+						"number_required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"number"},
+							},
+						},
+						"bool_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"boolean"},
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id ones", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+2)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
+				assertSchemaParentProperty(specSchemaDefinition, "firewalls_v2_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource that is a subresource (one level parent)", t, func() {
+		r := &SpecV2Resource{
+			Path: "/parent/{parent_id}/child",
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent one)", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should also include the parent property", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource that is a subresource (two level parent)", t, func() {
+		r := &SpecV2Resource{
+			Path: "/parent/{parent_id}/subparent/{subparent_id}/child",
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent ones)", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should also include the parents properties", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
+				assertSchemaParentProperty(specSchemaDefinition, "subparent_id")
+			})
+		})
+	})
+
+	// TODO: Handle case where parent resources have preferred resource names as specified in with the x-terraform-resource-name in the parent path configuration. Hence, the resulting autogenered parent id property should honor the preferred name
+	//Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
+	//	// Specifying here how the parent resource will look like when the preferred name has been speficied
+	//	//parentResource := SpecV2Resource{
+	//	//	RootPathItem: spec.PathItem{
+	//	//		PathItemProps: spec.PathItemProps{
+	//	//			Post: &spec.Operation{
+	//	//				VendorExtensible: spec.VendorExtensible{
+	//	//					Extensions: spec.Extensions{
+	//	//						extTfResourceName: "cdn",
+	//	//					},
+	//	//				},
+	//	//			},
+	//	//		},
+	//	//	},
+	//	//}
+	//	r := &SpecV2Resource{
+	//		Path: "/v1/cdns/{id}/firewalls",
+	//	}
+	//	Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+	//		s := &spec.Schema{
+	//			SchemaProps: spec.SchemaProps{
+	//				Required: []string{"number_required_prop"},
+	//				Properties: map[string]spec.Schema{
+	//					"string_readonly_prop": {
+	//						SchemaProps: spec.SchemaProps{
+	//							Type: spec.StringOrArray{"string"},
+	//						},
+	//						SwaggerSchemaProps: spec.SwaggerSchemaProps{
+	//							ReadOnly: true,
+	//						},
+	//					},
+	//				},
+	//			},
+	//		}
+	//		specSchemaDefinition, err := r.getSchemaDefinition(s)
+	//		Convey("Then the error returned should be nil", func() {
+	//			So(err, ShouldBeNil)
+	//		})
+	//		Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+	//			So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties) + 1)
+	//		})
+	//		Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+	//			assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false,true, true)
+	//		})
+	//		Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
+	//			assertSchemaProperty(specSchemaDefinition, "cdn_v1_id", typeString, false,false, true)
+	//		})
+	//	})
+	//})
+}
+
+func Test_getParentPropertiesNames(t *testing.T) {
+	Convey("Given a SpecV2Resource with no Path", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+			Convey("Then array returned should be empty", func() {
+				So(p, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that is not a subresource", t, func() {
+		r := &SpecV2Resource{Path: "/foo"}
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+			Convey("Then array returned should be empty", func() {
+				So(p, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path for a versioned parent resource where the path begins with the version", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v2/cdns/{id}/v1/firewalls",
+		}
+
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+			Convey("And the array returned should contain the expected parent name", func() {
+				So(len(p), ShouldEqual, 1)
+				So(p[0], ShouldEqual, "cdns_v2_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path for an unversioned parent resource", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns/{id}/v1/firewalls",
+		}
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+			Convey("And the array returned should contain the expected parent name", func() {
+				So(len(p), ShouldEqual, 1)
+				So(p[0], ShouldEqual, "cdns_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that contains two parents, the first one using version and the second one without", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls/{id}/rules",
+		}
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_v1_id")
+				So(p[1], ShouldEqual, "firewalls_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that contains two parents both using versioning", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls/{id}/rules",
+		}
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_v1_id")
+				So(p[1], ShouldEqual, "firewalls_v2_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that contains two parents; the first one with no version and the second one with it", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns/{id}/v1/firewalls/{id}/rules",
+		}
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_id")
+				So(p[1], ShouldEqual, "firewalls_v1_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with some Path that contains two parents that do not use versioning", t, func() {
+		r := &SpecV2Resource{
+			Path: "/cdns/{id}/firewalls/{id}/rules",
+		}
+		Convey("When the method getParentPropertiesNames is called", func() {
+			p := r.getParentPropertiesNames()
+			Convey("And the array returned should contain the expected parent names", func() {
+				So(len(p), ShouldEqual, 2)
+				So(p[0], ShouldEqual, "cdns_id")
+				So(p[1], ShouldEqual, "firewalls_id")
+			})
+		})
+	})
+}
+
+func TestGetResourcePath(t *testing.T) {
+
+	Convey("Given a SpecV2Resource with path resource that is not parameterised (root resource)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns",
+		}
+		Convey("When getResourcePath is called with an empty list of IDs", func() {
+			resourcePath, err := r.getResourcePath([]string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns")
+			})
+		})
+		Convey("When getResourcePath is called with a nil list of IDs", func() {
+			resourcePath, err := r.getResourcePath(nil)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with path resource that is parameterised (one level sub-resource)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{cdn_id}/v1/firewalls",
+		}
+		Convey("When getResourcePath is called with a list of IDs", func() {
+			ids := []string{"parentID"}
+			resourcePath, err := r.getResourcePath(ids)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns/parentID/v1/firewalls")
+			})
+		})
+		Convey("When getResourcePath is called with an empty list of IDs", func() {
+			_, err := r.getResourcePath([]string{})
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
+			})
+		})
+		Convey("When getResourcePath is called with an nil list of IDs", func() {
+			_, err := r.getResourcePath(nil)
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
+			})
+		})
+		Convey("When getResourcePath is called with a list of IDs that is bigger than the parameterised params in the path", func() {
+			_, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
+			})
+		})
+		Convey("When getResourcePath is called with a list of IDs twhere some IDs contain forward slashes", func() {
+			_, err := r.getResourcePath([]string{"cdnID/somethingElse"})
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' due to parent IDs ([cdnID/somethingElse]) containing not supported characters (forward slashes)")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with path resource that is parameterised (few levels sub-resource)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{cdn_id}/v1/firewalls/{fw_id}/rules",
+		}
+		Convey("When getResourcePath is called with a list of IDs", func() {
+			ids := []string{"cdnID", "fwID"}
+			resourcePath, err := r.getResourcePath(ids)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the returned resource path should match the expected one", func() {
+				So(resourcePath, ShouldEqual, "/v1/cdns/cdnID/v1/firewalls/fwID/rules")
 			})
 		})
 	})
@@ -611,7 +1489,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		// TODO: test for createSchemaDefinitionProperty added by fradiben
 		Convey("When createSchemaDefinitionProperty is called with an optional property schema", func() {
 			propertyName := "propertyWithNestedObj"
 
@@ -929,7 +1806,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_required_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("AND the result returned should be false since the property is not optional", func() {
@@ -946,7 +1823,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("AND the result returned should be true since the property is optional computed ", func() {
@@ -965,7 +1842,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should be nil", func() {
+			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("AND the result returned should be true since the property is optional computed ", func() {
@@ -984,10 +1861,10 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputedProperty("some_optional_property_name", property, []string{"some_required_property_name"})
-			Convey("The the error returned should not be nil", func() {
+			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("The the error message returned should not be the expected one", func() {
+			Convey("Then the error message returned should not be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
@@ -1027,7 +1904,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be true since the property matches the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be true since the property matches the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeTrue)
 			})
 		})
@@ -1044,7 +1921,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -1061,7 +1938,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -1078,7 +1955,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -1103,7 +1980,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 			Convey("Then the error message returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-computed' extension too")
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputedWithDefault, ShouldBeFalse)
 			})
 		})
@@ -1125,10 +2002,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("The the result returned should not return an error", func() {
+			Convey("Then the result returned should not return an error", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be true since the property matches the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be true since the property matches the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeTrue)
 			})
 		})
@@ -1141,10 +2018,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("The the result returned should not return an error", func() {
+			Convey("Then the result returned should not return an error", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -1160,13 +2037,13 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey(fmt.Sprintf("The the result returned should not be nil since properties with the %s extension cannot be computed,", extTfComputed), func() {
+			Convey(fmt.Sprintf("Then the result returned should not be nil since properties with the %s extension cannot be computed,", extTfComputed), func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
 			})
-			Convey("The the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -1185,10 +2062,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputed("some_optional_property_name", property)
-			Convey("The the error returned should not be nil", func() {
+			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("The the error message returned should not be the expected one", func() {
+			Convey("Then the error message returned should not be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-computed' can not have the default value as the value is not known at plan time. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
 			})
 			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
@@ -1200,10 +2077,10 @@ func TestIsOptionalComputed(t *testing.T) {
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("The the result returned should not return an error", func() {
+			Convey("Then the result returned should not return an error", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -1215,37 +2092,37 @@ func TestIsArrayItemPrimitiveType(t *testing.T) {
 		r := &SpecV2Resource{}
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeString", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeString)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeInt", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeInt)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeFloat", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeFloat)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeBool", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeBool)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeList", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeList)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isPrimitive, ShouldBeFalse)
 			})
 		})
 		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeObject", func() {
 			isPrimitive := r.isArrayItemPrimitiveType(typeObject)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isPrimitive, ShouldBeFalse)
 			})
 		})
@@ -1783,7 +2660,7 @@ func TestIsObjectTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isObjectTypeProperty(property)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isArrayType, ShouldBeTrue)
 			})
 		})
@@ -1794,7 +2671,7 @@ func TestIsObjectTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isObjectTypeProperty(property)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isArrayType, ShouldBeFalse)
 			})
 		})
@@ -1811,7 +2688,7 @@ func TestIsArrayTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isArrayTypeProperty(property)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isArrayType, ShouldBeTrue)
 			})
 		})
@@ -1822,7 +2699,7 @@ func TestIsArrayTypeProperty(t *testing.T) {
 				},
 			}
 			isArrayType := r.isArrayTypeProperty(property)
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isArrayType, ShouldBeFalse)
 			})
 		})
@@ -1839,7 +2716,7 @@ func TestIsOfType(t *testing.T) {
 				},
 			}
 			isString := r.isOfType(property, "string")
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isString, ShouldBeTrue)
 			})
 		})
@@ -1850,7 +2727,7 @@ func TestIsOfType(t *testing.T) {
 				},
 			}
 			isInteger := r.isOfType(property, "integer")
-			Convey("The the result returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(isInteger, ShouldBeFalse)
 			})
 		})
@@ -1864,14 +2741,14 @@ func TestSwaggerPropIsRequired(t *testing.T) {
 			requiredProp := "requiredProp"
 			requiredProps := []string{requiredProp}
 			isRequired := r.isRequired(requiredProp, requiredProps)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isRequired, ShouldBeTrue)
 			})
 		})
 		Convey("When isRequired is called with a NON required prop", func() {
 			requiredProps := []string{"requiredProp"}
 			isRequired := r.isRequired("nonRequired", requiredProps)
-			Convey("The the result returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(isRequired, ShouldBeFalse)
 			})
 		})

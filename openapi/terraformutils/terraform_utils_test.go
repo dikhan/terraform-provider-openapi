@@ -2,11 +2,12 @@ package terraformutils
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
-	. "github.com/smartystreets/goconvey/convey"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/schema"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestTerraformUtilsGetTerraformPluginsVendorDir(t *testing.T) {
@@ -89,25 +90,39 @@ func TestTerraformUtilsGetTerraformPluginsVendorDir(t *testing.T) {
 }
 
 func TestConvertToTerraformCompliantFieldName(t *testing.T) {
-	Convey("Given a name that is terraform name compliant", t, func() {
-		propertyName := "some_prop_name_that_is_terraform_field_name_compliant"
-		Convey("When ConvertToTerraformCompliantName method is called", func() {
-			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("And string return is terraform field name compliant, ", func() {
-				So(fieldName, ShouldEqual, propertyName)
-			})
-		})
-	})
+	testCases := []struct {
+		name                 string
+		inputPropertyName    string
+		expectedPropertyName string
+		expectedError        string
+	}{
+		{name: "property name that is terraform name compliant", inputPropertyName: "some_prop_name_that_is_terraform_field_name_compliant", expectedPropertyName: "some_prop_name_that_is_terraform_field_name_compliant"},
+		{name: "property name that is NOT terraform name compliant", inputPropertyName: "thisIsACamelCaseNameWhichIsNotTerraformNameCompliant", expectedPropertyName: "this_is_a_camel_case_name_which_is_not_terraform_name_compliant"},
+		{name: "property name that is terraform name compliant but with numbers with no _ between number and next word", inputPropertyName: "cdns_v1id", expectedPropertyName: "cdns_v1_id"},
+		{name: "property name that is terraform name compliant with one number in the middle", inputPropertyName: "cdns_v1_id", expectedPropertyName: "cdns_v1_id"},
+		{name: "property name that is terraform name compliant with multiple numbers", inputPropertyName: "cdns_v1_firewall_v2_id", expectedPropertyName: "cdns_v1_firewall_v2_id"},
+		{name: "property name that is terraform name compliant with one number at the end", inputPropertyName: "cdns_v1", expectedPropertyName: "cdns_v1"},
+		{name: "property name that ends with double underscore ( __ )", inputPropertyName: "cdns__", expectedPropertyName: "cdns__"},
+		{name: "property name that has v_1 on purpose", inputPropertyName: "cdns_v_1", expectedPropertyName: "cdns_v_1"},
+		{name: "property name that ends with __1", inputPropertyName: "cdns__1", expectedPropertyName: "cdns__1"},
+		{name: "property name that ends with v1_", inputPropertyName: "cdns_v1_", expectedPropertyName: "cdns_v1_"},
+		{name: "property name that ends with _1", inputPropertyName: "cdns_1", expectedPropertyName: "cdns_1"},
+		{name: "property name with underscore at the end", inputPropertyName: "cdns_", expectedPropertyName: "cdns_"},
+		{name: "property name with leading and trailing underscores", inputPropertyName: "_cdns_", expectedPropertyName: "_cdns_"},
+		{name: "property name 1", inputPropertyName: "1", expectedPropertyName: "1"},
+		{name: "property name with a number and an underscore at the end", inputPropertyName: "cdns_1_", expectedPropertyName: "cdns_1_"},
+	}
 
-	Convey("Given a name that is NOT terraform name compliant", t, func() {
-		propertyName := "thisIsACamelCaseNameWhichIsNotTerraformNameCompliant"
-		Convey("When ConvertToTerraformCompliantName method is called", func() {
-			fieldName := ConvertToTerraformCompliantName(propertyName)
-			Convey("And string return is terraform field name compliant, ", func() {
-				So(fieldName, ShouldEqual, "this_is_a_camel_case_name_which_is_not_terraform_name_compliant")
+	for _, tc := range testCases {
+		Convey("Given a "+tc.name, t, func() {
+			Convey("When ConvertToTerraformCompliantName method is called", func() {
+				fieldName := ConvertToTerraformCompliantName(tc.inputPropertyName)
+				Convey("The string returned should be the expected one", func() {
+					So(fieldName, ShouldEqual, tc.expectedPropertyName)
+				})
 			})
 		})
-	})
+	}
 }
 
 func TestCreateSchema(t *testing.T) {

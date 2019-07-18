@@ -12,6 +12,12 @@ type specStubResource struct {
 	resourcePutOperation    *specResourceOperation
 	resourceDeleteOperation *specResourceOperation
 	timeouts                *specTimeouts
+
+	parentResourceNames    []string
+	parentPropertyNames    []string
+	fullParentResourceName string
+
+	funcGetResourcePath func(parentIDs []string) (string, error)
 }
 
 func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition) *specStubResource {
@@ -34,7 +40,12 @@ func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, sch
 
 func (s *specStubResource) getResourceName() string { return s.name }
 
-func (s *specStubResource) getResourcePath() string { return s.path }
+func (s *specStubResource) getResourcePath(parentIDs []string) (string, error) {
+	if s.funcGetResourcePath != nil {
+		return s.funcGetResourcePath(parentIDs)
+	}
+	return s.path, nil
+}
 
 func (s *specStubResource) getResourceSchema() (*specSchemaDefinition, error) {
 	return s.schemaDefinition, nil
@@ -57,4 +68,18 @@ func (s *specStubResource) getTimeouts() (*specTimeouts, error) {
 
 func (s *specStubResource) getHost() (string, error) {
 	return s.host, nil
+}
+
+func (s *specStubResource) isSubResource() (bool, []string, string) {
+	if len(s.parentResourceNames) > 0 && s.fullParentResourceName != "" {
+		return true, s.parentResourceNames, s.fullParentResourceName
+	}
+	return false, []string{}, ""
+}
+
+func (s *specStubResource) getParentPropertiesNames() []string {
+	if len(s.parentPropertyNames) > 0 {
+		return s.parentPropertyNames
+	}
+	return []string{}
 }

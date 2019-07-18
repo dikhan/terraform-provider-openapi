@@ -543,11 +543,11 @@ paths:
       x-terraform-resource-host: cdn.${cdn}.api.otherdomain.com
 ````
 
-If the ``x-terraform-resource-host`` extension has a value parametrised in the form where the following pattern ```${identifier}```
+If the ``x-terraform-resource-host`` extension has a value parameterised in the form where the following pattern ```${identifier}```
  is found (identifier being any string with no whitspaces - spaces,tabs, line breaks, etc) AND there is a matching
  extension 'x-terraform-resource-regions-**identifier**' defined in the root level that refers to the same identifier
  then the resource will be considered multi region.
-For instance, in the above example, the ```x-terraform-resource-host``` value is parametrised as the ```${identifier}``` pattern
+For instance, in the above example, the ```x-terraform-resource-host``` value is parameterised as the ```${identifier}``` pattern
 is found, and the identifier in this case is ```cdn```. Moreover, there is a matching ```x-terraform-resource-regions-cdn```
 extension containing a list of regions where this resource can be created in.
 
@@ -845,7 +845,7 @@ x-terraform-immutable | boolean |  The field will be used to create a brand new 
 x-terraform-force-new | boolean |  If the value of this property is updated; terraform will delete the previously created resource and create a new one with this value
 x-terraform-sensitive | boolean |  If this meta attribute is present in an object definition property, it will be considered sensitive as far as terraform is concerned, meaning that its value will not be disclosed in the TF state file
 x-terraform-id | boolean | If this meta attribute is present in an object definition property, the value will be used as the resource identifier when performing the read, update and delete API operations. The value will also be stored in the ID field of the local state file.
-x-terraform-field-name | string | This enables service providers to override the schema definition property name with a different one which will be the property name used in the terraform configuration file. This is mostly used to expose the internal property to a more user friendly name. If the extension is not present and the property name is not terraform compliant, an automatic conversion will be performed by the OpenAPI Terraform provider to make the name compliant (following Terraform's field name convention to be snake_case) 
+x-terraform-field-name | string | This enables service providers to override the schema definition property name with a different one which will be the property name used in the terraform configuration file. This is mostly used to expose the internal property to a more user friendly name. If the extension is not present and the property name is not terraform compliant (following snake_case), an automatic conversion will be performed by the OpenAPI Terraform provider to make the name compliant (following Terraform's field name convention to be snake_case) 
 x-terraform-field-status | boolean | If this meta attribute is present in an object definition property, the value will be used as the status identifier when executing the polling mechanism on eligible async operations such as POST/PUT/DELETE.
 
 ##### <a name="propertyUseCasesSupport">Property use cases</a>
@@ -1082,6 +1082,10 @@ and the value provided by the user.
 Note that the TF property name inside the provider's configuration is exactly the same as the one configured in the swagger
 file.
 
+#### <a name="subresource-configuration">Sub-resource configuration</a>
+
+Refer to the [sub-resource documentation](https://github.com/dikhan/terraform-provider-openapi/tree/master/docs/how_to_subresources.md) to learn more about this.
+
 #### <a name="multiRegionConfiguration">Multi-region configuration</a>
 
 This section describes how to configure the swagger file for a service that operates multi-region, meaning there's an API for each region.
@@ -1130,19 +1134,19 @@ The following extensions can be used in the root level. Read the according exten
 
 Extension Name | Type | Description
 ---|:---:|---
-[x-terraform-provider-multiregion-fqdn](#xTerraformProviderMultiregionFQDN) | string | Defines the host that should be used when managing the resources exposed. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make the API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration. The value must be parametrised following the expected format (regex: (S+)(${(S+)})(S+)) where the ${region} section identifies the spot that will be replaced by the region value. E,g: service.api.${region}.hostname.com.
+[x-terraform-provider-multiregion-fqdn](#xTerraformProviderMultiregionFQDN) | string | Defines the host that should be used when managing the resources exposed. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make the API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration. The value must be parameterised following the expected format (regex: (S+)(${(S+)})(S+)) where the ${region} section identifies the spot that will be replaced by the region value. E,g: service.api.${region}.hostname.com.
 [x-terraform-provider-regions](#xTerraformProviderRegions) | string | Defines the regions the service has APIs exposed and will be translated into the terraform provider 'region' property. The value must be a comma separated list of strings. The default region value set in the provider will be the first element in the comma separated string. The value set, either the default or the one provider by the user, will be used to build the right FQDN based on the 'x-terraform-provider-multiregion-fqdn' value. In the example above, if the region value was 'uswest1', the API calls will be made against the following hostL: service.api.uswest1.hostname.com 
 
 ##### <a name="xTerraformProviderMultiregionFQDN">x-terraform-provider-multiregion-fqdn</a>
 
-This extension defines the FQDN to be used by Terraform when managing the service resources. The value must be parametrised
+This extension defines the FQDN to be used by Terraform when managing the service resources. The value must be parameterised
 following the pattern (S+)(${(S+)})(S+) where the ${} section identifies the location that will be replaced by the region value. 
 
 ````
 x-terraform-provider-multiregion-fqdn: "service.api.${region}.hostname.com"
 ````
 
-This extension must be present with the correct parametrised value in order for multi-region to be enabled.
+This extension must be present with the correct parameterised value in order for multi-region to be enabled.
 
 ##### <a name="xTerraformProviderRegions">x-terraform-provider-regions</a>
 

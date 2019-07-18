@@ -171,6 +171,64 @@ paths:
       security:
         - apikey_auth: []
 
+  ## CDN sub-resource
+
+  /v1/cdns/{parent_id}/v1/firewalls:
+    post:
+      x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
+      tags:
+      - "cdn"
+      summary: "Create cdn firewall"
+      operationId: "ContentDeliveryNetworkFirewallCreateV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Created CDN firewall"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+        default:
+          description: "generic error response"
+          schema:
+            $ref: "#/definitions/Error"
+  /v1/cdns/{parent_id}/firewalls/{id}:
+    get:
+      tags:
+      - "cdn"
+      summary: "Get cdn firewall by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkFirewallGetV1"
+      parameters:
+      - name: "parent_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - name: "id"
+        in: "path"
+        description: "The cdn firewall id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+        400:
+          description: "Invalid cdn id supplied"
+        404:
+          description: "CDN not found"
+
   ######################
   ##### LB Resource ####
   ######################
@@ -434,7 +492,7 @@ definitions:
         type: integer
       exampleNumber:
         type: number
-        x-terraform-field-name: betterExampleNumberFieldName  # overriding exampleNumber with a different name 'betterExampleNumberFieldName'; the preferred name is not terraform compliant either so the provider will perform the name conversion automatically when translating the name into the provider resource configuration and when saving the field into the state file
+        x-terraform-field-name: better_example_number_field_name  # overriding exampleNumber with a different name 'betterExampleNumberFieldName'; the preferred name is not terraform compliant either so the provider will perform the name conversion automatically when translating the name into the provider resource configuration and when saving the field into the state file
       example_boolean:
         type: boolean
       optional_property: # this property is optional as far as input from user is concerned, if the API computes a value if the user does not provider it, see 'optional_computed' or 'optional_computed_with_default' property definitions.
@@ -548,6 +606,17 @@ definitions:
         type: string
 
   MonitorV1:
+    type: "object"
+    required:
+    - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"
+
+  ContentDeliveryNetworkFirewallV1:
     type: "object"
     required:
     - name

@@ -1,11 +1,14 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/go-openapi/spec"
 
 	"github.com/dikhan/http_goclient"
 	. "github.com/smartystreets/goconvey/convey"
@@ -107,7 +110,7 @@ func TestAppendUserAgentHeader(t *testing.T) {
 }
 
 func TestGetResourceIDURL(t *testing.T) {
-	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
+	Convey("Given a providerClient", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:        "wwww.host.com",
@@ -116,31 +119,23 @@ func TestGetResourceIDURL(t *testing.T) {
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
-			apiAuthenticator: &specStubAuthenticator{
-				authContext: &authContext{
-					url: "",
-					headers: map[string]string{
-						"Authentication": "Bearer secret!",
-					},
-				},
-			},
 		}
-		Convey("When getResourceIDURL with a specResource and and ID", func() {
+		Convey("When getResourceIDURL is called with a specResource and ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource"
-			specStubResource := &specStubResource{
-				path: expectedPath,
-				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
-					responses:        specResponses{},
-					SecuritySchemes:  SpecSecuritySchemes{},
+			r := &SpecV2Resource{
+				Path: expectedPath,
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
 				},
 			}
-			resourceURL, err := providerClient.getResourceIDURL(specStubResource, expectedID)
+			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, expectedID)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And then resourceURL should equal", func() {
+			Convey("And then the resourceURL returned should be built from the schemes, host, base path, and path in the client and the ID passed", func() {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
@@ -148,18 +143,41 @@ func TestGetResourceIDURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceIDURL with a specResource containing trailing / in the path and and ID", func() {
+		Convey("When getResourceIDURL is called with a specResource containing trailing / in the path and an ID", func() {
 			expectedID := "1234"
 			expectedPath := "/v1/resource/"
-			specStubResource := &specStubResource{
-				path: expectedPath,
-				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
-					responses:        specResponses{},
-					SecuritySchemes:  SpecSecuritySchemes{},
+			r := &SpecV2Resource{
+				Path: expectedPath,
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
 				},
 			}
-			resourceURL, err := providerClient.getResourceIDURL(specStubResource, expectedID)
+			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, expectedID)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then resourceURL should equal the expected one", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
+			})
+		})
+
+		Convey("When getResourceIDURL is called with a specResource containing a parameterised path and a parent ID and instance ID", func() {
+			expectedID := "5678"
+			parentIDs := []string{"1234"}
+			r := &SpecV2Resource{
+				Path: "/v1/resource/{resource_id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			resourceURL, err := providerClient.getResourceIDURL(r, parentIDs, expectedID)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -167,14 +185,115 @@ func TestGetResourceIDURL(t *testing.T) {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+			})
+		})
+
+		Convey("When getResourceIDURL is called with a specResource containing a parameterized path and instance ID but missing a parent ID", func() {
+			r := &SpecV2Resource{
+				Path: "/v1/resource/{resource_id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, "5678")
+			Convey("Then an error should be returned", func() {
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/resource/{resource_id}/subresource' with the given ids - missing ids to resolve the path params properly: []")
+			})
+			Convey("And then resourceURL should be empty", func() {
+				So(resourceURL, ShouldBeEmpty)
+			})
+		})
+
+		Convey("When getResourceIDURL is called with an empty ID", func() {
+			r := &SpecV2Resource{
+				Path: "whatever",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			_, err := providerClient.getResourceIDURL(r, []string{}, "")
+			Convey("Then the error returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "could not build the resourceIDURL: required instance id value is missing")
 			})
 		})
 	})
 }
 
+func TestGetResourceURL_edge_cases(t *testing.T) {
+	testCases := []struct {
+		name                string
+		path                string
+		id                  string
+		parentIDs           []string
+		expectedResourceURL string
+		expectedError       string
+	}{
+		// Happy paths
+		{name: "no trailing slash", path: "/v1/resource", id: "1234", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1234"},
+		{name: "different id", path: "/v1/resource", id: "42", expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
+		{name: "with a parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14159/v17/subresource/42"},
+		{name: "with a parent id with mustaches", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"{3.14159}"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{3.14159}/v17/subresource/42"},
+		{name: "with a parent id with a slash", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14/159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14/159/v17/subresource/42", expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' due to parent IDs ([3.14/159]) containing not supported characters (forward slashes)"},
+		{name: "with a token with double mustaches", path: "/v1/resource/{{parent_id}}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{{parent_id}}/v17/subresource/42"},
+		{name: "with a parent id but no tokens", path: "/v1/resource", id: "42", parentIDs: []string{"pi"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
+		{name: "trailing slash", path: "/v1/resource/", id: "1337", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1337"},
+		{name: "id with a slash", path: "/v1/resource/", id: "13/37", expectedResourceURL: "http://wwww.host.com/api/v1/resource/13/37", expectedError: "instance ID (13/37) contains not supported characters (forward slashes)"},
+		{name: "id with mustaches", path: "/v1/resource/", id: "1{33}7", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1{33}7"},
+		// Unhappy paths
+		{name: "empty id", path: "/v1/resource/", id: "", expectedError: "could not build the resourceIDURL: required instance id value is missing"},
+		{name: "double trailing slash", path: "/v1/resource//", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1/resource//' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "double leading slash", path: "//v1/resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '//v1/resource/' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "double slash in the middle", path: "/v1//resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1//resource/' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "with a missing parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "with extra parent ids", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"-1", "-2"}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - more ids than path params: [-1 -2]"},
+	}
+
+	for _, tc := range testCases {
+		Convey("Given a providerClient configured with some backend configuration including the host, basedPath and http scheme", t, func() {
+			providerClient := &ProviderClient{
+				openAPIBackendConfiguration: &specStubBackendConfiguration{
+					host:        "wwww.host.com",
+					basePath:    "/api",
+					httpSchemes: []string{"http"},
+				},
+			}
+			Convey("When getResourceIDURL is called with a SpecV2Resource configured with some path and the root path item, some parent ids and an instance id", func() {
+				r := &SpecV2Resource{
+					Path: tc.path,
+					RootPathItem: spec.PathItem{
+						PathItemProps: spec.PathItemProps{
+							Post: &spec.Operation{},
+						},
+					},
+				}
+				actualResourceURL, err := providerClient.getResourceIDURL(r, tc.parentIDs, tc.id)
+				if tc.expectedError != "" {
+					Convey("Then the error returned should be the expected one", func() {
+						So(err.Error(), ShouldEqual, tc.expectedError)
+					})
+					Convey("And the resource url returned should be empty", func() {
+						So(actualResourceURL, ShouldBeEmpty)
+					})
+				} else {
+					Convey("Then the error returned should be nil", func() {
+						So(err, ShouldBeNil)
+					})
+					Convey("And the resource URL returned should be the expected one", func() {
+						So(tc.expectedResourceURL, ShouldEqual, tc.expectedResourceURL)
+					})
+				}
+			})
+		})
+	}
+}
+
 func TestGetResourceURL(t *testing.T) {
-	Convey("Given a providerClient set up with stub auth that injects some headers to the request and is not multiregion", t, func() {
+	Convey("Given a providerClient set up with auth that injects some headers to the request and is not multiregion", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:        "wwww.host.com",
@@ -192,7 +311,7 @@ func TestGetResourceURL(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceURL with a specResource with a resource path", func() {
+		Convey("When getResourceURL is called with a specResource with a resource path that is not parameterised", func() {
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{
 				path: expectedPath,
@@ -202,7 +321,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -214,7 +333,45 @@ func TestGetResourceURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceURL with a specResource with a resource path and overrides the global host", func() {
+		Convey("When getResourceURL is called with a resource which blows up on getResourcePath", func() {
+			specStubResource := &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (string, error) { return "", errors.New("getResourcePath blew up") },
+			}
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldNotBeNil)
+			})
+			Convey("And then resourceURL should be empty", func() {
+				So(resourceURL, ShouldBeEmpty)
+			})
+		})
+
+		// Using SpecV2Resource in this specific case to validate this specific scenario. The stub does not have logic
+		// to resolve parameters and it not a good idea to update the mock to have prod logic. Hence, using a real impl SpecV2Resource
+		// in this case so we have the subresource use case covered too.
+		Convey("When getResourceURL is called with a specResource with a resource path that is parameterised (e,g: subresource)", func() {
+			expectedParentID := "parentID"
+			specStubResource := &SpecV2Resource{
+				Path: "/v1/resource/{resource_id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			}
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{expectedParentID})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then resourceURL should equal", func() { //TODO: what should it equal?
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource", expectedProtocol, expectedHost, expectedBasePath, expectedParentID))
+			})
+		})
+
+		Convey("When getResourceURL with a specResource with a resource path that is not parameterised and overrides the global host", func() {
 			expectedHost := "wwww.host-overriden.com"
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{
@@ -226,7 +383,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -250,7 +407,7 @@ func TestGetResourceURL(t *testing.T) {
 			}
 
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -281,7 +438,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -314,7 +471,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -335,7 +492,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -369,7 +526,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -403,7 +560,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -437,7 +594,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -471,7 +628,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -510,7 +667,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -549,7 +706,7 @@ func TestGetResourceURL(t *testing.T) {
 					SecuritySchemes:  SpecSecuritySchemes{},
 				},
 			}
-			resourceURL, err := providerClient.getResourceURL(specStubResource)
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -578,7 +735,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -605,7 +762,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -632,7 +789,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -658,7 +815,7 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
 			specStubResource := &specStubResource{}
-			_, err := providerClient.getResourceURL(specStubResource)
+			_, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -773,6 +930,7 @@ func TestPerformRequest(t *testing.T) {
 }
 
 func TestProviderClientPost(t *testing.T) {
+
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
@@ -850,9 +1008,73 @@ func TestProviderClientPost(t *testing.T) {
 		})
 
 	})
+
+	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
+		httpClient := &http_goclient.HttpClientStub{}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+			},
+			httpClient:            httpClient,
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{
+				authContext: &authContext{
+					headers: map[string]string{},
+				},
+			},
+		}
+		Convey("When providerClient POST method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+			specv2Resource := &SpecV2Resource{
+				Path: "/v1/resource/{id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
+					},
+				},
+			}
+			expectedReqPayloadProperty1 := "property1"
+			expectedReqPayloadProperty1Value := "someValue"
+			expectedReqPayloadProperty2 := "property2"
+			expectedReqPayloadProperty2Value := 2
+			requestPayload := map[string]interface{}{
+				expectedReqPayloadProperty1: expectedReqPayloadProperty1Value,
+				expectedReqPayloadProperty2: expectedReqPayloadProperty2Value,
+			}
+			responsePayload := map[string]interface{}{}
+
+			_, err := providerClient.Post(specv2Resource, requestPayload, responsePayload, "parentID")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then client should have received the right URL", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/parentID/subresource", expectedProtocol, expectedHost, expectedBasePath))
+			})
+			Convey("And then client should have received the right User-Agent header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, userAgent)
+				So(httpClient.Headers[userAgent], ShouldContainSubstring, "OpenAPI Terraform Provider")
+			})
+			Convey("And then client should have received the right request payload", func() {
+				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty1)
+				So(httpClient.In.(map[string]interface{})[expectedReqPayloadProperty1], ShouldEqual, expectedReqPayloadProperty1Value)
+				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty2)
+				So(httpClient.In.(map[string]interface{})[expectedReqPayloadProperty2], ShouldEqual, expectedReqPayloadProperty2Value)
+			})
+		})
+
+	})
 }
 
 func TestProviderClientPut(t *testing.T) {
+
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
@@ -913,9 +1135,75 @@ func TestProviderClientPut(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
+		httpClient := &http_goclient.HttpClientStub{}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+			},
+			httpClient:            httpClient,
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{
+				authContext: &authContext{
+					headers: map[string]string{},
+				},
+			},
+		}
+		Convey("When providerClient PUT  method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+			specv2Resource := &SpecV2Resource{
+				Path: "/v1/resource/{id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
+					},
+				},
+				InstancePathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Put: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
+					},
+				},
+			}
+			expectedReqPayloadProperty1 := "property1"
+			expectedReqPayloadProperty1Value := "someValue"
+			requestPayload := map[string]interface{}{
+				expectedReqPayloadProperty1: expectedReqPayloadProperty1Value,
+			}
+			responsePayload := map[string]interface{}{}
+			expectedID := "1234"
+			parentIDs := []string{"parentID"}
+			_, err := providerClient.Put(specv2Resource, expectedID, requestPayload, responsePayload, parentIDs...)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then client should have received the right URL", func() {
+				So(httpClient.URL, ShouldEqual, "http://wwww.host.com/api/v1/resource/parentID/subresource/1234")
+			})
+			Convey("And then client should have received the right User-Agent header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, userAgent)
+				So(httpClient.Headers[userAgent], ShouldContainSubstring, "OpenAPI Terraform Provider")
+			})
+			Convey("And then client should have received the right request payload", func() {
+				So(httpClient.In.(map[string]interface{}), ShouldContainKey, expectedReqPayloadProperty1)
+				So(httpClient.In.(map[string]interface{})[expectedReqPayloadProperty1], ShouldEqual, expectedReqPayloadProperty1Value)
+			})
+		})
+	})
+
 }
 
 func TestProviderClientGet(t *testing.T) {
+
 	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
 		httpClient := &http_goclient.HttpClientStub{
 			Response: &http.Response{
@@ -972,9 +1260,69 @@ func TestProviderClientGet(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
+		httpClient := &http_goclient.HttpClientStub{}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+			},
+			httpClient:            httpClient,
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{
+				authContext: &authContext{
+					headers: map[string]string{},
+				},
+			},
+		}
+		Convey("When providerClient GET  method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+			specv2Resource := &SpecV2Resource{
+				Path: "/v1/resource/{id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
+					},
+				},
+				InstancePathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Get: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
+					},
+				},
+			}
+			responsePayload := map[string]interface{}{}
+			parentIDs := []string{"parentID"}
+			expectedID := "1234"
+			_, err := providerClient.Get(specv2Resource, expectedID, responsePayload, parentIDs...)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then client should have received the right URL", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+			})
+			Convey("And then client should have received the right User-Agent header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, userAgent)
+				So(httpClient.Headers[userAgent], ShouldContainSubstring, "OpenAPI Terraform Provider")
+			})
+		})
+	})
+
 }
 
 func TestProviderClientDelete(t *testing.T) {
+
 	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
 		httpClient := &http_goclient.HttpClientStub{
 			Response: &http.Response{
@@ -994,7 +1342,7 @@ func TestProviderClientDelete(t *testing.T) {
 			providerConfiguration:       providerConfiguration,
 			apiAuthenticator:            apiAuthenticator,
 		}
-		Convey("When providerClient PUT method is called with a specStubResource that does not override the host, a requestPayload and an empty responsePayload", func() {
+		Convey("When providerClient DELETE method is called with a specStubResource that does not override the host and the instance ID", func() {
 			specStubResource := &specStubResource{
 				path: "/v1/resource",
 				resourceDeleteOperation: &specResourceOperation{
@@ -1022,6 +1370,63 @@ func TestProviderClientDelete(t *testing.T) {
 			Convey("And then client should have received the right operation header and the expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, headerParameter.Name)
 				So(httpClient.Headers[headerParameter.Name], ShouldEqual, providerConfiguration.Headers[headerParameter.TerraformName])
+			})
+			Convey("And then client should have received the right User-Agent header and the expected value", func() {
+				So(httpClient.Headers, ShouldContainKey, userAgent)
+				So(httpClient.Headers[userAgent], ShouldContainSubstring, "OpenAPI Terraform Provider")
+			})
+		})
+	})
+
+	Convey("Given a providerClient set up with stub client that returns some response", t, func() {
+		httpClient := &http_goclient.HttpClientStub{}
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{
+				host:        "wwww.host.com",
+				basePath:    "/api",
+				httpSchemes: []string{"http"},
+			},
+			httpClient:            httpClient,
+			providerConfiguration: providerConfiguration{},
+			apiAuthenticator: &specStubAuthenticator{
+				authContext: &authContext{
+					headers: map[string]string{},
+				},
+			},
+		}
+		Convey("When providerClient DELETE  method is called with a SpecV2Resource that has a subresource path, an ID and the resource parentID", func() {
+			specv2Resource := &SpecV2Resource{
+				Path: "/v1/resource/{id}/subresource",
+				RootPathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
+					},
+				},
+				InstancePathItem: spec.PathItem{
+					PathItemProps: spec.PathItemProps{
+						Delete: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
+					},
+				},
+			}
+			parentIDs := []string{"parentID"}
+			expectedID := "1234"
+			_, err := providerClient.Delete(specv2Resource, expectedID, parentIDs...)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And then client should have received the right URL", func() {
+				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
+				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
 			})
 			Convey("And then client should have received the right User-Agent header and the expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, userAgent)
