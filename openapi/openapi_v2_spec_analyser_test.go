@@ -1674,12 +1674,50 @@ definitions:
 	})
 }
 
+func getExpectedResource(terraformCompliantResources []SpecResource, expectedResourceName string) SpecResource {
+	for _, r := range terraformCompliantResources {
+		if r.getResourceName() == expectedResourceName {
+			return r
+		}
+	}
+	return nil
+}
+
 func TestGetTerraformCompliantResources(t *testing.T) {
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: 127.0.0.1 
 paths:
+
+  ######################
+  ## CDN parent resource 
+  ######################
+
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
   ######################
   ## CDN sub-resource
   ######################
@@ -1687,8 +1725,6 @@ paths:
   /v1/cdns/{parent_id}/v1/firewalls:
     post:
       x-terraform-resource-host: 178.168.3.4
-      summary: "Create cdn firewall"
-      operationId: "ContentDeliveryNetworkFirewallCreateV1"
       parameters:
       - name: "parent_id"
         in: "path"
@@ -1703,15 +1739,10 @@ paths:
           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
       responses:
         201:
-          description: "successful operation"
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-
   /v1/cdns/{parent_id}/v1/firewalls/{id}:
     get:
-      summary: "Get cdn firewall by id"
-      description: ""
-      operationId: "ContentDeliveryNetworkFirewallGetV1"
       parameters:
       - name: "parent_id"
         in: "path"
@@ -1725,11 +1756,9 @@ paths:
         type: "string"
       responses:
         200:
-          description: "successful operation"
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-    delete: 
-      operationId: ContentDeliveryNetworkFirewallDeleteV1
+    delete:
       parameters: 
         - description: "The cdn id that contains the firewall to be fetched."
           in: path
@@ -1742,13 +1771,9 @@ paths:
           required: true
           type: string
       responses: 
-        204: 
-          description: "successful operation, no content is returned"
-      summary: "Delete firewall"
+        204:
     put:
       x-terraform-resource-timeout: "300s"
-      summary: "Updated firewall"
-      operationId: "ContentDeliveryNetworkFirewallUpdatedV1"
       parameters:
       - name: "id"
         in: "path"
@@ -1768,7 +1793,6 @@ paths:
           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
       responses:
         200:
-          description: "successful operation"
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
@@ -1790,20 +1814,22 @@ definitions:
         type: "string"
         readOnly: true
       label:
-        type: "string"
-`
+        type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the resources info map should only contain a resource called cdns_v1_firewalls_v1", func() {
-				So(len(terraformCompliantResources), ShouldEqual, 1)
-				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1_firewalls_v1")
-			})
 
-			firewallV1Resource := terraformCompliantResources[0]
+			cdnV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1")
+			firewallV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1_firewalls_v1")
+
+			Convey("And the resources info map should only contain a resource called both the parent cdns_v1 resource and the subresource cdns_v1_firewalls_v1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 2)
+				So(cdnV1Resource, ShouldNotBeNil)
+				So(firewallV1Resource, ShouldNotBeNil)
+			})
 
 			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
 				subRes, parentIDs, fullParentID := firewallV1Resource.isSubResource()
@@ -1817,14 +1843,14 @@ definitions:
 					So(resourcePath, ShouldEqual, "/v1/cdns/42/v1/firewalls")
 				})
 			})
-			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+			Convey("And the firewall resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
 				resOperation := firewallV1Resource.getResourceOperations()
 				So(resOperation.Get.responses, ShouldContainKey, 200)
 				So(resOperation.Post.responses, ShouldContainKey, 201)
 				So(resOperation.Put.responses, ShouldContainKey, 200)
 				So(resOperation.Delete.responses, ShouldContainKey, 204)
 			})
-			Convey("And each operation exposed on the resource has its own timeout set", func() {
+			Convey("And each firewall operation exposed on the resource has its own timeout set", func() {
 				timeoutSpec, err := firewallV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
 
@@ -1833,13 +1859,13 @@ definitions:
 				So(timeoutSpec.Post, ShouldBeNil)
 				So(timeoutSpec.Delete, ShouldBeNil)
 			})
-			Convey("And the host is correctly configured according to the swagger", func() {
+			Convey("And the firewall host is correctly configured according to the swagger", func() {
 				host, err := firewallV1Resource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "178.168.3.4")
 			})
 
-			Convey("And the resource schema contains 3 properties, 2 taken from the model and one added on the fly for the parent resource id", func() {
+			Convey("And the firewall resource schema contains 3 properties, 2 taken from the model and one added on the fly for the parent resource id", func() {
 				actualResourceSchema, err := firewallV1Resource.getResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 3)
