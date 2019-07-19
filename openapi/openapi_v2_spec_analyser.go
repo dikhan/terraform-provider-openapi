@@ -83,13 +83,10 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			continue
 		}
 
-		isSubResource := r.isSubResource()
-		if isSubResource != nil {
-			err := specAnalyser.validateSubResourceTerraformCompliance(resourcePath, isSubResource)
-			if err != nil {
-				log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
-				continue
-			}
+		err = specAnalyser.validateSubResourceTerraformCompliance(*r)
+		if err != nil {
+			log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
+			continue
 		}
 
 		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
@@ -99,16 +96,19 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 	return resources, nil
 }
 
-func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(resourcePath string, subResource *subResource) error {
-
-	for _, parentURI := range subResource.parentInstanceURIs {
-		if !specAnalyser.pathExists(parentURI) {
-			return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentURI)
+func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r SpecV2Resource) error {
+	subResource := r.isSubResource()
+	if subResource != nil {
+		resourcePath := r.Path
+		for _, parentURI := range subResource.parentInstanceURIs {
+			if !specAnalyser.pathExists(parentURI) {
+				return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentURI)
+			}
 		}
-	}
-	for _, parentURI := range subResource.parentURIs {
-		if !specAnalyser.pathExistsCheckIgnored(parentURI, true) {
-			return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s' or the resource root path is flagged with %s", resourcePath, parentURI, extTfExcludeResource)
+		for _, parentURI := range subResource.parentURIs {
+			if !specAnalyser.pathExistsCheckIgnored(parentURI, true) {
+				return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s' or the resource root path is flagged with %s", resourcePath, parentURI, extTfExcludeResource)
+			}
 		}
 	}
 	return nil
