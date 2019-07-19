@@ -1790,6 +1790,20 @@ paths:
 			})
 		})
 	})
+
+	Convey("Given an specV2Analyser with a resource that is missing the parent root path", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /cdns/{id}:`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateSubResourceTerraformCompliance method is called with a subresource path where the parent path DOES NOT exists in the swagger file", func() {
+			inputResource := SpecV2Resource{Path: "/cdns/{id}/firewalls"}
+			err := a.validateSubResourceTerraformCompliance(inputResource)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "subresource with path '/cdns/{id}/firewalls' is missing parent root path definition '/cdns'")
+			})
+		})
+	})
 }
 
 func TestGetTerraformCompliantResources(t *testing.T) {
