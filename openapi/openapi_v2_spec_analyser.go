@@ -83,7 +83,6 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			continue
 		}
 		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
-
 		resources = append(resources, r)
 	}
 	log.Printf("[INFO] found %d terraform compliant resources (time: %s)", len(resources), time.Since(start))
