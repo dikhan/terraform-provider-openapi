@@ -82,6 +82,16 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			log.Printf("[WARN] ignoring resource '%s' due to an error while creating a creating the SpecV2Resource: %s", resourceRootPath, err)
 			continue
 		}
+
+		isSubResource, _, _ := r.isSubResource()
+		if isSubResource {
+			err := specAnalyser.validateSubResourceTerraformCompliance(resourcePath)
+			if err != nil {
+				log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
+				continue
+			}
+		}
+
 		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
 		resources = append(resources, r)
 	}

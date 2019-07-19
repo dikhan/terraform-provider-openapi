@@ -1879,10 +1879,10 @@ paths:
         201:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
-  /v1/cdns/{id}:
+  /v1/cdns/{cdn_id}:
     get:
       parameters:
-      - name: "id"
+      - name: "cdn_id"
         in: "path"
         description: "The cdn id that needs to be fetched."
         required: true
@@ -1896,11 +1896,11 @@ paths:
   ## CDN sub-resource
   ######################
 
-  /v1/cdns/{parent_id}/v1/firewalls:
+  /v1/cdns/{cdn_id}/v1/firewalls:
     post:
       x-terraform-resource-host: 178.168.3.4
       parameters:
-      - name: "parent_id"
+      - name: "cdn_id"
         in: "path"
         description: "The cdn id that contains the firewall to be fetched."
         required: true
@@ -1915,10 +1915,10 @@ paths:
         201:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-  /v1/cdns/{parent_id}/v1/firewalls/{id}:
+  /v1/cdns/{cdn_id}/v1/firewalls/{id}:
     get:
       parameters:
-      - name: "parent_id"
+      - name: "cdn_id"
         in: "path"
         description: "The cdn id that contains the firewall to be fetched."
         required: true
