@@ -307,15 +307,15 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			isSubResource := r.isSubResource()
 			Convey("Then the bool returned should be false", func() {
 				So(isSubResource, ShouldBeFalse)
 			})
 			Convey("And the parentResourceNames should be empty", func() {
-				So(parentResourceNames, ShouldBeEmpty)
+				So(isSubResource.parentResourceNames, ShouldBeEmpty)
 			})
 			Convey("And the fullParentResourceName should be empty", func() {
-				So(fullParentResourceName, ShouldBeEmpty)
+				So(isSubResource.fullParentResourceName, ShouldBeEmpty)
 			})
 		})
 	})
@@ -324,15 +324,15 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			isSubResource := r.isSubResource()
 			Convey("Then the bool returned should be false", func() {
 				So(isSubResource, ShouldBeFalse)
 			})
 			Convey("And the parentResourceNames should be empty", func() {
-				So(parentResourceNames, ShouldBeEmpty)
+				So(isSubResource.parentResourceNames, ShouldBeEmpty)
 			})
 			Convey("And the fullParentResourceName should be empty", func() {
-				So(fullParentResourceName, ShouldBeEmpty)
+				So(isSubResource.fullParentResourceName, ShouldBeEmpty)
 			})
 		})
 	})
@@ -341,16 +341,16 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/firewalls",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			isSubResource := r.isSubResource()
 			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
-				So(len(parentResourceNames), ShouldEqual, 1)
-				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
+				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns_v1")
 			})
 			Convey("And the fullParentResourceName should match the expected name", func() {
-				So(fullParentResourceName, ShouldEqual, "cdns_v1")
+				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1")
 			})
 		})
 	})
@@ -359,16 +359,16 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns/{id}/firewalls",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			isSubResource := r.isSubResource()
 			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
-				So(len(parentResourceNames), ShouldEqual, 1)
-				So(parentResourceNames[0], ShouldEqual, "cdns")
+				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
+				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns")
 			})
 			Convey("And the fullParentResourceName should match the expected name", func() {
-				So(fullParentResourceName, ShouldEqual, "cdns")
+				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns")
 			})
 		})
 	})
@@ -377,17 +377,17 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns/{id}/firewalls/{id}/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			isSubResource := r.isSubResource()
 			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
-				So(len(parentResourceNames), ShouldEqual, 2)
-				So(parentResourceNames[0], ShouldEqual, "cdns")
-				So(parentResourceNames[1], ShouldEqual, "firewalls")
+				So(len(isSubResource.parentResourceNames), ShouldEqual, 2)
+				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns")
+				So(isSubResource.parentResourceNames[1], ShouldEqual, "firewalls")
 			})
 			Convey("And the fullParentResourceName should match the expected name", func() {
-				So(fullParentResourceName, ShouldEqual, "cdns_firewalls")
+				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_firewalls")
 			})
 		})
 	})
@@ -396,17 +396,17 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			isSubResource := r.isSubResource()
 			Convey("Then the bool returned should be true", func() {
 				So(isSubResource, ShouldBeTrue)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
-				So(len(parentResourceNames), ShouldEqual, 2)
-				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
-				So(parentResourceNames[1], ShouldEqual, "firewalls_v2")
+				So(len(isSubResource.parentResourceNames), ShouldEqual, 2)
+				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(isSubResource.parentResourceNames[1], ShouldEqual, "firewalls_v2")
 			})
 			Convey("And the fullParentResourceName should match the expected name", func() {
-				So(fullParentResourceName, ShouldEqual, "cdns_v1_firewalls_v2")
+				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls_v2")
 			})
 		})
 	})
@@ -415,12 +415,12 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource, parentResourceNames, fullParentResourceName := r.isSubResource()
+			isSubResource := r.isSubResource()
 			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
 				So(isSubResource, ShouldBeTrue)
-				So(len(parentResourceNames), ShouldEqual, 1)
-				So(parentResourceNames[0], ShouldEqual, "cdns_v1")
-				So(fullParentResourceName, ShouldEqual, "cdns_v1")
+				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
+				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1")
 			})
 		})
 	})

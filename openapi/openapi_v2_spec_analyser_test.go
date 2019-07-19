@@ -1705,7 +1705,7 @@ paths:
 		}
 		for _, tc := range testCases {
 			Convey(fmt.Sprintf("When validateSubResourceTerraformCompliance method is called with a %s", tc.name), func() {
-				err := a.validateSubResourceTerraformCompliance(tc.inputResourcePath)
+				err := a.validateSubResourceTerraformCompliance(tc.inputResourcePath, nil)
 				Convey("Then the error returned should be the expected one (if any)", func() {
 					if tc.expectedError == "" {
 						So(err, ShouldBeNil)
@@ -1735,7 +1735,7 @@ paths:
 		}
 		for _, tc := range testCases {
 			Convey(fmt.Sprintf("When validateSubResourceTerraformCompliance method is called with a %s", tc.name), func() {
-				err := a.validateSubResourceTerraformCompliance(tc.inputResourcePath)
+				err := a.validateSubResourceTerraformCompliance(tc.inputResourcePath, nil)
 				Convey("Then the error returned should be the expected one (if any)", func() {
 					if tc.expectedError == "" {
 						So(err, ShouldBeNil)
@@ -1765,7 +1765,7 @@ paths:
 		}
 		for _, tc := range testCases {
 			Convey(fmt.Sprintf("When validateSubResourceTerraformCompliance method is called with a %s", tc.name), func() {
-				err := a.validateSubResourceTerraformCompliance(tc.inputResourcePath)
+				err := a.validateSubResourceTerraformCompliance(tc.inputResourcePath, nil)
 				Convey("Then the error returned should be the expected one (if any)", func() {
 					if tc.expectedError == "" {
 						So(err, ShouldBeNil)
@@ -1786,7 +1786,7 @@ paths:
   /cdns/{id}:`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateSubResourceTerraformCompliance method is called with a subresource path where the parent path exists in the swagger file", func() {
-			err := a.validateSubResourceTerraformCompliance("/cdns/{id}/firewalls")
+			err := a.validateSubResourceTerraformCompliance("/cdns/{id}/firewalls", nil)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "subresource with path '/cdns/{id}/firewalls' is missing parent root path definition '/cdns' or the resource root path is flagged with x-terraform-exclude-resource")
 			})
@@ -2006,10 +2006,10 @@ definitions:
 			})
 
 			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
-				subRes, parentIDs, fullParentID := firewallV1Resource.isSubResource()
-				So(subRes, ShouldBeTrue)
-				So(parentIDs, ShouldResemble, []string{"cdns_v1"})
-				So(fullParentID, ShouldEqual, "cdns_v1")
+				subRes := firewallV1Resource.isSubResource()
+				So(subRes, ShouldNotBeNil)
+				So(subRes.parentResourceNames, ShouldResemble, []string{"cdns_v1"})
+				So(subRes.fullParentResourceName, ShouldEqual, "cdns_v1")
 				Convey("And the full resourcePath is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
 					parentID := "42"
 					resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
@@ -2154,11 +2154,9 @@ definitions:
 			})
 			cndV1Resource := terraformCompliantResources[0]
 			Convey("And the cndV1Resource should not be considered a subresource", func() {
-				subRes, parentIDs, fullParentID := cndV1Resource.isSubResource()
+				subRes := cndV1Resource.isSubResource()
 				So(err, ShouldBeNil)
-				So(subRes, ShouldBeFalse)
-				So(parentIDs, ShouldBeEmpty)
-				So(fullParentID, ShouldBeEmpty)
+				So(subRes, ShouldBeNil)
 			})
 			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
 				resOperation := cndV1Resource.getResourceOperations()

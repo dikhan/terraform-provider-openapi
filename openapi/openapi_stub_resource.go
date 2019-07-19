@@ -70,11 +70,13 @@ func (s *specStubResource) getHost() (string, error) {
 	return s.host, nil
 }
 
-func (s *specStubResource) isSubResource() (bool, []string, string) {
+func (s *specStubResource) isSubResource() (subRes *subResource) {
 	if len(s.parentResourceNames) > 0 && s.fullParentResourceName != "" {
-		return true, s.parentResourceNames, s.fullParentResourceName
+		subRes.parentResourceNames = s.parentResourceNames
+		subRes.fullParentResourceName = s.fullParentResourceName
+		return subRes
 	}
-	return false, []string{}, ""
+	return nil
 }
 
 func (s *specStubResource) getParentPropertiesNames() []string {

@@ -83,9 +83,9 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			continue
 		}
 
-		isSubResource, _, _ := r.isSubResource()
-		if isSubResource {
-			err := specAnalyser.validateSubResourceTerraformCompliance(resourcePath)
+		isSubResource := r.isSubResource()
+		if isSubResource != nil {
+			err := specAnalyser.validateSubResourceTerraformCompliance(resourcePath, isSubResource)
 			if err != nil {
 				log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
 				continue
@@ -99,32 +99,14 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 	return resources, nil
 }
 
-// TODO: this method could be dried up by leveraging the logic inside isSubResource. if isSubResource returned besides
-// the current output also the parentURIs AND the parentInstanceURIs then this method could just receive these two plus
-// the resourcePath to check and the logic would be centralised in isSubResource
-func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(resourcePath string) error {
-	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
-	parentMatches := resourceParentRegex.FindAllStringSubmatch(resourcePath, -1)
-	parentURIs := []string{}
-	parentInstanceURIs := []string{}
-	if len(parentMatches) > 0 {
-		var parentURI string
-		var parentInstanceURI string
-		for _, match := range parentMatches {
-			fullMatch := match[0]
-			rootPath := match[1]
-			parentURI = parentInstanceURI + rootPath
-			parentInstanceURI = parentInstanceURI + fullMatch
-			parentURIs = append(parentURIs, parentURI)
-			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
-		}
-	}
-	for _, parentURI := range parentInstanceURIs {
+func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(resourcePath string, subResource *subResource) error {
+
+	for _, parentURI := range subResource.parentInstanceURIs {
 		if !specAnalyser.pathExists(parentURI) {
 			return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentURI)
 		}
 	}
-	for _, parentURI := range parentURIs {
+	for _, parentURI := range subResource.parentURIs {
 		if !specAnalyser.pathExistsCheckIgnored(parentURI, true) {
 			return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s' or the resource root path is flagged with %s", resourcePath, parentURI, extTfExcludeResource)
 		}
