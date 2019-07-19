@@ -89,6 +89,60 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 	return resources, nil
 }
 
+func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(resourcePath string) error {
+	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
+	parentMatches := resourceParentRegex.FindAllStringSubmatch(resourcePath, -1)
+	parentURIs := []string{}
+	parentInstanceURIs := []string{}
+	if len(parentMatches) > 0 {
+		var parentURI string
+		var parentInstanceURI string
+		for _, match := range parentMatches {
+			fullMatch := match[0]
+			rootPath := match[1]
+			parentURI = parentInstanceURI + rootPath
+			parentInstanceURI = parentInstanceURI + fullMatch
+			parentURIs = append(parentURIs, parentURI)
+			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
+		}
+	}
+	for _, parentURI := range parentInstanceURIs {
+		if !specAnalyser.pathExists(parentURI) {
+			return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentURI)
+		}
+	}
+	for _, parentURI := range parentURIs {
+		if !specAnalyser.pathExistsCheckIgnored(parentURI, true) {
+			return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s' or the resource root path is flagged with %s", resourcePath, parentURI, extTfExcludeResource)
+		}
+	}
+	return nil
+}
+
+func (specAnalyser *specV2Analyser) pathExists(path string) bool {
+	return specAnalyser.pathExistsCheckIgnored(path, false)
+}
+
+func (specAnalyser *specV2Analyser) pathExistsCheckIgnored(path string, checkResourceIgnored bool) bool {
+	p, exists := specAnalyser.d.Spec().Paths.Paths[path]
+	if !exists {
+		log.Printf("[WARN] path %s not found, falling back to checking if the path with trailing slash %s/ exists", path, path)
+		_, exists := specAnalyser.d.Spec().Paths.Paths[path+"/"]
+		if !exists {
+			return false
+		}
+	}
+	if checkResourceIgnored {
+		if p.Post != nil {
+			// if the parent resource is ignored that means that the path can be considered as though it did not exist
+			if extensionExists, ignoreResource := p.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // isMultiRegionResource returns true on ly if:
 // - the value is parametrized following the pattern: some.subdomain.${keyword}.domain.com, where ${keyword} must be present in the string, otherwise the resource will not be considered multi region
 // - there is a matching 'x-terraform-resource-regions-${keyword}' extension defined in the swagger root level (extensions passed in), where ${keyword} will be the value of the parameter in the above URL
