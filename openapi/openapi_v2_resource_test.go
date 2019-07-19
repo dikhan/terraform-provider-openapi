@@ -308,14 +308,8 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource := r.isSubResource()
-			Convey("Then the bool returned should be false", func() {
-				So(isSubResource, ShouldBeFalse)
-			})
-			Convey("And the parentResourceNames should be empty", func() {
-				So(isSubResource.parentResourceNames, ShouldBeEmpty)
-			})
-			Convey("And the fullParentResourceName should be empty", func() {
-				So(isSubResource.fullParentResourceName, ShouldBeEmpty)
+			Convey("Then the subResource struct returned should be nil", func() {
+				So(isSubResource, ShouldBeNil)
 			})
 		})
 	})
@@ -325,14 +319,8 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource := r.isSubResource()
-			Convey("Then the bool returned should be false", func() {
-				So(isSubResource, ShouldBeFalse)
-			})
-			Convey("And the parentResourceNames should be empty", func() {
-				So(isSubResource.parentResourceNames, ShouldBeEmpty)
-			})
-			Convey("And the fullParentResourceName should be empty", func() {
-				So(isSubResource.fullParentResourceName, ShouldBeEmpty)
+			Convey("Then the subResource struct returned should be nil", func() {
+				So(isSubResource, ShouldBeNil)
 			})
 		})
 	})
@@ -342,8 +330,8 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource := r.isSubResource()
-			Convey("Then the bool returned should be true", func() {
-				So(isSubResource, ShouldBeTrue)
+			Convey("Then the subResource struct returned shouldn't be nil", func() {
+				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
@@ -360,8 +348,8 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource := r.isSubResource()
-			Convey("Then the bool returned should be true", func() {
-				So(isSubResource, ShouldBeTrue)
+			Convey("Then the the subResource struct returned shouldn't be nil", func() {
+				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
@@ -378,8 +366,8 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource := r.isSubResource()
-			Convey("Then the bool returned should be true", func() {
-				So(isSubResource, ShouldBeTrue)
+			Convey("Then the subResource struct returned shouldn't be nil", func() {
+				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(isSubResource.parentResourceNames), ShouldEqual, 2)
@@ -397,8 +385,8 @@ func TestIsSubResource(t *testing.T) {
 		}
 		Convey("When isSubResource is called", func() {
 			isSubResource := r.isSubResource()
-			Convey("Then the bool returned should be true", func() {
-				So(isSubResource, ShouldBeTrue)
+			Convey("Then the subResource struct returned shouldn't be nil", func() {
+				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(isSubResource.parentResourceNames), ShouldEqual, 2)
@@ -417,7 +405,7 @@ func TestIsSubResource(t *testing.T) {
 		Convey("When isSubResource is called", func() {
 			isSubResource := r.isSubResource()
 			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
-				So(isSubResource, ShouldBeTrue)
+				So(isSubResource, ShouldNotBeNil)
 				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
 				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns_v1")
 				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1")
