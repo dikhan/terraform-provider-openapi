@@ -238,8 +238,6 @@ func (o *SpecV2Resource) isSubResource() *subResource {
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
 		sub := subResource{}
-		// TODO: if path is deemed subreource but is wrongly formatted return an error
-		// return false, fmt.Errorf("invalid subresource path '%s'", o.Path)
 		var parentURI string
 		var parentInstanceURI string
 		fullParentResourceName := ""
