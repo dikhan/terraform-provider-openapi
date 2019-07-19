@@ -99,6 +99,9 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 	return resources, nil
 }
 
+// TODO: this method could be dried up by leveraging the logic inside isSubResource. if isSubResource returned besides
+// the current output also the parentURIs AND the parentInstanceURIs then this method could just receive these two plus
+// the resourcePath to check and the logic would be centralised in isSubResource
 func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(resourcePath string) error {
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(resourcePath, -1)
@@ -129,10 +132,12 @@ func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(resou
 	return nil
 }
 
+// TODO: missing unit test
 func (specAnalyser *specV2Analyser) pathExists(path string) bool {
 	return specAnalyser.pathExistsCheckIgnored(path, false)
 }
 
+// TODO: missing unit test
 func (specAnalyser *specV2Analyser) pathExistsCheckIgnored(path string, checkResourceIgnored bool) bool {
 	p, exists := specAnalyser.d.Spec().Paths.Paths[path]
 	if !exists {
