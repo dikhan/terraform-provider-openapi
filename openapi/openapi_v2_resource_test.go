@@ -181,6 +181,101 @@ func TestNewSpecV2Resource(t *testing.T) {
 	})
 }
 
+func TestShouldIgnoreResource(t *testing.T) {
+	Convey("Given a SpecV2Resource configured with a root path item that does not contain the post operation defined", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: nil,
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the result should be false", func() {
+				So(shouldIgnoreResource, ShouldBeFalse)
+			})
+		})
+	})
+	Convey(fmt.Sprintf("Given a SpecV2Resource configured with a root path item that does not contain the %s extension", extTfExcludeResource), t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the result should be false", func() {
+				So(shouldIgnoreResource, ShouldBeFalse)
+			})
+		})
+	})
+	Convey(fmt.Sprintf("Given a SpecV2Resource configured with a root path item that DOES contain the %s extension with value equal true", extTfExcludeResource), t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfExcludeResource: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the result should be true", func() {
+				So(shouldIgnoreResource, ShouldBeTrue)
+			})
+		})
+	})
+	Convey(fmt.Sprintf("Given a SpecV2Resource configured with a root path item that DOES contain the %s extension with value equal false", extTfExcludeResource), t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfExcludeResource: false,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the result should be false", func() {
+				So(shouldIgnoreResource, ShouldBeFalse)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource configured with a root path item where the extensions are nil", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: nil,
+						},
+					},
+				},
+			},
+		}
+		Convey("When shouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.shouldIgnoreResource()
+			Convey("Then the result should be false", func() {
+				So(shouldIgnoreResource, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestBuildResourceName(t *testing.T) {
 
 	testCases := []struct {

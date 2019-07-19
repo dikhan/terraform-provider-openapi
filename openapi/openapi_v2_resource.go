@@ -220,9 +220,12 @@ func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
 // defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provider; otherwise it will
 // be exposed and users will be able to manage such resource via terraform.
 func (o *SpecV2Resource) shouldIgnoreResource() bool {
-	if o.RootPathItem.Post != nil {
-		if extensionExists, ignoreResource := o.RootPathItem.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
-			return true
+	postOperation := o.RootPathItem.Post
+	if postOperation != nil {
+		if postOperation.Extensions != nil {
+			if extensionExists, ignoreResource := postOperation.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
+				return true
+			}
 		}
 	}
 	return false
