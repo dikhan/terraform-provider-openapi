@@ -100,14 +100,19 @@ func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r Spe
 	subResource := r.isSubResource()
 	if subResource != nil {
 		resourcePath := r.Path
-		for _, parentURI := range subResource.parentInstanceURIs {
-			if !specAnalyser.pathExists(parentURI) {
-				return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentURI)
+		for _, parentInstanceURIs := range subResource.parentInstanceURIs {
+			if pathExists, _ := specAnalyser.pathExists(parentInstanceURIs); !pathExists {
+				return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentInstanceURIs)
 			}
 		}
 		for _, parentURI := range subResource.parentURIs {
-			if !specAnalyser.pathExistsCheckIgnored(parentURI, true) {
-				return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s' or the resource root path is flagged with %s", resourcePath, parentURI, extTfExcludeResource)
+			parentPathExists, parentPathItem := specAnalyser.pathExists(parentURI)
+			if !parentPathExists {
+				return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s'", resourcePath, parentURI)
+			}
+			parentResource := SpecV2Resource{RootPathItem: parentPathItem}
+			if parentResource.shouldIgnoreResource() {
+				return fmt.Errorf("subresource with path '%s' contains a parent %s that is marked as ignored, therefore ignoring the subresource too", resourcePath, parentURI)
 			}
 		}
 	}
@@ -115,29 +120,16 @@ func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r Spe
 }
 
 // TODO: missing unit test
-func (specAnalyser *specV2Analyser) pathExists(path string) bool {
-	return specAnalyser.pathExistsCheckIgnored(path, false)
-}
-
-// TODO: missing unit test
-func (specAnalyser *specV2Analyser) pathExistsCheckIgnored(path string, checkResourceIgnored bool) bool {
+func (specAnalyser *specV2Analyser) pathExists(path string) (bool, spec.PathItem) {
 	p, exists := specAnalyser.d.Spec().Paths.Paths[path]
 	if !exists {
 		log.Printf("[WARN] path %s not found, falling back to checking if the path with trailing slash %s/ exists", path, path)
 		_, exists := specAnalyser.d.Spec().Paths.Paths[path+"/"]
 		if !exists {
-			return false
+			return false, spec.PathItem{}
 		}
 	}
-	if checkResourceIgnored {
-		if p.Post != nil {
-			// if the parent resource is ignored that means that the path can be considered as though it did not exist
-			if extensionExists, ignoreResource := p.Post.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
-				return false
-			}
-		}
-	}
-	return true
+	return true, p
 }
 
 // isMultiRegionResource returns true on ly if:
