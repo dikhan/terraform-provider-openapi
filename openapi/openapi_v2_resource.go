@@ -231,22 +231,14 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-type subResourceInfo struct {
-	parentResourceNames    []string
-	fullParentResourceName string
-	parentURIs             []string
-	parentInstanceURIs     []string
-}
-
 func (o *SpecV2Resource) isSubResource() *subResourceInfo {
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
-		sub := subResourceInfo{}
 		var parentURI string
 		var parentInstanceURI string
 		fullParentResourceName := ""
-
+		var parentResourceNames, parentURIs, parentInstanceURIs []string
 		for _, match := range parentMatches {
 			fullMatch := match[0]
 			rootPath := match[1]
@@ -257,14 +249,20 @@ func (o *SpecV2Resource) isSubResource() *subResourceInfo {
 			if parentVersion != "" {
 				parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
 			}
-			sub.parentResourceNames = append(sub.parentResourceNames, parentResourceName)
+			parentResourceNames = append(parentResourceNames, parentResourceName)
 			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
 
-			sub.parentURIs = append(sub.parentURIs, parentURI)
-			sub.parentInstanceURIs = append(sub.parentInstanceURIs, parentInstanceURI)
+			parentURIs = append(parentURIs, parentURI)
+			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
 		}
-		sub.fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
-		return &sub
+		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
+		sub := &subResourceInfo{
+			parentResourceNames:    parentResourceNames,
+			fullParentResourceName: fullParentResourceName,
+			parentURIs:             parentURIs,
+			parentInstanceURIs:     parentInstanceURIs,
+		}
+		return sub
 	}
 	return nil
 }
@@ -289,7 +287,7 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 
 	isSubResource := o.isSubResource()
 	if isSubResource != nil {
-		parentPropertyNames := o.getParentPropertiesNames()
+		parentPropertyNames := isSubResource.getParentPropertiesNames()
 		for _, parentPropertyName := range parentPropertyNames {
 			pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
 			pr.IsParentProperty = true
@@ -297,21 +295,6 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		}
 	}
 	return schemaDefinition, nil
-}
-
-func (o *SpecV2Resource) getParentPropertiesNames() []string {
-	if o.Path == "" {
-		return []string{}
-	}
-	isSubResource := o.isSubResource()
-	if isSubResource != nil {
-		parentPropertyNames := []string{}
-		for _, parentName := range isSubResource.parentResourceNames {
-			parentPropertyNames = append(parentPropertyNames, fmt.Sprintf("%s_id", parentName))
-		}
-		return parentPropertyNames
-	}
-	return []string{}
 }
 
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {

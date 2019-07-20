@@ -16,8 +16,6 @@ type SpecResource interface {
 	// isSubResource returns a struct populated with relevant subresource information if the resource is considered
 	// a subresource; nil otherwise.
 	isSubResource() *subResourceInfo
-	// getParentPropertiesNames is responsible to building the parent properties names for a resource that is a subresource
-	getParentPropertiesNames() []string
 }
 
 type specTimeouts struct {

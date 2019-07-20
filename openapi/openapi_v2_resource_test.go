@@ -435,9 +435,17 @@ func TestIsSubResource(t *testing.T) {
 			Convey("And the fullParentResourceName should match the expected name", func() {
 				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1")
 			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(isSubResource.parentURIs), ShouldEqual, 1)
+				So(isSubResource.parentURIs[0], ShouldEqual, "/v1/cdns")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(isSubResource.parentInstanceURIs), ShouldEqual, 1)
+				So(isSubResource.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+			})
 		})
 	})
-	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (with parent not using versioning)", t, func() {
+	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (no versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls",
 		}
@@ -453,8 +461,43 @@ func TestIsSubResource(t *testing.T) {
 			Convey("And the fullParentResourceName should match the expected name", func() {
 				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns")
 			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(isSubResource.parentURIs), ShouldEqual, 1)
+				So(isSubResource.parentURIs[0], ShouldEqual, "/cdns")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(isSubResource.parentInstanceURIs), ShouldEqual, 1)
+				So(isSubResource.parentInstanceURIs[0], ShouldEqual, "/cdns/{id}")
+			})
 		})
 	})
+	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (both using versioning)", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls",
+		}
+		Convey("When isSubResource is called", func() {
+			isSubResource := r.isSubResource()
+			Convey("Then the the subResourceInfo struct returned shouldn't be nil", func() {
+				So(isSubResource, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
+				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns_v1")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(isSubResource.parentURIs), ShouldEqual, 1)
+				So(isSubResource.parentURIs[0], ShouldEqual, "/v1/cdns")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(isSubResource.parentInstanceURIs), ShouldEqual, 1)
+				So(isSubResource.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+			})
+		})
+	})
+
 	Convey("Given a SpecV2Resource configured with a path that is indeed a multiple level sub-resource", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls/{id}/rules",
@@ -471,6 +514,16 @@ func TestIsSubResource(t *testing.T) {
 			})
 			Convey("And the fullParentResourceName should match the expected name", func() {
 				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_firewalls")
+			})
+			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				So(len(isSubResource.parentURIs), ShouldEqual, 2)
+				So(isSubResource.parentURIs[0], ShouldEqual, "/cdns")
+				So(isSubResource.parentURIs[1], ShouldEqual, "/cdns/{id}/firewalls")
+			})
+			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				So(len(isSubResource.parentInstanceURIs), ShouldEqual, 2)
+				So(isSubResource.parentInstanceURIs[0], ShouldEqual, "/cdns/{id}")
+				So(isSubResource.parentInstanceURIs[1], ShouldEqual, "/cdns/{id}/firewalls/{id}")
 			})
 		})
 	})
@@ -491,6 +544,16 @@ func TestIsSubResource(t *testing.T) {
 			Convey("And the fullParentResourceName should match the expected name", func() {
 				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls_v2")
 			})
+			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				So(len(isSubResource.parentURIs), ShouldEqual, 2)
+				So(isSubResource.parentURIs[0], ShouldEqual, "/v1/cdns")
+				So(isSubResource.parentURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls")
+			})
+			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				So(len(isSubResource.parentInstanceURIs), ShouldEqual, 2)
+				So(isSubResource.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+				So(isSubResource.parentInstanceURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls/{id}")
+			})
 		})
 	})
 	Convey("Given a SpecV2Resource configured with a path that is a subresource but the path is wrongly structured not following best restful practises for building subresource paths (the 'firewalls' parent in the path is missing the id path param)", t, func() {
@@ -504,6 +567,14 @@ func TestIsSubResource(t *testing.T) {
 				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)
 				So(isSubResource.parentResourceNames[0], ShouldEqual, "cdns_v1")
 				So(isSubResource.fullParentResourceName, ShouldEqual, "cdns_v1")
+			})
+			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				So(len(isSubResource.parentURIs), ShouldEqual, 1)
+				So(isSubResource.parentURIs[0], ShouldEqual, "/v1/cdns")
+			})
+			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				So(len(isSubResource.parentInstanceURIs), ShouldEqual, 1)
+				So(isSubResource.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 			})
 		})
 	})
@@ -951,112 +1022,6 @@ func TestGetSchemaDefinition(t *testing.T) {
 	//		})
 	//	})
 	//})
-}
-
-func Test_getParentPropertiesNames(t *testing.T) {
-	Convey("Given a SpecV2Resource with no Path", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-			Convey("Then array returned should be empty", func() {
-				So(p, ShouldBeEmpty)
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource with some Path that is not a subresource", t, func() {
-		r := &SpecV2Resource{Path: "/foo"}
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-			Convey("Then array returned should be empty", func() {
-				So(p, ShouldBeEmpty)
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource with some Path for a versioned parent resource where the path begins with the version", t, func() {
-		r := &SpecV2Resource{
-			Path: "/v2/cdns/{id}/v1/firewalls",
-		}
-
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-			Convey("And the array returned should contain the expected parent name", func() {
-				So(len(p), ShouldEqual, 1)
-				So(p[0], ShouldEqual, "cdns_v2_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource with some Path for an unversioned parent resource", t, func() {
-		r := &SpecV2Resource{
-			Path: "/cdns/{id}/v1/firewalls",
-		}
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-			Convey("And the array returned should contain the expected parent name", func() {
-				So(len(p), ShouldEqual, 1)
-				So(p[0], ShouldEqual, "cdns_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource with some Path that contains two parents, the first one using version and the second one without", t, func() {
-		r := &SpecV2Resource{
-			Path: "/v1/cdns/{id}/firewalls/{id}/rules",
-		}
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-			Convey("And the array returned should contain the expected parent names", func() {
-				So(len(p), ShouldEqual, 2)
-				So(p[0], ShouldEqual, "cdns_v1_id")
-				So(p[1], ShouldEqual, "firewalls_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource with some Path that contains two parents both using versioning", t, func() {
-		r := &SpecV2Resource{
-			Path: "/v1/cdns/{id}/v2/firewalls/{id}/rules",
-		}
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-
-			Convey("And the array returned should contain the expected parent names", func() {
-				So(len(p), ShouldEqual, 2)
-				So(p[0], ShouldEqual, "cdns_v1_id")
-				So(p[1], ShouldEqual, "firewalls_v2_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource with some Path that contains two parents; the first one with no version and the second one with it", t, func() {
-		r := &SpecV2Resource{
-			Path: "/cdns/{id}/v1/firewalls/{id}/rules",
-		}
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-			Convey("And the array returned should contain the expected parent names", func() {
-				So(len(p), ShouldEqual, 2)
-				So(p[0], ShouldEqual, "cdns_id")
-				So(p[1], ShouldEqual, "firewalls_v1_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource with some Path that contains two parents that do not use versioning", t, func() {
-		r := &SpecV2Resource{
-			Path: "/cdns/{id}/firewalls/{id}/rules",
-		}
-		Convey("When the method getParentPropertiesNames is called", func() {
-			p := r.getParentPropertiesNames()
-			Convey("And the array returned should contain the expected parent names", func() {
-				So(len(p), ShouldEqual, 2)
-				So(p[0], ShouldEqual, "cdns_id")
-				So(p[1], ShouldEqual, "firewalls_id")
-			})
-		})
-	})
 }
 
 func TestGetResourcePath(t *testing.T) {
