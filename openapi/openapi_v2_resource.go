@@ -231,18 +231,18 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	return false
 }
 
-type subResource struct {
+type subResourceInfo struct {
 	parentResourceNames    []string
 	fullParentResourceName string
 	parentURIs             []string
 	parentInstanceURIs     []string
 }
 
-func (o *SpecV2Resource) isSubResource() *subResource {
+func (o *SpecV2Resource) isSubResource() *subResourceInfo {
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
-		sub := subResource{}
+		sub := subResourceInfo{}
 		var parentURI string
 		var parentInstanceURI string
 		fullParentResourceName := ""

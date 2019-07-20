@@ -13,9 +13,9 @@ type SpecResource interface {
 	shouldIgnoreResource() bool
 	getResourceOperations() specResourceOperations
 	getTimeouts() (*specTimeouts, error)
-	// isSubResource returns true if the resource path is a subresource. Additionally, it will return the list of parent
-	// resource names and the resource parent names merged in one to facilitate parent names processing.
-	isSubResource() *subResource
+	// isSubResource returns a struct populated with relevant subresource information if the resource is considered
+	// a subresource; nil otherwise.
+	isSubResource() *subResourceInfo
 	// getParentPropertiesNames is responsible to building the parent properties names for a resource that is a subresource
 	getParentPropertiesNames() []string
 }
