@@ -9,7 +9,7 @@ type parentResourceInfo struct {
 	parentInstanceURIs     []string
 }
 
-// getParentPropertiesNames is responsible to building the parent properties names for a resource that is a parentResource
+// getParentPropertiesNames is responsible to building the parent properties names for a resource that is a subresource
 func (info *parentResourceInfo) getParentPropertiesNames() []string {
 	parentPropertyNames := []string{}
 	for _, parentName := range info.parentResourceNames {

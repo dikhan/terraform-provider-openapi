@@ -83,9 +83,9 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			continue
 		}
 
-		err = specAnalyser.validateParentResourceTerraformCompliance(*r)
+		err = specAnalyser.validateSubResourceTerraformCompliance(*r)
 		if err != nil {
-			log.Printf("[WARN] ignoring parentResource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
+			log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
 			continue
 		}
 
@@ -96,23 +96,23 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 	return resources, nil
 }
 
-func (specAnalyser *specV2Analyser) validateParentResourceTerraformCompliance(r SpecV2Resource) error {
-	parentResourceInfo := r.getParentResourceInfo()
-	if parentResourceInfo != nil {
+func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r SpecV2Resource) error {
+	subResource := r.getParentResourceInfo()
+	if subResource != nil {
 		resourcePath := r.Path
-		for _, parentInstanceURIs := range parentResourceInfo.parentInstanceURIs {
+		for _, parentInstanceURIs := range subResource.parentInstanceURIs {
 			if pathExists, _ := specAnalyser.pathExists(parentInstanceURIs); !pathExists {
-				return fmt.Errorf("parentResource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentInstanceURIs)
+				return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentInstanceURIs)
 			}
 		}
-		for _, parentURI := range parentResourceInfo.parentURIs {
+		for _, parentURI := range subResource.parentURIs {
 			parentPathExists, parentPathItem := specAnalyser.pathExists(parentURI)
 			if !parentPathExists {
-				return fmt.Errorf("parentResource with path '%s' is missing parent root path definition '%s'", resourcePath, parentURI)
+				return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s'", resourcePath, parentURI)
 			}
 			parentResource := SpecV2Resource{RootPathItem: parentPathItem}
 			if parentResource.shouldIgnoreResource() {
-				return fmt.Errorf("parentResource with path '%s' contains a parent %s that is marked as ignored, therefore ignoring the parentResource too", resourcePath, parentURI)
+				return fmt.Errorf("subresource with path '%s' contains a parent %s that is marked as ignored, therefore ignoring the subresource too", resourcePath, parentURI)
 			}
 		}
 	}

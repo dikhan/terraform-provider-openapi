@@ -74,7 +74,7 @@ exposing two resources. The cdns and the firewalls.
 
 The corresponding sub-resource Terraform configuration will contain the properties as defined in the model definition
 configured in the POST operation AND the parent properties. The parent property/properties are added automatically by the
-provider when creating the resource schema. This enables the user to link parentResources to parent resources from the terraform
+provider when creating the resource schema. This enables the user to link subresources to parent resources from the terraform
 configuration file. The following example describes how the above OpenAPI document will be translated into the Terraform 
 configuration: 
 

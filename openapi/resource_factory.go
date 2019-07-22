@@ -185,7 +185,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 		for _, parentResourceName := range parentResourceNames {
 			parentResourceID := data.Get(parentResourceName)
 			if parentResourceID == nil {
-				return nil, fmt.Errorf("could not find ID value in the state file for parentResource parent property '%s'", parentResourceName)
+				return nil, fmt.Errorf("could not find ID value in the state file for subresource parent property '%s'", parentResourceName)
 			}
 			parentIDs = append(parentIDs, parentResourceID.(string))
 		}
@@ -273,14 +273,14 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 				// The expected format for the ID provided when importing a sub-resource is 1234/567 where 1234 would be the parentID and 567 the instance ID
 				ids := strings.Split(data.Id(), "/")
 				if len(ids) < 2 {
-					return results, fmt.Errorf("can not import a parentResource without providing all the parent IDs (%d) and the instance ID", len(parentPropertyNames))
+					return results, fmt.Errorf("can not import a subresource without providing all the parent IDs (%d) and the instance ID", len(parentPropertyNames))
 				}
 				parentIDsLen := len(ids) - 1
 				if len(parentPropertyNames) < parentIDsLen {
 					return results, fmt.Errorf("the number of parent IDs provided %d is greater than the expected number of parent IDs %d", parentIDsLen, len(parentPropertyNames))
 				}
 				if len(parentPropertyNames) > parentIDsLen {
-					return results, fmt.Errorf("can not import a parentResource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen)
+					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen)
 				}
 				for idx, parentPropertyName := range parentPropertyNames {
 					data.Set(parentPropertyName, ids[idx])

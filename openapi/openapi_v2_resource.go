@@ -158,7 +158,7 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	return fullResourceName, nil
 }
 
-// getResourcePath returns the root path of the resource. If the resource is a parentResource and therefore the path contains
+// getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
 // path parameters these will be resolved accordingly based on the ids provided. For instance, considering the given
 // resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
 // If the resource path is not parameterised, then regular path will be returned accordingly

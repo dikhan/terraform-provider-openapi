@@ -338,7 +338,7 @@ func TestBuildResourceName(t *testing.T) {
 			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
 			expectedError:        nil,
 		},
-		{ // This is considered a wrongly structured path not following resful best practises for building parentResource paths, however the plugin still supports it to not be so opinionated
+		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
 			path:                 "/v1/cdns/{id}/firewalls/v3/rules",
 			expectedResourceName: "cdns_v1_rules_v3",
 			expectedError:        nil,
@@ -556,13 +556,13 @@ func TestParentResourceInfo(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a SpecV2Resource configured with a path that is a parentResource but the path is wrongly structured not following best restful practises for building parentResource paths (the 'firewalls' parent in the path is missing the id path param)", t, func() {
+	Convey("Given a SpecV2Resource configured with a path that is a subresource but the path is wrongly structured not following best restful practises for building subresource paths (the 'firewalls' parent in the path is missing the id path param)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the resource should be considered a parentResource and the output should match the expected output values", func() {
+			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
@@ -746,7 +746,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a parentResource path (one level)", t, func() {
+	Convey("Given a SpecV2Resource containing a subresource path (one level)", t, func() {
 		r := &SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls",
 		}
@@ -805,7 +805,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a parentResource path (one level) that has a non restful parentResource path", t, func() {
+	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non restful subresource path", t, func() {
 		r := &SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls/v1/rules",
 		}
@@ -841,7 +841,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a parentResource path (two level)", t, func() {
+	Convey("Given a SpecV2Resource containing a subresource path (two level)", t, func() {
 		r := &SpecV2Resource{
 			Path: "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
 		}
@@ -901,7 +901,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource that is a parentResource (one level parent)", t, func() {
+	Convey("Given a SpecV2Resource that is a subresource (one level parent)", t, func() {
 		r := &SpecV2Resource{
 			Path: "/parent/{parent_id}/child",
 		}
@@ -936,7 +936,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource that is a parentResource (two level parent)", t, func() {
+	Convey("Given a SpecV2Resource that is a subresource (two level parent)", t, func() {
 		r := &SpecV2Resource{
 			Path: "/parent/{parent_id}/subparent/{subparent_id}/child",
 		}

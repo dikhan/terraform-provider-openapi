@@ -170,7 +170,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			expectedID := "5678"
 			parentIDs := []string{"1234"}
 			r := &SpecV2Resource{
-				Path: "/v1/resource/{resource_id}/parentResource",
+				Path: "/v1/resource/{resource_id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{},
@@ -185,13 +185,13 @@ func TestGetResourceIDURL(t *testing.T) {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/parentResource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
 			})
 		})
 
 		Convey("When getResourceIDURL is called with a specResource containing a parameterized path and instance ID but missing a parent ID", func() {
 			r := &SpecV2Resource{
-				Path: "/v1/resource/{resource_id}/parentResource",
+				Path: "/v1/resource/{resource_id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{},
@@ -200,7 +200,7 @@ func TestGetResourceIDURL(t *testing.T) {
 			}
 			resourceURL, err := providerClient.getResourceIDURL(r, []string{}, "5678")
 			Convey("Then an error should be returned", func() {
-				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/resource/{resource_id}/parentResource' with the given ids - missing ids to resolve the path params properly: []")
+				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/resource/{resource_id}/subresource' with the given ids - missing ids to resolve the path params properly: []")
 			})
 			Convey("And then resourceURL should be empty", func() {
 				So(resourceURL, ShouldBeEmpty)
@@ -236,10 +236,10 @@ func TestGetResourceURL_edge_cases(t *testing.T) {
 		// Happy paths
 		{name: "no trailing slash", path: "/v1/resource", id: "1234", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1234"},
 		{name: "different id", path: "/v1/resource", id: "42", expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
-		{name: "with a parent id", path: "/v1/resource/{parent_id}/v17/parentResource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14159/v17/parentResource/42"},
-		{name: "with a parent id with mustaches", path: "/v1/resource/{parent_id}/v17/parentResource", id: "42", parentIDs: []string{"{3.14159}"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{3.14159}/v17/parentResource/42"},
-		{name: "with a parent id with a slash", path: "/v1/resource/{parent_id}/v17/parentResource", id: "42", parentIDs: []string{"3.14/159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14/159/v17/parentResource/42", expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/parentResource' due to parent IDs ([3.14/159]) containing not supported characters (forward slashes)"},
-		{name: "with a token with double mustaches", path: "/v1/resource/{{parent_id}}/v17/parentResource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{{parent_id}}/v17/parentResource/42"},
+		{name: "with a parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14159/v17/subresource/42"},
+		{name: "with a parent id with mustaches", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"{3.14159}"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{3.14159}/v17/subresource/42"},
+		{name: "with a parent id with a slash", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"3.14/159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/3.14/159/v17/subresource/42", expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' due to parent IDs ([3.14/159]) containing not supported characters (forward slashes)"},
+		{name: "with a token with double mustaches", path: "/v1/resource/{{parent_id}}/v17/subresource", id: "42", parentIDs: []string{"3.14159"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/{{parent_id}}/v17/subresource/42"},
 		{name: "with a parent id but no tokens", path: "/v1/resource", id: "42", parentIDs: []string{"pi"}, expectedResourceURL: "http://wwww.host.com/api/v1/resource/42"},
 		{name: "trailing slash", path: "/v1/resource/", id: "1337", expectedResourceURL: "http://wwww.host.com/api/v1/resource/1337"},
 		{name: "id with a slash", path: "/v1/resource/", id: "13/37", expectedResourceURL: "http://wwww.host.com/api/v1/resource/13/37", expectedError: "instance ID (13/37) contains not supported characters (forward slashes)"},
@@ -249,8 +249,8 @@ func TestGetResourceURL_edge_cases(t *testing.T) {
 		{name: "double trailing slash", path: "/v1/resource//", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1/resource//' with the given ids - missing ids to resolve the path params properly: []"},
 		{name: "double leading slash", path: "//v1/resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '//v1/resource/' with the given ids - missing ids to resolve the path params properly: []"},
 		{name: "double slash in the middle", path: "/v1//resource/", id: "1337", expectedError: "could not resolve sub-resource path correctly '/v1//resource/' with the given ids - missing ids to resolve the path params properly: []"},
-		{name: "with a missing parent id", path: "/v1/resource/{parent_id}/v17/parentResource", id: "42", parentIDs: []string{}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/parentResource' with the given ids - missing ids to resolve the path params properly: []"},
-		{name: "with extra parent ids", path: "/v1/resource/{parent_id}/v17/parentResource", id: "42", parentIDs: []string{"-1", "-2"}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/parentResource' with the given ids - more ids than path params: [-1 -2]"},
+		{name: "with a missing parent id", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - missing ids to resolve the path params properly: []"},
+		{name: "with extra parent ids", path: "/v1/resource/{parent_id}/v17/subresource", id: "42", parentIDs: []string{"-1", "-2"}, expectedError: "could not resolve sub-resource path correctly '/v1/resource/{parent_id}/v17/subresource' with the given ids - more ids than path params: [-1 -2]"},
 	}
 
 	for _, tc := range testCases {
@@ -348,11 +348,11 @@ func TestGetResourceURL(t *testing.T) {
 
 		// Using SpecV2Resource in this specific case to validate this specific scenario. The stub does not have logic
 		// to resolve parameters and it not a good idea to update the mock to have prod logic. Hence, using a real impl SpecV2Resource
-		// in this case so we have the parentResource use case covered too.
-		Convey("When getResourceURL is called with a specResource with a resource path that is parameterised (e,g: parentResource)", func() {
+		// in this case so we have the subresource use case covered too.
+		Convey("When getResourceURL is called with a specResource with a resource path that is parameterised (e,g: subresource)", func() {
 			expectedParentID := "parentID"
 			specStubResource := &SpecV2Resource{
-				Path: "/v1/resource/{resource_id}/parentResource",
+				Path: "/v1/resource/{resource_id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{},
@@ -367,7 +367,7 @@ func TestGetResourceURL(t *testing.T) {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/parentResource", expectedProtocol, expectedHost, expectedBasePath, expectedParentID))
+				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource", expectedProtocol, expectedHost, expectedBasePath, expectedParentID))
 			})
 		})
 
@@ -1025,9 +1025,9 @@ func TestProviderClientPost(t *testing.T) {
 				},
 			},
 		}
-		Convey("When providerClient POST method is called with a SpecV2Resource that has a parentResource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+		Convey("When providerClient POST method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
 			specv2Resource := &SpecV2Resource{
-				Path: "/v1/resource/{id}/parentResource",
+				Path: "/v1/resource/{id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
@@ -1056,7 +1056,7 @@ func TestProviderClientPost(t *testing.T) {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/parentID/parentResource", expectedProtocol, expectedHost, expectedBasePath))
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/parentID/subresource", expectedProtocol, expectedHost, expectedBasePath))
 			})
 			Convey("And then client should have received the right User-Agent header and the expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, userAgent)
@@ -1152,9 +1152,9 @@ func TestProviderClientPut(t *testing.T) {
 				},
 			},
 		}
-		Convey("When providerClient PUT  method is called with a SpecV2Resource that has a parentResource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+		Convey("When providerClient PUT  method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
 			specv2Resource := &SpecV2Resource{
-				Path: "/v1/resource/{id}/parentResource",
+				Path: "/v1/resource/{id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
@@ -1187,7 +1187,7 @@ func TestProviderClientPut(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				So(httpClient.URL, ShouldEqual, "http://wwww.host.com/api/v1/resource/parentID/parentResource/1234")
+				So(httpClient.URL, ShouldEqual, "http://wwww.host.com/api/v1/resource/parentID/subresource/1234")
 			})
 			Convey("And then client should have received the right User-Agent header and the expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, userAgent)
@@ -1277,9 +1277,9 @@ func TestProviderClientGet(t *testing.T) {
 				},
 			},
 		}
-		Convey("When providerClient GET  method is called with a SpecV2Resource that has a parentResource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
+		Convey("When providerClient GET  method is called with a SpecV2Resource that has a subresource path, a requestPayload, an empty responsePayload and the resource parentID", func() {
 			specv2Resource := &SpecV2Resource{
-				Path: "/v1/resource/{id}/parentResource",
+				Path: "/v1/resource/{id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
@@ -1310,7 +1310,7 @@ func TestProviderClientGet(t *testing.T) {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/parentResource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
 			})
 			Convey("And then client should have received the right User-Agent header and the expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, userAgent)
@@ -1394,9 +1394,9 @@ func TestProviderClientDelete(t *testing.T) {
 				},
 			},
 		}
-		Convey("When providerClient DELETE  method is called with a SpecV2Resource that has a parentResource path, an ID and the resource parentID", func() {
+		Convey("When providerClient DELETE  method is called with a SpecV2Resource that has a subresource path, an ID and the resource parentID", func() {
 			specv2Resource := &SpecV2Resource{
-				Path: "/v1/resource/{id}/parentResource",
+				Path: "/v1/resource/{id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{
@@ -1426,7 +1426,7 @@ func TestProviderClientDelete(t *testing.T) {
 				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/parentResource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
+				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
 			})
 			Convey("And then client should have received the right User-Agent header and the expected value", func() {
 				So(httpClient.Headers, ShouldContainKey, userAgent)

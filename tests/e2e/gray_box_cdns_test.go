@@ -369,7 +369,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 	}
 }
 
-func TestAccCDN_Create_and_UpdateParentResource(t *testing.T) {
+func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 
@@ -450,7 +450,7 @@ func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testin
 		}
 		# URI /v1/cdns/{parent_id}/v1/firewalls/
         resource "%s" "%s" {
-           # cdns_v1_id = %s.id All parent properties must be specified in parentResources
+           # cdns_v1_id = %s.id All parent properties must be specified in subresources
            label = "%s"
         }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedCDNFirewallLabel)
 
@@ -468,7 +468,7 @@ func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testin
 	})
 }
 
-func TestAccCDN_ImportParentResource(t *testing.T) {
+func TestAccCDN_ImportSubResource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 
 	api.cachePayloads["/v1/cdns/42/v1/firewalls/1337"] = `{"id":1337, "label":"importedFWLabel"}`
