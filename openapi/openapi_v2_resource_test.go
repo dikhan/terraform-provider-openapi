@@ -402,8 +402,8 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
-			Convey("Then the subResourceInfo struct returned should be nil", func() {
+			isSubResource := r.getParentResourceInfo()
+			Convey("Then the parentResourceInfo struct returned should be nil", func() {
 				So(isSubResource, ShouldBeNil)
 			})
 		})
@@ -413,8 +413,8 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
-			Convey("Then the subResourceInfo struct returned should be nil", func() {
+			isSubResource := r.getParentResourceInfo()
+			Convey("Then the parentResourceInfo struct returned should be nil", func() {
 				So(isSubResource, ShouldBeNil)
 			})
 		})
@@ -424,8 +424,8 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/firewalls",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
-			Convey("Then the subResourceInfo struct returned shouldn't be nil", func() {
+			isSubResource := r.getParentResourceInfo()
+			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
 				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -450,8 +450,8 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns/{id}/firewalls",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
-			Convey("Then the the subResourceInfo struct returned shouldn't be nil", func() {
+			isSubResource := r.getParentResourceInfo()
+			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
 				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -476,8 +476,8 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
-			Convey("Then the the subResourceInfo struct returned shouldn't be nil", func() {
+			isSubResource := r.getParentResourceInfo()
+			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
 				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -503,8 +503,8 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/cdns/{id}/firewalls/{id}/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
-			Convey("Then the subResourceInfo struct returned shouldn't be nil", func() {
+			isSubResource := r.getParentResourceInfo()
+			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
 				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -532,8 +532,8 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
-			Convey("Then the subResourceInfo struct returned shouldn't be nil", func() {
+			isSubResource := r.getParentResourceInfo()
+			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
 				So(isSubResource, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -561,7 +561,7 @@ func TestIsSubResource(t *testing.T) {
 			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
 		}
 		Convey("When isSubResource is called", func() {
-			isSubResource := r.isSubResource()
+			isSubResource := r.getParentResourceInfo()
 			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
 				So(isSubResource, ShouldNotBeNil)
 				So(len(isSubResource.parentResourceNames), ShouldEqual, 1)

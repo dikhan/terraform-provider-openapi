@@ -1,13 +1,14 @@
 package openapi
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func Test_getParentPropertiesNames(t *testing.T) {
-	Convey("Given an empty subResourceInfo", t, func() {
-		s := &subResourceInfo{}
+	Convey("Given an empty parentResourceInfo", t, func() {
+		s := &parentResourceInfo{}
 		Convey("When the method getParentPropertiesNames is called", func() {
 			p := s.getParentPropertiesNames()
 			Convey("Then array returned should be empty", func() {
@@ -16,8 +17,8 @@ func Test_getParentPropertiesNames(t *testing.T) {
 		})
 	})
 
-	Convey("Given a subResourceInfo with empty parentResourceNames", t, func() {
-		s := &subResourceInfo{
+	Convey("Given a parentResourceInfo with empty parentResourceNames", t, func() {
+		s := &parentResourceInfo{
 			parentResourceNames: []string{},
 		}
 		Convey("When the method getParentPropertiesNames is called", func() {
@@ -28,8 +29,8 @@ func Test_getParentPropertiesNames(t *testing.T) {
 		})
 	})
 
-	Convey("Given a subResourceInfo with some parentResourceNames", t, func() {
-		s := &subResourceInfo{
+	Convey("Given a parentResourceInfo with some parentResourceNames", t, func() {
+		s := &parentResourceInfo{
 			parentResourceNames: []string{"cdn_v1", "cdn_v1_firewalls_v2"},
 		}
 		Convey("When the method getParentPropertiesNames is called", func() {

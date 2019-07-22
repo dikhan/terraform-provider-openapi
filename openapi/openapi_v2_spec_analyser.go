@@ -97,7 +97,7 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 }
 
 func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r SpecV2Resource) error {
-	subResource := r.isSubResource()
+	subResource := r.getParentResourceInfo()
 	if subResource != nil {
 		resourcePath := r.Path
 		for _, parentInstanceURIs := range subResource.parentInstanceURIs {

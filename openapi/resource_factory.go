@@ -177,7 +177,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
 	}
 
-	isSubResource := r.openAPIResource.isSubResource()
+	isSubResource := r.openAPIResource.getParentResourceInfo()
 	if isSubResource != nil {
 		parentResourceNames := isSubResource.getParentPropertiesNames()
 
@@ -266,7 +266,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
-			isSubResource := r.openAPIResource.isSubResource()
+			isSubResource := r.openAPIResource.getParentResourceInfo()
 			if isSubResource != nil {
 				parentPropertyNames := isSubResource.getParentPropertiesNames()
 

@@ -2,7 +2,7 @@ package openapi
 
 import "fmt"
 
-type subResourceInfo struct {
+type parentResourceInfo struct {
 	parentResourceNames    []string
 	fullParentResourceName string
 	parentURIs             []string
@@ -10,9 +10,9 @@ type subResourceInfo struct {
 }
 
 // getParentPropertiesNames is responsible to building the parent properties names for a resource that is a subresource
-func (sub *subResourceInfo) getParentPropertiesNames() []string {
+func (info *parentResourceInfo) getParentPropertiesNames() []string {
 	parentPropertyNames := []string{}
-	for _, parentName := range sub.parentResourceNames {
+	for _, parentName := range info.parentResourceNames {
 		parentPropertyNames = append(parentPropertyNames, fmt.Sprintf("%s_id", parentName))
 	}
 	return parentPropertyNames
