@@ -97,6 +97,7 @@ definitions:
 			b, i := a.pathExists("/users/{id}")
 			Convey("Then it returns true but the PathItem Operation is nil", func() {
 				So(b, ShouldBeTrue)
+				So(i, ShouldNotBeNil)
 				So(i.Get, ShouldBeNil) //TODO: This is a bug. It should not be nil.  This will cause unexpected panics in callers.
 			})
 		})
@@ -137,7 +138,7 @@ definitions:
 				So(i, ShouldNotBeNil)
 			})
 		})
-		Convey("When pathExists is called with a path that is listed but with a slash", func() {
+		Convey("When pathExists is called with a path that is listed", func() {
 			b, i := a.pathExists("/abusers/{id}")
 			Convey("Then it returns true but the PathItem Operation is nil", func() {
 				So(b, ShouldBeTrue)
