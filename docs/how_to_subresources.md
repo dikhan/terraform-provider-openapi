@@ -13,8 +13,14 @@ are formed in such a way that the sub-resource can always be referenced from the
 
 The description of a sub-resource in the OpenAPI document is no different than any other resource and must meet the same [Terraform compliance requirements](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#terraform-compliant-resource-requirements).
 
-Nevertheless, the sub-resource endpoint path must contain the path parameters referring to the parents where they live under.
-For instance, in the following example the ```firewall``` sub-resource lives under the ```cdns``` resource.
+If the parent paths are not described in the OpenAPI doc or they are not [Terraform compliant](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#terraform-compliant-resource-requirements)
+then you will not be able to manage the sub-resource in the provider.
+
+Nevertheless, the sub-resource endpoint path must contain the path parameters referring to the parents where they live under and
+the path parameters must be named the same.
+
+For instance, in the following example the ```/v1/firewalls/``` sub-resource lives under the ```/v1/cdns/{cdn_id}``` resource and
+both the parent and the sub-resource instance paths contain the same path parameter name that refers to the parent ```{cdn_id}```.
 
 ````
 paths:
@@ -29,7 +35,7 @@ paths:
         201:
       ...
     ...
-  /v1/cdns/{id}:
+  /v1/cdns/{cdn_id}:
     get:
       ...
     put:
@@ -37,7 +43,7 @@ paths:
     delete:
       ....
 
-  /v1/cdns/{parent_id}/v1/firewalls:
+  /v1/cdns/{cdn_id}/v1/firewalls:
     post:
       parameters:
       - name: "parent_id"
