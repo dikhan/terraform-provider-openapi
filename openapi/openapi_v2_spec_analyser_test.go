@@ -1838,11 +1838,7 @@ paths:
 			Convey(fmt.Sprintf("When validateParentResourceTerraformCompliance method is called with a %s", tc.name), func() {
 				err := a.validateParentResourceTerraformCompliance(tc.inputResource)
 				Convey("Then the error returned should be the expected one (if any)", func() {
-					if tc.expectedError == "" {
-						So(err, ShouldBeNil)
-					} else {
-						So(err.Error(), ShouldEqual, tc.expectedError)
-					}
+					So(err == nil || err.Error() == tc.expectedError, ShouldBeTrue)
 				})
 			})
 		}
@@ -1864,11 +1860,7 @@ paths:
 			Convey(fmt.Sprintf("When validateParentResourceTerraformCompliance method is called with a %s", tc.name), func() {
 				err := a.validateParentResourceTerraformCompliance(tc.inputResource)
 				Convey("Then the error returned should be the expected one (if any)", func() {
-					if tc.expectedError == "" {
-						So(err, ShouldBeNil)
-					} else {
-						So(err.Error(), ShouldEqual, tc.expectedError)
-					}
+					So(err == nil || err.Error() == tc.expectedError, ShouldBeTrue)
 				})
 			})
 		}
@@ -1890,11 +1882,7 @@ paths:
 			Convey(fmt.Sprintf("When validateParentResourceTerraformCompliance method is called with a %s", tc.name), func() {
 				err := a.validateParentResourceTerraformCompliance(tc.inputResource)
 				Convey("Then the error returned should be the expected one (if any)", func() {
-					if tc.expectedError == "" {
-						So(err, ShouldBeNil)
-					} else {
-						So(err.Error(), ShouldEqual, tc.expectedError)
-					}
+					So(err == nil || err.Error() == tc.expectedError, ShouldBeTrue)
 				})
 			})
 		}
