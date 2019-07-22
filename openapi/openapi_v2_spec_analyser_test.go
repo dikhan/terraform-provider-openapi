@@ -39,7 +39,7 @@ func Test_pathExists(t *testing.T) {
 		})
 	})
 
-	Convey("Given a blank specV2Analyser with a blank d", t, func() {
+	Convey("Given a specV2Analyser with a blank d", t, func() {
 		a := &specV2Analyser{d: &loads.Document{}}
 		Convey("When pathExists is called", func() {
 			Convey("Then it panics", func() {
@@ -86,14 +86,7 @@ definitions:
        type: "string"`
 
 		a := initAPISpecAnalyser(swaggerDoc)
-		Convey("When pathExists is called with a path not listed", func() {
-			b, i := a.pathExists("whatever")
-			Convey("Then it should return false and a non-nil PathItem", func() {
-				So(b, ShouldBeFalse)
-				So(i, ShouldNotBeNil)
-			})
-		})
-		Convey("When pathExists is called with a path that is listed but with a slash", func() {
+		Convey("When pathExists is called with a path without the trailing slash", func() {
 			b, i := a.pathExists("/users/{id}")
 			Convey("Then it returns true but the PathItem Operation is nil", func() {
 				So(b, ShouldBeTrue)
@@ -101,7 +94,7 @@ definitions:
 				So(i.Get, ShouldBeNil) //TODO: This is a bug. It should not be nil.  This will cause unexpected panics in callers.
 			})
 		})
-		Convey("When pathExists is called with a path with a slash for a path that is listed with a slash", func() {
+		Convey("When pathExists is called with a path with the trailing slash", func() {
 			b, i := a.pathExists("/users/{id}/")
 			Convey("Then it returns true and the PathItem Operation is not nil", func() {
 				So(b, ShouldBeTrue)
@@ -145,16 +138,16 @@ definitions:
 				So(i, ShouldNotBeNil)
 			})
 		})
-		Convey("When pathExists is called with a path that is listed", func() {
+		Convey("When pathExists is called with a path with no trailing slash that is listed", func() {
 			b, i := a.pathExists("/abusers/{id}")
-			Convey("Then it returns true and the PathItem Operation is nil", func() {
+			Convey("Then it returns true and the PathItem Operation is not nil", func() {
 				So(b, ShouldBeTrue)
 				So(i.Get, ShouldNotBeNil)
 			})
 		})
-		Convey("When pathExists is called with a path that is listed but with a slash appended", func() {
+		Convey("When pathExists is called with a path that is listed but with a trailing slash", func() {
 			b, i := a.pathExists("/abusers/{id}/")
-			Convey("Then it returns false and the PathItem not nil", func() {
+			Convey("Then it returns false and the PathItem is not nil", func() {
 				So(b, ShouldBeFalse)
 				So(i, ShouldNotBeNil)
 			})
