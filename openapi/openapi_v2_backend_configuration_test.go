@@ -572,6 +572,7 @@ func TestGetHTTPSchemes(t *testing.T) {
 		expectedError   string
 	}{
 		{name: "both http and https schemes are configured", inputSchemes: []string{"http", "https"}, expectedSchemes: []string{"http", "https"}, expectedError: ""},
+		{name: "none http or https schemes are configured", inputSchemes: []string{}, expectedSchemes: []string{}, expectedError: "some error"},
 	}
 
 	for _, tc := range testCases {
@@ -586,8 +587,11 @@ func TestGetHTTPSchemes(t *testing.T) {
 			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 			So(err, ShouldBeNil)
 			Convey("When getHTTPSchemes method is called", func() {
-				httpSchemes := specV2BackendConfiguration.getHTTPSchemes()
-				Convey("And the returned http schemes contain the expected schemes (ordered)", func() {
+				httpSchemes, err := specV2BackendConfiguration.getHTTPSchemes2()
+				Convey("Then the error returned should be the expected one (if any)", func() {
+					So(err == nil || err.Error() == tc.expectedError, ShouldBeTrue)
+				})
+				Convey("The the returned http schemes contain the expected schemes (ordered)", func() {
 					for i, _ := range tc.expectedSchemes {
 						So(httpSchemes[i], ShouldEqual, tc.expectedSchemes[i])
 					}

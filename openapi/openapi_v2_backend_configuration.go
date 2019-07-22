@@ -120,3 +120,7 @@ func (o specV2BackendConfiguration) getBasePath() string {
 func (o specV2BackendConfiguration) getHTTPSchemes() []string {
 	return o.spec.Schemes
 }
+
+func (o specV2BackendConfiguration) getHTTPSchemes2() ([]string, error) {
+	return o.spec.Schemes, nil
+}
