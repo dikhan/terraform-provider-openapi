@@ -123,7 +123,7 @@ func (specAnalyser *specV2Analyser) pathExists(path string) (bool, spec.PathItem
 	p, exists := specAnalyser.d.Spec().Paths.Paths[path]
 	if !exists {
 		log.Printf("[WARN] path %s not found, falling back to checking if the path with trailing slash %s/ exists", path, path)
-		_, exists := specAnalyser.d.Spec().Paths.Paths[path+"/"]
+		p, exists = specAnalyser.d.Spec().Paths.Paths[path+"/"]
 		if !exists {
 			return false, spec.PathItem{}
 		}
