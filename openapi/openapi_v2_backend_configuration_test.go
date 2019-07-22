@@ -588,9 +588,11 @@ func TestGetHTTPSchemes(t *testing.T) {
 			So(err, ShouldBeNil)
 			Convey("When getHTTPSchemes method is called", func() {
 				httpSchemes, err := specV2BackendConfiguration.getHTTPSchemes2()
-				Convey("Then the error returned should be the expected one (if any)", func() {
-					So(err == nil || err.Error() == tc.expectedError, ShouldBeTrue)
-				})
+				if tc.expectedError != "" {
+					Convey("Then the error returned should be the expected one", func() {
+						So(err.Error(), ShouldEqual, tc.expectedError)
+					})
+				}
 				Convey("The the returned http schemes contain the expected schemes (ordered)", func() {
 					for i, _ := range tc.expectedSchemes {
 						So(httpSchemes[i], ShouldEqual, tc.expectedSchemes[i])
