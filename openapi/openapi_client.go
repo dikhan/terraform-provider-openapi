@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -189,9 +190,16 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 	// TODO: use resource operation schemes if specified
 	defaultScheme := "https"
 	supportedSchemes := o.openAPIBackendConfiguration.getHTTPSchemes()
-	if len(supportedSchemes) == 1 && len(supportedSchemes[0]) > 0 {
-		defaultScheme = supportedSchemes[0]
+	if len(supportedSchemes) == 0 || len(supportedSchemes[0]) == 0 {
+		return "", errors.New("No schemes specified")
 	}
+	for _, s := range supportedSchemes {
+		defaultScheme = s
+		if defaultScheme == "https" {
+			break
+		}
+	}
+
 	path := resourceRelativePath
 	if strings.Index(resourceRelativePath, "/") != 0 {
 		path = fmt.Sprintf("/%s", resourceRelativePath)
