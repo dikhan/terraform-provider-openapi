@@ -151,9 +151,9 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
 	}
 
-	isSubResource := o.getParentResourceInfo()
-	if isSubResource != nil {
-		fullResourceName = isSubResource.fullParentResourceName + "_" + fullResourceName
+	parentResourceInfo := o.getParentResourceInfo()
+	if parentResourceInfo != nil {
+		fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
 	}
 	return fullResourceName, nil
 }
@@ -285,9 +285,9 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
 
-	isSubResource := o.getParentResourceInfo()
-	if isSubResource != nil {
-		parentPropertyNames := isSubResource.getParentPropertiesNames()
+	parentResourceInfo := o.getParentResourceInfo()
+	if parentResourceInfo != nil {
+		parentPropertyNames := parentResourceInfo.getParentPropertiesNames()
 		for _, parentPropertyName := range parentPropertyNames {
 			pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
 			pr.IsParentProperty = true
