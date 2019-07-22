@@ -952,8 +952,8 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
-		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters '/resource/{name}/subresource/{id}'", func() {
-			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}")
+		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters '/resource/{name}/parentResource/{id}'", func() {
+			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/parentResource/{id}")
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1809,7 +1809,7 @@ func getExpectedResource(terraformCompliantResources []SpecResource, expectedRes
 	return nil
 }
 
-func TestValidateSubResourceTerraformCompliance(t *testing.T) {
+func TestValidateParentResourceTerraformCompliance(t *testing.T) {
 
 	type testCasesDef []struct {
 		name          string
@@ -1826,17 +1826,17 @@ paths:
   /cdns/{id}/firewalls/{id}:`
 		a := initAPISpecAnalyser(swaggerContent)
 		testCases := testCasesDef{
-			{name: "resource containing a subresource path where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls"}, expectedError: ""},
-			{name: "resource containing a subresource path where the input resource path path params DO NOT match the parents", inputResource: SpecV2Resource{Path: "/cdns/{cdn_id}/firewalls"}, expectedError: "subresource with path '/cdns/{cdn_id}/firewalls' is missing parent path instance definition '/cdns/{cdn_id}'"},
-			{name: "resource containing a subresource path (containing multiple parents) where the parent paths exist in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls/{id}/rules"}, expectedError: ""},
-			{name: "resource containing a subresource path (containing multiple parents) where one of the parent path DOES NOT exist in the swagger file", inputResource: SpecV2Resource{Path: "/notexisting/{id}/firewalls/{id}/rules"}, expectedError: "subresource with path '/notexisting/{id}/firewalls/{id}/rules' is missing parent path instance definition '/notexisting/{id}'"},
-			{name: "resource containing a subresource path where the parent path DOES NOT exists in the swagger file", inputResource: SpecV2Resource{Path: "/resource/{id}/firewalls"}, expectedError: "subresource with path '/resource/{id}/firewalls' is missing parent path instance definition '/resource/{id}'"},
-			{name: "resource that is not a subresource", inputResource: SpecV2Resource{Path: "/cdns"}, expectedError: ""},
+			{name: "resource containing a parentResource path where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls"}, expectedError: ""},
+			{name: "resource containing a parentResource path where the input resource path path params DO NOT match the parents", inputResource: SpecV2Resource{Path: "/cdns/{cdn_id}/firewalls"}, expectedError: "parentResource with path '/cdns/{cdn_id}/firewalls' is missing parent path instance definition '/cdns/{cdn_id}'"},
+			{name: "resource containing a parentResource path (containing multiple parents) where the parent paths exist in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls/{id}/rules"}, expectedError: ""},
+			{name: "resource containing a parentResource path (containing multiple parents) where one of the parent path DOES NOT exist in the swagger file", inputResource: SpecV2Resource{Path: "/notexisting/{id}/firewalls/{id}/rules"}, expectedError: "parentResource with path '/notexisting/{id}/firewalls/{id}/rules' is missing parent path instance definition '/notexisting/{id}'"},
+			{name: "resource containing a parentResource path where the parent path DOES NOT exists in the swagger file", inputResource: SpecV2Resource{Path: "/resource/{id}/firewalls"}, expectedError: "parentResource with path '/resource/{id}/firewalls' is missing parent path instance definition '/resource/{id}'"},
+			{name: "resource that is not a parentResource", inputResource: SpecV2Resource{Path: "/cdns"}, expectedError: ""},
 		}
 
 		for _, tc := range testCases {
-			Convey(fmt.Sprintf("When validateSubResourceTerraformCompliance method is called with a %s", tc.name), func() {
-				err := a.validateSubResourceTerraformCompliance(tc.inputResource)
+			Convey(fmt.Sprintf("When validateParentResourceTerraformCompliance method is called with a %s", tc.name), func() {
+				err := a.validateParentResourceTerraformCompliance(tc.inputResource)
 				Convey("Then the error returned should be the expected one (if any)", func() {
 					if tc.expectedError == "" {
 						So(err, ShouldBeNil)
@@ -1857,12 +1857,12 @@ paths:
   /v1/cdns/{id}/v2/firewalls/{id}:`
 		a := initAPISpecAnalyser(swaggerContent)
 		testCases := testCasesDef{
-			{name: "subresource path where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/v1/cdns/{id}/v2/firewalls"}, expectedError: ""},
-			{name: "subresource path (containing multiple parents) where the parent paths exist in the swagger file", inputResource: SpecV2Resource{Path: "/v1/cdns/{id}/v2/firewalls/{id}/rules"}, expectedError: ""},
+			{name: "parentResource path where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/v1/cdns/{id}/v2/firewalls"}, expectedError: ""},
+			{name: "parentResource path (containing multiple parents) where the parent paths exist in the swagger file", inputResource: SpecV2Resource{Path: "/v1/cdns/{id}/v2/firewalls/{id}/rules"}, expectedError: ""},
 		}
 		for _, tc := range testCases {
-			Convey(fmt.Sprintf("When validateSubResourceTerraformCompliance method is called with a %s", tc.name), func() {
-				err := a.validateSubResourceTerraformCompliance(tc.inputResource)
+			Convey(fmt.Sprintf("When validateParentResourceTerraformCompliance method is called with a %s", tc.name), func() {
+				err := a.validateParentResourceTerraformCompliance(tc.inputResource)
 				Convey("Then the error returned should be the expected one (if any)", func() {
 					if tc.expectedError == "" {
 						So(err, ShouldBeNil)
@@ -1883,12 +1883,12 @@ paths:
   /cdns/{id}/firewalls/{id}/:`
 		a := initAPISpecAnalyser(swaggerContent)
 		testCases := testCasesDef{
-			{name: "1 level subresource path where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls"}, expectedError: ""},
-			{name: "1 level subresource path with trailing / where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls/"}, expectedError: ""},
+			{name: "1 level parentResource path where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls"}, expectedError: ""},
+			{name: "1 level parentResource path with trailing / where the parent path exists in the swagger file", inputResource: SpecV2Resource{Path: "/cdns/{id}/firewalls/"}, expectedError: ""},
 		}
 		for _, tc := range testCases {
-			Convey(fmt.Sprintf("When validateSubResourceTerraformCompliance method is called with a %s", tc.name), func() {
-				err := a.validateSubResourceTerraformCompliance(tc.inputResource)
+			Convey(fmt.Sprintf("When validateParentResourceTerraformCompliance method is called with a %s", tc.name), func() {
+				err := a.validateParentResourceTerraformCompliance(tc.inputResource)
 				Convey("Then the error returned should be the expected one (if any)", func() {
 					if tc.expectedError == "" {
 						So(err, ShouldBeNil)
@@ -1908,11 +1908,11 @@ paths:
       x-terraform-exclude-resource: true
   /cdns/{id}:`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateSubResourceTerraformCompliance method is called with a subresource path where the parent path exists in the swagger file", func() {
+		Convey("When validateParentResourceTerraformCompliance method is called with a parentResource path where the parent path exists in the swagger file", func() {
 			inputResource := SpecV2Resource{Path: "/cdns/{id}/firewalls"}
-			err := a.validateSubResourceTerraformCompliance(inputResource)
+			err := a.validateParentResourceTerraformCompliance(inputResource)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "subresource with path '/cdns/{id}/firewalls' contains a parent /cdns that is marked as ignored, therefore ignoring the subresource too")
+				So(err.Error(), ShouldEqual, "parentResource with path '/cdns/{id}/firewalls' contains a parent /cdns that is marked as ignored, therefore ignoring the parentResource too")
 			})
 		})
 	})
@@ -1922,11 +1922,11 @@ paths:
 paths:
   /cdns/{id}:`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateSubResourceTerraformCompliance method is called with a subresource path where the parent path DOES NOT exists in the swagger file", func() {
+		Convey("When validateParentResourceTerraformCompliance method is called with a parentResource path where the parent path DOES NOT exists in the swagger file", func() {
 			inputResource := SpecV2Resource{Path: "/cdns/{id}/firewalls"}
-			err := a.validateSubResourceTerraformCompliance(inputResource)
+			err := a.validateParentResourceTerraformCompliance(inputResource)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "subresource with path '/cdns/{id}/firewalls' is missing parent root path definition '/cdns'")
+				So(err.Error(), ShouldEqual, "parentResource with path '/cdns/{id}/firewalls' is missing parent root path definition '/cdns'")
 			})
 		})
 	})
@@ -1934,7 +1934,7 @@ paths:
 
 func TestGetTerraformCompliantResources(t *testing.T) {
 
-	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls but missing the parent resource resource description", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform parentResource /v1/cdns/{id}/v1/firewalls but missing the parent resource resource description", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: 127.0.0.1 
 paths:
@@ -1991,13 +1991,13 @@ definitions:
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the list of resources returned should be empty since the subresource is not considered compliant if the parent is missing", func() {
+			Convey("And the list of resources returned should be empty since the parentResource is not considered compliant if the parent is missing", func() {
 				So(terraformCompliantResources, ShouldBeEmpty)
 			})
 		})
 	})
 
-	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform parentResource /v1/cdns/{id}/v1/firewalls", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: 127.0.0.1 
 paths:
@@ -2137,13 +2137,13 @@ definitions:
 			cdnV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1")
 			firewallV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1_firewalls_v1")
 
-			Convey("And the resources info map should only contain a resource called both the parent cdns_v1 resource and the subresource cdns_v1_firewalls_v1", func() {
+			Convey("And the resources info map should only contain a resource called both the parent cdns_v1 resource and the parentResource cdns_v1_firewalls_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 2)
 				So(cdnV1Resource, ShouldNotBeNil)
 				So(firewallV1Resource, ShouldNotBeNil)
 			})
 
-			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
+			Convey("And the firewall is a parentResource which references the parent CDN resource", func() {
 				subRes := firewallV1Resource.getParentResourceInfo()
 				So(subRes, ShouldNotBeNil)
 				So(subRes.parentResourceNames, ShouldResemble, []string{"cdns_v1"})
@@ -2291,7 +2291,7 @@ definitions:
 				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
 			})
 			cndV1Resource := terraformCompliantResources[0]
-			Convey("And the cndV1Resource should not be considered a subresource", func() {
+			Convey("And the cndV1Resource should not be considered a parentResource", func() {
 				subRes := cndV1Resource.getParentResourceInfo()
 				So(err, ShouldBeNil)
 				So(subRes, ShouldBeNil)

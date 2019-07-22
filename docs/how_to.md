@@ -1082,9 +1082,9 @@ and the value provided by the user.
 Note that the TF property name inside the provider's configuration is exactly the same as the one configured in the swagger
 file.
 
-#### <a name="subresource-configuration">Sub-resource configuration</a>
+#### <a name="parentResource-configuration">Sub-resource configuration</a>
 
-Refer to the [sub-resource documentation](https://github.com/dikhan/terraform-provider-openapi/tree/master/docs/how_to_subresources.md) to learn more about this.
+Refer to the [sub-resource documentation](https://github.com/dikhan/terraform-provider-openapi/tree/master/docs/how_to_parentResources.md) to learn more about this.
 
 #### <a name="multiRegionConfiguration">Multi-region configuration</a>
 
