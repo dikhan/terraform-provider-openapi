@@ -97,15 +97,15 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 }
 
 func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r SpecV2Resource) error {
-	subResource := r.getParentResourceInfo()
-	if subResource != nil {
+	parentResourceInfo := r.getParentResourceInfo()
+	if parentResourceInfo != nil {
 		resourcePath := r.Path
-		for _, parentInstanceURIs := range subResource.parentInstanceURIs {
+		for _, parentInstanceURIs := range parentResourceInfo.parentInstanceURIs {
 			if pathExists, _ := specAnalyser.pathExists(parentInstanceURIs); !pathExists {
 				return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentInstanceURIs)
 			}
 		}
-		for _, parentURI := range subResource.parentURIs {
+		for _, parentURI := range parentResourceInfo.parentURIs {
 			parentPathExists, parentPathItem := specAnalyser.pathExists(parentURI)
 			if !parentPathExists {
 				return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s'", resourcePath, parentURI)
