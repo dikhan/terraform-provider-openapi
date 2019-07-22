@@ -30,13 +30,21 @@ func TestSpecV2Analyser(t *testing.T) {
 }
 
 func Test_pathExists(t *testing.T) {
-	Convey("Calling pathExists on a blank specV2Analyser panics", t, func() {
-		a := &specV2Analyser{}
-		So(func() { a.pathExists("foo") }, ShouldPanic)
+	Convey("Given a blank specV2Analyser", t, func() {
+		Convey("When pathExists is called", func() {
+			Convey("Then it panics", func() {
+				a := &specV2Analyser{}
+				So(func() { a.pathExists("foo") }, ShouldPanic)
+			})
+		})
 	})
-	Convey("Calling pathExists on a specV2Analyser with a blank d panics", t, func() {
-		a := &specV2Analyser{d: &loads.Document{}}
-		So(func() { a.pathExists("foo") }, ShouldPanic)
+	Convey("Given a blank specV2Analyser with with a blank d ", t, func() {
+		Convey("When pathExists is called", func() {
+			Convey("Then it panics", func() {
+				a := &specV2Analyser{d: &loads.Document{}}
+				So(func() { a.pathExists("foo") }, ShouldPanic)
+			})
+		})
 	})
 }
 
