@@ -51,9 +51,7 @@ func Test_pathExists(t *testing.T) {
 			Convey("Then it panics", func() {
 				swaggerDoc := `swagger: "2.0"`
 				a := initAPISpecAnalyser(swaggerDoc)
-				b, i := a.pathExists("whatever")
-				So(b, ShouldBeFalse)
-				So(i, ShouldNotBeNil)
+				So(func() { a.pathExists("whatever") }, ShouldPanic)
 			})
 		})
 	})
