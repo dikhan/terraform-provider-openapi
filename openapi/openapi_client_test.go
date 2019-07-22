@@ -423,28 +423,11 @@ func TestGetResourceURL(t *testing.T) {
 					basePath:    "/api",
 					httpSchemes: []string{""},
 				},
-				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
-				apiAuthenticator: &specStubAuthenticator{
-					authContext: &authContext{},
-				},
 			}
-			expectedPath := "/v1/resource"
-			specStubResource := &specStubResource{
-				path: expectedPath,
-				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
-					responses:        specResponses{},
-					SecuritySchemes:  SpecSecuritySchemes{},
-				},
-			}
+			specStubResource := &specStubResource{path: "whatever"}
 			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
-			Convey("Then the error returned should not be nil", func() {
-				So(err.Error(), ShouldEqual, "No schemes specified")
-			})
-			Convey("And the resourceURL should be empty", func() {
-				So(resourceURL, ShouldBeEmpty)
-			})
+			Convey("Then the error returned should not be nil", func() { So(err.Error(), ShouldEqual, "No schemes specified") })
+			Convey("And the resourceURL should be empty", func() { So(resourceURL, ShouldBeEmpty) })
 		})
 
 		Convey("When getResourceURL is called but the backend config has no httpSchemes configured", func() {
@@ -454,28 +437,11 @@ func TestGetResourceURL(t *testing.T) {
 					basePath:    "/api",
 					httpSchemes: []string{},
 				},
-				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
-				apiAuthenticator: &specStubAuthenticator{
-					authContext: &authContext{},
-				},
 			}
-			expectedPath := "/v1/resource"
-			specStubResource := &specStubResource{
-				path: expectedPath,
-				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
-					responses:        specResponses{},
-					SecuritySchemes:  SpecSecuritySchemes{},
-				},
-			}
+			specStubResource := &specStubResource{path: "whatever"}
 			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
-			Convey("Then the error returned should not be nil", func() {
-				So(err.Error(), ShouldEqual, "No schemes specified")
-			})
-			Convey("And the resourceURL should be empty", func() {
-				So(resourceURL, ShouldBeEmpty)
-			})
+			Convey("Then the error returned should not be nil", func() { So(err.Error(), ShouldEqual, "No schemes specified") })
+			Convey("And the resourceURL should be empty", func() { So(resourceURL, ShouldBeEmpty) })
 		})
 
 		Convey("When getResourceURL is called but the backend config has both http and https configured", func() {
@@ -485,30 +451,11 @@ func TestGetResourceURL(t *testing.T) {
 					basePath:    "/api",
 					httpSchemes: []string{"http", "https"},
 				},
-				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
-				apiAuthenticator: &specStubAuthenticator{
-					authContext: &authContext{},
-				},
 			}
-			expectedPath := "/v1/resource"
-			specStubResource := &specStubResource{
-				path: expectedPath,
-				resourcePostOperation: &specResourceOperation{
-					HeaderParameters: SpecHeaderParameters{},
-					responses:        specResponses{},
-					SecuritySchemes:  SpecSecuritySchemes{},
-				},
-			}
+			specStubResource := &specStubResource{path: "whatever"}
 			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And then resourceURL should default to https scheme", func() {
-				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
-				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
-				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", "https", expectedHost, expectedBasePath, expectedPath))
-			})
+			Convey("Then the error returned should be nil", func() { So(err, ShouldBeNil) })
+			Convey("And then resourceURL should default to https scheme", func() { So(resourceURL, ShouldStartWith, "https://") })
 		})
 
 		Convey("When getResourceURL is called but the backend config has only http configured", func() {
@@ -522,7 +469,7 @@ func TestGetResourceURL(t *testing.T) {
 			specStubResource := &specStubResource{path: "whatever"}
 			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
 			Convey("Then the error returned should be nil", func() { So(err, ShouldBeNil) })
-			Convey("And then resourceURL should default to https scheme", func() { So(resourceURL, ShouldStartWith, "http://") })
+			Convey("And then resourceURL should use http scheme", func() { So(resourceURL, ShouldStartWith, "http://") })
 		})
 
 		Convey("When getResourceURL with a specResource with a resource path that does not have leading /", func() {
