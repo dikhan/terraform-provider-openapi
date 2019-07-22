@@ -38,6 +38,7 @@ func Test_pathExists(t *testing.T) {
 			})
 		})
 	})
+
 	Convey("Given a blank specV2Analyser with a blank d", t, func() {
 		a := &specV2Analyser{d: &loads.Document{}}
 		Convey("When pathExists is called", func() {
@@ -46,6 +47,7 @@ func Test_pathExists(t *testing.T) {
 			})
 		})
 	})
+
 	Convey("Given a specV2Analyser initialized from a swagger doc with no paths", t, func() {
 		swaggerDoc := `swagger: "2.0"`
 		a := initAPISpecAnalyser(swaggerDoc)
@@ -55,6 +57,51 @@ func Test_pathExists(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a specV2Analyser initialized from a swagger doc with a path with a trailing slash", t, func() {
+		swaggerDoc := `swagger: "2.0"
+paths:
+ /users/{id}/:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/Users"
+definitions:
+ Users:
+   type: "object"
+   required:
+     - name
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     name:
+       type: "string"`
+
+		a := initAPISpecAnalyser(swaggerDoc)
+		Convey("When pathExists is called with a path not listed", func() {
+			b, i := a.pathExists("whatever")
+			Convey("Then it should return false and a non-nil PathItem", func() {
+				So(b, ShouldBeFalse)
+				So(i, ShouldNotBeNil)
+			})
+		})
+		Convey("When pathExists is called with a path that is listed but with a slash", func() {
+			b, i := a.pathExists("/users/{id}")
+			Convey("Then it returns true but the PathItem Operation is nil", func() {
+				So(b, ShouldBeTrue)
+				So(i.Get, ShouldBeNil) //TODO: This is a bug. It should not be nil.  This will cause unexpected panics in callers.
+			})
+		})
+	})
+
 }
 
 func Test_getBodyParameterBodySchema(t *testing.T) {
