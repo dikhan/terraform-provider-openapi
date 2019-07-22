@@ -140,7 +140,7 @@ definitions:
 		})
 		Convey("When pathExists is called with a path that is listed", func() {
 			b, i := a.pathExists("/abusers/{id}")
-			Convey("Then it returns true but the PathItem Operation is nil", func() {
+			Convey("Then it returns true and the PathItem Operation is not nil", func() {
 				So(b, ShouldBeTrue)
 				So(i.Get, ShouldNotBeNil)
 			})
