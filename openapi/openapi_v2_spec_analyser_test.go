@@ -102,6 +102,50 @@ definitions:
 		})
 	})
 
+	Convey("Given a specV2Analyser initialized from a swagger doc with a path without a trailing slash", t, func() {
+		swaggerDoc := `swagger: "2.0"
+paths:
+ /abusers/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/Users"
+definitions:
+ Users:
+   type: "object"
+   required:
+     - name
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     name:
+       type: "string"`
+
+		a := initAPISpecAnalyser(swaggerDoc)
+		Convey("When pathExists is called with a path not listed", func() {
+			b, i := a.pathExists("whatever")
+			Convey("Then it should return false and a non-nil PathItem", func() {
+				So(b, ShouldBeFalse)
+				So(i, ShouldNotBeNil)
+			})
+		})
+		Convey("When pathExists is called with a path that is listed but with a slash", func() {
+			b, i := a.pathExists("/abusers/{id}")
+			Convey("Then it returns true but the PathItem Operation is nil", func() {
+				So(b, ShouldBeTrue)
+				So(i.Get, ShouldNotBeNil)
+			})
+		})
+	})
+
 }
 
 func Test_getBodyParameterBodySchema(t *testing.T) {
