@@ -119,7 +119,6 @@ func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r Spe
 	return nil
 }
 
-// TODO: missing unit test
 func (specAnalyser *specV2Analyser) pathExists(path string) (bool, spec.PathItem) {
 	p, exists := specAnalyser.d.Spec().Paths.Paths[path]
 	if !exists {

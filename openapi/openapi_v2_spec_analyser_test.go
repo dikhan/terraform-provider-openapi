@@ -29,6 +29,13 @@ func TestSpecV2Analyser(t *testing.T) {
 	})
 }
 
+func Test_pathExists(t *testing.T) {
+	Convey("Calling pathExists on a blank specV2Analyser panics", t, func() {
+		a := &specV2Analyser{}
+		So(func() { a.pathExists("foo") }, ShouldPanic)
+	})
+}
+
 func Test_getBodyParameterBodySchema(t *testing.T) {
 	Convey("Given a specV2Analyser", t, func() {
 		specV2Analyser := &specV2Analyser{}
