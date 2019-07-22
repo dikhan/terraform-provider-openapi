@@ -101,6 +101,13 @@ definitions:
 				So(i.Get, ShouldBeNil) //TODO: This is a bug. It should not be nil.  This will cause unexpected panics in callers.
 			})
 		})
+		Convey("When pathExists is called with a path with a slash for a path that is listed with a slash", func() {
+			b, i := a.pathExists("/users/{id}/")
+			Convey("Then it returns true and the PathItem Operation is not nil", func() {
+				So(b, ShouldBeTrue)
+				So(i.Get, ShouldNotBeNil)
+			})
+		})
 	})
 
 	Convey("Given a specV2Analyser initialized from a swagger doc with a path without a trailing slash", t, func() {
@@ -140,9 +147,16 @@ definitions:
 		})
 		Convey("When pathExists is called with a path that is listed", func() {
 			b, i := a.pathExists("/abusers/{id}")
-			Convey("Then it returns true and the PathItem Operation is not nil", func() {
+			Convey("Then it returns true and the PathItem Operation is nil", func() {
 				So(b, ShouldBeTrue)
 				So(i.Get, ShouldNotBeNil)
+			})
+		})
+		Convey("When pathExists is called with a path that is listed but with a slash appended", func() {
+			b, i := a.pathExists("/abusers/{id}/")
+			Convey("Then it returns false and the PathItem not nil", func() {
+				So(b, ShouldBeFalse)
+				So(i, ShouldNotBeNil)
 			})
 		})
 	})
