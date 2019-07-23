@@ -82,12 +82,53 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			log.Printf("[WARN] ignoring resource '%s' due to an error while creating a creating the SpecV2Resource: %s", resourceRootPath, err)
 			continue
 		}
-		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
 
+		err = specAnalyser.validateSubResourceTerraformCompliance(*r)
+		if err != nil {
+			log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
+			continue
+		}
+
+		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
 		resources = append(resources, r)
 	}
 	log.Printf("[INFO] found %d terraform compliant resources (time: %s)", len(resources), time.Since(start))
 	return resources, nil
+}
+
+func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r SpecV2Resource) error {
+	parentResourceInfo := r.getParentResourceInfo()
+	if parentResourceInfo != nil {
+		resourcePath := r.Path
+		for _, parentInstanceURIs := range parentResourceInfo.parentInstanceURIs {
+			if pathExists, _ := specAnalyser.pathExists(parentInstanceURIs); !pathExists {
+				return fmt.Errorf("subresource with path '%s' is missing parent path instance definition '%s'", resourcePath, parentInstanceURIs)
+			}
+		}
+		for _, parentURI := range parentResourceInfo.parentURIs {
+			parentPathExists, parentPathItem := specAnalyser.pathExists(parentURI)
+			if !parentPathExists {
+				return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s'", resourcePath, parentURI)
+			}
+			parentResource := SpecV2Resource{RootPathItem: parentPathItem}
+			if parentResource.shouldIgnoreResource() {
+				return fmt.Errorf("subresource with path '%s' contains a parent %s that is marked as ignored, therefore ignoring the subresource too", resourcePath, parentURI)
+			}
+		}
+	}
+	return nil
+}
+
+func (specAnalyser *specV2Analyser) pathExists(path string) (bool, spec.PathItem) {
+	p, exists := specAnalyser.d.Spec().Paths.Paths[path]
+	if !exists {
+		log.Printf("[WARN] path %s not found, falling back to checking if the path with trailing slash %s/ exists", path, path)
+		p, exists = specAnalyser.d.Spec().Paths.Paths[path+"/"]
+		if !exists {
+			return false, spec.PathItem{}
+		}
+	}
+	return true, p
 }
 
 // isMultiRegionResource returns true on ly if:
