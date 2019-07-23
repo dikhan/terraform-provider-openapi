@@ -15,6 +15,8 @@ type specStubBackendConfiguration struct {
 	hostErr          error
 	defaultRegionErr error
 	hostByRegionErr  error
+
+	getHTTPSchemeBehavior func() (string, error)
 }
 
 func newStubBackendConfiguration(host, basePath string, httpScheme string) *specStubBackendConfiguration {
@@ -47,6 +49,9 @@ func (s *specStubBackendConfiguration) getBasePath() string {
 }
 
 func (s *specStubBackendConfiguration) getHTTPScheme() (string, error) {
+	if s.getHTTPSchemeBehavior != nil {
+		return s.getHTTPSchemeBehavior()
+	}
 	return s.httpScheme, nil
 }
 

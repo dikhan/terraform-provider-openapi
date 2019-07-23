@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/go-openapi/spec"
 
 	"github.com/dikhan/http_goclient"
@@ -418,8 +416,20 @@ func TestGetResourceURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceURL is called but getHTTPSchemes raises an error", func() {
-			assert.Fail(t, "test me")
+		Convey("When getResourceURL is called but getHTTPScheme raises an error", func() {
+			specStubResource := &specStubResource{path: "whatever"}
+			providerClient := &ProviderClient{
+				openAPIBackendConfiguration: &specStubBackendConfiguration{
+					host:     "whatever",
+					basePath: "whatever",
+					getHTTPSchemeBehavior: func() (string, error) {
+						return "", errors.New("getHTTPScheme blew up")
+					},
+				},
+			}
+			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
+			So(resourceURL, ShouldEqual, "")
+			So(err.Error(), ShouldEqual, "getHTTPScheme blew up")
 		})
 
 		Convey("When getResourceURL is called but the backend config has only http configured", func() {
