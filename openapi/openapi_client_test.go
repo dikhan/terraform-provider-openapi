@@ -1039,7 +1039,7 @@ func TestProviderClientPut(t *testing.T) {
 		expectedHeaderValue := "Bearer secret!"
 		apiAuthenticator := newStubAuthenticator(expectedHeader, expectedHeaderValue, nil)
 		providerClient := &ProviderClient{
-			openAPIBackendConfiguration: newStubBackendConfiguration("wwww.host.com", "/api", []string{"http"}),
+			openAPIBackendConfiguration: newStubBackendConfiguration("wwww.host.com", "/api", "http"),
 			httpClient:                  httpClient,
 			providerConfiguration:       providerConfiguration,
 			apiAuthenticator:            apiAuthenticator,
@@ -1172,7 +1172,7 @@ func TestProviderClientGet(t *testing.T) {
 		expectedHeaderValue := "Bearer secret!"
 		apiAuthenticator := newStubAuthenticator(expectedHeader, expectedHeaderValue, nil)
 		providerClient := &ProviderClient{
-			openAPIBackendConfiguration: newStubBackendConfiguration("wwww.host.com", "/api", []string{"http"}),
+			openAPIBackendConfiguration: newStubBackendConfiguration("wwww.host.com", "/api", "http"),
 			httpClient:                  httpClient,
 			providerConfiguration:       providerConfiguration,
 			apiAuthenticator:            apiAuthenticator,
@@ -1291,7 +1291,7 @@ func TestProviderClientDelete(t *testing.T) {
 		expectedHeaderValue := "Bearer secret!"
 		apiAuthenticator := newStubAuthenticator(expectedHeader, expectedHeaderValue, nil)
 		providerClient := &ProviderClient{
-			openAPIBackendConfiguration: newStubBackendConfiguration("wwww.host.com", "/api", []string{"http"}),
+			openAPIBackendConfiguration: newStubBackendConfiguration("wwww.host.com", "/api", "http"),
 			httpClient:                  httpClient,
 			providerConfiguration:       providerConfiguration,
 			apiAuthenticator:            apiAuthenticator,

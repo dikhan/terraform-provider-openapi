@@ -18,11 +18,11 @@ type specStubBackendConfiguration struct {
 }
 
 //TODO: take a string instead of slice for schemes
-func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *specStubBackendConfiguration {
+func newStubBackendConfiguration(host, basePath string, httpScheme string) *specStubBackendConfiguration {
 	return &specStubBackendConfiguration{
 		host:       host,
 		basePath:   basePath,
-		httpScheme: httpSchemes[0],
+		httpScheme: httpScheme,
 	}
 }
 
