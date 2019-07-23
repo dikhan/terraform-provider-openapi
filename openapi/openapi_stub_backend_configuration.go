@@ -46,11 +46,6 @@ func (s *specStubBackendConfiguration) getBasePath() string {
 	return s.basePath
 }
 
-//TODO: delete me
-func (s *specStubBackendConfiguration) getHTTPSchemes() []string {
-	panic("quit calling me")
-}
-
 //TODO: rename me to getHTTPScheme
 // TODO: make this configurable via the specStubBackendConfiguration, instead of httpSchemes the stub should contain
 //  field httpScheme string that this method returns

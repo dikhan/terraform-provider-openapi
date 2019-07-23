@@ -3,10 +3,11 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/spec"
 	"log"
 	"strings"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/spec"
 )
 
 const extTfProviderMultiRegionFQDN = "x-terraform-provider-multiregion-fqdn"
@@ -118,10 +119,7 @@ func (o specV2BackendConfiguration) getBasePath() string {
 	return o.spec.BasePath
 }
 
-func (o specV2BackendConfiguration) getHTTPSchemes() []string {
-	return o.spec.Schemes
-}
-
+//TODO: rename me to getHTTPScheme
 func (o specV2BackendConfiguration) getHTTPSchemes2() (string, error) {
 	var defaultScheme string
 
