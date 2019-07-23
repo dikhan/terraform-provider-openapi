@@ -9,7 +9,7 @@ import (
 type specStubBackendConfiguration struct {
 	host             string
 	basePath         string
-	httpSchemes      []string
+	httpScheme       string
 	regions          []string
 	err              error
 	hostErr          error
@@ -17,11 +17,12 @@ type specStubBackendConfiguration struct {
 	hostByRegionErr  error
 }
 
+//TODO: take a string instead of slice for schemes
 func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *specStubBackendConfiguration {
 	return &specStubBackendConfiguration{
-		host:        host,
-		basePath:    basePath,
-		httpSchemes: httpSchemes,
+		host:       host,
+		basePath:   basePath,
+		httpScheme: httpSchemes[0],
 	}
 }
 
@@ -46,10 +47,8 @@ func (s *specStubBackendConfiguration) getBasePath() string {
 	return s.basePath
 }
 
-// TODO: make this configurable via the specStubBackendConfiguration, instead of httpSchemes the stub should contain
-//  field httpScheme string that this method returns
 func (s *specStubBackendConfiguration) getHTTPScheme() (string, error) {
-	return s.httpSchemes[0], nil
+	return s.httpScheme, nil
 }
 
 func (s *specStubBackendConfiguration) getHostByRegion(region string) (string, error) {

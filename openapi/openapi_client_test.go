@@ -115,9 +115,9 @@ func TestGetResourceIDURL(t *testing.T) {
 	Convey("Given a providerClient", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
@@ -259,9 +259,9 @@ func TestGetResourceURL_edge_cases(t *testing.T) {
 		Convey("Given a providerClient configured with some backend configuration including the host, basedPath and http scheme", t, func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "/api",
-					httpSchemes: []string{"http"},
+					host:       "wwww.host.com",
+					basePath:   "/api",
+					httpScheme: "http",
 				},
 			}
 			Convey("When getResourceIDURL is called with a SpecV2Resource configured with some path and the root path item, some parent ids and an instance id", func() {
@@ -298,9 +298,9 @@ func TestGetResourceURL(t *testing.T) {
 	Convey("Given a providerClient set up with auth that injects some headers to the request and is not multiregion", t, func() {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
@@ -399,9 +399,9 @@ func TestGetResourceURL(t *testing.T) {
 		Convey("When getResourceURL is called but the backend config has empty value for host or the resource spec has empty value for path", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "",
-					basePath:    "/api",
-					httpSchemes: []string{"http"},
+					host:       "",
+					basePath:   "/api",
+					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
 				providerConfiguration: providerConfiguration{},
@@ -425,9 +425,9 @@ func TestGetResourceURL(t *testing.T) {
 		Convey("When getResourceURL is called but the backend config has only http configured", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "/api",
-					httpSchemes: []string{"http"},
+					host:       "wwww.host.com",
+					basePath:   "/api",
+					httpScheme: "http",
 				},
 			}
 			specStubResource := &specStubResource{path: "whatever"}
@@ -461,9 +461,9 @@ func TestGetResourceURL(t *testing.T) {
 		Convey("When getResourceURL with a specResource with a resource path that does not have leading basePath is not empty AND basePath is not /", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "api", // basePath is not empty AND basePath is not /
-					httpSchemes: []string{"http"},
+					host:       "wwww.host.com",
+					basePath:   "api", // basePath is not empty AND basePath is not /
+					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
 				providerConfiguration: providerConfiguration{},
@@ -495,9 +495,9 @@ func TestGetResourceURL(t *testing.T) {
 		Convey("When getResourceURL with a specResource with a resource path that does not have leading basePath is not empty AND basePath is not does not start with /", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "api/otherpath", // basePath is not empty AND basePath is not /
-					httpSchemes: []string{"http"},
+					host:       "wwww.host.com",
+					basePath:   "api/otherpath", // basePath is not empty AND basePath is not /
+					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
 				providerConfiguration: providerConfiguration{},
@@ -529,9 +529,9 @@ func TestGetResourceURL(t *testing.T) {
 		Convey("When getResourceURL with a specResource with a resource path that does not have leading basePath is not empty AND basePath is not does start with /", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "/api/otherpath", // basePath is not empty AND basePath is not /
-					httpSchemes: []string{"http"},
+					host:       "wwww.host.com",
+					basePath:   "/api/otherpath", // basePath is not empty AND basePath is not /
+					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
 				providerConfiguration: providerConfiguration{},
@@ -563,9 +563,9 @@ func TestGetResourceURL(t *testing.T) {
 		Convey("When getResourceURL with a specResource with a resource path that does not have leading basePath is not empty AND basePath is /", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "/", // basePath is /
-					httpSchemes: []string{"http"},
+					host:       "wwww.host.com",
+					basePath:   "/", // basePath is /
+					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
 				providerConfiguration: providerConfiguration{},
@@ -602,10 +602,10 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.%s.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
-				regions:     []string{expectedRegion, "someOtherRegion"},
+				host:       "wwww.%s.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
+				regions:    []string{expectedRegion, "someOtherRegion"},
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration,
@@ -641,10 +641,10 @@ func TestGetResourceURL(t *testing.T) {
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.%s.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
-				regions:     []string{expectedRegion},
+				host:       "wwww.%s.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
+				regions:    []string{expectedRegion},
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration,
@@ -677,11 +677,11 @@ func TestGetResourceURL(t *testing.T) {
 		expectedError := "someError"
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.%s.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
-				regions:     []string{""},
-				err:         fmt.Errorf(expectedError),
+				host:       "wwww.%s.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
+				regions:    []string{""},
+				err:        fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
@@ -706,7 +706,7 @@ func TestGetResourceURL(t *testing.T) {
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:             "wwww.%s.host.com",
 				basePath:         "/api",
-				httpSchemes:      []string{"http"},
+				httpScheme:       "http",
 				regions:          []string{"us-east1"},
 				defaultRegionErr: fmt.Errorf(expectedError),
 			},
@@ -733,7 +733,7 @@ func TestGetResourceURL(t *testing.T) {
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:            "wwww.%s.host.com",
 				basePath:        "/api",
-				httpSchemes:     []string{"http"},
+				httpScheme:      "http",
 				regions:         []string{"us-east1"},
 				hostByRegionErr: fmt.Errorf(expectedError),
 			},
@@ -757,11 +757,11 @@ func TestGetResourceURL(t *testing.T) {
 		expectedError := "some error thrown by default host method"
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.%s.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
-				regions:     []string{},
-				hostErr:     fmt.Errorf(expectedError),
+				host:       "wwww.%s.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
+				regions:    []string{},
+				hostErr:    fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
 			providerConfiguration: providerConfiguration{},
@@ -799,9 +799,9 @@ func TestPerformRequest(t *testing.T) {
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            httpClient,
 			providerConfiguration: providerConfiguration,
@@ -903,9 +903,9 @@ func TestProviderClientPost(t *testing.T) {
 		}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            httpClient,
 			providerConfiguration: providerConfiguration,
@@ -967,9 +967,9 @@ func TestProviderClientPost(t *testing.T) {
 		httpClient := &http_goclient.HttpClientStub{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            httpClient,
 			providerConfiguration: providerConfiguration{},
@@ -1094,9 +1094,9 @@ func TestProviderClientPut(t *testing.T) {
 		httpClient := &http_goclient.HttpClientStub{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            httpClient,
 			providerConfiguration: providerConfiguration{},
@@ -1219,9 +1219,9 @@ func TestProviderClientGet(t *testing.T) {
 		httpClient := &http_goclient.HttpClientStub{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            httpClient,
 			providerConfiguration: providerConfiguration{},
@@ -1336,9 +1336,9 @@ func TestProviderClientDelete(t *testing.T) {
 		httpClient := &http_goclient.HttpClientStub{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
-				host:        "wwww.host.com",
-				basePath:    "/api",
-				httpSchemes: []string{"http"},
+				host:       "wwww.host.com",
+				basePath:   "/api",
+				httpScheme: "http",
 			},
 			httpClient:            httpClient,
 			providerConfiguration: providerConfiguration{},
