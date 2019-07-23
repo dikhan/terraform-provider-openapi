@@ -126,7 +126,7 @@ func (o specV2BackendConfiguration) getHTTPSchemes2() (string, error) {
 	var defaultScheme string
 
 	if len(o.spec.Schemes) == 0 {
-		return "", errors.New("no schemes specified")
+		return "", errors.New("no schemes specified - must use http or https")
 	}
 	for _, s := range o.spec.Schemes {
 		if s == "https" {

@@ -572,7 +572,7 @@ func TestGetHTTPSchemes(t *testing.T) {
 		expectedError  string
 	}{
 		{name: "both http and https schemes are configured", inputSchemes: []string{"http", "https"}, expectedScheme: "https", expectedError: ""},
-		{name: "none http or https schemes are configured", inputSchemes: []string{}, expectedScheme: "", expectedError: "no schemes specified"},
+		{name: "none http or https schemes are configured", inputSchemes: []string{}, expectedScheme: "", expectedError: "no schemes specified - must use http or https"},
 		{name: "none of the schemes configured are supported", inputSchemes: []string{"ws"}, expectedScheme: "", expectedError: "specified schemes [ws] are not supported - must use http or https"},
 		{name: "mix of schemes configured including supported ones", inputSchemes: []string{"http", "ws"}, expectedScheme: "http", expectedError: ""},
 	}
