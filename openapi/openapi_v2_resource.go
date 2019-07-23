@@ -85,7 +85,7 @@ type SpecV2Resource struct {
 	// of type object which in turn refer to other definitions
 	SchemaDefinitions map[string]spec.Schema
 
-	Swagger *spec.Swagger
+	Paths map[string]spec.PathItem
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
@@ -258,29 +258,24 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 	if len(parentMatches) > 0 {
 		var parentURI string
 		var parentInstanceURI string
-		fullParentResourceName := ""
+
 		var parentResourceNames, parentURIs, parentInstanceURIs []string
 		for _, match := range parentMatches {
 			fullMatch := match[0]
 			rootPath := match[1]
-			//parentVersion := match[2]
-			//parentResourceName := match[3]
 			parentURI = parentInstanceURI + rootPath
 			parentInstanceURI = parentInstanceURI + fullMatch
-			//if parentVersion != "" {
-			//	parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
-			//}
-
 			parentURIs = append(parentURIs, parentURI)
 			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
 		}
 
+		fullParentResourceName := ""
 		for _, parentURI := range parentURIs {
-			if o.Swagger.Paths == nil {
+			if o.Paths == nil {
 				// TODO: handle this better
 				return nil
 			}
-			parent := o.Swagger.Paths.Paths[parentURI]
+			parent := o.Paths[parentURI]
 			preferredParentName, _ := parent.Post.Extensions.GetString(extTfResourceName)
 			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
 			if err != nil {

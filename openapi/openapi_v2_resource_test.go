@@ -399,8 +399,8 @@ func TestBuildResourceName(t *testing.T) {
 func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a root path", t, func() {
 		r := SpecV2Resource{
-			Path:    "/cdns",
-			Swagger: &spec.Swagger{},
+			Path:  "/cdns",
+			Paths: map[string]spec.PathItem{},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -411,8 +411,8 @@ func TestParentResourceInfo(t *testing.T) {
 	})
 	Convey("Given a SpecV2Resource configured with a root path using versioning", t, func() {
 		r := SpecV2Resource{
-			Path:    "/v1/cdns",
-			Swagger: &spec.Swagger{},
+			Path:  "/v1/cdns",
+			Paths: map[string]spec.PathItem{},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -424,16 +424,10 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (with parent using versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls",
-			Swagger: &spec.Swagger{
-				SwaggerProps: spec.SwaggerProps{
-					Paths: &spec.Paths{
-						Paths: map[string]spec.PathItem{
-							"/v1/cdns": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-						},
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
 					},
 				},
 			},
@@ -463,16 +457,10 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (no versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls",
-			Swagger: &spec.Swagger{
-				SwaggerProps: spec.SwaggerProps{
-					Paths: &spec.Paths{
-						Paths: map[string]spec.PathItem{
-							"/cdns": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-						},
+			Paths: map[string]spec.PathItem{
+				"/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
 					},
 				},
 			},
@@ -502,16 +490,10 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (both using versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls",
-			Swagger: &spec.Swagger{
-				SwaggerProps: spec.SwaggerProps{
-					Paths: &spec.Paths{
-						Paths: map[string]spec.PathItem{
-							"/v1/cdns": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-						},
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
 					},
 				},
 			},
@@ -542,21 +524,15 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a multiple level sub-resource", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls/{id}/rules",
-			Swagger: &spec.Swagger{
-				SwaggerProps: spec.SwaggerProps{
-					Paths: &spec.Paths{
-						Paths: map[string]spec.PathItem{
-							"/cdns": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-							"/cdns/{id}/firewalls": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-						},
+			Paths: map[string]spec.PathItem{
+				"/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/cdns/{id}/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
 					},
 				},
 			},
@@ -589,21 +565,15 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a multiple level sub-resource with versioning", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
-			Swagger: &spec.Swagger{
-				SwaggerProps: spec.SwaggerProps{
-					Paths: &spec.Paths{
-						Paths: map[string]spec.PathItem{
-							"/v1/cdns": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-							"/v1/cdns/{id}/v2/firewalls": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-						},
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
 					},
 				},
 			},
@@ -636,16 +606,10 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is a subresource but the path is wrongly structured not following best restful practises for building subresource paths (the 'firewalls' parent in the path is missing the id path param)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
-			Swagger: &spec.Swagger{
-				SwaggerProps: spec.SwaggerProps{
-					Paths: &spec.Paths{
-						Paths: map[string]spec.PathItem{
-							"/v1/cdns": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{},
-								},
-							},
-						},
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
 					},
 				},
 			},
@@ -674,30 +638,24 @@ func TestParentResourceInfo(t *testing.T) {
 		expectedFirewallResourceName := "firewall"
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
-			Swagger: &spec.Swagger{
-				SwaggerProps: spec.SwaggerProps{
-					Paths: &spec.Paths{
-						Paths: map[string]spec.PathItem{
-							"/v1/cdns": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{
-										VendorExtensible: spec.VendorExtensible{
-											Extensions: spec.Extensions{
-												extTfResourceName: expectedCDNResourceName,
-											},
-										},
-									},
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: expectedCDNResourceName,
 								},
 							},
-							"/v1/cdns/{id}/v2/firewalls": {
-								PathItemProps: spec.PathItemProps{
-									Post: &spec.Operation{
-										VendorExtensible: spec.VendorExtensible{
-											Extensions: spec.Extensions{
-												extTfResourceName: expectedFirewallResourceName,
-											},
-										},
-									},
+						},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: expectedFirewallResourceName,
 								},
 							},
 						},
