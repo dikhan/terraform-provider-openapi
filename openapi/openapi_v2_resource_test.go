@@ -22,7 +22,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -40,7 +40,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -59,7 +59,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -78,7 +78,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -97,7 +97,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -109,6 +109,13 @@ func TestNewSpecV2Resource(t *testing.T) {
 
 	Convey("Given a root path which has path parameters '/api/v1/nodes/{name}/proxy' and a root path item", t, func() {
 		path := "/api/v1/nodes/{name}/proxy"
+		paths := map[string]spec.PathItem{
+			"/api/v1/nodes": {
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
 				Post: &spec.Operation{},
@@ -116,7 +123,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -141,7 +148,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -162,7 +169,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When newSpecV2Resource method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			_, err := newSpecV2Resource(invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			_, err := newSpecV2Resource(invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -173,7 +180,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		path := ""
 		Convey("When newSpecV2Resource method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			_, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions)
+			_, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions, nil)
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -508,6 +515,41 @@ func TestParentResourceInfo(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a SpecV2Resource configured with a base path that is indeed a sub-resource", t, func() {
+		r := SpecV2Resource{
+			Path: "/api/v1/nodes/{name}/proxy",
+			Paths: map[string]spec.PathItem{
+				"/api/v1/nodes": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+				So(parentResourceInfo, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "nodes_v1")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "nodes_v1_proxy")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/nodes")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/nodes/{name}")
+			})
+		})
+	})
+
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (no versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls",
