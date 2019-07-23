@@ -597,6 +597,10 @@ func TestGetHTTPSchemes(t *testing.T) {
 					Convey("Then the error returned should be the expected one", func() {
 						So(err.Error(), ShouldEqual, tc.expectedError)
 					})
+				} else {
+					Convey("Then there should be no error", func() {
+						So(err, ShouldBeNil)
+					})
 				}
 				Convey("Then the returned http scheme should match the expected scheme", func() {
 					So(httpScheme, ShouldEqual, tc.expectedScheme)
