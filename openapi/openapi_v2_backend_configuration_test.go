@@ -585,8 +585,7 @@ func TestGetHTTPSchemes(t *testing.T) {
 					Schemes: tc.inputSchemes,
 				},
 			}
-			openAPIDocumentURL := "www.domain.com"
-			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, "www.domain.com")
 			So(err, ShouldBeNil)
 			Convey("When getHTTPSchemes method is called", func() {
 				httpScheme, err := specV2BackendConfiguration.getHTTPSchemes2()
