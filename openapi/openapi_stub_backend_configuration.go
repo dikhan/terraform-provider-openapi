@@ -17,7 +17,6 @@ type specStubBackendConfiguration struct {
 	hostByRegionErr  error
 }
 
-//TODO: take a string instead of slice for schemes
 func newStubBackendConfiguration(host, basePath string, httpScheme string) *specStubBackendConfiguration {
 	return &specStubBackendConfiguration{
 		host:       host,
