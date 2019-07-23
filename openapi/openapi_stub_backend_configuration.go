@@ -46,10 +46,9 @@ func (s *specStubBackendConfiguration) getBasePath() string {
 	return s.basePath
 }
 
-//TODO: rename me to getHTTPScheme
 // TODO: make this configurable via the specStubBackendConfiguration, instead of httpSchemes the stub should contain
 //  field httpScheme string that this method returns
-func (s *specStubBackendConfiguration) getHTTPSchemes2() (string, error) {
+func (s *specStubBackendConfiguration) getHTTPScheme() (string, error) {
 	return s.httpSchemes[0], nil
 }
 

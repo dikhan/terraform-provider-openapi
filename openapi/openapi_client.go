@@ -187,7 +187,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 	}
 
 	// TODO: use resource operation schemes if specified
-	defaultScheme, _ := o.openAPIBackendConfiguration.getHTTPSchemes2() //TODO: handle err
+	defaultScheme, _ := o.openAPIBackendConfiguration.getHTTPScheme() //TODO: handle err
 
 	path := resourceRelativePath
 	if strings.Index(resourceRelativePath, "/") != 0 {

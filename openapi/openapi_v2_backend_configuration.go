@@ -119,8 +119,7 @@ func (o specV2BackendConfiguration) getBasePath() string {
 	return o.spec.BasePath
 }
 
-//TODO: rename me to getHTTPScheme
-func (o specV2BackendConfiguration) getHTTPSchemes2() (string, error) {
+func (o specV2BackendConfiguration) getHTTPScheme() (string, error) {
 	var defaultScheme string
 
 	if len(o.spec.Schemes) == 0 {
