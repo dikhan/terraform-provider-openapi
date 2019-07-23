@@ -572,14 +572,11 @@ func TestGetHTTPSchemes(t *testing.T) {
 		expectedError  string
 	}{
 		{name: "both http and https schemes are configured", inputSchemes: []string{"http", "https"}, expectedScheme: "https"},
-		{name: "mix of schemes configured including supported ones", inputSchemes: []string{"http", "ws"}, expectedScheme: "http"},
+		{name: "mix of schemes configured including supported ones without https", inputSchemes: []string{"http", "ws"}, expectedScheme: "http"},
+		{name: "mix of schemes configured including supported ones with https", inputSchemes: []string{"http", "ws", "https"}, expectedScheme: "https"},
 		{name: "none http or https schemes are configured", inputSchemes: []string{}, expectedError: "no schemes specified - must use http or https"},
 		{name: "none of the schemes configured are supported", inputSchemes: []string{"ws"}, expectedError: "specified schemes [ws] are not supported - must use http or https"},
 	}
-
-	// TODO: add missing use cases
-	// - inputSchemes: []string{"http", "ws", "https"}
-
 	for _, tc := range testCases {
 		Convey(fmt.Sprintf("Given a specV2BackendConfiguration with %s", tc.name), t, func() {
 			spec := &spec.Swagger{
