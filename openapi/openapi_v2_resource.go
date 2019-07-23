@@ -124,8 +124,31 @@ func (o *SpecV2Resource) getResourceName() string {
 // root path /resource/{id} or if specified the value set in the x-terraform-resource-name extension is used instead along
 // with the version (if applicable)
 func (o *SpecV2Resource) buildResourceName() (string, error) {
-	resourcePath := o.Path
+	preferredName := ""
+	if preferred := o.getResourceTerraformName(); preferred != "" {
+		preferredName = preferred
+	}
+	fullResourceName, err := o.buildResourceNameFromPath(o.Path, preferredName)
+	if err != nil {
+		return "", err
+	}
+	parentResourceInfo := o.getParentResourceInfo()
+	if parentResourceInfo != nil {
+		fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
+	}
+	return fullResourceName, nil
+}
 
+// buildResourceNameFromPath returns the name of the resource (including the version if applicable and using the preferred name
+// if provided). The name will be calculated using the last part of the path which is meant to be the resource name that the URI
+// refers to (e,g: /resource/{id}). If the path is versioned /v1/resource/{id} then the corresponding returned name will
+// be either the built name from the path or the preferred name with the version appended at the end.
+// For instance, given the following input the output will be:
+// /cdns/{id} -> cdns
+// /cdns/{id} and preferred name being cdn -> cdn
+// /v1/cdns/{id} -> cdns_v1
+// /v1/cdns/{id} and preferred name being cdn -> cdn_v1
+func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName string) (string, error) {
 	nameRegex, err := regexp.Compile(resourceNameRegex)
 	if err != nil {
 		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
@@ -137,7 +160,7 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	}
 	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
 
-	if preferredName := o.getResourceTerraformName(); preferredName != "" {
+	if preferredName != "" {
 		resourceName = preferredName
 	}
 
@@ -153,10 +176,6 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
 	}
 
-	parentResourceInfo := o.getParentResourceInfo()
-	if parentResourceInfo != nil {
-		fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
-	}
 	return fullResourceName, nil
 }
 
@@ -244,33 +263,34 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 		for _, match := range parentMatches {
 			fullMatch := match[0]
 			rootPath := match[1]
-			parentVersion := match[2]
-			parentResourceName := match[3]
+			//parentVersion := match[2]
+			//parentResourceName := match[3]
 			parentURI = parentInstanceURI + rootPath
 			parentInstanceURI = parentInstanceURI + fullMatch
-			if parentVersion != "" {
-				parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
-			}
-			parentResourceNames = append(parentResourceNames, parentResourceName)
-			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
+			//if parentVersion != "" {
+			//	parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
+			//}
 
 			parentURIs = append(parentURIs, parentURI)
 			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
 		}
+
+		for _, parentURI := range parentURIs {
+			if o.Swagger.Paths == nil {
+				// TODO: handle this better
+				return nil
+			}
+			parent := o.Swagger.Paths.Paths[parentURI]
+			preferredParentName, _ := parent.Post.Extensions.GetString(extTfResourceName)
+			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
+			if err != nil {
+				// TODO: handle this error or debug it or do something
+				return nil
+			}
+			parentResourceNames = append(parentResourceNames, parentResourceName)
+			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
+		}
 		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
-
-		// /cdns/{id}/firewalls/{id}/rules
-
-		// 1. /cdns (x-terraform-resource-name: "cdn")
-		// 2. /cdns/{id}/firewalls
-
-		//
-		//for _, parentURI := range parentURIs {
-		//	parent := o.swagger.Paths.Paths[parentURI]
-		//	preferredParentName, exists := parent.Post.Extensions.GetString(extTfResourceName); exists {
-		//
-		//	}
-		//}
 
 		sub := &parentResourceInfo{
 			parentResourceNames:    parentResourceNames,
