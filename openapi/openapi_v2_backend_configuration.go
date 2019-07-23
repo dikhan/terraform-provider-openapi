@@ -125,7 +125,7 @@ func (o specV2BackendConfiguration) getHTTPSchemes() []string {
 func (o specV2BackendConfiguration) getHTTPSchemes2() (string, error) {
 	var defaultScheme string
 
-	if len(o.spec.Schemes) == 0 || len(o.spec.Schemes[0]) == 0 {
+	if len(o.spec.Schemes) == 0 {
 		return "", errors.New("no schemes specified")
 	}
 	for _, s := range o.spec.Schemes {
