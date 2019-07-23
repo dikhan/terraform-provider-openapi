@@ -444,6 +444,8 @@ func TestGetResourceURL(t *testing.T) {
 			Convey("And the resourceURL should be empty", func() { So(resourceURL, ShouldBeEmpty) })
 		})
 
+		// TODO: expand test cases with new behaviour introduce to error out if httpSchemes do not contain any of the supported
+		// protocols
 		Convey("When getResourceURL is called but the backend config has both http and https configured", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{

@@ -577,6 +577,9 @@ func TestGetHTTPSchemes(t *testing.T) {
 		{name: "mix of schemes configured including supported ones", inputSchemes: []string{"http", "ws"}, expectedScheme: "http", expectedError: ""},
 	}
 
+	// TODO: add missing use cases
+	// - inputSchemes: []string{"http", "ws", "https"}
+
 	for _, tc := range testCases {
 		Convey(fmt.Sprintf("Given a specV2BackendConfiguration with %s", tc.name), t, func() {
 			spec := &spec.Swagger{

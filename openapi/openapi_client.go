@@ -189,6 +189,10 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 
 	// TODO: use resource operation schemes if specified
 	defaultScheme := "https"
+	// TODO: use getHTTPSchemes2 instead and handle the error properly...after integration is done, rename getHTTPSchemes2 to getHTTPSchemes
+	//  in this card there is no expectation to falling back to use the protocol where the swagger file is hosted as per
+	// the spec. To meet the story card, we will just focus on at least returning an error if the use did not specified
+	// any of the supported http/https protocols.
 	supportedSchemes := o.openAPIBackendConfiguration.getHTTPSchemes()
 	if len(supportedSchemes) == 0 || len(supportedSchemes[0]) == 0 {
 		return "", errors.New("No schemes specified")

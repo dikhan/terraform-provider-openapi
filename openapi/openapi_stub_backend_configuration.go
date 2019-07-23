@@ -49,6 +49,8 @@ func (s *specStubBackendConfiguration) getHTTPSchemes() []string {
 	return s.httpSchemes
 }
 
+// TODO: make this configurable via the specStubBackendConfiguration, instead of httpSchemes the stub should contain
+// field httpScheme string that this method returns
 func (s *specStubBackendConfiguration) getHTTPSchemes2() (string, error) {
 	return "", nil
 }
