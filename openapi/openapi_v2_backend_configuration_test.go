@@ -566,13 +566,15 @@ func TestGetBasePath(t *testing.T) {
 
 func TestGetHTTPSchemes(t *testing.T) {
 	testCases := []struct {
-		name            string
-		inputSchemes    []string
-		expectedSchemes []string
-		expectedError   string
+		name           string
+		inputSchemes   []string
+		expectedScheme string
+		expectedError  string
 	}{
-		{name: "both http and https schemes are configured", inputSchemes: []string{"http", "https"}, expectedSchemes: []string{"http", "https"}, expectedError: ""},
-		{name: "none http or https schemes are configured", inputSchemes: []string{}, expectedSchemes: []string{}, expectedError: "some error"},
+		{name: "both http and https schemes are configured", inputSchemes: []string{"http", "https"}, expectedScheme: "https", expectedError: ""},
+		{name: "none http or https schemes are configured", inputSchemes: []string{}, expectedScheme: "", expectedError: "no schemes specified"},
+		{name: "none of the schemes configured are supported", inputSchemes: []string{"ws"}, expectedScheme: "", expectedError: "specified schemes [ws] are not supported - must use http or https"},
+		{name: "mix of schemes configured including supported ones", inputSchemes: []string{"http", "ws"}, expectedScheme: "http", expectedError: ""},
 	}
 
 	for _, tc := range testCases {
@@ -587,16 +589,14 @@ func TestGetHTTPSchemes(t *testing.T) {
 			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 			So(err, ShouldBeNil)
 			Convey("When getHTTPSchemes method is called", func() {
-				httpSchemes, err := specV2BackendConfiguration.getHTTPSchemes2()
+				httpScheme, err := specV2BackendConfiguration.getHTTPSchemes2()
 				if tc.expectedError != "" {
 					Convey("Then the error returned should be the expected one", func() {
 						So(err.Error(), ShouldEqual, tc.expectedError)
 					})
 				}
-				Convey("The the returned http schemes contain the expected schemes (ordered)", func() {
-					for i, _ := range tc.expectedSchemes {
-						So(httpSchemes[i], ShouldEqual, tc.expectedSchemes[i])
-					}
+				Convey("Then the returned http scheme should match the expected scheme", func() {
+					So(httpScheme, ShouldEqual, tc.expectedScheme)
 				})
 			})
 		})

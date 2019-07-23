@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/go-openapi/spec"
@@ -121,6 +122,24 @@ func (o specV2BackendConfiguration) getHTTPSchemes() []string {
 	return o.spec.Schemes
 }
 
-func (o specV2BackendConfiguration) getHTTPSchemes2() ([]string, error) {
-	return o.spec.Schemes, nil
+func (o specV2BackendConfiguration) getHTTPSchemes2() (string, error) {
+	var defaultScheme string
+
+	if len(o.spec.Schemes) == 0 || len(o.spec.Schemes[0]) == 0 {
+		return "", errors.New("no schemes specified")
+	}
+	for _, s := range o.spec.Schemes {
+		if s == "https" {
+			return s, nil
+		}
+		if s == "http" {
+			defaultScheme = s
+		}
+	}
+
+	if defaultScheme == "" {
+		return "", fmt.Errorf("specified schemes %s are not supported - must use http or https", o.spec.Schemes)
+	}
+
+	return defaultScheme, nil
 }

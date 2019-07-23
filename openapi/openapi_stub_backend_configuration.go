@@ -49,8 +49,8 @@ func (s *specStubBackendConfiguration) getHTTPSchemes() []string {
 	return s.httpSchemes
 }
 
-func (s *specStubBackendConfiguration) getHTTPSchemes2() ([]string, error) {
-	return s.httpSchemes, nil
+func (s *specStubBackendConfiguration) getHTTPSchemes2() (string, error) {
+	return "", nil
 }
 
 func (s *specStubBackendConfiguration) getHostByRegion(region string) (string, error) {
