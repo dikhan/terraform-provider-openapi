@@ -1,11 +1,13 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/spec"
 	"log"
 	"strings"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/spec"
 )
 
 const extTfProviderMultiRegionFQDN = "x-terraform-provider-multiregion-fqdn"
@@ -117,6 +119,24 @@ func (o specV2BackendConfiguration) getBasePath() string {
 	return o.spec.BasePath
 }
 
-func (o specV2BackendConfiguration) getHTTPSchemes() []string {
-	return o.spec.Schemes
+func (o specV2BackendConfiguration) getHTTPScheme() (string, error) {
+	var defaultScheme string
+
+	if len(o.spec.Schemes) == 0 {
+		return "", errors.New("no schemes specified - must use http or https")
+	}
+	for _, s := range o.spec.Schemes {
+		if s == "https" {
+			return s, nil
+		}
+		if s == "http" {
+			defaultScheme = s
+		}
+	}
+
+	if defaultScheme == "" {
+		return "", fmt.Errorf("specified schemes %s are not supported - must use http or https", o.spec.Schemes)
+	}
+
+	return defaultScheme, nil
 }

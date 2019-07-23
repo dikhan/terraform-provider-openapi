@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/go-openapi/spec"
@@ -564,23 +565,36 @@ func TestGetBasePath(t *testing.T) {
 }
 
 func TestGetHTTPSchemes(t *testing.T) {
-	Convey("Given a specV2BackendConfiguration with the getHTTPSchemes configured", t, func() {
-		spec := &spec.Swagger{
-			SwaggerProps: spec.SwaggerProps{
-				Swagger:  "2.0",
-				Host:     "www.some-backend.com",
-				BasePath: "/api",
-				Schemes:  []string{"http", "https"},
-			},
-		}
-		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When getHTTPSchemes method is called", func() {
-			httpSchemes := specV2BackendConfiguration.getHTTPSchemes()
-			Convey("And the host should be correct", func() {
-				So(httpSchemes, ShouldContain, "http")
-				So(httpSchemes, ShouldContain, "https")
+	testCases := []struct {
+		name           string
+		inputSchemes   []string
+		expectedScheme string
+		expectedError  string
+	}{
+		{name: "both http and https schemes are configured", inputSchemes: []string{"http", "https"}, expectedScheme: "https"},
+		{name: "mix of schemes configured including supported ones without https", inputSchemes: []string{"http", "ws"}, expectedScheme: "http"},
+		{name: "mix of schemes configured including supported ones with https", inputSchemes: []string{"http", "ws", "https"}, expectedScheme: "https"},
+		{name: "none http or https schemes are configured", inputSchemes: []string{}, expectedError: "no schemes specified - must use http or https"},
+		{name: "none of the schemes configured are supported", inputSchemes: []string{"ws"}, expectedError: "specified schemes [ws] are not supported - must use http or https"},
+	}
+	for _, tc := range testCases {
+		Convey(fmt.Sprintf("Given a specV2BackendConfiguration with %s", tc.name), t, func() {
+			spec := &spec.Swagger{
+				SwaggerProps: spec.SwaggerProps{
+					Swagger: "2.0",
+					Schemes: tc.inputSchemes,
+				},
+			}
+			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, "www.domain.com")
+			So(err, ShouldBeNil)
+			Convey("When getHTTPSchemes method is called", func() {
+				httpScheme, err := specV2BackendConfiguration.getHTTPScheme()
+				Convey("Then the returned http scheme and  error should be as expected", func() {
+					So(err == nil && tc.expectedError == "" || err.Error() == tc.expectedError, ShouldBeTrue)
+					So(httpScheme, ShouldEqual, tc.expectedScheme)
+				})
 			})
 		})
-	})
+
+	}
 }

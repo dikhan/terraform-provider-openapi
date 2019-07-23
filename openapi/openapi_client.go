@@ -187,12 +187,11 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 	}
 
 	// TODO: use resource operation schemes if specified
-	defaultScheme := "http"
-	for _, scheme := range o.openAPIBackendConfiguration.getHTTPSchemes() {
-		if scheme == "https" {
-			defaultScheme = "https"
-		}
+	defaultScheme, err := o.openAPIBackendConfiguration.getHTTPScheme()
+	if err != nil {
+		return "", err
 	}
+
 	path := resourceRelativePath
 	if strings.Index(resourceRelativePath, "/") != 0 {
 		path = fmt.Sprintf("/%s", resourceRelativePath)

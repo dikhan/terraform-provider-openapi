@@ -4,7 +4,7 @@ package openapi
 type SpecBackendConfiguration interface {
 	getHost() (string, error)
 	getBasePath() string
-	getHTTPSchemes() []string
+	getHTTPScheme() (string, error)
 	getHostByRegion(region string) (string, error)
 	isMultiRegion() (bool, string, []string, error)
 	getDefaultRegion([]string) (string, error)

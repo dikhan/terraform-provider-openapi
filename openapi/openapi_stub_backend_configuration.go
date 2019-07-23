@@ -2,25 +2,28 @@ package openapi
 
 import (
 	"fmt"
+
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 )
 
 type specStubBackendConfiguration struct {
 	host             string
 	basePath         string
-	httpSchemes      []string
+	httpScheme       string
 	regions          []string
 	err              error
 	hostErr          error
 	defaultRegionErr error
 	hostByRegionErr  error
+
+	getHTTPSchemeBehavior func() (string, error)
 }
 
-func newStubBackendConfiguration(host, basePath string, httpSchemes []string) *specStubBackendConfiguration {
+func newStubBackendConfiguration(host, basePath string, httpScheme string) *specStubBackendConfiguration {
 	return &specStubBackendConfiguration{
-		host:        host,
-		basePath:    basePath,
-		httpSchemes: httpSchemes,
+		host:       host,
+		basePath:   basePath,
+		httpScheme: httpScheme,
 	}
 }
 
@@ -45,8 +48,11 @@ func (s *specStubBackendConfiguration) getBasePath() string {
 	return s.basePath
 }
 
-func (s *specStubBackendConfiguration) getHTTPSchemes() []string {
-	return s.httpSchemes
+func (s *specStubBackendConfiguration) getHTTPScheme() (string, error) {
+	if s.getHTTPSchemeBehavior != nil {
+		return s.getHTTPSchemeBehavior()
+	}
+	return s.httpScheme, nil
 }
 
 func (s *specStubBackendConfiguration) getHostByRegion(region string) (string, error) {
