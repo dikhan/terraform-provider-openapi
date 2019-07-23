@@ -84,6 +84,8 @@ type SpecV2Resource struct {
 	// SchemaDefinitions contains all the definitions which might be needed in case the resource schema contains properties
 	// of type object which in turn refer to other definitions
 	SchemaDefinitions map[string]spec.Schema
+
+	Swagger *spec.Swagger
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
@@ -256,6 +258,20 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
 		}
 		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
+
+		// /cdns/{id}/firewalls/{id}/rules
+
+		// 1. /cdns (x-terraform-resource-name: "cdn")
+		// 2. /cdns/{id}/firewalls
+
+		//
+		//for _, parentURI := range parentURIs {
+		//	parent := o.swagger.Paths.Paths[parentURI]
+		//	preferredParentName, exists := parent.Post.Extensions.GetString(extTfResourceName); exists {
+		//
+		//	}
+		//}
+
 		sub := &parentResourceInfo{
 			parentResourceNames:    parentResourceNames,
 			fullParentResourceName: fullParentResourceName,

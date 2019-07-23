@@ -578,6 +578,66 @@ func TestParentResourceInfo(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a SpecV2Resource configured with a path that is a subresource and the parents have preferred names", t, func() {
+		expectedCDNResourceName := "cdn"
+		expectedFirewallResourceName := "firewall"
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			Swagger: &spec.Swagger{
+				SwaggerProps: spec.SwaggerProps{
+					Paths: &spec.Paths{
+						Paths: map[string]spec.PathItem{
+							"/v1/cdns": {
+								PathItemProps: spec.PathItemProps{
+									Post: &spec.Operation{
+										VendorExtensible: spec.VendorExtensible{
+											Extensions: spec.Extensions{
+												extTfResourceName: expectedCDNResourceName,
+											},
+										},
+									},
+								},
+							},
+							"/v1/cdns/{id}/v2/firewalls": {
+								PathItemProps: spec.PathItemProps{
+									Post: &spec.Operation{
+										VendorExtensible: spec.VendorExtensible{
+											Extensions: spec.Extensions{
+												extTfResourceName: expectedFirewallResourceName,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
+				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewall_v2")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1_firewall_v2")
+			})
+			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
+				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls")
+			})
+			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls/{id}")
+			})
+		})
+	})
+
 }
 
 func assertSchemaProperty(actualSpecSchemaDefinition *specSchemaDefinition, expectedName string, expectedType schemaDefinitionPropertyType, expectedRequired, expectedReadOnly, expectedComputed bool) {
