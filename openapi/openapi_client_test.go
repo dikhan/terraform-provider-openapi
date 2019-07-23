@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/go-openapi/spec"
 
 	"github.com/dikhan/http_goclient"
@@ -136,7 +138,7 @@ func TestGetResourceIDURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then the resourceURL returned should be built from the schemes, host, base path, and path in the client and the ID passed", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s/%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
@@ -159,7 +161,7 @@ func TestGetResourceIDURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal the expected one", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath, expectedID))
@@ -182,7 +184,7 @@ func TestGetResourceIDURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
@@ -326,7 +328,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
@@ -364,7 +366,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() { //TODO: what should it equal?
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource", expectedProtocol, expectedHost, expectedBasePath, expectedParentID))
@@ -388,7 +390,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
 			})
@@ -416,48 +418,8 @@ func TestGetResourceURL(t *testing.T) {
 			})
 		})
 
-		Convey("When getResourceURL is called but the backend config has only an empty string in httpSchemes", func() {
-			providerClient := &ProviderClient{
-				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "/api",
-					httpSchemes: []string{""},
-				},
-			}
-			specStubResource := &specStubResource{path: "whatever"}
-			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
-			Convey("Then the error returned should not be nil", func() { So(err.Error(), ShouldEqual, "No schemes specified") })
-			Convey("And the resourceURL should be empty", func() { So(resourceURL, ShouldBeEmpty) })
-		})
-
-		Convey("When getResourceURL is called but the backend config has no httpSchemes configured", func() {
-			providerClient := &ProviderClient{
-				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "/api",
-					httpSchemes: []string{},
-				},
-			}
-			specStubResource := &specStubResource{path: "whatever"}
-			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
-			Convey("Then the error returned should not be nil", func() { So(err.Error(), ShouldEqual, "No schemes specified") })
-			Convey("And the resourceURL should be empty", func() { So(resourceURL, ShouldBeEmpty) })
-		})
-
-		// TODO: expand test cases with new behaviour introduce to error out if httpSchemes do not contain any of the supported
-		// protocols
-		Convey("When getResourceURL is called but the backend config has both http and https configured", func() {
-			providerClient := &ProviderClient{
-				openAPIBackendConfiguration: &specStubBackendConfiguration{
-					host:        "wwww.host.com",
-					basePath:    "/api",
-					httpSchemes: []string{"http", "https"},
-				},
-			}
-			specStubResource := &specStubResource{path: "whatever"}
-			resourceURL, err := providerClient.getResourceURL(specStubResource, []string{})
-			Convey("Then the error returned should be nil", func() { So(err, ShouldBeNil) })
-			Convey("And then resourceURL should default to https scheme", func() { So(resourceURL, ShouldStartWith, "https://") })
+		Convey("When getResourceURL is called but getHTTPSchemes raises an error", func() {
+			assert.Fail(t, "test me")
 		})
 
 		Convey("When getResourceURL is called but the backend config has only http configured", func() {
@@ -489,7 +451,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s/%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
@@ -523,7 +485,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s/%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
@@ -557,7 +519,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s/%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
@@ -591,7 +553,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, expectedHost, expectedBasePath, expectedPath))
@@ -625,7 +587,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s", expectedProtocol, expectedHost, expectedPath))
 			})
@@ -664,7 +626,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, fmt.Sprintf(expectedHost, expectedRegion), expectedBasePath, expectedPath))
@@ -703,7 +665,7 @@ func TestGetResourceURL(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then resourceURL should equal", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(resourceURL, ShouldEqual, fmt.Sprintf("%s://%s%s%s", expectedProtocol, fmt.Sprintf(expectedHost, expectedRegion), expectedBasePath, expectedPath))
@@ -858,7 +820,7 @@ func TestPerformRequest(t *testing.T) {
 			}
 			responsePayload := map[string]interface{}{}
 
-			expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+			expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 			expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 			expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 			expectedPath := "/v1/resource"
@@ -973,7 +935,7 @@ func TestProviderClientPost(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				expectedPath := specStubResource.path
@@ -1045,7 +1007,7 @@ func TestProviderClientPost(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/parentID/subresource", expectedProtocol, expectedHost, expectedBasePath))
@@ -1103,7 +1065,7 @@ func TestProviderClientPut(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				expectedPath := specStubResource.path
@@ -1232,7 +1194,7 @@ func TestProviderClientGet(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				expectedPath := specStubResource.path
@@ -1299,7 +1261,7 @@ func TestProviderClientGet(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))
@@ -1349,7 +1311,7 @@ func TestProviderClientDelete(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				expectedPath := specStubResource.path
@@ -1415,7 +1377,7 @@ func TestProviderClientDelete(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And then client should have received the right URL", func() {
-				expectedProtocol := providerClient.openAPIBackendConfiguration.getHTTPSchemes()[0]
+				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPSchemes2()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
 				So(httpClient.URL, ShouldEqual, fmt.Sprintf("%s://%s%s/v1/resource/%s/subresource/%s", expectedProtocol, expectedHost, expectedBasePath, parentIDs[0], expectedID))

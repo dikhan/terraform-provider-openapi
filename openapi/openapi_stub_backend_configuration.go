@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 )
 
@@ -45,14 +46,16 @@ func (s *specStubBackendConfiguration) getBasePath() string {
 	return s.basePath
 }
 
+//TODO: delete me
 func (s *specStubBackendConfiguration) getHTTPSchemes() []string {
-	return s.httpSchemes
+	panic("quit calling me")
 }
 
+//TODO: rename me to getHTTPScheme
 // TODO: make this configurable via the specStubBackendConfiguration, instead of httpSchemes the stub should contain
-// field httpScheme string that this method returns
+//  field httpScheme string that this method returns
 func (s *specStubBackendConfiguration) getHTTPSchemes2() (string, error) {
-	return "", nil
+	return s.httpSchemes[0], nil
 }
 
 func (s *specStubBackendConfiguration) getHostByRegion(region string) (string, error) {
