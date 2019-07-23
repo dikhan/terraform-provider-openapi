@@ -385,6 +385,35 @@ func TestBuildResourceName(t *testing.T) {
 			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
 			expectedError:        nil,
 		},
+		{
+			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "cdn",
+								},
+							},
+						},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "firewall",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedResourceName: "cdn_v1_firewall_v2_rules_v3",
+			expectedError:        nil,
+		},
 		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
 			path: "/v1/cdns/{id}/firewalls/v3/rules",
 			paths: map[string]spec.PathItem{
@@ -419,36 +448,6 @@ func TestBuildResourceName(t *testing.T) {
 			})
 		})
 	}
-
-	// TODO: Add support for sub-resources names to honour preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
-	//  For instance, if /v1/cdns/{id}/v1/firewalls path had the x-terraform-resource-name defined and the value was "cdn_v1_firewall"
-	//  the expected returned name would be "cdn_v1_firewall_v1" (note the version should be automatically injected)
-	Convey("Given a SpecV2Resource with a path and a preferred terraform resource name", t, func() {
-		expectedResourceName := "user"
-		r := SpecV2Resource{
-			Path: "/users",
-			RootPathItem: spec.PathItem{
-				PathItemProps: spec.PathItemProps{
-					Post: &spec.Operation{
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								extTfResourceName: expectedResourceName,
-							},
-						},
-					},
-				},
-			},
-		}
-		Convey("When buildResourceName is called", func() {
-			resourceName, err := r.buildResourceName()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the resource name should be the expected one", func() {
-				So(resourceName, ShouldEqual, expectedResourceName)
-			})
-		})
-	})
 }
 
 func TestParentResourceInfo(t *testing.T) {
