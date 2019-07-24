@@ -899,7 +899,6 @@ func TestGetResourceSchema(t *testing.T) {
 	})
 }
 
-// TODO: fix test failing
 func TestGetSchemaDefinition(t *testing.T) {
 
 	Convey("Given a blank SpecV2Resource", t, func() {
@@ -1094,7 +1093,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 	Convey("Given a SpecV2Resource containing a subresource path (two level)", t, func() {
 		r := &SpecV2Resource{
 			Path:  "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
-			Paths: nil, // TODO: populate paths as expected based on the above path so internally the calculation of parent nanes is done properly
+			Paths: nil, // [fradiben: not sure if following TODO applies still] --> TODO: populate paths as expected based on the above path so internally the calculation of parent nanes is done properly
 		}
 		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
 			s := &spec.Schema{
@@ -1223,56 +1222,58 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	// TODO: Handle case where parent resources have preferred resource names as specified in with the x-terraform-resource-name in the parent path configuration. Hence, the resulting autogenered parent id property should honor the preferred name
-	//Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
-	//	// Specifying here how the parent resource will look like when the preferred name has been speficied
-	//	//parentResource := SpecV2Resource{
-	//	//	RootPathItem: spec.PathItem{
-	//	//		PathItemProps: spec.PathItemProps{
-	//	//			Post: &spec.Operation{
-	//	//				VendorExtensible: spec.VendorExtensible{
-	//	//					Extensions: spec.Extensions{
-	//	//						extTfResourceName: "cdn",
-	//	//					},
-	//	//				},
-	//	//			},
-	//	//		},
-	//	//	},
-	//	//}
-	//	r := &SpecV2Resource{
-	//		Path: "/v1/cdns/{id}/firewalls",
-	//	}
-	//	Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-	//		s := &spec.Schema{
-	//			SchemaProps: spec.SchemaProps{
-	//				Required: []string{"number_required_prop"},
-	//				Properties: map[string]spec.Schema{
-	//					"string_readonly_prop": {
-	//						SchemaProps: spec.SchemaProps{
-	//							Type: spec.StringOrArray{"string"},
-	//						},
-	//						SwaggerSchemaProps: spec.SwaggerSchemaProps{
-	//							ReadOnly: true,
-	//						},
-	//					},
-	//				},
-	//			},
-	//		}
-	//		specSchemaDefinition, err := r.getSchemaDefinition(s)
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
-	//			So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties) + 1)
-	//		})
-	//		Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-	//			assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false,true, true)
-	//		})
-	//		Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
-	//			assertSchemaProperty(specSchemaDefinition, "cdn_v1_id", typeString, false,false, true)
-	//		})
-	//	})
-	//})
+	// TODO: Handle case where parent resources have preferred resource names as specified in with the x-terraform-resource-name in the parent path configuration.
+	//  Hence, the resulting autogenered parent id property should honor the preferred name
+	Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
+		//todo [fradiben] : created the resource in this way, looks like is working: only thing that fails is that the prooperty is not marked as required
+		// how to fix that?
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "cdn",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
+				assertSchemaProperty(specSchemaDefinition, "cdn_v1_id", typeString, false, false, true)
+			})
+		})
+	})
 }
 
 func TestGetResourcePath(t *testing.T) {
