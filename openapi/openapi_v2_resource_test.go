@@ -457,6 +457,112 @@ func TestBuildResourceName(t *testing.T) {
 	}
 }
 
+func TestBuildResourceNameFromPath(t *testing.T) {
+
+	testCases := []struct {
+		path                 string
+		expectedResourceName string
+		preferredName        string
+		expectedError        error
+	}{
+		{
+			path:                 "/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v11/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns_v11",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1.1.1/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns", // semver in paths is not supported at the moment, this documents the resource output for such use case
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1a/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/",
+			preferredName:        "",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/v1/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls_v2",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			preferredName:        "",
+			expectedResourceName: "rules_v3",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/rules",
+			preferredName:        "",
+			expectedResourceName: "rules",
+			expectedError:        nil,
+		},
+		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
+			path:                 "/v1/cdns/{id}/firewalls/v3/rules",
+			preferredName:        "",
+			expectedResourceName: "rules_v3",
+			expectedError:        nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		Convey("Given a SpecV2Resource", t, func() {
+			r := SpecV2Resource{}
+			Convey("When buildResourceName is called with the given path and preferred name", func() {
+				resourceName, err := r.buildResourceNameFromPath(tc.path, tc.preferredName)
+				if tc.expectedError != nil {
+					Convey("Then the error returned should be the expected one", func() {
+						So(err.Error(), ShouldEqual, tc.expectedError.Error())
+					})
+				}
+				Convey("And the resource name should be the expected one", func() {
+					So(resourceName, ShouldEqual, tc.expectedResourceName)
+				})
+			})
+		})
+	}
+}
+
 func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a root path", t, func() {
 		r := SpecV2Resource{
