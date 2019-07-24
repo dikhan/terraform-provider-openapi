@@ -516,6 +516,46 @@ func TestParentResourceInfo(t *testing.T) {
 		})
 	})
 
+	Convey("Given a SpecV2Resource configured with a path that is a sub-resource and the paths configured having trailing forward slashes and having a preferred name", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns/": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "cdn",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+				So(parentResourceInfo, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+			})
+		})
+	})
+
 	Convey("Given a SpecV2Resource configured with a base path that is indeed a sub-resource", t, func() {
 		r := SpecV2Resource{
 			Path: "/api/v1/nodes/{name}/proxy",

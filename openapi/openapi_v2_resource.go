@@ -277,6 +277,11 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 			if o.Paths != nil {
 				if parent, ok := o.Paths[parentURI]; ok {
 					preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+				} else {
+					// Falling back to checking path with trailing slash
+					if parent, ok := o.Paths[parentURI+"/"]; ok {
+						preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+					}
 				}
 			}
 			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
