@@ -592,6 +592,48 @@ func TestParentResourceInfo(t *testing.T) {
 		})
 	})
 
+	Convey("Given a SpecV2Resource configured with a base path and the 2 level parent starts with some base path too and it's not versionied", t, func() {
+		r := SpecV2Resource{
+			Path: "/api/v1/cdns/{id}/something/firewalls/{id}/v3/rules",
+			Paths: map[string]spec.PathItem{
+				"/api/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/api/v1/cdns/{id}/something/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+				So(parentResourceInfo, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewalls")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/cdns")
+				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/api/v1/cdns/{id}/something/firewalls")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/cdns/{id}")
+				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/api/v1/cdns/{id}/something/firewalls/{id}")
+			})
+		})
+	})
+
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (no versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls",
