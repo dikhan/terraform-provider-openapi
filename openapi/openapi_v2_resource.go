@@ -271,13 +271,14 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 		}
 
 		fullParentResourceName := ""
+		preferredParentName := ""
 		for _, parentURI := range parentURIs {
-			if o.Paths == nil {
-				// TODO: handle this better
-				return nil
+			// `o.Paths` is used to read the preferred name over that resource if `x-terraform-preferred-name` is set
+			if o.Paths != nil {
+				if parent, ok := o.Paths[parentURI]; ok {
+					preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+				}
 			}
-			parent := o.Paths[parentURI]
-			preferredParentName, _ := parent.Post.Extensions.GetString(extTfResourceName)
 			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
 			if err != nil {
 				// TODO: handle this error or debug it or do something
