@@ -1222,11 +1222,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	// TODO: Handle case where parent resources have preferred resource names as specified in with the x-terraform-resource-name in the parent path configuration.
-	//  Hence, the resulting autogenered parent id property should honor the preferred name
 	Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
-		//todo [fradiben] : created the resource in this way, looks like is working: only thing that fails is that the prooperty is not marked as required
-		// how to fix that?
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls",
 			Paths: map[string]spec.PathItem{
@@ -1270,7 +1266,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
 			})
 			Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
-				assertSchemaProperty(specSchemaDefinition, "cdn_v1_id", typeString, false, false, true)
+				assertSchemaParentProperty(specSchemaDefinition, "cdn_v1_id")
 			})
 		})
 	})
