@@ -550,9 +550,6 @@ func TestParentResourceInfo(t *testing.T) {
 		})
 	})
 
-	// TODO: figure out how the hell this is working. In https://regex101.com/ the resourceParentNameRegex does not return the versions
-	//  so wondering how this test is working just fine :)
-	//  [fradiben] see: https://github.com/dikhan/terraform-provider-openapi/commit/5ff0f1c6be7b419ee0f503b176383bd41bfa1e83#r34427530
 	Convey("Given a SpecV2Resource configured with a base path that is indeed a sub-resource with multiple levels", t, func() {
 		r := SpecV2Resource{
 			Path: "/api/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
