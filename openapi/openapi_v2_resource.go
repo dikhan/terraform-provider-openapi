@@ -2,12 +2,13 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/go-openapi/spec"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/go-openapi/spec"
 )
 
 const pathParameterRegex = "/({[\\w]*})*/"
@@ -44,7 +45,7 @@ const resourceNameRegex = "((/\\w*[/]?))+$"
 // matches[1][1]: Group 1. /v2/firewalls
 // matches[1][2]: Group 2. v2
 // matches[1][3]: Group 3. firewalls
-const resourceParentNameRegex = `(\/(?:(?:[^v\d]?)\w+\/)?(?:(v\d+)\/)?(\w+))\/{\w+}`
+const resourceParentNameRegex = `(\/(?:\w+\/)?(?:v\d+\/)?\w+)\/{\w+}`
 
 const resourceInstanceRegex = "((?:.*)){.*}"
 const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
