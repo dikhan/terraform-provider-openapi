@@ -48,7 +48,6 @@ const resourceNameRegex = "((/\\w*[/]?))+$"
 const resourceParentNameRegex = `(\/(?:\w+\/)?(?:v\d+\/)?\w+)\/{\w+}`
 
 const resourceInstanceRegex = "((?:.*)){.*}"
-const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
 // Definition level extensions
 const extTfImmutable = "x-terraform-immutable"
