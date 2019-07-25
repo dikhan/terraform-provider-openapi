@@ -301,43 +301,25 @@ func TestBuildResourceName(t *testing.T) {
 	testCases := []struct {
 		path                 string
 		paths                map[string]spec.PathItem
+		rootPathItem         spec.PathItem
 		expectedResourceName string
 		expectedError        error
 	}{
 		{
-			path:                 "/cdns",
-			paths:                nil,
-			expectedResourceName: "cdns",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1/cdns",
-			paths:                nil,
-			expectedResourceName: "cdns_v1",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v11/cdns",
-			paths:                nil,
-			expectedResourceName: "cdns_v11",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1.1.1/cdns",
-			paths:                nil,
-			expectedResourceName: "cdns", // semver in paths is not supported at the moment, this documents the resource output for such use case
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1a/cdns",
-			paths:                nil,
-			expectedResourceName: "cdns", //TODO: possible bug
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1/cdns/",
-			paths:                nil,
-			expectedResourceName: "cdns_v1",
+			path:  "/v1/cdns",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: "cdn",
+							},
+						},
+					},
+				},
+			},
+			expectedResourceName: "cdn_v1",
 			expectedError:        nil,
 		},
 		{
@@ -353,70 +335,11 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
-			path: "/v1/cdns/{id}/firewalls",
-			paths: map[string]spec.PathItem{
-				"/v1/cdns": {
-					PathItemProps: spec.PathItemProps{
-						Post: &spec.Operation{},
-					},
-				},
-			},
-			expectedResourceName: "cdns_v1_firewalls",
-			expectedError:        nil,
-		},
-		{
-			path: "/cdns/{id}/v1/firewalls",
-			paths: map[string]spec.PathItem{
-				"/cdns": {
-					PathItemProps: spec.PathItemProps{
-						Post: &spec.Operation{},
-					},
-				},
-			},
-			expectedResourceName: "cdns_firewalls_v1",
-			expectedError:        nil,
-		},
-		{
-			path: "/v1/cdns/{id}/v2/firewalls",
-			paths: map[string]spec.PathItem{
-				"/v1/cdns": {
-					PathItemProps: spec.PathItemProps{
-						Post: &spec.Operation{},
-					},
-				},
-			},
-			expectedResourceName: "cdns_v1_firewalls_v2",
-			expectedError:        nil,
-		},
-		{
 			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
 			paths: map[string]spec.PathItem{
 				"/v1/cdns": {
 					PathItemProps: spec.PathItemProps{
 						Post: &spec.Operation{},
-					},
-				},
-				"/v1/cdns/{id}/v2/firewalls": {
-					PathItemProps: spec.PathItemProps{
-						Post: &spec.Operation{},
-					},
-				},
-			},
-			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
-			expectedError:        nil,
-		},
-		{
-			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
-			paths: map[string]spec.PathItem{
-				"/v1/cdns": {
-					PathItemProps: spec.PathItemProps{
-						Post: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{
-								Extensions: spec.Extensions{
-									extTfResourceName: "cdn",
-								},
-							},
-						},
 					},
 				},
 				"/v1/cdns/{id}/v2/firewalls": {
@@ -431,19 +354,7 @@ func TestBuildResourceName(t *testing.T) {
 					},
 				},
 			},
-			expectedResourceName: "cdn_v1_firewall_v2_rules_v3",
-			expectedError:        nil,
-		},
-		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
-			path: "/v1/cdns/{id}/firewalls/v3/rules",
-			paths: map[string]spec.PathItem{
-				"/v1/cdns": {
-					PathItemProps: spec.PathItemProps{
-						Post: &spec.Operation{},
-					},
-				},
-			},
-			expectedResourceName: "cdns_v1_rules_v3",
+			expectedResourceName: "cdns_v1_firewall_v2_rules_v3",
 			expectedError:        nil,
 		},
 	}
@@ -451,8 +362,9 @@ func TestBuildResourceName(t *testing.T) {
 	for _, tc := range testCases {
 		Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
 			r := SpecV2Resource{
-				Path:  tc.path,
-				Paths: tc.paths,
+				Path:         tc.path,
+				Paths:        tc.paths,
+				RootPathItem: tc.rootPathItem,
 			}
 
 			Convey("When buildResourceName is called", func() {
