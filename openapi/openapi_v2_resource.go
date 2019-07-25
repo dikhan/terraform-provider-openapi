@@ -152,10 +152,7 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 // /v1/cdns/{id} -> cdns_v1
 // /v1/cdns/{id} and preferred name being cdn -> cdn_v1
 func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName string) (string, error) {
-	nameRegex, err := regexp.Compile(resourceNameRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
-	}
+	nameRegex, _ := regexp.Compile(resourceNameRegex)
 	var resourceName string
 	matches := nameRegex.FindStringSubmatch(resourcePath)
 	if len(matches) < 2 {
@@ -167,10 +164,7 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 		resourceName = preferredName
 	}
 
-	versionRegex, err := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
-	}
+	versionRegex, _ := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
 
 	fullResourceName := resourceName
 	v := versionRegex.FindAllStringSubmatch(resourcePath, -1)
