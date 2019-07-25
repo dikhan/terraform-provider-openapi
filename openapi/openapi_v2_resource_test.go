@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -403,6 +404,12 @@ func TestBuildResourceNameFromPath(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			path:                 "/v1/cdns",
+			preferredName:        "cdn",
+			expectedResourceName: "cdn_v1",
+			expectedError:        nil,
+		},
+		{
 			path:                 "/v11/cdns",
 			preferredName:        "",
 			expectedResourceName: "cdns_v11",
@@ -467,6 +474,24 @@ func TestBuildResourceNameFromPath(t *testing.T) {
 			preferredName:        "",
 			expectedResourceName: "rules_v3",
 			expectedError:        nil,
+		},
+		{
+			path:                 "/",
+			preferredName:        "",
+			expectedResourceName: "",
+			expectedError:        nil,
+		},
+		{
+			path:                 "",
+			preferredName:        "",
+			expectedResourceName: "",
+			expectedError:        nil,
+		},
+		{
+			path:                 "&^",
+			preferredName:        "",
+			expectedResourceName: "",
+			expectedError:        errors.New("could not find a valid name for resource instance path '&^'"),
 		},
 	}
 
