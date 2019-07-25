@@ -27,7 +27,7 @@ var openAPIResourceNameCDN = fmt.Sprintf("%s_%s", providerName, resourceCDNName)
 var openAPIResourceInstanceNameCDN = "my_cdn"
 var openAPIResourceStateCDN = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
 
-const resourceCDNFirewallName = "cdns_v1_firewalls_v1"
+const resourceCDNFirewallName = "cdn_v1_firewalls_v1"
 
 var openAPIResourceNameCDNFirewall = fmt.Sprintf("%s_%s", providerName, resourceCDNFirewallName)
 var openAPIResourceInstanceNameCDNFirewall = "my_cdn_firewall_v1"
@@ -397,7 +397,7 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", expectedCDNLabel),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
+						openAPIResourceStateCDNFirewall, "cdn_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
 				),
@@ -409,7 +409,7 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", "updatedCDNLabel"),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
+						openAPIResourceStateCDNFirewall, "cdn_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDNFirewall, "label", "updatedFWLabel"),
 				),
@@ -450,11 +450,11 @@ func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testin
 		}
 		# URI /v1/cdns/{parent_id}/v1/firewalls/
         resource "%s" "%s" {
-           # cdns_v1_id = %s.id All parent properties must be specified in subresources
+           # cdn_v1_id = %s.id All parent properties must be specified in subresources
            label = "%s"
         }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedCDNFirewallLabel)
 
-	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"cdns_v1_id\" is required, but no definition was found.*")
+	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"cdn_v1_id\" is required, but no definition was found.*")
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:                true,
 		Providers:                 testAccProviders,
@@ -507,7 +507,7 @@ func TestAccCDN_ImportSubResource(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", expectedCDNLabel),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDNFirewall, "cdns_v1_id", expectedCDNID),
+						openAPIResourceStateCDNFirewall, "cdn_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDNFirewall, "label", expectedCDNFirewallLabel),
 				),
@@ -521,7 +521,8 @@ func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["label"])
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["id"])
 	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["label"])
-	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["cdn_v1_id"])
+	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["cdn_v1_id"])
+	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["cdns_v1_id"])
 }
 
 func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
@@ -532,7 +533,7 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
 		}
 		# URI /v1/cdns/{parent_id}/v1/firewalls/
         resource "%s" "%s" {
-           cdns_v1_id = %s.id
+           cdn_v1_id = %s.id
            label = "%s"
         }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
 }
