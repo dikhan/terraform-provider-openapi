@@ -358,6 +358,17 @@ func TestBuildResourceName(t *testing.T) {
 			expectedResourceName: "cdns_v1_firewall_v2_rules_v3",
 			expectedError:        nil,
 		},
+		{
+			path:  "?",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+			expectedResourceName: "",
+			expectedError:        errors.New("could not find a valid name for resource instance path '?'"),
+		},
 	}
 
 	for _, tc := range testCases {
