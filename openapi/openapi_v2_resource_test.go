@@ -190,7 +190,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 	})
 
 	Convey("Given paths is nil", t, func() {
-		var paths map[string]spec.PathItem = nil
+		var paths map[string]spec.PathItem
 		Convey("When newSpecV2Resource method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2Resource("/v1/users", spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions, paths)
