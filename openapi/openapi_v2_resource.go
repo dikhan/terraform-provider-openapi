@@ -283,7 +283,7 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
 			if err != nil {
 				// TODO: handle this error or debug it or do something
-				return nil
+				return nil //untested
 			}
 			parentResourceNames = append(parentResourceNames, parentResourceName)
 			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
