@@ -2181,6 +2181,87 @@ definitions:
 		})
 	})
 
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that is multi region", t, func() {
+		swaggerContent := `swagger: "2.0"
+x-terraform-resource-regions-keyword: "sea1"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: some.subdomain.${keyword}.domain.com
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1_sea1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1_sea1")
+			})
+			cndV1Resource := terraformCompliantResources[0]
+			Convey("And the cndV1Resource should not be considered a subresource", func() {
+				subRes := cndV1Resource.getParentResourceInfo()
+				So(err, ShouldBeNil)
+				So(subRes, ShouldBeNil)
+			})
+			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				resOperation := cndV1Resource.getResourceOperations()
+				So(resOperation.Get.responses, ShouldContainKey, 200)
+				So(resOperation.Post.responses, ShouldContainKey, 201)
+				So(resOperation.Put, ShouldBeNil)
+				So(resOperation.Delete, ShouldBeNil)
+			})
+			Convey("And each operation exposed on the resource has a nil timeout", func() {
+				timeoutSpec, err := cndV1Resource.getTimeouts()
+				So(err, ShouldBeNil)
+				So(timeoutSpec.Post, ShouldBeNil)
+				So(timeoutSpec.Get, ShouldBeNil)
+				So(timeoutSpec.Put, ShouldBeNil)
+				So(timeoutSpec.Delete, ShouldBeNil)
+			})
+			Convey("And the host is correctly configured according to the swagger", func() {
+				host, err := cndV1Resource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldEqual, "some.subdomain.sea1.domain.com")
+			})
+
+			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
+				actualResourceSchema, err := cndV1Resource.getResourceSchema()
+				So(err, ShouldBeNil)
+				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
+				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
+			})
+		})
+	})
+
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
