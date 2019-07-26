@@ -1985,7 +1985,7 @@ definitions:
 		})
 	})
 
-	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform parent resource /v1/cdns that uses a preferred resource name and a terraform compatible subresource /v1/cdns/{id}/v1/firewalls", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: 127.0.0.1 
 paths:
@@ -1996,6 +1996,7 @@ paths:
 
   /v1/cdns:
     post:
+      x-terraform-resource-name: "cdn"
       parameters:
       - in: "body"
         name: "body"
@@ -2122,8 +2123,8 @@ definitions:
 				So(err, ShouldBeNil)
 			})
 
-			cdnV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1")
-			firewallV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1_firewalls_v1")
+			cdnV1Resource := getExpectedResource(terraformCompliantResources, "cdn_v1")
+			firewallV1Resource := getExpectedResource(terraformCompliantResources, "cdn_v1_firewalls_v1")
 
 			Convey("And the resources info map should only contain a resource called both the parent cdns_v1 resource and the subresource cdns_v1_firewalls_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 2)
@@ -2134,8 +2135,8 @@ definitions:
 			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
 				subRes := firewallV1Resource.getParentResourceInfo()
 				So(subRes, ShouldNotBeNil)
-				So(subRes.parentResourceNames, ShouldResemble, []string{"cdns_v1"})
-				So(subRes.fullParentResourceName, ShouldEqual, "cdns_v1")
+				So(subRes.parentResourceNames, ShouldResemble, []string{"cdn_v1"})
+				So(subRes.fullParentResourceName, ShouldEqual, "cdn_v1")
 				Convey("And the full resourcePath is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
 					parentID := "42"
 					resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
@@ -2174,11 +2175,7 @@ definitions:
 				So(idExists, ShouldBeTrue)
 				labelExists, _ := assertPropertyExists(actualResourceSchema.Properties, "label")
 				So(labelExists, ShouldBeTrue)
-				// TODO: the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
-				//  the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
-				//  have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
-				//  That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
-				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdns_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
+				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdn_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
 			})
 
 		})
