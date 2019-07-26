@@ -53,7 +53,7 @@ paths:
         schema:
           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"    
       ....
-  /v1/cdns/{parent_id}/v1/firewalls/{id}:
+  /v1/cdns/{cdn_id}/v1/firewalls/{id}:
     get:
       ...
       
@@ -106,6 +106,9 @@ hence the parent property generated will be ```cdns_v1_id```. The ```_id``` is a
 
 If the cdn endpoint was not using versioning in the path (e,g: ```/cdns```), then the automatically generated property would
 not have the version in the name either. The parent property name generated in this case would be ```cdns_id```.
+
+Sub-resources with a preferred parent resource name specified in the OpenAPI doc using the [x-terraform-resource-name](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourceName) 
+extension will use the preferred parent resource name in the terraform configuration file.
 
 ### How will the API requests for sub-resources look like?
 
