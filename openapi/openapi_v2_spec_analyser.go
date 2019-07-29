@@ -43,6 +43,25 @@ func newSpecAnalyserV2(openAPIDocumentFilename string) (*specV2Analyser, error) 
 	}, nil
 }
 
+func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string, resourceRootPath string, resourceRoot, pathItem *spec.PathItem, resourcePayloadSchemaDef *spec.Schema) ([]SpecResource, error) {
+	var resources []SpecResource
+	for _, regionName := range regions {
+		r, err := newSpecV2ResourceWithRegion(regionName, resourceRootPath, *resourcePayloadSchemaDef, *resourceRoot, *pathItem, specAnalyser.d.Spec().Definitions, specAnalyser.d.Spec().Paths.Paths)
+		if err != nil {
+			log.Printf("[WARN] ignoring resource '%s' due to an error while creating a creating the SpecV2Resource: %s", resourceRootPath, err)
+			continue
+		}
+		regionHost, err := r.getHost()
+		if err != nil {
+			log.Printf("multi region host for resource '%s' is not valid: ", err)
+			continue
+		}
+		log.Printf("[INFO] multi region resource name = %s, region = '%s', host = '%s'", r.getResourceName(), regionName, regionHost)
+		resources = append(resources, r)
+	}
+	return resources, nil
+}
+
 func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecResource, error) {
 	var resources []SpecResource
 	start := time.Now()

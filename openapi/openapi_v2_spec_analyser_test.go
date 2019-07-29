@@ -1920,6 +1920,67 @@ paths:
 	})
 }
 
+func TestCreateMultiRegionResources(t *testing.T) {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a multiregion resource", t, func() {
+		swaggerContent := `swagger: "2.0"
+x-terraform-resource-regions-keyword: "rst1"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: some.subdomain.${keyword}.domain.com
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When createMultiRegionResources method is called with a map of regions and corresponding resolved URLs", func() {
+			regions := []string{"rst1"}
+			resourceRootPath := "/v1/cdns"
+			pathRootItem := a.d.Spec().Paths.Paths["/v1/cdns"]
+			pathItem := a.d.Spec().Paths.Paths["/v1/cdns/{id}"]
+			resourcePayloadSchemaDef := a.d.Spec().Definitions["ContentDeliveryNetwork"]
+			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, &pathRootItem, &pathItem, &resourcePayloadSchemaDef)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1_rst1", func() {
+				So(len(multiRegionResources), ShouldEqual, 1)
+				So(multiRegionResources[0].getResourceName(), ShouldEqual, "cdns_v1_rst1")
+			})
+			cdnMultiRegionResource := multiRegionResources[0]
+			Convey("And the host is correctly configured according to the swagger", func() {
+				host, err := cdnMultiRegionResource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldEqual, "some.subdomain.rst1.domain.com")
+			})
+		})
+	})
+}
+
 func TestGetTerraformCompliantResources(t *testing.T) {
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls but missing the parent resource resource description", t, func() {
