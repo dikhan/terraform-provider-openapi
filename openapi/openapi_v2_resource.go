@@ -18,7 +18,6 @@ const pathParameterRegex = "/({[\\w]*})*/"
 // to the resource in question and not any other version showing in the path before the resource name
 const resourceVersionRegexTemplate = "/(v[\\d]*)/%s"
 
-const resourceVersionRegex = "(/v[0-9]*/)"
 const resourceNameRegex = "((/\\w*[/]?))+$"
 
 // resourceParentNameRegex is the regex used to identify the different parents from a path that is a sub-resource. If used
@@ -45,10 +44,9 @@ const resourceNameRegex = "((/\\w*[/]?))+$"
 // matches[1][1]: Group 1. /v2/firewalls
 // matches[1][2]: Group 2. v2
 // matches[1][3]: Group 3. firewalls
-const resourceParentNameRegex = `(\/?([v[\d]*]?)\/(\w+))\/{\w*}`
+const resourceParentNameRegex = `(\/(?:\w+\/)?(?:v\d+\/)?\w+)\/{\w+}`
 
 const resourceInstanceRegex = "((?:.*)){.*}"
-const swaggerResourcePayloadDefinitionRegex = "(\\w+)[^//]*$"
 
 // Definition level extensions
 const extTfImmutable = "x-terraform-immutable"
@@ -84,16 +82,21 @@ type SpecV2Resource struct {
 	// SchemaDefinitions contains all the definitions which might be needed in case the resource schema contains properties
 	// of type object which in turn refer to other definitions
 	SchemaDefinitions map[string]spec.Schema
+
+	Paths map[string]spec.PathItem
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
-func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema) (*SpecV2Resource, error) {
-	return newSpecV2ResourceWithRegion("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions)
+func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
+	return newSpecV2ResourceWithRegion("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
 }
 
-func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema) (*SpecV2Resource, error) {
+func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path must not be empty")
+	}
+	if paths == nil {
+		return nil, fmt.Errorf("paths must not be nil")
 	}
 	resource := &SpecV2Resource{
 		Path:              path,
@@ -102,6 +105,7 @@ func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Sche
 		RootPathItem:      rootPathItem,
 		InstancePathItem:  instancePathItem,
 		SchemaDefinitions: schemaDefinitions,
+		Paths:             paths,
 	}
 	name, err := resource.buildResourceName()
 	if err != nil {
@@ -122,12 +126,32 @@ func (o *SpecV2Resource) getResourceName() string {
 // root path /resource/{id} or if specified the value set in the x-terraform-resource-name extension is used instead along
 // with the version (if applicable)
 func (o *SpecV2Resource) buildResourceName() (string, error) {
-	resourcePath := o.Path
-
-	nameRegex, err := regexp.Compile(resourceNameRegex)
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceNameRegex regex '%s': %s", resourceNameRegex, err)
+	preferredName := ""
+	if preferred := o.getResourceTerraformName(); preferred != "" {
+		preferredName = preferred
 	}
+	fullResourceName, err := o.buildResourceNameFromPath(o.Path, preferredName)
+	if err != nil {
+		return "", err
+	}
+	parentResourceInfo := o.getParentResourceInfo()
+	if parentResourceInfo != nil {
+		fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
+	}
+	return fullResourceName, nil
+}
+
+// buildResourceNameFromPath returns the name of the resource (including the version if applicable and using the preferred name
+// if provided). The name will be calculated using the last part of the path which is meant to be the resource name that the URI
+// refers to (e,g: /resource/{id}). If the path is versioned /v1/resource/{id} then the corresponding returned name will
+// be either the built name from the path or the preferred name with the version appended at the end.
+// For instance, given the following input the output will be:
+// /cdns/{id} -> cdns
+// /cdns/{id} and preferred name being cdn -> cdn
+// /v1/cdns/{id} -> cdns_v1
+// /v1/cdns/{id} and preferred name being cdn -> cdn_v1
+func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName string) (string, error) {
+	nameRegex, _ := regexp.Compile(resourceNameRegex)
 	var resourceName string
 	matches := nameRegex.FindStringSubmatch(resourcePath)
 	if len(matches) < 2 {
@@ -135,14 +159,11 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	}
 	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
 
-	if preferredName := o.getResourceTerraformName(); preferredName != "" {
+	if preferredName != "" {
 		resourceName = preferredName
 	}
 
-	versionRegex, err := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
-	if err != nil {
-		return "", fmt.Errorf("an error occurred while compiling the resourceVersionRegex regex '%s': %s", resourceVersionRegex, err)
-	}
+	versionRegex, _ := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
 
 	fullResourceName := resourceName
 	v := versionRegex.FindAllStringSubmatch(resourcePath, -1)
@@ -151,10 +172,6 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 		fullResourceName = fmt.Sprintf("%s_%s", resourceName, version)
 	}
 
-	parentResourceInfo := o.getParentResourceInfo()
-	if parentResourceInfo != nil {
-		fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
-	}
 	return fullResourceName, nil
 }
 
@@ -237,25 +254,41 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 	if len(parentMatches) > 0 {
 		var parentURI string
 		var parentInstanceURI string
-		fullParentResourceName := ""
+
 		var parentResourceNames, parentURIs, parentInstanceURIs []string
 		for _, match := range parentMatches {
 			fullMatch := match[0]
 			rootPath := match[1]
-			parentVersion := match[2]
-			parentResourceName := match[3]
 			parentURI = parentInstanceURI + rootPath
 			parentInstanceURI = parentInstanceURI + fullMatch
-			if parentVersion != "" {
-				parentResourceName = fmt.Sprintf("%s_%s", parentResourceName, parentVersion)
-			}
-			parentResourceNames = append(parentResourceNames, parentResourceName)
-			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
-
 			parentURIs = append(parentURIs, parentURI)
 			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
 		}
+
+		fullParentResourceName := ""
+		preferredParentName := ""
+		for _, parentURI := range parentURIs {
+			// `o.Paths` is used to read the preferred name over that resource if `x-terraform-preferred-name` is set
+			if o.Paths != nil {
+				if parent, ok := o.Paths[parentURI]; ok {
+					preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+				} else {
+					// Falling back to checking path with trailing slash
+					if parent, ok := o.Paths[parentURI+"/"]; ok {
+						preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+					}
+				}
+			}
+			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
+			if err != nil {
+				log.Printf("[ERROR] could not build parent resource info due to the following error: %s", err)
+				return nil //untested
+			}
+			parentResourceNames = append(parentResourceNames, parentResourceName)
+			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
+		}
 		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
+
 		sub := &parentResourceInfo{
 			parentResourceNames:    parentResourceNames,
 			fullParentResourceName: fullParentResourceName,

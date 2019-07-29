@@ -1985,7 +1985,7 @@ definitions:
 		})
 	})
 
-	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform parent resource /v1/cdns that uses a preferred resource name and a terraform compatible subresource /v1/cdns/{id}/v1/firewalls", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: 127.0.0.1 
 paths:
@@ -1996,6 +1996,7 @@ paths:
 
   /v1/cdns:
     post:
+      x-terraform-resource-name: "cdn"
       parameters:
       - in: "body"
         name: "body"
@@ -2122,8 +2123,8 @@ definitions:
 				So(err, ShouldBeNil)
 			})
 
-			cdnV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1")
-			firewallV1Resource := getExpectedResource(terraformCompliantResources, "cdns_v1_firewalls_v1")
+			cdnV1Resource := getExpectedResource(terraformCompliantResources, "cdn_v1")
+			firewallV1Resource := getExpectedResource(terraformCompliantResources, "cdn_v1_firewalls_v1")
 
 			Convey("And the resources info map should only contain a resource called both the parent cdns_v1 resource and the subresource cdns_v1_firewalls_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 2)
@@ -2134,8 +2135,8 @@ definitions:
 			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
 				subRes := firewallV1Resource.getParentResourceInfo()
 				So(subRes, ShouldNotBeNil)
-				So(subRes.parentResourceNames, ShouldResemble, []string{"cdns_v1"})
-				So(subRes.fullParentResourceName, ShouldEqual, "cdns_v1")
+				So(subRes.parentResourceNames, ShouldResemble, []string{"cdn_v1"})
+				So(subRes.fullParentResourceName, ShouldEqual, "cdn_v1")
 				Convey("And the full resourcePath is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
 					parentID := "42"
 					resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
@@ -2174,13 +2175,90 @@ definitions:
 				So(idExists, ShouldBeTrue)
 				labelExists, _ := assertPropertyExists(actualResourceSchema.Properties, "label")
 				So(labelExists, ShouldBeTrue)
-				// TODO: the parent property name should match the one in the URI. For instance, for the following URI /v1/cdns/{id}/firewalls
-				//  the parent id property will be: cdns_v1. Note for this first iteration we will not use the 'preferred name' that might
-				//  have been specified in the root resource OpenAPI configuration with the extension x-terraform-resource-name: "cdn".
-				//  That will be done in the second iteration (to make this slice thin enough and also enable more generic sub-resource processing)
-				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdns_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
+				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdn_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
 			})
 
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that is multi region", t, func() {
+		swaggerContent := `swagger: "2.0"
+x-terraform-resource-regions-keyword: "sea1"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: some.subdomain.${keyword}.domain.com
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resources info map should only contain a resource called cdns_v1_sea1", func() {
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1_sea1")
+			})
+			cndV1Resource := terraformCompliantResources[0]
+			Convey("And the cndV1Resource should not be considered a subresource", func() {
+				subRes := cndV1Resource.getParentResourceInfo()
+				So(err, ShouldBeNil)
+				So(subRes, ShouldBeNil)
+			})
+			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				resOperation := cndV1Resource.getResourceOperations()
+				So(resOperation.Get.responses, ShouldContainKey, 200)
+				So(resOperation.Post.responses, ShouldContainKey, 201)
+				So(resOperation.Put, ShouldBeNil)
+				So(resOperation.Delete, ShouldBeNil)
+			})
+			Convey("And each operation exposed on the resource has a nil timeout", func() {
+				timeoutSpec, err := cndV1Resource.getTimeouts()
+				So(err, ShouldBeNil)
+				So(timeoutSpec.Post, ShouldBeNil)
+				So(timeoutSpec.Get, ShouldBeNil)
+				So(timeoutSpec.Put, ShouldBeNil)
+				So(timeoutSpec.Delete, ShouldBeNil)
+			})
+			Convey("And the host is correctly configured according to the swagger", func() {
+				host, err := cndV1Resource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldEqual, "some.subdomain.sea1.domain.com")
+			})
+
+			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
+				actualResourceSchema, err := cndV1Resource.getResourceSchema()
+				So(err, ShouldBeNil)
+				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
+				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
+			})
 		})
 	})
 

@@ -53,7 +53,7 @@ paths:
         schema:
           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"    
       ....
-  /v1/cdns/{parent_id}/v1/firewalls/{id}:
+  /v1/cdns/{cdn_id}/v1/firewalls/{id}:
     get:
       ...
       
@@ -76,11 +76,12 @@ Note: At the moment any path that contains path parameters (e,g: {id}) is consid
 ### How do sub-resources look like in the terraform configuration file?
 
 When the OpenAPI Terraform provider would configured itself at runtime based on the above OpenAPI document, it will end up
-exposing two resources. The cdns and the firewalls. 
+exposing two resources. The ```cdns_v1``` and the ```cdns_v1_firewalls_v1```. The terraform resource name of the sub-resource 
+will be constructed combining the resource name of the parent/s plus the resource name of the sub-resource. 
 
-The corresponding sub-resource Terraform configuration will contain the properties as defined in the model definition
-configured in the POST operation AND the parent properties. The parent property/properties are added automatically by the
-provider when creating the resource schema. This enables the user to link subresources to parent resources from the terraform
+As far as the Terraform configuration for the sub-resource, it will contain the properties as defined in the model definition
+configured in the POST operation AND the corresponding parent id properties. The parent property/properties are added automatically by the
+provider when creating the resource schema. This enables the user to link sub-resources to parent resources from the terraform
 configuration file. The following example describes how the above OpenAPI document will be translated into the Terraform 
 configuration: 
 
@@ -100,12 +101,16 @@ resource "openapi_cdns_v1_firewalls_v1" "my_firewall_v1" {
 ````
 
 Note the property ```cdns_v1_id``` is not described in the definition ```ContentDeliveryNetworkFirewallV1```. This property was
-added automatically by the provider. The parent property name will be built based on the parent URI path including the version 
-(must be next to the resource name - e,g: /v1/cdns) if applicable. In this example the parent URI is ```/v1/cdns```, 
-hence the parent property generated will be ```cdns_v1_id```. The ```_id``` is appended after the resource parent name.
+added automatically by the provider. The sub-resource parent property name will be the same as the parent resource name 
+with ```_id``` appended at the end. In this example the parent resource name is ```cdns_v1```, hence the sub-resource parent property
+generated will be ```cdns_v1_id```
 
 If the cdn endpoint was not using versioning in the path (e,g: ```/cdns```), then the automatically generated property would
 not have the version in the name either. The parent property name generated in this case would be ```cdns_id```.
+
+Sub-resources with a preferred parent resource name specified in the OpenAPI doc using the [x-terraform-resource-name](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourceName) 
+extension will use the preferred parent resource name for both the subresource name as well as the parent property names
+in the terraform configuration file.
 
 ### How will the API requests for sub-resources look like?
 

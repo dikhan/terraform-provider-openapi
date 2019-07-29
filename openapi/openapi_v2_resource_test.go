@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -22,7 +23,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -40,7 +41,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -59,7 +60,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -78,7 +79,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -97,7 +98,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -109,6 +110,13 @@ func TestNewSpecV2Resource(t *testing.T) {
 
 	Convey("Given a root path which has path parameters '/api/v1/nodes/{name}/proxy' and a root path item", t, func() {
 		path := "/api/v1/nodes/{name}/proxy"
+		paths := map[string]spec.PathItem{
+			"/api/v1/nodes": {
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
 				Post: &spec.Operation{},
@@ -116,7 +124,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -141,7 +149,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When getResourceName method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -162,7 +170,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 		}
 		Convey("When newSpecV2Resource method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			_, err := newSpecV2Resource(invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions)
+			_, err := newSpecV2Resource(invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -173,9 +181,22 @@ func TestNewSpecV2Resource(t *testing.T) {
 		path := ""
 		Convey("When newSpecV2Resource method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			_, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions)
-			Convey("And the err returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
+			r, err := newSpecV2Resource(path, spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			Convey("And the err returned output should match the expectation", func() {
+				So(err.Error(), ShouldEqual, "path must not be empty")
+				So(r, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given paths is nil", t, func() {
+		var paths map[string]spec.PathItem
+		Convey("When newSpecV2Resource method is called", func() {
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource("/v1/users", spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions, paths)
+			Convey("And the err returned output should match the expectation", func() {
+				So(err.Error(), ShouldEqual, "paths must not be nil")
+				So(r, ShouldBeNil)
 			})
 		})
 	})
@@ -280,75 +301,82 @@ func TestBuildResourceName(t *testing.T) {
 
 	testCases := []struct {
 		path                 string
+		paths                map[string]spec.PathItem
+		rootPathItem         spec.PathItem
 		expectedResourceName string
 		expectedError        error
 	}{
 		{
-			path:                 "/cdns",
-			expectedResourceName: "cdns",
+			path:  "/v1/cdns",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: "cdn",
+							},
+						},
+					},
+				},
+			},
+			expectedResourceName: "cdn_v1",
 			expectedError:        nil,
 		},
 		{
-			path:                 "/v1/cdns",
-			expectedResourceName: "cdns_v1",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v11/cdns",
-			expectedResourceName: "cdns_v11",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1.1.1/cdns",
-			expectedResourceName: "cdns", // semver in paths is not supported at the moment, this documents the resource output for such use case
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1a/cdns",
-			expectedResourceName: "cdns", //TODO: possible bug
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1/cdns/",
-			expectedResourceName: "cdns_v1",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/cdns/{id}/firewalls",
+			path: "/cdns/{id}/firewalls",
+			paths: map[string]spec.PathItem{
+				"/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
 			expectedResourceName: "cdns_firewalls",
 			expectedError:        nil,
 		},
 		{
-			path:                 "/v1/cdns/{id}/firewalls",
-			expectedResourceName: "cdns_v1_firewalls",
+			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "firewall",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedResourceName: "cdns_v1_firewall_v2_rules_v3",
 			expectedError:        nil,
 		},
 		{
-			path:                 "/cdns/{id}/v1/firewalls",
-			expectedResourceName: "cdns_firewalls_v1",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1/cdns/{id}/v2/firewalls",
-			expectedResourceName: "cdns_v1_firewalls_v2",
-			expectedError:        nil,
-		},
-		{
-			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
-			expectedResourceName: "cdns_v1_firewalls_v2_rules_v3",
-			expectedError:        nil,
-		},
-		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
-			path:                 "/v1/cdns/{id}/firewalls/v3/rules",
-			expectedResourceName: "cdns_v1_rules_v3",
-			expectedError:        nil,
+			path:  "?",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+			expectedResourceName: "",
+			expectedError:        errors.New("could not find a valid name for resource instance path '?'"),
 		},
 	}
 
 	for _, tc := range testCases {
 		Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
 			r := SpecV2Resource{
-				Path: tc.path,
+				Path:         tc.path,
+				Paths:        tc.paths,
+				RootPathItem: tc.rootPathItem,
 			}
 
 			Convey("When buildResourceName is called", func() {
@@ -364,42 +392,143 @@ func TestBuildResourceName(t *testing.T) {
 			})
 		})
 	}
+}
 
-	// TODO: Add support for sub-resources names to honour preferred parent resource name as specified in with the x-terraform-resource-name in the parent path configuration.
-	//  For instance, if /v1/cdns/{id}/v1/firewalls path had the x-terraform-resource-name defined and the value was "cdn_v1_firewall"
-	//  the expected returned name would be "cdn_v1_firewall_v1" (note the version should be automatically injected)
-	Convey("Given a SpecV2Resource with a path and a preferred terraform resource name", t, func() {
-		expectedResourceName := "user"
-		r := SpecV2Resource{
-			Path: "/users",
-			RootPathItem: spec.PathItem{
-				PathItemProps: spec.PathItemProps{
-					Post: &spec.Operation{
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								extTfResourceName: expectedResourceName,
-							},
-						},
-					},
-				},
-			},
-		}
-		Convey("When buildResourceName is called", func() {
-			resourceName, err := r.buildResourceName()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the resource name should be the expected one", func() {
-				So(resourceName, ShouldEqual, expectedResourceName)
+func TestBuildResourceNameFromPath(t *testing.T) {
+
+	testCases := []struct {
+		path                 string
+		expectedResourceName string
+		preferredName        string
+		expectedError        error
+	}{
+		{
+			path:                 "/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns",
+			preferredName:        "cdn",
+			expectedResourceName: "cdn_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v11/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns_v11",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1.1.1/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns", // semver in paths is not supported at the moment, this documents the resource output for such use case
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1a/cdns",
+			preferredName:        "",
+			expectedResourceName: "cdns",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/",
+			preferredName:        "",
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/cdns/{id}/v1/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls_v1",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls",
+			preferredName:        "",
+			expectedResourceName: "firewalls_v2",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			preferredName:        "",
+			expectedResourceName: "rules_v3",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/rules",
+			preferredName:        "",
+			expectedResourceName: "rules",
+			expectedError:        nil,
+		},
+		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
+			path:                 "/v1/cdns/{id}/firewalls/v3/rules",
+			preferredName:        "",
+			expectedResourceName: "rules_v3",
+			expectedError:        nil,
+		},
+		{
+			path:                 "/",
+			preferredName:        "",
+			expectedResourceName: "",
+			expectedError:        nil,
+		},
+		{
+			path:                 "",
+			preferredName:        "",
+			expectedResourceName: "",
+			expectedError:        nil,
+		},
+		{
+			path:                 "&^",
+			preferredName:        "",
+			expectedResourceName: "",
+			expectedError:        errors.New("could not find a valid name for resource instance path '&^'"),
+		},
+	}
+
+	for _, tc := range testCases {
+		Convey("Given a SpecV2Resource", t, func() {
+			r := SpecV2Resource{}
+			Convey("When buildResourceName is called with the given path and preferred name", func() {
+				resourceName, err := r.buildResourceNameFromPath(tc.path, tc.preferredName)
+				if tc.expectedError != nil {
+					Convey("Then the error returned should be the expected one", func() {
+						So(err.Error(), ShouldEqual, tc.expectedError.Error())
+					})
+				}
+				Convey("And the resource name should be the expected one", func() {
+					So(resourceName, ShouldEqual, tc.expectedResourceName)
+				})
 			})
 		})
-	})
+	}
 }
 
 func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a root path", t, func() {
 		r := SpecV2Resource{
-			Path: "/cdns",
+			Path:  "/cdns",
+			Paths: map[string]spec.PathItem{},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -410,7 +539,8 @@ func TestParentResourceInfo(t *testing.T) {
 	})
 	Convey("Given a SpecV2Resource configured with a root path using versioning", t, func() {
 		r := SpecV2Resource{
-			Path: "/v1/cdns",
+			Path:  "/v1/cdns",
+			Paths: map[string]spec.PathItem{},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -422,6 +552,13 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (with parent using versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -445,9 +582,175 @@ func TestParentResourceInfo(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a SpecV2Resource configured with a path that is a sub-resource and the paths configured having trailing forward slashes and having a preferred name", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns/": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "cdn",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+				So(parentResourceInfo, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource configured with a base path that is indeed a sub-resource", t, func() {
+		r := SpecV2Resource{
+			Path: "/api/v1/nodes/{name}/proxy",
+			Paths: map[string]spec.PathItem{
+				"/api/v1/nodes": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+				So(parentResourceInfo, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "nodes_v1")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "nodes_v1")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/nodes")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/nodes/{name}")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource configured with a base path that is indeed a sub-resource with multiple levels", t, func() {
+		r := SpecV2Resource{
+			Path: "/api/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			Paths: map[string]spec.PathItem{
+				"/api/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/api/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+				So(parentResourceInfo, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewalls_v2")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls_v2")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/cdns")
+				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/api/v1/cdns/{id}/v2/firewalls")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/cdns/{id}")
+				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/api/v1/cdns/{id}/v2/firewalls/{id}")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource configured with a base path and the 2 level parent starts with some base path too and it's not versionied", t, func() {
+		r := SpecV2Resource{
+			Path: "/api/v1/cdns/{id}/something/firewalls/{id}/v3/rules",
+			Paths: map[string]spec.PathItem{
+				"/api/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/api/v1/cdns/{id}/something/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+				So(parentResourceInfo, ShouldNotBeNil)
+			})
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
+				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewalls")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls")
+			})
+			Convey("And the parentURIs contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/cdns")
+				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/api/v1/cdns/{id}/something/firewalls")
+			})
+			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/cdns/{id}")
+				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/api/v1/cdns/{id}/something/firewalls/{id}")
+			})
+		})
+	})
+
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (no versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -474,6 +777,13 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a sub-resource (both using versioning)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -501,6 +811,18 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a multiple level sub-resource", t, func() {
 		r := SpecV2Resource{
 			Path: "/cdns/{id}/firewalls/{id}/rules",
+			Paths: map[string]spec.PathItem{
+				"/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/cdns/{id}/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -530,6 +852,18 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is indeed a multiple level sub-resource with versioning", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -559,6 +893,13 @@ func TestParentResourceInfo(t *testing.T) {
 	Convey("Given a SpecV2Resource configured with a path that is a subresource but the path is wrongly structured not following best restful practises for building subresource paths (the 'firewalls' parent in the path is missing the id path param)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns/{id}/v2/firewalls/v3/rules",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
 		}
 		Convey("When parentResourceInfo is called", func() {
 			parentResourceInfo := r.getParentResourceInfo()
@@ -578,6 +919,60 @@ func TestParentResourceInfo(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a SpecV2Resource configured with a path that is a subresource and the parents have preferred names", t, func() {
+		expectedCDNResourceName := "cdn"
+		expectedFirewallResourceName := "firewall"
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: expectedCDNResourceName,
+								},
+							},
+						},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: expectedFirewallResourceName,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
+				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewall_v2")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1_firewall_v2")
+			})
+			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
+				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls")
+			})
+			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls/{id}")
+			})
+		})
+	})
+
 }
 
 func assertSchemaProperty(actualSpecSchemaDefinition *specSchemaDefinition, expectedName string, expectedType schemaDefinitionPropertyType, expectedRequired, expectedReadOnly, expectedComputed bool) {
@@ -843,7 +1238,8 @@ func TestGetSchemaDefinition(t *testing.T) {
 
 	Convey("Given a SpecV2Resource containing a subresource path (two level)", t, func() {
 		r := &SpecV2Resource{
-			Path: "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
+			Path:  "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
+			Paths: nil, // [fradiben: not sure if following TODO applies still] --> TODO: populate paths as expected based on the above path so internally the calculation of parent nanes is done properly
 		}
 		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
 			s := &spec.Schema{
@@ -972,56 +1368,54 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	// TODO: Handle case where parent resources have preferred resource names as specified in with the x-terraform-resource-name in the parent path configuration. Hence, the resulting autogenered parent id property should honor the preferred name
-	//Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
-	//	// Specifying here how the parent resource will look like when the preferred name has been speficied
-	//	//parentResource := SpecV2Resource{
-	//	//	RootPathItem: spec.PathItem{
-	//	//		PathItemProps: spec.PathItemProps{
-	//	//			Post: &spec.Operation{
-	//	//				VendorExtensible: spec.VendorExtensible{
-	//	//					Extensions: spec.Extensions{
-	//	//						extTfResourceName: "cdn",
-	//	//					},
-	//	//				},
-	//	//			},
-	//	//		},
-	//	//	},
-	//	//}
-	//	r := &SpecV2Resource{
-	//		Path: "/v1/cdns/{id}/firewalls",
-	//	}
-	//	Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-	//		s := &spec.Schema{
-	//			SchemaProps: spec.SchemaProps{
-	//				Required: []string{"number_required_prop"},
-	//				Properties: map[string]spec.Schema{
-	//					"string_readonly_prop": {
-	//						SchemaProps: spec.SchemaProps{
-	//							Type: spec.StringOrArray{"string"},
-	//						},
-	//						SwaggerSchemaProps: spec.SwaggerSchemaProps{
-	//							ReadOnly: true,
-	//						},
-	//					},
-	//				},
-	//			},
-	//		}
-	//		specSchemaDefinition, err := r.getSchemaDefinition(s)
-	//		Convey("Then the error returned should be nil", func() {
-	//			So(err, ShouldBeNil)
-	//		})
-	//		Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
-	//			So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties) + 1)
-	//		})
-	//		Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-	//			assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false,true, true)
-	//		})
-	//		Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
-	//			assertSchemaProperty(specSchemaDefinition, "cdn_v1_id", typeString, false,false, true)
-	//		})
-	//	})
-	//})
+	Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "cdn",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinition(s)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdn_v1_id")
+			})
+		})
+	})
 }
 
 func TestGetResourcePath(t *testing.T) {
