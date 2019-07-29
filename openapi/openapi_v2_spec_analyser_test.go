@@ -2842,6 +2842,63 @@ definitions:
 			})
 		})
 	})
+
+	Convey("Given a swagger doc that exposes a resource with not valid multi region configuration (x-terraform-resource-regions-serviceProviderName is missing", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "x-terraform-resource-regions-someOtherServiceProvider": "rst, dub",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-resource-host": "some.api.${serviceProviderName}.domain.com",
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetTerraformCompliantResources method is called", func() {
+			r, err := a.GetTerraformCompliantResources()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be empty", func() {
+				So(r, ShouldBeEmpty)
+			})
+		})
+	})
 }
 
 func assertPropertyExists(properties specSchemaDefinitionProperties, name string) (bool, int) {
