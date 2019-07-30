@@ -850,13 +850,9 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("And the map returned should contain uswest", func() {
-				So(regions, ShouldContainKey, "uswest")
-				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
-			})
-			Convey("And the map returned should contain useast", func() {
-				So(regions, ShouldContainKey, "useast")
-				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			Convey("And the list returned should contain uswest and useast", func() {
+				So(regions, ShouldContain, "uswest")
+				So(regions, ShouldContain, "useast")
 			})
 		})
 
@@ -873,7 +869,7 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
-			Convey("And the regions map returned should be empty", func() {
+			Convey("And the regions list returned should be empty", func() {
 				So(regions, ShouldBeEmpty)
 			})
 		})
@@ -888,9 +884,8 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("And the map returned should contain uswest", func() {
-				So(regions, ShouldContainKey, "uswestuseast")
-				So(regions["uswestuseast"], ShouldEqual, "some.api.uswestuseast.domain.com")
+			Convey("And the list returned should contain uswestuseast", func() {
+				So(regions, ShouldContain, "uswestuseast")
 			})
 		})
 
@@ -904,13 +899,9 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("And the map returned should contain uswest", func() {
-				So(regions, ShouldContainKey, "uswest")
-				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
-			})
-			Convey("And the map returned should contain useast", func() {
-				So(regions, ShouldContainKey, "useast")
-				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			Convey("And the list returned should contain uswest and useast", func() {
+				So(regions, ShouldContain, "uswest")
+				So(regions, ShouldContain, "useast")
 			})
 		})
 	})

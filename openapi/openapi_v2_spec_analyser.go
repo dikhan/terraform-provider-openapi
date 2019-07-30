@@ -77,7 +77,7 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 		}
 		if isMultiRegion {
 			log.Printf("[INFO] resource '%s' is configured with host override AND multi region; creating one reasource per region", resourceRootPath)
-			for regionName := range regions {
+			for _, regionName := range regions {
 				r, err := newSpecV2ResourceWithRegion(regionName, resourceRootPath, *resourcePayloadSchemaDef, *resourceRoot, pathItem, specAnalyser.d.Spec().Definitions, specAnalyser.d.Spec().Paths.Paths)
 				if err != nil {
 					log.Printf("[WARN] ignoring resource '%s' due to an error while creating a creating the SpecV2Resource: %s", resourceRootPath, err)
@@ -152,7 +152,7 @@ func (specAnalyser *specV2Analyser) pathExists(path string) (bool, spec.PathItem
 // - the value is parametrized following the pattern: some.subdomain.${keyword}.domain.com, where ${keyword} must be present in the string, otherwise the resource will not be considered multi region
 // - there is a matching 'x-terraform-resource-regions-${keyword}' extension defined in the swagger root level (extensions passed in), where ${keyword} will be the value of the parameter in the above URL
 // - and finally the value of the extension is an array of strings containing the different regions where the resource can be created
-func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.PathItem, extensions spec.Extensions) (bool, map[string]string, error) {
+func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.PathItem, extensions spec.Extensions) (bool, []string, error) {
 	overrideHost := getResourceOverrideHost(resourceRoot.Post)
 	if overrideHost == "" {
 		return false, nil, nil
@@ -173,19 +173,15 @@ func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.Pat
 		if len(regions) < 1 {
 			return false, nil, fmt.Errorf("could not find any region for '%s' matching region extension %s: '%s'", regionIdentifier, regionExtensionName, resourceRegions)
 		}
-		apiRegionsMap := map[string]string{}
+		apiRegions := []string{}
 		for _, region := range regions {
-			multiRegionHost, err := openapiutils.GetMultiRegionHost(overrideHost, region)
-			if err != nil {
-				return false, nil, err
-			}
-			apiRegionsMap[region] = multiRegionHost
+			apiRegions = append(apiRegions, region)
 		}
-		if len(apiRegionsMap) < 1 {
+		if len(apiRegions) < 1 {
 			return false, nil, fmt.Errorf("could not build properly the resource region map for '%s' matching region extension %s: '%s'", regionIdentifier, regionExtensionName, resourceRegions)
 
 		}
-		return true, apiRegionsMap, nil
+		return true, apiRegions, nil
 	}
 	return false, nil, fmt.Errorf("missing matching '%s' root level region extension '%s'", regionIdentifier, regionExtensionName)
 }
