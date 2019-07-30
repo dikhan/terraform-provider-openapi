@@ -216,7 +216,7 @@ func (o *SpecV2Resource) getHost() (string, error) {
 	}
 	multiRegionHost, err := openapiutils.GetMultiRegionHost(overrideHost, o.Region)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	if multiRegionHost != "" {
 		return multiRegionHost, nil

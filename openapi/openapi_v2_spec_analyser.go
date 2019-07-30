@@ -53,8 +53,7 @@ func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string,
 		}
 		regionHost, err := r.getHost()
 		if err != nil {
-			log.Printf("multi region host for resource '%s' is not valid: ", err)
-			continue
+			return nil, fmt.Errorf("multi region host for resource is not valid: %s", err)
 		}
 		log.Printf("[INFO] multi region resource name = %s, region = '%s', host = '%s'", r.getResourceName(), regionName, regionHost)
 		resources = append(resources, r)
