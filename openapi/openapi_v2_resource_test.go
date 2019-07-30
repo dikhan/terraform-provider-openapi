@@ -3754,6 +3754,7 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 	})
 	Convey("Given a SpecV2Resource that is multi region but region isn't specified", t, func() {
 		r := SpecV2Resource{
+			Region: "",
 			RootPathItem: spec.PathItem{
 				PathItemProps: spec.PathItemProps{
 					Post: &spec.Operation{
@@ -3773,6 +3774,31 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 			})
 			Convey("Then the host returned should be an empty string", func() {
 				So(host, ShouldEqual, "")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource that is multi region with region specified", t, func() {
+		r := SpecV2Resource{
+			Region: "rst1",
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: "www.${region}.some-host.com",
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be as expected", func() {
+				So(err, ShouldEqual, nil)
+			})
+			Convey("Then the host returned should be the override host", func() {
+				So(host, ShouldEqual, "www.rst1.some-host.com")
 			})
 		})
 	})

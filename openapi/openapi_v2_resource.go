@@ -210,7 +210,6 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 
 // getHost can return an empty host in which case the expectation is that the host used will be the one specified in the
 // swagger host attribute or if not present the host used will be the host where the swagger file was served
-// TODO: Add unit test for this
 func (o *SpecV2Resource) getHost() (string, error) {
 	overrideHost := getResourceOverrideHost(o.RootPathItem.Post)
 	if overrideHost == "" {
