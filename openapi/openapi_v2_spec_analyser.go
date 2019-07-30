@@ -48,8 +48,7 @@ func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string,
 	for _, regionName := range regions {
 		r, err := newSpecV2ResourceWithRegion(regionName, resourceRootPath, *resourcePayloadSchemaDef, *resourceRoot, *pathItem, specAnalyser.d.Spec().Definitions, specAnalyser.d.Spec().Paths.Paths)
 		if err != nil {
-			log.Printf("[WARN] ignoring resource '%s' due to an error while creating a creating the SpecV2Resource: %s", resourceRootPath, err)
-			continue
+			return nil, fmt.Errorf("failed to create a resource with region: %s", err)
 		}
 		regionHost, err := r.getHost()
 		if err != nil {
