@@ -3691,6 +3691,33 @@ func TestGetDuration(t *testing.T) {
 	})
 }
 
+func TestSpecV2ResourceGetHost(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: "www.some-host.com",
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the host returned should be the override host", func() {
+				So(host, ShouldEqual, "www.some-host.com")
+			})
+		})
+	})
+}
+
 func TestGetResourceOverrideHost(t *testing.T) {
 	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a non parametrized host containing the host to use", t, func() {
 		expectedHost := "some.api.domain.com"
