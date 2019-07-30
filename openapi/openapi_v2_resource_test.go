@@ -3817,4 +3817,20 @@ func TestGetResourceOverrideHost(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a terraform resource that doesn't have a POST operation", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: nil,
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := getResourceOverrideHost(r.RootPathItem.Post)
+			Convey("Then the value returned should be an empty string", func() {
+				So(host, ShouldEqual, "")
+			})
+		})
+	})
 }
