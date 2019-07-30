@@ -3735,7 +3735,13 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 		})
 	})
 	Convey("Given a SpecV2Resource that doesn't have a POST operation specified", t, func() {
-		r := SpecV2Resource{}
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: nil,
+				},
+			},
+		}
 		Convey("When getHost is called", func() {
 			host, err := r.getHost()
 			Convey("Then the error returned should be nil", func() {
