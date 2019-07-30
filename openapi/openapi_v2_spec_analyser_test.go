@@ -1985,11 +1985,11 @@ definitions:
 			pathItem := a.d.Spec().Paths.Paths["/v1/cdns/{id}"]
 			resourcePayloadSchemaDef := a.d.Spec().Definitions["ContentDeliveryNetwork"]
 			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, &pathRootItem, &pathItem, &resourcePayloadSchemaDef)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, "failed to create a resource with region: path must not be empty")
 			})
-			Convey("And the list resources return should be empty", func() {
-				So(multiRegionResources, ShouldBeEmpty)
+			Convey("And multiRegionResources should be nil", func() {
+				So(multiRegionResources, ShouldBeNil)
 			})
 		})
 		Convey("When createMultiRegionResources method is called with a list of regions containing empty strings", func() {
