@@ -3734,6 +3734,18 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a SpecV2Resource that doesn't have a POST operation specified", t, func() {
+		r := SpecV2Resource{}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the host returned should be an empty string", func() {
+				So(host, ShouldEqual, "")
+			})
+		})
+	})
 }
 
 func TestGetResourceOverrideHost(t *testing.T) {
