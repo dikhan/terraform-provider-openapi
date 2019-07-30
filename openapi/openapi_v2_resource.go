@@ -98,6 +98,7 @@ func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Sche
 	if paths == nil {
 		return nil, fmt.Errorf("paths must not be nil")
 	}
+	//TODO: Need to check that the required items are passed into the constructor
 	resource := &SpecV2Resource{
 		Path:              path,
 		Region:            region,
@@ -712,8 +713,11 @@ func (o *SpecV2Resource) getDuration(t string) (*time.Duration, error) {
 
 // getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
 // value will override the global host value, and the API calls for this resource will be made against the value returned
-func getResourceOverrideHost(rootPathItem *spec.Operation) string {
-	if resourceURL, exists := rootPathItem.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
+func getResourceOverrideHost(rootPathItemPost *spec.Operation) string {
+	if rootPathItemPost == nil {
+		return ""
+	}
+	if resourceURL, exists := rootPathItemPost.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
 		return resourceURL
 	}
 	return ""
