@@ -1967,7 +1967,7 @@ definitions:
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the resources info map should only contain a resource called cdns_v1_rst1", func() {
+			Convey("And the list resources return should only contain a resource called cdns_v1_rst1", func() {
 				So(len(multiRegionResources), ShouldEqual, 1)
 				So(multiRegionResources[0].getResourceName(), ShouldEqual, "cdns_v1_rst1")
 			})
@@ -1976,6 +1976,20 @@ definitions:
 				host, err := cdnMultiRegionResource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "some.subdomain.rst1.domain.com")
+			})
+		})
+		Convey("When createMultiRegionResources method is called with a map of regions and an empty resourceRootPath", func() {
+			regions := []string{"rst1"}
+			resourceRootPath := ""
+			pathRootItem := a.d.Spec().Paths.Paths["/v1/cdns"]
+			pathItem := a.d.Spec().Paths.Paths["/v1/cdns/{id}"]
+			resourcePayloadSchemaDef := a.d.Spec().Definitions["ContentDeliveryNetwork"]
+			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, &pathRootItem, &pathItem, &resourcePayloadSchemaDef)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the list resources return should be empty", func() {
+				So(multiRegionResources, ShouldBeEmpty)
 			})
 		})
 	})
