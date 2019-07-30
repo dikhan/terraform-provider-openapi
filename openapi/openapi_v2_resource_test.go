@@ -3716,6 +3716,24 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a SpecV2Resource without an override host specified", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the host returned should be the override host", func() {
+				So(host, ShouldEqual, "")
+			})
+		})
+	})
 }
 
 func TestGetResourceOverrideHost(t *testing.T) {
