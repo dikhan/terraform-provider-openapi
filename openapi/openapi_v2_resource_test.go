@@ -3810,8 +3810,8 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 		}
 		Convey("When getHost is called", func() {
 			host, err := r.getHost()
-			Convey("Then the error returned should be as expected", func() {
-				So(err, ShouldEqual, nil)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
 			})
 			Convey("Then the host returned should be the override host", func() {
 				So(host, ShouldEqual, "www.rst1.some-host.com")
