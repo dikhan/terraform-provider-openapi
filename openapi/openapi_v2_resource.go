@@ -88,10 +88,18 @@ type SpecV2Resource struct {
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
 func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
-	return newSpecV2ResourceWithRegion("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+	return newSpecV2ResourceWithConfig("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
 }
 
+// newSpecV2ResourceWithRegion creates a SpecV2Resource with the region configured making the returned SpecV2Resource region based.
 func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
+	if region == "" {
+		return nil, fmt.Errorf("region must not be empty")
+	}
+	return newSpecV2ResourceWithConfig(region, path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+}
+
+func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path must not be empty")
 	}
