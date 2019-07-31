@@ -1983,20 +1983,6 @@ definitions:
 				So(multiRegionResources, ShouldBeNil)
 			})
 		})
-		Convey("When createMultiRegionResources method is called with a list of regions containing empty strings", func() {
-			regions := []string{""}
-			resourceRootPath := "/v1/cdns"
-			pathRootItem := a.d.Spec().Paths.Paths["/v1/cdns"]
-			pathItem := a.d.Spec().Paths.Paths["/v1/cdns/{id}"]
-			resourcePayloadSchemaDef := a.d.Spec().Definitions["ContentDeliveryNetwork"]
-			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, pathRootItem, pathItem, &resourcePayloadSchemaDef)
-			Convey("Then the error returned should be as expected", func() {
-				So(err.Error(), ShouldEqual, "multi region host for resource is not valid: region can not be empty for multiregion resources")
-			})
-			Convey("And multiRegionResources should be nil", func() {
-				So(multiRegionResources, ShouldBeNil)
-			})
-		})
 	})
 }
 

@@ -50,11 +50,7 @@ func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string,
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a resource with region: %s", err)
 		}
-		regionHost, err := r.getHost()
-		if err != nil {
-			return nil, fmt.Errorf("multi region host for resource is not valid: %s", err)
-		}
-		log.Printf("[INFO] multi region resource name = %s, region = '%s', host = '%s'", r.getResourceName(), regionName, regionHost)
+		log.Printf("[INFO] multi region resource name = %s, region = '%s'", r.getResourceName(), regionName)
 		resources = append(resources, r)
 	}
 	return resources, nil
@@ -171,7 +167,6 @@ func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.Pat
 		}
 		if len(apiRegions) < 1 {
 			return false, nil, fmt.Errorf("could not build properly the resource region map for '%s' matching region extension %s: '%s'", regionIdentifier, regionExtensionName, resourceRegions)
-
 		}
 		return true, apiRegions, nil
 	}
