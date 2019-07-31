@@ -2065,6 +2065,54 @@ definitions:
 		})
 	})
 
+	Convey("Given an specV2Analyser loaded with a swagger file containing a resource where the name can not be computed", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /^&:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+  /^&/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+definitions:
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the list of resources returned should be empty since the subresource is not considered compliant if the parent is missing", func() {
+				So(terraformCompliantResources, ShouldBeEmpty)
+			})
+		})
+	})
+
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform parent resource /v1/cdns that uses a preferred resource name and a terraform compatible subresource /v1/cdns/{id}/v1/firewalls", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: 127.0.0.1 
