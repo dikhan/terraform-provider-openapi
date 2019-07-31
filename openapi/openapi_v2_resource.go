@@ -98,7 +98,9 @@ func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Sche
 	if paths == nil {
 		return nil, fmt.Errorf("paths must not be nil")
 	}
-	//TODO: Need to check that the required items are passed into the constructor
+	if schemaDefinitions == nil {
+		return nil, fmt.Errorf("schemaDefinitions must not be nil")
+	}
 	resource := &SpecV2Resource{
 		Path:              path,
 		Region:            region,

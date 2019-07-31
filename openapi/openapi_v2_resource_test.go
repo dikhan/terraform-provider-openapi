@@ -200,6 +200,22 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a path, schemaDefinition, rootPathItem, instancePathItem, paths AND a schemaDefinitions that is nil", t, func() {
+		path := "/v1/users"
+		schemaDefinition := spec.Schema{}
+		rootPathItem := spec.PathItem{}
+		instancePathItem := spec.PathItem{}
+		paths := map[string]spec.PathItem{}
+		var schemaDefinitions map[string]spec.Schema
+		Convey("When newSpecV2Resource method is called", func() {
+			r, err := newSpecV2Resource(path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+			Convey("And the err returned output should match the expectation", func() {
+				So(err.Error(), ShouldEqual, "schemaDefinitions must not be nil")
+				So(r, ShouldBeNil)
+			})
+		})
+	})
 }
 
 func TestShouldIgnoreResource(t *testing.T) {
