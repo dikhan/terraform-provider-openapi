@@ -224,7 +224,6 @@ resource "%s" "%s" {
 		PreCheck:   func() { testAccPreCheck(t) },
 		IsUnitTest: true,
 		Providers:  testAccProviders,
-		//CheckDestroy: testCheckLBsV1DestroyWithDelay(timeToProcess + 1), // wait long enough so polling timeouts; otherwise
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,
