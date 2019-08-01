@@ -168,7 +168,7 @@ func TestAccLB_CreateTimeout(t *testing.T) {
 	})
 }
 
-func TestAccLB_CreateDoesNotTimeoutDueToUserSpecifyingALongerTimeout(t *testing.T) {
+func TestAccLB_CreateDoesNotTimeoutDueToUserSpecifyingAShorterTimeout(t *testing.T) {
 	timeToProcess := 3
 	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
 	testCreateConfigLB = fmt.Sprintf(`provider "%s" {
