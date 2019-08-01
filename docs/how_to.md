@@ -336,8 +336,8 @@ resource "openapi_resource_v1" "my_resource" {
 }
 ````
 
-Hence overriding the default timeout value set in the swagger file for the ```/v1/resource``` post operation from 15m to 10s
-and the default timeout value set in the swagger file for the ```/v1/resource``` delete operation from 20m to 5s.
+Hence overriding the default timeout value set in the swagger document for the ```/v1/resource``` post operation from 15m to 10s
+and the default timeout value set in the swagger document for the ```/v1/resource/{id}``` delete operation from 20m to 5s.
 
 *Note: This extension is only supported at the operation level*
 
