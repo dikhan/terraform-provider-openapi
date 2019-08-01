@@ -324,7 +324,7 @@ paths:
 ````
 
 This extension will also enable users to specify a different value from the terraform configuration file. For instance, the
-example above will expose the timeouts proeprty in the resource_v1 but only for the create and delete operations enablind the
+example above will expose the timeouts property in the resource_v1 but only for the create and delete operations enablind the
 user to override the default values in the swagger file with different ones:
 
 ````
