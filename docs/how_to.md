@@ -300,7 +300,8 @@ above example*
 
 ###### <a name="xTerraformResourceTimeout">x-terraform-resource-timeout</a>
 
-This extension allows service providers to override the default timeout value for CRUD operations with a different value.
+This extension allows service providers to override the default timeout value for CRUD operations with a different value
+for just the operations that are [asynchronous](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourcePollEnabled).
 
 The value must comply with the duration type format. A duration string is a sequence of decimal positive numbers (negative numbers are not allowed),
 each with optional fraction and a unit suffix, such as "300s", "20.5m", "1.5h" or "2h45m".
@@ -321,6 +322,22 @@ paths:
       x-terraform-resource-timeout: "20m" # this means the max timeout for the delete operation to finish is 20 minutes. This overrides the default timeout per operation which is 10 minutes
       ...
 ````
+
+This extension will also enable users to specify a different value from the terraform configuration file. For instance, the
+example above will expose the timeouts property in the resource_v1 but only for the create and delete operations enablind the
+user to override the default values in the swagger file with different ones:
+
+````
+resource "openapi_resource_v1" "my_resource" {
+  timeouts {
+    create = "10s"
+    delete = "5s"
+  }
+}
+````
+
+Hence overriding the default timeout value set in the swagger document for the ```/v1/resource``` post operation from 15m to 10s
+and the default timeout value set in the swagger document for the ```/v1/resource/{id}``` delete operation from 20m to 5s.
 
 *Note: This extension is only supported at the operation level*
 
