@@ -1,4 +1,4 @@
-# Terraform Provider OpenAPI [![Build Status][travis-image]][travis-url]
+# Terraform Provider OpenAPI [![Build Status][travis-image]][travis-url] 
 
 This terraform provider aims to minimise as much as possible the efforts needed from service providers to create and
 maintain custom terraform providers. This provider uses terraform as the engine that will orchestrate and manage the cycle

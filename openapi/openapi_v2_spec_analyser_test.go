@@ -850,13 +850,9 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("And the map returned should contain uswest", func() {
-				So(regions, ShouldContainKey, "uswest")
-				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
-			})
-			Convey("And the map returned should contain useast", func() {
-				So(regions, ShouldContainKey, "useast")
-				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			Convey("And the list returned should contain uswest and useast", func() {
+				So(regions, ShouldContain, "uswest")
+				So(regions, ShouldContain, "useast")
 			})
 		})
 
@@ -873,7 +869,7 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
-			Convey("And the regions map returned should be empty", func() {
+			Convey("And the regions list returned should be empty", func() {
 				So(regions, ShouldBeEmpty)
 			})
 		})
@@ -888,9 +884,8 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("And the map returned should contain uswest", func() {
-				So(regions, ShouldContainKey, "uswestuseast")
-				So(regions["uswestuseast"], ShouldEqual, "some.api.uswestuseast.domain.com")
+			Convey("And the list returned should contain uswestuseast", func() {
+				So(regions, ShouldContain, "uswestuseast")
 			})
 		})
 
@@ -904,13 +899,9 @@ func TestIsMultiRegionResource(t *testing.T) {
 			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
 			})
-			Convey("And the map returned should contain uswest", func() {
-				So(regions, ShouldContainKey, "uswest")
-				So(regions["uswest"], ShouldEqual, "some.api.uswest.domain.com")
-			})
-			Convey("And the map returned should contain useast", func() {
-				So(regions, ShouldContainKey, "useast")
-				So(regions["useast"], ShouldEqual, "some.api.useast.domain.com")
+			Convey("And the list returned should contain uswest and useast", func() {
+				So(regions, ShouldContain, "uswest")
+				So(regions, ShouldContain, "useast")
 			})
 		})
 	})
@@ -1920,6 +1911,81 @@ paths:
 	})
 }
 
+func TestCreateMultiRegionResources(t *testing.T) {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a multiregion resource", t, func() {
+		swaggerContent := `swagger: "2.0"
+x-terraform-resource-regions-keyword: "rst1"
+paths:
+  /v1/cdns:
+    post:
+      x-terraform-resource-host: some.subdomain.${keyword}.domain.com
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetwork"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+  /v1/cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetwork"
+definitions:
+  ContentDeliveryNetwork:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When createMultiRegionResources method is called with a map of regions and corresponding resolved URLs", func() {
+			regions := []string{"rst1"}
+			resourceRootPath := "/v1/cdns"
+			pathRootItem := a.d.Spec().Paths.Paths["/v1/cdns"]
+			pathItem := a.d.Spec().Paths.Paths["/v1/cdns/{id}"]
+			resourcePayloadSchemaDef := a.d.Spec().Definitions["ContentDeliveryNetwork"]
+			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, pathRootItem, pathItem, &resourcePayloadSchemaDef)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the list resources return should only contain a resource called cdns_v1_rst1", func() {
+				So(len(multiRegionResources), ShouldEqual, 1)
+				So(multiRegionResources[0].getResourceName(), ShouldEqual, "cdns_v1_rst1")
+			})
+			cdnMultiRegionResource := multiRegionResources[0]
+			Convey("And the host is correctly configured according to the swagger", func() {
+				host, err := cdnMultiRegionResource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldEqual, "some.subdomain.rst1.domain.com")
+			})
+		})
+		Convey("When createMultiRegionResources method is called with a map of regions and an empty resourceRootPath", func() {
+			regions := []string{"rst1"}
+			resourceRootPath := ""
+			pathRootItem := a.d.Spec().Paths.Paths["/v1/cdns"]
+			pathItem := a.d.Spec().Paths.Paths["/v1/cdns/{id}"]
+			resourcePayloadSchemaDef := a.d.Spec().Definitions["ContentDeliveryNetwork"]
+			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, pathRootItem, pathItem, &resourcePayloadSchemaDef)
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, "failed to create a resource with region: path must not be empty")
+			})
+			Convey("And multiRegionResources should be nil", func() {
+				So(multiRegionResources, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetTerraformCompliantResources(t *testing.T) {
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls but missing the parent resource resource description", t, func() {
@@ -1963,6 +2029,54 @@ paths:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
+definitions:
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the list of resources returned should be empty since the subresource is not considered compliant if the parent is missing", func() {
+				So(terraformCompliantResources, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a resource where the name can not be computed", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /^&:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+  /^&/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 definitions:
   ContentDeliveryNetworkFirewallV1:
     type: "object"
@@ -2839,6 +2953,119 @@ definitions:
 			})
 			Convey("AND the specResources slice should not be nil", func() {
 				So(specResources, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a swagger doc that exposes a resource with not valid multi region configuration (x-terraform-resource-regions-serviceProviderName is missing", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "x-terraform-resource-regions-someOtherServiceProvider": "rst, dub",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-resource-host": "some.api.${serviceProviderName}.domain.com",
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetTerraformCompliantResources method is called", func() {
+			r, err := a.GetTerraformCompliantResources()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be empty", func() {
+				So(r, ShouldBeEmpty)
+			})
+		})
+	})
+	Convey("Given a swagger doc that exposes a resource with a multi region configuration but missing region", t, func() {
+		var swaggerJSON = `
+{
+   "swagger":"2.0",
+   "x-terraform-resource-regions-serviceProviderName": "",
+   "paths":{
+      "/v1/cdns":{
+         "post":{
+            "x-terraform-resource-host": "some.api.${serviceProviderName}.domain.com",
+            "summary":"Create cdn",
+            "parameters":[
+               {
+                  "in":"body",
+                  "name":"body",
+                  "description":"Created CDN",
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            ]
+         }
+      },
+      "/v1/cdns/{id}":{
+         "get":{
+            "summary":"Get cdn by id"
+         },
+         "put":{
+            "summary":"Updated cdn"
+         },
+         "delete":{
+            "summary":"Delete cdn"
+         }
+      }
+   },
+   "definitions":{
+      "ContentDeliveryNetwork":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            }
+         }
+      }
+   }
+}`
+		a := initAPISpecAnalyser(swaggerJSON)
+		Convey("When GetTerraformCompliantResources method is called", func() {
+			r, err := a.GetTerraformCompliantResources()
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the value returned should be empty", func() {
+				So(r, ShouldBeEmpty)
 			})
 		})
 	})

@@ -88,15 +88,26 @@ type SpecV2Resource struct {
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
 func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
-	return newSpecV2ResourceWithRegion("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+	return newSpecV2ResourceWithConfig("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
 }
 
+// newSpecV2ResourceWithRegion creates a SpecV2Resource with the region configured making the returned SpecV2Resource region based.
 func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
+	if region == "" {
+		return nil, fmt.Errorf("region must not be empty")
+	}
+	return newSpecV2ResourceWithConfig(region, path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+}
+
+func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path must not be empty")
 	}
 	if paths == nil {
 		return nil, fmt.Errorf("paths must not be nil")
+	}
+	if schemaDefinitions == nil {
+		return nil, fmt.Errorf("schemaDefinitions must not be nil")
 	}
 	resource := &SpecV2Resource{
 		Path:              path,
@@ -216,7 +227,7 @@ func (o *SpecV2Resource) getHost() (string, error) {
 	}
 	multiRegionHost, err := openapiutils.GetMultiRegionHost(overrideHost, o.Region)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	if multiRegionHost != "" {
 		return multiRegionHost, nil
@@ -711,8 +722,11 @@ func (o *SpecV2Resource) getDuration(t string) (*time.Duration, error) {
 
 // getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
 // value will override the global host value, and the API calls for this resource will be made against the value returned
-func getResourceOverrideHost(rootPathItem *spec.Operation) string {
-	if resourceURL, exists := rootPathItem.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
+func getResourceOverrideHost(rootPathItemPost *spec.Operation) string {
+	if rootPathItemPost == nil {
+		return ""
+	}
+	if resourceURL, exists := rootPathItemPost.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
 		return resourceURL
 	}
 	return ""

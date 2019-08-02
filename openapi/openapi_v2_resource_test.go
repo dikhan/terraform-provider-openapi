@@ -14,6 +14,27 @@ import (
 )
 
 func TestNewSpecV2Resource(t *testing.T) {
+	Convey("Given a root path /users and a root path item", t, func() {
+		path := "/users"
+		rootPathItem := spec.PathItem{
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{},
+			},
+		}
+		Convey("When newSpecV2Resource method is called", func() {
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be 'users'", func() {
+				So(r.getResourceName(), ShouldEqual, "users")
+			})
+		})
+	})
+}
+
+func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 	Convey("Given a root path /users/ containing a trailing slash and a root path item item", t, func() {
 		path := "/users/"
 		rootPathItem := spec.PathItem{
@@ -21,9 +42,9 @@ func TestNewSpecV2Resource(t *testing.T) {
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When getResourceName method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -32,16 +53,16 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a root path /users with no trailing slash and a root path item item", t, func() {
+	Convey("Given a root path /users with no trailing slash and a root path item", t, func() {
 		path := "/users"
 		rootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When getResourceName method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -50,7 +71,25 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
-
+	Convey("Given a root path /users, a root path item and a region", t, func() {
+		path := "/users"
+		rootPathItem := spec.PathItem{
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{},
+			},
+		}
+		region := "rst1"
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
+			schemaDefinitions := map[string]spec.Schema{}
+			r, err := newSpecV2ResourceWithConfig(region, path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be the resource name plus the region appended at the end", func() {
+				So(r.getResourceName(), ShouldEqual, "users_rst1")
+			})
+		})
+	})
 	Convey("Given a root path that is versioned such as '/v1/users/' and a root path item item", t, func() {
 		path := "/v1/users/"
 		rootPathItem := spec.PathItem{
@@ -58,9 +97,9 @@ func TestNewSpecV2Resource(t *testing.T) {
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When getResourceName method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -69,7 +108,6 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given a root path that is versioned with number higher than 9 such as '/v12/users/' and a root path item item", t, func() {
 		path := "/v12/users/"
 		rootPathItem := spec.PathItem{
@@ -77,9 +115,9 @@ func TestNewSpecV2Resource(t *testing.T) {
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When getResourceName method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -88,7 +126,6 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given a root path such as '/v1/something/users' and a root path item", t, func() {
 		path := "/v1/something/users"
 		rootPathItem := spec.PathItem{
@@ -96,9 +133,9 @@ func TestNewSpecV2Resource(t *testing.T) {
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When getResourceName method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -107,7 +144,6 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given a root path which has path parameters '/api/v1/nodes/{name}/proxy' and a root path item", t, func() {
 		path := "/api/v1/nodes/{name}/proxy"
 		paths := map[string]spec.PathItem{
@@ -122,9 +158,9 @@ func TestNewSpecV2Resource(t *testing.T) {
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When getResourceName method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, paths)
+			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, paths)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -147,9 +183,9 @@ func TestNewSpecV2Resource(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceName method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -160,7 +196,6 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given an invalid root path", t, func() {
 		invalidRootPath := "/api/v1/nodes/{name}"
 		rootPathItem := spec.PathItem{
@@ -168,15 +203,14 @@ func TestNewSpecV2Resource(t *testing.T) {
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When newSpecV2Resource method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			_, err := newSpecV2Resource(invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
+			_, err := newSpecV2ResourceWithConfig("", invalidRootPath, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("And the err returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 		})
 	})
-
 	Convey("Given an empty path", t, func() {
 		path := ""
 		Convey("When newSpecV2Resource method is called", func() {
@@ -188,15 +222,72 @@ func TestNewSpecV2Resource(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given paths is nil", t, func() {
 		var paths map[string]spec.PathItem
-		Convey("When newSpecV2Resource method is called", func() {
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource("/v1/users", spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions, paths)
+			r, err := newSpecV2ResourceWithConfig("", "/v1/users", spec.Schema{}, spec.PathItem{}, spec.PathItem{}, schemaDefinitions, paths)
 			Convey("And the err returned output should match the expectation", func() {
 				So(err.Error(), ShouldEqual, "paths must not be nil")
 				So(r, ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given a path, schemaDefinition, rootPathItem, instancePathItem, paths AND a schemaDefinitions that is nil", t, func() {
+		path := "/v1/users"
+		schemaDefinition := spec.Schema{}
+		rootPathItem := spec.PathItem{}
+		instancePathItem := spec.PathItem{}
+		paths := map[string]spec.PathItem{}
+		var schemaDefinitions map[string]spec.Schema
+		Convey("When newSpecV2ResourceWithConfig method is called", func() {
+			r, err := newSpecV2ResourceWithConfig("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+			Convey("And the err returned output should match the expectation", func() {
+				So(err.Error(), ShouldEqual, "schemaDefinitions must not be nil")
+				So(r, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestNewSpecV2ResourceWithRegion(t *testing.T) {
+	Convey("Given a path, schemaDefinition, rootPathItem, instancePathItem, paths, schemaDefinitions AND a region that is empty", t, func() {
+		path := "/v1/users"
+		schemaDefinition := spec.Schema{}
+		rootPathItem := spec.PathItem{}
+		instancePathItem := spec.PathItem{}
+		paths := map[string]spec.PathItem{}
+		schemaDefinitions := map[string]spec.Schema{}
+		region := ""
+		Convey("When newSpecV2ResourceWithRegion method is called", func() {
+			r, err := newSpecV2ResourceWithRegion(region, path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "region must not be empty")
+			})
+			Convey("And the resource returned should be nil", func() {
+				So(r, ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given a path, schemaDefinition, rootPathItem, instancePathItem, paths, schemaDefinitions AND a region that is NOT empty", t, func() {
+		path := "/users"
+		rootPathItem := spec.PathItem{
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{},
+			},
+		}
+		schemaDefinition := spec.Schema{}
+		instancePathItem := spec.PathItem{}
+		paths := map[string]spec.PathItem{}
+		schemaDefinitions := map[string]spec.Schema{}
+		region := "rst1"
+		Convey("When newSpecV2ResourceWithRegion method is called", func() {
+			r, err := newSpecV2ResourceWithRegion(region, path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be the resource name plus the region appended at the end", func() {
+				So(r.getResourceName(), ShouldEqual, "users_rst1")
 			})
 		})
 	})
@@ -3691,6 +3782,119 @@ func TestGetDuration(t *testing.T) {
 	})
 }
 
+func TestSpecV2ResourceGetHost(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: "www.some-host.com",
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the host returned should be the override host", func() {
+				So(host, ShouldEqual, "www.some-host.com")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource without an override host specified", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the host returned should be the override host", func() {
+				So(host, ShouldEqual, "")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource that doesn't have a POST operation specified", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: nil,
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the host returned should be an empty string", func() {
+				So(host, ShouldEqual, "")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource that is multi region but region isn't specified", t, func() {
+		r := SpecV2Resource{
+			Region: "",
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: "www.${region}.some-host.com",
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, "region can not be empty for multiregion resources")
+			})
+			Convey("Then the host returned should be an empty string", func() {
+				So(host, ShouldEqual, "")
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource that is multi region with region specified", t, func() {
+		r := SpecV2Resource{
+			Region: "rst1",
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceURL: "www.${region}.some-host.com",
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getHost is called", func() {
+			host, err := r.getHost()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the host returned should be the override host", func() {
+				So(host, ShouldEqual, "www.rst1.some-host.com")
+			})
+		})
+	})
+}
+
 func TestGetResourceOverrideHost(t *testing.T) {
 	Convey("Given a terraform compliant resource that has a POST operation containing the x-terraform-resource-host with a non parametrized host containing the host to use", t, func() {
 		expectedHost := "some.api.domain.com"
@@ -3757,6 +3961,22 @@ func TestGetResourceOverrideHost(t *testing.T) {
 			host := getResourceOverrideHost(r.RootPathItem.Post)
 			Convey("Then the value returned should be the host value", func() {
 				So(host, ShouldEqual, expectedHost)
+			})
+		})
+	})
+
+	Convey("Given a terraform resource that doesn't have a POST operation", t, func() {
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: nil,
+				},
+			},
+		}
+		Convey("When getResourceOverrideHost method is called", func() {
+			host := getResourceOverrideHost(r.RootPathItem.Post)
+			Convey("Then the value returned should be an empty string", func() {
+				So(host, ShouldEqual, "")
 			})
 		})
 	})
