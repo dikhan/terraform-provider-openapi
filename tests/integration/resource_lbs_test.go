@@ -186,7 +186,7 @@ resource "%s" "%s" {
   }
 }`, providerName, openAPIResourceNameLB, openAPIResourceInstanceNameLB, lb.Name, arrayToString(lb.Backends), timeToProcess, lb.SimulateFailure)
 
-	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\((?:last state: 'deploy_pending', )?timeout: 1s\\).*")
+	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\((?:last state: '(?:deploy_in_progress|deploy_pending)', )?timeout: 1s\\).*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:   func() { testAccPreCheck(t) },
 		IsUnitTest: true,
