@@ -31,6 +31,7 @@ func TestAccLB_Create(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
+		IsUnitTest:   true,
 		CheckDestroy: testCheckLBsV1Destroy(),
 		Steps: []resource.TestStep{
 			{
@@ -158,6 +159,70 @@ func TestAccLB_CreateTimeout(t *testing.T) {
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testCheckLBsV1DestroyWithDelay(timeToProcess + 1), // wait long enough so polling timeouts; otherwise
+		Steps: []resource.TestStep{
+			{
+				Config:      testCreateConfigLB,
+				ExpectError: expectedValidationError,
+			},
+		},
+	})
+}
+
+func TestAccLB_CreateDoesNotTimeoutDueToUserSpecifyingAShorterTimeout(t *testing.T) {
+	timeToProcess := 3
+	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
+	testCreateConfigLB = fmt.Sprintf(`provider "%s" {
+  apikey_auth = "apiKeyValue"
+  x_request_id = "some value..."
+}
+
+resource "%s" "%s" {
+  name = "%s"
+  backends = ["%s"]
+  time_to_process = %d # the operation (post,update,delete) will take 15s in the API to complete
+  simulate_failure = %v # no failures wished now ;) (post,update,delete)
+  timeouts {
+    create = "1s"
+  }
+}`, providerName, openAPIResourceNameLB, openAPIResourceInstanceNameLB, lb.Name, arrayToString(lb.Backends), timeToProcess, lb.SimulateFailure)
+
+	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\((?:last state: '(?:deploy_in_progress|deploy_pending)', )?timeout: 1s\\).*")
+	resource.Test(t, resource.TestCase{
+		PreCheck:   func() { testAccPreCheck(t) },
+		IsUnitTest: true,
+		Providers:  testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testCreateConfigLB,
+				ExpectError: expectedValidationError,
+			},
+		},
+	})
+}
+
+func TestAccLB_UserTriesToSetTimeoutForOperationThatDoesNotSupportIt(t *testing.T) {
+	timeToProcess := 3
+	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
+	testCreateConfigLB = fmt.Sprintf(`provider "%s" {
+  apikey_auth = "apiKeyValue"
+  x_request_id = "some value..."
+}
+
+resource "%s" "%s" {
+  name = "%s"
+  backends = ["%s"]
+  time_to_process = %d # the operation (post,update,delete) will take 15s in the API to complete
+  simulate_failure = %v # no failures wished now ;) (post,update,delete)
+  timeouts {
+    delete = "5s"
+  }
+}`, providerName, openAPIResourceNameLB, openAPIResourceInstanceNameLB, lb.Name, arrayToString(lb.Backends), timeToProcess, lb.SimulateFailure)
+
+	expectedValidationError, _ := regexp.Compile(".*An argument named \"delete\" is not expected here.*")
+	resource.Test(t, resource.TestCase{
+		PreCheck:   func() { testAccPreCheck(t) },
+		IsUnitTest: true,
+		Providers:  testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,
