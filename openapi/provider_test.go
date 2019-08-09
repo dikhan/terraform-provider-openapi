@@ -191,32 +191,16 @@ definitions:
 			})
 		})
 	})
-}
 
-func Test_naming_collisions(t *testing.T) {
-	Convey("Given a swagger doc that declares reources with colliding x-terraform-resource-names", t, func() {
+	Convey("Given a swagger doc that declares resources with colliding x-terraform-resource-names", t, func() {
 		swaggerContent := `swagger: "2.0"
-
-host: "localhost:8443"
-basePath: "/api"
-
-schemes:
-- "https"
-
-security:
-  - apikey_auth: []
-
 paths:
-
   /v1/cdns:
     post:
-      summary: "Create cdn"
       x-terraform-resource-name: "collision"
       parameters:
       - in: "body"
         name: "body"
-        description: "Created CDN"
-        required: true
         schema:
           $ref: "#/definitions/ContentDeliveryNetworkV1"
       responses:
@@ -225,57 +209,21 @@ paths:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
   /v1/cdns/{id}:
     get:
-      summary: "Get cdn by id"
       parameters:
       - name: "id"
         in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
         type: "string"
       responses:
         200:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
-    put:
-      summary: "Updated cdn"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "cdn that needs to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated cdn object"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-    delete:
-      summary: "Delete cdn"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        204:
-          description: "successful operation, no content is returned"
 
   /v1/xyz:
     post:
-      summary: "Create xyz"
       x-terraform-resource-name: "collision"
       parameters:
       - in: "body"
         name: "body"
-        description: "Created CDN"
-        required: true
         schema:
           $ref: "#/definitions/ContentDeliveryNetworkV1"
       responses:
@@ -284,65 +232,22 @@ paths:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
   /v1/xyz/{id}:
     get:
-      summary: "Get cdn by id"
       parameters:
       - name: "id"
         in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
         type: "string"
       responses:
         200:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
-    put:
-      summary: "Updated cdn"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "cdn that needs to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated cdn object"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-    delete:
-      summary: "Delete cdn"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        204:
-          description: "successful operation, no content is returned"
-
-securityDefinitions:
-  apikey_auth:
-    type: "apiKey"
-    name: "Authorization"
-    in: "header"
 
 definitions:
   ContentDeliveryNetworkV1:
     type: "object"
-    required:
-      - label
     properties:
       id:
         type: "string"
-        readOnly: true
-      label:
-        type: "string"`
+        readOnly: true`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(swaggerContent))
@@ -353,7 +258,7 @@ definitions:
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("Then the error should not be nil", func() {
+			Convey("Then it should retrun and error and a provider without those resources", func() {
 				So(err.Error(), ShouldEqual, "plugin terraform-provider-openapi init error while creating schema provider: Found duplicate resource name: openapi_collision")
 			})
 			Convey("And the provider returned should be nil", func() {
