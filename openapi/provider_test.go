@@ -306,7 +306,6 @@ definitions:
 
 			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2)
-				fmt.Println("\nswagger doc for '" + tc.label + "':\n" + swaggerDoc)
 				w.Write([]byte(swaggerDoc))
 			}))
 
