@@ -191,7 +191,9 @@ definitions:
 			})
 		})
 	})
+}
 
+func Test_colliding_preferred_names(t *testing.T) {
 	Convey("Given a swagger doc that declares resources with colliding x-terraform-resource-names", t, func() {
 		preferredNameCollisionSwaggerContent := `swagger: "2.0"
 paths:
@@ -264,7 +266,9 @@ definitions:
 			})
 		})
 	})
+}
 
+func Test_preferred_name_collides_with_calculated_name(t *testing.T) {
 	Convey("Given a swagger doc that declares resources with colliding calculated names", t, func() {
 		preferredNameCollisionSwaggerContent := `swagger: "2.0"
 paths:
@@ -279,7 +283,7 @@ paths:
         201:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
-  /v1/cdns/{id}:
+  /collision/{id}:
     get:
       parameters:
       - name: "id"
