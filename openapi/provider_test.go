@@ -193,13 +193,27 @@ definitions:
 	})
 }
 
-func Test_colliding_preferred_names(t *testing.T) {
-	Convey("Given a swagger doc that declares resources with colliding x-terraform-resource-names", t, func() {
+func Test_colliding_resource_names(t *testing.T) {
+	makeSwaggerDoc := func(path1, preferredName1, path2, preferredName2 string) string {
+		if path1 == "" {
+			path1 = "/v1/abc"
+		}
+		if path2 == "" {
+			path2 = "/v1/xyz"
+		}
+		xTerraformResourceName1 := ""
+		if preferredName1 != "" {
+			xTerraformResourceName1 = `x-terraform-resource-name: "` + preferredName1 + `"`
+		}
+		xTerraformResourceName2 := ""
+		if preferredName2 != "" {
+			xTerraformResourceName2 = `x-terraform-resource-name: "` + preferredName2 + `"`
+		}
 		swagger := `swagger: "2.0"
 paths:
-  /v1/abc:
+  ` + path1 + `:
     post:
-      x-terraform-resource-name: "collision"
+      ` + xTerraformResourceName1 + `
       parameters:
       - in: "body"
         name: "body"
@@ -209,7 +223,7 @@ paths:
         201:
           schema:
             $ref: "#/definitions/whatever"
-  /v1/abc/{id}:
+  ` + path1 + `/{id}:
     get:
       parameters:
       - name: "id"
@@ -220,9 +234,9 @@ paths:
           schema:
             $ref: "#/definitions/whatever"
 
-  /v1/xyz:
+  ` + path2 + `:
     post:
-      x-terraform-resource-name: "collision"
+      ` + xTerraformResourceName2 + `
       parameters:
       - in: "body"
         name: "body"
@@ -232,7 +246,7 @@ paths:
         201:
           schema:
             $ref: "#/definitions/whatever"
-  /v1/xyz/{id}:
+  ` + path2 + `/{id}:
     get:
       parameters:
       - name: "id"
@@ -250,173 +264,48 @@ definitions:
       id:
         type: "string"
         readOnly: true`
+		return swagger
+	}
 
-		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(swagger))
-		}))
+	Convey("Given a swagger doc that declares resources with colliding names, "+
+		"When CreateSchemaProviderWithConfiguration method is called, "+
+		"Then there should be no error but the provider should not have those resources", t, func() {
 
-		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+		testcases := []struct {
+			name           string
+			path1          string
+			preferredName1 string
+			path2          string
+			preferredName2 string
+		}{
+			{name: "resources with colliding x-terraform-resource-names",
+				preferredName1: "collision",
+				preferredName2: "collision"},
+			{name: "resources with colliding calculated name and x-terraform-resource-name",
+				path1:          "/collision",
+				preferredName2: "collision"},
+			{name: "resources with colliding calculated names",
+				path1: "/v1/collision",
+				path2: "/collision_v1"},
+		}
+
+		for _, tc := range testcases {
+			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2)
+				fmt.Println("swagger doc >>>>", swaggerDoc)
+				w.Write([]byte(swaggerDoc))
+			}))
+
 			providerName := "openapi"
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("There should be no error but the provider shuold not have those resources", func() {
-				So(err, ShouldBeNil)
-				So(tfProvider, ShouldNotBeNil)
-				So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
-			})
-		})
-	})
-}
-
-func Test_preferred_name_collides_with_calculated_name(t *testing.T) {
-	Convey("Given a swagger doc that declares resources with colliding calculated names", t, func() {
-		swagger := `swagger: "2.0"
-paths:
-  /collision:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/whatever"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/whatever"
-  /collision/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/whatever"
-
-  /v1/xyz:
-    post:
-      x-terraform-resource-name: "collision"
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/whatever"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/whatever"
-  /v1/xyz/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/whatever"
-
-definitions:
-  whatever:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true`
-
-		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(swagger))
-		}))
-
-		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
-			providerName := "openapi"
-			p := ProviderOpenAPI{ProviderName: providerName}
-			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
-
-			Convey("There should be no error but the provider shuold not have those resources", func() {
-				So(err, ShouldBeNil)
-				So(tfProvider, ShouldNotBeNil)
-				So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
-			})
-		})
+			So(err, ShouldBeNil)
+			So(tfProvider, ShouldNotBeNil)
+			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
+		}
 	})
 
-}
-
-func Test_colliding_calculated_name(t *testing.T) {
-	Convey("Given a swagger doc that declares resources with colliding calculated names", t, func() {
-		swagger := `swagger: "2.0"
-paths:
-  /v1/collision:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/whatever"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/whatever"
-  /v1/collision/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/whatever"
-
-  /collision_v1:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/whatever"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/whatever"
-  /collision_v1/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/whatever"
-
-definitions:
-  whatever:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true`
-
-		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(swagger))
-		}))
-
-		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
-			providerName := "openapi"
-			p := ProviderOpenAPI{ProviderName: providerName}
-			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
-
-			Convey("There should be no error but the provider shuold not have those resources", func() {
-				So(err, ShouldBeNil)
-				So(tfProvider, ShouldNotBeNil)
-				So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
-			})
-		})
-	})
 }
 
 func TestGetServiceConfiguration(t *testing.T) {
