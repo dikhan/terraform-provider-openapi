@@ -1182,6 +1182,15 @@ Note: This extension will be ignored if the ``x-terraform-provider-multiregion-f
 - Terraform requires field names to be lower case and follow the snake_case pattern (my_sec_definition). Thus, security definitions 
  must follow this naming convention.
 
+## Resource naming collisions
+
+When resource names collide, those resources will not be available in the Terraform provider.  Here are some scenarios that may result in naming collisions: 
+- Two or more resources with the same `x-terraform-resource-name`
+- Versioned resource with non-versioned resources having version-like patterns in the paths, e.g. one resource with a path of `/v1/abc` and another with a path of `/abc_v1`
+- `x-terraform-resource-name` name values matching the path of a resource without a `x-terraform-resource-name`, e.g.
+  - one resource has a path of `/abc` while another has a `x-terraform-resource-name` value of `abc`
+  - one resource has a path of `/v1/abc` while another has a `x-terraform-resource-name` value of `abc_v1`
+
 ## What is not supported yet?
 
 - Response definitions: [Responses Definitions Object](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#responsesDefinitionsObject)
