@@ -2,6 +2,8 @@ package openapi
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -269,38 +271,48 @@ definitions:
 
 	Convey("Given a swagger doc that declares resources with colliding names, "+
 		"When CreateSchemaProviderWithConfiguration method is called, "+
-		"Then there should be no error but the provider should not have those resources", t, func() {
+		"Then there should be no error but the provider should not have those resources and a warning should be logged", t, func() {
 
 		testcases := []struct {
-			name           string
-			path1          string
-			preferredName1 string
-			path2          string
-			preferredName2 string
+			label           string
+			path1           string
+			preferredName1  string
+			path2           string
+			preferredName2  string
+			expectedWarning string
 		}{
-			{name: "resources with colliding x-terraform-resource-names",
-				preferredName1: "collision",
-				preferredName2: "collision"},
-			{name: "resources with colliding calculated name and x-terraform-resource-name",
-				path1:          "/collision",
-				preferredName2: "collision"},
-			{name: "resources with colliding calculated names",
-				path1: "/v1/collision",
-				path2: "/collision_v1"},
+			{label: "resources with colliding x-terraform-resource-names",
+				preferredName1:  "collision",
+				preferredName2:  "collision",
+				expectedWarning: "'collision' is a duplicate resource name and is being removed from the provider"},
+			{label: "resources with colliding calculated name and x-terraform-resource-name",
+				path1:           "/collision",
+				preferredName2:  "collision",
+				expectedWarning: "'collision' is a duplicate resource name and is being removed from the provider"},
+			{label: "resources with colliding calculated names",
+				path1:           "/v1/collision",
+				path2:           "/collision_v1",
+				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
 		}
 
 		for _, tc := range testcases {
+			f, _ := ioutil.TempFile("", "*")
+			defer f.Close()
+			log.SetOutput(f)
+
 			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2)
-				fmt.Println("swagger doc >>>>", swaggerDoc)
+				fmt.Println("\nswagger doc for '" + tc.label + "':\n" + swaggerDoc)
 				w.Write([]byte(swaggerDoc))
 			}))
 
-			providerName := "openapi"
-			p := ProviderOpenAPI{ProviderName: providerName}
+			p := ProviderOpenAPI{ProviderName: "something"}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
 			So(err, ShouldBeNil)
+			b, _ := ioutil.ReadFile(f.Name())
+			s := string(b)
+			So(s, ShouldContainSubstring, tc.expectedWarning)
 			So(tfProvider, ShouldNotBeNil)
 			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 		}
