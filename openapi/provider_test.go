@@ -343,6 +343,80 @@ definitions:
 
 }
 
+func Test_colliding_calculated_name(t *testing.T) {
+	Convey("Given a swagger doc that declares resources with colliding calculated names", t, func() {
+		preferredNameCollisionSwaggerContent := `swagger: "2.0"
+paths:
+  /v1/collision:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/collision/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+  /collision_v1:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /collision_v1/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(preferredNameCollisionSwaggerContent))
+		}))
+
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			providerName := "openapi"
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+
+			Convey("Then it should return an error and a provider without those resources", func() {
+				So(err.Error(), ShouldEqual, "plugin terraform-provider-openapi init error while creating schema provider: Found duplicate resource name: openapi_collision_v1")
+				So(tfProvider, ShouldBeNil)
+			})
+		})
+	})
+
+}
+
 func TestGetServiceConfiguration(t *testing.T) {
 	Convey("Given a swagger url configured with environment variable and skip verify being false", t, func() {
 		providerName := "providerName"
