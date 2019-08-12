@@ -3,9 +3,10 @@ package openapi
 import (
 	"bytes"
 	"fmt"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -145,7 +146,7 @@ func TestEndpointsToHash(t *testing.T) {
 			Convey("Then the schema set function returned should NOT be nil", func() {
 				So(schemaSetFunction, ShouldNotBeNil)
 			})
-			Convey("And the return int from calling the schemaSetFunction() shuold be the expected one", func() {
+			Convey("And the return int from calling the schemaSetFunction() should be the expected one", func() {
 				m := map[string]interface{}{}
 				m[resourceName] = "something to get the string represention from"
 				var buf bytes.Buffer

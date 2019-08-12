@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -182,7 +181,9 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 			return nil, err
 		}
 		if _, alreadyThere := resourceMap[resourceName]; alreadyThere {
-			return nil, errors.New("Found duplicate resource name: " + resourceName)
+			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
+			delete(resourceMap, resourceName)
+			continue
 		}
 		start := time.Now()
 		if openAPIResource.shouldIgnoreResource() {

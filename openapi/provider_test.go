@@ -195,21 +195,21 @@ definitions:
 
 func Test_colliding_preferred_names(t *testing.T) {
 	Convey("Given a swagger doc that declares resources with colliding x-terraform-resource-names", t, func() {
-		preferredNameCollisionSwaggerContent := `swagger: "2.0"
+		swagger := `swagger: "2.0"
 paths:
-  /v1/cdns:
+  /v1/abc:
     post:
       x-terraform-resource-name: "collision"
       parameters:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
+          $ref: "#/definitions/whatever"
       responses:
         201:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-  /v1/cdns/{id}:
+            $ref: "#/definitions/whatever"
+  /v1/abc/{id}:
     get:
       parameters:
       - name: "id"
@@ -218,7 +218,7 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
 
   /v1/xyz:
     post:
@@ -227,11 +227,11 @@ paths:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
+          $ref: "#/definitions/whatever"
       responses:
         201:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
   /v1/xyz/{id}:
     get:
       parameters:
@@ -241,10 +241,10 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
 
 definitions:
-  ContentDeliveryNetworkV1:
+  whatever:
     type: "object"
     properties:
       id:
@@ -252,7 +252,7 @@ definitions:
         readOnly: true`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(preferredNameCollisionSwaggerContent))
+			w.Write([]byte(swagger))
 		}))
 
 		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
@@ -260,9 +260,10 @@ definitions:
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("Then it should return an error and a provider without those resources", func() {
-				So(err.Error(), ShouldEqual, "plugin terraform-provider-openapi init error while creating schema provider: Found duplicate resource name: openapi_collision")
-				So(tfProvider, ShouldBeNil)
+			Convey("There should be no error but the provider shuold not have those resources", func() {
+				So(err, ShouldBeNil)
+				So(tfProvider, ShouldNotBeNil)
+				So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 			})
 		})
 	})
@@ -270,7 +271,7 @@ definitions:
 
 func Test_preferred_name_collides_with_calculated_name(t *testing.T) {
 	Convey("Given a swagger doc that declares resources with colliding calculated names", t, func() {
-		preferredNameCollisionSwaggerContent := `swagger: "2.0"
+		swagger := `swagger: "2.0"
 paths:
   /collision:
     post:
@@ -278,11 +279,11 @@ paths:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
+          $ref: "#/definitions/whatever"
       responses:
         201:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
   /collision/{id}:
     get:
       parameters:
@@ -292,7 +293,7 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
 
   /v1/xyz:
     post:
@@ -301,11 +302,11 @@ paths:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
+          $ref: "#/definitions/whatever"
       responses:
         201:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
   /v1/xyz/{id}:
     get:
       parameters:
@@ -315,10 +316,10 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
 
 definitions:
-  ContentDeliveryNetworkV1:
+  whatever:
     type: "object"
     properties:
       id:
@@ -326,7 +327,7 @@ definitions:
         readOnly: true`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(preferredNameCollisionSwaggerContent))
+			w.Write([]byte(swagger))
 		}))
 
 		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
@@ -334,9 +335,10 @@ definitions:
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("Then it should return an error and a provider without those resources", func() {
-				So(err.Error(), ShouldEqual, "plugin terraform-provider-openapi init error while creating schema provider: Found duplicate resource name: openapi_collision")
-				So(tfProvider, ShouldBeNil)
+			Convey("There should be no error but the provider shuold not have those resources", func() {
+				So(err, ShouldBeNil)
+				So(tfProvider, ShouldNotBeNil)
+				So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 			})
 		})
 	})
@@ -345,7 +347,7 @@ definitions:
 
 func Test_colliding_calculated_name(t *testing.T) {
 	Convey("Given a swagger doc that declares resources with colliding calculated names", t, func() {
-		preferredNameCollisionSwaggerContent := `swagger: "2.0"
+		swagger := `swagger: "2.0"
 paths:
   /v1/collision:
     post:
@@ -353,11 +355,11 @@ paths:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
+          $ref: "#/definitions/whatever"
       responses:
         201:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
   /v1/collision/{id}:
     get:
       parameters:
@@ -367,7 +369,7 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
 
   /collision_v1:
     post:
@@ -375,11 +377,11 @@ paths:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
+          $ref: "#/definitions/whatever"
       responses:
         201:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
   /collision_v1/{id}:
     get:
       parameters:
@@ -389,10 +391,10 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+            $ref: "#/definitions/whatever"
 
 definitions:
-  ContentDeliveryNetworkV1:
+  whatever:
     type: "object"
     properties:
       id:
@@ -400,7 +402,7 @@ definitions:
         readOnly: true`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(preferredNameCollisionSwaggerContent))
+			w.Write([]byte(swagger))
 		}))
 
 		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
@@ -408,13 +410,13 @@ definitions:
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("Then it should return an error and a provider without those resources", func() {
-				So(err.Error(), ShouldEqual, "plugin terraform-provider-openapi init error while creating schema provider: Found duplicate resource name: openapi_collision_v1")
-				So(tfProvider, ShouldBeNil)
+			Convey("There should be no error but the provider shuold not have those resources", func() {
+				So(err, ShouldBeNil)
+				So(tfProvider, ShouldNotBeNil)
+				So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 			})
 		})
 	})
-
 }
 
 func TestGetServiceConfiguration(t *testing.T) {
