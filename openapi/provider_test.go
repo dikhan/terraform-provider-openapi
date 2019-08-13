@@ -300,9 +300,9 @@ definitions:
 		}
 
 		for _, tc := range testcases {
-			f, _ := ioutil.TempFile("", "*")
-			defer f.Close()
-			log.SetOutput(f)
+			logFile, _ := ioutil.TempFile("", "*")
+			defer logFile.Close()
+			log.SetOutput(logFile)
 
 			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2)
@@ -311,11 +311,12 @@ definitions:
 
 			p := ProviderOpenAPI{ProviderName: "something"}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
-
 			So(err, ShouldBeNil)
-			b, _ := ioutil.ReadFile(f.Name())
-			s := string(b)
-			So(s, ShouldContainSubstring, tc.expectedWarning)
+
+			logBytes, _ := ioutil.ReadFile(logFile.Name())
+			logs := string(logBytes)
+			So(logs, ShouldContainSubstring, tc.expectedWarning)
+
 			So(tfProvider, ShouldNotBeNil)
 			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 		}
