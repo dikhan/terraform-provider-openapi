@@ -1194,8 +1194,8 @@ Here are some scenarios that will result in naming collisions such that the reso
   - one resource has a path of `/v1/abc` while another has a `x-terraform-resource-name` value of `abc_v1`
   
 If the resources with the colliding names also have colliding paths, then one of them will be available and one will not, and which one is available will be selected indeterminately at run time and may change from one invocation to the next.  Scenarios which will result in this behavior:
-- Two or more resources the same path and the same `x-terraform-resource-name` 
-- Two or more resources the same path where one of them has a `x-terraform-resource-name` colliding with the name calculated for that path, e.g.
+- Two or more resources with the same path and the same `x-terraform-resource-name` 
+- Two or more resources with the same path where one of them has a `x-terraform-resource-name` colliding with the name calculated for that path, e.g.
   - one resource has a path of `/abc` and no `x-terraform-resource-name` while another has the same path and a `x-terraform-resource-name` value of `abc`
   - one resource has a path of `/v1/abc` and no `x-terraform-resource-name` while another has the same path and a `x-terraform-resource-name` value of `abc_v1`
 
