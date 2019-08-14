@@ -1183,15 +1183,16 @@ Note: This extension will be ignored if the ``x-terraform-provider-multiregion-f
  must follow this naming convention.
 
 ## Path collisions
+
 _If one or more resources have the same path, then one of them will be accessible in the provider and the others will 
-not, and which one is available will be selected indeterminately at run time and may change from one invocation to the 
+not, and which one is available will be determined at run time and may change from one invocation to the 
 next, such that different resource types may be created, updated, and destroyed with different terraform plan, apply and 
 destory invocations._
 
 ## Resource naming collisions
 
 When resource names collide, the provider is unable to determine which resource the name refers to in tf files, so it 
-will not provide access to either resource.  
+will not provide access to either resource (unless there is a path collision, as documented above).  
 
 Here are some scenarios that will result in naming collisions such that the resources will not available in the 
 provider: 
