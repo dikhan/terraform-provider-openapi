@@ -324,7 +324,6 @@ definitions:
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
 
 			So(err, ShouldBeNil)
-			So(tfProvider, ShouldNotBeNil)
 			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 			So(out.written, ShouldContainSubstring, tc.expectedWarning)
 		}
@@ -342,7 +341,6 @@ definitions:
 		tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
 
 		So(err, ShouldBeNil)
-		So(tfProvider, ShouldNotBeNil)
 		So(len(tfProvider.ResourcesMap), ShouldEqual, 1)
 		So(out.written, ShouldNotContainSubstring, "duplicate resource name")
 	})
