@@ -1183,6 +1183,7 @@ Note: This extension will be ignored if the ``x-terraform-provider-multiregion-f
  must follow this naming convention.
 
 ## Path collisions
+
 _If one or more resources have the same path, then one of them will be accessible in the provider and the others will 
 not, and which one is available will be determined at run time and may change from one invocation to the 
 next, such that different resource types may be created, updated, and destroyed with different terraform plan, apply and 
