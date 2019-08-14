@@ -2,7 +2,6 @@ package openapi
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -270,7 +269,7 @@ definitions:
 	}
 
 	Convey("Given a swagger doc that declares resources with colliding names, "+
-		"When CreateSchemaProviderWithConfiguration method is called, "+
+		"When CreateSchemaProviderWithConfiguration is called, "+
 		"Then there should be no error but the provider should not have those resources and a warning should be logged", t, func() {
 
 		testcases := []struct {
@@ -300,9 +299,8 @@ definitions:
 		}
 
 		for _, tc := range testcases {
-			logFile, _ := ioutil.TempFile("", "*")
-			defer logFile.Close()
-			log.SetOutput(logFile)
+			out := newTestWriter()
+			log.SetOutput(out)
 
 			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2)
@@ -313,15 +311,26 @@ definitions:
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 			So(err, ShouldBeNil)
 
-			logBytes, _ := ioutil.ReadFile(logFile.Name())
-			logs := string(logBytes)
-			So(logs, ShouldContainSubstring, tc.expectedWarning)
+			So(out.written, ShouldContainSubstring, tc.expectedWarning)
 
 			So(tfProvider, ShouldNotBeNil)
 			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 		}
 	})
 
+}
+
+type logWriter struct {
+	written string
+}
+
+func newTestWriter() *logWriter {
+	return &logWriter{""}
+}
+
+func (w *logWriter) Write(p []byte) (n int, err error) {
+	w.written = w.written + string(p)
+	return 0, nil
 }
 
 func TestGetServiceConfiguration(t *testing.T) {
