@@ -180,14 +180,15 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 		if err != nil {
 			return nil, err
 		}
-		if _, alreadyThere := resourceMap[resourceName]; alreadyThere {
-			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
-			delete(resourceMap, resourceName)
-			continue
-		}
 		start := time.Now()
 		if openAPIResource.shouldIgnoreResource() {
-			log.Printf("[WARN] '%s' is marked as to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			continue
+		}
+		_, alreadyThere := resourceMap[resourceName]
+		if alreadyThere {
+			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
+			delete(resourceMap, resourceName)
 			continue
 		}
 		r := newResourceFactory(openAPIResource)

@@ -308,11 +308,6 @@ definitions:
 				path1:           "/v1/collision",
 				path2:           "/collision_v1",
 				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
-			////TODO
-			//{label: "resources with identical paths",
-			//	path1:           "/v1/collision",
-			//	path2:           "/v1/collision",
-			//	expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
 		}
 
 		for _, tc := range testcases {
@@ -326,6 +321,42 @@ definitions:
 			So(err, ShouldBeNil)
 			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 			So(out.written, ShouldContainSubstring, tc.expectedWarning)
+		}
+	})
+
+	Convey("Given a swagger doc that declares resources identical paths and colliding names preferred names, "+
+		"When CreateSchemaProviderWithConfiguration is called, "+
+		"Then there will be no error and the provider will have one of those resources (indeterminately selected) and no warning will be logged", t, func() {
+
+		testcases := []struct {
+			label          string
+			path1          string
+			preferredName1 string
+			path2          string
+			preferredName2 string
+		}{
+			{label: "resources with identical paths and a colliding preferred name",
+				path1:          "/v1/collision",
+				path2:          "/v1/collision",
+				preferredName1: "collision_v1"},
+			{label: "resources with identical paths and identical preferred names",
+				path1:          "/v1/collision",
+				path2:          "/v1/collision",
+				preferredName1: "collision",
+				preferredName2: "collision"},
+		}
+
+		for _, tc := range testcases {
+			out := newTestWriter()
+			log.SetOutput(out)
+
+			p := ProviderOpenAPI{ProviderName: "something"}
+			swaggerDoc := makeSwaggerDoc("/v1/collision", tc.preferredName1, "/v1/collision", tc.preferredName2, false)
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
+
+			So(err, ShouldBeNil)
+			So(len(tfProvider.ResourcesMap), ShouldEqual, 1)
+			So(out.written, ShouldNotContainSubstring, "duplicate resource name")
 		}
 	})
 
@@ -343,6 +374,8 @@ definitions:
 		So(err, ShouldBeNil)
 		So(len(tfProvider.ResourcesMap), ShouldEqual, 1)
 		So(out.written, ShouldNotContainSubstring, "duplicate resource name")
+		So(out.written, ShouldContainSubstring, "is marked to be ignored")
+
 	})
 
 }
