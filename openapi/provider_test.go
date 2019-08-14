@@ -195,7 +195,7 @@ definitions:
 }
 
 func Test_colliding_resource_names(t *testing.T) {
-	makeSwaggerDoc := func(path1, preferredName1, path2, preferredName2 string) string {
+	makeSwaggerDoc := func(path1, preferredName1, path2, preferredName2 string, markIgnorePath1 bool) string {
 		if path1 == "" {
 			path1 = "/v1/abc"
 		}
@@ -210,11 +210,16 @@ func Test_colliding_resource_names(t *testing.T) {
 		if preferredName2 != "" {
 			xTerraformResourceName2 = `x-terraform-resource-name: "` + preferredName2 + `"`
 		}
+		ignorePath1 := ""
+		if markIgnorePath1 {
+			ignorePath1 = `x-terraform-exclude-resource: true`
+		}
 		swagger := `swagger: "2.0"
 paths:
   ` + path1 + `:
     post:
       ` + xTerraformResourceName1 + `
+      ` + ignorePath1 + `
       parameters:
       - in: "body"
         name: "body"
@@ -268,6 +273,13 @@ definitions:
 		return swagger
 	}
 
+	swaggerDocServerURL := func(swaggerDoc string) (serverURL string) {
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(swaggerDoc))
+		}))
+		return swaggerServer.URL
+	}
+
 	Convey("Given a swagger doc that declares resources with colliding names, "+
 		"When CreateSchemaProviderWithConfiguration is called, "+
 		"Then there should be no error but the provider should not have those resources and a warning should be logged", t, func() {
@@ -296,26 +308,43 @@ definitions:
 				path1:           "/v1/collision",
 				path2:           "/collision_v1",
 				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
+			////TODO
+			//{label: "resources with identical paths",
+			//	path1:           "/v1/collision",
+			//	path2:           "/v1/collision",
+			//	expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
 		}
 
 		for _, tc := range testcases {
 			out := newTestWriter()
 			log.SetOutput(out)
 
-			swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2)
-				w.Write([]byte(swaggerDoc))
-			}))
-
 			p := ProviderOpenAPI{ProviderName: "something"}
-			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+			swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2, false)
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
+
 			So(err, ShouldBeNil)
-
-			So(out.written, ShouldContainSubstring, tc.expectedWarning)
-
 			So(tfProvider, ShouldNotBeNil)
 			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
+			So(out.written, ShouldContainSubstring, tc.expectedWarning)
 		}
+	})
+
+	Convey("Given a swagger doc that declares resources with colliding names, and all but one is ignored, "+
+		"When CreateSchemaProviderWithConfiguration is called, "+
+		"Then there should be no error and the provider should have the un-ignored resource and no warning should be logged", t, func() {
+
+		out := newTestWriter()
+		log.SetOutput(out)
+
+		p := ProviderOpenAPI{ProviderName: "something"}
+		swaggerDoc := makeSwaggerDoc("/v1/abc", "collision", "/v1/xyz", "collision", true)
+		tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
+
+		So(err, ShouldBeNil)
+		So(tfProvider, ShouldNotBeNil)
+		So(len(tfProvider.ResourcesMap), ShouldEqual, 1)
+		So(out.written, ShouldNotContainSubstring, "duplicate resource name")
 	})
 
 }
