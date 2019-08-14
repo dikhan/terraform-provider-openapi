@@ -223,7 +223,7 @@ definitions:
         type: "string"
 `
 
-const swaggerContent = `swagger: "2.0"
+const swaggerREADONLYpropertyContent = `swagger: "2.0"
 host: %s 
 schemes:
 - "http"
@@ -262,6 +262,27 @@ paths:
         description: "The cdn id that needs to be fetched."
         required: true
         type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+    put:
+      summary: "Updated cdn"
+      operationId: "ContentDeliveryNetworkUpdateV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "cdn that needs to be updated"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Updated cdn object"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
       responses:
         200:
           description: "successful operation"
@@ -442,7 +463,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 }
 
 func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
-	api := initAPI(t, swaggerContent)
+	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
@@ -504,6 +525,70 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	//secondToLastRequest := api.requestsReceived[numberOfRequestsReceived-2]
 	//assert.Equal(t, http.MethodGet, secondToLastRequest.Method)
 	//assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
+}
+
+func TestAccCDN_Create_and_UpdateSubResource_WITH_READONLY(t *testing.T) {
+	api := initAPI(t, swaggerREADONLYpropertyContent)
+	tfFileContents := createTerraformFileREADONLY(expectedCDNLabel)
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
+	assert.NoError(t, err)
+	assertProviderSchemaForReadONLY(t, provider)
+
+	resourceInstancesToCheck := map[string]string{
+		openAPIResourceNameCDN: fmt.Sprintf("%s/v1/cdns", api.apiHost),
+	}
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:   true,
+		Providers:    testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t, api.swaggerURL) },
+		CheckDestroy: testAccCheckDestroy(resourceInstancesToCheck),
+		Steps: []resource.TestStep{
+			{ // STEP 0 : create a Terraform State which has a Value for the readOnly property called `read_only`
+				Config: tfFileContents,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", expectedCDNLabel),
+					resource.TestCheckResourceAttr(
+						"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.name", "hello"),
+					resource.TestCheckResourceAttr(
+						"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.object_property.read_only", "bub"),
+				),
+			},
+			{ //STEP 1: Using a new configuration widtout readOnly property  keeps `read_only` = "bub"
+				Config: createTerraformFileREADONLY_UPDATE("updatedCDNLabel"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", "updatedCDNLabel"),
+					resource.TestCheckResourceAttr(
+						"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.name", "hello"),
+					//resource.TestCheckResourceAttr(
+					//	"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.object_property.read_only", "bub"),
+					//resource.TestCheckResourceAttr(
+					//	"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.object_property.account", "im new here, but you should still see read_only : bub"),
+				),
+			},
+			{ //STEP 2: Using a new configuration widtout readOnly property  keeps `read_only` = "bub"
+				Config: createTerraformFileREADONLY_UPDATE2("updatedCDNLabel"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", "updatedCDNLabel"),
+					resource.TestCheckResourceAttr(
+						"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.name", "hello"),
+					resource.TestCheckResourceAttr(
+						"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.object_property.read_only", "bub"),
+					resource.TestCheckResourceAttr(
+						"openapi_cdn_v1.my_cdn", "object_nested_scheme_property.0.object_property.account", "im new here, but you should still see read_only : bub"),
+				),
+			},
+		},
+	})
 }
 
 func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testing.T) {
@@ -597,6 +682,11 @@ func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["cdns_v1_id"])
 }
 
+func assertProviderSchemaForReadONLY(t *testing.T, provider *schema.Provider) {
+	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["id"])
+	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["label"])
+}
+
 func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
 	return fmt.Sprintf(`
 		# URI /v1/cdns/
@@ -608,4 +698,43 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
            cdn_v1_id = %s.id
            label = "%s"
         }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
+}
+
+func createTerraformFileREADONLY(expectedCDNLabel string) string {
+	return fmt.Sprintf(`
+		# URI /v1/cdns/
+		resource "%s" "%s" {
+		  label = "%s"
+          object_nested_scheme_property {
+             name = "hello"
+             object_property = {
+               read_only = "bub"
+             }
+          }
+		}`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel)
+}
+
+func createTerraformFileREADONLY_UPDATE(expectedCDNLabel string) string {
+	return fmt.Sprintf(`
+		# URI /v1/cdns/
+		resource "%s" "%s" {
+          label = "%s"
+          object_nested_scheme_property {
+             object_property = {
+                account = "im new here, but you should still see read_only : bub"
+             }
+          }
+		}`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel)
+}
+
+func createTerraformFileREADONLY_UPDATE2(expectedCDNLabel string) string {
+	return fmt.Sprintf(`
+		# URI /v1/cdns/
+		resource "%s" "%s" {
+          label = "%s"
+          object_nested_scheme_property {
+				object_property = {
+             }
+          }
+		}`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel)
 }
