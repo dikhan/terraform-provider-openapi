@@ -223,6 +223,78 @@ definitions:
         type: "string"
 `
 
+const swaggerContent = `swagger: "2.0"
+host: %s 
+schemes:
+- "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    post:
+      x-terraform-resource-name: "cdn"
+      summary: "Create cdn"
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+  /v1/cdns/{cdn_id}:
+    get:
+      summary: "Get cdn by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+      object_nested_scheme_property:
+        type: "object"
+        properties:
+          name:
+            type: "string"
+            readOnly: true
+          object_property:
+            type: "object"
+            properties:
+              account:
+                type: string
+              read_only:
+                type: string
+                readOnly: true
+`
+
 const expectedCDNID = "42"
 const expectedCDNFirewallID = "1337"
 
@@ -370,7 +442,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 }
 
 func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
-	api := initAPI(t, cdnSwaggerYAMLTemplate)
+	api := initAPI(t, swaggerContent)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
