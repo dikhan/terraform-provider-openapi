@@ -1192,7 +1192,6 @@ Here are some scenarios that will result in naming collisions such that the reso
 - `x-terraform-resource-name` name values matching the path of a resource without a `x-terraform-resource-name`, e.g.
   - one resource has a path of `/abc` while another has a `x-terraform-resource-name` value of `abc`
   - one resource has a path of `/v1/abc` while another has a `x-terraform-resource-name` value of `abc_v1`
- 
 - Versioned resources with non-versioned resources having version-like patterns in the paths, e.g. one resource with a path of `/v1/abc` and another with a path of `/abc_v1`
 - `x-terraform-resource-name` name values matching the path of a resource without a `x-terraform-resource-name`, e.g.
   - one resource has a path of `/abc` while another has a `x-terraform-resource-name` value of `abc`
