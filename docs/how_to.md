@@ -1184,12 +1184,24 @@ Note: This extension will be ignored if the ``x-terraform-provider-multiregion-f
 
 ## Resource naming collisions
 
-When resource names collide, those resources will not be available in the Terraform provider.  Here are some scenarios that may result in naming collisions: 
+When resource names collide, those resources will not be available in the Terraform provider, unless there is a collision in their paths as well.  Here are some scenarios that may result in naming collisions: 
 - Two or more resources with the same `x-terraform-resource-name`
 - Versioned resource with non-versioned resources having version-like patterns in the paths, e.g. one resource with a path of `/v1/abc` and another with a path of `/abc_v1`
 - `x-terraform-resource-name` name values matching the path of a resource without a `x-terraform-resource-name`, e.g.
   - one resource has a path of `/abc` while another has a `x-terraform-resource-name` value of `abc`
   - one resource has a path of `/v1/abc` while another has a `x-terraform-resource-name` value of `abc_v1`
+ 
+- Versioned resources with non-versioned resources having version-like patterns in the paths, e.g. one resource with a path of `/v1/abc` and another with a path of `/abc_v1`
+- `x-terraform-resource-name` name values matching the path of a resource without a `x-terraform-resource-name`, e.g.
+  - one resource has a path of `/abc` while another has a `x-terraform-resource-name` value of `abc`
+  - one resource has a path of `/v1/abc` while another has a `x-terraform-resource-name` value of `abc_v1`
+  
+All of the above are cases where the resources will not be available.  However if the resources with the colliding names also have colliding paths, then one of them will be available and one will not, and which one is available will be selected indeterminately at run time and may change from one invocation to the next.  Scenarios which will result in this behavior:
+- Two or more resources the same path and the same `x-terraform-resource-name` 
+- Two or more resources the same path where one of them has a `x-terraform-resource-name` colliding with the name calculated for that path, e.g.
+  - one resource has a path of `/abc` and no `x-terraform-resource-name` while another has the same path and a `x-terraform-resource-name` value of `abc`
+  - one resource has a path of `/v1/abc` and no `x-terraform-resource-name` while another has the same path and a `x-terraform-resource-name` value of `abc_v1`
+
 
 ## What is not supported yet?
 
