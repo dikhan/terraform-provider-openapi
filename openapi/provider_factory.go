@@ -2,13 +2,15 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"net/http"
 	"time"
 
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+
+	"log"
+
 	"github.com/dikhan/http_goclient"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 type providerFactory struct {
@@ -174,17 +176,23 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 		return nil, err
 	}
 	for _, openAPIResource := range openAPIResources {
+		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
+		if err != nil {
+			return nil, err
+		}
 		start := time.Now()
 		if openAPIResource.shouldIgnoreResource() {
-			log.Printf("[WARN] '%s' is marked as to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			continue
+		}
+		_, alreadyThere := resourceMap[resourceName]
+		if alreadyThere {
+			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
+			delete(resourceMap, resourceName)
 			continue
 		}
 		r := newResourceFactory(openAPIResource)
 		resource, err := r.createTerraformResource()
-		if err != nil {
-			return nil, err
-		}
-		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
 		if err != nil {
 			return nil, err
 		}

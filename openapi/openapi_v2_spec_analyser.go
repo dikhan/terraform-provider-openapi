@@ -59,7 +59,9 @@ func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string,
 func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecResource, error) {
 	var resources []SpecResource
 	start := time.Now()
-	for resourcePath, pathItem := range specAnalyser.d.Spec().Paths.Paths {
+	spec := specAnalyser.d.Spec()
+	paths := spec.Paths
+	for resourcePath, pathItem := range paths.Paths {
 		resourceRootPath, resourceRoot, resourcePayloadSchemaDef, err := specAnalyser.isEndPointFullyTerraformResourceCompliant(resourcePath)
 		if err != nil {
 			log.Printf("[DEBUG] resource path '%s' not terraform compliant: %s", resourcePath, err)
