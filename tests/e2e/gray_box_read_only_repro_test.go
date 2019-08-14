@@ -133,6 +133,16 @@ definitions:
 //      - Step 0 : we build the base terraform STATE file, taking care of building the nested object with the
 //                 `a_read_read_only_property` = whatever
 
+// todo:   State Step 0:
+//      State: openapi_cdn_v1.my_cdn:
+//          ID = 42
+//          provider = provider.openapi
+//          label =  cdn
+//          object_nested_scheme_property.# = 1
+//          object_nested_scheme_property.0.name_that_is_readonly = hello
+//          object_nested_scheme_property.0.object_property.% = 1
+//          object_nested_scheme_property.0.object_property.a_read_read_only_property = whatever
+
 // todo:  - Step 1: given the TF state generated at Step 0, we apply a change to the above resource by changing the label name
 //                from `cdn` to `updatedCDNLabel`. This is a change which occurs on the TOP level resource and
 //                should not change the nested object ( see createTerraformFileREADONLY_UPDATE function)
@@ -143,7 +153,7 @@ definitions:
 //          provider = provider.openapi
 //          label = updatedCDNLabel
 //          object_nested_scheme_property.# = 1
-//          object_nested_scheme_property.0.name = hello
+//          object_nested_scheme_property.0.name_that_is_readonly = hello
 //          object_nested_scheme_property.0.object_property.% = 2
 //          object_nested_scheme_property.0.object_property.a_read_read_only_property = whatever
 //          object_nested_scheme_property.0.object_property.account = im new here, but you should still see read_only : whatever
@@ -154,7 +164,7 @@ definitions:
 //          provider = provider.openapi
 //          label = updatedCDNLabel
 //          object_nested_scheme_property.# = 1
-//          object_nested_scheme_property.0.name = hello
+//          object_nested_scheme_property.0.name_that_is_readonly = hello
 //          object_nested_scheme_property.0.object_property.% = 1
 //          object_nested_scheme_property.0.object_property.account = im new here, but you should still see read_only : whatever
 
@@ -171,7 +181,7 @@ definitions:
 //          object_nested_scheme_property.0.object_property.% = 0
 
 //  todo: which * i think * correctly removes `object_nested_scheme_property.0.object_property.account ` as is it not defined anymore in the TF config file, but as well don't show
-//    `object_nested_scheme_property.0.object_property.a_read_read_only_property = whatever` whcih is read only and must be there as
+//    `object_nested_scheme_property.0.object_property.a_read_read_only_property = whatever` which is read only and must be there as
 //    `object_nested_scheme_property.0.name = hello` does
 
 func TestAccCDN_Create_and_UpdateSubResource_WITH_READONLY(t *testing.T) {
