@@ -1184,7 +1184,9 @@ Note: This extension will be ignored if the ``x-terraform-provider-multiregion-f
 
 ## Resource naming collisions
 
-When resource names collide, those resources will not be available in the Terraform provider, unless there is a collision in their paths as well.  Here are some scenarios that may result in naming collisions: 
+When resource names collide, those resources will not be available in the Terraform provider, unless there is a collision in their paths as well.  
+
+Here are some scenarios that will result in naming collisions such that the resources will not available in the provider: 
 - Two or more resources with the same `x-terraform-resource-name`
 - Versioned resource with non-versioned resources having version-like patterns in the paths, e.g. one resource with a path of `/v1/abc` and another with a path of `/abc_v1`
 - `x-terraform-resource-name` name values matching the path of a resource without a `x-terraform-resource-name`, e.g.
