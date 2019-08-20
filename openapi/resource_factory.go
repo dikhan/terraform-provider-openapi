@@ -514,7 +514,7 @@ func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchem
 		if err != nil {
 			return nil, err
 		}
-		if isPropertyWithNestedObjects {
+		if isPropertyWithNestedObjects || property.ShouldBeTreatedAsComplexObject {
 			arrayInput := []interface{}{}
 			arrayInput = append(arrayInput, objectInput)
 			return arrayInput, nil

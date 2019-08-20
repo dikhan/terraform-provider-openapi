@@ -34,12 +34,13 @@ type specSchemaDefinitionProperty struct {
 	Computed bool
 	// IsParentProperty defines whether the property is a parent property in which case it will be treated differently in
 	// different parts of the code. For instance, the property will not be posted to the API.
-	IsParentProperty   bool
-	ForceNew           bool
-	Sensitive          bool
-	Immutable          bool
-	IsIdentifier       bool
-	IsStatusIdentifier bool
+	IsParentProperty               bool
+	ForceNew                       bool
+	Sensitive                      bool
+	Immutable                      bool
+	IsIdentifier                   bool
+	IsStatusIdentifier             bool
+	ShouldBeTreatedAsComplexObject bool
 	// Default field is only for informative purposes to know what the openapi spec for the property stated the default value is
 	// As per the openapi spec default attributes, the value is expected to be computed by the API
 	Default interface{}
@@ -52,6 +53,18 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 		return s.PreferredName
 	}
 	return terraformutils.ConvertToTerraformCompliantName(s.Name)
+}
+
+// This is the workaround to be able to process objects that contain properties that are not of the same type and may
+// contain other configuration like be computed optional etc (https://github.com/hashicorp/terraform/issues/22511)
+func (s *specSchemaDefinitionProperty) shouldBeTreatedAsComplexObject() bool {
+	if !s.isObjectProperty() {
+		return false
+	}
+	if s.ShouldBeTreatedAsComplexObject {
+		return true
+	}
+	return false
 }
 
 func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() (bool, error) {
@@ -195,7 +208,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		if err != nil {
 			return nil, err
 		}
-		if isPropertyWithNestedObjects {
+		if isPropertyWithNestedObjects || s.shouldBeTreatedAsComplexObject() {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1
 		}

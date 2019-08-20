@@ -56,6 +56,7 @@ const extTfFieldName = "x-terraform-field-name"
 const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
 const extTfComputed = "x-terraform-computed"
+const extTfObjectType = "x-terraform-object-type"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"
@@ -426,6 +427,10 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 	if isStatusIdentifier, ok := property.Extensions.GetBool(extTfFieldStatus); ok && isStatusIdentifier {
 		schemaDefinitionProperty.IsStatusIdentifier = true
+	}
+
+	if shouldBeTreatedAsComplexObject, ok := property.Extensions.GetBool(extTfObjectType); ok && shouldBeTreatedAsComplexObject {
+		schemaDefinitionProperty.ShouldBeTreatedAsComplexObject = true
 	}
 
 	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default
