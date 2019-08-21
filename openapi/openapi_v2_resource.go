@@ -106,9 +106,6 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 	if paths == nil {
 		return nil, fmt.Errorf("paths must not be nil")
 	}
-	if schemaDefinitions == nil {
-		return nil, fmt.Errorf("schemaDefinitions must not be nil")
-	}
 	resource := &SpecV2Resource{
 		Path:              path,
 		Region:            region,
