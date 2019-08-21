@@ -580,6 +580,12 @@ func TestBuildResourceNameFromPath(t *testing.T) {
 			expectedResourceName: "",
 			expectedError:        errors.New("could not find a valid name for resource instance path '&^'"),
 		},
+		{
+			path:                 "/api/v1/group/",
+			preferredName:        "iamgroup",
+			expectedResourceName: "iamgroup_v1",
+			expectedError:        nil,
+		},
 	}
 
 	for _, tc := range testCases {

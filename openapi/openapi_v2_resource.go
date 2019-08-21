@@ -167,11 +167,11 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 	}
 	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
 
+	versionRegex, _ := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
+
 	if preferredName != "" {
 		resourceName = preferredName
 	}
-
-	versionRegex, _ := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
 
 	fullResourceName := resourceName
 	v := versionRegex.FindAllStringSubmatch(resourcePath, -1)
