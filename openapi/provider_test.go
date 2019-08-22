@@ -295,14 +295,16 @@ definitions:
 			{label: "resources with colliding x-terraform-resource-names",
 				preferredName1:  "collision",
 				preferredName2:  "collision",
-				expectedWarning: "'collision' is a duplicate resource name and is being removed from the provider"},
-			{label: "resources with colliding x-terraform-resource-name calculated name and calculated non-versioned name",
-				path1:           "/collision",
-				preferredName2:  "collision",
-				expectedWarning: "'collision' is a duplicate resource name and is being removed from the provider"},
+				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
 			{label: "resources with colliding x-terraform-resource-name calculated name and calculated versioned name",
 				path1:           "/v1/collision",
+				path2:           "/xyz",
 				preferredName2:  "collision_v1",
+				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
+			{label: "resources with colliding x-terraform-resource-name calculated name and calculated versioned name",
+				path1:           "/v1/collision",
+				path2:           "/v1/xyz",
+				preferredName2:  "collision",
 				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
 			{label: "resources with colliding calculated names",
 				path1:           "/v1/collision",
@@ -316,8 +318,9 @@ definitions:
 
 			p := ProviderOpenAPI{ProviderName: "something"}
 			swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2, false)
+			fmt.Println(">>>", swaggerDoc)
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
-
+			fmt.Println(">>>>", out.written)
 			So(err, ShouldBeNil)
 			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
 			So(out.written, ShouldContainSubstring, tc.expectedWarning)
