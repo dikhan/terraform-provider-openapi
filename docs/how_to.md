@@ -1196,9 +1196,13 @@ will not provide access to either resource (unless there is a path collision, as
 
 Here are some scenarios that will result in naming collisions such that the resources will not available in the 
 provider: 
-- Two or more resources with the same `x-terraform-resource-name`.  For example, if a swagger document defines one 
-resource with a path of `/abc` and a `x-terraform-resource-name` of `something` and another resource with a path of 
-`/xyz` and a `x-terraform-resource-name` of `something` then the  resource names for both of them would be `something`.
+- Two or more resources with the same `x-terraform-resource-name` when both are versioned or neither is versioned.  
+  - Example 1: A swagger document defines one resource with a path of `/abc` and a `x-terraform-resource-name` of 
+  `something` and another resource with a path of `/xyz` and a `x-terraform-resource-name` of `something`.  The  
+  resource names for both of them would be `something`.
+  - Example 2: A swagger document defines one resource with a path of `/v1/abc` and a `x-terraform-resource-name` of 
+  `something` and another resource with a path of `/v1/xyz` and a `x-terraform-resource-name` of `something`.  The  
+  resource names for both of them would be `something_v1`.
 - Versioned resources with non-versioned resources having version-like patterns in the paths.  For example, if a swagger 
 document defines a path for one resource of `/v1/abc` and  a path for another resource of `/abc_v1`, then the  resource 
 names for both of them would be `abc_v1`.
@@ -1206,8 +1210,8 @@ names for both of them would be `abc_v1`.
 `x-terraform-resource-name`.
   - Example 1: One resource has a path of `/abc` while another has a `x-terraform-resource-name` value of `abc`.  The 
   resource name for both will be `abc`.
-  - Example 2: One resource has a path of `/v1/abc` while another has a `x-terraform-resource-name` value of `abc_v1`.
-  The resource name for both will be `abc_v1`.
+  - Example 2: One resource has a path of `/v1/abc` while another has a path of `/abc` and a `x-terraform-resource-name`
+  value of `abc_v1`.  The resource name for both will be `abc_v1`.
   
 Note that none these scenarios above involve duplicate paths, which is addressed above in the "Path collisions" section. 
 
