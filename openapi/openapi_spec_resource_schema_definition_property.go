@@ -64,6 +64,7 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 // The object properties that have EnableLegacyComplexObjectBlockConfiguration set to true will be represented in Terraform schema
 // as TypeList with MaxItems limited to 1. This will solve the current limitation in Terraform SDK 0.12 where blocks can only be
 // translated to lists and sets, maps can not be used to represent complex objects at the moment as it will result into undefined behavior.
+// TODO: unit test this method
 func (s *specSchemaDefinitionProperty) shouldEnableLegacyComplexObjectBlockConfiguration() bool {
 	if !s.isObjectProperty() {
 		return false
@@ -199,6 +200,7 @@ func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource
 // References to the issues opened:
 // - https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737
 // - https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851
+// TODO: add unit test for this method
 func (s *specSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() (bool, error) {
 	isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
 	if err != nil {
@@ -223,6 +225,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// complex data structures
 	switch s.Type {
 	case typeObject:
+		// TODO: add coverage for this logic if not already done
 		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 		if shouldUseLegacyTerraformSDKApproachForBlocks {
 			terraformSchema.Type = schema.TypeList
