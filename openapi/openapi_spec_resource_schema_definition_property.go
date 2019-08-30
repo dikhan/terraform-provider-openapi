@@ -34,13 +34,17 @@ type specSchemaDefinitionProperty struct {
 	Computed bool
 	// IsParentProperty defines whether the property is a parent property in which case it will be treated differently in
 	// different parts of the code. For instance, the property will not be posted to the API.
-	IsParentProperty               bool
-	ForceNew                       bool
-	Sensitive                      bool
-	Immutable                      bool
-	IsIdentifier                   bool
-	IsStatusIdentifier             bool
-	ShouldBeTreatedAsComplexObject bool
+	IsParentProperty   bool
+	ForceNew           bool
+	Sensitive          bool
+	Immutable          bool
+	IsIdentifier       bool
+	IsStatusIdentifier bool
+	// EnableLegacyComplexObjectBlockConfiguration defines whether this specSchemaDefinitionProperty should be handled with special treatment following
+	// the recommendation from hashi maintainers (https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851)
+	// to support complex object types with the legacy SDK (objects that contain properties with different types and configurations
+	// like computed properties).
+	EnableLegacyComplexObjectBlockConfiguration bool
 	// Default field is only for informative purposes to know what the openapi spec for the property stated the default value is
 	// As per the openapi spec default attributes, the value is expected to be computed by the API
 	Default interface{}
@@ -56,12 +60,15 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 }
 
 // This is the workaround to be able to process objects that contain properties that are not of the same type and may
-// contain other configuration like be computed optional etc (https://github.com/hashicorp/terraform/issues/22511)
-func (s *specSchemaDefinitionProperty) shouldBeTreatedAsComplexObject() bool {
+// contain other configurations like be computed properties (More info here: https://github.com/hashicorp/terraform/issues/22511)
+// The object properties that have EnableLegacyComplexObjectBlockConfiguration set to true will be represented in Terraform schema
+// as TypeList with MaxItems limited to 1. This will solve the current limitation in Terraform SDK 0.12 where blocks can only be
+// translated to lists and sets, maps can not be used to represent complex objects at the moment as it will result into undefined behavior.
+func (s *specSchemaDefinitionProperty) shouldEnableLegacyComplexObjectBlockConfiguration() bool {
 	if !s.isObjectProperty() {
 		return false
 	}
-	if s.ShouldBeTreatedAsComplexObject {
+	if s.EnableLegacyComplexObjectBlockConfiguration {
 		return true
 	}
 	return false
@@ -184,6 +191,25 @@ func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource
 	return nil, fmt.Errorf("object schema can only be formed for types %s or types %s with elems of type %s: found type='%s' elemType='%s' instead", typeObject, typeList, typeObject, s.Type, s.ArrayItemsType)
 }
 
+// shouldUseLegacyTerraformSDKBlockApproachForComplexObjects returns true if one of the following scenarios match:
+// - the specSchemaDefinitionProperty is of type object and in turn contains at lesat one nested property that is an object.
+// - the specSchemaDefinitionProperty is of type object and also has the EnableLegacyComplexObjectBlockConfiguration set to true
+// In both cases, in order to represent complex objects with the current version of the Terraform SDK (<= v0.12.2), the workaround
+// suggested by hashi maintainers is to use TypeList limiting the MaxItems to 1.
+// References to the issues opened:
+// - https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737
+// - https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851
+func (s *specSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() (bool, error) {
+	isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
+	if err != nil {
+		return isPropertyWithNestedObjects, err
+	}
+	if isPropertyWithNestedObjects {
+		return isPropertyWithNestedObjects, nil
+	}
+	return s.shouldEnableLegacyComplexObjectBlockConfiguration(), nil
+}
+
 // terraformSchema returns the terraform schema for a the given specSchemaDefinitionProperty
 func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error) {
 	var terraformSchema = &schema.Schema{}
@@ -197,18 +223,8 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// complex data structures
 	switch s.Type {
 	case typeObject:
-
-		// As per @apparentlymart comment in https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737, currently (terraform sdk <= v0.12.2) the only
-		// way to configure nested structs is by defining a TypeList property which contains the object schema in the elem
-		// AND the list is restricted to 1 element. The below is a workaround to support this, however this should go away
-		// once the SDK supports this out-of-the-box. Note: When this behaviour changes, it will require a new major release
-		// of the provider since the terraform configuration will most likely be different (as well as the way the data is stored
-		// in the state file) AND the change will NOT be backwards compatible.
-		isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
-		if err != nil {
-			return nil, err
-		}
-		if isPropertyWithNestedObjects || s.shouldBeTreatedAsComplexObject() {
+		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+		if shouldUseLegacyTerraformSDKApproachForBlocks {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1
 		}

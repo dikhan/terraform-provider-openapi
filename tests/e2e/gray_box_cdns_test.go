@@ -234,7 +234,7 @@ definitions:
             readOnly: true
       object_property_block: # option 2 (handling objects with complex property types and configurations - eg: computed)
         type: "object"
-        x-terraform-object-block-legacy: true
+        x-terraform-complex-object-legacy-config: true
         properties:
           account:
             type: string
