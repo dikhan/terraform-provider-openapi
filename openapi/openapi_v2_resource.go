@@ -56,7 +56,7 @@ const extTfFieldName = "x-terraform-field-name"
 const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
 const extTfComputed = "x-terraform-computed"
-const extTfObjectType = "x-terraform-object-type"
+const extTfObjectType = "x-terraform-object-block-legacy"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"

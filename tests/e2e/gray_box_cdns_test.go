@@ -234,7 +234,7 @@ definitions:
             readOnly: true
       object_property_block: # option 2 (handling objects with complex property types and configurations - eg: computed)
         type: "object"
-        x-terraform-object-type: true
+        x-terraform-object-block-legacy: true
         properties:
           account:
             type: string
@@ -460,6 +460,23 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 						openAPIResourceStateCDN, "label", "updatedCDNLabel"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "computed_property", "some auto-generated value"),
+
+					// option 1
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.%", "2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.account", "my_account"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.object_read_only_property", "some computed value for object read only"),
+
+					// option 2
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.#", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.0.account", "my_account"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.0.object_read_only_property", "some computed value for object read only"),
+
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDNFirewall, "cdn_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
@@ -588,7 +605,7 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
 
 		  object_property_argument = {
 		   account = "my_account"
-           object_read_only_property = "some computed value for object read only" // This is the worjaournd users will have to do in order to fix the diff issues with objects that contain readOnly properties
+           object_read_only_property = "some computed value for object read only" // This is the workaround users will have to do in order to fix the diff issues with objects that contain readOnly properties
 		  }
 
 		}
