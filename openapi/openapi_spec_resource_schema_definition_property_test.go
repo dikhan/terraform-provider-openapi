@@ -707,48 +707,30 @@ func TestIsLegacyComplexObjectExtensionEnabled(t *testing.T) {
 		{
 			name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration enabled",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "top_level_object",
 				Type: typeObject,
 				EnableLegacyComplexObjectBlockConfiguration: true,
-				SpecSchemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
-						&specSchemaDefinitionProperty{
-							Type: typeString,
-							Name: "prop_1",
-						},
-					},
-				},
 			},
 			expectedResult: true,
 		},
 		{
 			name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "top_level_object",
 				Type: typeObject,
 				EnableLegacyComplexObjectBlockConfiguration: false,
-				SpecSchemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
-						&specSchemaDefinitionProperty{
-							Type: typeString,
-							Name: "prop_1",
-						},
-					},
-				}},
+			},
 			expectedResult: false,
 		},
 		{
-			name: "property that is NOT an object",
+			name: "property that is NOT an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "prop_1",
 				Type: typeString,
+				EnableLegacyComplexObjectBlockConfiguration: false,
 			},
 			expectedResult: false,
 		},
 		{
 			name: "property that is NOT an object but somehow has the EnableLegacyComplexObjectBlockConfiguration turned on",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "prop_1",
 				Type: typeString,
 				EnableLegacyComplexObjectBlockConfiguration: true,
 			},
