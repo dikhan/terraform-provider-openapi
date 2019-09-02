@@ -225,7 +225,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		}
 		objectSchema, err := s.terraformObjectSchema()
 		if err != nil {
-			return nil, err
+			return nil, err //untested
 		}
 		terraformSchema.Elem = objectSchema
 
