@@ -826,7 +826,7 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 }
 
 func TestTerraformSchema(t *testing.T) {
-	Convey("Given a swagger schema definition that has two nested properties - one being an object and the other one a primitive", t, func() {
+	Convey("Given a swagger schema definition that has two nested properties - one being a simple object and the other one a primitive", t, func() {
 		expectedNestedObjectPropertyName := "nested_object1"
 		s := &specSchemaDefinitionProperty{
 			Name: "top_level_object",
@@ -872,7 +872,7 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger schema definition that has two nested object properties", t, func() {
+	Convey("Given a swagger schema definition that has two nested simple object properties", t, func() {
 		expectedNestedObjectPropertyName1 := "nested_object1"
 		expectedNestedObjectPropertyName2 := "nested_object2"
 		s := &specSchemaDefinitionProperty{
@@ -928,7 +928,7 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger schema definition that has an object and a complex object nested into it", t, func() {
+	Convey("Given a swagger schema definition of type object and a complex object nested into it", t, func() {
 		complexObjectName := "complex_object_which_is_nested"
 		s := &specSchemaDefinitionProperty{
 			Name: "top_level_object",
@@ -974,7 +974,7 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger schema definition that has complex object", t, func() {
+	Convey("Given a swagger schema definition that contains a nested object", t, func() {
 		complexObjectName := "complex_object_which_is_nested"
 		s := &specSchemaDefinitionProperty{
 			Name: "complex object",
@@ -1000,7 +1000,7 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
-	Convey("Given a swagger schema definition that has complex object", t, func() {
+	Convey("Given a swagger schema definition tha is a complex object (EnableLegacyComplexObjectBlockConfiguration set to true)", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name: "top level complex object",
 			Type: typeObject,
@@ -1021,6 +1021,31 @@ func TestTerraformSchema(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
+				So(tfPropSchema.Elem.(*schema.Resource).Schema["my_int_prop"].Computed, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given a swagger schema definition tha is a simple object (EnableLegacyComplexObjectBlockConfiguration not present or set to false)", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "top level complex object",
+			Type: typeObject,
+			//EnableLegacyComplexObjectBlockConfiguration: true, ==> This field is not present or set to false
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Type:                 typeInt,
+						Name:                 "my_int_prop",
+						ReadOnly:             true,
+						SpecSchemaDefinition: &specSchemaDefinition{},
+					},
+				},
+			}}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulting tfPropSchema should match the following using TypeMap as type", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeMap)
 				So(tfPropSchema.Elem.(*schema.Resource).Schema["my_int_prop"].Computed, ShouldBeTrue)
 			})
 		})
