@@ -600,7 +600,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 
 func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
 	if dataValue == nil {
-		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name)
+		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name) //untested
 	}
 	dataValueKind := reflect.TypeOf(dataValue).Kind()
 	switch dataValueKind {
@@ -610,10 +610,10 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 		for propertyName, propertyValue := range mapValue {
 			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getPropertyBasedOnTerraformName(propertyName)
 			if err != nil {
-				return err
+				return err //untested
 			}
 			if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
-				return err
+				return err //untested
 			}
 		}
 		input[property.Name] = objectInput
@@ -630,7 +630,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 				}
 				if err := r.getPropertyPayload(input, property, arrayValue[0]); err != nil {
-					return err
+					return err //untested
 				}
 			} else {
 				arrayInput := []interface{}{}
@@ -638,7 +638,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 				for _, arrayItem := range arrayValue {
 					objectInput := map[string]interface{}{}
 					if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
-						return err
+						return err //untested
 					}
 					// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example
 					// [propertyName: listeners; propertyValue: [map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]]]

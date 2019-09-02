@@ -2,13 +2,15 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"net/http"
 	"time"
 
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+
+	"log"
+
 	"github.com/dikhan/http_goclient"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 type providerFactory struct {
@@ -171,7 +173,7 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 	resourceMap := map[string]*schema.Resource{}
 	openAPIResources, err := p.specAnalyser.GetTerraformCompliantResources()
 	if err != nil {
-		return nil, err
+		return nil, err //untested
 	}
 	for _, openAPIResource := range openAPIResources {
 		start := time.Now()
@@ -182,11 +184,11 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 		r := newResourceFactory(openAPIResource)
 		resource, err := r.createTerraformResource()
 		if err != nil {
-			return nil, err
+			return nil, err //untested
 		}
 		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
 		if err != nil {
-			return nil, err
+			return nil, err //untested
 		}
 		log.Printf("[INFO] resource '%s' successfully registered in the provider (time:%s)", resourceName, time.Since(start))
 		resourceMap[resourceName] = resource
