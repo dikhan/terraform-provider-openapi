@@ -985,6 +985,21 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
+	Convey("Given a swagger schema definition that has a nested object with no specSchemaDefinition", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "top_level_object",
+			Type: typeObject,
+		}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulting tfPropSchema should be nil and an error should be raised", func() {
+				So(err, ShouldNotBeNil)
+				So(tfPropSchema, ShouldBeNil)
+				So(err.Error(), ShouldEqual, `missing spec schema definition for object property 'top_level_object'`)
+			})
+		})
+	})
+
 	Convey("Given a swagger schema definition that has complex object", t, func() {
 		complexObjectName := "complex_object_which_is_nested"
 		s := &specSchemaDefinitionProperty{
@@ -1531,6 +1546,7 @@ func TestValidateFunc(t *testing.T) {
 }
 
 func Test_shouldUseLegacyTerraformSDKBlockApproachForComplexObjects(t *testing.T) {
+
 	Convey("shouldUseLegacyTerraformSDKBlockApproachForComplexObject", t, func() {
 		Convey("returns an error", func() {
 			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and nothing else"+
