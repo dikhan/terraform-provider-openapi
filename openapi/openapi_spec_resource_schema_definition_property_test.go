@@ -697,7 +697,7 @@ func TestTerraformObjectSchema(t *testing.T) {
 	})
 }
 
-func TestShouldEnableLegacyComplexObjectBlockConfiguration(t *testing.T) {
+func TestIsLegacyComplexObjectExtensionEnabled(t *testing.T) {
 	Convey("Given the following swagger schema definition property use cases", t, func() {
 		testCases := []struct {
 			name                              string
@@ -757,8 +757,8 @@ func TestShouldEnableLegacyComplexObjectBlockConfiguration(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
-			Convey(fmt.Sprintf("When shouldEnableLegacyComplexObjectBlockConfiguration method is called: %s", tc.name), func() {
-				shouldEnableLegacyComplexObjectBlockConfiguration := tc.inputSpecSchemaDefinitionProperty.shouldEnableLegacyComplexObjectBlockConfiguration()
+			Convey(fmt.Sprintf("When isLegacyComplexObjectExtensionEnabled method is called: %s", tc.name), func() {
+				shouldEnableLegacyComplexObjectBlockConfiguration := tc.inputSpecSchemaDefinitionProperty.isLegacyComplexObjectExtensionEnabled()
 				Convey("Then the result should be true", func() {
 					So(shouldEnableLegacyComplexObjectBlockConfiguration, ShouldEqual, tc.expectedResult)
 				})
