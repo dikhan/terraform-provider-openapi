@@ -173,22 +173,28 @@ func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schem
 	resourceMap := map[string]*schema.Resource{}
 	openAPIResources, err := p.specAnalyser.GetTerraformCompliantResources()
 	if err != nil {
-		return nil, err //untested
+		return nil, err
 	}
 	for _, openAPIResource := range openAPIResources {
+		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
+		if err != nil {
+			return nil, err
+		}
 		start := time.Now()
 		if openAPIResource.shouldIgnoreResource() {
-			log.Printf("[WARN] '%s' is marked as to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			continue
+		}
+		_, alreadyThere := resourceMap[resourceName]
+		if alreadyThere {
+			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
+			delete(resourceMap, resourceName)
 			continue
 		}
 		r := newResourceFactory(openAPIResource)
 		resource, err := r.createTerraformResource()
 		if err != nil {
-			return nil, err //untested
-		}
-		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
-		if err != nil {
-			return nil, err //untested
+			return nil, err
 		}
 		log.Printf("[INFO] resource '%s' successfully registered in the provider (time:%s)", resourceName, time.Since(start))
 		resourceMap[resourceName] = resource

@@ -107,9 +107,6 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 	if paths == nil {
 		return nil, fmt.Errorf("paths must not be nil")
 	}
-	if schemaDefinitions == nil {
-		return nil, fmt.Errorf("schemaDefinitions must not be nil")
-	}
 	resource := &SpecV2Resource{
 		Path:              path,
 		Region:            region,
@@ -171,11 +168,11 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 	}
 	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
 
+	versionRegex, _ := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
+
 	if preferredName != "" {
 		resourceName = preferredName
 	}
-
-	versionRegex, _ := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
 
 	fullResourceName := resourceName
 	v := versionRegex.FindAllStringSubmatch(resourcePath, -1)

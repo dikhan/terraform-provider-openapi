@@ -462,7 +462,7 @@ func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interf
 	for propertyName, propertyValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
-			return fmt.Errorf("failed to update state with remote data. This usually happends when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
+			return fmt.Errorf("failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
 		}
 		if property.isPropertyNamedID() {
 			continue

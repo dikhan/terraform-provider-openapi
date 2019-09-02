@@ -233,21 +233,6 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a path, schemaDefinition, rootPathItem, instancePathItem, paths AND a schemaDefinitions that is nil", t, func() {
-		path := "/v1/users"
-		schemaDefinition := spec.Schema{}
-		rootPathItem := spec.PathItem{}
-		instancePathItem := spec.PathItem{}
-		paths := map[string]spec.PathItem{}
-		var schemaDefinitions map[string]spec.Schema
-		Convey("When newSpecV2ResourceWithConfig method is called", func() {
-			r, err := newSpecV2ResourceWithConfig("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
-			Convey("And the err returned output should match the expectation", func() {
-				So(err.Error(), ShouldEqual, "schemaDefinitions must not be nil")
-				So(r, ShouldBeNil)
-			})
-		})
-	})
 }
 
 func TestNewSpecV2ResourceWithRegion(t *testing.T) {
@@ -594,6 +579,12 @@ func TestBuildResourceNameFromPath(t *testing.T) {
 			preferredName:        "",
 			expectedResourceName: "",
 			expectedError:        errors.New("could not find a valid name for resource instance path '&^'"),
+		},
+		{
+			path:                 "/api/v1/group/",
+			preferredName:        "iamgroup",
+			expectedResourceName: "iamgroup_v1",
+			expectedError:        nil,
 		},
 	}
 

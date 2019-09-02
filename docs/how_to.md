@@ -1182,6 +1182,39 @@ Note: This extension will be ignored if the ``x-terraform-provider-multiregion-f
 - Terraform requires field names to be lower case and follow the snake_case pattern (my_sec_definition). Thus, security definitions 
  must follow this naming convention.
 
+## Path collisions
+
+_If one or more resources have the same path, then one of them will be accessible in the provider and the others will 
+not, and which one is available will be determined at run time and may change from one invocation to the 
+next, such that different resource types may be created, updated, and destroyed with different terraform plan, apply and 
+destory invocations._
+
+## Resource naming collisions
+
+When resource names collide, the provider is unable to determine which resource the name refers to in tf files, so it 
+will not provide access to either resource (unless there is a path collision, as documented above).  
+
+Here are some scenarios that will result in naming collisions such that the resources will not available in the 
+provider: 
+- Two or more resources with the same `x-terraform-resource-name` when both are versioned or neither is versioned.  
+  - Example 1: A swagger document defines one resource with a path of `/abc` and a `x-terraform-resource-name` of 
+  `something` and another resource with a path of `/xyz` and a `x-terraform-resource-name` of `something`.  The  
+  resource names for both of them would be `something`.
+  - Example 2: A swagger document defines one resource with a path of `/v1/abc` and a `x-terraform-resource-name` of 
+  `something` and another resource with a path of `/v1/xyz` and a `x-terraform-resource-name` of `something`.  The  
+  resource names for both of them would be `something_v1`.
+- Versioned resources with non-versioned resources having version-like patterns in the paths.  For example, if a swagger 
+document defines a path for one resource of `/v1/abc` and  a path for another resource of `/abc_v1`, then the  resource 
+names for both of them would be `abc_v1`.
+- Resources with `x-terraform-resource-name` name values matching the path of another resource without a 
+`x-terraform-resource-name`.
+  - Example 1: One resource has a path of `/abc` while another has a `x-terraform-resource-name` value of `abc`.  The 
+  resource name for both will be `abc`.
+  - Example 2: One resource has a path of `/v1/abc` while another has a path of `/abc` and a `x-terraform-resource-name`
+  value of `abc_v1`.  The resource name for both will be `abc_v1`.
+  
+Note that none these scenarios above involve duplicate paths, which is addressed above in the "Path collisions" section. 
+
 ## What is not supported yet?
 
 - Response definitions: [Responses Definitions Object](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#responsesDefinitionsObject)

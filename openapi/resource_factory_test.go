@@ -1343,7 +1343,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			}
 			err := r.updateStateWithPayloadData(remoteData, resourceData)
 			Convey("Then the err returned should matched the expected one", func() {
-				So(err.Error(), ShouldEqual, "failed to update state with remote data. This usually happends when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'some_other_property_not_documented_in_openapi_doc' not existing in resource schema definition")
+				So(err.Error(), ShouldEqual, "failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'some_other_property_not_documented_in_openapi_doc' not existing in resource schema definition")
 			})
 		})
 	})
