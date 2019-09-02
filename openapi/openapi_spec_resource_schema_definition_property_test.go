@@ -1431,3 +1431,99 @@ func TestValidateFunc(t *testing.T) {
 		})
 	})
 }
+
+func Test_shouldUseLegacyTerraformSDKBlockApproachForComplexObjects(t *testing.T) {
+	Convey("shouldUseLegacyTerraformSDKBlockApproachForComplexObject", t, func() {
+		Convey("returns an error", func() {
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and nothing else"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with an error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeError, "missing spec schema definition for object property ''") //possible bug
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and EnableLegacyComplexObjectBlockConfiguration = true and no SpecSchemaDefinition"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with an error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					EnableLegacyComplexObjectBlockConfiguration: true}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeError, "missing spec schema definition for object property ''") //possible bug
+			})
+		})
+
+		Convey("returns false", func() {
+			Convey("Given a blank specSchemaDefinitionProperty "+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'boolean' and nothing else"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeBool}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject, SpecSchemaDefinition: &specSchemaDefinition{}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty which is blank"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{}}}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty with Type 'boolean' "+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return true with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{Type: typeBool}}}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+		})
+
+		Convey("returns true", func() {
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty with Type 'object' "+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{Type: typeObject}}}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeTrue)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition and EnableLegacyComplexObjectBlockConfiguration = true"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return true with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition:                        &specSchemaDefinition{},
+					EnableLegacyComplexObjectBlockConfiguration: true}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeTrue)
+				So(e, ShouldBeNil)
+			})
+		})
+	})
+}
