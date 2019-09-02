@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -693,6 +694,76 @@ func TestTerraformObjectSchema(t *testing.T) {
 				So(err.Error(), ShouldEqual, "missing spec schema definition for property 'prop' of type 'object'")
 			})
 		})
+	})
+}
+
+func TestShouldEnableLegacyComplexObjectBlockConfiguration(t *testing.T) {
+	Convey("Given the following swagger schema definition property use cases", t, func() {
+		testCases := []struct {
+			name                              string
+			inputSpecSchemaDefinitionProperty specSchemaDefinitionProperty
+			expectedResult                    bool
+		}{
+			{
+				name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration enabled",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "top_level_object",
+					Type: typeObject,
+					EnableLegacyComplexObjectBlockConfiguration: true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							&specSchemaDefinitionProperty{
+								Type: typeString,
+								Name: "prop_1",
+							},
+						},
+					},
+				},
+				expectedResult: true,
+			},
+			{
+				name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "top_level_object",
+					Type: typeObject,
+					EnableLegacyComplexObjectBlockConfiguration: false,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							&specSchemaDefinitionProperty{
+								Type: typeString,
+								Name: "prop_1",
+							},
+						},
+					}},
+				expectedResult: false,
+			},
+			{
+				name: "property that is NOT an object",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "prop_1",
+					Type: typeString,
+				},
+				expectedResult: false,
+			},
+			{
+				name: "property that is NOT an object but somehow has the EnableLegacyComplexObjectBlockConfiguration turned on",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "prop_1",
+					Type: typeString,
+					EnableLegacyComplexObjectBlockConfiguration: true,
+				},
+				expectedResult: false,
+			},
+		}
+
+		for _, tc := range testCases {
+			Convey(fmt.Sprintf("When shouldEnableLegacyComplexObjectBlockConfiguration method is called: %s", tc.name), func() {
+				shouldEnableLegacyComplexObjectBlockConfiguration := tc.inputSpecSchemaDefinitionProperty.shouldEnableLegacyComplexObjectBlockConfiguration()
+				Convey("Then the result should be true", func() {
+					So(shouldEnableLegacyComplexObjectBlockConfiguration, ShouldEqual, tc.expectedResult)
+				})
+			})
+		}
 	})
 }
 
