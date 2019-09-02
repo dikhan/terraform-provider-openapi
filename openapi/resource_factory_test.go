@@ -860,6 +860,7 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 				},
 				returnHTTPCode: http.StatusOK,
 			}
+
 			responsePayload := map[string]interface{}{}
 
 			responseStatusCode := http.StatusAccepted
@@ -918,7 +919,7 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 				responses: map[int]*specResponse{},
 			}
 			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the err  should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 		})
@@ -1842,6 +1843,14 @@ func TestGetPropertyPayload(t *testing.T) {
 	})
 
 	Convey("Given a resource factory"+
+		"When getPropertyPayload is called with a nil datavalue"+
+		"Then it returns an error", t, func() {
+		input := map[string]interface{}{}
+		resourceFactory := resourceFactory{}
+		So(resourceFactory.getPropertyPayload(input, &specSchemaDefinitionProperty{Name: "buu"}, nil).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
+	})
+
+	Convey("Given a resource factory"+
 		"When it is called with  non-nil property and value for dataValue which cannot be cast to []interface{}"+
 		"Then it panics", t, func() {
 		input := map[string]interface{}{}
@@ -2109,6 +2118,7 @@ func TestGetPropertyPayload(t *testing.T) {
 			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 
 		})
+
 		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
