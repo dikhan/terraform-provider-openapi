@@ -511,12 +511,7 @@ func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchem
 		// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
 		// blocks only for TypeList and TypeSet . In this case, we need to make sure that the json (which reflects to a map)
 		// gets translated to the expected array of one item that terraform expects.
-		// TODO: add test coverage for this logic
-		shouldUseLegacyTerraformSDKBlockApproachForComplexObjects, err := property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
-		if err != nil {
-			return nil, err
-		}
-		if shouldUseLegacyTerraformSDKBlockApproachForComplexObjects {
+		if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
 			arrayInput := []interface{}{}
 			arrayInput = append(arrayInput, objectInput)
 			return arrayInput, nil
@@ -630,11 +625,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			// state representation of nested objects is an array, we need to make sure we don't end up constructing an
 			// array but rather just a json object
 			// TODO: add test coverage for this logic
-			shouldUseLegacyTerraformSDKBlockApproachForComplexObjects, err := property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
-			if err != nil {
-				return err
-			}
-			if shouldUseLegacyTerraformSDKBlockApproachForComplexObjects {
+			if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
 				arrayValue := dataValue.([]interface{})
 				if len(arrayValue) != 1 {
 					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")

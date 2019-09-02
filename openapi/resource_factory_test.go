@@ -1683,15 +1683,18 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
-		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with non objects inside", func() {
+		Convey("When convertPayloadToLocalStateDataValue is called with simple object property and an empty map as value", func() {
 			property := &specSchemaDefinitionProperty{
-				Name:     "blowup",
+				Name:     "some_object",
 				Type:     typeObject,
 				Required: true,
 			}
-			_, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
-			Convey("Then the error should match the expected one", func() {
-				So(err.Error(), ShouldEqual, "missing spec schema definition for object property 'blowup'")
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type array", func() {
+				So(resultValue.(map[string]interface{}), ShouldBeEmpty)
 			})
 		})
 

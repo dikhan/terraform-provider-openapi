@@ -75,19 +75,16 @@ func (s *specSchemaDefinitionProperty) isLegacyComplexObjectExtensionEnabled() b
 	return false
 }
 
-func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() (bool, error) {
-	if !s.isObjectProperty() {
-		return false, nil
-	}
-	if s.SpecSchemaDefinition == nil {
-		return false, fmt.Errorf("missing spec schema definition for object property '%s'", s.Name)
+func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
+	if !s.isObjectProperty() || s.SpecSchemaDefinition == nil {
+		return false
 	}
 	for _, p := range s.SpecSchemaDefinition.Properties {
 		if p.isObjectProperty() {
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
 
 func (s *specSchemaDefinitionProperty) isPropertyNamedID() bool {
@@ -200,17 +197,13 @@ func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource
 // References to the issues opened:
 // - https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737
 // - https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851
-func (s *specSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() (bool, error) {
-	isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
-	if err != nil {
-		return false, err
-	}
-	// is of type object and in turn contains at lesat one nested property that is an object.
-	if isPropertyWithNestedObjects {
-		return true, nil
+func (s *specSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() bool {
+	// is of type object and in turn contains at least one nested property that is an object.
+	if s.isPropertyWithNestedObjects() {
+		return true
 	}
 	// or is of type object and also has the EnableLegacyComplexObjectBlockConfiguration set to true
-	return s.isLegacyComplexObjectExtensionEnabled(), nil
+	return s.isLegacyComplexObjectExtensionEnabled()
 }
 
 // terraformSchema returns the terraform schema for a the given specSchemaDefinitionProperty
@@ -226,11 +219,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// complex data structures
 	switch s.Type {
 	case typeObject:
-		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
-		if err != nil {
-			return nil, err
-		}
-		if shouldUseLegacyTerraformSDKApproachForBlocks {
+		if s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1
 		}
