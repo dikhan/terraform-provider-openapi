@@ -2024,7 +2024,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 
 		Convey("When createSchemaDefinitionProperty is called with an optional property schema", func() {
 			propertyName := "propertyWithNestedObj"
-
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
@@ -2046,9 +2045,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 
 			requiredProperties := []string{}
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
-
-			fmt.Println(schemaDefinitionProperty, err)
-
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
