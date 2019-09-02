@@ -341,7 +341,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		if ok {
 			*responsePayload = remoteDataCasted
 		} else {
-			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData)) //untested
+			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData))
 		}
 	}
 	return nil
@@ -600,7 +600,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 
 func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
 	if dataValue == nil {
-		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name) //untested
+		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name)
 	}
 	dataValueKind := reflect.TypeOf(dataValue).Kind()
 	switch dataValueKind {
