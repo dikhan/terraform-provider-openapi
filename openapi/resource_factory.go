@@ -624,7 +624,6 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			// This is the work around put in place to have support for complex objects. In this case, because the
 			// state representation of nested objects is an array, we need to make sure we don't end up constructing an
 			// array but rather just a json object
-			// TODO: add test coverage for this logic
 			if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
 				arrayValue := dataValue.([]interface{})
 				if len(arrayValue) != 1 {

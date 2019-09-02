@@ -1832,6 +1832,35 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 }
 
 func TestGetPropertyPayload(t *testing.T) {
+	Convey("Given a resource factory"+
+		"When getPropertyPayload is called with a nil property"+
+		"Then it panics", t, func() {
+		input := map[string]interface{}{}
+		dataValue := struct{}{}
+		resourceFactory := resourceFactory{}
+		So(func() { resourceFactory.getPropertyPayload(input, nil, dataValue) }, ShouldPanic)
+	})
+
+	Convey("Given a resource factory"+
+		"When it is called with  non-nil property and value for dataValue which cannot be cast to []interface{}"+
+		"Then it panics", t, func() {
+		input := map[string]interface{}{}
+		dataValue := []bool{}
+		property := &specSchemaDefinitionProperty{}
+		resourceFactory := resourceFactory{}
+		So(func() { resourceFactory.getPropertyPayload(input, property, dataValue) }, ShouldPanic)
+	})
+
+	Convey("Given the function handleSliceOrArray"+
+		"When it is called with an empty slice for dataValue"+
+		"Then it should not return an error", t, func() {
+		input := map[string]interface{}{}
+		dataValue := []interface{}{}
+		property := &specSchemaDefinitionProperty{}
+		resourceFactory := resourceFactory{}
+		e := resourceFactory.getPropertyPayload(input, property, dataValue)
+		So(e, ShouldBeNil)
+	})
 
 	Convey("Given a resource factory initialized with a spec resource with a schema definition containing a string property", t, func() {
 		// Use case - string property (terraform configuration pseudo representation below):
