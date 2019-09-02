@@ -442,8 +442,10 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 }
 
 func (o *SpecV2Resource) isBoolExtensionEnabled(extensions spec.Extensions, extension string) bool {
-	if enabled, ok := extensions.GetBool(extension); ok && enabled {
-		return true
+	if extensions != nil {
+		if enabled, ok := extensions.GetBool(extension); ok && enabled {
+			return true
+		}
 	}
 	return false
 }

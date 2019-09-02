@@ -2346,6 +2346,33 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 	})
 }
 
+func TestIsBoolExtensionEnabled(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		testCases := []struct {
+			name           string
+			extensions     spec.Extensions
+			extension      string
+			expectedResult bool
+		}{
+			{name: "nil extensions", extensions: nil, extension: "", expectedResult: false},
+			{name: "empty extensions", extensions: spec.Extensions{}, extension: "", expectedResult: false},
+			{name: "populated extensions but empty extension", extensions: spec.Extensions{"some-extension": true}, extension: "", expectedResult: false},
+			{name: "populated extensions and matching bool extension with value true", extensions: spec.Extensions{"some-extension": true}, extension: "some-extension", expectedResult: true},
+			{name: "populated extensions and matching bool extension with value false", extensions: spec.Extensions{"some-extension": false}, extension: "some-extension", expectedResult: false},
+			{name: "populated extensions and matching non bool extension", extensions: spec.Extensions{"some-extension": "some value"}, extension: "some-extension", expectedResult: false},
+		}
+		for _, tc := range testCases {
+			Convey(fmt.Sprintf("When isBoolExtensionEnabled method is called: %s", tc.name), func() {
+				isEnabled := r.isBoolExtensionEnabled(tc.extensions, tc.extension)
+				Convey("Then the result returned should be the expected one", func() {
+					So(isEnabled, ShouldEqual, tc.expectedResult)
+				})
+			})
+		}
+	})
+}
+
 func TestIsOptionalComputedProperty(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
