@@ -745,6 +745,18 @@ func TestIsLegacyComplexObjectExtensionEnabled(t *testing.T) {
 }
 
 func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
+	Convey("Given a swagger schema definition property that is not of type object", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Type: typeBool,
+		}
+		Convey("When terraformSchema method is called", func() {
+			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
+			Convey("Then the result should be false", func() {
+				So(isPropertyWithNestedObjects, ShouldBeFalse)
+			})
+		})
+	})
+
 	Convey("Given a swagger schema definition property that has nested objects", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name: "top_level_object",
