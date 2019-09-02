@@ -228,7 +228,6 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// complex data structures
 	switch s.Type {
 	case typeObject:
-		// TODO: add coverage for this logic if not already done
 		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() //todo: handle the error
 		if shouldUseLegacyTerraformSDKApproachForBlocks {
 			terraformSchema.Type = schema.TypeList
