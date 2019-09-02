@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -693,6 +694,76 @@ func TestTerraformObjectSchema(t *testing.T) {
 				So(err.Error(), ShouldEqual, "missing spec schema definition for property 'prop' of type 'object'")
 			})
 		})
+	})
+}
+
+func TestIsLegacyComplexObjectExtensionEnabled(t *testing.T) {
+	Convey("Given the following swagger schema definition property use cases", t, func() {
+		testCases := []struct {
+			name                              string
+			inputSpecSchemaDefinitionProperty specSchemaDefinitionProperty
+			expectedResult                    bool
+		}{
+			{
+				name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration enabled",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "top_level_object",
+					Type: typeObject,
+					EnableLegacyComplexObjectBlockConfiguration: true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							&specSchemaDefinitionProperty{
+								Type: typeString,
+								Name: "prop_1",
+							},
+						},
+					},
+				},
+				expectedResult: true,
+			},
+			{
+				name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "top_level_object",
+					Type: typeObject,
+					EnableLegacyComplexObjectBlockConfiguration: false,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							&specSchemaDefinitionProperty{
+								Type: typeString,
+								Name: "prop_1",
+							},
+						},
+					}},
+				expectedResult: false,
+			},
+			{
+				name: "property that is NOT an object",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "prop_1",
+					Type: typeString,
+				},
+				expectedResult: false,
+			},
+			{
+				name: "property that is NOT an object but somehow has the EnableLegacyComplexObjectBlockConfiguration turned on",
+				inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
+					Name: "prop_1",
+					Type: typeString,
+					EnableLegacyComplexObjectBlockConfiguration: true,
+				},
+				expectedResult: false,
+			},
+		}
+
+		for _, tc := range testCases {
+			Convey(fmt.Sprintf("When isLegacyComplexObjectExtensionEnabled method is called: %s", tc.name), func() {
+				shouldEnableLegacyComplexObjectBlockConfiguration := tc.inputSpecSchemaDefinitionProperty.isLegacyComplexObjectExtensionEnabled()
+				Convey("Then the result should be true", func() {
+					So(shouldEnableLegacyComplexObjectBlockConfiguration, ShouldEqual, tc.expectedResult)
+				})
+			})
+		}
 	})
 }
 
@@ -1454,6 +1525,102 @@ func TestValidateFunc(t *testing.T) {
 				So(err, ShouldNotBeNil)
 				So(err, ShouldNotBeEmpty)
 				So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as required and can not be configured as computed too")
+			})
+		})
+	})
+}
+
+func Test_shouldUseLegacyTerraformSDKBlockApproachForComplexObjects(t *testing.T) {
+	Convey("shouldUseLegacyTerraformSDKBlockApproachForComplexObject", t, func() {
+		Convey("returns an error", func() {
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and nothing else"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with an error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeError, "missing spec schema definition for object property ''") //possible bug
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and EnableLegacyComplexObjectBlockConfiguration = true and no SpecSchemaDefinition"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with an error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					EnableLegacyComplexObjectBlockConfiguration: true}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeError, "missing spec schema definition for object property ''") //possible bug
+			})
+		})
+
+		Convey("returns false", func() {
+			Convey("Given a blank specSchemaDefinitionProperty "+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'boolean' and nothing else"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeBool}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject, SpecSchemaDefinition: &specSchemaDefinition{}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty which is blank"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{}}}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty with Type 'boolean' "+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return true with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{Type: typeBool}}}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeFalse)
+				So(e, ShouldBeNil)
+			})
+		})
+
+		Convey("returns true", func() {
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty with Type 'object' "+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return false with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{Type: typeObject}}}}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeTrue)
+				So(e, ShouldBeNil)
+			})
+
+			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition and EnableLegacyComplexObjectBlockConfiguration = true"+
+				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
+				"Then it should return true with no error", func() {
+				p := &specSchemaDefinitionProperty{Type: typeObject,
+					SpecSchemaDefinition:                        &specSchemaDefinition{},
+					EnableLegacyComplexObjectBlockConfiguration: true}
+				b, e := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+				So(b, ShouldBeTrue)
+				So(e, ShouldBeNil)
 			})
 		})
 	})
