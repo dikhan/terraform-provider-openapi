@@ -1716,12 +1716,36 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
-		Convey("When convertPayloadToLocalStateDataValue is called with an object", func() {
+		Convey("When convertPayloadToLocalStateDataValue is called with a simple object", func() {
+			// Simple objects are considered objects that all the properties are of the same type and are not computed
+			objectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_string_2", "", true, false, nil),
+				},
+			}
+			dataValue := map[string]interface{}{
+				"example_string":   "http",
+				"example_string_2": "something",
+			}
+			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
+				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
+				So(resultValue.(map[string]interface{})["example_string_2"].(string), ShouldEqual, "something")
+			})
+		})
+
+		// Simple objects are considered objects that contain properties that are of different types and configuration (e,g: mix of required/optional/computed properties)
+		Convey("When convertPayloadToLocalStateDataValue is called with a complex object", func() {
 			objectSchemaDefinition := &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
-					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
 				},
 			}
@@ -1732,19 +1756,20 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"example_float":  10.45,
 			}
 			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
+			property.EnableLegacyComplexObjectBlockConfiguration = true
 			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_int")
-				So(resultValue.(map[string]interface{})["example_int"].(string), ShouldEqual, "80")
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_string")
-				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_bool")
-				So(resultValue.(map[string]interface{})["example_bool"].(string), ShouldEqual, "true")
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_float")
-				So(resultValue.(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
+				So(resultValue.([]interface{})[0], ShouldContainKey, "example_int")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_int"].(string), ShouldEqual, "80")
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_string")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_bool")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_bool"].(string), ShouldEqual, "true")
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_float")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
 			})
 		})
 
