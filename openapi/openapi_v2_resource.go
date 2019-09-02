@@ -429,7 +429,6 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.IsStatusIdentifier = true
 	}
 
-	// TODO: unit test this code
 	if shouldBeTreatedAsComplexObject, ok := property.Extensions.GetBool(extTfComplexObjectType); ok && shouldBeTreatedAsComplexObject {
 		schemaDefinitionProperty.EnableLegacyComplexObjectBlockConfiguration = true
 	}
