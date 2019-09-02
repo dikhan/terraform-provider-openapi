@@ -396,9 +396,6 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 	}
 }
 
-// TODO: This test now fails due to terraform not honouring the computed value object_property_top.object_read_only_property
-//   detecting a diff after the apply that goes: object_property_top.object_read_only_property: "some computed value for object read only" => ""
-//   An issue has been opened in the Terraform repo to learn more about this behaviour: https://github.com/hashicorp/terraform/issues/22511
 func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)
@@ -438,7 +435,7 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property_argument.object_read_only_property", "some computed value for object read only"),
 
-					// option 2
+					// option 2 (chosen)
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property_block.#", "1"),
 					resource.TestCheckResourceAttr(
