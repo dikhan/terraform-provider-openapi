@@ -1000,6 +1000,29 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
+	Convey("Given a swagger schema definition that contains a object with no SpecSchemaDefinition", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "object",
+			Type: typeObject,
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Type: typeObject,
+						Name: "the object",
+					},
+				},
+			}}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then return an error because of the lack of SpecSchemaDefinition", func() {
+				So(err, ShouldNotBeNil)
+				So(tfPropSchema, ShouldBeNil)
+				So(err.Error(), ShouldEqual, `missing spec schema definition for property 'the object' of type 'object'`)
+
+			})
+		})
+	})
+
 	Convey("Given a swagger schema definition tha is a complex object (EnableLegacyComplexObjectBlockConfiguration set to true)", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name: "top level complex object",
