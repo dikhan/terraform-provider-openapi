@@ -707,48 +707,30 @@ func TestIsLegacyComplexObjectExtensionEnabled(t *testing.T) {
 		{
 			name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration enabled",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "top_level_object",
 				Type: typeObject,
 				EnableLegacyComplexObjectBlockConfiguration: true,
-				SpecSchemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
-						&specSchemaDefinitionProperty{
-							Type: typeString,
-							Name: "prop_1",
-						},
-					},
-				},
 			},
 			expectedResult: true,
 		},
 		{
 			name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "top_level_object",
 				Type: typeObject,
 				EnableLegacyComplexObjectBlockConfiguration: false,
-				SpecSchemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
-						&specSchemaDefinitionProperty{
-							Type: typeString,
-							Name: "prop_1",
-						},
-					},
-				}},
+			},
 			expectedResult: false,
 		},
 		{
-			name: "property that is NOT an object",
+			name: "property that is NOT an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "prop_1",
 				Type: typeString,
+				EnableLegacyComplexObjectBlockConfiguration: false,
 			},
 			expectedResult: false,
 		},
 		{
 			name: "property that is NOT an object but somehow has the EnableLegacyComplexObjectBlockConfiguration turned on",
 			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Name: "prop_1",
 				Type: typeString,
 				EnableLegacyComplexObjectBlockConfiguration: true,
 			},
@@ -763,66 +745,63 @@ func TestIsLegacyComplexObjectExtensionEnabled(t *testing.T) {
 }
 
 func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
-	Convey("Given a swagger schema definition property that has nested objects", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name: "top_level_object",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
+	testcases := []struct {
+		name                         string
+		schemaDefinitionPropertyType schemaDefinitionPropertyType
+		specSchemaDefinition         *specSchemaDefinition
+		expected                     bool
+	}{
+		{name: "swagger schema definition property that is not of type 'object'",
+			schemaDefinitionPropertyType: typeBool,
+			specSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Type: typeString,
+					},
+				},
+			},
+			expected: false},
+		{name: "swagger schema definition property that has nested objects",
+			schemaDefinitionPropertyType: typeObject,
+			specSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
 						Type: typeObject,
-						Name: "nested_object_1",
 						SpecSchemaDefinition: &specSchemaDefinition{
 							Properties: specSchemaDefinitionProperties{
 								&specSchemaDefinitionProperty{
 									Type: typeString,
-									Name: "string_property_1",
 								},
 							},
 						},
 					},
 				},
-			}}
-		Convey("When terraformSchema method is called", func() {
-			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
-			Convey("Then the result should be true", func() {
-				So(isPropertyWithNestedObjects, ShouldBeTrue)
-			})
-		})
-	})
-	Convey("Given a swagger schema definition property that DOES NOT have nested objects", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Name: "top_level_object",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
+			},
+			expected: true},
+		{name: "swagger schema definition property that DOES NOT have nested objects",
+			specSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
 						Type: typeString,
-						Name: "some_string",
 					},
 				},
-			}}
-		Convey("When terraformSchema method is called", func() {
-			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
-			Convey("Then the result should be false", func() {
-				So(isPropertyWithNestedObjects, ShouldBeFalse)
-			})
-		})
-	})
-
-	Convey("Given a spec definition property of type object that does not have a corresponding spec schema definition", t, func() {
+			},
+			expected: false},
+		{name: "spec definition property of type object that does not have a corresponding spec schema definition",
+			schemaDefinitionPropertyType: typeObject,
+			specSchemaDefinition:         nil,
+			expected:                     false},
+	}
+	for _, tc := range testcases {
 		s := &specSchemaDefinitionProperty{
-			Name:                 "top_level_object",
-			Type:                 typeObject,
-			SpecSchemaDefinition: nil,
+			Type:                 tc.schemaDefinitionPropertyType,
+			SpecSchemaDefinition: tc.specSchemaDefinition,
 		}
-		Convey("When terraformSchema method is called", func() {
-			isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
-			Convey("Then the result should be false", func() {
-				So(isPropertyWithNestedObjects, ShouldBeFalse)
-			})
-		})
-	})
+		isPropertyWithNestedObjects := s.isPropertyWithNestedObjects()
+		assert.Equal(t, tc.expected, isPropertyWithNestedObjects, tc.name)
+
+	}
+
 }
 
 func TestTerraformSchema(t *testing.T) {
