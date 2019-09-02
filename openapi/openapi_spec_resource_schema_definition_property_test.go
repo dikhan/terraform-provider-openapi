@@ -759,18 +759,15 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 
 	Convey("Given a swagger schema definition property that has nested objects", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Name: "top_level_object",
 			Type: typeObject,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
 						Type: typeObject,
-						Name: "nested_object_1",
 						SpecSchemaDefinition: &specSchemaDefinition{
 							Properties: specSchemaDefinitionProperties{
 								&specSchemaDefinitionProperty{
 									Type: typeString,
-									Name: "string_property_1",
 								},
 							},
 						},
@@ -784,15 +781,13 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 			})
 		})
 	})
+
 	Convey("Given a swagger schema definition property that DOES NOT have nested objects", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Name: "top_level_object",
-			Type: typeObject,
 			SpecSchemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
 						Type: typeString,
-						Name: "some_string",
 					},
 				},
 			}}
@@ -806,7 +801,6 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 
 	Convey("Given a spec definition property of type object that does not have a corresponding spec schema definition", t, func() {
 		s := &specSchemaDefinitionProperty{
-			Name:                 "top_level_object",
 			Type:                 typeObject,
 			SpecSchemaDefinition: nil,
 		}
