@@ -229,7 +229,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	switch s.Type {
 	case typeObject:
 		// TODO: add coverage for this logic if not already done
-		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() // handle the error
+		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() //todo: handle the error
 		if shouldUseLegacyTerraformSDKApproachForBlocks {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1

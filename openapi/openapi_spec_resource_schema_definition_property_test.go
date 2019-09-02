@@ -868,6 +868,52 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
+	Convey("Given a swagger schema definition that has an object and a complex object nested into it", t, func() {
+		complexObjectName := "complex_object_which_is_nested"
+		s := &specSchemaDefinitionProperty{
+			Name: "top_level_object",
+			Type: typeObject,
+			SpecSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Type: typeObject,
+						Name: complexObjectName,
+						EnableLegacyComplexObjectBlockConfiguration: true,
+						SpecSchemaDefinition: &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{
+								&specSchemaDefinitionProperty{
+									Type: typeString,
+									Name: "string_property",
+								},
+								&specSchemaDefinitionProperty{
+									Type:     typeInt,
+									Name:     "int_property",
+									ReadOnly: true,
+								},
+							},
+						},
+					},
+				},
+			}}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
+				So(tfPropSchema.MaxItems, ShouldEqual, 1)
+			})
+			Convey("And the returned terraform schema contains the schema for the first nested AND complex object property with the right configuration --> typeList", func() {
+				nestedAndComplexObj := tfPropSchema.Elem.(*schema.Resource).Schema[complexObjectName]
+				So(nestedAndComplexObj, ShouldNotBeNil)
+				So(nestedAndComplexObj.Type, ShouldEqual, schema.TypeList)
+				So(nestedAndComplexObj.MaxItems, ShouldEqual, 1)
+				So(nestedAndComplexObj.Elem.(*schema.Resource).Schema["string_property"].Type, ShouldEqual, schema.TypeString)
+				So(nestedAndComplexObj.Elem.(*schema.Resource).Schema["int_property"].Type, ShouldEqual, schema.TypeInt)
+				So(nestedAndComplexObj.Elem.(*schema.Resource).Schema["int_property"].Computed, ShouldBeTrue)
+			})
+		})
+	})
+
 	Convey("Given a swagger schema definition that has a property of type 'string' which is required", t, func() {
 		s := &specSchemaDefinitionProperty{
 			Name:     "string_prop",
