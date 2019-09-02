@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -204,10 +205,10 @@ func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource
 func (s *specSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() (bool, error) {
 	isPropertyWithNestedObjects, err := s.isPropertyWithNestedObjects()
 	if err != nil {
-		return isPropertyWithNestedObjects, err
+		return false, err
 	}
 	if isPropertyWithNestedObjects {
-		return isPropertyWithNestedObjects, nil
+		return true, nil
 	}
 	return s.shouldEnableLegacyComplexObjectBlockConfiguration(), nil
 }
@@ -226,7 +227,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	switch s.Type {
 	case typeObject:
 		// TODO: add coverage for this logic if not already done
-		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
+		shouldUseLegacyTerraformSDKApproachForBlocks, err := s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() // handle the error
 		if shouldUseLegacyTerraformSDKApproachForBlocks {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1
