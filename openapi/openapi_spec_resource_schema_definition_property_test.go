@@ -751,9 +751,16 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 		specSchemaDefinition         *specSchemaDefinition
 		expected                     bool
 	}{
-		{name: "swagger schema definition property that is not of type object",
+		{name: "swagger schema definition property that is not of type 'object'",
 			schemaDefinitionPropertyType: typeBool,
-			expected:                     false},
+			specSchemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Type: typeString,
+					},
+				},
+			},
+			expected: false},
 		{name: "swagger schema definition property that has nested objects",
 			schemaDefinitionPropertyType: typeObject,
 			specSchemaDefinition: &specSchemaDefinition{
