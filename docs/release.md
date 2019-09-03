@@ -24,7 +24,7 @@ v0.1.0
 ### Update version file
 
 Update the [version file](https://github.com/dikhan/terraform-provider-openapi/blob/master/version) with the 
-latest version created, commit and push to origin:
+latest version created and then create a branch, commit to it and merge to master:
 
 ````
 $ cat version 
