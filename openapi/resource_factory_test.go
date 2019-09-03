@@ -860,6 +860,7 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 				},
 				returnHTTPCode: http.StatusOK,
 			}
+
 			responsePayload := map[string]interface{}{}
 
 			responseStatusCode := http.StatusAccepted
@@ -918,7 +919,7 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 				responses: map[int]*specResponse{},
 			}
 			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the err  should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 		})
@@ -1683,15 +1684,18 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
-		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with non objects inside", func() {
+		Convey("When convertPayloadToLocalStateDataValue is called with simple object property and an empty map as value", func() {
 			property := &specSchemaDefinitionProperty{
-				Name:     "blowup",
+				Name:     "some_object",
 				Type:     typeObject,
 				Required: true,
 			}
-			_, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
-			Convey("Then the error should match the expected one", func() {
-				So(err.Error(), ShouldEqual, "missing spec schema definition for object property 'blowup'")
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the expected value with the right type array", func() {
+				So(resultValue.(map[string]interface{}), ShouldBeEmpty)
 			})
 		})
 
@@ -1716,12 +1720,36 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 
-		Convey("When convertPayloadToLocalStateDataValue is called with an object", func() {
+		Convey("When convertPayloadToLocalStateDataValue is called with a simple object", func() {
+			// Simple objects are considered objects that all the properties are of the same type and are not computed
+			objectSchemaDefinition := &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_string_2", "", true, false, nil),
+				},
+			}
+			dataValue := map[string]interface{}{
+				"example_string":   "http",
+				"example_string_2": "something",
+			}
+			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
+			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
+				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
+				So(resultValue.(map[string]interface{})["example_string_2"].(string), ShouldEqual, "something")
+			})
+		})
+
+		// Simple objects are considered objects that contain properties that are of different types and configuration (e,g: mix of required/optional/computed properties)
+		Convey("When convertPayloadToLocalStateDataValue is called with a complex object", func() {
 			objectSchemaDefinition := &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
-					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
 				},
 			}
@@ -1732,19 +1760,20 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"example_float":  10.45,
 			}
 			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
+			property.EnableLegacyComplexObjectBlockConfiguration = true
 			resultValue, err := r.convertPayloadToLocalStateDataValue(property, dataValue, false)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_int")
-				So(resultValue.(map[string]interface{})["example_int"].(string), ShouldEqual, "80")
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_string")
-				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_bool")
-				So(resultValue.(map[string]interface{})["example_bool"].(string), ShouldEqual, "true")
-				So(resultValue.(map[string]interface{}), ShouldContainKey, "example_float")
-				So(resultValue.(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
+				So(resultValue.([]interface{})[0], ShouldContainKey, "example_int")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_int"].(string), ShouldEqual, "80")
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_string")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_bool")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_bool"].(string), ShouldEqual, "true")
+				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_float")
+				So(resultValue.([]interface{})[0].(map[string]interface{})["example_float"].(string), ShouldEqual, "10.45")
 			})
 		})
 
@@ -1804,6 +1833,43 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 }
 
 func TestGetPropertyPayload(t *testing.T) {
+	Convey("Given a resource factory"+
+		"When getPropertyPayload is called with a nil property"+
+		"Then it panics", t, func() {
+		input := map[string]interface{}{}
+		dataValue := struct{}{}
+		resourceFactory := resourceFactory{}
+		So(func() { resourceFactory.getPropertyPayload(input, nil, dataValue) }, ShouldPanic)
+	})
+
+	Convey("Given a resource factory"+
+		"When getPropertyPayload is called with a nil datavalue"+
+		"Then it returns an error", t, func() {
+		input := map[string]interface{}{}
+		resourceFactory := resourceFactory{}
+		So(resourceFactory.getPropertyPayload(input, &specSchemaDefinitionProperty{Name: "buu"}, nil).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
+	})
+
+	Convey("Given a resource factory"+
+		"When it is called with  non-nil property and value for dataValue which cannot be cast to []interface{}"+
+		"Then it panics", t, func() {
+		input := map[string]interface{}{}
+		dataValue := []bool{}
+		property := &specSchemaDefinitionProperty{}
+		resourceFactory := resourceFactory{}
+		So(func() { resourceFactory.getPropertyPayload(input, property, dataValue) }, ShouldPanic)
+	})
+
+	Convey("Given the function handleSliceOrArray"+
+		"When it is called with an empty slice for dataValue"+
+		"Then it should not return an error", t, func() {
+		input := map[string]interface{}{}
+		dataValue := []interface{}{}
+		property := &specSchemaDefinitionProperty{}
+		resourceFactory := resourceFactory{}
+		e := resourceFactory.getPropertyPayload(input, property, dataValue)
+		So(e, ShouldBeNil)
+	})
 
 	Convey("Given a resource factory initialized with a spec resource with a schema definition containing a string property", t, func() {
 		// Use case - string property (terraform configuration pseudo representation below):
@@ -2052,6 +2118,7 @@ func TestGetPropertyPayload(t *testing.T) {
 			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 
 		})
+
 		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
@@ -2075,6 +2142,68 @@ func TestGetPropertyPayload(t *testing.T) {
 				nestedLevel := topLevel[nestedObject.Name].(map[string]interface{})
 				So(nestedLevel["origin_port"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["origin_port"])
 				So(nestedLevel["protocol"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["protocol"])
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing one nested struct but having terraform property names that are not valid within the resource definition", t, func() {
+		// Use case -  crappy path while getting properties paylod for properties which do not exists in nested objects
+		nestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		nestedObjectNoTFCompliantName := map[string]interface{}{
+			"badprotocoldoesntexist": nestedObjectSchemaDefinition.Properties[0].Default,
+		}
+		nestedObjectNotTFCompliant := newObjectSchemaDefinitionPropertyWithDefaults("nested_object_not_compliant", "", true, false, false, nestedObjectNoTFCompliantName, nestedObjectSchemaDefinition)
+		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				nestedObjectNotTFCompliant,
+			},
+		}
+		propertyWithNestedObjectDefault := []map[string]interface{}{
+			{
+				"id":                          propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+				"nested_object_not_compliant": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+			},
+		}
+		expectedPropertyWithNestedObjectName := "property_with_nested_object"
+		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
+		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
+		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, propertyWithNestedObject, dataValue)
+			Convey("Then the error should not be nil", func() {
+				So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
+			})
+			Convey("Then the map returned should be empty", func() {
+				So(payload, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing a slice of objects with an invalid slice name definition", t, func() {
+		// Use case -  crappy path while getting properties paylod for properties which do not exists in slices
+		objectSchemaDefinition := &specSchemaDefinition{}
+		arrayObjectDefault := []map[string]interface{}{
+			{"protocol": "http"},
+		}
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property_doesn_not_exists", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+
+		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
+
+		Convey("When getPropertyPayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
+			Convey("Then the error should not be nil", func() {
+				So(err.Error(), ShouldEqual, "property 'slice_object_property_doesn_not_exists' has a nil state dataValue")
+			})
+			Convey("Then the map returned should be empty", func() {
+				So(payload, ShouldBeEmpty)
 			})
 		})
 	})

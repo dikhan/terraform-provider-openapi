@@ -56,6 +56,7 @@ const extTfFieldName = "x-terraform-field-name"
 const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
 const extTfComputed = "x-terraform-computed"
+const extTfComplexObjectType = "x-terraform-complex-object-legacy-config"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"
@@ -248,7 +249,7 @@ func (o *SpecV2Resource) shouldIgnoreResource() bool {
 	postOperation := o.RootPathItem.Post
 	if postOperation != nil {
 		if postOperation.Extensions != nil {
-			if extensionExists, ignoreResource := postOperation.Extensions.GetBool(extTfExcludeResource); extensionExists && ignoreResource {
+			if o.isBoolExtensionEnabled(postOperation.Extensions, extTfExcludeResource) {
 				return true
 			}
 		}
@@ -401,28 +402,32 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 	// If the value of the property is changed, it will force the deletion of the previous generated resource and
 	// a new resource with this new value will be created
-	if forceNew, ok := property.Extensions.GetBool(extTfForceNew); ok && forceNew {
+	if o.isBoolExtensionEnabled(property.Extensions, extTfForceNew) {
 		schemaDefinitionProperty.ForceNew = true
 	}
 
 	// A sensitive property means that the value will not be disclosed in the state file, preventing secrets from
 	// being leaked
-	if sensitive, ok := property.Extensions.GetBool(extTfSensitive); ok && sensitive {
+	if o.isBoolExtensionEnabled(property.Extensions, extTfSensitive) {
 		schemaDefinitionProperty.Sensitive = true
 	}
 
 	// field with extTfID metadata takes preference over 'id' fields as the service provider is the one acknowledging
 	// the fact that this field should be used as identifier of the resource
-	if terraformID, ok := property.Extensions.GetBool(extTfID); ok && terraformID {
+	if o.isBoolExtensionEnabled(property.Extensions, extTfID) {
 		schemaDefinitionProperty.IsIdentifier = true
 	}
 
-	if immutable, ok := property.Extensions.GetBool(extTfImmutable); ok && immutable {
+	if o.isBoolExtensionEnabled(property.Extensions, extTfImmutable) {
 		schemaDefinitionProperty.Immutable = true
 	}
 
-	if isStatusIdentifier, ok := property.Extensions.GetBool(extTfFieldStatus); ok && isStatusIdentifier {
+	if o.isBoolExtensionEnabled(property.Extensions, extTfFieldStatus) {
 		schemaDefinitionProperty.IsStatusIdentifier = true
+	}
+
+	if o.isBoolExtensionEnabled(property.Extensions, extTfComplexObjectType) {
+		schemaDefinitionProperty.EnableLegacyComplexObjectBlockConfiguration = true
 	}
 
 	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default
@@ -431,6 +436,15 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	schemaDefinitionProperty.Default = property.Default
 
 	return schemaDefinitionProperty, nil
+}
+
+func (o *SpecV2Resource) isBoolExtensionEnabled(extensions spec.Extensions, extension string) bool {
+	if extensions != nil {
+		if enabled, ok := extensions.GetBool(extension); ok && enabled {
+			return true
+		}
+	}
+	return false
 }
 
 func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, property spec.Schema, requiredProperties []string) (bool, error) {
@@ -469,7 +483,7 @@ func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, propert
 //  default: “some known default value”
 func (o *SpecV2Resource) isOptionalComputedWithDefault(propertyName string, property spec.Schema) (bool, error) {
 	if !property.ReadOnly && property.Default != nil {
-		if optionalComputed, ok := property.Extensions.GetBool(extTfComputed); ok && optionalComputed {
+		if o.isBoolExtensionEnabled(property.Extensions, extTfComputed) {
 			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties with default attributes should not have '%s' extension too", propertyName, extTfComputed)
 		}
 		return true, nil
@@ -484,7 +498,7 @@ func (o *SpecV2Resource) isOptionalComputedWithDefault(propertyName string, prop
 //  type: "string"
 //  x-terraform-computed: true
 func (o *SpecV2Resource) isOptionalComputed(propertyName string, property spec.Schema) (bool, error) {
-	if optionalComputed, ok := property.Extensions.GetBool(extTfComputed); ok && optionalComputed {
+	if o.isBoolExtensionEnabled(property.Extensions, extTfComputed) {
 		if property.ReadOnly {
 			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not be readOnly", propertyName, extTfComputed)
 		}
@@ -642,7 +656,7 @@ func (o *SpecV2Resource) createResponses(operation *spec.Operation) specResponse
 // whether that response contains the extension 'x-terraform-resource-poll-enabled' set to true returning true;
 // otherwise false is returned
 func (o *SpecV2Resource) isResourcePollingEnabled(response spec.Response) bool {
-	if isResourcePollEnabled, ok := response.Extensions.GetBool(extTfResourcePollEnabled); ok && isResourcePollEnabled {
+	if o.isBoolExtensionEnabled(response.Extensions, extTfResourcePollEnabled) {
 		return true
 	}
 	return false

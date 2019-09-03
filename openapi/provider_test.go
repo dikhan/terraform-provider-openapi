@@ -192,6 +192,137 @@ definitions:
 			})
 		})
 	})
+
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource taht has a model containing nested objects", t, func() {
+		swaggerContent := `swagger: "2.0"
+host: "localhost:8443"
+basePath: "/api"
+schemes:
+- "https"
+paths:
+  /v1/cdns:
+    post:
+      summary: "Create cdn"
+      x-terraform-resource-name: "cdn"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/cdns/{id}:
+    get:
+      summary: "Get cdn by id"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+      object_nested_scheme_property:
+        type: "object"
+        properties:
+          name:
+            type: "string"
+            readOnly: true
+          object_property:
+            type: "object"
+            properties:
+              account:
+                type: string
+              read_only:
+                type: string
+                readOnly: true`
+
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(swaggerContent))
+		}))
+
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			providerName := "openapi"
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider returned should be configured as expected", func() {
+				So(tfProvider, ShouldNotBeNil)
+				Convey("the provider schema should only include the endpoints property that enables users to override the resource host from the configuration", func() {
+					So(tfProvider.Schema, ShouldNotBeNil)
+					assertTerraformSchemaProperty(tfProvider.Schema, "endpoints", schema.TypeSet, false, false)
+					So(tfProvider.Schema["endpoints"].Elem.(*schema.Resource).Schema, ShouldContainKey, "cdn_v1")
+				})
+				Convey("the provider resource map should contain the cdn resource with the expected configuration", func() {
+					So(tfProvider.ResourcesMap, ShouldNotBeNil)
+					resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
+					So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+					Convey("the provider cdn resource should have the expected schema", func() {
+						So(tfProvider.ResourcesMap, ShouldNotBeNil)
+						resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
+						So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+						assertTerraformSchemaProperty(tfProvider.ResourcesMap[resourceName].Schema, "label", schema.TypeString, true, false)
+						assertTerraformSchemaNestedObjectProperty(tfProvider.ResourcesMap[resourceName].Schema, "object_nested_scheme_property", false, false)
+						nestedObject := tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"]
+						assertTerraformSchemaProperty(nestedObject.Elem.(*schema.Resource).Schema, "name", schema.TypeString, false, true)
+						assertTerraformSchemaProperty(nestedObject.Elem.(*schema.Resource).Schema, "object_property", schema.TypeMap, false, false)
+						object := nestedObject.Elem.(*schema.Resource).Schema["object_property"]
+						assertTerraformSchemaProperty(object.Elem.(*schema.Resource).Schema, "account", schema.TypeString, false, false)
+						assertTerraformSchemaProperty(object.Elem.(*schema.Resource).Schema, "read_only", schema.TypeString, false, true)
+					})
+					Convey("the provider cdn resource should have the expected operations configured", func() {
+						So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
+					})
+				})
+				Convey("the provider configuration function should not be nil", func() {
+					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
+				})
+			})
+		})
+	})
+}
+
+func assertTerraformSchemaProperty(actualSchema map[string]*schema.Schema, expectedPropertyName string, expectedType schema.ValueType, expectedRequired, expectedComputed bool) {
+	fmt.Printf(">>> Validating '%s' property settings\n", expectedPropertyName)
+	So(actualSchema, ShouldContainKey, expectedPropertyName)
+	property := actualSchema[expectedPropertyName]
+	So(property.Type, ShouldEqual, expectedType)
+	if expectedRequired {
+		So(property.Required, ShouldBeTrue)
+		So(property.Optional, ShouldBeFalse)
+	} else {
+		So(property.Optional, ShouldBeTrue)
+		So(property.Required, ShouldBeFalse)
+	}
+	So(property.Computed, ShouldEqual, expectedComputed)
+}
+
+func assertTerraformSchemaNestedObjectProperty(actualSchema map[string]*schema.Schema, expectedPropertyName string, expectedRequired, expectedComputed bool) {
+	assertTerraformSchemaProperty(actualSchema, expectedPropertyName, schema.TypeList, expectedRequired, expectedComputed)
+	So(actualSchema[expectedPropertyName].MaxItems, ShouldEqual, 1)
 }
 
 func Test_colliding_resource_names(t *testing.T) {

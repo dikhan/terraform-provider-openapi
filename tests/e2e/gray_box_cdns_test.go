@@ -221,7 +221,26 @@ definitions:
         readOnly: true
       label:
         type: "string"
-`
+      computed_property:
+        type: "string"
+        readOnly: true
+      object_property_argument: # option 1 (handling objects with complex property types and configurations - eg: computed)
+        type: "object"
+        properties:
+          account:
+            type: string
+          object_read_only_property:
+            type: string
+            readOnly: true
+      object_property_block: # option 2 (handling objects with complex property types and configurations - eg: computed)
+        type: "object"
+        x-terraform-complex-object-legacy-config: true
+        properties:
+          account:
+            type: string
+          object_read_only_property:
+            type: string
+            readOnly: true`
 
 const expectedCDNID = "42"
 const expectedCDNFirewallID = "1337"
@@ -271,7 +290,15 @@ func (a *api) handleRequest(t *testing.T, w http.ResponseWriter, r *http.Request
 func (a *api) handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
 	apiServerBehaviors := map[string]http.HandlerFunc{}
 	expectedRequestInstanceURI := fmt.Sprintf("/v1/cdns/%s", expectedCDNID)
-	responseBody := fmt.Sprintf(`{"id":%s,"label":"%s"}`, expectedCDNID, expectedCDNLabel)
+	responseBody := fmt.Sprintf(
+		`{
+"id":%s,
+"label":"%s",
+"computed_property": "some auto-generated value",
+"object_property_argument": {"account":"my_account", "object_read_only_property": "some computed value for object read only"},
+"object_property_block": {"account":"my_account", "object_read_only_property": "some computed value for object read only"}
+}`, expectedCDNID, expectedCDNLabel)
+
 	apiServerBehaviors[http.MethodPost] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, "/v1/cdns", r)
 		a.apiPostResponse(t, expectedRequestInstanceURI, responseBody, w, r)
@@ -396,6 +423,26 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", expectedCDNLabel),
+
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "computed_property", "some auto-generated value"),
+
+					// option 1
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.%", "2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.account", "my_account"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.object_read_only_property", "some computed value for object read only"),
+
+					// option 2 (chosen)
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.#", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.0.account", "my_account"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.0.object_read_only_property", "some computed value for object read only"),
+
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDNFirewall, "cdn_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
@@ -408,6 +455,25 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", "updatedCDNLabel"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "computed_property", "some auto-generated value"),
+
+					// option 1
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.%", "2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.account", "my_account"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_argument.object_read_only_property", "some computed value for object read only"),
+
+					// option 2
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.#", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.0.account", "my_account"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "object_property_block.0.object_read_only_property", "some computed value for object read only"),
+
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDNFirewall, "cdn_v1_id", expectedCDNID),
 					resource.TestCheckResourceAttr(
@@ -530,6 +596,15 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
 		# URI /v1/cdns/
 		resource "%s" "%s" {
 		  label = "%s"
+		  object_property_block {
+		   account = "my_account"
+		  }
+
+		  object_property_argument = {
+		   account = "my_account"
+           object_read_only_property = "some computed value for object read only" // This is the workaround users will have to do in order to fix the diff issues with objects that contain readOnly properties
+		  }
+
 		}
 		# URI /v1/cdns/{parent_id}/v1/firewalls/
         resource "%s" "%s" {

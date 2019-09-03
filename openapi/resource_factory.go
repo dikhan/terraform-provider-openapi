@@ -341,7 +341,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 		if ok {
 			*responsePayload = remoteDataCasted
 		} else {
-			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData)) //untested
+			return fmt.Errorf("failed to convert remote data (%s) to map[string]interface{}", reflect.TypeOf(remoteData))
 		}
 	}
 	return nil
@@ -508,18 +508,14 @@ func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchem
 			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
 		}
 
-		// This is the work around put in place to have support for nested structs. In this case, we need to make sure
-		// that the json (which reflects to a map) gets translated to the expected array of one item that terraform expects.
-		isPropertyWithNestedObjects, err := property.isPropertyWithNestedObjects()
-		if err != nil {
-			return nil, err
-		}
-		if isPropertyWithNestedObjects {
+		// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
+		// blocks only for TypeList and TypeSet . In this case, we need to make sure that the json (which reflects to a map)
+		// gets translated to the expected array of one item that terraform expects.
+		if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
 			arrayInput := []interface{}{}
 			arrayInput = append(arrayInput, objectInput)
 			return arrayInput, nil
 		}
-
 		return objectInput, nil
 	case reflect.Slice, reflect.Array:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
@@ -625,14 +621,10 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			input[property.Name] = dataValue.([]interface{})
 		} else {
-			// This is the work around put in place to have support for nested structs. In this case, because the
+			// This is the work around put in place to have support for complex objects. In this case, because the
 			// state representation of nested objects is an array, we need to make sure we don't end up constructing an
 			// array but rather just a json object
-			isPropertyWithNestedObjects, err := property.isPropertyWithNestedObjects()
-			if err != nil {
-				return err
-			}
-			if isPropertyWithNestedObjects {
+			if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
 				arrayValue := dataValue.([]interface{})
 				if len(arrayValue) != 1 {
 					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")

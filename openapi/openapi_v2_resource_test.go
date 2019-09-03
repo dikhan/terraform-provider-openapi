@@ -2015,7 +2015,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 
 		Convey("When createSchemaDefinitionProperty is called with an optional property schema", func() {
 			propertyName := "propertyWithNestedObj"
-
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
@@ -2037,9 +2036,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 
 			requiredProperties := []string{}
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
-
-			fmt.Println(schemaDefinitionProperty, err)
-
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -2131,6 +2127,30 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be have force new enabled", func() {
 				So(schemaDefinitionProperty.ForceNew, ShouldEqual, expectedForceNewValue)
+			})
+			Convey("And the schema definition property should not be computed", func() {
+				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
+			})
+		})
+
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-complex-object-legacy-config' extension", func() {
+			expectedValue := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfComplexObjectType: expectedValue,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should be have EnableLegacyComplexObjectBlockConfiguration enabled", func() {
+				So(schemaDefinitionProperty.EnableLegacyComplexObjectBlockConfiguration, ShouldEqual, expectedValue)
 			})
 			Convey("And the schema definition property should not be computed", func() {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
@@ -2314,6 +2334,33 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty, ShouldBeNil)
 			})
 		})
+	})
+}
+
+func TestIsBoolExtensionEnabled(t *testing.T) {
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		testCases := []struct {
+			name           string
+			extensions     spec.Extensions
+			extension      string
+			expectedResult bool
+		}{
+			{name: "nil extensions", extensions: nil, extension: "", expectedResult: false},
+			{name: "empty extensions", extensions: spec.Extensions{}, extension: "", expectedResult: false},
+			{name: "populated extensions but empty extension", extensions: spec.Extensions{"some-extension": true}, extension: "", expectedResult: false},
+			{name: "populated extensions and matching bool extension with value true", extensions: spec.Extensions{"some-extension": true}, extension: "some-extension", expectedResult: true},
+			{name: "populated extensions and matching bool extension with value false", extensions: spec.Extensions{"some-extension": false}, extension: "some-extension", expectedResult: false},
+			{name: "populated extensions and matching non bool extension", extensions: spec.Extensions{"some-extension": "some value"}, extension: "some-extension", expectedResult: false},
+		}
+		for _, tc := range testCases {
+			Convey(fmt.Sprintf("When isBoolExtensionEnabled method is called: %s", tc.name), func() {
+				isEnabled := r.isBoolExtensionEnabled(tc.extensions, tc.extension)
+				Convey("Then the result returned should be the expected one", func() {
+					So(isEnabled, ShouldEqual, tc.expectedResult)
+				})
+			})
+		}
 	})
 }
 

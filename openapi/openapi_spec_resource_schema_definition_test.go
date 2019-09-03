@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -576,4 +577,20 @@ func TestGetProperty(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestGetPropertyBasedOnTerraformName(t *testing.T){
+	existingPropertyName := "existingPropertyName"
+	s := &specSchemaDefinition{
+		Properties: specSchemaDefinitionProperties{
+			&specSchemaDefinitionProperty{
+				Name:     existingPropertyName,
+				Type:     typeString,
+				ReadOnly: false,
+			},
+		},
+	}
+	_, err := s.getPropertyBasedOnTerraformName("badTerraformPropertyName")
+	assert.EqualError(t, err, "property with terraform name 'badTerraformPropertyName' not existing in resource schema definition")
+
 }
