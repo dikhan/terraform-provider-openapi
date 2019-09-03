@@ -2147,6 +2147,7 @@ func TestGetPropertyPayload(t *testing.T) {
 	})
 
 	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing one nested struct but having terraform property names that are not valid within the resource definition", t, func() {
+		// Use case -  crappy path while getting properties paylod for properties which do not exists in nested objects
 		nestedObjectSchemaDefinition := &specSchemaDefinition{
 			Properties: specSchemaDefinitionProperties{
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
@@ -2177,6 +2178,29 @@ func TestGetPropertyPayload(t *testing.T) {
 			err := r.getPropertyPayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
+			})
+			Convey("Then the map returned should be empty", func() {
+				So(payload, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing a slice of objects with an invalid slice name definition", t, func() {
+		// Use case -  crappy path while getting properties paylod for properties which do not exists in slices
+		objectSchemaDefinition := &specSchemaDefinition{}
+		arrayObjectDefault := []map[string]interface{}{
+			{"protocol": "http"},
+		}
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property_doesn_not_exists", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+
+		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
+
+		Convey("When getPropertyPayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
+			Convey("Then the error should not be nil", func() {
+				So(err.Error(), ShouldEqual, "property 'slice_object_property_doesn_not_exists' has a nil state dataValue")
 			})
 			Convey("Then the map returned should be empty", func() {
 				So(payload, ShouldBeEmpty)

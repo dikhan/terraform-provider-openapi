@@ -638,7 +638,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 				for _, arrayItem := range arrayValue {
 					objectInput := map[string]interface{}{}
 					if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
-						return err //untested
+						return err
 					}
 					// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example
 					// [propertyName: listeners; propertyValue: [map[options:[] origin_ingress_port:80 protocol:http shield_ingress_port:80]]]
