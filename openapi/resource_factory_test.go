@@ -2145,63 +2145,62 @@ func TestGetPropertyPayload(t *testing.T) {
 			})
 		})
 	})
+
 	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing one nested struct but having terraform property names that are not valid within the resource definition", t, func() {
-		// Use case - object with nested objects (terraform configuration pseudo representation below):
-		// property_with_nested_object {
-		//	id = "id",
-		//	nested_object {
-		//		origin_port = 80
-		//		protocol = "http"
-		//	}
-		//}
+		// Use case -  crappy path while getting properties paylod for properties which do not exists in nested objects
 		nestedObjectSchemaDefinition := &specSchemaDefinition{
 			Properties: specSchemaDefinitionProperties{
-				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
 		}
-		nestedObjectDefault := map[string]interface{}{
-			"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
-			"badprotocoldoesntexist":    nestedObjectSchemaDefinition.Properties[1].Default,
+		nestedObjectNoTFCompliantName := map[string]interface{}{
+			"badprotocoldoesntexist": nestedObjectSchemaDefinition.Properties[0].Default,
 		}
-		nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+		nestedObjectNotTFCompliant := newObjectSchemaDefinitionPropertyWithDefaults("nested_object_not_compliant", "", true, false, false, nestedObjectNoTFCompliantName, nestedObjectSchemaDefinition)
 		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
 			Properties: specSchemaDefinitionProperties{
 				idProperty,
-				nestedObject,
+				nestedObjectNotTFCompliant,
 			},
 		}
-		// Tag(NestedStructsWorkaround)
-		// Note: This is the workaround needed to support properties with nested structs. The current Terraform sdk version
-		// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
-		// with the list containing just one element. The below represents the internal representation of the terraform state
-		// for an object property that contains other objects
 		propertyWithNestedObjectDefault := []map[string]interface{}{
 			{
-				"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
-				"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+				"id":                          propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+				"nested_object_not_compliant": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
 			},
 		}
 		expectedPropertyWithNestedObjectName := "property_with_nested_object"
 		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
-		Convey("When getPropertyPayload is called a slice with >1 dataValue, it complains", func() {
-			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"})
-			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
-
-		})
-		Convey("When getPropertyPayload is called a slice with <1 dataValue, it complains", func() {
-			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{})
-			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
-
-		})
-
 		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
 			err := r.getPropertyPayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
+			})
+			Convey("Then the map returned should be empty", func() {
+				So(payload, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing a slice of objects with an invalid slice name definition", t, func() {
+		// Use case -  crappy path while getting properties paylod for properties which do not exists in slices
+		objectSchemaDefinition := &specSchemaDefinition{}
+		arrayObjectDefault := []map[string]interface{}{
+			{"protocol": "http"},
+		}
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property_doesn_not_exists", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+
+		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
+
+		Convey("When getPropertyPayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
+			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
+			Convey("Then the error should not be nil", func() {
+				So(err.Error(), ShouldEqual, "property 'slice_object_property_doesn_not_exists' has a nil state dataValue")
 			})
 			Convey("Then the map returned should be empty", func() {
 				So(payload, ShouldBeEmpty)
