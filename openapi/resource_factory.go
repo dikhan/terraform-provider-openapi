@@ -610,10 +610,10 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 		for propertyName, propertyValue := range mapValue {
 			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getPropertyBasedOnTerraformName(propertyName)
 			if err != nil {
-				return err //untested
+				return err
 			}
 			if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
-				return err //untested
+				return err
 			}
 		}
 		input[property.Name] = objectInput
