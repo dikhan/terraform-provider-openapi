@@ -630,7 +630,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 				}
 				if err := r.getPropertyPayload(input, property, arrayValue[0]); err != nil {
-					return err //untested
+					return err
 				}
 			} else {
 				arrayInput := []interface{}{}
