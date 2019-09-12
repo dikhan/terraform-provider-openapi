@@ -60,6 +60,21 @@ func (c *clientOpenAPIStub) Get(resource SpecResource, id string, responsePayloa
 	return c.generateStubResponse(http.StatusOK), nil
 }
 
+func (c *clientOpenAPIStub) List(resource SpecResource, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+	if c.error != nil {
+		return nil, c.error
+	}
+	c.parentIDsReceived = parentIDs
+	switch p := responsePayload.(type) {
+	case *map[string]interface{}:
+		*p = c.responsePayload
+	default:
+		panic("unexpected type")
+	}
+
+	return c.generateStubResponse(http.StatusOK), nil
+}
+
 func (c *clientOpenAPIStub) Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error) {
 	if c.error != nil {
 		return nil, c.error
