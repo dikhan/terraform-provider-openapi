@@ -3,7 +3,6 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
@@ -88,22 +87,10 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	return schemaDefinition.createResourceSchema()
 }
 
-func (r resourceFactory) getParentIDsAndResourcePath(data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
-	parentIDs, err = r.getParentIDs(data)
-	if err != nil {
-		return nil, "", err
-	}
-	resourcePath, err = r.openAPIResource.getResourcePath(parentIDs)
-	if err != nil {
-		return nil, "", err
-	}
-	return
-}
-
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -116,7 +103,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
 
 		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), resourcePath, err)
 	}
@@ -138,7 +125,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -165,7 +152,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 		return nil, err
 	}
 
-	if err := r.checkHTTPStatusCode(resp, []int{http.StatusOK}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, resp, []int{http.StatusOK}); err != nil {
 		return nil, err
 	}
 
@@ -198,7 +185,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -216,7 +203,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
 	}
 
@@ -231,7 +218,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -244,7 +231,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
 		if openapiErr, ok := err.(openapierr.Error); ok {
 			if openapierr.NotFound == openapiErr.Code() {
 				return nil
@@ -394,37 +381,6 @@ func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payl
 		resourceLocalData.SetId(payload[identifierProperty].(string))
 	}
 	return nil
-}
-
-func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
-	if !r.responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
-		var resBody string
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("[resource='%s'] HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", r.openAPIResource.getResourceName(), res.StatusCode, err)
-		}
-		if b != nil && len(b) > 0 {
-			resBody = string(b)
-		}
-		switch res.StatusCode {
-		case http.StatusUnauthorized:
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", r.openAPIResource.getResourceName(), res.StatusCode, resBody)
-		case http.StatusNotFound:
-			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Reponse Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
-		default:
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d not matching expected one %v (%s)", r.openAPIResource.getResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
-		}
-	}
-	return nil
-}
-
-func (r resourceFactory) responseContainsExpectedStatus(expectedStatusCodes []int, responseStatusCode int) bool {
-	for _, expectedStatusCode := range expectedStatusCodes {
-		if expectedStatusCode == responseStatusCode {
-			return true
-		}
-	}
-	return false
 }
 
 func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI) error {
