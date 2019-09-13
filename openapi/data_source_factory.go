@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -85,20 +86,56 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("[data source='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
 	}
 
-	fmt.Println(filters)
-	//for _, payloadItem := range responsePayload {
-	//
-	//}
+	var filteredResults []map[string]interface{}
+	for _, payloadItem := range responsePayload {
+		match, err := d.filterMatch(filters, payloadItem)
+		if err != nil {
+			return err
+		}
+		if match {
+			filteredResults = append(filteredResults, payloadItem)
+		}
+	}
 
-	// TODO: make use of responsePayload to filter out results
+	if len(filteredResults) == 0 { // TODO: untested
+		return fmt.Errorf("your query returned no results. Please change your search criteria and try again")
+	}
 
-	// TODO: If there are multiple matches after applying the filters return an error
-	// TODO: If there are no matches after applying the filters return an error
-
-	// TODO: update the state data object with the filtered result data
-	// d.updateStateWithPayloadData(remoteData, data)
+	if len(filteredResults) > 1 { // TODO: untested
+		return fmt.Errorf("your query returned contains more than one result. Please change your search criteria to make it more specific")
+	}
 
 	return nil
+	//return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
+}
+
+// TODO: add tests
+func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]interface{}) (bool, error) {
+	specSchemaDefinition, err := d.openAPIResource.getResourceSchema()
+	if err != nil {
+		return false, err
+	}
+	for _, filter := range filters {
+		if val, exists := payloadItem[filter.name]; exists {
+			schemaProperty, _ := specSchemaDefinition.getProperty(filter.name)
+			var value string
+			switch schemaProperty.Type {
+			case typeInt:
+				value = strconv.Itoa(val.(int))
+			case typeFloat:
+				value = fmt.Sprintf("%g", val.(float64))
+			case typeBool:
+				value = strconv.FormatBool(val.(bool))
+			default:
+				value = val.(string)
+			}
+			if value == filter.value {
+				continue
+			}
+		}
+		return false, nil
+	}
+	return true, nil
 }
 
 func (d dataSourceFactory) validateInput(data *schema.ResourceData) (filters, error) {
