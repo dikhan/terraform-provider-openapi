@@ -7,6 +7,10 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+const dataSourceFilterPropertyName = "filter"
+const dataSourceFilterSchemaNamePropertyName = "name"
+const dataSourceFilterSchemaValuesPropertyName = "values"
+
 type dataSourceFactory struct {
 	openAPIResource SpecResource
 }
@@ -27,7 +31,7 @@ func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error)
 
 func (d dataSourceFactory) createTerraformDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"filter": d.dataSourceFiltersSchema(),
+		dataSourceFilterPropertyName: d.dataSourceFiltersSchema(),
 	}
 }
 
@@ -38,11 +42,11 @@ func (d dataSourceFactory) dataSourceFiltersSchema() *schema.Schema {
 		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
-				"name": {
+				dataSourceFilterSchemaNamePropertyName: {
 					Type:     schema.TypeString,
 					Required: true,
 				},
-				"values": {
+				dataSourceFilterSchemaValuesPropertyName: {
 					Type:     schema.TypeList,
 					Required: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
@@ -90,19 +94,19 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 }
 
 func (d dataSourceFactory) validateInput(data *schema.ResourceData) error {
-	filters := data.Get("filter")
+	filters := data.Get(dataSourceFilterPropertyName)
 	for _, filter := range filters.(*schema.Set).List() {
 		f := filter.(map[string]interface{})
-		filterPropertyName := f["name"].(string)
+		filterPropertyName := f[dataSourceFilterSchemaNamePropertyName].(string)
 		s, err := d.openAPIResource.getResourceSchema()
 		if err != nil {
 			return err
 		}
 
 		// This validates that the property from the filter exists one of the properties from the data source schema
-		_, err = s.getProperty(filterPropertyName)
+		specSchemaDefinitionProperty, err := s.getProperty(filterPropertyName)
 		if err != nil {
-			return err
+			return fmt.Errorf("filter name does not match any of the schema properties: %s", err)
 		}
 
 		// TODO: validate that the filter values contain just one element for specSchemaDefinitionProperty of type primitive. error out otherwise
