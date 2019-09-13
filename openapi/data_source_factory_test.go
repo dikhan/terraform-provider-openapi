@@ -76,6 +76,7 @@ func TestValidateInput(t *testing.T) {
 		specSchemaDefinition *specSchemaDefinition
 		filtersInput         map[string]interface{}
 		expectedError        error
+		expectedFilters      filters
 	}{
 		{
 			name: "data source populated with a different filters of primitive property types",
@@ -95,7 +96,8 @@ func TestValidateInput(t *testing.T) {
 					newFilter("bool_primitive", []string{"true"}),
 				},
 			},
-			expectedError: nil,
+			expectedFilters: filters{},
+			expectedError:   nil,
 		},
 		{
 			name: "data source populated with an incorrect filter containing a property that does not match any of the schema definition",
@@ -109,7 +111,8 @@ func TestValidateInput(t *testing.T) {
 					newFilter("non_matching_property_name", []string{"label_to_fetch"}),
 				},
 			},
-			expectedError: errors.New("filter name does not match any of the schema properties: property with name 'non_matching_property_name' not existing in resource schema definition"),
+			expectedFilters: nil,
+			expectedError:   errors.New("filter name does not match any of the schema properties: property with name 'non_matching_property_name' not existing in resource schema definition"),
 		},
 		{
 			name: "data source populated with an incorrect filter containing a property that is not a primitive",
@@ -125,7 +128,8 @@ func TestValidateInput(t *testing.T) {
 					newFilter("not_primitive", []string{"filters for non primitive properties are not supported at the moment"}),
 				},
 			},
-			expectedError: errors.New("property not supported as as filter: not_primitive"),
+			expectedFilters: nil,
+			expectedError:   errors.New("property not supported as as filter: not_primitive"),
 		},
 		{
 			name: "data source populated with an incorrect filter containing multiple values for a primitive property",
@@ -139,7 +143,8 @@ func TestValidateInput(t *testing.T) {
 					newFilter("label", []string{"value1", "value2"}),
 				},
 			},
-			expectedError: errors.New("filters for primitive properties can not have more than one value in the values field"),
+			expectedFilters: nil,
+			expectedError:   errors.New("filters for primitive properties can not have more than one value in the values field"),
 		},
 	}
 
@@ -153,14 +158,26 @@ func TestValidateInput(t *testing.T) {
 		resourceSchema := dataSourceFactory.createTerraformDataSourceSchema()
 		resourceLocalData := schema.TestResourceDataRaw(t, resourceSchema, tc.filtersInput)
 		// When
-		err := dataSourceFactory.validateInput(resourceLocalData)
+		filters, err := dataSourceFactory.validateInput(resourceLocalData)
 		// Then
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
+		for _, expectedFilter := range tc.expectedFilters {
+			assertFilter(t, filters, expectedFilter, tc.name)
+		}
 	}
+}
+
+func assertFilter(t *testing.T, filters filters, expectedFilter filter, msgAndArgs ...interface{}) bool {
+	for _, f := range filters {
+		if f.name == expectedFilter.name {
+			assert.Equal(t, expectedFilter.value, f.value, msgAndArgs)
+		}
+	}
+	return false
 }
 
 func newFilter(name string, values []string) map[string]interface{} {
