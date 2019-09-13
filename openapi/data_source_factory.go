@@ -75,11 +75,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	}
 
 	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil {
-		return err
-	}
-
-	if err != nil {
-		return fmt.Errorf("[resource='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
+		return fmt.Errorf("[data source='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
 	}
 
 	// TODO: make use of responsePayload to filter out results
