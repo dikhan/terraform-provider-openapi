@@ -117,9 +117,6 @@ func (d dataSourceFactory) validateInput(data *schema.ResourceData) error {
 		if len(filterValue) > 1 {
 			return fmt.Errorf("filters for primitive properties can not have more than one value in the values field")
 		}
-
-		// TODO: validate that the filter values contain just one element for specSchemaDefinitionProperty of type primitive. error out otherwise
-
 	}
 	return nil
 }
