@@ -8,11 +8,12 @@ import (
 
 // clientOpenAPIStub is a stubbed client used for testing purposes that implements the ClientOpenAPI interface
 type clientOpenAPIStub struct {
-	responsePayload   map[string]interface{}
-	error             error
-	returnHTTPCode    int
-	idReceived        string
-	parentIDsReceived []string
+	responsePayload     map[string]interface{}
+	responseListPayload []map[string]interface{}
+	error               error
+	returnHTTPCode      int
+	idReceived          string
+	parentIDsReceived   []string
 }
 
 func (c *clientOpenAPIStub) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
@@ -66,8 +67,8 @@ func (c *clientOpenAPIStub) List(resource SpecResource, responsePayload interfac
 	}
 	c.parentIDsReceived = parentIDs
 	switch p := responsePayload.(type) {
-	case *map[string]interface{}:
-		*p = c.responsePayload
+	case *[]map[string]interface{}:
+		*p = c.responseListPayload
 	default:
 		panic("unexpected type")
 	}
