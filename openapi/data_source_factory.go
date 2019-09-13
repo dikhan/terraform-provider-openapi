@@ -68,7 +68,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	responsePayload := map[string]interface{}{}
+	responsePayload := []map[string]interface{}{}
 	resp, err := openAPIClient.List(d.openAPIResource, &responsePayload, parentIDs...)
 	if err != nil {
 		return err
