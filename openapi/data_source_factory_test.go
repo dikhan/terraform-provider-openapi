@@ -24,15 +24,9 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				"filter": []map[string]interface{}{
-					{
-						"name":   "owner",
-						"values": []string{"some_owner"},
-					},
-					{
-						"name":   "label",
-						"values": []string{"label_to_fetch"},
-					},
+				dataSourceFilterPropertyName: []map[string]interface{}{
+					newFilter("owner", []string{"some_owner"}),
+					newFilter("label", []string{"label_to_fetch"}),
 				},
 			},
 			expectedError: nil,
@@ -45,11 +39,8 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				"filter": []map[string]interface{}{
-					{
-						"name":   "non_matching_property_name",
-						"values": []string{"label_to_fetch"},
-					},
+				dataSourceFilterPropertyName: []map[string]interface{}{
+					newFilter("non_matching_property_name", []string{"label_to_fetch"}),
 				},
 			},
 			expectedError: errors.New("filter name does not match any of the schema properties: property with name 'non_matching_property_name' not existing in resource schema definition"),
@@ -63,15 +54,9 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				"filter": []map[string]interface{}{
-					{
-						"name":   "label",
-						"values": []string{"my_label"},
-					},
-					{
-						"name":   "not_primitive",
-						"values": []string{"filters for non primitive properties are not supported at the moment"},
-					},
+				dataSourceFilterPropertyName: []map[string]interface{}{
+					newFilter("label", []string{"my_label"}),
+					newFilter("not_primitive", []string{"filters for non primitive properties are not supported at the moment"}),
 				},
 			},
 			expectedError: errors.New("property not supported as as filter: not_primitive"),
@@ -84,11 +69,8 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				"filter": []map[string]interface{}{
-					{
-						"name":   "label",
-						"values": []string{"value1", "value2"},
-					},
+				dataSourceFilterPropertyName: []map[string]interface{}{
+					newFilter("label", []string{"value1", "value2"}),
 				},
 			},
 			expectedError: errors.New("filters for primitive properties can not have more than one value in the values field"),
@@ -109,5 +91,12 @@ func TestValidateInput(t *testing.T) {
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
+	}
+}
+
+func newFilter(name string, values []string) map[string]interface{} {
+	return map[string]interface{}{
+		dataSourceFilterSchemaNamePropertyName:   name,
+		dataSourceFilterSchemaValuesPropertyName: values,
 	}
 }

@@ -103,7 +103,6 @@ func (d dataSourceFactory) validateInput(data *schema.ResourceData) error {
 			return err
 		}
 
-		// This validates that the property from the filter exists one of the properties from the data source schema
 		specSchemaDefinitionProperty, err := s.getProperty(filterPropertyName)
 		if err != nil {
 			return fmt.Errorf("filter name does not match any of the schema properties: %s", err)
