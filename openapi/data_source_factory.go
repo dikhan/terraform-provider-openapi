@@ -109,6 +109,15 @@ func (d dataSourceFactory) validateInput(data *schema.ResourceData) error {
 			return fmt.Errorf("filter name does not match any of the schema properties: %s", err)
 		}
 
+		if !specSchemaDefinitionProperty.isPrimitiveProperty() {
+			return fmt.Errorf("property not supported as as filter: %s", specSchemaDefinitionProperty.getTerraformCompliantPropertyName())
+		}
+
+		filterValue := f[dataSourceFilterSchemaValuesPropertyName].([]interface{})
+		if len(filterValue) > 1 {
+			return fmt.Errorf("filters for primitive properties can not have more than one value in the values field")
+		}
+
 		// TODO: validate that the filter values contain just one element for specSchemaDefinitionProperty of type primitive. error out otherwise
 
 	}
