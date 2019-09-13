@@ -55,8 +55,9 @@ func (d dataSourceFactory) dataSourceFiltersSchema() *schema.Schema {
 func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	// TODO: validate filters are configured correctly
-	//  - A primitive property contains more than one value in the filter values array
+	if err := d.validateInput(data); err != nil {
+		return err
+	}
 
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
 	if err != nil {
@@ -85,5 +86,27 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	// TODO: update the state data object with the filtered result data
 	// d.updateStateWithPayloadData(remoteData, data)
 
+	return nil
+}
+
+func (d dataSourceFactory) validateInput(data *schema.ResourceData) error {
+	filters := data.Get("filter")
+	for _, filter := range filters.(*schema.Set).List() {
+		f := filter.(map[string]interface{})
+		filterPropertyName := f["name"].(string)
+		s, err := d.openAPIResource.getResourceSchema()
+		if err != nil {
+			return err
+		}
+
+		// This validates that the property from the filter exists one of the properties from the data source schema
+		_, err = s.getProperty(filterPropertyName)
+		if err != nil {
+			return err
+		}
+
+		// TODO: validate that the filter values contain just one element for specSchemaDefinitionProperty of type primitive. error out otherwise
+
+	}
 	return nil
 }
