@@ -98,6 +98,9 @@ func TestDataSourceRead(t *testing.T) {
 		// Then
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
+			// assert that the filtered data source contains the same values as the ones returned by the API
+			assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Get("id"), tc.name)
+			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
