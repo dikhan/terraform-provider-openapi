@@ -105,8 +105,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("your query returned contains more than one result. Please change your search criteria to make it more specific")
 	}
 
-	return nil
-	//return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
+	return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
 }
 
 // TODO: add tests
