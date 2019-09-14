@@ -17,6 +17,10 @@ func TestDataSourceRead(t *testing.T) {
 		expectedError   error
 	}{
 		{
+			// TODO: fix this test. The reason why it fails is because the data source is currently not configuring the properties
+			//  of the resource in the terraform schema hence the call to save the data for label failing:
+			//  Expected nil, but got: &errors.errorString{s:"Invalid address to set: []string{\"label\"}"}
+			//  See: https://github.com/dikhan/terraform-provider-openapi/blob/feature/data-source-support/openapi/data_source_factory.go#L41
 			name: "fetch selected data source as per filter configuration (label=someLabel)",
 			filtersInput: []map[string]interface{}{
 				newFilter("label", []string{"someLabel"}),
