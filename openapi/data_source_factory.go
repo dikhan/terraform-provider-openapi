@@ -97,11 +97,11 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 		}
 	}
 
-	if len(filteredResults) == 0 { // TODO: untested
+	if len(filteredResults) == 0 {
 		return fmt.Errorf("your query returned no results. Please change your search criteria and try again")
 	}
 
-	if len(filteredResults) > 1 { // TODO: untested
+	if len(filteredResults) > 1 {
 		return fmt.Errorf("your query returned contains more than one result. Please change your search criteria to make it more specific")
 	}
 
