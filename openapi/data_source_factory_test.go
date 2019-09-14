@@ -7,6 +7,50 @@ import (
 	"testing"
 )
 
+func TestCreateTerraformDataSourceSchema(t *testing.T) {
+	testCases := []struct {
+		name            string
+		openAPIResource SpecResource
+	}{
+		{
+			// TODO: this test fails due to the impl not being there yet. Fixing this test should make the other test from
+			//  TestDataSourceRead work
+			name: "data source schema is configured as expected",
+			openAPIResource: &specStubResource{
+				schemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
+						newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		dataSourceFactory := dataSourceFactory{
+			openAPIResource: tc.openAPIResource,
+		}
+		s := dataSourceFactory.createTerraformDataSourceSchema()
+		assert.NotNil(t, s)
+		// data source specific properties for filtering purposes (exposed to the user to be able to provide filters)
+		assert.Contains(t, s, dataSourceFilterPropertyName)
+		assert.IsType(t, &schema.Resource{}, s[dataSourceFilterPropertyName].Elem)
+		assert.Contains(t, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema, dataSourceFilterSchemaNamePropertyName)
+		assert.Equal(t, schema.TypeString, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema[dataSourceFilterSchemaNamePropertyName].Type)
+		assert.True(t, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema[dataSourceFilterSchemaNamePropertyName].Required)
+		assert.Contains(t, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema, dataSourceFilterSchemaValuesPropertyName)
+		assert.Equal(t, schema.TypeList, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema[dataSourceFilterSchemaValuesPropertyName].Type)
+		assert.True(t, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema[dataSourceFilterSchemaValuesPropertyName].Required)
+
+		// resource specific properties as per swagger def (this properties are meant to be popolated by the read operation when a match is found as per the filters)
+		assert.Contains(t, s, "id")
+		assert.True(t, s["id"].Computed)
+		assert.Contains(t, s, "label")
+		assert.True(t, s["label"].Computed)
+	}
+}
+
 func TestDataSourceRead(t *testing.T) {
 
 	testCases := []struct {
