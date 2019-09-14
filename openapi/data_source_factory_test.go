@@ -33,6 +33,36 @@ func TestDataSourceRead(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name: "no filter match",
+			filtersInput: []map[string]interface{}{
+				newFilter("label", []string{"some non existing label"}),
+			},
+			responsePayload: []map[string]interface{}{
+				{
+					"id":    "someID",
+					"label": "someLabel",
+				},
+			},
+			expectedError: errors.New("your query returned no results. Please change your search criteria and try again"),
+		},
+		{
+			name: "after filtering the result contains more than one element",
+			filtersInput: []map[string]interface{}{
+				newFilter("label", []string{"my_label"}),
+			},
+			responsePayload: []map[string]interface{}{
+				{
+					"id":    "someID",
+					"label": "my_label",
+				},
+				{
+					"id":    "someOtherID",
+					"label": "my_label",
+				},
+			},
+			expectedError: errors.New("your query returned contains more than one result. Please change your search criteria to make it more specific"),
+		},
 	}
 
 	for _, tc := range testCases {
