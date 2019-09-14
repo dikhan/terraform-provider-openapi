@@ -40,7 +40,9 @@ func (d dataSourceFactory) createTerraformDataSourceSchema() map[string]*schema.
 	return map[string]*schema.Schema{
 		dataSourceFilterPropertyName: d.dataSourceFiltersSchema(),
 		// TODO: need to populate also here the properties for the data source so then we can update the state object (data *schema.ResourceData)
-		//  at the end of the read operation
+		//  at the end of the read operation. This can be done via getting the schema from d.openAPIResource.getResourceSchema() and
+		//  calling createResourceSchema(). Some adjustments will need to be made making all the properties computed
+		//  no matter what the schema is configured with since the model might be the same as the actual resource.
 	}
 }
 
