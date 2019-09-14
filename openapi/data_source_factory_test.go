@@ -33,6 +33,44 @@ func TestDataSourceRead(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name: "no filter match",
+			filtersInput: []map[string]interface{}{
+				newFilter("label", []string{"some non existing label"}),
+			},
+			responsePayload: []map[string]interface{}{
+				{
+					"id":    "someID",
+					"label": "someLabel",
+				},
+			},
+			expectedError: errors.New("your query returned no results. Please change your search criteria and try again"),
+		},
+		{
+			name: "after filtering the result contains more than one element",
+			filtersInput: []map[string]interface{}{
+				newFilter("label", []string{"my_label"}),
+			},
+			responsePayload: []map[string]interface{}{
+				{
+					"id":    "someID",
+					"label": "my_label",
+				},
+				{
+					"id":    "someOtherID",
+					"label": "my_label",
+				},
+			},
+			expectedError: errors.New("your query returned contains more than one result. Please change your search criteria to make it more specific"),
+		},
+		{
+			name: "validate input fails",
+			filtersInput: []map[string]interface{}{
+				newFilter("non_existing_property", []string{"my_label"}),
+			},
+			responsePayload: []map[string]interface{}{},
+			expectedError:   errors.New("filter name does not match any of the schema properties: property with name 'non_existing_property' not existing in resource schema definition"),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -60,12 +98,12 @@ func TestDataSourceRead(t *testing.T) {
 		// Then
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
+			// assert that the filtered data source contains the same values as the ones returned by the API
+			assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Get("id"), tc.name)
+			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
-		// assert that the filtered data source contains the same values as the ones returned by the API
-		assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Get("id"), tc.name)
-		assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
 	}
 }
 

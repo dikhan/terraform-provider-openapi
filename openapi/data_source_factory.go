@@ -39,6 +39,10 @@ func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error)
 func (d dataSourceFactory) createTerraformDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		dataSourceFilterPropertyName: d.dataSourceFiltersSchema(),
+		// TODO: need to populate also here the properties for the data source so then we can update the state object (data *schema.ResourceData)
+		//  at the end of the read operation. This can be done via getting the schema from d.openAPIResource.getResourceSchema() and
+		//  calling createResourceSchema(). Some adjustments will need to be made making all the properties computed
+		//  no matter what the schema is configured with since the model might be the same as the actual resource.
 	}
 }
 
@@ -97,16 +101,15 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 		}
 	}
 
-	if len(filteredResults) == 0 { // TODO: untested
+	if len(filteredResults) == 0 {
 		return fmt.Errorf("your query returned no results. Please change your search criteria and try again")
 	}
 
-	if len(filteredResults) > 1 { // TODO: untested
+	if len(filteredResults) > 1 {
 		return fmt.Errorf("your query returned contains more than one result. Please change your search criteria to make it more specific")
 	}
 
-	return nil
-	//return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
+	return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
 }
 
 // TODO: add tests
