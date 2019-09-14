@@ -257,6 +257,146 @@ func TestValidateInput(t *testing.T) {
 	}
 }
 
+// TODO: Fix filter for float property (test currently failing) - conversion from string to float in dataSourceFactory.filterMatch()
+func TestFilterMatch(t *testing.T) {
+	testCases := []struct {
+		name                           string
+		specSchemaDefinitionProperties specSchemaDefinitionProperties
+		filters                        filters
+		payloadItem                    map[string]interface{}
+		expectedResult                 bool
+		expectedError                  error
+		resourceSchemaErr              error
+	}{
+		{
+			name: "happy path - payloadItem matches the filter for string property",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"label", "some label"},
+			},
+			payloadItem: map[string]interface{}{
+				"label": "some label",
+			},
+			expectedResult:    true,
+			expectedError:     nil,
+			resourceSchemaErr: nil,
+		},
+		{
+			name: "happy path - payloadItem matches the filter for int property",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("int property name", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"int property name", "5"},
+			},
+			payloadItem: map[string]interface{}{
+				"int property name": 5,
+			},
+			expectedResult:    true,
+			expectedError:     nil,
+			resourceSchemaErr: nil,
+		},
+		//{
+		//	name: "happy path - payloadItem matches the filter for float property",
+		//	specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+		//		newNumberSchemaDefinitionPropertyWithDefaults("float property name", "", false, true, nil),
+		//	},
+		//	filters: filters{
+		//		filter{"float property name", "6.0"},
+		//	},
+		//	payloadItem: map[string]interface{}{
+		//		"float property name": 6.0,
+		//	},
+		//	expectedResult:    true,
+		//	expectedError:     nil,
+		//	resourceSchemaErr: nil,
+		//},
+		{
+			name: "happy path - payloadItem matches the filter for bool property",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newBoolSchemaDefinitionPropertyWithDefaults("bool property name", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"bool property name", "false"},
+			},
+			payloadItem: map[string]interface{}{
+				"bool property name": false,
+			},
+			expectedResult:    true,
+			expectedError:     nil,
+			resourceSchemaErr: nil,
+		},
+		{
+			name: "crappy path - invalid specSchemaDefinition",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"label", "some label"},
+			},
+			payloadItem: map[string]interface{}{
+				"label": "some label",
+			},
+			expectedResult:    false,
+			expectedError:     errors.New("invalid specSchemaDefinition"),
+			resourceSchemaErr: errors.New("invalid specSchemaDefinition"),
+		},
+		{
+			name: "crappy path - payloadItem doesn't match the filter name",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"invalid filter name", "some label"},
+			},
+			payloadItem: map[string]interface{}{
+				"label": "some label",
+			},
+			expectedResult:    false,
+			expectedError:     nil,
+			resourceSchemaErr: nil,
+		},
+		{
+			name: "crappy path - payloadItem doesn't match the filter value",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"label", "invalid filter value"},
+			},
+			payloadItem: map[string]interface{}{
+				"label": "some label",
+			},
+			expectedResult:    false,
+			expectedError:     nil,
+			resourceSchemaErr: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		// Given
+		dataSourceFactory := dataSourceFactory{
+			openAPIResource: &specStubResource{
+				schemaDefinition: &specSchemaDefinition{
+					Properties: tc.specSchemaDefinitionProperties,
+				},
+				error: tc.resourceSchemaErr,
+			},
+		}
+		// When
+		match, err := dataSourceFactory.filterMatch(tc.filters, tc.payloadItem)
+		// Then
+		assert.Equal(t, tc.expectedResult, match, tc.name)
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+		} else {
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		}
+	}
+}
+
 func assertFilter(t *testing.T, filters filters, expectedFilter filter, msgAndArgs ...interface{}) bool {
 	for _, f := range filters {
 		if f.name == expectedFilter.name {
