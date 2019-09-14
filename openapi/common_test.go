@@ -5,6 +5,7 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -13,68 +14,77 @@ import (
 )
 
 func TestCheckHTTPStatusCode(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
-		openAPIResource := &specStubResource{name: "resourceName"}
-		Convey("When checkHTTPStatusCode is called with a response containing a status codes that matches one of the expected response status codes", func() {
-			response := &http.Response{
+
+	testCases := []struct {
+		name                string
+		response            *http.Response
+		expectedStatusCodes []int
+		expectedError       error
+	}{
+		{
+			name: "response containing a status codes that matches one of the expected response status codes",
+			response: &http.Response{
 				StatusCode: http.StatusOK,
-			}
-			expectedStatusCodes := []int{http.StatusOK}
-			err := checkHTTPStatusCode(openAPIResource, response, expectedStatusCodes)
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-		Convey("When checkHTTPStatusCode is called with a response that IS NOT expected", func() {
-			response := &http.Response{
+			},
+			expectedStatusCodes: []int{http.StatusOK},
+			expectedError:       nil,
+		},
+		{
+			name: "response that IS NOT expected",
+			response: &http.Response{
 				Body:       ioutil.NopCloser(strings.NewReader("some backend error")),
 				StatusCode: http.StatusInternalServerError,
-			}
-			expectedStatusCodes := []int{http.StatusOK}
-			err := checkHTTPStatusCode(openAPIResource, response, expectedStatusCodes)
-			Convey("Then the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the err messages should equal", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] (some backend error)")
-			})
-		})
-		Convey("When checkHTTPStatusCode is called with a response known with code 401 Unauthorized", func() {
-			response := &http.Response{
+			},
+			expectedStatusCodes: []int{http.StatusOK},
+			expectedError:       errors.New("[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] (some backend error)"),
+		},
+		{
+			name: "response known with code 401 Unauthorized",
+			response: &http.Response{
 				Body:       ioutil.NopCloser(strings.NewReader("unauthorized")),
 				StatusCode: http.StatusUnauthorized,
-			}
-			expectedStatusCodes := []int{http.StatusOK}
-			err := checkHTTPStatusCode(openAPIResource, response, expectedStatusCodes)
-			Convey("Then the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the err messages should equal", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 401 - Unauthorized: API access is denied due to invalid credentials (unauthorized)")
-			})
-		})
-	})
+			},
+			expectedStatusCodes: []int{http.StatusOK},
+			expectedError:       errors.New("[resource='resourceName'] HTTP Response Status Code 401 - Unauthorized: API access is denied due to invalid credentials (unauthorized)"),
+		},
+	}
+
+	for _, tc := range testCases {
+		openAPIResource := &specStubResource{name: "resourceName"}
+		err := checkHTTPStatusCode(openAPIResource, tc.response, tc.expectedStatusCodes)
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+		} else {
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		}
+	}
 }
 
 func TestResponseContainsExpectedStatus(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
-		Convey("When responseContainsExpectedStatus is called with a response code that exists in the given list of expected status codes", func() {
-			expectedResponseStatusCodes := []int{http.StatusCreated, http.StatusAccepted}
-			responseCode := http.StatusCreated
-			exists := responseContainsExpectedStatus(expectedResponseStatusCodes, responseCode)
-			Convey("Then the expectedValue returned should be true", func() {
-				So(exists, ShouldBeTrue)
-			})
-		})
-		Convey("When responseContainsExpectedStatus is called with a response code that DOES NOT exists in 'expectedResponseStatusCodes'", func() {
-			expectedResponseStatusCodes := []int{http.StatusCreated, http.StatusAccepted}
-			responseCode := http.StatusUnauthorized
-			exists := responseContainsExpectedStatus(expectedResponseStatusCodes, responseCode)
-			Convey("Then the expectedValue returned should be false", func() {
-				So(exists, ShouldBeFalse)
-			})
-		})
-	})
+	testCases := []struct {
+		name                        string
+		expectedResponseStatusCodes []int
+		responseCode                int
+		expectedResult              bool
+	}{
+		{
+			name:                        "response code that exists in the given list of expected status codes",
+			expectedResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
+			responseCode:                http.StatusCreated,
+			expectedResult:              true,
+		},
+		{
+			name:                        "response code that DOES NOT exists in 'expectedResponseStatusCodes'",
+			expectedResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
+			responseCode:                http.StatusUnauthorized,
+			expectedResult:              false,
+		},
+	}
+
+	for _, tc := range testCases {
+		exists := responseContainsExpectedStatus(tc.expectedResponseStatusCodes, tc.responseCode)
+		assert.Equal(t, tc.expectedResult, exists, tc.name)
+	}
 }
 
 func TestGetParentIDsAndResourcePath(t *testing.T) {
