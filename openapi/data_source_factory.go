@@ -29,21 +29,24 @@ func newDataSourceFactory(openAPIResource SpecResource) dataSourceFactory {
 }
 
 func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error) {
-	s := d.createTerraformDataSourceSchema()
+	s, err := d.createTerraformDataSourceSchema()
+	if err != nil {
+		return nil, err
+	}
 	return &schema.Resource{
 		Schema: s,
 		Read:   d.read,
 	}, nil
 }
 
-func (d dataSourceFactory) createTerraformDataSourceSchema() map[string]*schema.Schema {
+func (d dataSourceFactory) createTerraformDataSourceSchema() (map[string]*schema.Schema, error) {
 	specSchema, err := d.openAPIResource.getResourceSchema()
 	if err != nil {
-		return map[string]*schema.Schema{}
+		return nil, err
 	}
 	dataSourceSchema, err := specSchema.createDataSourceSchema()
 	dataSourceSchema[dataSourceFilterPropertyName] = d.dataSourceFiltersSchema()
-	return dataSourceSchema
+	return dataSourceSchema, nil
 }
 
 func (d dataSourceFactory) dataSourceFiltersSchema() *schema.Schema {
