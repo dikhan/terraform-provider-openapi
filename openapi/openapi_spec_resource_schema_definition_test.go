@@ -1,9 +1,10 @@
 package openapi
 
 import (
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/stretchr/testify/assert"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -32,6 +33,12 @@ func TestCreateDataSourceSchema(t *testing.T) {
 						ReadOnly: false,
 						Required: true,
 					},
+					&specSchemaDefinitionProperty{
+						Name:     "int_prop",
+						Type:     typeInt,
+						ReadOnly: false,
+						Required: true,
+					},
 				},
 			},
 			expectedResult: map[string]*schema.Schema{
@@ -40,6 +47,12 @@ func TestCreateDataSourceSchema(t *testing.T) {
 					Optional: true,
 					Computed: true,
 					Type:     schema.TypeString,
+				},
+				"int_prop": &schema.Schema{
+					Required: false,
+					Optional: true,
+					Computed: true,
+					Type:     schema.TypeInt,
 				},
 			},
 			expectedError: nil,
