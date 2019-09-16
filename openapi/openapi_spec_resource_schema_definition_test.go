@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -56,6 +57,12 @@ func TestCreateDataSourceSchema(t *testing.T) {
 				},
 			},
 			expectedError: nil,
+		},
+		{
+			name:           "sad path -- a terraform schema cannot be created from a specSchemaDefinition ",
+			specSchemaDef:  specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{}}},
+			expectedResult: nil,
+			expectedError:  errors.New("non supported type "),
 		},
 	}
 
