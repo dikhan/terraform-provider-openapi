@@ -19,7 +19,7 @@ func TestCreateDataSourceSchema(t *testing.T) {
 		expectedError  error
 	}{
 		{
-			name: "data source schema contains all schema properties configured as computed",
+			name: "happy path -- data source schema contains all schema properties configured as computed",
 			specSchemaDef: specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					&specSchemaDefinitionProperty{
