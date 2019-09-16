@@ -17,6 +17,10 @@ func (s *specSchemaDefinition) createResourceSchema() (map[string]*schema.Schema
 	return s.createResourceSchemaIgnoreID(true)
 }
 
+func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Schema, error) {
+	return s.createResourceSchemaIgnoreID(true)
+}
+
 func (s *specSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {
 	return s.createResourceSchemaIgnoreID(false)
 }
