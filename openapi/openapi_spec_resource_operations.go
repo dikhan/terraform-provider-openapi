@@ -1,6 +1,7 @@
 package openapi
 
 type specResourceOperations struct {
+	List   *specResourceOperation
 	Post   *specResourceOperation
 	Get    *specResourceOperation
 	Put    *specResourceOperation

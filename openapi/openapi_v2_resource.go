@@ -235,6 +235,7 @@ func (o *SpecV2Resource) getHost() (string, error) {
 
 func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
 	return specResourceOperations{
+		List:   o.createResourceOperation(o.RootPathItem.Get),
 		Post:   o.createResourceOperation(o.RootPathItem.Post),
 		Get:    o.createResourceOperation(o.InstancePathItem.Get),
 		Put:    o.createResourceOperation(o.InstancePathItem.Put),
