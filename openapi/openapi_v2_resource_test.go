@@ -1321,7 +1321,7 @@ func TestGetSchemaDefinition(t *testing.T) {
 	Convey("Given a SpecV2Resource containing a subresource path (two level)", t, func() {
 		r := &SpecV2Resource{
 			Path:  "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
-			Paths: nil, // [fradiben: not sure if following TODO applies still] --> TODO: populate paths as expected based on the above path so internally the calculation of parent nanes is done properly
+			Paths: nil,
 		}
 		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
 			s := &spec.Schema{

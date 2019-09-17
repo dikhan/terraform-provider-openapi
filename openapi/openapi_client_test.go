@@ -363,7 +363,7 @@ func TestGetResourceURL(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And then resourceURL should equal", func() { //TODO: what should it equal?
+			Convey("And then resourceURL should equal /v1/resource/%s/subresource ", func() {
 				expectedProtocol, _ := providerClient.openAPIBackendConfiguration.getHTTPScheme()
 				expectedHost, _ := providerClient.openAPIBackendConfiguration.getHost()
 				expectedBasePath := providerClient.openAPIBackendConfiguration.getBasePath()
