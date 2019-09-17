@@ -55,8 +55,8 @@ func TestCreateTerraformDataSourceSchema(t *testing.T) {
 			assert.Equal(t, schema.TypeList, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema[dataSourceFilterSchemaValuesPropertyName].Type, tc.name)
 			assert.True(t, s[dataSourceFilterPropertyName].Elem.(*schema.Resource).Schema[dataSourceFilterSchemaValuesPropertyName].Required, tc.name)
 
-			// resource specific properties as per swagger def (this properties are meant to be popolated by the read operation when a match is found as per the filters)
-			assert.Nil(t, s["id"], tc.name)
+			// resource specific properties as per swagger def (this properties are meant to be populated by the read operation when a match is found as per the filters)
+			assert.Nil(t, s["id"], tc.name) // we assert that s["id"] is Nil because during the creation of the schema id is treated in a special way and should not be populated at creation time (must be set in read() method)
 			assert.Contains(t, s, "label", tc.name)
 			assert.True(t, s["label"].Computed, tc.name)
 		} else {
@@ -159,10 +159,9 @@ func TestDataSourceRead(t *testing.T) {
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
 			// assert that the filtered data source contains the same values as the ones returned by the API
-			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name) //todo: how to assert that ONLY 1 element is returned in the resourceData ?
-
-			// TODO: ID is dropped when calling createTerraformDataSourceSchema() which calls createDataSourceSchema() which calls createResourceSchemaIgnoreID()
-			//assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id(), tc.name)
+			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
+			assert.Equal(t, 6, len(resourceData.State().Attributes), tc.name)                //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
+			assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id(), tc.name) //resourceData.Id() is being called instead of resourceData.Get("id") because id property is a special one kept by Terraform
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}

@@ -72,6 +72,8 @@ func (d dataSourceFactory) dataSourceFiltersSchema() *schema.Schema {
 }
 
 func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error {
+	defer func() { recover() }()
+
 	openAPIClient := i.(ClientOpenAPI)
 
 	filters, err := d.validateInput(data)
@@ -80,13 +82,13 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	}
 
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
-	if err != nil { //todo: check if we can let this burn
-		return err
-	}
+	//if err != nil { //todo: check if we can let this burn, i guess yes
+	//	return err
+	//}
 
 	responsePayload := []map[string]interface{}{}
 	resp, err := openAPIClient.List(d.openAPIResource, &responsePayload, parentIDs...)
-	if err != nil { //todo: check if we can let this burn
+	if err != nil { //todo: check if we can let this burn, probably not but yes with a defer
 		return err
 	}
 
@@ -111,6 +113,12 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 
 	if len(filteredResults) > 1 {
 		return fmt.Errorf("your query returned contains more than one result. Please change your search criteria to make it more specific")
+	}
+
+	err = setStateID(d.openAPIResource, data, filteredResults[0])
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
 
 	return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
