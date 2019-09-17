@@ -1002,69 +1002,6 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 	})
 }
 
-func TestSetStateID(t *testing.T) {
-	Convey("Given a resource factory configured with a schema definition that as an id property", t, func() {
-		r, resourceData := testCreateResourceFactory(t, idProperty)
-		Convey("When setStateID is called with the resourceData and responsePayload", func() {
-			responsePayload := map[string]interface{}{
-				idProperty.Name: "idValue",
-			}
-			err := r.setStateID(resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(resourceData.Id(), ShouldEqual, responsePayload[idProperty.Name])
-			})
-		})
-
-		Convey("When setStateID is called with a resourceData that contains an id property but the responsePayload does not have it", func() {
-			responsePayload := map[string]interface{}{
-				"someOtherProperty": "idValue",
-			}
-			err := r.setStateID(resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(err.Error(), ShouldEqual, "response object returned from the API is missing mandatory identifier property 'id'")
-			})
-		})
-	})
-
-	Convey("Given a resource factory configured with a schema definition that DOES not have an id property but one of the properties is tagged as id", t, func() {
-		r, resourceData := testCreateResourceFactory(t, someIdentifierProperty)
-		Convey("When setStateID is called with the resourceData and responsePayload", func() {
-			responsePayload := map[string]interface{}{
-				someIdentifierProperty.Name: "idValue",
-			}
-			err := r.setStateID(resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(resourceData.Id(), ShouldEqual, responsePayload[someIdentifierProperty.Name])
-			})
-		})
-	})
-
-	Convey("Given a resource factory configured with a schema definition that DOES not have an id property nor a property that should be used as the identifier", t, func() {
-		r, resourceData := testCreateResourceFactory(t)
-		Convey("When setStateID is called with the resourceData and responsePayload", func() {
-			responsePayload := map[string]interface{}{
-				"someOtherProperty": "idValue",
-			}
-			err := r.setStateID(resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
-				So(err.Error(), ShouldEqual, "could not find any identifier property in the resource schema definition")
-			})
-		})
-	})
-}
-
 func TestCheckImmutableFields(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactory(t, immutableProperty, nonImmutableProperty)

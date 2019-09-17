@@ -104,11 +104,10 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
-
 		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), resourcePath, err)
 	}
 
-	err = r.setStateID(data, responsePayload)
+	err = setStateID(r.openAPIResource, data, responsePayload)
 	if err != nil {
 		return err
 	}
@@ -355,32 +354,6 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 		log.Printf("[DEBUG] resource status '%s' (%s): %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
-}
-
-// setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
-// r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
-func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
-	resourceSchema, err := r.openAPIResource.getResourceSchema()
-	if err != nil {
-		return err
-	}
-	identifierProperty, err := resourceSchema.getResourceIdentifier()
-	if err != nil {
-		return err
-	}
-	if payload[identifierProperty] == nil {
-		return fmt.Errorf("response object returned from the API is missing mandatory identifier property '%s'", identifierProperty)
-	}
-
-	switch payload[identifierProperty].(type) {
-	case int:
-		resourceLocalData.SetId(strconv.Itoa(payload[identifierProperty].(int)))
-	case float64:
-		resourceLocalData.SetId(strconv.Itoa(int(payload[identifierProperty].(float64))))
-	default:
-		resourceLocalData.SetId(payload[identifierProperty].(string))
-	}
-	return nil
 }
 
 func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI) error {

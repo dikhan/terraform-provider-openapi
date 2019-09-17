@@ -3,11 +3,13 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"strconv"
+
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expectedHTTPStatusCodes []int) error {
@@ -205,4 +207,30 @@ func setResourceDataProperty(openAPIResource SpecResource, schemaDefinitionPrope
 		return fmt.Errorf("could not find schema definition property name %s in the resource data: %s", schemaDefinitionPropertyName, err)
 	}
 	return resourceLocalData.Set(schemaDefinitionProperty.getTerraformCompliantPropertyName(), value)
+}
+
+// setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
+// r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
+func setStateID(openAPIres SpecResource, resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
+	resourceSchema, err := openAPIres.getResourceSchema()
+	if err != nil {
+		return err
+	}
+	identifierProperty, err := resourceSchema.getResourceIdentifier()
+	if err != nil {
+		return err
+	}
+	if payload[identifierProperty] == nil {
+		return fmt.Errorf("response object returned from the API is missing mandatory identifier property '%s'", identifierProperty)
+	}
+
+	switch payload[identifierProperty].(type) {
+	case int:
+		resourceLocalData.SetId(strconv.Itoa(payload[identifierProperty].(int)))
+	case float64:
+		resourceLocalData.SetId(strconv.Itoa(int(payload[identifierProperty].(float64))))
+	default:
+		resourceLocalData.SetId(payload[identifierProperty].(string))
+	}
+	return nil
 }
