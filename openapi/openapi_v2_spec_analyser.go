@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -275,6 +276,29 @@ func (specAnalyser *specV2Analyser) isEndPointFullyTerraformResourceCompliant(re
 		return "", nil, nil, err
 	}
 	return resourceRootPath, resourceRootPathItem, resourceRootPostSchemaDef, nil
+}
+
+func (specAnalyser *specV2Analyser) isEndPointTerraformDataSourceCompliant(path spec.PathItem) (*spec.Schema, error) {
+	if path.Get == nil {
+		return nil, errors.New("missing get operation")
+	}
+	if path.Get.Responses != nil {
+		response, responseStatusOK := path.Get.Responses.ResponsesProps.StatusCodeResponses[http.StatusOK]
+		if !responseStatusOK {
+			return nil, errors.New("missing get 200 OK response specification")
+		}
+		if response.Schema == nil {
+			return nil, errors.New("missing response schema")
+		}
+		if len(response.Schema.Type) > 0 && !response.Schema.Type.Contains("array") {
+			return nil, errors.New("response does not return an array of items")
+		}
+		if len(response.Schema.Properties) == 0 {
+			return nil, errors.New("the response schema is missing the properties")
+		}
+		return response.Schema, nil
+	}
+	return nil, errors.New("missing get responses")
 }
 
 func (specAnalyser *specV2Analyser) validateInstancePath(path string) error {

@@ -1,7 +1,9 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -1546,6 +1548,166 @@ definitions:
 			})
 		})
 	})
+}
+
+func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
+
+	testCases := []struct {
+		name          string
+		inputPathItem spec.PathItem
+		expectedError error
+	}{
+		{
+			name: "happy path: endpoint is data source compliant",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{
+											ResponseProps: spec.ResponseProps{
+												Schema: &spec.Schema{
+													SchemaProps: spec.SchemaProps{
+														Type: spec.StringOrArray{"array"},
+														Properties: map[string]spec.Schema{
+															"prop1": spec.Schema{},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "bad path: endpoint is missing get operation",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{},
+			},
+			expectedError: errors.New("missing get operation"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 OK response",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{},
+					},
+				},
+			},
+			expectedError: errors.New("missing get responses"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("missing get 200 OK response specification"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response schema",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("missing response schema"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response schema type not being an array",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{
+											ResponseProps: spec.ResponseProps{
+												Schema: &spec.Schema{
+													SchemaProps: spec.SchemaProps{
+														Type: spec.StringOrArray{"string"},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("response does not return an array of items"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response schema type being an array with empty properties",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{
+											ResponseProps: spec.ResponseProps{
+												Schema: &spec.Schema{
+													SchemaProps: spec.SchemaProps{
+														Type:       spec.StringOrArray{"array"},
+														Properties: map[string]spec.Schema{},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("the response schema is missing the properties"),
+		},
+	}
+
+	for _, tc := range testCases {
+		a := specV2Analyser{}
+		s, err := a.isEndPointTerraformDataSourceCompliant(tc.inputPathItem)
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			assert.Equal(t, s, tc.inputPathItem.Get.Responses.StatusCodeResponses[http.StatusOK].Schema, tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
+		}
+	}
 }
 
 func TestIsEndPointTerraformResourceCompliant(t *testing.T) {
