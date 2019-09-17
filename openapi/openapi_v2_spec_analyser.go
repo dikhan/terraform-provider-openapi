@@ -56,6 +56,18 @@ func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string,
 	return resources, nil
 }
 
+func (specAnalyser *specV2Analyser) GetTerraformCompliantDataSources() ([]SpecResource, error) {
+	var dataSources []SpecResource
+	spec := specAnalyser.d.Spec()
+	paths := spec.Paths
+	for resourcePath, pathItem := range paths.Paths {
+		fmt.Println(resourcePath, pathItem)
+		// TODO: Validate if path is data source compatible
+		// TODO: If path is deemed data source compatible call the data source constructor newDataSourceFactory() and add it to the list of dataSources
+	}
+	return dataSources, nil
+}
+
 func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecResource, error) {
 	var resources []SpecResource
 	start := time.Now()

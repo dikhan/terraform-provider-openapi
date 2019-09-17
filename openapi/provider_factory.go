@@ -42,6 +42,7 @@ func newProviderFactory(name string, specAnalyser SpecAnalyser, serviceConfigura
 func (p providerFactory) createProvider() (*schema.Provider, error) {
 	var providerSchema map[string]*schema.Schema
 	var resourceMap map[string]*schema.Resource
+	var dataSources map[string]*schema.Resource
 	var err error
 
 	openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
@@ -55,10 +56,15 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	if resourceMap, err = p.createTerraformProviderResourceMap(); err != nil {
 		return nil, err
 	}
+	// TODO: test out this code
+	if dataSources, err = p.createTerraformProviderDataSourceMap(); err != nil {
+		return nil, err
+	}
 	provider := &schema.Provider{
-		Schema:        providerSchema,
-		ResourcesMap:  resourceMap,
-		ConfigureFunc: p.configureProvider(openAPIBackendConfiguration),
+		Schema:         providerSchema,
+		ResourcesMap:   resourceMap,
+		DataSourcesMap: dataSources,
+		ConfigureFunc:  p.configureProvider(openAPIBackendConfiguration),
 	}
 	return provider, nil
 }
@@ -167,6 +173,25 @@ func (p providerFactory) createValidateFunc(allowedValues []string) func(val int
 		}
 	}
 	return nil
+}
+
+func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*schema.Resource, error) {
+	dataSourceMap := map[string]*schema.Resource{}
+	openAPIDataResources, err := p.specAnalyser.GetTerraformCompliantDataSources()
+	if err != nil {
+		return nil, err
+	}
+	for _, openAPIDataResource := range openAPIDataResources {
+		dataSourceName, err := p.getProviderResourceName(openAPIDataResource.getResourceName())
+		fmt.Println(dataSourceName) // TODO: remove this (added to fix compile issues)
+		if err != nil {
+			return nil, err
+		}
+		// TODO: create data resource newDataSourceFactory(openAPIDataResource)
+		// TODO: build schema resource calling d.createTerraformDataSource()
+		// TODO: add new data source to dataSourceMap
+	}
+	return dataSourceMap, nil
 }
 
 func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schema.Resource, error) {
