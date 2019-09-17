@@ -2,9 +2,12 @@ package openapi
 
 import (
 	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCreateTerraformDataSourceSchema(t *testing.T) {
@@ -63,6 +66,17 @@ func TestCreateTerraformDataSourceSchema(t *testing.T) {
 }
 
 func TestDataSourceRead(t *testing.T) {
+	// Given
+	dataSourceFactory := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+				},
+			},
+		},
+	}
 
 	testCases := []struct {
 		name            string
@@ -72,10 +86,6 @@ func TestDataSourceRead(t *testing.T) {
 		expectedError   error
 	}{
 		{
-			// TODO: fix this test. The reason why it fails is because the data source is currently not configuring the properties
-			//  of the resource in the terraform schema hence the call to save the data for label failing:
-			//  Expected nil, but got: &errors.errorString{s:"Invalid address to set: []string{\"label\"}"}
-			//  See: https://github.com/dikhan/terraform-provider-openapi/blob/feature/data-source-support/openapi/data_source_factory.go#L41
 			name: "fetch selected data source as per filter configuration (label=someLabel)",
 			filtersInput: []map[string]interface{}{
 				newFilter("label", []string{"someLabel"}),
@@ -133,19 +143,9 @@ func TestDataSourceRead(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Given
-		dataSourceFactory := dataSourceFactory{
-			openAPIResource: &specStubResource{
-				schemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
-						newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
-						newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
-					},
-				},
-			},
-		}
-		// TODO: handle error from createTerraformDataSourceSchema?
-		resourceSchema, _ := dataSourceFactory.createTerraformDataSourceSchema()
+		resourceSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+		require.NoError(t, err)
+
 		filtersInput := map[string]interface{}{
 			dataSourceFilterPropertyName: tc.filtersInput,
 		}
@@ -154,18 +154,15 @@ func TestDataSourceRead(t *testing.T) {
 			responseListPayload: tc.responsePayload,
 		}
 		// When
-		err := dataSourceFactory.read(resourceData, client)
+		err = dataSourceFactory.read(resourceData, client)
 		// Then
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
-
 			// assert that the filtered data source contains the same values as the ones returned by the API
+			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name) //todo: how to assert that ONLY 1 element is returned in the resourceData ?
 
 			// TODO: ID is dropped when calling createTerraformDataSourceSchema() which calls createDataSourceSchema() which calls createResourceSchemaIgnoreID()
-			// Given this, should we be asserting id is nil instead?
 			//assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id(), tc.name)
-
-			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
@@ -258,8 +255,9 @@ func TestValidateInput(t *testing.T) {
 				schemaDefinition: tc.specSchemaDefinition,
 			},
 		}
-		// TODO: handle error from createTerraformDataSourceSchema?
-		resourceSchema, _ := dataSourceFactory.createTerraformDataSourceSchema()
+		resourceSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+		require.NoError(t, err)
+
 		resourceLocalData := schema.TestResourceDataRaw(t, resourceSchema, tc.filtersInput)
 		// When
 		filters, err := dataSourceFactory.validateInput(resourceLocalData)
