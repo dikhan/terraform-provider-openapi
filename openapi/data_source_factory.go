@@ -29,7 +29,7 @@ func newDataSourceFactory(openAPIResource SpecResource) dataSourceFactory {
 	}
 }
 
-func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error) {
+func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error) { //todo: this is not tested
 	s, err := d.createTerraformDataSourceSchema()
 	if err != nil {
 		return nil, err
@@ -80,24 +80,24 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	}
 
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
-	if err != nil {
+	if err != nil { //todo: check if we can let this burn
 		return err
 	}
 
 	responsePayload := []map[string]interface{}{}
 	resp, err := openAPIClient.List(d.openAPIResource, &responsePayload, parentIDs...)
-	if err != nil {
+	if err != nil { //todo: check if we can let this burn
 		return err
 	}
 
-	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil {
+	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil { //todo: test this
 		return fmt.Errorf("[data source='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
 	}
 
 	var filteredResults []map[string]interface{}
 	for _, payloadItem := range responsePayload {
 		match, err := d.filterMatch(filters, payloadItem)
-		if err != nil {
+		if err != nil { //todo: test
 			return err
 		}
 		if match {
@@ -156,7 +156,7 @@ func (d dataSourceFactory) validateInput(data *schema.ResourceData) (filters, er
 		f := inputFilter.(map[string]interface{})
 		filterPropertyName := f[dataSourceFilterSchemaNamePropertyName].(string)
 		s, err := d.openAPIResource.getResourceSchema()
-		if err != nil {
+		if err != nil { //todo: check if we can let this burn
 			return nil, err
 		}
 
