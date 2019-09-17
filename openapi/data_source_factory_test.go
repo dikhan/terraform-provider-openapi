@@ -250,6 +250,36 @@ func TestDataSourceRead_Fails_Because_List_Operation_Returns_Err(t *testing.T) {
 	assert.EqualError(t, err, "some error")
 }
 
+func TestDataSourceRead_Fails_Because_Bad_Status_Code(t *testing.T) {
+	// Given
+	dataSourceFactory := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			name: "some resource",
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+				},
+			},
+		},
+	}
+	resourceSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+	require.NoError(t, err)
+
+	filtersInput := map[string]interface{}{
+		dataSourceFilterPropertyName: []map[string]interface{}{
+			newFilter("label", []string{"someLabel"}),
+		},
+	}
+	resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
+	client := &clientOpenAPIStub{
+		returnHTTPCode: 400,
+	}
+	// When
+	err = dataSourceFactory.read(resourceData, client)
+	// Then
+	assert.Equal(t, errors.New("[data source='some resource'] GET  failed: [resource='some resource'] HTTP Response Status Code 400 not matching expected one [200] ()"), err)
+}
+
 func TestValidateInput(t *testing.T) {
 
 	testCases := []struct {

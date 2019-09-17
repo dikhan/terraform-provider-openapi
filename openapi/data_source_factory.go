@@ -90,7 +90,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil { //todo: test this
+	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil {
 		return fmt.Errorf("[data source='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
 	}
 
