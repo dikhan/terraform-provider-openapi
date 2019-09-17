@@ -86,7 +86,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 
 	responsePayload := []map[string]interface{}{}
 	resp, err := openAPIClient.List(d.openAPIResource, &responsePayload, parentIDs...)
-	if err != nil { //todo: check if we can let this burn, probably not but yes with a defer
+	if err != nil {
 		return err
 	}
 

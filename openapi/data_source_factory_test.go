@@ -173,6 +173,37 @@ func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
 	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
 }
 
+func TestDataSourceRead_Fails_Because_List_Operation_Returns_Err(t *testing.T) {
+	dataSourceFactory := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+				},
+			},
+		},
+	}
+	resourceSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+	require.NoError(t, err)
+
+	filtersInput := map[string]interface{}{
+		dataSourceFilterPropertyName: []map[string]interface{}{
+			newFilter("label", []string{"someLabel"}),
+		},
+	}
+	resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
+	client := &clientOpenAPIStub{
+		responseListPayload: []map[string]interface{}{
+			{
+				"label": "someLabel",
+			},
+		},
+		error: errors.New("some error"),
+	}
+	err = dataSourceFactory.read(resourceData, client)
+	assert.EqualError(t, err, "some error")
+}
+
 func TestValidateInput(t *testing.T) {
 
 	testCases := []struct {
