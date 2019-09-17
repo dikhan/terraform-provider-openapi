@@ -10,6 +10,52 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCreateTerraformDataSource(t *testing.T) {
+	testCases := []struct {
+		name                string
+		expectedError       error
+		specStubResourceErr error
+	}{
+		{
+			name:                "happy path - Terraform data source created as expected",
+			expectedError:       nil,
+			specStubResourceErr: nil,
+		},
+		{
+			name:                "crappy path - Terraform data source schema has an error",
+			expectedError:       errors.New("data source schema has an error"),
+			specStubResourceErr: errors.New("data source schema has an error"),
+		},
+	}
+
+	for _, tc := range testCases {
+		dataSourceFactory := dataSourceFactory{
+			openAPIResource: &specStubResource{
+				schemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
+						newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+					},
+				},
+				error: tc.specStubResourceErr,
+			},
+		}
+
+		dataSource, err := dataSourceFactory.createTerraformDataSource()
+
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			assert.NotNil(t, dataSource, tc.name)
+			assert.NotNil(t, dataSource.Read, tc.name)
+			assert.Nil(t, dataSource.Delete, tc.name)
+			assert.Nil(t, dataSource.Create, tc.name)
+			assert.Nil(t, dataSource.Update, tc.name)
+		} else {
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		}
+	}
+}
+
 func TestCreateTerraformDataSourceSchema(t *testing.T) {
 	testCases := []struct {
 		name            string
