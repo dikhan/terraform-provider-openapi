@@ -168,6 +168,11 @@ func TestDataSourceRead(t *testing.T) {
 	}
 }
 
+func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
+	err := dataSourceFactory{}.read(nil, &clientOpenAPIStub{})
+	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
+}
+
 func TestValidateInput(t *testing.T) {
 
 	testCases := []struct {

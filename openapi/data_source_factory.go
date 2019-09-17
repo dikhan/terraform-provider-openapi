@@ -72,19 +72,17 @@ func (d dataSourceFactory) dataSourceFiltersSchema() *schema.Schema {
 }
 
 func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error {
-	defer func() { recover() }()
-
 	openAPIClient := i.(ClientOpenAPI)
+
+	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
+	if err != nil {
+		return err
+	}
 
 	filters, err := d.validateInput(data)
 	if err != nil {
 		return err
 	}
-
-	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
-	//if err != nil { //todo: check if we can let this burn, i guess yes
-	//	return err
-	//}
 
 	responsePayload := []map[string]interface{}{}
 	resp, err := openAPIClient.List(d.openAPIResource, &responsePayload, parentIDs...)
