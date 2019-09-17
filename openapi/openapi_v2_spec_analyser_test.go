@@ -1571,6 +1571,16 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 												Schema: &spec.Schema{
 													SchemaProps: spec.SchemaProps{
 														Type: spec.StringOrArray{"array"},
+														Items: &spec.SchemaOrArray{
+															Schema: &spec.Schema{
+																SchemaProps: spec.SchemaProps{
+																	Type: spec.StringOrArray{"object"},
+																	Properties: map[string]spec.Schema{
+																		"prop1": spec.Schema{},
+																	},
+																},
+															},
+														},
 														Properties: map[string]spec.Schema{
 															"prop1": spec.Schema{},
 														},
@@ -1669,7 +1679,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 			expectedError: errors.New("response does not return an array of items"),
 		},
 		{
-			name: "bad path: endpoint is missing get operation 200 response schema type being an array with empty properties",
+			name: "bad path: endpoint is missing get operation 200 response schema type being an array with no items schema defined",
 			inputPathItem: spec.PathItem{
 				PathItemProps: spec.PathItemProps{
 					Get: &spec.Operation{
@@ -1681,8 +1691,8 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 											ResponseProps: spec.ResponseProps{
 												Schema: &spec.Schema{
 													SchemaProps: spec.SchemaProps{
-														Type:       spec.StringOrArray{"array"},
-														Properties: map[string]spec.Schema{},
+														Type:  spec.StringOrArray{"array"},
+														Items: nil,
 													},
 												},
 											},
@@ -1694,7 +1704,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("the response schema is missing the properties"),
+			expectedError: errors.New("the response schema is missing the items schema specification or the items schema is not properly defined as object with properties configured"),
 		},
 	}
 
@@ -2146,6 +2156,60 @@ definitions:
 			})
 		})
 	})
+}
+
+func TestGetTerraformCompliantDataSources(t *testing.T) {
+
+	testCases := []struct {
+		name                string
+		inputSwagger        string
+		expectedDataSources []SpecResource
+		expectedError       error
+	}{
+		{
+			name: "happy path: endpoint is data source compliant",
+			inputSwagger: `swagger: "2.0"
+host: 127.0.0.1 
+paths:
+  /v1/cdns:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+definitions:
+  ContentDeliveryNetworkV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`,
+			expectedDataSources: []SpecResource{
+				&specStubResource{
+					name: "cdns_v1",
+				},
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		a := initAPISpecAnalyser(tc.inputSwagger)
+		dataSources, err := a.GetTerraformCompliantDataSources()
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			assert.Equal(t, len(dataSources), len(tc.expectedDataSources), tc.name)
+			assert.Equal(t, dataSources[0].getResourceName(), tc.expectedDataSources[0].getResourceName(), tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
+		}
+	}
 }
 
 func TestGetTerraformCompliantResources(t *testing.T) {

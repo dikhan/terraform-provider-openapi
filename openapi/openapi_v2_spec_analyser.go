@@ -293,8 +293,8 @@ func (specAnalyser *specV2Analyser) isEndPointTerraformDataSourceCompliant(path 
 		if len(response.Schema.Type) > 0 && !response.Schema.Type.Contains("array") {
 			return nil, errors.New("response does not return an array of items")
 		}
-		if len(response.Schema.Properties) == 0 {
-			return nil, errors.New("the response schema is missing the properties")
+		if response.Schema.Items == nil || response.Schema.Items.Schema == nil || !response.Schema.Items.Schema.Type.Contains("object") || len(response.Schema.Items.Schema.Properties) == 0 {
+			return nil, errors.New("the response schema is missing the items schema specification or the items schema is not properly defined as object with properties configured")
 		}
 		return response.Schema, nil
 	}
