@@ -29,7 +29,7 @@ func newDataSourceFactory(openAPIResource SpecResource) dataSourceFactory {
 	}
 }
 
-func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error) { //todo: this is not tested
+func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error) {
 	s, err := d.createTerraformDataSourceSchema()
 	if err != nil {
 		return nil, err
