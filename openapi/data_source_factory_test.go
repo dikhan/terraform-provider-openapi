@@ -273,7 +273,6 @@ func TestValidateInput(t *testing.T) {
 	}
 }
 
-// TODO: Fix filter for float property (test currently failing) - conversion from string to float in dataSourceFactory.filterMatch()
 func TestFilterMatch(t *testing.T) {
 	testCases := []struct {
 		name                           string
@@ -314,21 +313,36 @@ func TestFilterMatch(t *testing.T) {
 			expectedError:     nil,
 			resourceSchemaErr: nil,
 		},
-		//{
-		//	name: "happy path - payloadItem matches the filter for float property",
-		//	specSchemaDefinitionProperties: specSchemaDefinitionProperties{
-		//		newNumberSchemaDefinitionPropertyWithDefaults("float property name", "", false, true, nil),
-		//	},
-		//	filters: filters{
-		//		filter{"float property name", "6.0"},
-		//	},
-		//	payloadItem: map[string]interface{}{
-		//		"float property name": 6.0,
-		//	},
-		//	expectedResult:    true,
-		//	expectedError:     nil,
-		//	resourceSchemaErr: nil,
-		//},
+		{
+			name: "happy path - payloadItem matches the filter for float property WHEN FLOAT HAS A DECIMAL PART == 0 ",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newNumberSchemaDefinitionPropertyWithDefaults("float property name", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"float property name", "6.0"},
+			},
+			payloadItem: map[string]interface{}{
+				"float property name": 6.0, //because 6.0 is treateted as an interface golang keeps only the int part (6) so we need to treat thi case specially
+			},
+			expectedResult:    true,
+			expectedError:     nil,
+			resourceSchemaErr: nil,
+		},
+		{
+			name: "happy path - payloadItem matches the filter for float property WHEN FLOAT HAS A DECIMAL PART != 0 ",
+			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+				newNumberSchemaDefinitionPropertyWithDefaults("float property name", "", false, true, nil),
+			},
+			filters: filters{
+				filter{"float property name", "6.89"},
+			},
+			payloadItem: map[string]interface{}{
+				"float property name": 6.89,
+			},
+			expectedResult:    true,
+			expectedError:     nil,
+			resourceSchemaErr: nil,
+		},
 		{
 			name: "happy path - payloadItem matches the filter for bool property",
 			specSchemaDefinitionProperties: specSchemaDefinitionProperties{

@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -115,7 +116,6 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
 }
 
-// TODO: add tests
 func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]interface{}) (bool, error) {
 	specSchemaDefinition, err := d.openAPIResource.getResourceSchema()
 	if err != nil {
@@ -129,7 +129,12 @@ func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]i
 			case typeInt:
 				value = strconv.Itoa(val.(int))
 			case typeFloat:
-				value = fmt.Sprintf("%g", val.(float64))
+				v := val.(float64)                            //because of payloadItem is map[string]interface{} a float with decimal point is treat as an int
+				if _, decimal := math.Modf(v); decimal == 0 { //we recognize this special case here and print the value accordingly
+					value = fmt.Sprintf("%.1f", val) //if it's like 6.0, force the .0 to be there and match the filetr condition
+				} else {
+					value = fmt.Sprintf("%g", val) //if the float has a decimal part != 0  the use the %g to keep it real float value
+				}
 			case typeBool:
 				value = strconv.FormatBool(val.(bool))
 			default:
