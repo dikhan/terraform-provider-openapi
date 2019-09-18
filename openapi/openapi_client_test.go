@@ -1308,7 +1308,7 @@ func TestProviderClientList(t *testing.T) {
 		Convey("When providerClient List method is called with a specStubResource that does not override the host, a requestPayload and an empty responsePayload", func() {
 			specStubResource := &specStubResource{
 				path: "/v1/resource",
-				resourceGetOperation: &specResourceOperation{
+				resourceListOperation: &specResourceOperation{
 					HeaderParameters: SpecHeaderParameters{headerParameter},
 					responses:        specResponses{},
 					SecuritySchemes:  SpecSecuritySchemes{},
@@ -1363,6 +1363,11 @@ func TestProviderClientList(t *testing.T) {
 				Path: "/v1/resource/{id}/subresource",
 				RootPathItem: spec.PathItem{
 					PathItemProps: spec.PathItemProps{
+						Get: &spec.Operation{
+							OperationProps: spec.OperationProps{
+								Responses: &spec.Responses{},
+							},
+						},
 						Post: &spec.Operation{
 							OperationProps: spec.OperationProps{
 								Responses: &spec.Responses{},

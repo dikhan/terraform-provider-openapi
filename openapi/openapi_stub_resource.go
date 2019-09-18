@@ -9,6 +9,7 @@ type specStubResource struct {
 	schemaDefinition        *specSchemaDefinition
 	resourceGetOperation    *specResourceOperation
 	resourcePostOperation   *specResourceOperation
+	resourceListOperation   *specResourceOperation
 	resourcePutOperation    *specResourceOperation
 	resourceDeleteOperation *specResourceOperation
 	timeouts                *specTimeouts
@@ -60,6 +61,7 @@ func (s *specStubResource) shouldIgnoreResource() bool { return s.shouldIgnore }
 
 func (s *specStubResource) getResourceOperations() specResourceOperations {
 	return specResourceOperations{
+		List:   s.resourceListOperation,
 		Post:   s.resourcePostOperation,
 		Get:    s.resourceGetOperation,
 		Put:    s.resourcePutOperation,
