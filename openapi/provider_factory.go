@@ -178,10 +178,7 @@ func (p providerFactory) createValidateFunc(allowedValues []string) func(val int
 // TODO: add tests for this method
 func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*schema.Resource, error) {
 	dataSourceMap := map[string]*schema.Resource{}
-	openAPIDataResources, err := p.specAnalyser.GetTerraformCompliantDataSources()
-	if err != nil {
-		return nil, err
-	}
+	openAPIDataResources := p.specAnalyser.GetTerraformCompliantDataSources()
 	for _, openAPIDataSource := range openAPIDataResources {
 		dataSourceName, err := p.getProviderResourceName(openAPIDataSource.getResourceName())
 		fmt.Println(dataSourceName) // TODO: remove this (added to fix compile issues)

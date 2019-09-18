@@ -3,12 +3,13 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
@@ -2156,14 +2157,10 @@ definitions:
 }
 
 func TestGetTerraformCompliantDataSources(t *testing.T) {
-
-	// TODO: add tests for the missing branches
-
 	testCases := []struct {
 		name                string
 		inputSwagger        string
 		expectedDataSources []SpecResource
-		expectedError       error
 	}{
 		{
 			name: "happy path: endpoint is data source compliant",
@@ -2194,20 +2191,87 @@ definitions:
 					name: "cdns_v1",
 				},
 			},
-			expectedError: nil,
+		},
+		{
+			name: "happy path: given 2 datasource endpoints one is TF compatible and one is not",
+			inputSwagger: `swagger: "2.0"
+host: 127.0.0.1 
+paths:
+  /v1/cdns:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+  /v1/other:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/OtherV1Collection"
+definitions:
+  OtherV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
+        type: "string"
+  ContentDeliveryNetworkV1Collection:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`,
+			expectedDataSources: []SpecResource{
+				&specStubResource{
+					name: "other_v1",
+				},
+			},
+		},
+		{
+			name: "happy path: given 1 datasource which is TF compatible but not parseable as a SpecV2DataSource",
+			inputSwagger: `swagger: "2.0"
+host: 127.0.0.1 
+paths:
+  /v1/^&:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+definitions:
+  ContentDeliveryNetworkV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`,
+			expectedDataSources: []SpecResource{},
 		},
 	}
 
 	for _, tc := range testCases {
 		a := initAPISpecAnalyser(tc.inputSwagger)
-		dataSources, err := a.GetTerraformCompliantDataSources()
-		if tc.expectedError == nil {
-			assert.Nil(t, err, tc.name)
-			assert.Equal(t, len(dataSources), len(tc.expectedDataSources), tc.name)
-			assert.Equal(t, dataSources[0].getResourceName(), tc.expectedDataSources[0].getResourceName(), tc.name)
-		} else {
-			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
+		dataSources := a.GetTerraformCompliantDataSources()
+		assert.Equal(t, len(dataSources), len(tc.expectedDataSources), tc.name)
+		for i, data := range dataSources {
+			assert.Equal(t, data.getResourceName(), tc.expectedDataSources[i].getResourceName(), tc.name)
 		}
+
 	}
 }
 

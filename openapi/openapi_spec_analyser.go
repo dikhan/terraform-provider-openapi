@@ -19,7 +19,7 @@ type SpecAnalyser interface {
 	GetTerraformCompliantResources() ([]SpecResource, error)
 	// GetTerraformCompliantDataSources is responsible for finding endpoints that are deemed terraform data source compatible
 	// and returns a list of SpecResource configured as data sources
-	GetTerraformCompliantDataSources() ([]SpecResource, error)
+	GetTerraformCompliantDataSources() []SpecResource
 	// GetSecurity returns a SpecSecurity based on the security defined in the OpenAPI document
 	GetSecurity() SpecSecurity
 	// GetAllHeaderParameters returns SpecHeaderParameters containing all the headers defined in the OpenAPI document. This

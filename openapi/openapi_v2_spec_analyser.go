@@ -57,7 +57,7 @@ func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string,
 	return resources, nil
 }
 
-func (specAnalyser *specV2Analyser) GetTerraformCompliantDataSources() ([]SpecResource, error) {
+func (specAnalyser *specV2Analyser) GetTerraformCompliantDataSources() []SpecResource {
 	var dataSources []SpecResource
 	spec := specAnalyser.d.Spec()
 	paths := spec.Paths
@@ -77,7 +77,7 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantDataSources() ([]SpecRe
 		log.Printf("[INFO] found terraform compliant data source [name='%s', rootPath='%s']", d.getResourceName(), resourcePath)
 		dataSources = append(dataSources, d)
 	}
-	return dataSources, nil
+	return dataSources
 }
 
 func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecResource, error) {
