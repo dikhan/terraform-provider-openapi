@@ -531,22 +531,6 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 			},
 		},
 	})
-
-	// TODO: commenting this out as the assertions for now, they are failing due to requestsReceived containing an unordered array of items making the assertions to fail
-	// IMHO these assertions are not adding any value, considering the terraform framework will handle the execution of
-	// commands which internally will get translated into API calls which if they work as expected will result into the
-	// expected state file. Also, the testAccCheckDestroy method will make sure that the DELETE operation is called properly
-	// after the execution of the test and that the resource has been destroyed properly.
-
-	//numberOfRequestsReceived := len(api.requestsReceived)
-	//
-	//lastRequest := api.requestsReceived[numberOfRequestsReceived-1]
-	//assert.Equal(t, http.MethodGet, lastRequest.Method)
-	//assert.Equal(t, "/v1/cdns/42", lastRequest.URL.Path)
-	//
-	//secondToLastRequest := api.requestsReceived[numberOfRequestsReceived-2]
-	//assert.Equal(t, http.MethodGet, secondToLastRequest.Method)
-	//assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
 }
 
 func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testing.T) {
