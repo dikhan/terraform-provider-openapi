@@ -2,15 +2,11 @@ package openapi
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
-
-	"github.com/go-openapi/loads"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -18,6 +14,23 @@ import (
 )
 
 func TestOpenAPIProvider(t *testing.T) {
+	Convey("Given a provider name missing the service configuration", t, func() {
+		providerName := "nonExistingProvider"
+		Convey("When getServiceConfiguration method is called", func() {
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProvider()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the error message returned should be", func() {
+				So(err.Error(), ShouldContainSubstring, "plugin init error")
+			})
+			Convey("Then the schema provider returned should also be nil", func() {
+				So(tfProvider, ShouldBeNil)
+			})
+		})
+	})
+
 	Convey("Given a provider name missing the service configuration", t, func() {
 		providerName := "nonExistingProvider"
 		Convey("When getServiceConfiguration method is called", func() {
@@ -60,7 +73,6 @@ func TestOpenAPIProvider(t *testing.T) {
 
 	Convey("Given a local server that exposes a swagger file containing a terraform compatible reource (cdn)", t, func() {
 		swaggerContent := `swagger: "2.0"
-
 host: "localhost:8443"
 basePath: "/api"
 
@@ -197,6 +209,106 @@ definitions:
 		})
 	})
 
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible data source (cdn_datasource)", t, func() {
+		swaggerContent := `swagger: "2.0"
+host: "localhost:8443"
+basePath: "/api"
+
+schemes:
+- "https"
+
+security:
+  - apikey_auth: []
+
+paths:
+  /v1/cdn_datasource:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+
+definitions:
+  ContentDeliveryNetworkV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(swaggerContent))
+		}))
+
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			providerName := "openapi"
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider returned should be configured as expected", func() {
+				So(tfProvider, ShouldNotBeNil)
+				Convey("the provider schema should be the expected one", func() {
+					So(tfProvider.Schema, ShouldNotBeNil)
+					So(tfProvider.Schema, ShouldContainKey, "apikey_auth")
+					So(tfProvider.Schema["apikey_auth"].Required, ShouldBeTrue)
+					So(tfProvider.Schema["apikey_auth"].Type, ShouldEqual, schema.TypeString)
+				})
+				Convey("the provider dataSource map should contain the cdn resource with the expected configuration", func() {
+					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+					So(len(tfProvider.DataSourcesMap), ShouldEqual, 1)
+
+					resourceName := fmt.Sprintf("%s_cdn_datasource_v1", providerName)
+					So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
+					Convey("the provider cdn resource should have the expected schema", func() {
+						resourceName := fmt.Sprintf("%s_cdn_datasource_v1", providerName)
+						So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
+
+						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "label")
+						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Required, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Optional, ShouldBeTrue)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Computed, ShouldBeTrue)
+
+						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
+						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Required, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Optional, ShouldBeTrue)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Computed, ShouldBeFalse)
+
+						elements := tfProvider.DataSourcesMap[resourceName].Schema["filter"].Elem.(*schema.Resource).Schema
+						So(elements["name"].Type, ShouldEqual, schema.TypeString)
+						So(elements["values"].Type, ShouldEqual, schema.TypeList)
+					})
+					Convey("the provider cdn-datasource data source should have only the READ operation configured", func() {
+						So(tfProvider.DataSourcesMap[resourceName].Read, ShouldNotBeNil)
+					})
+
+					Convey("and the provider resource map must be nil as no resources are configured in the swagger", func() {
+						So(tfProvider.ResourcesMap, ShouldBeEmpty)
+					})
+				})
+				Convey("the provider configuration function should not be nil", func() {
+					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
+				})
+			})
+		})
+	})
+
 	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource taht has a model containing nested objects", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: "localhost:8443"
@@ -307,6 +419,7 @@ definitions:
 			})
 		})
 	})
+
 }
 
 func assertTerraformSchemaProperty(actualSchema map[string]*schema.Schema, expectedPropertyName string, expectedType schema.ValueType, expectedRequired, expectedComputed bool) {
@@ -550,61 +663,4 @@ func TestGetServiceConfiguration(t *testing.T) {
 			})
 		})
 	})
-}
-
-func createTemporaryTestDocFromSwagger(yamlSpec string) (doc *loads.Document, deferrableCloser func()) {
-	f, _ := ioutil.TempFile("", "")
-	deferrableCloser = func() {
-		defer os.Remove(f.Name())
-		defer f.Close()
-	}
-	f.WriteString(yamlSpec)
-	doc, _ = loads.JSONSpec(f.Name())
-	doc, _ = doc.Expanded()
-	return doc, deferrableCloser
-}
-
-//TODO: make this test similar to the others in which we test the higher lever OpenAPI provider itself
-func Test_createProvider_Integration_WITH_DATASOURCE_YAML_happyPath(t *testing.T) {
-	yamlSpec := `swagger: "2.0"
-host: 127.0.0.1 
-paths:
-  /v1/cdns:
-    get:
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
-definitions:
-  ContentDeliveryNetworkV1Collection:
-    type: "array"
-    items:
-      $ref: "#/definitions/ContentDeliveryNetworkV1"
-  ContentDeliveryNetworkV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"`
-
-	doc, deferable := createTemporaryTestDocFromSwagger(yamlSpec)
-	defer deferable()
-
-	s := specV2Analyser{
-		d:                  doc,
-		openAPIDocumentURL: "abc.url",
-	}
-	p := providerFactory{
-		name:         "provider",
-		specAnalyser: &s,
-	}
-
-	schemaResource, err := p.createProvider()
-
-	assert.NoError(t, err)
-	assert.Empty(t, schemaResource.ResourcesMap)
-	assert.Equal(t, 1, len(schemaResource.DataSourcesMap))
-	assert.NotEmpty(t, schemaResource.DataSourcesMap["provider_cdns_v1"])
 }
