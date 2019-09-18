@@ -47,7 +47,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 
 	openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
 	if err != nil {
-		return nil, err // TODO: untested
+		return nil, err
 	}
 
 	if providerSchema, err = p.createTerraformProviderSchema(openAPIBackendConfiguration); err != nil {

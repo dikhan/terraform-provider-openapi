@@ -185,6 +185,25 @@ func TestCreateProvider(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a provider factory where the specAnalyser has an error", t, func() {
+		expectedError := errors.New("specAnalyser has an error")
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				error: expectedError,
+			},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be as expected", func() {
+				So(err, ShouldEqual, expectedError)
+			})
+			Convey("And the provider returned should be nil", func() {
+				So(p, ShouldBeNil)
+			})
+		})
+	})
 }
 
 func TestCreateValidateFunc(t *testing.T) {
