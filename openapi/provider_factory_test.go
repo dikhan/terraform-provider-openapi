@@ -721,7 +721,7 @@ func TestGetProviderResourceName(t *testing.T) {
 	})
 }
 
-func Test_Happy_Path_Integration_Of_createProvider(t *testing.T) {
+func Test__createProvider_Integration_WITH_DATASOURCE_YAML_happyPath(t *testing.T) {
 	yamlSpec := `swagger: "2.0"
 host: 127.0.0.1 
 paths:
@@ -746,17 +746,18 @@ definitions:
         type: "string"`
 
 	f, _ := ioutil.TempFile("", "")
-	defer func() { os.Remove(f.Name()) }()
-	defer func() { f.Close() }()
+	defer os.Remove(f.Name())
+	defer f.Close()
 
 	f.WriteString(yamlSpec)
 	doc, err := loads.JSONSpec(f.Name())
 	doc, err = doc.Expanded()
 	require.NoError(t, err)
-	s := specV2Analyser{
-		d: doc,
-	}
 
+	s := specV2Analyser{
+		d:                  doc,
+		openAPIDocumentURL: "abc.url",
+	}
 	p := providerFactory{
 		name:         "provider",
 		specAnalyser: &s,
