@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/go-openapi/loads"
 
 	"github.com/stretchr/testify/assert"
@@ -721,6 +719,18 @@ func TestGetProviderResourceName(t *testing.T) {
 	})
 }
 
+func createTemporaryTestDocFromSwagger(yamlSpec string) (doc *loads.Document, deferrableCloser func()) {
+	f, _ := ioutil.TempFile("", "")
+	deferrableCloser = func() {
+		defer os.Remove(f.Name())
+		defer f.Close()
+	}
+	f.WriteString(yamlSpec)
+	doc, _ = loads.JSONSpec(f.Name())
+	doc, _ = doc.Expanded()
+	return doc, deferrableCloser
+}
+
 func Test__createProvider_Integration_WITH_DATASOURCE_YAML_happyPath(t *testing.T) {
 	yamlSpec := `swagger: "2.0"
 host: 127.0.0.1 
@@ -745,14 +755,8 @@ definitions:
       label:
         type: "string"`
 
-	f, _ := ioutil.TempFile("", "")
-	defer os.Remove(f.Name())
-	defer f.Close()
-
-	f.WriteString(yamlSpec)
-	doc, err := loads.JSONSpec(f.Name())
-	doc, err = doc.Expanded()
-	require.NoError(t, err)
+	doc, deferable := createTemporaryTestDocFromSwagger(yamlSpec)
+	defer deferable()
 
 	s := specV2Analyser{
 		d:                  doc,
@@ -765,6 +769,8 @@ definitions:
 
 	schemaResource, err := p.createProvider()
 
-	assert.Nil(t, err)
-	assert.Empty(t, schemaResource)
+	assert.NoError(t, err)
+	assert.Empty(t, schemaResource.ResourcesMap)
+	assert.Equal(t, 1, len(schemaResource.DataSourcesMap))
+	assert.NotEmpty(t, schemaResource.DataSourcesMap["provider_cdns_v1"])
 }
