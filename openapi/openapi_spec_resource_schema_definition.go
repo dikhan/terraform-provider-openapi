@@ -23,7 +23,7 @@ func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Sche
 	if err != nil {
 		return nil, err
 	}
-	for propertyName, _ := range terraformSchema {
+	for propertyName := range terraformSchema {
 		terraformSchema[propertyName].Required = false
 		terraformSchema[propertyName].Optional = true
 		terraformSchema[propertyName].Computed = true
