@@ -96,10 +96,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 
 	var filteredResults []map[string]interface{}
 	for _, payloadItem := range responsePayload {
-		match, err := d.filterMatch(filters, payloadItem)
-		if err != nil { //todo: test
-			return err
-		}
+		match := d.filterMatch(filters, payloadItem)
 		if match {
 			filteredResults = append(filteredResults, payloadItem)
 		}
@@ -122,11 +119,8 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
 }
 
-func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]interface{}) (bool, error) {
-	specSchemaDefinition, err := d.openAPIResource.getResourceSchema()
-	if err != nil {
-		return false, err
-	}
+func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]interface{}) bool {
+	specSchemaDefinition, _ := d.openAPIResource.getResourceSchema() // ignoring error because will be caught beforehand when data source is constructed via createTerraformDataSourceSchema
 	for _, filter := range filters {
 		if val, exists := payloadItem[filter.name]; exists {
 			schemaProperty, _ := specSchemaDefinition.getProperty(filter.name)
@@ -150,9 +144,9 @@ func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]i
 				continue
 			}
 		}
-		return false, nil
+		return false
 	}
-	return true, nil
+	return true
 }
 
 func (d dataSourceFactory) validateInput(data *schema.ResourceData) (filters, error) {
@@ -161,10 +155,7 @@ func (d dataSourceFactory) validateInput(data *schema.ResourceData) (filters, er
 	for _, inputFilter := range inputFilters.(*schema.Set).List() {
 		f := inputFilter.(map[string]interface{})
 		filterPropertyName := f[dataSourceFilterSchemaNamePropertyName].(string)
-		s, err := d.openAPIResource.getResourceSchema()
-		if err != nil { //todo: check if we can let this burn
-			return nil, err
-		}
+		s, _ := d.openAPIResource.getResourceSchema() // ignoring error because will be caught beforehand when data source is constructed via createTerraformDataSourceSchema
 
 		specSchemaDefinitionProperty, err := s.getProperty(filterPropertyName)
 		if err != nil {

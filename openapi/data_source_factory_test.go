@@ -392,7 +392,6 @@ func TestFilterMatch(t *testing.T) {
 		payloadItem                    map[string]interface{}
 		expectedResult                 bool
 		expectedError                  error
-		resourceSchemaErr              error
 	}{
 		{
 			name: "happy path - payloadItem matches the filter for string property",
@@ -405,9 +404,8 @@ func TestFilterMatch(t *testing.T) {
 			payloadItem: map[string]interface{}{
 				"label": "some label",
 			},
-			expectedResult:    true,
-			expectedError:     nil,
-			resourceSchemaErr: nil,
+			expectedResult: true,
+			expectedError:  nil,
 		},
 		{
 			name: "happy path - payloadItem matches the filter for int property",
@@ -420,9 +418,8 @@ func TestFilterMatch(t *testing.T) {
 			payloadItem: map[string]interface{}{
 				"int property name": 5,
 			},
-			expectedResult:    true,
-			expectedError:     nil,
-			resourceSchemaErr: nil,
+			expectedResult: true,
+			expectedError:  nil,
 		},
 		{
 			name: "happy path - payloadItem matches the filter for float property WHEN FLOAT HAS A DECIMAL PART == 0 ",
@@ -435,9 +432,8 @@ func TestFilterMatch(t *testing.T) {
 			payloadItem: map[string]interface{}{
 				"float property name": 6.0, //because 6.0 is treateted as an interface golang keeps only the int part (6) so we need to treat thi case specially
 			},
-			expectedResult:    true,
-			expectedError:     nil,
-			resourceSchemaErr: nil,
+			expectedResult: true,
+			expectedError:  nil,
 		},
 		{
 			name: "happy path - payloadItem matches the filter for float property WHEN FLOAT HAS A DECIMAL PART != 0 ",
@@ -450,9 +446,8 @@ func TestFilterMatch(t *testing.T) {
 			payloadItem: map[string]interface{}{
 				"float property name": 6.89,
 			},
-			expectedResult:    true,
-			expectedError:     nil,
-			resourceSchemaErr: nil,
+			expectedResult: true,
+			expectedError:  nil,
 		},
 		{
 			name: "happy path - payloadItem matches the filter for bool property",
@@ -465,25 +460,24 @@ func TestFilterMatch(t *testing.T) {
 			payloadItem: map[string]interface{}{
 				"bool property name": false,
 			},
-			expectedResult:    true,
-			expectedError:     nil,
-			resourceSchemaErr: nil,
+			expectedResult: true,
+			expectedError:  nil,
 		},
-		{
-			name: "crappy path - invalid specSchemaDefinition",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
-				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
-			},
-			filters: filters{
-				filter{"label", "some label"},
-			},
-			payloadItem: map[string]interface{}{
-				"label": "some label",
-			},
-			expectedResult:    false,
-			expectedError:     errors.New("invalid specSchemaDefinition"),
-			resourceSchemaErr: errors.New("invalid specSchemaDefinition"),
-		},
+		//{
+		//	name: "crappy path - invalid specSchemaDefinition",
+		//	specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+		//		newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+		//	},
+		//	filters: filters{
+		//		filter{"label", "some label"},
+		//	},
+		//	payloadItem: map[string]interface{}{
+		//		"label": "some label",
+		//	},
+		//	expectedResult:    false,
+		//	expectedError:     errors.New("invalid specSchemaDefinition"),
+		//	resourceSchemaErr: errors.New("invalid specSchemaDefinition"),
+		//},
 		{
 			name: "crappy path - payloadItem doesn't match the filter name",
 			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
@@ -495,9 +489,8 @@ func TestFilterMatch(t *testing.T) {
 			payloadItem: map[string]interface{}{
 				"label": "some label",
 			},
-			expectedResult:    false,
-			expectedError:     nil,
-			resourceSchemaErr: nil,
+			expectedResult: false,
+			expectedError:  nil,
 		},
 		{
 			name: "crappy path - payloadItem doesn't match the filter value",
@@ -510,9 +503,8 @@ func TestFilterMatch(t *testing.T) {
 			payloadItem: map[string]interface{}{
 				"label": "some label",
 			},
-			expectedResult:    false,
-			expectedError:     nil,
-			resourceSchemaErr: nil,
+			expectedResult: false,
+			expectedError:  nil,
 		},
 	}
 
@@ -523,18 +515,12 @@ func TestFilterMatch(t *testing.T) {
 				schemaDefinition: &specSchemaDefinition{
 					Properties: tc.specSchemaDefinitionProperties,
 				},
-				error: tc.resourceSchemaErr,
 			},
 		}
 		// When
-		match, err := dataSourceFactory.filterMatch(tc.filters, tc.payloadItem)
+		match := dataSourceFactory.filterMatch(tc.filters, tc.payloadItem)
 		// Then
 		assert.Equal(t, tc.expectedResult, match, tc.name)
-		if tc.expectedError == nil {
-			assert.Nil(t, err, tc.name)
-		} else {
-			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
-		}
 	}
 }
 
