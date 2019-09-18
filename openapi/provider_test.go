@@ -31,23 +31,6 @@ func TestOpenAPIProvider(t *testing.T) {
 		})
 	})
 
-	Convey("Given a provider name missing the service configuration", t, func() {
-		providerName := "nonExistingProvider"
-		Convey("When getServiceConfiguration method is called", func() {
-			p := ProviderOpenAPI{ProviderName: providerName}
-			tfProvider, err := p.CreateSchemaProvider()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message returned should be", func() {
-				So(err.Error(), ShouldContainSubstring, "plugin init error")
-			})
-			Convey("Then the schema provider returned should also be nil", func() {
-				So(tfProvider, ShouldBeNil)
-			})
-		})
-	})
-
 	Convey("Given a provider name with service configuration but there is an error with the OpenAPI spec analyser", t, func() {
 		providerName := "providerName"
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
