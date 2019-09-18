@@ -2268,8 +2268,8 @@ definitions:
 		a := initAPISpecAnalyser(tc.inputSwagger)
 		dataSources := a.GetTerraformCompliantDataSources()
 		assert.Equal(t, len(dataSources), len(tc.expectedDataSources), tc.name)
-		for i, data := range dataSources {
-			assert.Equal(t, data.getResourceName(), tc.expectedDataSources[i].getResourceName(), tc.name)
+		if len(dataSources) > 0 {
+			assert.Equal(t, dataSources[0].getResourceName(), tc.expectedDataSources[0].getResourceName(), tc.name)
 		}
 
 	}

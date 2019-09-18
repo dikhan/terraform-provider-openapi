@@ -2,11 +2,15 @@ package openapi
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/go-openapi/loads"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -546,4 +550,61 @@ func TestGetServiceConfiguration(t *testing.T) {
 			})
 		})
 	})
+}
+
+func createTemporaryTestDocFromSwagger(yamlSpec string) (doc *loads.Document, deferrableCloser func()) {
+	f, _ := ioutil.TempFile("", "")
+	deferrableCloser = func() {
+		defer os.Remove(f.Name())
+		defer f.Close()
+	}
+	f.WriteString(yamlSpec)
+	doc, _ = loads.JSONSpec(f.Name())
+	doc, _ = doc.Expanded()
+	return doc, deferrableCloser
+}
+
+//TODO: make this test similar to the others in which we test the higher lever OpenAPI provider itself
+func Test_createProvider_Integration_WITH_DATASOURCE_YAML_happyPath(t *testing.T) {
+	yamlSpec := `swagger: "2.0"
+host: 127.0.0.1 
+paths:
+  /v1/cdns:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+definitions:
+  ContentDeliveryNetworkV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+
+	doc, deferable := createTemporaryTestDocFromSwagger(yamlSpec)
+	defer deferable()
+
+	s := specV2Analyser{
+		d:                  doc,
+		openAPIDocumentURL: "abc.url",
+	}
+	p := providerFactory{
+		name:         "provider",
+		specAnalyser: &s,
+	}
+
+	schemaResource, err := p.createProvider()
+
+	assert.NoError(t, err)
+	assert.Empty(t, schemaResource.ResourcesMap)
+	assert.Equal(t, 1, len(schemaResource.DataSourcesMap))
+	assert.NotEmpty(t, schemaResource.DataSourcesMap["provider_cdns_v1"])
 }

@@ -1,12 +1,9 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"testing"
-
-	"github.com/go-openapi/loads"
 
 	"github.com/stretchr/testify/assert"
 
@@ -719,58 +716,56 @@ func TestGetProviderResourceName(t *testing.T) {
 	})
 }
 
-func createTemporaryTestDocFromSwagger(yamlSpec string) (doc *loads.Document, deferrableCloser func()) {
-	f, _ := ioutil.TempFile("", "")
-	deferrableCloser = func() {
-		defer os.Remove(f.Name())
-		defer f.Close()
-	}
-	f.WriteString(yamlSpec)
-	doc, _ = loads.JSONSpec(f.Name())
-	doc, _ = doc.Expanded()
-	return doc, deferrableCloser
-}
+func TestCreateTerraformProviderDataSorceMap(t *testing.T) {
 
-func Test__createProvider_Integration_WITH_DATASOURCE_YAML_happyPath(t *testing.T) {
-	yamlSpec := `swagger: "2.0"
-host: 127.0.0.1 
-paths:
-  /v1/cdns:
-    get:
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
-definitions:
-  ContentDeliveryNetworkV1Collection:
-    type: "array"
-    items:
-      $ref: "#/definitions/ContentDeliveryNetworkV1"
-  ContentDeliveryNetworkV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"`
-
-	doc, deferable := createTemporaryTestDocFromSwagger(yamlSpec)
-	defer deferable()
-
-	s := specV2Analyser{
-		d:                  doc,
-		openAPIDocumentURL: "abc.url",
-	}
-	p := providerFactory{
-		name:         "provider",
-		specAnalyser: &s,
+	testcases := []struct {
+		name                 string
+		specV2stub           SpecAnalyser
+		expectedResourceName string
+		expectedError        string
+	}{
+		{
+			name: "happy path",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedResourceName: "provider_resource",
+		},
+		{
+			name: "getProviderResourceName fails ",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedError: "resource name can not be empty",
+		},
+		{
+			name: "createTerraformDataSource fails",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{&specStubResource{
+					name: "hello",
+					funcGetResourceSchema: func() (*specSchemaDefinition, error) {
+						return nil, errors.New("createTerraformDataSource failed")
+					},
+				}},
+			},
+			expectedError: "createTerraformDataSource failed",
+		},
 	}
 
-	schemaResource, err := p.createProvider()
+	for _, tc := range testcases {
+		p := providerFactory{
+			name:         "provider",
+			specAnalyser: tc.specV2stub,
+		}
+		schemaResource, err := p.createTerraformProviderDataSourceMap()
 
-	assert.NoError(t, err)
-	assert.Empty(t, schemaResource.ResourcesMap)
-	assert.Equal(t, 1, len(schemaResource.DataSourcesMap))
-	assert.NotEmpty(t, schemaResource.DataSourcesMap["provider_cdns_v1"])
+		if tc.expectedError == "" {
+			assert.Nil(t, err)
+			assert.Contains(t, schemaResource, tc.expectedResourceName, tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError)
+		}
+
+	}
+
 }

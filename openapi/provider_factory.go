@@ -183,14 +183,12 @@ func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*sch
 	for _, openAPIDataSource := range openAPIDataResources {
 		dataSourceName, err := p.getProviderResourceName(openAPIDataSource.getResourceName())
 		if err != nil {
-			fmt.Println(err)
-			continue
+			return nil, err
 		}
 		d := newDataSourceFactory(openAPIDataSource)
 		dataSourceTFSchema, err := d.createTerraformDataSource()
 		if err != nil {
-			fmt.Println(err)
-			continue
+			return nil, err
 		}
 		dataSourceMap[dataSourceName] = dataSourceTFSchema
 	}
