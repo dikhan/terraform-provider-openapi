@@ -176,7 +176,6 @@ func (p providerFactory) createValidateFunc(allowedValues []string) func(val int
 	return nil
 }
 
-// TODO: add tests for this method
 func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*schema.Resource, error) {
 	dataSourceMap := map[string]*schema.Resource{}
 	openAPIDataResources := p.specAnalyser.GetTerraformCompliantDataSources()
