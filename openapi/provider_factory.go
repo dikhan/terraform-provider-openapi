@@ -175,19 +175,20 @@ func (p providerFactory) createValidateFunc(allowedValues []string) func(val int
 	return nil
 }
 
+// TODO: add tests for this method
 func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*schema.Resource, error) {
 	dataSourceMap := map[string]*schema.Resource{}
 	openAPIDataResources, err := p.specAnalyser.GetTerraformCompliantDataSources()
 	if err != nil {
 		return nil, err
 	}
-	for _, openAPIDataResource := range openAPIDataResources {
-		dataSourceName, err := p.getProviderResourceName(openAPIDataResource.getResourceName())
+	for _, openAPIDataSource := range openAPIDataResources {
+		dataSourceName, err := p.getProviderResourceName(openAPIDataSource.getResourceName())
 		fmt.Println(dataSourceName) // TODO: remove this (added to fix compile issues)
 		if err != nil {
 			return nil, err
 		}
-		// TODO: create data resource newDataSourceFactory(openAPIDataResource)
+		// TODO: create data resource d := newDataSourceFactory(openAPIDataSource)
 		// TODO: build schema resource calling d.createTerraformDataSource()
 		// TODO: add new data source to dataSourceMap
 	}

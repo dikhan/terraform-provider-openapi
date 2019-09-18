@@ -76,7 +76,7 @@ func (o *ProviderClient) List(resource SpecResource, responsePayload interface{}
 	if err != nil {
 		return nil, err
 	}
-	operation := resource.getResourceOperations().Get
+	operation := resource.getResourceOperations().List
 	return o.performRequest(httpGet, resourceURL, operation, nil, responsePayload)
 }
 

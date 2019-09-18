@@ -1,7 +1,9 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -1548,6 +1550,173 @@ definitions:
 	})
 }
 
+func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
+
+	testCases := []struct {
+		name          string
+		inputPathItem spec.PathItem
+		expectedError error
+	}{
+		{
+			name: "happy path: endpoint is data source compliant",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{
+											ResponseProps: spec.ResponseProps{
+												Schema: &spec.Schema{
+													SchemaProps: spec.SchemaProps{
+														Type: spec.StringOrArray{"array"},
+														Items: &spec.SchemaOrArray{
+															Schema: &spec.Schema{
+																SchemaProps: spec.SchemaProps{
+																	Type: spec.StringOrArray{"object"},
+																	Properties: map[string]spec.Schema{
+																		"prop1": spec.Schema{},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "bad path: endpoint is missing get operation",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{},
+			},
+			expectedError: errors.New("missing get operation"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 OK response",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{},
+					},
+				},
+			},
+			expectedError: errors.New("missing get responses"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("missing get 200 OK response specification"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response schema",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("missing response schema"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response schema type not being an array",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{
+											ResponseProps: spec.ResponseProps{
+												Schema: &spec.Schema{
+													SchemaProps: spec.SchemaProps{
+														Type: spec.StringOrArray{"string"},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("response does not return an array of items"),
+		},
+		{
+			name: "bad path: endpoint is missing get operation 200 response schema type being an array with no items schema defined",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Get: &spec.Operation{
+						OperationProps: spec.OperationProps{
+							Responses: &spec.Responses{
+								ResponsesProps: spec.ResponsesProps{
+									StatusCodeResponses: map[int]spec.Response{
+										http.StatusOK: spec.Response{
+											ResponseProps: spec.ResponseProps{
+												Schema: &spec.Schema{
+													SchemaProps: spec.SchemaProps{
+														Type:  spec.StringOrArray{"array"},
+														Items: nil,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("the response schema is missing the items schema specification or the items schema is not properly defined as object with properties configured"),
+		},
+	}
+
+	for _, tc := range testCases {
+		a := specV2Analyser{}
+		s, err := a.isEndPointTerraformDataSourceCompliant(tc.inputPathItem)
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			assert.Equal(t, s, tc.inputPathItem.Get.Responses.StatusCodeResponses[http.StatusOK].Schema.Items.Schema, tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
+		}
+	}
+}
+
 func TestIsEndPointTerraformResourceCompliant(t *testing.T) {
 	Convey("Given an specV2Analyser with a fully terraform compliant resource Users", t, func() {
 		swaggerContent := `swagger: "2.0"
@@ -1984,6 +2153,62 @@ definitions:
 			})
 		})
 	})
+}
+
+func TestGetTerraformCompliantDataSources(t *testing.T) {
+
+	// TODO: add tests for the missing branches
+
+	testCases := []struct {
+		name                string
+		inputSwagger        string
+		expectedDataSources []SpecResource
+		expectedError       error
+	}{
+		{
+			name: "happy path: endpoint is data source compliant",
+			inputSwagger: `swagger: "2.0"
+host: 127.0.0.1 
+paths:
+  /v1/cdns:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+definitions:
+  ContentDeliveryNetworkV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`,
+			expectedDataSources: []SpecResource{
+				&specStubResource{
+					name: "cdns_v1",
+				},
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		a := initAPISpecAnalyser(tc.inputSwagger)
+		dataSources, err := a.GetTerraformCompliantDataSources()
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			assert.Equal(t, len(dataSources), len(tc.expectedDataSources), tc.name)
+			assert.Equal(t, dataSources[0].getResourceName(), tc.expectedDataSources[0].getResourceName(), tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
+		}
+	}
 }
 
 func TestGetTerraformCompliantResources(t *testing.T) {

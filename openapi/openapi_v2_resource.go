@@ -92,6 +92,24 @@ func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, 
 	return newSpecV2ResourceWithConfig("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
 }
 
+func newSpecV2DataSource(path string, schemaDefinition spec.Schema, rootPathItem spec.PathItem, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
+	resource := &SpecV2Resource{
+		Path:              path,
+		Region:            "",
+		SchemaDefinition:  schemaDefinition,
+		RootPathItem:      rootPathItem,
+		InstancePathItem:  spec.PathItem{},
+		SchemaDefinitions: nil,
+		Paths:             paths,
+	}
+	name, err := resource.buildResourceName()
+	if err != nil {
+		return nil, fmt.Errorf("could not build resource name for '%s': %s", path, err)
+	}
+	resource.Name = name
+	return resource, nil
+}
+
 // newSpecV2ResourceWithRegion creates a SpecV2Resource with the region configured making the returned SpecV2Resource region based.
 func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	if region == "" {
@@ -235,6 +253,7 @@ func (o *SpecV2Resource) getHost() (string, error) {
 
 func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
 	return specResourceOperations{
+		List:   o.createResourceOperation(o.RootPathItem.Get),
 		Post:   o.createResourceOperation(o.RootPathItem.Post),
 		Get:    o.createResourceOperation(o.InstancePathItem.Get),
 		Put:    o.createResourceOperation(o.InstancePathItem.Put),
