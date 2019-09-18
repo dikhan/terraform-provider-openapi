@@ -1710,7 +1710,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 		s, err := a.isEndPointTerraformDataSourceCompliant(tc.inputPathItem)
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
-			assert.Equal(t, s, tc.inputPathItem.Get.Responses.StatusCodeResponses[http.StatusOK].Schema, tc.name)
+			assert.Equal(t, s, tc.inputPathItem.Get.Responses.StatusCodeResponses[http.StatusOK].Schema.Items.Schema, tc.name)
 		} else {
 			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
 		}
