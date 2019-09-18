@@ -464,21 +464,6 @@ func TestFilterMatch(t *testing.T) {
 			expectedResult: true,
 			expectedError:  nil,
 		},
-		//{
-		//	name: "crappy path - invalid specSchemaDefinition",
-		//	specSchemaDefinitionProperties: specSchemaDefinitionProperties{
-		//		newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
-		//	},
-		//	filters: filters{
-		//		filter{"label", "some label"},
-		//	},
-		//	payloadItem: map[string]interface{}{
-		//		"label": "some label",
-		//	},
-		//	expectedResult:    false,
-		//	expectedError:     errors.New("invalid specSchemaDefinition"),
-		//	resourceSchemaErr: errors.New("invalid specSchemaDefinition"),
-		//},
 		{
 			name: "crappy path - payloadItem doesn't match the filter name",
 			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
