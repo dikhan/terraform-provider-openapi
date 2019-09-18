@@ -1581,9 +1581,6 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 																},
 															},
 														},
-														Properties: map[string]spec.Schema{
-															"prop1": spec.Schema{},
-														},
 													},
 												},
 											},
@@ -2159,6 +2156,8 @@ definitions:
 }
 
 func TestGetTerraformCompliantDataSources(t *testing.T) {
+
+	// TODO: add tests for the missing branches
 
 	testCases := []struct {
 		name                string
