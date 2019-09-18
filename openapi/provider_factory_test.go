@@ -2,7 +2,15 @@ package openapi
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/go-openapi/loads"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -711,4 +719,51 @@ func TestGetProviderResourceName(t *testing.T) {
 			})
 		})
 	})
+}
+
+func Test_Happy_Path_Integration_Of_createProvider(t *testing.T) {
+	yamlSpec := `swagger: "2.0"
+host: 127.0.0.1 
+paths:
+  /v1/cdns:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+definitions:
+  ContentDeliveryNetworkV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+
+	f, _ := ioutil.TempFile("", "")
+	defer func() { os.Remove(f.Name()) }()
+	defer func() { f.Close() }()
+
+	f.WriteString(yamlSpec)
+	doc, err := loads.JSONSpec(f.Name())
+	doc, err = doc.Expanded()
+	require.NoError(t, err)
+	s := specV2Analyser{
+		d: doc,
+	}
+
+	p := providerFactory{
+		name:         "provider",
+		specAnalyser: &s,
+	}
+
+	schemaResource, err := p.createProvider()
+
+	assert.Nil(t, err)
+	assert.Empty(t, schemaResource)
 }
