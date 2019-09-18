@@ -47,18 +47,18 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 
 	openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
 	if err != nil {
-		return nil, err
+		return nil, err // TODO: untested
 	}
 
 	if providerSchema, err = p.createTerraformProviderSchema(openAPIBackendConfiguration); err != nil {
-		return nil, err
+		return nil, err // TODO: untested
 	}
 	if resourceMap, err = p.createTerraformProviderResourceMap(); err != nil {
-		return nil, err
+		return nil, err // TODO: untested
 	}
 
 	if dataSources, err = p.createTerraformProviderDataSourceMap(); err != nil {
-		return nil, err
+		return nil, err // TODO: untested
 	}
 
 	provider := &schema.Provider{
