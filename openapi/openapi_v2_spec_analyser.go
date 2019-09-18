@@ -62,9 +62,20 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantDataSources() ([]SpecRe
 	spec := specAnalyser.d.Spec()
 	paths := spec.Paths
 	for resourcePath, pathItem := range paths.Paths {
-		fmt.Println(resourcePath, pathItem)
-		// TODO: Validate if path is data source compatible
-		// TODO: If path is deemed data source compatible call the data source constructor newDataSourceFactory() and add it to the list of dataSources
+		schemaDefinition, err := specAnalyser.isEndPointTerraformDataSourceCompliant(pathItem)
+		if err != nil {
+			log.Printf("[DEBUG] resource path '%s' not terraform data source compliant: %s", resourcePath, err)
+			continue
+		}
+
+		d, err := newSpecV2DataSource(resourcePath, *schemaDefinition, pathItem, specAnalyser.d.Spec().Paths.Paths)
+		if err != nil {
+			log.Printf("[WARN] ignoring data source '%s' due to an error while creating a creating the SpecV2Resource: %s", resourcePath, err)
+			continue
+		}
+
+		log.Printf("[INFO] found terraform compliant data source [name='%s', rootPath='%s']", d.getResourceName(), resourcePath)
+		dataSources = append(dataSources, d)
 	}
 	return dataSources, nil
 }
@@ -296,7 +307,7 @@ func (specAnalyser *specV2Analyser) isEndPointTerraformDataSourceCompliant(path 
 		if response.Schema.Items == nil || response.Schema.Items.Schema == nil || !response.Schema.Items.Schema.Type.Contains("object") || len(response.Schema.Items.Schema.Properties) == 0 {
 			return nil, errors.New("the response schema is missing the items schema specification or the items schema is not properly defined as object with properties configured")
 		}
-		return response.Schema, nil
+		return response.Schema.Items.Schema, nil
 	}
 	return nil, errors.New("missing get responses")
 }
