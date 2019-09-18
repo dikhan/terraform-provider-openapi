@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -26,6 +27,8 @@ const resourceCDNName = "cdn_v1"
 var openAPIResourceNameCDN = fmt.Sprintf("%s_%s", providerName, resourceCDNName)
 var openAPIResourceInstanceNameCDN = "my_cdn"
 var openAPIResourceStateCDN = fmt.Sprintf("%s.%s", openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
+var openAPIDataSourceNameCDN = "my_data_source"
+var openAPIDataSourceStateCDN = fmt.Sprintf("data.%s.%s", openAPIResourceNameCDN, openAPIDataSourceNameCDN)
 
 const resourceCDNFirewallName = "cdn_v1_firewalls_v1"
 
@@ -44,6 +47,13 @@ paths:
   ######################
 
   /v1/cdns:
+    get:
+      summary: "Get all cdns"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkCollectionV1"
     post:
       x-terraform-resource-name: "cdn"
       summary: "Create cdn"
@@ -203,6 +213,10 @@ paths:
 
 
 definitions:
+  ContentDeliveryNetworkCollectionV1:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
   ContentDeliveryNetworkFirewallV1:
     type: "object"
     properties:
@@ -304,8 +318,14 @@ func (a *api) handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
 		a.apiPostResponse(t, expectedRequestInstanceURI, responseBody, w, r)
 	}
 	apiServerBehaviors[http.MethodGet] = func(w http.ResponseWriter, r *http.Request) {
-		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
-		a.apiGetResponse(t, w, r)
+		if r.RequestURI == "/v1/cdns" {
+			expectedRequestInstanceURI = "/v1/cdns"
+			assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+			a.apiListResponse(t, w, r)
+		} else {
+			assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
+			a.apiGetResponse(t, w, r)
+		}
 	}
 	apiServerBehaviors[http.MethodDelete] = func(w http.ResponseWriter, r *http.Request) {
 		assertExpectedRequestURI(t, expectedRequestInstanceURI, r)
@@ -353,6 +373,28 @@ func (a *api) apiGetResponse(t *testing.T, w http.ResponseWriter, r *http.Reques
 		return
 	}
 	a.apiResponse(t, cachedBody.(string), http.StatusOK, w, r)
+}
+
+func (a *api) apiListResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
+	cdnList := []map[string]interface{}{
+		{
+			"id":                       expectedCDNID,
+			"label":                    expectedCDNLabel,
+			"computed_property":        "some auto-generated value",
+			"object_property_argument": map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
+			"object_property_block":    map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
+		},
+		{
+			"id":                       "some other id",
+			"label":                    "some other label",
+			"computed_property":        "some auto-generated value",
+			"object_property_argument": map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
+			"object_property_block":    map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
+		},
+	}
+	response, err := json.Marshal(cdnList)
+	assert.Nil(t, err)
+	a.apiResponse(t, string(response), http.StatusOK, w, r)
 }
 
 func (a *api) apiDeleteResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
@@ -421,6 +463,13 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 				Config: tfFileContents,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
+					// check data source
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceStateCDN, "label", expectedCDNLabel),
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceStateCDN, "id", expectedCDNID),
+
+					// check resource
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", expectedCDNLabel),
 
@@ -593,6 +642,13 @@ func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 
 func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
 	return fmt.Sprintf(`
+		data "%s" "%s" {
+		  filter {
+		    name = "label"
+		    values = ["CDN #42"]
+		  }
+		}
+
 		# URI /v1/cdns/
 		resource "%s" "%s" {
 		  label = "%s"
@@ -610,5 +666,5 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
         resource "%s" "%s" {
            cdn_v1_id = %s.id
            label = "%s"
-        }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
+        }`, openAPIResourceNameCDN, openAPIDataSourceNameCDN, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
 }
