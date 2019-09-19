@@ -17,9 +17,6 @@ func (s *specAnalyserStub) GetTerraformCompliantResources() ([]SpecResource, err
 }
 
 func (s *specAnalyserStub) GetTerraformCompliantDataSources() []SpecResource {
-	if s.error != nil {
-		return nil
-	}
 	return s.resources
 }
 
