@@ -645,12 +645,20 @@ func TestAccCDN_DataSource(t *testing.T) {
 }
 
 func assertProviderSchema(t *testing.T, provider *schema.Provider) {
+	// Resource map check
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["id"])
 	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["label"])
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["id"])
 	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["label"])
 	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["cdn_v1_id"])
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDNFirewall].Schema["cdns_v1_id"])
+
+	// Data source map check
+	assert.Nil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["id"])
+	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["label"])
+	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["computed_property"])
+	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["object_property_argument"])
+	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["object_property_block"])
 }
 
 func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
