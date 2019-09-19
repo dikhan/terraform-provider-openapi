@@ -53,6 +53,13 @@ type specSchemaDefinitionProperty struct {
 	SpecSchemaDefinition *specSchemaDefinition
 }
 
+func (s *specSchemaDefinitionProperty) isPrimitiveProperty() bool {
+	if s.Type == typeString || s.Type == typeInt || s.Type == typeFloat || s.Type == typeBool {
+		return true
+	}
+	return false
+}
+
 func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() string {
 	if s.PreferredName != "" {
 		return s.PreferredName

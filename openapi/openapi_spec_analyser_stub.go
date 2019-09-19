@@ -16,6 +16,10 @@ func (s *specAnalyserStub) GetTerraformCompliantResources() ([]SpecResource, err
 	return s.resources, nil
 }
 
+func (s *specAnalyserStub) GetTerraformCompliantDataSources() []SpecResource {
+	return s.resources
+}
+
 func (s *specAnalyserStub) GetSecurity() SpecSecurity {
 	return s.security
 }

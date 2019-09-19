@@ -3,7 +3,6 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
@@ -88,22 +87,10 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	return schemaDefinition.createResourceSchema()
 }
 
-func (r resourceFactory) getParentIDsAndResourcePath(data *schema.ResourceData) (parentIDs []string, resourcePath string, err error) {
-	parentIDs, err = r.getParentIDs(data)
-	if err != nil {
-		return nil, "", err
-	}
-	resourcePath, err = r.openAPIResource.getResourcePath(parentIDs)
-	if err != nil {
-		return nil, "", err
-	}
-	return
-}
-
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -116,12 +103,11 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
-
+	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), resourcePath, err)
 	}
 
-	err = r.setStateID(data, responsePayload)
+	err = setStateID(r.openAPIResource, data, responsePayload)
 	if err != nil {
 		return err
 	}
@@ -132,13 +118,13 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("polling mechanism failed after POST %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
 	}
 
-	return r.updateStateWithPayloadData(responsePayload, data)
+	return updateStateWithPayloadData(r.openAPIResource, responsePayload, data)
 }
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -154,7 +140,7 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 		return fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
 	}
 
-	return r.updateStateWithPayloadData(remoteData, data)
+	return updateStateWithPayloadData(r.openAPIResource, remoteData, data)
 }
 
 func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, parentIDs ...string) (map[string]interface{}, error) {
@@ -165,7 +151,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 		return nil, err
 	}
 
-	if err := r.checkHTTPStatusCode(resp, []int{http.StatusOK}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, resp, []int{http.StatusOK}); err != nil {
 		return nil, err
 	}
 
@@ -198,7 +184,7 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -216,7 +202,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
 	}
 
@@ -225,13 +211,13 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
 	}
 
-	return r.updateStateWithPayloadData(responsePayload, data)
+	return updateStateWithPayloadData(r.openAPIResource, responsePayload, data)
 }
 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	parentsIDs, resourcePath, err := r.getParentIDsAndResourcePath(data)
+	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
 	}
@@ -244,7 +230,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if err != nil {
 		return err
 	}
-	if err := r.checkHTTPStatusCode(res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusNoContent, http.StatusOK, http.StatusAccepted}); err != nil {
 		if openapiErr, ok := err.(openapierr.Error); ok {
 			if openapierr.NotFound == openapiErr.Code() {
 				return nil
@@ -370,63 +356,6 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 	}
 }
 
-// setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
-// r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
-func (r resourceFactory) setStateID(resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
-	resourceSchema, err := r.openAPIResource.getResourceSchema()
-	if err != nil {
-		return err
-	}
-	identifierProperty, err := resourceSchema.getResourceIdentifier()
-	if err != nil {
-		return err
-	}
-	if payload[identifierProperty] == nil {
-		return fmt.Errorf("response object returned from the API is missing mandatory identifier property '%s'", identifierProperty)
-	}
-
-	switch payload[identifierProperty].(type) {
-	case int:
-		resourceLocalData.SetId(strconv.Itoa(payload[identifierProperty].(int)))
-	case float64:
-		resourceLocalData.SetId(strconv.Itoa(int(payload[identifierProperty].(float64))))
-	default:
-		resourceLocalData.SetId(payload[identifierProperty].(string))
-	}
-	return nil
-}
-
-func (r resourceFactory) checkHTTPStatusCode(res *http.Response, expectedHTTPStatusCodes []int) error {
-	if !r.responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
-		var resBody string
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("[resource='%s'] HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", r.openAPIResource.getResourceName(), res.StatusCode, err)
-		}
-		if b != nil && len(b) > 0 {
-			resBody = string(b)
-		}
-		switch res.StatusCode {
-		case http.StatusUnauthorized:
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", r.openAPIResource.getResourceName(), res.StatusCode, resBody)
-		case http.StatusNotFound:
-			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Reponse Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
-		default:
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d not matching expected one %v (%s)", r.openAPIResource.getResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
-		}
-	}
-	return nil
-}
-
-func (r resourceFactory) responseContainsExpectedStatus(expectedStatusCodes []int, responseStatusCode int) bool {
-	for _, expectedStatusCode := range expectedStatusCodes {
-		if expectedStatusCode == responseStatusCode {
-			return true
-		}
-	}
-	return false
-}
-
 func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI) error {
 	resourceSchema, err := r.openAPIResource.getResourceSchema()
 	if err != nil {
@@ -443,134 +372,13 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 				if localValue != remoteData[immutablePropertyName] {
 					// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
 					// data inside the updated (*schema.ResourceData) in the state file
-					r.updateStateWithPayloadData(remoteData, updatedResourceLocalData)
+					updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
 					return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
 				}
 			}
 		}
 	}
 	return nil
-}
-
-// updateStateWithPayloadData is in charge of saving the given payload into the state file. The property names are
-// converted into compliant terraform names if needed.
-func (r resourceFactory) updateStateWithPayloadData(remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
-	resourceSchema, err := r.openAPIResource.getResourceSchema()
-	if err != nil {
-		return err
-	}
-	for propertyName, propertyValue := range remoteData {
-		property, err := resourceSchema.getProperty(propertyName)
-		if err != nil {
-			return fmt.Errorf("failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
-		}
-		if property.isPropertyNamedID() {
-			continue
-		}
-		value, err := r.convertPayloadToLocalStateDataValue(property, propertyValue, false)
-		if err != nil {
-			return err
-		}
-		if value != nil {
-			if err := r.setResourceDataProperty(propertyName, value, resourceLocalData); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (r resourceFactory) convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
-	if propertyValue == nil {
-		return nil, nil
-	}
-	dataValueKind := reflect.TypeOf(propertyValue).Kind()
-	switch dataValueKind {
-	case reflect.Map:
-		objectInput := map[string]interface{}{}
-		mapValue := propertyValue.(map[string]interface{})
-		for propertyName, propertyValue := range mapValue {
-			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
-			if err != nil {
-				return nil, err
-			}
-			var propValue interface{}
-			// Here we are processing the items of the list which are objects. In this case we need to keep the original
-			// types as Terraform honors property types for resource schemas attached to typeList properties
-			if property.isArrayOfObjectsProperty() {
-				propValue, err = r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, false)
-			} else { // Here we need to use strings as values as terraform typeMap only supports string items
-				propValue, err = r.convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
-			}
-			if err != nil {
-				return nil, err
-			}
-			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
-		}
-
-		// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
-		// blocks only for TypeList and TypeSet . In this case, we need to make sure that the json (which reflects to a map)
-		// gets translated to the expected array of one item that terraform expects.
-		if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
-			arrayInput := []interface{}{}
-			arrayInput = append(arrayInput, objectInput)
-			return arrayInput, nil
-		}
-		return objectInput, nil
-	case reflect.Slice, reflect.Array:
-		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
-			return propertyValue, nil
-		}
-		if property.isArrayOfObjectsProperty() {
-			arrayInput := []interface{}{}
-			arrayValue := propertyValue.([]interface{})
-			for _, arrayItem := range arrayValue {
-				objectValue, err := r.convertPayloadToLocalStateDataValue(property, arrayItem, false)
-				if err != nil {
-					return err, nil
-				}
-				arrayInput = append(arrayInput, objectValue)
-			}
-			return arrayInput, nil
-		}
-		return nil, fmt.Errorf("property '%s' is supposed to be an array objects", property.Name)
-	case reflect.String:
-		return propertyValue.(string), nil
-	case reflect.Int:
-		if useString {
-			return fmt.Sprintf("%d", propertyValue.(int)), nil
-		}
-		return propertyValue.(int), nil
-	case reflect.Float64:
-		// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
-		// an actual int or if not then casting to float64
-		if property.Type == typeInt {
-			if useString {
-				return fmt.Sprintf("%d", int(propertyValue.(float64))), nil
-			}
-			return int(propertyValue.(float64)), nil
-		}
-		if useString {
-			// For some reason after apply the state for object configurations is saved with values "0.00" but subsequent plans find diffs saying that the value changed from "0.00" to "0"
-			// Adding this check for the time being to avoid the above diffs
-			if propertyValue.(float64) == 0 {
-				return "0", nil
-			}
-			return fmt.Sprintf("%.2f", propertyValue.(float64)), nil
-		}
-		return propertyValue.(float64), nil
-	case reflect.Bool:
-		if useString {
-			// this is only applicable to objects
-			if propertyValue.(bool) {
-				return fmt.Sprintf("true"), nil
-			}
-			return fmt.Sprintf("false"), nil
-		}
-		return propertyValue.(bool), nil
-	default:
-		return nil, fmt.Errorf("'%s' type not supported", dataValueKind)
-	}
 }
 
 // createPayloadFromLocalStateData is in charge of translating the values saved in the local state into a payload that can be posted/put
@@ -722,14 +530,4 @@ func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName st
 		return nil, false
 	}
 	return resourceLocalData.GetOkExists(schemaDefinitionProperty.getTerraformCompliantPropertyName())
-}
-
-// setResourceDataProperty sets the expectedValue for the given schemaDefinitionPropertyName using the terraform compliant property name
-func (r resourceFactory) setResourceDataProperty(schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
-	resourceSchema, _ := r.openAPIResource.getResourceSchema()
-	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
-	if err != nil {
-		return fmt.Errorf("could not find schema definition property name %s in the resource data: %s", schemaDefinitionPropertyName, err)
-	}
-	return resourceLocalData.Set(schemaDefinitionProperty.getTerraformCompliantPropertyName(), value)
 }

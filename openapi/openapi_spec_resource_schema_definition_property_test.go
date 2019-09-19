@@ -70,6 +70,60 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 	})
 }
 
+func TestIsPrimitiveProperty(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		specSchemaDefinition specSchemaDefinitionProperty
+		expectedResult       bool
+	}{
+		{
+			name: "pecSchemaDefinitionProperty that is a primitive string",
+			specSchemaDefinition: specSchemaDefinitionProperty{
+				Name: "primitive_property",
+				Type: typeString,
+			},
+			expectedResult: true,
+		},
+		{
+			name: "pecSchemaDefinitionProperty that is a primitive int",
+			specSchemaDefinition: specSchemaDefinitionProperty{
+				Name: "primitive_property",
+				Type: typeInt,
+			},
+			expectedResult: true,
+		},
+		{
+			name: "pecSchemaDefinitionProperty that is a primitive float",
+			specSchemaDefinition: specSchemaDefinitionProperty{
+				Name: "primitive_property",
+				Type: typeFloat,
+			},
+			expectedResult: true,
+		},
+		{
+			name: "pecSchemaDefinitionProperty that is a primitive bool",
+			specSchemaDefinition: specSchemaDefinitionProperty{
+				Name: "primitive_property",
+				Type: typeBool,
+			},
+			expectedResult: true,
+		},
+		{
+			name: "pecSchemaDefinitionProperty that is not a primitive",
+			specSchemaDefinition: specSchemaDefinitionProperty{
+				Name: "primitive_property",
+				Type: typeObject,
+			},
+			expectedResult: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		isPrimitiveProperty := tc.specSchemaDefinition.isPrimitiveProperty()
+		assert.Equal(t, tc.expectedResult, isPrimitiveProperty, tc.name)
+	}
+}
+
 func TestIsPropertyNamedID(t *testing.T) {
 	Convey("Given a specSchemaDefinitionProperty that is PropertyNamedID", t, func() {
 		s := &specSchemaDefinitionProperty{

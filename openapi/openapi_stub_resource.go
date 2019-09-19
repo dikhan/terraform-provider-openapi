@@ -9,6 +9,7 @@ type specStubResource struct {
 	schemaDefinition        *specSchemaDefinition
 	resourceGetOperation    *specResourceOperation
 	resourcePostOperation   *specResourceOperation
+	resourceListOperation   *specResourceOperation
 	resourcePutOperation    *specResourceOperation
 	resourceDeleteOperation *specResourceOperation
 	timeouts                *specTimeouts
@@ -17,7 +18,9 @@ type specStubResource struct {
 	parentPropertyNames    []string
 	fullParentResourceName string
 
-	funcGetResourcePath func(parentIDs []string) (string, error)
+	funcGetResourcePath   func(parentIDs []string) (string, error)
+	funcGetResourceSchema func() (*specSchemaDefinition, error)
+	error                 error
 }
 
 func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition) *specStubResource {
@@ -48,6 +51,12 @@ func (s *specStubResource) getResourcePath(parentIDs []string) (string, error) {
 }
 
 func (s *specStubResource) getResourceSchema() (*specSchemaDefinition, error) {
+	if s.funcGetResourceSchema != nil {
+		return s.funcGetResourceSchema()
+	}
+	if s.error != nil {
+		return nil, s.error
+	}
 	return s.schemaDefinition, nil
 }
 
@@ -55,6 +64,7 @@ func (s *specStubResource) shouldIgnoreResource() bool { return s.shouldIgnore }
 
 func (s *specStubResource) getResourceOperations() specResourceOperations {
 	return specResourceOperations{
+		List:   s.resourceListOperation,
 		Post:   s.resourcePostOperation,
 		Get:    s.resourceGetOperation,
 		Put:    s.resourcePutOperation,

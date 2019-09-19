@@ -1,12 +1,88 @@
 package openapi
 
 import (
+	"errors"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/stretchr/testify/assert"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func TestCreateDataSourceSchema(t *testing.T) {
+
+	testCases := []struct {
+		name           string
+		specSchemaDef  specSchemaDefinition
+		expectedResult map[string]*schema.Schema
+		expectedError  error
+	}{
+		{
+			name: "happy path -- data source schema contains all schema properties configured as computed",
+			specSchemaDef: specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name:     "id",
+						Type:     typeString,
+						ReadOnly: false,
+						Required: true,
+					},
+					&specSchemaDefinitionProperty{
+						Name:     "string_prop",
+						Type:     typeString,
+						ReadOnly: false,
+						Required: true,
+					},
+					&specSchemaDefinitionProperty{
+						Name:     "int_prop",
+						Type:     typeInt,
+						ReadOnly: false,
+						Required: true,
+					},
+				},
+			},
+			expectedResult: map[string]*schema.Schema{
+				"string_prop": &schema.Schema{
+					Required: false,
+					Optional: true,
+					Computed: true,
+					Type:     schema.TypeString,
+				},
+				"int_prop": &schema.Schema{
+					Required: false,
+					Optional: true,
+					Computed: true,
+					Type:     schema.TypeInt,
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name:           "sad path -- a terraform schema cannot be created from a specSchemaDefinition ",
+			specSchemaDef:  specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{}}},
+			expectedResult: nil,
+			expectedError:  errors.New("non supported type "),
+		},
+	}
+
+	for _, tc := range testCases {
+		s, err := tc.specSchemaDef.createDataSourceSchema()
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			for expectedTerraformPropName, tfSchemaProp := range tc.expectedResult {
+				assert.Contains(t, s, expectedTerraformPropName, tc.name)
+				assert.Nil(t, s["id"])
+				assert.Equal(t, tfSchemaProp.Type, s[expectedTerraformPropName].Type, tc.name)
+				assert.Equal(t, tfSchemaProp.Optional, s[expectedTerraformPropName].Optional, tc.name)
+				assert.Equal(t, tfSchemaProp.Required, s[expectedTerraformPropName].Required, tc.name)
+				assert.Equal(t, tfSchemaProp.Computed, s[expectedTerraformPropName].Computed, tc.name)
+			}
+		} else {
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		}
+	}
+}
 
 func TestCreateResourceSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has few properties including the id all with terraform compliant names", t, func() {
@@ -579,7 +655,7 @@ func TestGetProperty(t *testing.T) {
 	})
 }
 
-func TestGetPropertyBasedOnTerraformName(t *testing.T){
+func TestGetPropertyBasedOnTerraformName(t *testing.T) {
 	existingPropertyName := "existingPropertyName"
 	s := &specSchemaDefinition{
 		Properties: specSchemaDefinitionProperties{

@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -15,6 +16,19 @@ type specSchemaDefinition struct {
 
 func (s *specSchemaDefinition) createResourceSchema() (map[string]*schema.Schema, error) {
 	return s.createResourceSchemaIgnoreID(true)
+}
+
+func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Schema, error) {
+	terraformSchema, err := s.createResourceSchemaIgnoreID(true)
+	if err != nil {
+		return nil, err
+	}
+	for propertyName := range terraformSchema {
+		terraformSchema[propertyName].Required = false
+		terraformSchema[propertyName].Optional = true
+		terraformSchema[propertyName].Computed = true
+	}
+	return terraformSchema, nil
 }
 
 func (s *specSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {

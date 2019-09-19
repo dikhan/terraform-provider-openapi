@@ -27,6 +27,7 @@ type ClientOpenAPI interface {
 	Put(resource SpecResource, id string, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)
+	List(resource SpecResource, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
@@ -66,6 +67,16 @@ func (o *ProviderClient) Get(resource SpecResource, id string, responsePayload i
 		return nil, err
 	}
 	operation := resource.getResourceOperations().Get
+	return o.performRequest(httpGet, resourceURL, operation, nil, responsePayload)
+}
+
+// List performs a GET request to the root level endpoint of the resource (e,g: GET /v1/groups)
+func (o *ProviderClient) List(resource SpecResource, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
+	resourceURL, err := o.getResourceURL(resource, parentIDs)
+	if err != nil {
+		return nil, err
+	}
+	operation := resource.getResourceOperations().List
 	return o.performRequest(httpGet, resourceURL, operation, nil, responsePayload)
 }
 

@@ -259,6 +259,113 @@ as described in the [OpenAPI documentation for $ref](https://swagger.io/docs/spe
 having a computed property (readOnly) called ```id``` or by adding the ```x-terraform-id``` extension to one of the
 existing properties. Read 
 
+##### Terraform data source compliant requirements
+
+The OpenAPI provider is able to export data sources from paths that are data source compatible.
+
+An endpoint (path) to be considered terraform data source compliant must meet the following criteria:
+
+- The path must be a root level path (e,g: /v1/cdns) not an instance path (e,g: /api/v1/cdn/{id})
+- The path must contain a GET operation with a response 200 which contains a schema of type 'array'. The items schema must be of type 'object' and must specify at least one property.
+- The items schema object definitnio must contain a property called ```id``` which will be used internally to uniquely identify the data source. If
+the object schema does not have a property called ```id```, then at least one property should have the ```x-terraform-id``` extension 
+so the OpenAPI Terraform provider knows which property should be used to unique identifier instead.
+
+The following snipped of code shows a valid terraform compliant data source endpoint ```/v1/cdns```:
+
+````
+paths:
+  /v1/cdns:
+    get:
+      summary: "Get all cdns"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkCollectionV1"
+definitions:
+  ContentDeliveryNetworkCollectionV1:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+      computed_property:
+        type: "string"
+        readOnly: true
+````
+
+The corresponding Terraform data source configuration will be:
+
+````
+data "openapi_cdns_v1" "my_data_source" {
+  filter {
+    name = "label"
+    values = ["my_label"]
+  }
+}
+````
+
+Check out the argument and attributes references below to learn more about how the input expected and ouput produced by
+the data sources.
+
+*Refer to [x-terraform-resource-name](#xTerraformResourceName) to learn more about how the data source name (```cdns_v1```) type is built.*
+
+###### Argument Reference
+
+filter - (Optional) One or more name/value pairs to filter off of. The keys allowed to filter by will depend on the properties
+ exposed in the swagger model definition for the data source path. In the example above the corresponding model definition
+ for ```/v1/cdns``` was the ```ContentDeliveryNetworkV1```, which exposed three properties - id, label and computed_property. These
+ become automatically available as filter for the data source. 
+
+**NOTE**: Currently, only primitive properties are supported as filters. If the model definition contains properties that are
+not primitive (e,g: arrays or objects), these will not be available as filters.
+**NOTE**: If more or less than a single match is returned by the search, Terraform will fail. Ensure that your search is specific enough to return a single result only.
+
+###### Attributes Reference
+
+id is set to the ID of the found result. In addition, the properties defined in the swagger model definition of the data
+source will be exported as attributes. 
+
+In the previous example, let's pretend the ```GET /v1/cdns``` API returned a list of cdns:
+
+````
+[
+    {
+      "id":"someID",
+      "label":"someLabel",
+      "computed_property":"computed property"
+    },
+    {
+      "id":"someOtherID",
+      "label":"someOtherLabel",
+      "computed_property":"computed property 2"
+    },
+]
+````
+
+From the above list, the filter set up was to retrieve the cdn with ```label = my_label```, hence the matching item would
+be:
+
+````
+    {
+      "id":"someID",
+      "label":"someLabel",
+      "computed_property":"computed property"
+    }
+````
+
+Considering the above result, the openapi plugin will then go ahead and start setting the data source terraform state with
+the properties and values of the matching result.
+
 ##### Extensions
 
 The following extensions can be used in path operations. Read the according extension section for more information

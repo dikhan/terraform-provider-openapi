@@ -1,8 +1,11 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -179,6 +182,84 @@ func TestCreateProvider(t *testing.T) {
 				_, errors := p.Schema["region"].ValidateFunc("nonExisting", "region")
 				So(errors, ShouldNotBeNil)
 				So(errors[0].Error(), ShouldEqual, "property region value nonExisting is not valid, please make sure the value is one of [rst dub]")
+			})
+		})
+	})
+
+	Convey("Given a provider factory where the specAnalyser has an error", t, func() {
+		expectedError := "specAnalyser has an error"
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				error: errors.New(expectedError),
+			},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+			Convey("And the provider returned should be nil", func() {
+				So(p, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a provider factory where the specAnalyser has an error on the backendConfiguration", t, func() {
+		expectedError := "backendConfiguration error"
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				backendConfiguration: &specStubBackendConfiguration{
+					err: errors.New(expectedError),
+				},
+			},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+			Convey("And the provider returned should be nil", func() {
+				So(p, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a provider factory where createTerraformProviderResourceMap fails", t, func() {
+		expectedError := "resource name can not be empty"
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				resources: []SpecResource{
+					&specStubResource{},
+				},
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{Name: headerProperty.Name},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+				backendConfiguration: &specStubBackendConfiguration{},
+			},
+			serviceConfiguration: &ServiceConfigStub{},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+			Convey("And the provider returned should be nil", func() {
+				So(p, ShouldBeNil)
 			})
 		})
 	})
@@ -711,4 +792,58 @@ func TestGetProviderResourceName(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
+
+	testcases := []struct {
+		name                 string
+		specV2stub           SpecAnalyser
+		expectedResourceName string
+		expectedError        string
+	}{
+		{
+			name: "happy path",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedResourceName: "provider_resource",
+		},
+		{
+			name: "getProviderResourceName fails ",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedError: "resource name can not be empty",
+		},
+		{
+			name: "createTerraformDataSource fails",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{&specStubResource{
+					name: "hello",
+					funcGetResourceSchema: func() (*specSchemaDefinition, error) {
+						return nil, errors.New("createTerraformDataSource failed")
+					},
+				}},
+			},
+			expectedError: "createTerraformDataSource failed",
+		},
+	}
+
+	for _, tc := range testcases {
+		p := providerFactory{
+			name:         "provider",
+			specAnalyser: tc.specV2stub,
+		}
+		schemaResource, err := p.createTerraformProviderDataSourceMap()
+
+		if tc.expectedError == "" {
+			assert.Nil(t, err)
+			assert.Contains(t, schemaResource, tc.expectedResourceName, tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError)
+		}
+
+	}
+
 }
