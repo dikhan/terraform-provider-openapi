@@ -211,7 +211,6 @@ paths:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
-
 definitions:
   ContentDeliveryNetworkCollectionV1:
     type: "array"
@@ -463,11 +462,6 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 				Config: tfFileContents,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckWhetherResourceExist(resourceInstancesToCheck),
-					// check data source
-					resource.TestCheckResourceAttr(
-						openAPIDataSourceStateCDN, "label", expectedCDNLabel),
-					resource.TestCheckResourceAttr(
-						openAPIDataSourceStateCDN, "id", expectedCDNID),
 
 					// check resource
 					resource.TestCheckResourceAttr(
@@ -531,22 +525,6 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 			},
 		},
 	})
-
-	// TODO: commenting this out as the assertions for now, they are failing due to requestsReceived containing an unordered array of items making the assertions to fail
-	// IMHO these assertions are not adding any value, considering the terraform framework will handle the execution of
-	// commands which internally will get translated into API calls which if they work as expected will result into the
-	// expected state file. Also, the testAccCheckDestroy method will make sure that the DELETE operation is called properly
-	// after the execution of the test and that the resource has been destroyed properly.
-
-	//numberOfRequestsReceived := len(api.requestsReceived)
-	//
-	//lastRequest := api.requestsReceived[numberOfRequestsReceived-1]
-	//assert.Equal(t, http.MethodGet, lastRequest.Method)
-	//assert.Equal(t, "/v1/cdns/42", lastRequest.URL.Path)
-	//
-	//secondToLastRequest := api.requestsReceived[numberOfRequestsReceived-2]
-	//assert.Equal(t, http.MethodGet, secondToLastRequest.Method)
-	//assert.Equal(t, "/v1/cdns/42/v1/firewalls/1337", secondToLastRequest.URL.Path)
 }
 
 func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testing.T) {
@@ -631,6 +609,41 @@ func TestAccCDN_ImportSubResource(t *testing.T) {
 	})
 }
 
+func TestAccCDN_DataSource(t *testing.T) {
+	api := initAPI(t, cdnSwaggerYAMLTemplate)
+	tfFileContents := fmt.Sprintf(`
+		data "%s" "%s" {
+		  filter {
+		    name = "label"
+		    values = ["%s"]
+		  }
+		}`, openAPIResourceNameCDN, openAPIDataSourceNameCDN, expectedCDNLabel)
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
+	assert.NoError(t, err)
+	assertProviderSchema(t, provider)
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Providers:  testAccProviders,
+		PreCheck:   func() { testAccPreCheck(t, api.swaggerURL) },
+		Steps: []resource.TestStep{
+			{
+				Config: tfFileContents,
+				Check: resource.ComposeTestCheckFunc(
+					// check data source
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceStateCDN, "label", expectedCDNLabel),
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceStateCDN, "id", expectedCDNID),
+				),
+			},
+		},
+	})
+}
+
 func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["id"])
 	assert.NotNil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["label"])
@@ -641,15 +654,7 @@ func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 }
 
 func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
-	return fmt.Sprintf(`
-		data "%s" "%s" {
-		  filter {
-		    name = "label"
-		    values = ["CDN #42"]
-		  }
-		}
-
-		# URI /v1/cdns/
+	return fmt.Sprintf(`# URI /v1/cdns/
 		resource "%s" "%s" {
 		  label = "%s"
 		  object_property_block {
@@ -666,5 +671,5 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
         resource "%s" "%s" {
            cdn_v1_id = %s.id
            label = "%s"
-        }`, openAPIResourceNameCDN, openAPIDataSourceNameCDN, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
+        }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
 }
