@@ -211,7 +211,6 @@ paths:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
-
 definitions:
   ContentDeliveryNetworkCollectionV1:
     type: "array"
