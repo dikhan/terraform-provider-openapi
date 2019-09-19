@@ -54,7 +54,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 		return nil, err
 	}
 	if resourceMap, err = p.createTerraformProviderResourceMap(); err != nil {
-		return nil, err // TODO: untested
+		return nil, err
 	}
 
 	if dataSources, err = p.createTerraformProviderDataSourceMap(); err != nil {
