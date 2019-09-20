@@ -25,7 +25,7 @@ func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Sche
 	}
 	for propertyName := range terraformSchema {
 		// TODO: to be tested
-		p, err := s.getProperty(propertyName)
+		p, err := s.getPropertyBasedOnTerraformName(propertyName)
 		if err != nil {
 			return nil, err
 		}
