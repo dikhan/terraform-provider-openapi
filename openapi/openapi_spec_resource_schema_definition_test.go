@@ -80,14 +80,6 @@ func TestCreateDataSourceSchema(t *testing.T) {
 	}
 }
 
-func assertDataSourceSchemaProperty(t *testing.T, actual *schema.Schema, expectedType schema.ValueType, msgAndArgs ...interface{}) {
-	assert.NotNil(t, actual, msgAndArgs)
-	assert.Equal(t, expectedType, actual.Type, msgAndArgs)
-	assert.False(t, actual.Required, msgAndArgs)
-	assert.True(t, actual.Optional, msgAndArgs)
-	assert.True(t, actual.Computed, msgAndArgs)
-}
-
 func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 	t.Run("happy path -- a data soruce can be derived from a nested object keeping all the properies attributes as expected", func(t *testing.T) {
 		// set up the schema for the nested object

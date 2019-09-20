@@ -3,6 +3,7 @@ package openapi
 import (
 	"encoding/json"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"os"
@@ -160,4 +161,12 @@ func initAPISpecFile(swaggerContent string) *os.File {
 		log.Fatal(err)
 	}
 	return file
+}
+
+func assertDataSourceSchemaProperty(t *testing.T, actual *schema.Schema, expectedType schema.ValueType, msgAndArgs ...interface{}) {
+	assert.NotNil(t, actual, msgAndArgs)
+	assert.Equal(t, expectedType, actual.Type, msgAndArgs)
+	assert.False(t, actual.Required, msgAndArgs)
+	assert.True(t, actual.Optional, msgAndArgs)
+	assert.True(t, actual.Computed, msgAndArgs)
 }
