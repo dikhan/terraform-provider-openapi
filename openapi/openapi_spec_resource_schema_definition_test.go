@@ -85,42 +85,67 @@ func TestCreateDataSourceSchema(t *testing.T) {
 }
 
 func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
-	nestedObjectSchemaDefinition := &specSchemaDefinition{
-		Properties: specSchemaDefinitionProperties{
-			newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
-			newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
-		},
-	}
-	nestedObjectDefault := map[string]interface{}{
-		"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
-		"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
-	}
-	nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
-	propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-		Properties: specSchemaDefinitionProperties{
-			idProperty,
-			nestedObject,
-		},
-	}
-	dataValue := map[string]interface{}{
-		"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
-		"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
-	}
-	dataSourceSchema := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
-	specSchemaNested := &specSchemaDefinition{
-		Properties: specSchemaDefinitionProperties{dataSourceSchema},
-	}
+	t.Run("happy path -- a data soruce can be derived from a nested object keeping all the properies attributes as expected", func(t *testing.T) {
+		// set up the schema for the nested object
+		nestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		nestedObjectDefault := map[string]interface{}{
+			"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+			"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+		}
+		nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				nestedObject,
+			},
+		}
+		dataValue := map[string]interface{}{
+			"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+			"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+		}
+		dataSourceSchema := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+		specSchemaNested := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{dataSourceSchema},
+		}
 
-	s, err := specSchemaNested.createDataSourceSchema()
+		// get the Terraform schema which represents a Data Source
+		s, err := specSchemaNested.createDataSourceSchema()
 
-	assert.NotNil(t, s)
-	assert.NoError(t, err)
-	assert.Equal(t, false, s["nested_oobj"].Required)
-	nestedObjectElement := s["nested_oobj"].Elem.(*schema.Resource)
+		assert.NotNil(t, s)
+		assert.NoError(t, err)
 
-	assert.Equal(t, 2, len(nestedObjectElement.Schema))
-	assert.Equal(t, false, nestedObjectElement.Schema["id"].Required)
+		// assertions on the properties attributes
+		assert.Equal(t, false, s["nested_oobj"].Required)
+		assert.Equal(t, true, s["nested_oobj"].Optional)
+		assert.Equal(t, true, s["nested_oobj"].Computed)
 
+		// 1^ level
+		objectResource := s["nested_oobj"].Elem.(*schema.Resource)
+		assert.Equal(t, 2, len(objectResource.Schema))
+
+		assert.Equal(t, false, objectResource.Schema["id"].Required)
+		assert.Equal(t, true, objectResource.Schema["id"].Optional)
+		assert.Equal(t, true, objectResource.Schema["id"].Computed)
+		assert.Equal(t, false, objectResource.Schema["nested_object"].Required)
+		assert.Equal(t, true, objectResource.Schema["nested_object"].Optional)
+		assert.Equal(t, true, objectResource.Schema["nested_object"].Computed)
+
+		// 2^ level
+		nestedObjectResource := objectResource.Schema["nested_object"].Elem.(*schema.Resource)
+		assert.Equal(t, 2, len(nestedObjectResource.Schema))
+
+		assert.Equal(t, false, nestedObjectResource.Schema["origin_port"].Required)
+		assert.Equal(t, true, nestedObjectResource.Schema["origin_port"].Optional)
+		assert.Equal(t, true, nestedObjectResource.Schema["origin_port"].Computed)
+		assert.Equal(t, false, nestedObjectResource.Schema["protocol"].Required)
+		assert.Equal(t, true, nestedObjectResource.Schema["protocol"].Optional)
+		assert.Equal(t, true, nestedObjectResource.Schema["protocol"].Computed)
+	})
 }
 
 func TestCreateResourceSchema(t *testing.T) {

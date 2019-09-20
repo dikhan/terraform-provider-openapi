@@ -23,13 +23,25 @@ func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Sche
 	if err != nil {
 		return nil, err
 	}
-	// TODO: make sure the nested objects properties are also made computed to avoid surprises
 	for propertyName := range terraformSchema {
-		terraformSchema[propertyName].Required = false
-		terraformSchema[propertyName].Optional = true
-		terraformSchema[propertyName].Computed = true
+		terraformSchema[propertyName] = setPropertyForDataSourceSchema(terraformSchema[propertyName])
 	}
 	return terraformSchema, nil
+}
+
+func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputProperty *schema.Schema) {
+	outputProperty = inputProperty // the output is a clone of the input, do changes on the output var
+	outputProperty.Required = false
+	outputProperty.Optional = true
+	outputProperty.Computed = true
+	hasChildResources := inputProperty.Elem != nil && len(inputProperty.Elem.(*schema.Resource).Schema) > 0
+	if hasChildResources {
+		childResources := outputProperty.Elem.(*schema.Resource).Schema
+		for _, childR := range childResources {
+			childR = setPropertyForDataSourceSchema(childR)
+		}
+	}
+	return outputProperty
 }
 
 func (s *specSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {
