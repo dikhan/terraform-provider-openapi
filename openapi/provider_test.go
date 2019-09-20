@@ -219,23 +219,33 @@ securityDefinitions:
 
 definitions:
   ContentDeliveryNetworkV1Collection:
-    type: "array"
+    type: array
     items:
       $ref: "#/definitions/ContentDeliveryNetworkV1"
   ContentDeliveryNetworkV1:
-    type: "object"
+    type: object
     properties:
       id:
-        type: "string"
+        type: string
         readOnly: true
       label:
-        type: "string"
+        type: string
       owners:
         type: array
         items:
-          type: string`
-
-		// TODO: expand model definition to include other primitives that user can filter on AND also more complex property and ensure they are congfigured property in the schema as computed
+          type: string
+      int_property:
+        type: integer
+      bool_property:
+        type: boolean
+      float_property:
+        type: number
+        format: float
+      obj_property:
+        type: object
+        properties:
+          name:
+            type: string`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(swaggerContent))
@@ -269,6 +279,10 @@ definitions:
 
 						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["label"], schema.TypeString)
 						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["owners"], schema.TypeList)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["int_property"], schema.TypeInt)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["bool_property"], schema.TypeBool)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["float_property"], schema.TypeFloat)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeMap)
 
 						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
 						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
@@ -282,6 +296,8 @@ definitions:
 					})
 					Convey("the provider cdn-datasource data source should have only the READ operation configured", func() {
 						So(tfProvider.DataSourcesMap[resourceName].Read, ShouldNotBeNil)
+						So(tfProvider.DataSourcesMap[resourceName].Create, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[resourceName].Delete, ShouldBeNil)
 					})
 
 					Convey("and the provider resource map must be nil as no resources are configured in the swagger", func() {
