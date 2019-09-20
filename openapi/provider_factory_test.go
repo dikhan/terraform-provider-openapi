@@ -187,17 +187,76 @@ func TestCreateProvider(t *testing.T) {
 	})
 
 	Convey("Given a provider factory where the specAnalyser has an error", t, func() {
-		expectedError := errors.New("specAnalyser has an error")
+		expectedError := "specAnalyser has an error"
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
-				error: expectedError,
+				error: errors.New(expectedError),
 			},
 		}
 		Convey("When createProvider is called ", func() {
 			p, err := p.createProvider()
 			Convey("Then the error returned should be as expected", func() {
-				So(err, ShouldEqual, expectedError)
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+			Convey("And the provider returned should be nil", func() {
+				So(p, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a provider factory where the specAnalyser has an error on the backendConfiguration", t, func() {
+		expectedError := "backendConfiguration error"
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				backendConfiguration: &specStubBackendConfiguration{
+					err: errors.New(expectedError),
+				},
+			},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+			Convey("And the provider returned should be nil", func() {
+				So(p, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a provider factory where createTerraformProviderResourceMap fails", t, func() {
+		expectedError := "resource name can not be empty"
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				resources: []SpecResource{
+					&specStubResource{},
+				},
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{Name: headerProperty.Name},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+				backendConfiguration: &specStubBackendConfiguration{},
+			},
+			serviceConfiguration: &ServiceConfigStub{},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
 			})
 			Convey("And the provider returned should be nil", func() {
 				So(p, ShouldBeNil)
@@ -735,7 +794,7 @@ func TestGetProviderResourceName(t *testing.T) {
 	})
 }
 
-func TestCreateTerraformProviderDataSorceMap(t *testing.T) {
+func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
 
 	testcases := []struct {
 		name                 string
