@@ -229,7 +229,13 @@ definitions:
         type: "string"
         readOnly: true
       label:
-        type: "string"`
+        type: "string"
+      owners:
+        type: array
+        items:
+          type: string`
+
+		// TODO: expand model definition to include other primitives that user can filter on AND also more complex property and ensure they are congfigured property in the schema as computed
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(swaggerContent))
@@ -261,11 +267,18 @@ definitions:
 						resourceName := fmt.Sprintf("%s_cdn_datasource_v1", providerName)
 						So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
 
+						// TODO: dry out the assertions
 						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "label")
 						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
 						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Required, ShouldBeFalse)
 						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Optional, ShouldBeTrue)
 						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Computed, ShouldBeTrue)
+
+						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "owners")
+						So(tfProvider.DataSourcesMap[resourceName].Schema["owners"].Type, ShouldEqual, schema.TypeList)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["owners"].Required, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["owners"].Optional, ShouldBeTrue)
+						So(tfProvider.DataSourcesMap[resourceName].Schema["owners"].Computed, ShouldBeTrue)
 
 						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
 						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
