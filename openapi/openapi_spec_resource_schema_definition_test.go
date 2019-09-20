@@ -80,6 +80,40 @@ func TestCreateDataSourceSchema(t *testing.T) {
 	}
 }
 
+func TestCreateDataSourceSchema_Subresources(t *testing.T) {
+	t.Run("happy path -- data source schema dor sub-resoruce contains all schema properties configured as computed but parent properties", func(t *testing.T) {
+
+		specSchemaDef := specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				&specSchemaDefinitionProperty{
+					Name:     "id",
+					Type:     typeString,
+					ReadOnly: false,
+					Required: true,
+				},
+				&specSchemaDefinitionProperty{
+					Name:             "parent_id",
+					Type:             typeString,
+					ReadOnly:         false,
+					Required:         true,
+					IsParentProperty: true,
+				},
+			},
+		}
+
+		// get the Terraform schema which represents a Data Source
+		s, err := specSchemaDef.createDataSourceSchema()
+
+		assert.NotNil(t, s)
+		assert.NoError(t, err)
+
+		assert.Equal(t, schema.TypeString, s["parent_id"].Type)
+		assert.True(t, s["parent_id"].Required)
+		assert.False(t, s["parent_id"].Optional)
+		assert.False(t, s["parent_id"].Computed)
+	})
+}
+
 func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 	t.Run("happy path -- a data soruce can be derived from a nested object keeping all the properies attributes as expected", func(t *testing.T) {
 		// set up the schema for the nested object
