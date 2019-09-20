@@ -70,18 +70,22 @@ func TestCreateDataSourceSchema(t *testing.T) {
 		s, err := tc.specSchemaDef.createDataSourceSchema()
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
-			for expectedTerraformPropName, tfSchemaProp := range tc.expectedResult {
-				assert.Contains(t, s, expectedTerraformPropName, tc.name)
+			for expectedTerraformPropName, expectedTerraformSchemaProp := range tc.expectedResult {
 				assert.Nil(t, s["id"])
-				assert.Equal(t, tfSchemaProp.Type, s[expectedTerraformPropName].Type, tc.name)
-				assert.Equal(t, tfSchemaProp.Optional, s[expectedTerraformPropName].Optional, tc.name)
-				assert.Equal(t, tfSchemaProp.Required, s[expectedTerraformPropName].Required, tc.name)
-				assert.Equal(t, tfSchemaProp.Computed, s[expectedTerraformPropName].Computed, tc.name)
+				assertDataSourceSchemaProperty(t, s[expectedTerraformPropName], expectedTerraformSchemaProp.Type, tc.name)
 			}
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
 	}
+}
+
+func assertDataSourceSchemaProperty(t *testing.T, actual *schema.Schema, expectedType schema.ValueType, msgAndArgs ...interface{}) {
+	assert.NotNil(t, actual, msgAndArgs)
+	assert.Equal(t, expectedType, actual.Type, msgAndArgs)
+	assert.False(t, actual.Required, msgAndArgs)
+	assert.True(t, actual.Optional, msgAndArgs)
+	assert.True(t, actual.Computed, msgAndArgs)
 }
 
 func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
@@ -120,31 +124,20 @@ func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 		assert.NoError(t, err)
 
 		// assertions on the properties attributes
-		assert.Equal(t, false, s["nested_oobj"].Required)
-		assert.Equal(t, true, s["nested_oobj"].Optional)
-		assert.Equal(t, true, s["nested_oobj"].Computed)
+		assertDataSourceSchemaProperty(t, s["nested_oobj"], schema.TypeList)
 
 		// 1^ level
 		objectResource := s["nested_oobj"].Elem.(*schema.Resource)
 		assert.Equal(t, 2, len(objectResource.Schema))
 
-		assert.Equal(t, false, objectResource.Schema["id"].Required)
-		assert.Equal(t, true, objectResource.Schema["id"].Optional)
-		assert.Equal(t, true, objectResource.Schema["id"].Computed)
-		assert.Equal(t, false, objectResource.Schema["nested_object"].Required)
-		assert.Equal(t, true, objectResource.Schema["nested_object"].Optional)
-		assert.Equal(t, true, objectResource.Schema["nested_object"].Computed)
+		assertDataSourceSchemaProperty(t, objectResource.Schema["id"], schema.TypeString)
+		assertDataSourceSchemaProperty(t, objectResource.Schema["nested_object"], schema.TypeMap)
 
 		// 2^ level
 		nestedObjectResource := objectResource.Schema["nested_object"].Elem.(*schema.Resource)
 		assert.Equal(t, 2, len(nestedObjectResource.Schema))
-
-		assert.Equal(t, false, nestedObjectResource.Schema["origin_port"].Required)
-		assert.Equal(t, true, nestedObjectResource.Schema["origin_port"].Optional)
-		assert.Equal(t, true, nestedObjectResource.Schema["origin_port"].Computed)
-		assert.Equal(t, false, nestedObjectResource.Schema["protocol"].Required)
-		assert.Equal(t, true, nestedObjectResource.Schema["protocol"].Optional)
-		assert.Equal(t, true, nestedObjectResource.Schema["protocol"].Computed)
+		assertDataSourceSchemaProperty(t, nestedObjectResource.Schema["origin_port"], schema.TypeInt)
+		assertDataSourceSchemaProperty(t, nestedObjectResource.Schema["protocol"], schema.TypeString)
 	})
 }
 
