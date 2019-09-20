@@ -24,12 +24,20 @@ func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Sche
 		return nil, err
 	}
 	for propertyName := range terraformSchema {
-		terraformSchema[propertyName] = setPropertyForDataSourceSchema(terraformSchema[propertyName])
+		// TODO: to be tested
+		p, err := s.getProperty(propertyName)
+		if err != nil {
+			return nil, err
+		}
+		if !p.IsParentProperty {
+			terraformSchema[propertyName] = setPropertyForDataSourceSchema(terraformSchema[propertyName])
+		}
 	}
 	return terraformSchema, nil
 }
 
 func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputProperty *schema.Schema) {
+
 	outputProperty = inputProperty // the output is a clone of the input, do changes on the output var
 	outputProperty.Required = false
 	outputProperty.Optional = true
