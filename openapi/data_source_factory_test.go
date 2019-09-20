@@ -119,6 +119,7 @@ func TestDataSourceRead(t *testing.T) {
 				Properties: specSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, typeString, nil),
 				},
 			},
 		},
@@ -131,7 +132,7 @@ func TestDataSourceRead(t *testing.T) {
 		expectedResult  map[string]interface{}
 		expectedError   error
 	}{
-		// TODO: add a test to cover sub-resource use case too
+		// TODO: add a test to cover sub-resource use case too (need to cover this before releasing data source support)
 		{
 			name: "fetch selected data source as per filter configuration (label=someLabel)",
 			filtersInput: []map[string]interface{}{
@@ -139,12 +140,14 @@ func TestDataSourceRead(t *testing.T) {
 			},
 			responsePayload: []map[string]interface{}{
 				{
-					"id":    "someID",
-					"label": "someLabel",
+					"id":     "someID",
+					"label":  "someLabel",
+					"owners": []string{"someOwner"},
 				},
 				{
-					"id":    "someOtherID",
-					"label": "someOtherLabel",
+					"id":     "someOtherID",
+					"label":  "someOtherLabel",
+					"owners": []string{},
 				},
 			},
 			expectedError: nil,
@@ -206,9 +209,14 @@ func TestDataSourceRead(t *testing.T) {
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
 			// assert that the filtered data source contains the same values as the ones returned by the API
-			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
-			assert.Equal(t, 6, len(resourceData.State().Attributes), tc.name)                //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
+			assert.Equal(t, 8, len(resourceData.State().Attributes), tc.name)                //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
 			assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id(), tc.name) //resourceData.Id() is being called instead of resourceData.Get("id") because id property is a special one kept by Terraform
+			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
+			expectedOwners := client.responseListPayload[0]["owners"].([]string)
+			owners := resourceData.Get("owners").([]interface{})
+			assert.NotNil(t, owners, tc.name)
+			assert.NotNil(t, len(expectedOwners), len(owners), tc.name)
+			assert.Equal(t, expectedOwners[0], owners[0], tc.name)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
