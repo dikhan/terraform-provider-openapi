@@ -223,6 +223,50 @@ func TestDataSourceRead(t *testing.T) {
 	}
 }
 
+func TestDataSourceRead_Subresource(t *testing.T) {
+
+	dataSourceFactory := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			path: "/v1/cdns/{id}/firewall",
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", false, true, nil), // This simulates an openAPIResource that is subresource and the schema has already been populated with the parent property
+				},
+			},
+			fullParentResourceName: "cdns_v1",
+			parentResourceNames:    []string{"cdns_v1"},
+			parentPropertyNames:    []string{"cdns_v1_id"},
+		},
+	}
+
+	resourceSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+	require.NoError(t, err)
+
+	filtersInput := map[string]interface{}{
+		"cdns_v1_id": "parentPropertyID", // Since the path is a sub-resource, the user is expected to provide the id of the parent
+		dataSourceFilterPropertyName: []map[string]interface{}{
+			newFilter("label", []string{"my_label"}),
+		},
+	}
+	resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
+
+	client := &clientOpenAPIStub{
+		responseListPayload: []map[string]interface{}{
+			{
+				"id":    "someID",
+				"label": "my_label",
+			},
+		},
+	}
+	err = dataSourceFactory.read(resourceData, client)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"parentPropertyID"}, client.parentIDsReceived) // check that the parent id is passed as expected
+	assert.Equal(t, "someID", resourceData.Id())
+	assert.Equal(t, "my_label", resourceData.Get("label"))
+}
+
 func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	// Given ...
 	// ... a schema describing a nested object which is used to ...
