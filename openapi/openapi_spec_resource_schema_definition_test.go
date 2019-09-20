@@ -84,6 +84,45 @@ func TestCreateDataSourceSchema(t *testing.T) {
 	}
 }
 
+func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
+	nestedObjectSchemaDefinition := &specSchemaDefinition{
+		Properties: specSchemaDefinitionProperties{
+			newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+			newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+		},
+	}
+	nestedObjectDefault := map[string]interface{}{
+		"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+		"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+	}
+	nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+	propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+		Properties: specSchemaDefinitionProperties{
+			idProperty,
+			nestedObject,
+		},
+	}
+	dataValue := map[string]interface{}{
+		"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+		"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+	}
+	dataSourceSchema := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+	specSchemaNested := &specSchemaDefinition{
+		Properties: specSchemaDefinitionProperties{dataSourceSchema},
+	}
+
+	s, err := specSchemaNested.createDataSourceSchema()
+
+	assert.NotNil(t, s)
+	assert.NoError(t, err)
+	assert.Equal(t, false, s["nested_oobj"].Required)
+	nestedObjectElement := s["nested_oobj"].Elem.(*schema.Resource)
+
+	assert.Equal(t, 2, len(nestedObjectElement.Schema))
+	assert.Equal(t, false, nestedObjectElement.Schema["id"].Required)
+
+}
+
 func TestCreateResourceSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has few properties including the id all with terraform compliant names", t, func() {
 		s := &specSchemaDefinition{
