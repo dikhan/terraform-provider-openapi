@@ -23,6 +23,7 @@ func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Sche
 	if err != nil {
 		return nil, err
 	}
+	// TODO: make sure the nested objects properties are also made computed to avoid surprises
 	for propertyName := range terraformSchema {
 		terraformSchema[propertyName].Required = false
 		terraformSchema[propertyName].Optional = true
