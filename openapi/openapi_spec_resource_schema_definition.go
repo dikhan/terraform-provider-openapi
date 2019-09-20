@@ -34,11 +34,20 @@ func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputPropert
 	outputProperty.Required = false
 	outputProperty.Optional = true
 	outputProperty.Computed = true
-	hasChildResources := inputProperty.Elem != nil && len(inputProperty.Elem.(*schema.Resource).Schema) > 0
-	if hasChildResources {
-		childResources := outputProperty.Elem.(*schema.Resource).Schema
-		for _, childR := range childResources {
-			childR = setPropertyForDataSourceSchema(childR)
+
+	isResource := false
+	switch inputProperty.Elem.(type) {
+	case *schema.Resource:
+		isResource = true
+	}
+	// only apply the recursive call if Elem is a Resource (hence a complex item)
+	if isResource {
+		hasChildResources := inputProperty.Elem != nil && len(inputProperty.Elem.(*schema.Resource).Schema) > 0
+		if hasChildResources {
+			childResources := outputProperty.Elem.(*schema.Resource).Schema
+			for _, childR := range childResources {
+				childR = setPropertyForDataSourceSchema(childR)
+			}
 		}
 	}
 	return outputProperty
