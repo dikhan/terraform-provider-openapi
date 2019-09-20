@@ -2,7 +2,6 @@ package openapi
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -135,7 +134,7 @@ func TestDataSourceRead(t *testing.T) {
 	}{
 		// TODO: add a test to cover sub-resource use case too (need to cover this before releasing data source support)
 		{
-			name: "fetch selected data source as per filter configuration (label=someLabel) when the filter is into a nested object",
+			name: "fetch selected data source as per filter configuration (label=someLabel)",
 			filtersInput: []map[string]interface{}{
 				newFilter("label", []string{"someLabel"}),
 			},
@@ -153,82 +152,44 @@ func TestDataSourceRead(t *testing.T) {
 			},
 			expectedError: nil,
 		},
-		//{
-		//	name: "fetch selected data source as per filter configuration (label=someLabel) when the filter a top level property of a nested object",
-		//	filtersInput: []map[string]interface{}{
-		//		newFilter("label", []string{"someLabel"}),
-		//	},
-		//	responsePayload: []map[string]interface{}{
-		//		{
-		//			"id":     "someID",
-		//			"label":  "someLabel",
-		//			"owners": []string{"someOwner"},
-		//		},
-		//		{
-		//			"id":     "someOtherID",
-		//			"label":  "someOtherLabel",
-		//			"owners": []string{},
-		//		},
-		//	},
-		//	expectedError: nil,
-		//},
-		//{
-		//	name: "fetch selected data source as per filter configuration (label=someLabel)",
-		//	filtersInput: []map[string]interface{}{
-		//		newFilter("label", []string{"someLabel"}),
-		//	},
-		//	responsePayload: []map[string]interface{}{
-		//		{
-		//			"id":     "someID",
-		//			"label":  "someLabel",
-		//			"owners": []string{"someOwner"},
-		//		},
-		//		{
-		//			"id":     "someOtherID",
-		//			"label":  "someOtherLabel",
-		//			"owners": []string{},
-		//		},
-		//	},
-		//	expectedError: nil,
-		//},
-		//{
-		//	name: "no filter match",
-		//	filtersInput: []map[string]interface{}{
-		//		newFilter("label", []string{"some non existing label"}),
-		//	},
-		//	responsePayload: []map[string]interface{}{
-		//		{
-		//			"id":    "someID",
-		//			"label": "someLabel",
-		//		},
-		//	},
-		//	expectedError: errors.New("your query returned no results. Please change your search criteria and try again"),
-		//},
-		//{
-		//	name: "after filtering the result contains more than one element",
-		//	filtersInput: []map[string]interface{}{
-		//		newFilter("label", []string{"my_label"}),
-		//	},
-		//	responsePayload: []map[string]interface{}{
-		//		{
-		//			"id":    "someID",
-		//			"label": "my_label",
-		//		},
-		//		{
-		//			"id":    "someOtherID",
-		//			"label": "my_label",
-		//		},
-		//	},
-		//	expectedError: errors.New("your query returned contains more than one result. Please change your search criteria to make it more specific"),
-		//},
-		//{
-		//	name: "validate input fails",
-		//	filtersInput: []map[string]interface{}{
-		//		newFilter("non_existing_property", []string{"my_label"}),
-		//	},
-		//	responsePayload: []map[string]interface{}{},
-		//	expectedError:   errors.New("filter name does not match any of the schema properties: property with name 'non_existing_property' not existing in resource schema definition"),
-		//},
+		{
+			name: "no filter match",
+			filtersInput: []map[string]interface{}{
+				newFilter("label", []string{"some non existing label"}),
+			},
+			responsePayload: []map[string]interface{}{
+				{
+					"id":    "someID",
+					"label": "someLabel",
+				},
+			},
+			expectedError: errors.New("your query returned no results. Please change your search criteria and try again"),
+		},
+		{
+			name: "after filtering the result contains more than one element",
+			filtersInput: []map[string]interface{}{
+				newFilter("label", []string{"my_label"}),
+			},
+			responsePayload: []map[string]interface{}{
+				{
+					"id":    "someID",
+					"label": "my_label",
+				},
+				{
+					"id":    "someOtherID",
+					"label": "my_label",
+				},
+			},
+			expectedError: errors.New("your query returned contains more than one result. Please change your search criteria to make it more specific"),
+		},
+		{
+			name: "validate input fails",
+			filtersInput: []map[string]interface{}{
+				newFilter("non_existing_property", []string{"my_label"}),
+			},
+			responsePayload: []map[string]interface{}{},
+			expectedError:   errors.New("filter name does not match any of the schema properties: property with name 'non_existing_property' not existing in resource schema definition"),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -263,6 +224,8 @@ func TestDataSourceRead(t *testing.T) {
 }
 
 func TestDataSourceRead_ForNestedObjects(t *testing.T) {
+	// Given ...
+	// ... a schema describing a nested object which is used to ...
 	nestedObjectSchemaDefinition := &specSchemaDefinition{
 		Properties: specSchemaDefinitionProperties{
 			newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
@@ -287,7 +250,7 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 
 	dataSourceSchema := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
 
-	// Given
+	// ... build a data source (using a dataSourceFactory)
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
 			schemaDefinition: &specSchemaDefinition{
@@ -295,10 +258,36 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 			},
 		},
 	}
+	dataSourceTFSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+	require.NotNil(t, dataSourceTFSchema)
+	require.NoError(t, err)
 
-	fmt.Println(dataSourceFactory) //todo work on this
-	fs, err := dataSourceFactory.createTerraformDataSourceSchema()
-	fmt.Println(err, fs)
+	filtersInput := map[string]interface{}{
+		dataSourceFilterPropertyName: []map[string]interface{}{
+			newFilter("origin_port", []string{"3900"}),
+		},
+	}
+	resourceData := schema.TestResourceDataRaw(t, dataSourceTFSchema, filtersInput)
+	client := &clientOpenAPIStub{
+		responseListPayload: []map[string]interface{}{
+			{
+				"id":    "someID",
+				"label": "my_label",
+			},
+			{
+				"id":    "someOtherID",
+				"label": "my_label",
+			},
+		},
+	}
+	// When
+	err = dataSourceFactory.read(resourceData, client)
+	// Then
+	assert.Nil(t, err)
+	// assert that the filtered data source contains the same values as the ones returned by the API
+	assert.Equal(t, 8, len(resourceData.State().Attributes))                //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
+	assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id()) //resourceData.Id() is being called instead of resourceData.Get("id") because id property is a special one kept by Terraform
+	assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"))
 
 }
 
