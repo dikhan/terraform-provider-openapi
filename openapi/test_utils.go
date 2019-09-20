@@ -164,9 +164,23 @@ func initAPISpecFile(swaggerContent string) *os.File {
 }
 
 func assertDataSourceSchemaProperty(t *testing.T, actual *schema.Schema, expectedType schema.ValueType, msgAndArgs ...interface{}) {
+	assertTerraformSchemaProperty(t, actual, expectedType, false, true)
+}
+
+func assertTerraformSchemaNestedObjectProperty(t *testing.T, actual *schema.Schema, expectedRequired, expectedComputed bool, msgAndArgs ...interface{}) {
+	assertTerraformSchemaProperty(t, actual, schema.TypeList, expectedRequired, expectedComputed)
+	assert.Equal(t, 1, actual.MaxItems, msgAndArgs)
+}
+
+func assertTerraformSchemaProperty(t *testing.T, actual *schema.Schema, expectedType schema.ValueType, expectedRequired, expectedComputed bool, msgAndArgs ...interface{}) {
 	assert.NotNil(t, actual, msgAndArgs)
 	assert.Equal(t, expectedType, actual.Type, msgAndArgs)
-	assert.False(t, actual.Required, msgAndArgs)
-	assert.True(t, actual.Optional, msgAndArgs)
-	assert.True(t, actual.Computed, msgAndArgs)
+	if expectedRequired {
+		assert.True(t, actual.Required, msgAndArgs)
+		assert.False(t, actual.Optional, msgAndArgs)
+	} else {
+		assert.True(t, actual.Optional, msgAndArgs)
+		assert.False(t, actual.Required, msgAndArgs)
+	}
+	assert.Equal(t, expectedComputed, actual.Computed, msgAndArgs)
 }
