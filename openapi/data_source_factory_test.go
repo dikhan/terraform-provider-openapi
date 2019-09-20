@@ -248,13 +248,16 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 		"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
 	}
 
-	dataSourceSchema := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+	objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
 
 	// ... build a data source (using a dataSourceFactory)
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
 			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{dataSourceSchema},
+				Properties: specSchemaDefinitionProperties{
+					idProperty,
+					objectProperty,
+				},
 			},
 		},
 	}
@@ -264,19 +267,31 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 
 	filtersInput := map[string]interface{}{
 		dataSourceFilterPropertyName: []map[string]interface{}{
-			newFilter("origin_port", []string{"3900"}),
+			newFilter("id", []string{"someID"}),
 		},
 	}
 	resourceData := schema.TestResourceDataRaw(t, dataSourceTFSchema, filtersInput)
 	client := &clientOpenAPIStub{
 		responseListPayload: []map[string]interface{}{
 			{
-				"id":    "someID",
-				"label": "my_label",
+				"id": "someID",
+				"nested-oobj": map[string]interface{}{
+					"id": "uuid",
+					"nested_object": map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
 			},
 			{
-				"id":    "someOtherID",
-				"label": "my_label",
+				"id": "someOtherID",
+				"nested-oobj": map[string]interface{}{
+					"id": "other-uuid",
+					"nested_object": map[string]interface{}{
+						"origin_port": 443,
+						"protocol":    "https",
+					},
+				},
 			},
 		},
 	}
@@ -285,10 +300,9 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	// Then
 	assert.Nil(t, err)
 	// assert that the filtered data source contains the same values as the ones returned by the API
-	assert.Equal(t, 8, len(resourceData.State().Attributes))                //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
+	assert.Equal(t, 10, len(resourceData.State().Attributes))               //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
 	assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id()) //resourceData.Id() is being called instead of resourceData.Get("id") because id property is a special one kept by Terraform
-	assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"))
-
+	assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("nested_object"))
 }
 
 func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
