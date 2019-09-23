@@ -132,7 +132,6 @@ func TestDataSourceRead(t *testing.T) {
 		expectedResult  map[string]interface{}
 		expectedError   error
 	}{
-		// TODO: add a test to cover sub-resource use case too (need to cover this before releasing data source support)
 		{
 			name: "fetch selected data source as per filter configuration (label=someLabel)",
 			filtersInput: []map[string]interface{}{

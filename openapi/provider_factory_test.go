@@ -264,57 +264,52 @@ func TestCreateProvider(t *testing.T) {
 		})
 	})
 
-	// TODO: Fix the below test - failing because both ResourcesMap and DataSourcesMap are populated in the provider - not sure if this is the intended behavior
-	//Convey("Given a provider factory where createTerraformProviderDataSourceMap fails", t, func() {
-	//	expectedError := ""
-	//	apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
-	//	headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
-	//	p := providerFactory{
-	//		name: "provider",
-	//		specAnalyser: &specAnalyserStub{
-	//			resources: []SpecResource{
-	//				&specStubResource{
-	//					name: "resource",
-	//					path: "/v1/resource",
-	//					shouldIgnore: false,
-	//					schemaDefinition: &specSchemaDefinition{
-	//						Properties: specSchemaDefinitionProperties{
-	//							//&specSchemaDefinitionProperty{Type: "unsupported"},
-	//						},
-	//					},
-	//					resourceGetOperation: &specResourceOperation{},
-	//					timeouts: &specTimeouts{},
-	//				},
-	//			},
-	//			headers: SpecHeaderParameters{
-	//				SpecHeaderParam{Name: headerProperty.Name},
-	//			},
-	//			security: &specSecurityStub{
-	//				securityDefinitions: &SpecSecurityDefinitions{
-	//					newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
-	//				},
-	//				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
-	//					{
-	//						apiKeyAuthProperty.Name: []string{""},
-	//					},
-	//				}),
-	//			},
-	//			backendConfiguration: &specStubBackendConfiguration{},
-	//		},
-	//		serviceConfiguration: &ServiceConfigStub{},
-	//	}
-	//	Convey("When createProvider is called ", func() {
-	//		p, err := p.createProvider()
-	//		Convey("Then the error returned should be as expected", func() {
-	//			So(err.Error(), ShouldEqual, expectedError)
-	//		})
-	//		Convey("And the provider returned should be nil", func() {
-	//			So(p, ShouldBeNil)
-	//			So(p.DataSourcesMap, ShouldNotBeNil)
-	//			So(p.ResourcesMap, ShouldBeNil)
-	//		})
-	//	})
-	//})
+	Convey("Given a provider factory where createTerraformProviderDataSourceMap fails", t, func() {
+		expectedError := "resource name can not be empty"
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				dataSources: []SpecResource{
+					&specStubResource{
+						name:         "",
+						path:         "/v1/resource",
+						shouldIgnore: false,
+						schemaDefinition: &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{},
+						},
+						resourceGetOperation: &specResourceOperation{},
+						timeouts:             &specTimeouts{},
+					},
+				},
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{Name: headerProperty.Name},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorization),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+				backendConfiguration: &specStubBackendConfiguration{},
+			},
+			serviceConfiguration: &ServiceConfigStub{},
+		}
+		Convey("When createProvider is called ", func() {
+			p, err := p.createProvider()
+			Convey("Then the error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+			Convey("And the provider returned should be nil", func() {
+				So(p, ShouldBeNil)
+			})
+		})
+	})
 }
 
 func TestCreateValidateFunc(t *testing.T) {
