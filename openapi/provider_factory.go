@@ -58,8 +58,13 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	}
 
 	if dataSources, err = p.createTerraformProviderDataSourceMap(); err != nil {
-		return nil, err // TODO: untested
+		return nil, err
 	}
+
+	// TODO: createTerraformProviderDataSourceMap error untested
+	// Data sources follow the same creation path as resources, so any errors will be caught in createTerraformProviderResourceMap
+	// Also, data sources are returned in *both* the ResourcesMap and the DataSourcesMap of the provider - is that the intended behavior?
+	// If not, need logic to skip createTerraformProviderResourceMap if we are dealing with data sources
 
 	provider := &schema.Provider{
 		Schema:         providerSchema,
