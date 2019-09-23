@@ -852,21 +852,21 @@ func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
 		{
 			name: "happy path",
 			specV2stub: &specAnalyserStub{
-				resources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+				dataSources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
 			},
 			expectedResourceName: "provider_resource",
 		},
 		{
 			name: "getProviderResourceName fails ",
 			specV2stub: &specAnalyserStub{
-				resources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
+				dataSources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
 			},
 			expectedError: "resource name can not be empty",
 		},
 		{
 			name: "createTerraformDataSource fails",
 			specV2stub: &specAnalyserStub{
-				resources: []SpecResource{&specStubResource{
+				dataSources: []SpecResource{&specStubResource{
 					name: "hello",
 					funcGetResourceSchema: func() (*specSchemaDefinition, error) {
 						return nil, errors.New("createTerraformDataSource failed")
