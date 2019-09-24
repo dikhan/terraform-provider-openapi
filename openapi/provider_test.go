@@ -219,17 +219,33 @@ securityDefinitions:
 
 definitions:
   ContentDeliveryNetworkV1Collection:
-    type: "array"
+    type: array
     items:
       $ref: "#/definitions/ContentDeliveryNetworkV1"
   ContentDeliveryNetworkV1:
-    type: "object"
+    type: object
     properties:
       id:
-        type: "string"
+        type: string
         readOnly: true
       label:
-        type: "string"`
+        type: string
+      owners:
+        type: array
+        items:
+          type: string
+      int_property:
+        type: integer
+      bool_property:
+        type: boolean
+      float_property:
+        type: number
+        format: float
+      obj_property:
+        type: object
+        properties:
+          name:
+            type: string`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(swaggerContent))
@@ -261,11 +277,12 @@ definitions:
 						resourceName := fmt.Sprintf("%s_cdn_datasource_v1", providerName)
 						So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
 
-						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "label")
-						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
-						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Required, ShouldBeFalse)
-						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Optional, ShouldBeTrue)
-						So(tfProvider.DataSourcesMap[resourceName].Schema["label"].Computed, ShouldBeTrue)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["label"], schema.TypeString)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["owners"], schema.TypeList)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["int_property"], schema.TypeInt)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["bool_property"], schema.TypeBool)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["float_property"], schema.TypeFloat)
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeMap)
 
 						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
 						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
@@ -279,6 +296,94 @@ definitions:
 					})
 					Convey("the provider cdn-datasource data source should have only the READ operation configured", func() {
 						So(tfProvider.DataSourcesMap[resourceName].Read, ShouldNotBeNil)
+						So(tfProvider.DataSourcesMap[resourceName].Create, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[resourceName].Delete, ShouldBeNil)
+					})
+
+					Convey("and the provider resource map must be nil as no resources are configured in the swagger", func() {
+						So(tfProvider.ResourcesMap, ShouldBeEmpty)
+					})
+				})
+				Convey("the provider configuration function should not be nil", func() {
+					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
+				})
+			})
+		})
+	})
+
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible data source that has a subresource path", t, func() {
+		swaggerContent := `swagger: "2.0"
+host: "localhost:8443"
+basePath: "/api"
+
+paths:
+  /v1/cdns/{id}/firewalls:
+    get:
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+
+definitions:
+  ContentDeliveryNetworkV1Collection:
+    type: "array"
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(swaggerContent))
+		}))
+
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			providerName := "openapi"
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider returned should be configured as expected", func() {
+				So(tfProvider, ShouldNotBeNil)
+				Convey("the provider schema should be the expected one", func() {
+					So(tfProvider.Schema, ShouldNotBeNil)
+				})
+				Convey("the provider dataSource map should contain the cdn resource with the expected configuration", func() {
+					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+					So(len(tfProvider.DataSourcesMap), ShouldEqual, 1)
+
+					dataSourceName := fmt.Sprintf("%s_cdns_v1_firewalls", providerName)
+					So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceName)
+					Convey("the provider cdn resource should have the expected schema", func() {
+						So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceName)
+
+						// check parent id is part of the schema
+
+						assertTerraformSchemaProperty(t, tfProvider.DataSourcesMap[dataSourceName].Schema["cdns_v1_id"], schema.TypeString, true, false)
+
+						// check actual model properties are part of the schema
+						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[dataSourceName].Schema["label"], schema.TypeString)
+
+						// check filter property is in the schema
+						So(tfProvider.DataSourcesMap[dataSourceName].Schema, ShouldContainKey, "filter")
+						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
+						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Required, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Optional, ShouldBeTrue)
+						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Computed, ShouldBeFalse)
+
+						elements := tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Elem.(*schema.Resource).Schema
+						So(elements["name"].Type, ShouldEqual, schema.TypeString)
+						So(elements["values"].Type, ShouldEqual, schema.TypeList)
+					})
+					Convey("the provider cdn-datasource data source should have only the READ operation configured", func() {
+						So(tfProvider.DataSourcesMap[dataSourceName].Read, ShouldNotBeNil)
 					})
 
 					Convey("and the provider resource map must be nil as no resources are configured in the swagger", func() {
@@ -368,7 +473,7 @@ definitions:
 				So(tfProvider, ShouldNotBeNil)
 				Convey("the provider schema should only include the endpoints property that enables users to override the resource host from the configuration", func() {
 					So(tfProvider.Schema, ShouldNotBeNil)
-					assertTerraformSchemaProperty(tfProvider.Schema, "endpoints", schema.TypeSet, false, false)
+					assertTerraformSchemaProperty(t, tfProvider.Schema["endpoints"], schema.TypeSet, false, false)
 					So(tfProvider.Schema["endpoints"].Elem.(*schema.Resource).Schema, ShouldContainKey, "cdn_v1")
 				})
 				Convey("the provider resource map should contain the cdn resource with the expected configuration", func() {
@@ -379,14 +484,14 @@ definitions:
 						So(tfProvider.ResourcesMap, ShouldNotBeNil)
 						resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
 						So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
-						assertTerraformSchemaProperty(tfProvider.ResourcesMap[resourceName].Schema, "label", schema.TypeString, true, false)
-						assertTerraformSchemaNestedObjectProperty(tfProvider.ResourcesMap[resourceName].Schema, "object_nested_scheme_property", false, false)
+						assertTerraformSchemaProperty(t, tfProvider.ResourcesMap[resourceName].Schema["label"], schema.TypeString, true, false)
+						assertTerraformSchemaNestedObjectProperty(t, tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"], false, false)
 						nestedObject := tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"]
-						assertTerraformSchemaProperty(nestedObject.Elem.(*schema.Resource).Schema, "name", schema.TypeString, false, true)
-						assertTerraformSchemaProperty(nestedObject.Elem.(*schema.Resource).Schema, "object_property", schema.TypeMap, false, false)
+						assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["name"], schema.TypeString, false, true)
+						assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["object_property"], schema.TypeMap, false, false)
 						object := nestedObject.Elem.(*schema.Resource).Schema["object_property"]
-						assertTerraformSchemaProperty(object.Elem.(*schema.Resource).Schema, "account", schema.TypeString, false, false)
-						assertTerraformSchemaProperty(object.Elem.(*schema.Resource).Schema, "read_only", schema.TypeString, false, true)
+						assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["account"], schema.TypeString, false, false)
+						assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["read_only"], schema.TypeString, false, true)
 					})
 					Convey("the provider cdn resource should have the expected operations configured", func() {
 						So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
@@ -403,26 +508,6 @@ definitions:
 		})
 	})
 
-}
-
-func assertTerraformSchemaProperty(actualSchema map[string]*schema.Schema, expectedPropertyName string, expectedType schema.ValueType, expectedRequired, expectedComputed bool) {
-	fmt.Printf(">>> Validating '%s' property settings\n", expectedPropertyName)
-	So(actualSchema, ShouldContainKey, expectedPropertyName)
-	property := actualSchema[expectedPropertyName]
-	So(property.Type, ShouldEqual, expectedType)
-	if expectedRequired {
-		So(property.Required, ShouldBeTrue)
-		So(property.Optional, ShouldBeFalse)
-	} else {
-		So(property.Optional, ShouldBeTrue)
-		So(property.Required, ShouldBeFalse)
-	}
-	So(property.Computed, ShouldEqual, expectedComputed)
-}
-
-func assertTerraformSchemaNestedObjectProperty(actualSchema map[string]*schema.Schema, expectedPropertyName string, expectedRequired, expectedComputed bool) {
-	assertTerraformSchemaProperty(actualSchema, expectedPropertyName, schema.TypeList, expectedRequired, expectedComputed)
-	So(actualSchema[expectedPropertyName].MaxItems, ShouldEqual, 1)
 }
 
 func Test_colliding_resource_names(t *testing.T) {

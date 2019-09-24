@@ -119,6 +119,7 @@ func TestDataSourceRead(t *testing.T) {
 				Properties: specSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, typeString, nil),
 				},
 			},
 		},
@@ -131,7 +132,6 @@ func TestDataSourceRead(t *testing.T) {
 		expectedResult  map[string]interface{}
 		expectedError   error
 	}{
-		// TODO: add a test to cover sub-resource use case too
 		{
 			name: "fetch selected data source as per filter configuration (label=someLabel)",
 			filtersInput: []map[string]interface{}{
@@ -139,12 +139,14 @@ func TestDataSourceRead(t *testing.T) {
 			},
 			responsePayload: []map[string]interface{}{
 				{
-					"id":    "someID",
-					"label": "someLabel",
+					"id":     "someID",
+					"label":  "someLabel",
+					"owners": []string{"someOwner"},
 				},
 				{
-					"id":    "someOtherID",
-					"label": "someOtherLabel",
+					"id":     "someOtherID",
+					"label":  "someOtherLabel",
+					"owners": []string{},
 				},
 			},
 			expectedError: nil,
@@ -206,13 +208,144 @@ func TestDataSourceRead(t *testing.T) {
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
 			// assert that the filtered data source contains the same values as the ones returned by the API
-			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
-			assert.Equal(t, 6, len(resourceData.State().Attributes), tc.name)                //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
+			assert.Equal(t, 8, len(resourceData.State().Attributes), tc.name)                //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
 			assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id(), tc.name) //resourceData.Id() is being called instead of resourceData.Get("id") because id property is a special one kept by Terraform
+			assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("label"), tc.name)
+			expectedOwners := client.responseListPayload[0]["owners"].([]string)
+			owners := resourceData.Get("owners").([]interface{})
+			assert.NotNil(t, owners, tc.name)
+			assert.NotNil(t, len(expectedOwners), len(owners), tc.name)
+			assert.Equal(t, expectedOwners[0], owners[0], tc.name)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
 	}
+}
+
+func TestDataSourceRead_Subresource(t *testing.T) {
+
+	dataSourceFactory := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			path: "/v1/cdns/{id}/firewall",
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", false, true, nil), // This simulates an openAPIResource that is subresource and the schema has already been populated with the parent property
+				},
+			},
+			fullParentResourceName: "cdns_v1",
+			parentResourceNames:    []string{"cdns_v1"},
+			parentPropertyNames:    []string{"cdns_v1_id"},
+		},
+	}
+
+	resourceSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+	require.NoError(t, err)
+
+	filtersInput := map[string]interface{}{
+		"cdns_v1_id": "parentPropertyID", // Since the path is a sub-resource, the user is expected to provide the id of the parent
+		dataSourceFilterPropertyName: []map[string]interface{}{
+			newFilter("label", []string{"my_label"}),
+		},
+	}
+	resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
+
+	client := &clientOpenAPIStub{
+		responseListPayload: []map[string]interface{}{
+			{
+				"id":    "someID",
+				"label": "my_label",
+			},
+		},
+	}
+	err = dataSourceFactory.read(resourceData, client)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"parentPropertyID"}, client.parentIDsReceived) // check that the parent id is passed as expected
+	assert.Equal(t, "someID", resourceData.Id())
+	assert.Equal(t, "my_label", resourceData.Get("label"))
+}
+
+func TestDataSourceRead_ForNestedObjects(t *testing.T) {
+	// Given ...
+	// ... a schema describing a nested object which is used to ...
+	nestedObjectSchemaDefinition := &specSchemaDefinition{
+		Properties: specSchemaDefinitionProperties{
+			newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+			newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+		},
+	}
+	nestedObjectDefault := map[string]interface{}{
+		"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+		"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+	}
+	nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+	propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+		Properties: specSchemaDefinitionProperties{
+			idProperty,
+			nestedObject,
+		},
+	}
+	dataValue := map[string]interface{}{
+		"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+		"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+	}
+
+	objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+
+	// ... build a data source (using a dataSourceFactory)
+	dataSourceFactory := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					idProperty,
+					objectProperty,
+				},
+			},
+		},
+	}
+	dataSourceTFSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
+	require.NotNil(t, dataSourceTFSchema)
+	require.NoError(t, err)
+
+	filtersInput := map[string]interface{}{
+		dataSourceFilterPropertyName: []map[string]interface{}{
+			newFilter("id", []string{"someID"}),
+		},
+	}
+	resourceData := schema.TestResourceDataRaw(t, dataSourceTFSchema, filtersInput)
+	client := &clientOpenAPIStub{
+		responseListPayload: []map[string]interface{}{
+			{
+				"id": "someID",
+				"nested-oobj": map[string]interface{}{
+					"id": "uuid",
+					"nested_object": map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+			},
+			{
+				"id": "someOtherID",
+				"nested-oobj": map[string]interface{}{
+					"id": "other-uuid",
+					"nested_object": map[string]interface{}{
+						"origin_port": 443,
+						"protocol":    "https",
+					},
+				},
+			},
+		},
+	}
+	// When
+	err = dataSourceFactory.read(resourceData, client)
+	// Then
+	assert.Nil(t, err)
+	// assert that the filtered data source contains the same values as the ones returned by the API
+	assert.Equal(t, 10, len(resourceData.State().Attributes))               //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
+	assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id()) //resourceData.Id() is being called instead of resourceData.Get("id") because id property is a special one kept by Terraform
+	assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("nested_object"))
 }
 
 func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {

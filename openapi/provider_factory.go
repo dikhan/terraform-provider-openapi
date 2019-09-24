@@ -58,7 +58,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	}
 
 	if dataSources, err = p.createTerraformProviderDataSourceMap(); err != nil {
-		return nil, err // TODO: untested
+		return nil, err
 	}
 
 	provider := &schema.Provider{
@@ -184,11 +184,13 @@ func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*sch
 		if err != nil {
 			return nil, err
 		}
+		start := time.Now()
 		d := newDataSourceFactory(openAPIDataSource)
 		dataSourceTFSchema, err := d.createTerraformDataSource()
 		if err != nil {
 			return nil, err
 		}
+		log.Printf("[INFO] data source '%s' successfully registered in the provider (time:%s)", dataSourceName, time.Since(start))
 		dataSourceMap[dataSourceName] = dataSourceTFSchema
 	}
 	return dataSourceMap, nil

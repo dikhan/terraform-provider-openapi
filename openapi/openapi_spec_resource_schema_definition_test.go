@@ -70,18 +70,101 @@ func TestCreateDataSourceSchema(t *testing.T) {
 		s, err := tc.specSchemaDef.createDataSourceSchema()
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
-			for expectedTerraformPropName, tfSchemaProp := range tc.expectedResult {
-				assert.Contains(t, s, expectedTerraformPropName, tc.name)
+			for expectedTerraformPropName, expectedTerraformSchemaProp := range tc.expectedResult {
 				assert.Nil(t, s["id"])
-				assert.Equal(t, tfSchemaProp.Type, s[expectedTerraformPropName].Type, tc.name)
-				assert.Equal(t, tfSchemaProp.Optional, s[expectedTerraformPropName].Optional, tc.name)
-				assert.Equal(t, tfSchemaProp.Required, s[expectedTerraformPropName].Required, tc.name)
-				assert.Equal(t, tfSchemaProp.Computed, s[expectedTerraformPropName].Computed, tc.name)
+				assertDataSourceSchemaProperty(t, s[expectedTerraformPropName], expectedTerraformSchemaProp.Type, tc.name)
 			}
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
 	}
+}
+
+func TestCreateDataSourceSchema_Subresources(t *testing.T) {
+	t.Run("happy path -- data source schema dor sub-resoruce contains all schema properties configured as computed but parent properties", func(t *testing.T) {
+
+		specSchemaDef := specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				&specSchemaDefinitionProperty{
+					Name:     "id",
+					Type:     typeString,
+					ReadOnly: false,
+					Required: true,
+				},
+				&specSchemaDefinitionProperty{
+					Name:             "parent_id",
+					Type:             typeString,
+					ReadOnly:         false,
+					Required:         true,
+					IsParentProperty: true,
+				},
+			},
+		}
+
+		// get the Terraform schema which represents a Data Source
+		s, err := specSchemaDef.createDataSourceSchema()
+
+		assert.NotNil(t, s)
+		assert.NoError(t, err)
+
+		assert.Equal(t, schema.TypeString, s["parent_id"].Type)
+		assert.True(t, s["parent_id"].Required)
+		assert.False(t, s["parent_id"].Optional)
+		assert.False(t, s["parent_id"].Computed)
+	})
+}
+
+func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
+	t.Run("happy path -- a data soruce can be derived from a nested object keeping all the properies attributes as expected", func(t *testing.T) {
+		// set up the schema for the nested object
+		nestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		nestedObjectDefault := map[string]interface{}{
+			"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+			"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+		}
+		nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
+		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				nestedObject,
+			},
+		}
+		dataValue := map[string]interface{}{
+			"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+			"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+		}
+		dataSourceSchema := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+		specSchemaNested := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{dataSourceSchema},
+		}
+
+		// get the Terraform schema which represents a Data Source
+		s, err := specSchemaNested.createDataSourceSchema()
+
+		assert.NotNil(t, s)
+		assert.NoError(t, err)
+
+		// assertions on the properties attributes
+		assertDataSourceSchemaProperty(t, s["nested_oobj"], schema.TypeList)
+
+		// 1^ level
+		objectResource := s["nested_oobj"].Elem.(*schema.Resource)
+		assert.Equal(t, 2, len(objectResource.Schema))
+
+		assertDataSourceSchemaProperty(t, objectResource.Schema["id"], schema.TypeString)
+		assertDataSourceSchemaProperty(t, objectResource.Schema["nested_object"], schema.TypeMap)
+
+		// 2^ level
+		nestedObjectResource := objectResource.Schema["nested_object"].Elem.(*schema.Resource)
+		assert.Equal(t, 2, len(nestedObjectResource.Schema))
+		assertDataSourceSchemaProperty(t, nestedObjectResource.Schema["origin_port"], schema.TypeInt)
+		assertDataSourceSchemaProperty(t, nestedObjectResource.Schema["protocol"], schema.TypeString)
+	})
 }
 
 func TestCreateResourceSchema(t *testing.T) {

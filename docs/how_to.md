@@ -265,7 +265,7 @@ The OpenAPI provider is able to export data sources from paths that are data sou
 
 An endpoint (path) to be considered terraform data source compliant must meet the following criteria:
 
-- The path must be a root level path (e,g: /v1/cdns) not an instance path (e,g: /api/v1/cdn/{id})
+- The path must be a root level path (e,g: /v1/cdns) not an instance path (e,g: /api/v1/cdn/{id}). Subresource data source paths are also supported (e,g: /v1/cdns/{id}/firewalls)
 - The path must contain a GET operation with a response 200 which contains a schema of type 'array'. The items schema must be of type 'object' and must specify at least one property.
 - The items schema object definitnio must contain a property called ```id``` which will be used internally to uniquely identify the data source. If
 the object schema does not have a property called ```id```, then at least one property should have the ```x-terraform-id``` extension 
