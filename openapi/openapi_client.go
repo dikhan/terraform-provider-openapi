@@ -40,6 +40,15 @@ type ProviderClient struct {
 	apiAuthenticator            specAuthenticator
 }
 
+func NewProviderClient(openAPIBackendConfiguration SpecBackendConfiguration, httpClient http_goclient.HttpClientIface, providerConfiguration providerConfiguration, apiAuthenticator specAuthenticator) ProviderClient {
+	return ProviderClient{
+		openAPIBackendConfiguration: openAPIBackendConfiguration,
+		httpClient:                  httpClient,
+		providerConfiguration:       providerConfiguration,
+		apiAuthenticator:            apiAuthenticator,
+	}
+}
+
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in
 func (o *ProviderClient) Post(resource SpecResource, requestPayload interface{}, responsePayload interface{}, parentIDs ...string) (*http.Response, error) {
 	resourceURL, err := o.getResourceURL(resource, parentIDs)
