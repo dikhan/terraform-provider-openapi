@@ -13,8 +13,8 @@ func TestApiAuth(t *testing.T) {
 			apiAuth := &apiAuth{
 				globalSecuritySchemes: globalSecuritySchemes,
 			}
-			Convey("Then the apiAuth should comply with specAuthenticator interface", func() {
-				var _ specAuthenticator = apiAuth
+			Convey("Then the apiAuth should comply with SpecAuthenticator interface", func() {
+				var _ SpecAuthenticator = apiAuth
 			})
 		})
 	})
@@ -66,7 +66,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 			name:  authorization,
 			value: "superSecretKey",
 		}
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					expectedAPIKey,
@@ -91,7 +91,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 
 	Convey("Given a provider configuration containing an 'apiKey' type security definition with name 'apikey_auth' and an operation that requires api key header authentication", t, func() {
 		securityPolicyName := "apikey_auth"
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
@@ -118,7 +118,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing a header 'apiKey' type security definition with name 'apikey_header_auth', an operation that requires the 'apikey_auth' authentication and the resource URL", t, func() {
 		securityPolicyName := "apikey_header_auth"
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
@@ -130,7 +130,7 @@ func TestPrepareAuth(t *testing.T) {
 		}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: securityPolicyName}}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(nil)
+		oa := NewAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with a providerConfiguration", func() {
 			authContext, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should be nil", func() {
@@ -150,7 +150,7 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a provider configuration containing a query 'apiKey' type security definition with name 'apikey_query_auth', an operation that requires the 'apikey_auth' authentication and the resource URL", t, func() {
 		securityPolicyName := "apikey_query_auth"
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyQueryAuthenticator{
 					apiKey{
@@ -162,7 +162,7 @@ func TestPrepareAuth(t *testing.T) {
 		}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: securityPolicyName}}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(nil)
+		oa := NewAPIAuthenticator(nil)
 		Convey("When prepareAPIKeyAuthentication method is called with the operation, providerConfiguration and the service url", func() {
 			authContext, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should be nil", func() {
@@ -180,7 +180,7 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing multiple 'apiKey' type security definitions (apikey_header_auth and apikey_query_auth), an operation that requires both 'apikey_header_auth' AND 'apikey_query_auth' authentication and the resource URL", t, func() {
 		apiKeyHeaderSecurityPolicyName := "apikey_header_auth"
 		apiKeyQuerySecurityPolicyName := "apikey_query_auth"
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				apiKeyHeaderSecurityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
@@ -198,7 +198,7 @@ func TestPrepareAuth(t *testing.T) {
 		}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: apiKeyHeaderSecurityPolicyName}, SpecSecurityScheme{Name: apiKeyQuerySecurityPolicyName}}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(nil)
+		oa := NewAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with the providerConfiguration", func() {
 			authContext, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should be nil", func() {
@@ -214,7 +214,7 @@ func TestPrepareAuth(t *testing.T) {
 	})
 
 	Convey("Given a provider configuration containing multiple 'apiKey' type security definitions (apiKey and appId), an operation that requires both 'apiKey' AND 'appId' header authentication and the resource URL", t, func() {
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				// provider config keys are always terraform name compliant - snake case
 				"api_key": apiKeyHeaderAuthenticator{
@@ -233,7 +233,7 @@ func TestPrepareAuth(t *testing.T) {
 		}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: "apiKey"}, SpecSecurityScheme{Name: "appId"}}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(nil)
+		oa := NewAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with the providerConfiguration", func() {
 			authContext, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should be nil", func() {
@@ -249,7 +249,7 @@ func TestPrepareAuth(t *testing.T) {
 	})
 
 	Convey("Given a provider configuration containing security definitions for the global security contains policies default and an operation that DOES NOT have any specific security scheme and the resource URL", t, func() {
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
@@ -264,7 +264,7 @@ func TestPrepareAuth(t *testing.T) {
 			// Operation DOES NOT have security schemes
 		}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(globalSecuritySchemes)
+		oa := NewAPIAuthenticator(globalSecuritySchemes)
 		Convey("When prepareAuth method is called with the providerConfiguration", func() {
 			authContext, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should be nil", func() {
@@ -278,7 +278,7 @@ func TestPrepareAuth(t *testing.T) {
 	})
 
 	Convey("Given a provider configuration containing security definitions for both global security schemes and operation overrides and the resource URL", t, func() {
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
@@ -297,7 +297,7 @@ func TestPrepareAuth(t *testing.T) {
 		globalSecuritySchemes := &SpecSecuritySchemes{SpecSecurityScheme{Name: "apiKey"}}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: "apiKeyOverride"}}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(globalSecuritySchemes)
+		oa := NewAPIAuthenticator(globalSecuritySchemes)
 		Convey("When prepareAuth method is called with the providerConfiguration", func() {
 			authContext, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should be nil", func() {
@@ -311,7 +311,7 @@ func TestPrepareAuth(t *testing.T) {
 	})
 
 	Convey("Given a global security setting containing schemes which are not defined in the provider security definitions, and an operation with NO security schemes", t, func() {
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"apiKey": apiKeyHeaderAuthenticator{
 					apiKey{
@@ -326,7 +326,7 @@ func TestPrepareAuth(t *testing.T) {
 			// Operation DOES NOT have security schemes}
 		}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(globalSecuritySchemes)
+		oa := NewAPIAuthenticator(globalSecuritySchemes)
 		Convey("When prepareAuth method is called with the providerConfiguration", func() {
 			_, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should NOT be nil as global schemes contain policies which are not defined", func() {
@@ -339,7 +339,7 @@ func TestPrepareAuth(t *testing.T) {
 	})
 
 	Convey("Given an operation security setting containing schemes which are not defined in the provider security definitions", t, func() {
-		providerConfig := providerConfiguration{
+		providerConfig := ProviderConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
@@ -351,7 +351,7 @@ func TestPrepareAuth(t *testing.T) {
 		}
 		operationSecuritySchemes := SpecSecuritySchemes{SpecSecurityScheme{Name: "not_defined_scheme"}}
 		url := "https://www.host.com/v1/resource"
-		oa := newAPIAuthenticator(nil)
+		oa := NewAPIAuthenticator(nil)
 		Convey("When prepareAuth method is called with the providerConfiguration", func() {
 			_, err := oa.prepareAuth(url, operationSecuritySchemes, providerConfig)
 			Convey("Then err should NOT be nil as global schemes contain policies which are not defined", func() {

@@ -95,7 +95,7 @@ func TestNewProviderConfiguration(t *testing.T) {
 
 func TestGetAuthenticatorFor(t *testing.T) {
 	Convey("Given a providerConfiguration with some security schema definitions", t, func() {
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{},
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"registered_sec_def_name": createAPIKeyAuthenticator(newAPIKeyHeaderSecurityDefinition("registeredSecDefName", "headerName"), "value"),
@@ -121,7 +121,7 @@ func TestGetAuthenticatorFor(t *testing.T) {
 
 func TestGetHeaderValueFor(t *testing.T) {
 	Convey("Given a providerConfiguration with some headers", t, func() {
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{
 				"header_name": "headerValue",
 			},
@@ -143,7 +143,7 @@ func TestGetHeaderValueFor(t *testing.T) {
 
 func TestGetRegion(t *testing.T) {
 	Convey("Given a providerConfiguration with data that has no values for the region property", t, func() {
-		providerConfiguration := providerConfiguration{}
+		providerConfiguration := ProviderConfiguration{}
 		Convey("When getRegion() method is called", func() {
 			value := providerConfiguration.getRegion()
 			Convey("Then the value returned should be empty", func() {
@@ -153,7 +153,7 @@ func TestGetRegion(t *testing.T) {
 	})
 	Convey("Given a providerConfiguration with data that has a value for the region property", t, func() {
 		expectedRegion := "us-west1"
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Region: expectedRegion,
 		}
 		Convey("When getRegion() method is called", func() {
@@ -169,7 +169,7 @@ func TestGetEndPoint(t *testing.T) {
 	Convey("Given a providerConfiguration configured with some endpoints", t, func() {
 		expectedResource := "cdn_v1"
 		expectedResourceValue := "www.endpoint.com"
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Endpoints: map[string]string{
 				expectedResource: expectedResourceValue,
 			},

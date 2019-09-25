@@ -235,7 +235,7 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 		if err != nil {
 			return nil, err
 		}
-		authenticator := newAPIAuthenticator(&globalSecuritySchemes)
+		authenticator := NewAPIAuthenticator(&globalSecuritySchemes)
 		config, err := p.createProviderConfig(data)
 		if err != nil {
 			return nil, err
@@ -254,7 +254,7 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 // - Header values that might be required by API operations
 // - Security definition values that might be required by API operations (or globally)
 // configuration mapped to the corresponding
-func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*providerConfiguration, error) {
+func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*ProviderConfiguration, error) {
 	providerConfiguration, err := newProviderConfiguration(p.specAnalyser, data)
 	if err != nil {
 		return nil, err

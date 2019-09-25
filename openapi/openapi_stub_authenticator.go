@@ -17,7 +17,7 @@ func newStubAuthenticator(expectedHeader, expectedHeaderValue string, err error)
 	}
 }
 
-func (s *specStubAuthenticator) prepareAuth(url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) (*authContext, error) {
+func (s *specStubAuthenticator) prepareAuth(url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig ProviderConfiguration) (*authContext, error) {
 	// mimicking api key header auth which does not change the url at all
 	if s.authContext.url == "" {
 		s.authContext.url = url

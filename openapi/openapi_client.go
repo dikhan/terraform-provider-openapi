@@ -36,12 +36,12 @@ type ClientOpenAPI interface {
 type ProviderClient struct {
 	openAPIBackendConfiguration SpecBackendConfiguration
 	httpClient                  http_goclient.HttpClientIface
-	providerConfiguration       providerConfiguration
-	apiAuthenticator            specAuthenticator
+	providerConfiguration       ProviderConfiguration
+	apiAuthenticator            SpecAuthenticator
 }
 
 // NewProviderClient creates a new instance of ProviderClient
-func NewProviderClient(openAPIBackendConfiguration SpecBackendConfiguration, httpClient http_goclient.HttpClientIface, providerConfiguration providerConfiguration, apiAuthenticator specAuthenticator) ProviderClient {
+func NewProviderClient(openAPIBackendConfiguration SpecBackendConfiguration, httpClient http_goclient.HttpClientIface, providerConfiguration ProviderConfiguration, apiAuthenticator SpecAuthenticator) ProviderClient {
 	return ProviderClient{
 		openAPIBackendConfiguration: openAPIBackendConfiguration,
 		httpClient:                  httpClient,
@@ -144,7 +144,7 @@ func (o *ProviderClient) logHeadersSafely(headers map[string]string) {
 
 // appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
 // are retrieved from the provider configuration.
-func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderParam, providerConfig providerConfiguration, headers map[string]string) {
+func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderParam, providerConfig ProviderConfiguration, headers map[string]string) {
 	if operationHeaders != nil && len(operationHeaders) > 0 {
 		for _, headerParam := range operationHeaders {
 			// Setting the actual name of the header with the expectedValue coming from the provider configuration

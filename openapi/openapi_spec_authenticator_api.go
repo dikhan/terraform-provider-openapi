@@ -5,14 +5,14 @@ import (
 	"log"
 )
 
-// apiAuth is an implementation of specAuthenticator encapsulating the general settings to be applied in case
+// apiAuth is an implementation of SpecAuthenticator encapsulating the general settings to be applied in case
 // an operation does not contain a security policy; otherwise the operation's security policies will be applied instead.
 type apiAuth struct {
 	globalSecuritySchemes *SpecSecuritySchemes
 }
 
-// newAPIAuthenticator allows for the creation of a new authenticator
-func newAPIAuthenticator(globalSecuritySchemes *SpecSecuritySchemes) specAuthenticator {
+// NewAPIAuthenticator allows for the creation of a new authenticator
+func NewAPIAuthenticator(globalSecuritySchemes *SpecSecuritySchemes) SpecAuthenticator {
 	return apiAuth{
 		globalSecuritySchemes: globalSecuritySchemes,
 	}
@@ -37,7 +37,7 @@ func (oa apiAuth) authRequired(url string, operationSecuritySchemes SpecSecurity
 
 // Validate security policies. This function will perform the following checks:
 // 1. Verify that the operation security schemes are defined as security definitions in the provider config
-func (oa apiAuth) fetchRequiredAuthenticators(operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) ([]specAPIKeyAuthenticator, error) {
+func (oa apiAuth) fetchRequiredAuthenticators(operationSecuritySchemes SpecSecuritySchemes, providerConfig ProviderConfiguration) ([]specAPIKeyAuthenticator, error) {
 	var authenticators []specAPIKeyAuthenticator
 	for _, operationSecurityScheme := range operationSecuritySchemes {
 		authenticator := providerConfig.getAuthenticatorFor(operationSecurityScheme)
@@ -49,7 +49,7 @@ func (oa apiAuth) fetchRequiredAuthenticators(operationSecuritySchemes SpecSecur
 	return authenticators, nil
 }
 
-func (oa apiAuth) prepareAuth(url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig providerConfiguration) (*authContext, error) {
+func (oa apiAuth) prepareAuth(url string, operationSecuritySchemes SpecSecuritySchemes, providerConfig ProviderConfiguration) (*authContext, error) {
 	authContext := &authContext{
 		headers: map[string]string{},
 		url:     url,

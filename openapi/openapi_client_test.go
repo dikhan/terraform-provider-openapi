@@ -15,10 +15,10 @@ import (
 )
 
 func TestProviderClient(t *testing.T) {
-	Convey("Given a SpecBackendConfiguration, HttpClient, providerConfiguration and specAuthenticator", t, func() {
+	Convey("Given a SpecBackendConfiguration, HttpClient, providerConfiguration and SpecAuthenticator", t, func() {
 		var openAPIBackendConfiguration SpecBackendConfiguration
-		providerConfiguration := providerConfiguration{}
-		var apiAuthenticator specAuthenticator
+		providerConfiguration := ProviderConfiguration{}
+		var apiAuthenticator SpecAuthenticator
 		Convey("When ProviderClient method is constructed", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: openAPIBackendConfiguration,
@@ -40,7 +40,7 @@ func TestAppendOperationHeaders(t *testing.T) {
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{},
 			httpClient:                  &http_goclient.HttpClientStub{},
-			providerConfiguration: providerConfiguration{
+			providerConfiguration: ProviderConfiguration{
 				Headers: map[string]string{
 					operationHeaderTfName: "operationHeaderValue",
 				},
@@ -118,7 +118,7 @@ func TestGetResourceIDURL(t *testing.T) {
 				httpScheme: "http",
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 		}
 		Convey("When getResourceIDURL is called with a specResource and ID", func() {
 			expectedID := "1234"
@@ -301,7 +301,7 @@ func TestGetResourceURL(t *testing.T) {
 				httpScheme: "http",
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator: &specStubAuthenticator{
 				authContext: &authContext{
 					url: "",
@@ -402,7 +402,7 @@ func TestGetResourceURL(t *testing.T) {
 					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
+				providerConfiguration: ProviderConfiguration{},
 				apiAuthenticator:      &specStubAuthenticator{},
 			}
 
@@ -476,7 +476,7 @@ func TestGetResourceURL(t *testing.T) {
 					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
+				providerConfiguration: ProviderConfiguration{},
 				apiAuthenticator: &specStubAuthenticator{
 					authContext: &authContext{},
 				},
@@ -510,7 +510,7 @@ func TestGetResourceURL(t *testing.T) {
 					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
+				providerConfiguration: ProviderConfiguration{},
 				apiAuthenticator: &specStubAuthenticator{
 					authContext: &authContext{},
 				},
@@ -544,7 +544,7 @@ func TestGetResourceURL(t *testing.T) {
 					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
+				providerConfiguration: ProviderConfiguration{},
 				apiAuthenticator: &specStubAuthenticator{
 					authContext: &authContext{},
 				},
@@ -578,7 +578,7 @@ func TestGetResourceURL(t *testing.T) {
 					httpScheme: "http",
 				},
 				httpClient:            &http_goclient.HttpClientStub{},
-				providerConfiguration: providerConfiguration{},
+				providerConfiguration: ProviderConfiguration{},
 				apiAuthenticator: &specStubAuthenticator{
 					authContext: &authContext{},
 				},
@@ -607,7 +607,7 @@ func TestGetResourceURL(t *testing.T) {
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region and the region field being filled in (pretending user provided us-west1 in the provider's region property)", t, func() {
 		expectedRegion := "us-west1"
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Region: expectedRegion,
 		}
 		providerClient := &ProviderClient{
@@ -646,7 +646,7 @@ func TestGetResourceURL(t *testing.T) {
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region and the region field being the default (pretending user did not provide value for provider's region property)", t, func() {
 		expectedRegion := "us-east1"
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Region: "", //emptyRegionProvidedByUser
 		}
 		providerClient := &ProviderClient{
@@ -694,7 +694,7 @@ func TestGetResourceURL(t *testing.T) {
 				err:        fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
@@ -711,7 +711,7 @@ func TestGetResourceURL(t *testing.T) {
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration getDefaultRegion() call throws an error", t, func() {
 		expectedError := "some error thrown by default region method"
-		providerConfiguration := providerConfiguration{}
+		providerConfiguration := ProviderConfiguration{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:             "wwww.%s.host.com",
@@ -738,7 +738,7 @@ func TestGetResourceURL(t *testing.T) {
 
 	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration getHostByRegion(region) call throws an error", t, func() {
 		expectedError := "some error thrown by default host by region method"
-		providerConfiguration := providerConfiguration{}
+		providerConfiguration := ProviderConfiguration{}
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
 				host:            "wwww.%s.host.com",
@@ -774,7 +774,7 @@ func TestGetResourceURL(t *testing.T) {
 				hostErr:    fmt.Errorf(expectedError),
 			},
 			httpClient:            &http_goclient.HttpClientStub{},
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator:      &specStubAuthenticator{},
 		}
 		Convey("When getResourceURL with a specResource with a resource path", func() {
@@ -794,7 +794,7 @@ func TestPerformRequest(t *testing.T) {
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
 		expectedHeader := "Authentication"
@@ -898,7 +898,7 @@ func TestProviderClientPost(t *testing.T) {
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
 		expectedHeader := "Authentication"
@@ -982,7 +982,7 @@ func TestProviderClientPost(t *testing.T) {
 				httpScheme: "http",
 			},
 			httpClient:            httpClient,
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator: &specStubAuthenticator{
 				authContext: &authContext{
 					headers: map[string]string{},
@@ -1042,7 +1042,7 @@ func TestProviderClientPut(t *testing.T) {
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
 		expectedHeader := "Authentication"
@@ -1109,7 +1109,7 @@ func TestProviderClientPut(t *testing.T) {
 				httpScheme: "http",
 			},
 			httpClient:            httpClient,
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator: &specStubAuthenticator{
 				authContext: &authContext{
 					headers: map[string]string{},
@@ -1175,7 +1175,7 @@ func TestProviderClientGet(t *testing.T) {
 			},
 		}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
 		expectedHeader := "Authentication"
@@ -1234,7 +1234,7 @@ func TestProviderClientGet(t *testing.T) {
 				httpScheme: "http",
 			},
 			httpClient:            httpClient,
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator: &specStubAuthenticator{
 				authContext: &authContext{
 					headers: map[string]string{},
@@ -1293,7 +1293,7 @@ func TestProviderClientList(t *testing.T) {
 			},
 		}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
 		expectedHeader := "Authentication"
@@ -1351,7 +1351,7 @@ func TestProviderClientList(t *testing.T) {
 				httpScheme: "http",
 			},
 			httpClient:            httpClient,
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator: &specStubAuthenticator{
 				authContext: &authContext{
 					headers: map[string]string{},
@@ -1415,7 +1415,7 @@ func TestProviderClientDelete(t *testing.T) {
 			},
 		}
 		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
-		providerConfiguration := providerConfiguration{
+		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
 		expectedHeader := "Authentication"
@@ -1472,7 +1472,7 @@ func TestProviderClientDelete(t *testing.T) {
 				httpScheme: "http",
 			},
 			httpClient:            httpClient,
-			providerConfiguration: providerConfiguration{},
+			providerConfiguration: ProviderConfiguration{},
 			apiAuthenticator: &specStubAuthenticator{
 				authContext: &authContext{
 					headers: map[string]string{},
