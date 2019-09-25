@@ -40,6 +40,7 @@ type ProviderClient struct {
 	apiAuthenticator            specAuthenticator
 }
 
+// NewProviderClient creates a new instance of ProviderClient
 func NewProviderClient(openAPIBackendConfiguration SpecBackendConfiguration, httpClient http_goclient.HttpClientIface, providerConfiguration providerConfiguration, apiAuthenticator specAuthenticator) ProviderClient {
 	return ProviderClient{
 		openAPIBackendConfiguration: openAPIBackendConfiguration,

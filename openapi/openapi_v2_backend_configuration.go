@@ -18,7 +18,8 @@ type specV2BackendConfiguration struct {
 	spec               *spec.Swagger
 }
 
-func newOpenAPIBackendConfigurationV2(spec *spec.Swagger, openAPIDocumentURL string) (*specV2BackendConfiguration, error) {
+// NewOpenAPIBackendConfigurationV2 creates a new instance of specV2BackendConfiguration
+func NewOpenAPIBackendConfigurationV2(spec *spec.Swagger, openAPIDocumentURL string) (*specV2BackendConfiguration, error) {
 	if spec.Swagger != "2.0" {
 		return nil, fmt.Errorf("swagger version '%s' not supported, specV2BackendConfiguration only supports 2.0", spec.Swagger)
 	}

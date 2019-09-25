@@ -17,8 +17,8 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		Convey("When newOpenAPIBackendConfigurationV2 method is called", func() {
-			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		Convey("When NewOpenAPIBackendConfigurationV2 method is called", func() {
+			specV2BackendConfiguration, err := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 			Convey("Then the error returned should be  nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -35,8 +35,8 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		Convey("When newOpenAPIBackendConfigurationV2 method is called", func() {
-			_, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		Convey("When NewOpenAPIBackendConfigurationV2 method is called", func() {
+			_, err := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 			Convey("Then the error returned should be NOT nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -53,8 +53,8 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := ""
-		Convey("When newOpenAPIBackendConfigurationV2 method is called", func() {
-			_, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		Convey("When NewOpenAPIBackendConfigurationV2 method is called", func() {
+			_, err := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 			Convey("Then the error returned should be NOT nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -74,7 +74,7 @@ func TestGetHost(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getHost method is called", func() {
 			host, err := specV2BackendConfiguration.getHost()
 			Convey("Then the error returned should be nil", func() {
@@ -94,7 +94,7 @@ func TestGetHost(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getHost method is called", func() {
 			host, err := specV2BackendConfiguration.getHost()
 			Convey("Then the error returned should be nil", func() {
@@ -140,7 +140,7 @@ func TestGetHostByRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getHostByRegion method is called with an existing region", func() {
 			host, err := specV2BackendConfiguration.getHostByRegion("rst1")
 			Convey("Then the error returned should be nil", func() {
@@ -178,7 +178,7 @@ func TestGetHostByRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getHostByRegion method is called with a NON existing region", func() {
 			_, err := specV2BackendConfiguration.getHostByRegion("nonExisting")
 			Convey("Then the error returned should NOT be nil", func() {
@@ -196,7 +196,7 @@ func TestValidateRegion(t *testing.T) {
 		region := "allowed"
 		allowedRegions := []string{region}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(&spec.Swagger{SwaggerProps: spec.SwaggerProps{Swagger: "2.0"}}, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(&spec.Swagger{SwaggerProps: spec.SwaggerProps{Swagger: "2.0"}}, openAPIDocumentURL)
 		Convey("When validateRegion method is called with a region that is allowed", func() {
 			err := specV2BackendConfiguration.validateRegion(region, allowedRegions)
 			Convey("Then the error returned should be nil", func() {
@@ -219,7 +219,7 @@ func TestGetDefaultRegion(t *testing.T) {
 	Convey("Given a specV2BackendConfiguration", t, func() {
 		spec := &spec.Swagger{SwaggerProps: spec.SwaggerProps{Swagger: "2.0"}}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getDefaultRegion() method is called with an array of regions", func() {
 			regions := []string{"rst1", "dub1"}
 			region, err := specV2BackendConfiguration.getDefaultRegion(regions)
@@ -266,7 +266,7 @@ func TestIsMultiRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isMultiRegion() method is called", func() {
 			isMultiRegion, host, regions, err := specV2BackendConfiguration.isMultiRegion()
 			Convey("Then the error returned should be nil", func() {
@@ -298,7 +298,7 @@ func TestIsMultiRegion(t *testing.T) {
 			//},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isMultiRegion() method is called", func() {
 			isMultiRegion, _, _, err := specV2BackendConfiguration.isMultiRegion()
 			Convey("Then the error returned should be nil", func() {
@@ -322,7 +322,7 @@ func TestIsMultiRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isMultiRegion() method is called", func() {
 			isMultiRegion, _, _, err := specV2BackendConfiguration.isMultiRegion()
 			Convey("Then the error returned should NOT be nil", func() {
@@ -350,7 +350,7 @@ func TestIsMultiRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isMultiRegion() method is called", func() {
 			isMultiRegion, _, _, err := specV2BackendConfiguration.isMultiRegion()
 			Convey("Then the error returned should NOT be nil", func() {
@@ -380,7 +380,7 @@ func TestGetProviderRegions(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getProviderRegions() method is called", func() {
 			regions, err := specV2BackendConfiguration.getProviderRegions()
 			Convey("Then the error returned should be nil", func() {
@@ -405,7 +405,7 @@ func TestGetProviderRegions(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getProviderRegions() method is called", func() {
 			_, err := specV2BackendConfiguration.getProviderRegions()
 			Convey("Then the error returned should NOT be nil", func() {
@@ -429,7 +429,7 @@ func TestGetProviderRegions(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getProviderRegions() method is called", func() {
 			_, err := specV2BackendConfiguration.getProviderRegions()
 			Convey("Then the error returned should NOT be nil", func() {
@@ -456,7 +456,7 @@ func TestIsHostMultiRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, host, err := specV2BackendConfiguration.isHostMultiRegion()
 			Convey("Then the error returned should be nil", func() {
@@ -483,7 +483,7 @@ func TestIsHostMultiRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, host, err := specV2BackendConfiguration.isHostMultiRegion()
 			Convey("Then the error returned should be nil", func() {
@@ -510,7 +510,7 @@ func TestIsHostMultiRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, _, err := specV2BackendConfiguration.isHostMultiRegion()
 			Convey("Then the error returned should NOT be nil", func() {
@@ -531,7 +531,7 @@ func TestIsHostMultiRegion(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, _, err := specV2BackendConfiguration.isHostMultiRegion()
 			Convey("Then the error returned should be nil", func() {
@@ -554,7 +554,7 @@ func TestGetBasePath(t *testing.T) {
 			},
 		}
 		openAPIDocumentURL := "www.domain.com"
-		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
+		specV2BackendConfiguration, _ := NewOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getBasePath method is called", func() {
 			basePath := specV2BackendConfiguration.getBasePath()
 			Convey("And the host should be correct", func() {
@@ -585,7 +585,7 @@ func TestGetHTTPSchemes(t *testing.T) {
 					Schemes: tc.inputSchemes,
 				},
 			}
-			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, "www.domain.com")
+			specV2BackendConfiguration, err := NewOpenAPIBackendConfigurationV2(spec, "www.domain.com")
 			So(err, ShouldBeNil)
 			Convey("When getHTTPSchemes method is called", func() {
 				httpScheme, err := specV2BackendConfiguration.getHTTPScheme()

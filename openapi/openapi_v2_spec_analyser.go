@@ -220,7 +220,7 @@ func (specAnalyser *specV2Analyser) GetAllHeaderParameters() (SpecHeaderParamete
 }
 
 func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {
-	return newOpenAPIBackendConfigurationV2(specAnalyser.d.Spec(), specAnalyser.openAPIDocumentURL)
+	return NewOpenAPIBackendConfigurationV2(specAnalyser.d.Spec(), specAnalyser.openAPIDocumentURL)
 }
 
 // isEndPointFullyTerraformResourceCompliant returns true only if:
