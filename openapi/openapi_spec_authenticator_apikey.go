@@ -7,7 +7,7 @@ type specAPIKeyAuthenticator interface {
 	getType() authType
 }
 
-func createAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) specAPIKeyAuthenticator {
+func CreateAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) specAPIKeyAuthenticator {
 	switch secDef.getAPIKey().In {
 	case inHeader:
 		return newAPIKeyHeaderAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value))

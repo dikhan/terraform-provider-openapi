@@ -39,7 +39,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 		for _, secDef := range *securitySchemaDefinitions {
 			secDefTerraformCompliantName := secDef.getTerraformConfigurationName()
 			if value, exists := data.GetOkExists(secDefTerraformCompliantName); exists {
-				providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = createAPIKeyAuthenticator(secDef, value.(string))
+				providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = CreateAPIKeyAuthenticator(secDef, value.(string))
 			} else {
 				return nil, fmt.Errorf("security schema definition '%s' is missing the value, please make sure this value is provided in the terraform configuration", secDefTerraformCompliantName)
 			}

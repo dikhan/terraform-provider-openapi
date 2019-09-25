@@ -98,7 +98,7 @@ func TestGetAuthenticatorFor(t *testing.T) {
 		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{},
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
-				"registered_sec_def_name": createAPIKeyAuthenticator(newAPIKeyHeaderSecurityDefinition("registeredSecDefName", "headerName"), "value"),
+				"registered_sec_def_name": CreateAPIKeyAuthenticator(newAPIKeyHeaderSecurityDefinition("registeredSecDefName", "headerName"), "value"),
 			},
 		}
 		Convey("When getAuthenticatorFor method with an existing sec def", func() {
