@@ -22,7 +22,7 @@ func (s *specV2Security) GetAPIKeySecurityDefinitions() (*SpecSecurityDefinition
 			switch secDef.In {
 			case "header":
 				if s.isBearerScheme(secDef) {
-					securityDefinition = newAPIKeyHeaderBearerSecurityDefinition(secDefName)
+					securityDefinition = NewAPIKeyHeaderBearerSecurityDefinition(secDefName)
 				} else {
 					securityDefinition = newAPIKeyHeaderSecurityDefinition(secDefName, secDef.Name)
 				}

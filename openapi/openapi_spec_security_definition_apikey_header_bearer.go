@@ -12,9 +12,9 @@ type specAPIKeyHeaderBearerSecurityDefinition struct {
 	name string
 }
 
-// newAPIKeyHeaderBearerSecurityDefinition constructs a SpecSecurityDefinition of Header type using the Bearer authentication
+// NewAPIKeyHeaderBearerSecurityDefinition constructs a SpecSecurityDefinition of Header type using the Bearer authentication
 // scheme. The secDefName value is the identifier of the security definition, and the apiKeyName is the actual value of the header/query that will be user in the HTTP request.
-func newAPIKeyHeaderBearerSecurityDefinition(secDefName string) specAPIKeyHeaderBearerSecurityDefinition {
+func NewAPIKeyHeaderBearerSecurityDefinition(secDefName string) specAPIKeyHeaderBearerSecurityDefinition {
 	return specAPIKeyHeaderBearerSecurityDefinition{secDefName}
 }
 
