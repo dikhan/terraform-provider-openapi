@@ -17,8 +17,8 @@ func TestApiKeyQueryAuthenticator(t *testing.T) {
 					value: value,
 				},
 			}
-			Convey("Then the apiKeyQueryAuthenticator should comply with specAPIKeyAuthenticator interface", func() {
-				var _ specAPIKeyAuthenticator = apiKeyQueryAuthenticator
+			Convey("Then the apiKeyQueryAuthenticator should comply with SpecAPIKeyAuthenticator interface", func() {
+				var _ SpecAPIKeyAuthenticator = apiKeyQueryAuthenticator
 			})
 		})
 	})

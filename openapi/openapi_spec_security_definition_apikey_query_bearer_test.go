@@ -11,7 +11,7 @@ func TestNewAPIKeyQueryBearerSecurityDefinition(t *testing.T) {
 		name := "sec_def_name"
 		Convey("When newAPIKeyQueryBearerSecurityDefinition method is called", func() {
 			specAPIKeyQueryBearerSecurityDefinition := newAPIKeyQueryBearerSecurityDefinition(name)
-			Convey("Then the apiKeyHeaderAuthenticator should comply with specAPIKeyAuthenticator interface", func() {
+			Convey("Then the apiKeyHeaderAuthenticator should comply with SpecAPIKeyAuthenticator interface", func() {
 				var _ SpecSecurityDefinition = specAPIKeyQueryBearerSecurityDefinition
 			})
 		})

@@ -67,7 +67,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 			value: "superSecretKey",
 		}
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					expectedAPIKey,
 				},
@@ -92,7 +92,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 	Convey("Given a provider configuration containing an 'apiKey' type security definition with name 'apikey_auth' and an operation that requires api key header authentication", t, func() {
 		securityPolicyName := "apikey_auth"
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  authorization,
@@ -119,7 +119,7 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing a header 'apiKey' type security definition with name 'apikey_header_auth', an operation that requires the 'apikey_auth' authentication and the resource URL", t, func() {
 		securityPolicyName := "apikey_header_auth"
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  authorization,
@@ -151,7 +151,7 @@ func TestPrepareAuth(t *testing.T) {
 	Convey("Given a provider configuration containing a query 'apiKey' type security definition with name 'apikey_query_auth', an operation that requires the 'apikey_auth' authentication and the resource URL", t, func() {
 		securityPolicyName := "apikey_query_auth"
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				securityPolicyName: apiKeyQueryAuthenticator{
 					apiKey{
 						name:  authorization,
@@ -181,7 +181,7 @@ func TestPrepareAuth(t *testing.T) {
 		apiKeyHeaderSecurityPolicyName := "apikey_header_auth"
 		apiKeyQuerySecurityPolicyName := "apikey_query_auth"
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				apiKeyHeaderSecurityPolicyName: apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  authorization,
@@ -215,7 +215,7 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a provider configuration containing multiple 'apiKey' type security definitions (apiKey and appId), an operation that requires both 'apiKey' AND 'appId' header authentication and the resource URL", t, func() {
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				// provider config keys are always terraform name compliant - snake case
 				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
@@ -250,7 +250,7 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a provider configuration containing security definitions for the global security contains policies default and an operation that DOES NOT have any specific security scheme and the resource URL", t, func() {
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
@@ -279,7 +279,7 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a provider configuration containing security definitions for both global security schemes and operation overrides and the resource URL", t, func() {
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
@@ -312,7 +312,7 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given a global security setting containing schemes which are not defined in the provider security definitions, and an operation with NO security schemes", t, func() {
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				"apiKey": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",
@@ -340,7 +340,7 @@ func TestPrepareAuth(t *testing.T) {
 
 	Convey("Given an operation security setting containing schemes which are not defined in the provider security definitions", t, func() {
 		providerConfig := ProviderConfiguration{
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
 					apiKey{
 						name:  "X-API-KEY",

@@ -18,7 +18,7 @@ const providerPropertyEndPoints = "endpoints"
 // - Region contains the region if user provided value for it (only supported for multi-region providers)
 type ProviderConfiguration struct {
 	Headers                   map[string]string
-	SecuritySchemaDefinitions map[string]specAPIKeyAuthenticator
+	SecuritySchemaDefinitions map[string]SpecAPIKeyAuthenticator
 	Endpoints                 map[string]string
 	Region                    string
 }
@@ -29,7 +29,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 	providerConfiguration := &ProviderConfiguration{}
 	providerConfiguration.Headers = map[string]string{}
 	providerConfiguration.Endpoints = map[string]string{}
-	providerConfiguration.SecuritySchemaDefinitions = map[string]specAPIKeyAuthenticator{}
+	providerConfiguration.SecuritySchemaDefinitions = map[string]SpecAPIKeyAuthenticator{}
 
 	securitySchemaDefinitions, err := specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions()
 	if err != nil {
@@ -82,7 +82,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 	return providerConfiguration, nil
 }
 
-func (p *ProviderConfiguration) getAuthenticatorFor(s SpecSecurityScheme) specAPIKeyAuthenticator {
+func (p *ProviderConfiguration) getAuthenticatorFor(s SpecSecurityScheme) SpecAPIKeyAuthenticator {
 	securitySchemeConfigName := s.getTerraformConfigurationName()
 	return p.SecuritySchemaDefinitions[securitySchemeConfigName]
 }

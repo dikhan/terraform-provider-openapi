@@ -97,7 +97,7 @@ func TestGetAuthenticatorFor(t *testing.T) {
 	Convey("Given a providerConfiguration with some security schema definitions", t, func() {
 		providerConfiguration := ProviderConfiguration{
 			Headers: map[string]string{},
-			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+			SecuritySchemaDefinitions: map[string]SpecAPIKeyAuthenticator{
 				"registered_sec_def_name": CreateAPIKeyAuthenticator(newAPIKeyHeaderSecurityDefinition("registeredSecDefName", "headerName"), "value"),
 			},
 		}

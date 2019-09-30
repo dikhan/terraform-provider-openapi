@@ -1,13 +1,13 @@
 package openapi
 
-// specAPIKeyAuthenticator defines the behaviour for api key type authenticators (e,g: header/query)
-type specAPIKeyAuthenticator interface {
+// SpecAPIKeyAuthenticator defines the behaviour for api key type authenticators (e,g: header/query)
+type SpecAPIKeyAuthenticator interface {
 	getContext() interface{}
 	prepareAuth(*authContext) error
 	getType() authType
 }
 
-func CreateAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) specAPIKeyAuthenticator {
+func CreateAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) SpecAPIKeyAuthenticator {
 	switch secDef.getAPIKey().In {
 	case inHeader:
 		return newAPIKeyHeaderAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value))

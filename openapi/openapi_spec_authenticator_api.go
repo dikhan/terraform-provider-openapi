@@ -37,8 +37,8 @@ func (oa apiAuth) authRequired(url string, operationSecuritySchemes SpecSecurity
 
 // Validate security policies. This function will perform the following checks:
 // 1. Verify that the operation security schemes are defined as security definitions in the provider config
-func (oa apiAuth) fetchRequiredAuthenticators(operationSecuritySchemes SpecSecuritySchemes, providerConfig ProviderConfiguration) ([]specAPIKeyAuthenticator, error) {
-	var authenticators []specAPIKeyAuthenticator
+func (oa apiAuth) fetchRequiredAuthenticators(operationSecuritySchemes SpecSecuritySchemes, providerConfig ProviderConfiguration) ([]SpecAPIKeyAuthenticator, error) {
+	var authenticators []SpecAPIKeyAuthenticator
 	for _, operationSecurityScheme := range operationSecuritySchemes {
 		authenticator := providerConfig.getAuthenticatorFor(operationSecurityScheme)
 		if authenticator == nil {
