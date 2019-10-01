@@ -644,6 +644,58 @@ func TestAccCDN_DataSource(t *testing.T) {
 	})
 }
 
+func TestAccCDN_DataSourceInstance(t *testing.T) {
+	api := initAPI(t, cdnSwaggerYAMLTemplate)
+	api.cachePayloads = map[string]interface{}{ // Pretending resource already exists remotely
+		"/v1/cdns/" + expectedCDNID: fmt.Sprintf(
+			`{
+"id":%s,
+"label":"%s",
+"computed_property": "some auto-generated value",
+"object_property_argument": {"account":"my_account", "object_read_only_property": "some computed value for object read only"},
+"object_property_block": {"account":"my_account", "object_read_only_property": "some computed value for object read only"}
+}`, expectedCDNID, expectedCDNLabel),
+	}
+
+	dataSourceInstanceName := fmt.Sprintf("%s_instance", openAPIResourceNameCDN)
+	tfFileContents := fmt.Sprintf(`
+		data "%s" "%s" {
+		  id = "%s"
+		}`, dataSourceInstanceName, openAPIDataSourceNameCDN, expectedCDNID)
+	openAPIDataSourceInstanceStateCDN := fmt.Sprintf("data.%s.%s", dataSourceInstanceName, openAPIDataSourceNameCDN)
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: api.swaggerURL})
+	assert.NoError(t, err)
+	assertProviderSchema(t, provider)
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Providers:  testAccProviders,
+		PreCheck:   func() { testAccPreCheck(t, api.swaggerURL) },
+		Steps: []resource.TestStep{
+			{
+				Config: tfFileContents,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceInstanceStateCDN, "id", expectedCDNID),
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceInstanceStateCDN, "label", expectedCDNLabel),
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceInstanceStateCDN, "computed_property", "some auto-generated value"),
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceInstanceStateCDN, "object_property_block.#", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceInstanceStateCDN, "object_property_block.0.account", "my_account"),
+					resource.TestCheckResourceAttr(
+						openAPIDataSourceInstanceStateCDN, "object_property_block.0.object_read_only_property", "some computed value for object read only"),
+				),
+			},
+		},
+	})
+}
+
 func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 	// Resource map check
 	assert.Nil(t, provider.ResourcesMap[openAPIResourceNameCDN].Schema["id"])
@@ -659,6 +711,13 @@ func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["computed_property"])
 	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["object_property_argument"])
 	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["object_property_block"])
+
+	openAPIDataSourceInstanceCDN := openAPIResourceNameCDN + "_instance"
+	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["id"]) // data source instance expects only one property from the user called 'id'. Hence, checking that is configured as expected
+	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["label"])
+	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["computed_property"])
+	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["object_property_argument"])
+	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["object_property_block"])
 }
 
 func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string {
