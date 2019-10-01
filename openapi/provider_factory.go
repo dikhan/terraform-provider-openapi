@@ -43,6 +43,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	var providerSchema map[string]*schema.Schema
 	var resourceMap map[string]*schema.Resource
 	var dataSources map[string]*schema.Resource
+	var dataSourcesInstance map[string]*schema.Resource
 	var err error
 
 	openAPIBackendConfiguration, err := p.specAnalyser.GetAPIBackendConfiguration()
@@ -53,12 +54,16 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 	if providerSchema, err = p.createTerraformProviderSchema(openAPIBackendConfiguration); err != nil {
 		return nil, err
 	}
-	if resourceMap, err = p.createTerraformProviderResourceMap(); err != nil {
+	if resourceMap, dataSourcesInstance, err = p.createTerraformProviderResourceMapAndDataSourceInstanceMap(); err != nil {
 		return nil, err
 	}
 
 	if dataSources, err = p.createTerraformProviderDataSourceMap(); err != nil {
 		return nil, err
+	}
+
+	for k, v := range dataSourcesInstance {
+		dataSources[k] = v
 	}
 
 	provider := &schema.Provider{
@@ -176,38 +181,6 @@ func (p providerFactory) createValidateFunc(allowedValues []string) func(val int
 	return nil
 }
 
-// createTerraformProviderDataSourceInstanceMap only registers as data source instances the openAPIResources that are
-// terraform resource compatible
-func (p providerFactory) createTerraformProviderDataSourceInstanceMap() (map[string]*schema.Resource, error) {
-	dataSourceInstanceMap := map[string]*schema.Resource{}
-	openAPIResources, err := p.specAnalyser.GetTerraformCompliantResources()
-	if err != nil {
-		return nil, err
-	}
-	for _, openAPIResource := range openAPIResources {
-		start := time.Now()
-		r := newDataSourceInstanceFactory(openAPIResource)
-		dataSourceInstanceName := r.getDataSourceInstanceName()
-		fullDataSourceInstanceName, _ := p.getProviderResourceName(dataSourceInstanceName) // dataSourceInstanceName is always non empty string
-		if openAPIResource.shouldIgnoreResource() {
-			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
-			continue
-		}
-		if _, alreadyThere := dataSourceInstanceMap[fullDataSourceInstanceName]; alreadyThere {
-			log.Printf("[WARN] '%s' is a duplicate data source instance name and is being removed from the provider", fullDataSourceInstanceName)
-			delete(dataSourceInstanceMap, fullDataSourceInstanceName)
-			continue
-		}
-		resource, err := r.createTerraformInstanceDataSource()
-		if err != nil {
-			return nil, err
-		}
-		log.Printf("[INFO] data source instance '%s' successfully registered in the provider (time:%s)", fullDataSourceInstanceName, time.Since(start))
-		dataSourceInstanceMap[fullDataSourceInstanceName] = resource
-	}
-	return dataSourceInstanceMap, nil
-}
-
 func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*schema.Resource, error) {
 	dataSourceMap := map[string]*schema.Resource{}
 	openAPIDataResources := p.specAnalyser.GetTerraformCompliantDataSources()
@@ -228,37 +201,55 @@ func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*sch
 	return dataSourceMap, nil
 }
 
-func (p providerFactory) createTerraformProviderResourceMap() (map[string]*schema.Resource, error) {
-	resourceMap := map[string]*schema.Resource{}
+// createTerraformProviderResourceMapAndDataSourceInstanceMap is responsible for building the following:
+// - a map containing the resources that are terraform compatible
+// - a map containing the data sources from the resources that are terraform compatible. This data sources enable data
+//  source configuration on the resource instance GET operation.
+func (p providerFactory) createTerraformProviderResourceMapAndDataSourceInstanceMap() (resourceMap, dataSourceInstanceMap map[string]*schema.Resource, err error) {
+	resourceMap = map[string]*schema.Resource{}
+	dataSourceInstanceMap = map[string]*schema.Resource{}
 	openAPIResources, err := p.specAnalyser.GetTerraformCompliantResources()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, openAPIResource := range openAPIResources {
+		start := time.Now()
+
 		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		start := time.Now()
+
 		if openAPIResource.shouldIgnoreResource() {
 			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
 			continue
 		}
-		_, alreadyThere := resourceMap[resourceName]
-		if alreadyThere {
+
+		r := newResourceFactory(openAPIResource)
+		d := newDataSourceInstanceFactory(openAPIResource)
+		fullDataSourceInstanceName, _ := p.getProviderResourceName(d.getDataSourceInstanceName())
+
+		if _, alreadyThere := resourceMap[resourceName]; alreadyThere {
 			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
 			delete(resourceMap, resourceName)
+			delete(dataSourceInstanceMap, fullDataSourceInstanceName)
 			continue
 		}
-		r := newResourceFactory(openAPIResource)
+
+		// Register resource
 		resource, err := r.createTerraformResource()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		log.Printf("[INFO] resource '%s' successfully registered in the provider (time:%s)", resourceName, time.Since(start))
 		resourceMap[resourceName] = resource
+
+		// Register data source instance
+		dataSourceInstance, _ := d.createTerraformInstanceDataSource() // if createTerraformResource did not throw an error, it's assumed that the data source instance would work too considering it's subset of the resource
+		log.Printf("[INFO] data source instance '%s' successfully registered in the provider (time:%s)", fullDataSourceInstanceName, time.Since(start))
+		dataSourceInstanceMap[fullDataSourceInstanceName] = dataSourceInstance
 	}
-	return resourceMap, nil
+	return resourceMap, dataSourceInstanceMap, nil
 }
 
 func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBackendConfiguration) schema.ConfigureFunc {
