@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -29,7 +30,7 @@ func (d dataSourceInstanceFactory) createTerraformInstanceDataSource() (*schema.
 	}
 	return &schema.Resource{
 		Schema: s,
-		//Read:   d.read,
+		Read:   d.read,
 	}, nil
 }
 
@@ -48,4 +49,29 @@ func (d dataSourceInstanceFactory) dataSourceInstanceSchema() *schema.Schema {
 		Type:     schema.TypeString,
 		Required: true,
 	}
+}
+
+func (d dataSourceInstanceFactory) read(data *schema.ResourceData, i interface{}) error {
+	openAPIClient := i.(ClientOpenAPI)
+	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
+	if err != nil {
+		return err
+	}
+	id := data.Get(dataSourceInstanceIDProperty)
+	if id == nil || id == "" {
+		return fmt.Errorf("data source 'id' property value must be populated")
+	}
+	responsePayload := map[string]interface{}{}
+	resp, err := openAPIClient.Get(d.openAPIResource, id.(string), &responsePayload, parentIDs...)
+	if err != nil {
+		return err
+	}
+	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil {
+		return fmt.Errorf("[data source instance='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
+	}
+	err = setStateID(d.openAPIResource, data, responsePayload)
+	if err != nil {
+		return err
+	}
+	return updateStateWithPayloadData(d.openAPIResource, responsePayload, data)
 }

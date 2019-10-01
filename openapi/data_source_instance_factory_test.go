@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"net/http"
 	"testing"
 )
 
@@ -113,4 +115,107 @@ func TestCreateTerraformDataSourceInstance(t *testing.T) {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
 	}
+}
+
+func TestDataSourceInstanceRead(t *testing.T) {
+
+	testCases := []struct {
+		name           string
+		inputID        string
+		client         *clientOpenAPIStub
+		expectedResult map[string]interface{}
+		expectedError  error
+	}{
+		{
+			name:    "fetch selected data source as per input ID",
+			inputID: "ID",
+			client: &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					"id":     "someID",
+					"label":  "someLabel",
+					"owners": []string{"someOwner"},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name:    "input ID is empty",
+			inputID: "",
+			client: &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					"id":     "someID",
+					"label":  "someLabel",
+					"owners": []string{"someOwner"},
+				},
+			},
+			expectedError: errors.New("data source 'id' property value must be populated"),
+		},
+		{
+			name:    "empty response from API",
+			inputID: "ID",
+			client: &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{},
+			},
+			expectedError: errors.New("response object returned from the API is missing mandatory identifier property 'id'"),
+		},
+		{
+			name:    "api returns a non expected code 404",
+			inputID: "ID",
+			client: &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{},
+				returnHTTPCode:  http.StatusNotFound,
+			},
+			expectedError: errors.New("[data source instance=''] GET  failed: HTTP Reponse Status Code 404 - Not Found. Could not find resource instance: "),
+		},
+		{
+			name:    "get operation returns an error",
+			inputID: "ID",
+			client: &clientOpenAPIStub{
+				error: errors.New("some api error in the get operation"),
+			},
+			expectedError: errors.New("some api error in the get operation"),
+		},
+	}
+
+	dataSourceFactory := dataSourceInstanceFactory{
+		openAPIResource: &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
+					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, typeString, nil),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		resourceSchema, err := dataSourceFactory.createTerraformDataSourceInstanceSchema()
+		require.NoError(t, err)
+
+		dataSourceUserInput := map[string]interface{}{
+			dataSourceInstanceIDProperty: tc.inputID,
+		}
+		resourceData := schema.TestResourceDataRaw(t, resourceSchema, dataSourceUserInput)
+		// When
+		err = dataSourceFactory.read(resourceData, tc.client)
+		// Then
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			assert.Equal(t, tc.client.responsePayload["id"], resourceData.Id(), tc.name)
+			assert.Equal(t, tc.client.responsePayload["label"], resourceData.Get("label"), tc.name)
+			expectedOwners := tc.client.responsePayload["owners"].([]string)
+			owners := resourceData.Get("owners").([]interface{})
+			assert.NotNil(t, owners, tc.name)
+			assert.NotNil(t, len(expectedOwners), len(owners), tc.name)
+			assert.Equal(t, expectedOwners[0], owners[0], tc.name)
+		} else {
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		}
+	}
+}
+
+func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
+	err := dataSourceInstanceFactory{}.read(nil, &clientOpenAPIStub{})
+	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
 }
