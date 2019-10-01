@@ -841,6 +841,92 @@ func TestGetProviderResourceName(t *testing.T) {
 	})
 }
 
+func TestCreateTerraformProviderDataSourceInstanceMap(t *testing.T) {
+	testcases := []struct {
+		name                 string
+		specV2stub           SpecAnalyser
+		expectedResourceName string
+		expectedError        string
+	}{
+		{
+			name: "happy path",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedResourceName: "provider_resource_instance",
+		},
+		{
+			name: "getTerraformCompliantResources fails ",
+			specV2stub: &specAnalyserStub{
+				error: fmt.Errorf("error getting terraform compliant resources"),
+			},
+			expectedError: "error getting terraform compliant resources",
+		},
+		{
+			name: "getProviderResourceName fails ",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedError: "resource name can not be empty",
+		},
+		{
+			name: "createTerraformDataSource fails",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{&specStubResource{
+					name: "hello",
+					funcGetResourceSchema: func() (*specSchemaDefinition, error) {
+						return nil, errors.New("createTerraformDataSource failed")
+					},
+				}},
+			},
+			expectedError: "createTerraformDataSource failed",
+		},
+	}
+
+	for _, tc := range testcases {
+		p := providerFactory{
+			name:         "provider",
+			specAnalyser: tc.specV2stub,
+		}
+		schemaResource, err := p.createTerraformProviderDataSourceInstanceMap()
+
+		if tc.expectedError == "" {
+			assert.Nil(t, err)
+			assert.Contains(t, schemaResource, tc.expectedResourceName, tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError, tc.name)
+		}
+	}
+}
+
+func TestCreateTerraformProviderDataSourceInstanceMap_ignore_resource(t *testing.T) {
+	p := providerFactory{
+		name: "provider",
+		specAnalyser: &specAnalyserStub{
+			resources: []SpecResource{
+				newSpecStubResource("resource", "/v1/resource", true, &specSchemaDefinition{}),
+			},
+		},
+	}
+	schemaResource, err := p.createTerraformProviderDataSourceInstanceMap()
+	assert.Nil(t, err)
+	assert.Empty(t, schemaResource)
+}
+
+func TestCreateTerraformProviderDataSourceInstanceMap_duplicate_resource(t *testing.T) {
+	p := providerFactory{
+		name: "provider",
+		specAnalyser: &specAnalyserStub{
+			resources: []SpecResource{
+				newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{}),
+				newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+		},
+	}
+	schemaResource, err := p.createTerraformProviderDataSourceInstanceMap()
+	assert.Nil(t, err)
+	assert.Empty(t, schemaResource)
+}
+
 func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
 
 	testcases := []struct {

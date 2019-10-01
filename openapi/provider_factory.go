@@ -176,6 +176,38 @@ func (p providerFactory) createValidateFunc(allowedValues []string) func(val int
 	return nil
 }
 
+// createTerraformProviderDataSourceInstanceMap only registers as data source instances the openAPIResources that are
+// terraform resource compatible
+func (p providerFactory) createTerraformProviderDataSourceInstanceMap() (map[string]*schema.Resource, error) {
+	dataSourceInstanceMap := map[string]*schema.Resource{}
+	openAPIResources, err := p.specAnalyser.GetTerraformCompliantResources()
+	if err != nil {
+		return nil, err
+	}
+	for _, openAPIResource := range openAPIResources {
+		start := time.Now()
+		r := newDataSourceInstanceFactory(openAPIResource)
+		dataSourceInstanceName := r.getDataSourceInstanceName()
+		fullDataSourceInstanceName, _ := p.getProviderResourceName(dataSourceInstanceName) // dataSourceInstanceName is always non empty string
+		if openAPIResource.shouldIgnoreResource() {
+			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+			continue
+		}
+		if _, alreadyThere := dataSourceInstanceMap[fullDataSourceInstanceName]; alreadyThere {
+			log.Printf("[WARN] '%s' is a duplicate data source instance name and is being removed from the provider", fullDataSourceInstanceName)
+			delete(dataSourceInstanceMap, fullDataSourceInstanceName)
+			continue
+		}
+		resource, err := r.createTerraformInstanceDataSource()
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("[INFO] data source instance '%s' successfully registered in the provider (time:%s)", fullDataSourceInstanceName, time.Since(start))
+		dataSourceInstanceMap[fullDataSourceInstanceName] = resource
+	}
+	return dataSourceInstanceMap, nil
+}
+
 func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*schema.Resource, error) {
 	dataSourceMap := map[string]*schema.Resource{}
 	openAPIDataResources := p.specAnalyser.GetTerraformCompliantDataSources()
