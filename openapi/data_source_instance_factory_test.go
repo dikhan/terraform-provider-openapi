@@ -236,3 +236,43 @@ func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testin
 	err := dataSourceInstanceFactory{}.read(nil, &clientOpenAPIStub{})
 	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
 }
+
+func TestDataSourceInstanceRead_Subresource(t *testing.T) {
+
+	dataSourceFactory := dataSourceInstanceFactory{
+		openAPIResource: &specStubResource{
+			path: "/v1/cdns/{id}/firewall",
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
+					newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", false, true, nil), // This simulates an openAPIResource that is subresource and the schema has already been populated with the parent property
+				},
+			},
+			fullParentResourceName: "cdns_v1",
+			parentResourceNames:    []string{"cdns_v1"},
+			parentPropertyNames:    []string{"cdns_v1_id"},
+		},
+	}
+
+	dataSourceInstanceSchema, err := dataSourceFactory.createTerraformDataSourceInstanceSchema()
+	require.NoError(t, err)
+
+	dataSourceInput := map[string]interface{}{
+		"cdns_v1_id":                 "parentPropertyID", // Since the path is a sub-resource, the user is expected to provide the id of the parent
+		dataSourceInstanceIDProperty: "someID",
+	}
+	resourceData := schema.TestResourceDataRaw(t, dataSourceInstanceSchema, dataSourceInput)
+
+	client := &clientOpenAPIStub{
+		responsePayload: map[string]interface{}{
+			"id":    "someID",
+			"label": "my_label",
+		},
+	}
+	err = dataSourceFactory.read(resourceData, client)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"parentPropertyID"}, client.parentIDsReceived) // check that the parent id is passed as expected
+	assert.Equal(t, "someID", resourceData.Id())
+	assert.Equal(t, "my_label", resourceData.Get("label"))
+}
