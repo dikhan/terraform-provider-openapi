@@ -215,6 +215,23 @@ func TestDataSourceInstanceRead(t *testing.T) {
 	}
 }
 
+func TestDataSourceInstanceRead_Fails_Because_Schema_is_not_valid(t *testing.T) {
+	dataSourceFactory := dataSourceInstanceFactory{
+		openAPIResource: &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name: "label",
+						Type: "unknown",
+					},
+				},
+			},
+		},
+	}
+	_, err := dataSourceFactory.createTerraformDataSourceInstanceSchema()
+	assert.EqualError(t, err, "non supported type unknown")
+}
+
 func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
 	err := dataSourceInstanceFactory{}.read(nil, &clientOpenAPIStub{})
 	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")

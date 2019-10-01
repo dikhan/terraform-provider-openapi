@@ -40,6 +40,9 @@ func (d dataSourceInstanceFactory) createTerraformDataSourceInstanceSchema() (ma
 		return nil, err
 	}
 	dataSourceSchema, err := specSchema.createDataSourceSchema()
+	if err != nil {
+		return nil, err
+	}
 	dataSourceSchema[dataSourceInstanceIDProperty] = d.dataSourceInstanceSchema()
 	return dataSourceSchema, nil
 }
