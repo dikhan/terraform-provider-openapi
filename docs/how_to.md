@@ -256,8 +256,34 @@ with a link to the same definition (e,g: `$ref: "#/definitions/resource`). The r
 as described in the [OpenAPI documentation for $ref](https://swagger.io/docs/specification/using-ref/).
 
 - The schema object must have a property that uniquely identifies the resource instance. This can be done by either
-having a computed property (readOnly) called ```id``` or by adding the ```x-terraform-id``` extension to one of the
-existing properties. Read 
+having a computed property (readOnly) called ```id``` or by adding the [x-terraform-id](#attributeDetails) extension to one of the
+existing properties.
+
+###### Data source instance
+
+Any resources that are deemed terraform compatible as per the previous section, will also expose a terraform data source 
+that internally will be mapped to the GET operation (in the previous example that would be GET ```/resource/{id}```).
+
+This type of data source is named data source instance. The data source name will be formed from the resource name 
+plus the ```_instance``` string attach to it.
+
+####### Argument Reference
+
+````
+data "openapi_resource_v1_instance" "my_resource_data_source" {
+   id = "resourceID"
+}
+````  
+
+- id: string value of the resource instance id to be fetched
+
+####### Attributes Reference
+
+The data source state will be filled with the corresponding properties defined in the resource model definition, in the 
+example above that would be ```resourceV1```. Please note that all the properties from the model will be configured as computed 
+in the data source schema and will be available as attributes. 
+
+
 
 ##### Terraform data source compliant requirements
 
@@ -267,7 +293,7 @@ An endpoint (path) to be considered terraform data source compliant must meet th
 
 - The path must be a root level path (e,g: /v1/cdns) not an instance path (e,g: /api/v1/cdn/{id}). Subresource data source paths are also supported (e,g: /v1/cdns/{id}/firewalls)
 - The path must contain a GET operation with a response 200 which contains a schema of type 'array'. The items schema must be of type 'object' and must specify at least one property.
-- The items schema object definitnio must contain a property called ```id``` which will be used internally to uniquely identify the data source. If
+- The items schema object definition must contain a property called ```id``` which will be used internally to uniquely identify the data source. If
 the object schema does not have a property called ```id```, then at least one property should have the ```x-terraform-id``` extension 
 so the OpenAPI Terraform provider knows which property should be used to unique identifier instead.
 
