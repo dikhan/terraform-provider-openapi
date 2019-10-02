@@ -369,6 +369,53 @@ func TestCreateResourceSchema(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a swagger schema definition that has a combination of properties supported", t, func() {
+		s := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				idProperty,
+				stringProperty,
+				intProperty,
+				numberProperty,
+				boolProperty,
+				slicePrimitiveProperty,
+				computedProperty,
+				optionalProperty,
+				sensitiveProperty,
+				forceNewProperty,
+			},
+		}
+		Convey("When createResourceSchema method is called", func() {
+			tfResourceSchema, err := s.createResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema for the resource should contain the expected attributes", func() {
+				So(tfResourceSchema, ShouldContainKey, stringProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, computedProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, intProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, numberProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, boolProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, slicePrimitiveProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, optionalProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, sensitiveProperty.Name)
+				So(tfResourceSchema, ShouldContainKey, forceNewProperty.Name)
+			})
+			Convey("And the schema property types should match the expected configuration", func() {
+				So(tfResourceSchema[stringProperty.Name].Type, ShouldEqual, schema.TypeString)
+				So(tfResourceSchema[intProperty.Name].Type, ShouldEqual, schema.TypeInt)
+				So(tfResourceSchema[numberProperty.Name].Type, ShouldEqual, schema.TypeFloat)
+				So(tfResourceSchema[boolProperty.Name].Type, ShouldEqual, schema.TypeBool)
+				So(tfResourceSchema[slicePrimitiveProperty.Name].Type, ShouldEqual, schema.TypeList)
+			})
+			Convey("And the schema property options should match the expected configuration", func() {
+				So(tfResourceSchema[computedProperty.Name].Computed, ShouldBeTrue)
+				So(tfResourceSchema[optionalProperty.Name].Optional, ShouldBeTrue)
+				So(tfResourceSchema[sensitiveProperty.Name].Sensitive, ShouldBeTrue)
+				So(tfResourceSchema[forceNewProperty.Name].ForceNew, ShouldBeTrue)
+			})
+		})
+	})
 }
 
 func TestGetImmutableProperties(t *testing.T) {

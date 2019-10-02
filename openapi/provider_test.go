@@ -54,7 +54,7 @@ func TestOpenAPIProvider(t *testing.T) {
 		})
 	})
 
-	Convey("Given a local server that exposes a swagger file containing a terraform compatible reource (cdn)", t, func() {
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource (cdn)", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: "localhost:8443"
 basePath: "/api"
@@ -183,6 +183,28 @@ definitions:
 						So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
 						So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
 						So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
+					})
+				})
+				Convey("the provider data source map should contain the cdn data source instance with the expected configuration", func() {
+					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+					dataSourceInstanceName := fmt.Sprintf("%s_cdn_v1_instance", providerName)
+					So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceInstanceName)
+					Convey("the provider cdn resource should have the expected schema", func() {
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "id")
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Type, ShouldEqual, schema.TypeString)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Required, ShouldBeTrue)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Computed, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "label")
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Required, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Computed, ShouldBeTrue)
+					})
+					Convey("the provider cdn data source instance should have the expected operations configured", func() {
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
 					})
 				})
 				Convey("the provider configuration function should not be nil", func() {

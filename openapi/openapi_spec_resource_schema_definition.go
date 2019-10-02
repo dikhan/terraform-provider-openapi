@@ -41,6 +41,7 @@ func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputPropert
 	outputProperty.Required = false
 	outputProperty.Optional = true
 	outputProperty.Computed = true
+	outputProperty.Default = nil
 
 	isResource := false
 	switch inputProperty.Elem.(type) {

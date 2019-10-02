@@ -7,8 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hashicorp/terraform/helper/schema"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -90,6 +88,7 @@ func TestCreateProvider(t *testing.T) {
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("resource_v1", "/v1/resource", false, &specSchemaDefinition{})},
 				headers: SpecHeaderParameters{
 					SpecHeaderParam{
 						Name: headerProperty.Name,
@@ -116,6 +115,12 @@ func TestCreateProvider(t *testing.T) {
 			})
 			Convey("And the provider returned should NOT be nil", func() {
 				So(p, ShouldNotBeNil)
+			})
+			Convey("And the provider returned should contain the expected resource resource_v1 registered", func() {
+				So(p.ResourcesMap, ShouldContainKey, "provider_resource_v1")
+			})
+			Convey("And the provider returned should contain the expected data source resource_v1_instance registered", func() {
+				So(p.DataSourcesMap, ShouldContainKey, "provider_resource_v1_instance")
 			})
 			Convey("And the provider should have a property for the auth", func() {
 				So(p.Schema[apiKeyAuthProperty.Name], ShouldNotBeNil)
@@ -226,7 +231,7 @@ func TestCreateProvider(t *testing.T) {
 		})
 	})
 
-	Convey("Given a provider factory where createTerraformProviderResourceMap fails", t, func() {
+	Convey("Given a provider factory where createTerraformProviderResourceMapAndDataSourceInstanceMap fails", t, func() {
 		expectedError := "resource name can not be empty"
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
@@ -571,86 +576,6 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 	})
 }
 
-func TestCreateTerraformProviderResourceMap(t *testing.T) {
-	Convey("Given a provider factory", t, func() {
-		p := providerFactory{
-			name: "provider",
-			specAnalyser: &specAnalyserStub{
-				resources: []SpecResource{
-					newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
-							idProperty,
-							stringProperty,
-							intProperty,
-							numberProperty,
-							boolProperty,
-							slicePrimitiveProperty,
-							computedProperty,
-							optionalProperty,
-							sensitiveProperty,
-							forceNewProperty,
-						},
-					}),
-				},
-			},
-		}
-		Convey("When createTerraformProviderResourceMap is called ", func() {
-			schemaResource, err := p.createTerraformProviderResourceMap()
-			expectedResourceName := "provider_resource"
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the schema resource should contain the resource", func() {
-				So(schemaResource, ShouldContainKey, expectedResourceName)
-			})
-			Convey("And the schema for the resource should contain the expected attributes", func() {
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, stringProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, computedProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, intProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, numberProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, boolProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, slicePrimitiveProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, optionalProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, sensitiveProperty.Name)
-				So(schemaResource[expectedResourceName].Schema, ShouldContainKey, forceNewProperty.Name)
-			})
-			Convey("And the schema property types should match the expected configuration", func() {
-				So(schemaResource[expectedResourceName].Schema[stringProperty.Name].Type, ShouldEqual, schema.TypeString)
-				So(schemaResource[expectedResourceName].Schema[intProperty.Name].Type, ShouldEqual, schema.TypeInt)
-				So(schemaResource[expectedResourceName].Schema[numberProperty.Name].Type, ShouldEqual, schema.TypeFloat)
-				So(schemaResource[expectedResourceName].Schema[boolProperty.Name].Type, ShouldEqual, schema.TypeBool)
-				So(schemaResource[expectedResourceName].Schema[slicePrimitiveProperty.Name].Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the schema property options should match the expected configuration", func() {
-				So(schemaResource[expectedResourceName].Schema[computedProperty.Name].Computed, ShouldBeTrue)
-				So(schemaResource[expectedResourceName].Schema[optionalProperty.Name].Optional, ShouldBeTrue)
-				So(schemaResource[expectedResourceName].Schema[sensitiveProperty.Name].Sensitive, ShouldBeTrue)
-				So(schemaResource[expectedResourceName].Schema[forceNewProperty.Name].ForceNew, ShouldBeTrue)
-			})
-		})
-	})
-
-	Convey("Given a provider factory with a factory loaded with a resource that should be ignored", t, func() {
-		p := providerFactory{
-			name: "provider",
-			specAnalyser: &specAnalyserStub{
-				resources: []SpecResource{
-					newSpecStubResource("resource", "/v1/resource", true, nil),
-				},
-			},
-		}
-		Convey("When createTerraformProviderResourceMap is called ", func() {
-			schemaResource, err := p.createTerraformProviderResourceMap()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the schema resource should contain the resource", func() {
-				So(schemaResource, ShouldBeEmpty)
-			})
-		})
-	})
-}
-
 func TestConfigureProvider(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
@@ -839,6 +764,95 @@ func TestGetProviderResourceName(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestCreateTerraformProviderResourceMapAndDataSourceInstanceMap(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		specV2stub           SpecAnalyser
+		expectedResourceName string
+		expectedError        string
+	}{
+		{
+			name: "happy path",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedResourceName: "provider_resource",
+		},
+		{
+			name: "getTerraformCompliantResources fails ",
+			specV2stub: &specAnalyserStub{
+				error: fmt.Errorf("error getting terraform compliant resources"),
+			},
+			expectedError: "error getting terraform compliant resources",
+		},
+		{
+			name: "getProviderResourceName fails ",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
+			},
+			expectedError: "resource name can not be empty",
+		},
+		{
+			name: "createTerraformDataSource fails",
+			specV2stub: &specAnalyserStub{
+				resources: []SpecResource{&specStubResource{
+					name: "hello",
+					funcGetResourceSchema: func() (*specSchemaDefinition, error) {
+						return nil, errors.New("createTerraformDataSource failed")
+					},
+				}},
+			},
+			expectedError: "createTerraformDataSource failed",
+		},
+	}
+
+	for _, tc := range testCases {
+		p := providerFactory{
+			name:         "provider",
+			specAnalyser: tc.specV2stub,
+		}
+		resourceMap, dataSourceMap, err := p.createTerraformProviderResourceMapAndDataSourceInstanceMap()
+
+		if tc.expectedError == "" {
+			assert.Nil(t, err)
+			assert.Contains(t, resourceMap, tc.expectedResourceName, tc.name)
+			assert.Contains(t, dataSourceMap, tc.expectedResourceName+"_instance", tc.name)
+		} else {
+			assert.EqualError(t, err, tc.expectedError, tc.name)
+		}
+	}
+}
+
+func TestCreateTerraformProviderDataSourceInstanceMap_ignore_resource(t *testing.T) {
+	p := providerFactory{
+		name: "provider",
+		specAnalyser: &specAnalyserStub{
+			resources: []SpecResource{
+				newSpecStubResource("resource", "/v1/resource", true, &specSchemaDefinition{}),
+			},
+		},
+	}
+	resourceMap, dataSourceMap, err := p.createTerraformProviderResourceMapAndDataSourceInstanceMap()
+	assert.Nil(t, err)
+	assert.Empty(t, resourceMap)
+	assert.Empty(t, dataSourceMap)
+}
+
+func TestCreateTerraformProviderDataSourceInstanceMap_duplicate_resource(t *testing.T) {
+	p := providerFactory{
+		name: "provider",
+		specAnalyser: &specAnalyserStub{
+			resources: []SpecResource{
+				newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{}),
+				newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+		},
+	}
+	resourceMap, dataSourceMap, err := p.createTerraformProviderResourceMapAndDataSourceInstanceMap()
+	assert.Nil(t, err)
+	assert.Empty(t, resourceMap)
+	assert.Empty(t, dataSourceMap)
 }
 
 func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
