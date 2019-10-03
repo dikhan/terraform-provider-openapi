@@ -6,6 +6,7 @@ import (
 )
 
 const extTfAuthenticationSchemeBearer = "x-terraform-authentication-scheme-bearer"
+const extTfAuthenticationRefreshToken = "x-terraform-refresh-token-url"
 
 type specV2Security struct {
 	SecurityDefinitions spec.SecurityDefinitions
@@ -21,7 +22,9 @@ func (s *specV2Security) GetAPIKeySecurityDefinitions() (*SpecSecurityDefinition
 			var securityDefinition SpecSecurityDefinition
 			switch secDef.In {
 			case "header":
-				if s.isBearerScheme(secDef) {
+				if refreshTokenURL := s.isRefreshTokenAuth(secDef); refreshTokenURL != "" {
+					securityDefinition = newAPIKeyHeaderRefreshTokenSecurityDefinition(secDefName, secDef, refreshTokenURL)
+				} else if s.isBearerScheme(secDef) {
 					securityDefinition = newAPIKeyHeaderBearerSecurityDefinition(secDefName)
 				} else {
 					securityDefinition = newAPIKeyHeaderSecurityDefinition(secDefName, secDef.Name)
@@ -50,6 +53,14 @@ func (s *specV2Security) isBearerScheme(secDef *spec.SecurityScheme) bool {
 		return true
 	}
 	return false
+}
+
+func (s *specV2Security) isRefreshTokenAuth(secDef *spec.SecurityScheme) string {
+	refreshTokenURL, isRefreshTokenAuth := secDef.Extensions.GetString(extTfAuthenticationRefreshToken)
+	if isRefreshTokenAuth {
+		return refreshTokenURL
+	}
+	return ""
 }
 
 // GetGlobalSecuritySchemes returns a list of SpecSecuritySchemes that have their corresponding SpecSecurityDefinition

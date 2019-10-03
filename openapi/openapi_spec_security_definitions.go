@@ -15,7 +15,8 @@ func (s SpecSecurityDefinitions) findSecurityDefinitionFor(securitySchemeName st
 type securityDefinitionType string
 
 const (
-	securityDefinitionAPIKey securityDefinitionType = "apiKey"
+	securityDefinitionAPIKey             securityDefinitionType = "apiKey"
+	securityDefinitionAPIKeyRefreshToken securityDefinitionType = "apiKeyRefreshToken"
 )
 
 // SpecSecurityDefinition defines the behaviour expected for security definition implementations. This interface creates
