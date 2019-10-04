@@ -96,7 +96,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	}
 
 	operation := r.openAPIResource.getResourceOperations().Post
-	requestPayload := r.createPayloadFromLocalStateData(data)
+	requestPayload := r.buildPayloadFromLocalStateDataForPostOperation(data)
 	responsePayload := map[string]interface{}{}
 
 	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
@@ -383,29 +383,13 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 	return nil
 }
 
-// createPayloadFromLocalStateData is in charge of translating the values saved in the local state into a payload that can be posted/put
+// buildPayloadFromLocalStateDataForPostOperation is in charge of translating the values saved in the local state into a payload that can be posted/put
 // to the API. Note that when reading the properties from the schema definition, there's a conversion to a compliant
 // will automatically translate names into terraform compatible names that can be saved in the state file; otherwise
 // terraform name so the look up in the local state operation works properly. The property names saved in the local state
 // are always converted to terraform compatible names
-func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
-	input := map[string]interface{}{}
-	resourceSchema, _ := r.openAPIResource.getResourceSchema()
-	for _, property := range resourceSchema.Properties {
-		propertyName := property.Name
-		// IDs and ReadOnly properties are not considered for the payload data
-		if !property.isPropertyNamedID() && !property.isReadOnly() && !property.IsParentProperty {
-			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
-				err := r.getPropertyPayload(input, property, dataValue)
-				if err != nil {
-					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
-				}
-			}
-			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
-		}
-	}
-	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
-	return input
+func (r resourceFactory) buildPayloadFromLocalStateDataForPostOperation(resourceLocalData *schema.ResourceData) map[string]interface{} {
+	return r.createPayloadFromLocalStateData(resourceLocalData, true)
 }
 
 func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
@@ -426,7 +410,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			if err != nil {
 				return err
 			}
-			if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
+			if err := r.populatePayload(objectInput, schemaDefinitionProperty, propertyValue, ignoreReadOnly); err != nil {
 				return err
 			}
 		}
@@ -443,7 +427,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 				if len(arrayValue) != 1 {
 					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 				}
-				if err := r.getPropertyPayload(input, property, arrayValue[0]); err != nil {
+				if err := r.populatePayload(input, property, arrayValue[0], ignoreReadOnly); err != nil {
 					return err
 				}
 			} else {
@@ -451,7 +435,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 				arrayValue := dataValue.([]interface{})
 				for _, arrayItem := range arrayValue {
 					objectInput := map[string]interface{}{}
-					if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
+					if err := r.populatePayload(objectInput, property, arrayItem, ignoreReadOnly); err != nil {
 						return err
 					}
 					// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example
