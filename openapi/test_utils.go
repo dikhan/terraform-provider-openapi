@@ -33,6 +33,7 @@ var forceNewProperty = newBoolSchemaDefinitionProperty("bool_force_new_property"
 var statusProperty = newStringSchemaDefinitionPropertyWithDefaults("status", "", false, true, "pending")
 
 // testing properties with zero values set
+var stringZeroValueProperty = newStringSchemaDefinitionPropertyWithDefaults("string_property", "", true, false, "")
 var intZeroValueProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 0)
 var numberZeroValueProperty = newNumberSchemaDefinitionPropertyWithDefaults("number_property", "", true, false, 0)
 var boolZeroValueProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, false)
