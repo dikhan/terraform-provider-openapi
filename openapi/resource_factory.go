@@ -194,7 +194,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
 	}
-	requestPayload := r.createPayloadFromLocalStateData(data)
+	requestPayload := r.buildPayloadFromLocalStateDataForPutOperation(data)
 	responsePayload := map[string]interface{}{}
 	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
@@ -392,9 +392,42 @@ func (r resourceFactory) buildPayloadFromLocalStateDataForPostOperation(resource
 	return r.createPayloadFromLocalStateData(resourceLocalData, true)
 }
 
-func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
-	// ignore readOnly properties
-	if property.isReadOnly() {
+func (r resourceFactory) buildPayloadFromLocalStateDataForPutOperation(resourceLocalData *schema.ResourceData) map[string]interface{} {
+	return r.createPayloadFromLocalStateData(resourceLocalData, false)
+}
+
+func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData, ignoreReadOnly bool) map[string]interface{} {
+	input := map[string]interface{}{}
+	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	for _, property := range resourceSchema.Properties {
+		propertyName := property.Name
+		// ReadOnly properties are not considered for the payload data (including the id if it's computed)
+		if r.shouldIgnoreReadOnlyProperty(property, ignoreReadOnly) {
+			continue
+		}
+		if !property.IsParentProperty {
+			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
+				err := r.populatePayload(input, property, dataValue, ignoreReadOnly)
+				if err != nil {
+					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
+				}
+			}
+			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
+		}
+	}
+	log.Printf("[DEBUG] [resource='%s'] buildPayloadFromLocalStateDataForPostOperation: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
+	return input
+}
+
+func (r resourceFactory) shouldIgnoreReadOnlyProperty(property *specSchemaDefinitionProperty, ignoreReadOnly bool) bool {
+	if property.isReadOnly() && ignoreReadOnly {
+		return true
+	}
+	return false
+}
+
+func (r resourceFactory) populatePayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}, ignoreReadOnly bool) error {
+	if r.shouldIgnoreReadOnlyProperty(property, ignoreReadOnly) {
 		return nil
 	}
 	if dataValue == nil {
