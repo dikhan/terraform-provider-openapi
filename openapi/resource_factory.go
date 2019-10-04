@@ -407,6 +407,10 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 }
 
 func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+	// ignore readOnly properties
+	if property.isReadOnly() {
+		return nil
+	}
 	if dataValue == nil {
 		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name)
 	}
