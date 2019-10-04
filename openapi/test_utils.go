@@ -27,6 +27,7 @@ var nonImmutableProperty = newStringSchemaDefinitionPropertyWithDefaults("other_
 var someIdentifierProperty = newStringSchemaDefinitionProperty("somePropertyThatShouldBeUsedAsID", "", true, true, false, false, false, false, true, false, "idValue")
 var immutableProperty = newStringSchemaDefinitionProperty("string_immutable_property", "", true, false, false, false, false, true, false, false, "updatedImmutableValue")
 var computedProperty = newStringSchemaDefinitionPropertyWithDefaults("computed_property", "", false, true, nil)
+var readOnlyProperty = newStringSchemaDefinitionPropertyWithDefaults("read_only_property", "", false, true, "some_value")
 var optionalProperty = newStringSchemaDefinitionPropertyWithDefaults("optional_property", "", false, false, "updatedValue")
 var sensitiveProperty = newStringSchemaDefinitionProperty("sensitive_property", "", false, false, false, false, true, false, false, false, "sensitive")
 var forceNewProperty = newBoolSchemaDefinitionProperty("bool_force_new_property", "", true, false, false, true, false, false, false, false, true)

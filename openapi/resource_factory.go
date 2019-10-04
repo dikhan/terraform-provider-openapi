@@ -96,7 +96,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	}
 
 	operation := r.openAPIResource.getResourceOperations().Post
-	requestPayload := r.buildPayloadFromLocalStateDataForPostOperation(data)
+	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
 
 	res, err := providerClient.Post(r.openAPIResource, requestPayload, &responsePayload, parentIDs...)
@@ -194,7 +194,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
 	}
-	requestPayload := r.buildPayloadFromLocalStateDataForPutOperation(data)
+	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
 	if err := r.checkImmutableFields(data, providerClient); err != nil {
 		return err
@@ -383,31 +383,25 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 	return nil
 }
 
-// buildPayloadFromLocalStateDataForPostOperation is in charge of translating the values saved in the local state into a payload that can be posted/put
+// createPayloadFromLocalStateData is in charge of translating the values saved in the local state into a payload that can be posted/put
 // to the API. Note that when reading the properties from the schema definition, there's a conversion to a compliant
 // will automatically translate names into terraform compatible names that can be saved in the state file; otherwise
 // terraform name so the look up in the local state operation works properly. The property names saved in the local state
 // are always converted to terraform compatible names
-func (r resourceFactory) buildPayloadFromLocalStateDataForPostOperation(resourceLocalData *schema.ResourceData) map[string]interface{} {
-	return r.createPayloadFromLocalStateData(resourceLocalData, true)
-}
-
-func (r resourceFactory) buildPayloadFromLocalStateDataForPutOperation(resourceLocalData *schema.ResourceData) map[string]interface{} {
-	return r.createPayloadFromLocalStateData(resourceLocalData, false)
-}
-
-func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData, ignoreReadOnly bool) map[string]interface{} {
+// Note the readonly properties will not be posted/put to the API. The payload will always contain the desired state as far
+// as the input is concerned.
+func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
 	resourceSchema, _ := r.openAPIResource.getResourceSchema()
 	for _, property := range resourceSchema.Properties {
 		propertyName := property.Name
 		// ReadOnly properties are not considered for the payload data (including the id if it's computed)
-		if r.shouldIgnoreReadOnlyProperty(property, ignoreReadOnly) {
+		if property.isReadOnly() {
 			continue
 		}
 		if !property.IsParentProperty {
 			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
-				err := r.populatePayload(input, property, dataValue, ignoreReadOnly)
+				err := r.populatePayload(input, property, dataValue)
 				if err != nil {
 					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
 				}
@@ -419,15 +413,8 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 	return input
 }
 
-func (r resourceFactory) shouldIgnoreReadOnlyProperty(property *specSchemaDefinitionProperty, ignoreReadOnly bool) bool {
-	if property.isReadOnly() && ignoreReadOnly {
-		return true
-	}
-	return false
-}
-
-func (r resourceFactory) populatePayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}, ignoreReadOnly bool) error {
-	if r.shouldIgnoreReadOnlyProperty(property, ignoreReadOnly) {
+func (r resourceFactory) populatePayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+	if property.isReadOnly() {
 		return nil
 	}
 	if dataValue == nil {
@@ -443,7 +430,7 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 			if err != nil {
 				return err
 			}
-			if err := r.populatePayload(objectInput, schemaDefinitionProperty, propertyValue, ignoreReadOnly); err != nil {
+			if err := r.populatePayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
 				return err
 			}
 		}
@@ -460,7 +447,7 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 				if len(arrayValue) != 1 {
 					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 				}
-				if err := r.populatePayload(input, property, arrayValue[0], ignoreReadOnly); err != nil {
+				if err := r.populatePayload(input, property, arrayValue[0]); err != nil {
 					return err
 				}
 			} else {
@@ -468,7 +455,7 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 				arrayValue := dataValue.([]interface{})
 				for _, arrayItem := range arrayValue {
 					objectInput := map[string]interface{}{}
-					if err := r.populatePayload(objectInput, property, arrayItem, ignoreReadOnly); err != nil {
+					if err := r.populatePayload(objectInput, property, arrayItem); err != nil {
 						return err
 					}
 					// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example

@@ -1028,7 +1028,7 @@ func TestCheckImmutableFields(t *testing.T) {
 	})
 }
 
-func TestBuildPayloadFromLocalStateDataForPostOperation(t *testing.T) {
+func TestCreatePayloadFromLocalStateData(t *testing.T) {
 	idProperty := newStringSchemaDefinitionProperty("id", "", false, true, false, false, false, true, false, false, "id")
 	testCases := []struct {
 		name            string
@@ -1212,13 +1212,9 @@ func TestBuildPayloadFromLocalStateDataForPostOperation(t *testing.T) {
 
 	for _, tc := range testCases {
 		r, resourceData := testCreateResourceFactory(t, tc.inputProps...)
-		payload := r.buildPayloadFromLocalStateDataForPostOperation(resourceData)
+		payload := r.createPayloadFromLocalStateData(resourceData)
 		assert.Equal(t, tc.expectedPayload, payload, tc.name)
 	}
-}
-
-func TestCreatePayloadFromLocalStateData(t *testing.T) {
-
 }
 
 func TestGetPropertyPayload(t *testing.T) {
@@ -1228,7 +1224,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		input := map[string]interface{}{}
 		dataValue := struct{}{}
 		resourceFactory := resourceFactory{}
-		So(func() { resourceFactory.populatePayload(input, nil, dataValue, false) }, ShouldPanic)
+		So(func() { resourceFactory.populatePayload(input, nil, dataValue) }, ShouldPanic)
 	})
 
 	Convey("Given a resource factory"+
@@ -1236,7 +1232,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		"Then it returns an error", t, func() {
 		input := map[string]interface{}{}
 		resourceFactory := resourceFactory{}
-		So(resourceFactory.populatePayload(input, &specSchemaDefinitionProperty{Name: "buu"}, nil, false).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
+		So(resourceFactory.populatePayload(input, &specSchemaDefinitionProperty{Name: "buu"}, nil).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
 	})
 
 	Convey("Given a resource factory"+
@@ -1246,7 +1242,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		dataValue := []bool{}
 		property := &specSchemaDefinitionProperty{}
 		resourceFactory := resourceFactory{}
-		So(func() { resourceFactory.populatePayload(input, property, dataValue, false) }, ShouldPanic)
+		So(func() { resourceFactory.populatePayload(input, property, dataValue) }, ShouldPanic)
 	})
 
 	Convey("Given the function handleSliceOrArray"+
@@ -1256,7 +1252,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		dataValue := []interface{}{}
 		property := &specSchemaDefinitionProperty{}
 		resourceFactory := resourceFactory{}
-		e := resourceFactory.populatePayload(input, property, dataValue, false)
+		e := resourceFactory.populatePayload(input, property, dataValue)
 		So(e, ShouldBeNil)
 	})
 
@@ -1267,7 +1263,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the string property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(stringProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, stringProperty, dataValue, false)
+			err := r.populatePayload(payload, stringProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1290,7 +1286,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the int property in the resource schema  and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(intProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, intProperty, dataValue, false)
+			err := r.populatePayload(payload, intProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1313,7 +1309,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the number property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(numberProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, numberProperty, dataValue, false)
+			err := r.populatePayload(payload, numberProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1336,7 +1332,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the bool property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(boolProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, boolProperty, dataValue, false)
+			err := r.populatePayload(payload, boolProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1373,7 +1369,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the object property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(objectProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, objectProperty, dataValue, false)
+			err := r.populatePayload(payload, objectProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1416,7 +1412,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, sliceObjectProperty, dataValue, false)
+			err := r.populatePayload(payload, sliceObjectProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1441,7 +1437,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, slicePrimitiveProperty, dataValue, false)
+			err := r.populatePayload(payload, slicePrimitiveProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1498,12 +1494,12 @@ func TestGetPropertyPayload(t *testing.T) {
 		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
 		Convey("When populatePayload is called a slice with >1 dataValue, it complains", func() {
-			err := r.populatePayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"}, false)
+			err := r.populatePayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"})
 			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 
 		})
 		Convey("When populatePayload is called a slice with <1 dataValue, it complains", func() {
-			err := r.populatePayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{}, false)
+			err := r.populatePayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{})
 			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 
 		})
@@ -1511,7 +1507,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, propertyWithNestedObject, dataValue, false)
+			err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1564,7 +1560,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, propertyWithNestedObject, dataValue, false)
+			err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
 			})
@@ -1587,7 +1583,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		Convey("When populatePayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, sliceObjectProperty, dataValue, false)
+			err := r.populatePayload(payload, sliceObjectProperty, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property 'slice_object_property_doesn_not_exists' has a nil state dataValue")
 			})
