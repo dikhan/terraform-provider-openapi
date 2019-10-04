@@ -42,6 +42,12 @@ func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, r
 	return newStringSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, false, defaultValue)
 }
 
+func newParentStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	p := newStringSchemaDefinitionPropertyWithDefaults(name, preferredName, required, readOnly, defaultValue)
+	p.IsParentProperty = true
+	return p
+}
+
 func newStringSchemaDefinitionProperty(name, preferredName string, required, readOnly, computed, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
 	return newSchemaDefinitionProperty(name, preferredName, typeString, required, readOnly, computed, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier, defaultValue)
 }
