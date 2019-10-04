@@ -155,6 +155,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 		return nil, err
 	}
 
+	log.Printf("[DEBUG] GET '%s' response payload: %#v", r.openAPIResource.getResourceName(), responsePayload)
 	return responsePayload, nil
 }
 
@@ -370,6 +371,7 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 		for _, immutablePropertyName := range immutableProperties {
 			if localValue, exists := r.getResourceDataOKExists(immutablePropertyName, updatedResourceLocalData); exists {
 				if localValue != remoteData[immutablePropertyName] {
+					log.Printf("[DEBUG] immutable field updated [updatedValue: %s; actual: %s]", localValue, remoteData[immutablePropertyName])
 					// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
 					// data inside the updated (*schema.ResourceData) in the state file
 					updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
