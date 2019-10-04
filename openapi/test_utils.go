@@ -77,7 +77,7 @@ func newBoolSchemaDefinitionProperty(name, preferredName string, required, readO
 }
 
 func newObjectSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly, computed bool, defaultValue interface{}, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
-	return newObjectSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, false, defaultValue, objectSpecSchemaDefinition)
+	return newObjectSchemaDefinitionProperty(name, preferredName, required, readOnly, computed, false, false, false, false, false, defaultValue, objectSpecSchemaDefinition)
 }
 
 func newObjectSchemaDefinitionProperty(name, preferredName string, required, readOnly, computed, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
