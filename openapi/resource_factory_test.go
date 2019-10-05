@@ -1265,6 +1265,15 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			expectedError: errors.New("validation for immutable properties failed: immutable list of objects 'immutable_prop' updated: [input: [map[origin_port:%!s(int=80) protocol:http]]; remote: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
 		},
+		{
+			name:       "client returns an error",
+			inputProps: []*specSchemaDefinitionProperty{},
+			client: clientOpenAPIStub{
+				error: errors.New("some error"),
+			},
+			assertions:    func(resourceData *schema.ResourceData) {},
+			expectedError: errors.New("some error"),
+		},
 	}
 
 	for _, tc := range testCases {
