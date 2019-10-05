@@ -362,20 +362,6 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 	if err != nil {
 		return err
 	}
-	err = r.validateImmutableProperties(updatedResourceLocalData, remoteData)
-	if err != nil {
-		// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
-		// data inside the updated (*schema.ResourceData) in the state file
-		updateError := updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
-		if updateError != nil {
-			return updateError
-		}
-		return fmt.Errorf("validation for immutable properties failed: %s. Update operation was aborted; no updates were performed", err)
-	}
-	return nil
-}
-
-func (r resourceFactory) validateImmutableProperties(updatedResourceLocalData *schema.ResourceData, remoteData map[string]interface{}) error {
 	localData := r.createPayloadFromLocalStateData(updatedResourceLocalData)
 	s, _ := r.openAPIResource.getResourceSchema()
 	for _, p := range s.Properties {
@@ -384,7 +370,13 @@ func (r resourceFactory) validateImmutableProperties(updatedResourceLocalData *s
 		}
 		err := r.validateImmutableProperty(p, remoteData[p.Name], localData[p.Name], false)
 		if err != nil {
-			return err
+			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
+			// data inside the updated (*schema.ResourceData) in the state file
+			updateError := updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
+			if updateError != nil {
+				return updateError
+			}
+			return fmt.Errorf("validation for immutable properties failed: %s. Update operation was aborted; no updates were performed", err)
 		}
 	}
 	return nil
