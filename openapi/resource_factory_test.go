@@ -1147,7 +1147,42 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https"}, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable object property 'immutable_prop' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'origin_port' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https]]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable object with nested object property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeObject,
+					Immutable: true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
+								"some_prop": "someValue",
+							}, &specSchemaDefinition{
+								Properties: specSchemaDefinitionProperties{
+									newStringSchemaDefinitionProperty("some_prop", "", true, false, false, false, false, true, false, false, "someValue"),
+								},
+							}),
+						},
+					},
+					Default: []map[string]interface{}{
+						{
+							"object_property": map[string]interface{}{
+								"some_prop": "someUpdatedValue",
+							},
+						},
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": {"object_property": {"some_prop":"someValue"}}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'object_property' value updated: [input: map[object_property:map[some_prop:someUpdatedValue]]; remote: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
 		},
 	}
 

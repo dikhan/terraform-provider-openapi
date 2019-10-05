@@ -409,7 +409,7 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 			for _, objProp := range property.SpecSchemaDefinition.Properties {
 				err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], true)
 				if err != nil {
-					return fmt.Errorf("immutable object property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+					return fmt.Errorf("immutable object '%s' property '%s' value updated: [input: %s; remote: %s]", property.Name, objProp.Name, localData, remoteData)
 				}
 			}
 		default:
