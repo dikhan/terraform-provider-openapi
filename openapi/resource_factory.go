@@ -379,48 +379,47 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 	return nil
 }
 
-func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}, isImmutableObjectProperty bool) error {
+func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}, checkObjectPropertiesUpdates bool) error {
 	if property.ReadOnly || property.IsParentProperty {
 		return nil
 	}
-	if property.Immutable || isImmutableObjectProperty { // isImmutableObjectProperty covers the recursive call from objects that are immutable which also make all its properties immutable
-		switch property.Type {
-		case typeList:
-			localList := localData.([]interface{})
-			remoteList := remoteData.([]interface{})
-			if len(localList) != len(remoteList) {
-				return fmt.Errorf("immutable list property '%s' size updated: [input: %d; remote: %d]", property.Name, len(localList), len(remoteList))
-			}
-			if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
-				for idx, elem := range localList {
-					if elem != remoteList[idx] {
-						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
-					}
+	switch property.Type {
+	case typeList:
+		localList := localData.([]interface{})
+		remoteList := remoteData.([]interface{})
+		if len(localList) != len(remoteList) {
+			return fmt.Errorf("immutable list property '%s' size updated: [input list size: %d; remote list size: %d]", property.Name, len(localList), len(remoteList))
+		}
+		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+			for idx, elem := range localList {
+				if elem != remoteList[idx] {
+					return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
 				}
-			} else {
-				for idx, localListObj := range localList {
-					remoteListObj := remoteList[idx]
-					localObj := localListObj.(map[string]interface{})
-					remoteObj := remoteListObj.(map[string]interface{})
-					for _, objectProp := range property.SpecSchemaDefinition.Properties {
-						// TODO: check optional, optional with default and optional-computed cases
-						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], true)
-						if err != nil {
-							return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
-						}
+			}
+		} else {
+			for idx, localListObj := range localList {
+				remoteListObj := remoteList[idx]
+				localObj := localListObj.(map[string]interface{})
+				remoteObj := remoteListObj.(map[string]interface{})
+				for _, objectProp := range property.SpecSchemaDefinition.Properties {
+					err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], true)
+					if err != nil {
+						return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
 					}
 				}
 			}
-		case typeObject:
-			localObject := localData.(map[string]interface{})
-			remoteObject := remoteData.(map[string]interface{})
-			for _, objProp := range property.SpecSchemaDefinition.Properties {
-				err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], true)
-				if err != nil {
-					return fmt.Errorf("immutable object '%s' property '%s' value updated: [input: %s; remote: %s]", property.Name, objProp.Name, localData, remoteData)
-				}
+		}
+	case typeObject:
+		localObject := localData.(map[string]interface{})
+		remoteObject := remoteData.(map[string]interface{})
+		for _, objProp := range property.SpecSchemaDefinition.Properties {
+			err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], true)
+			if err != nil {
+				return fmt.Errorf("immutable object '%s' property '%s' value updated: [input: %s; remote: %s]", property.Name, objProp.Name, localData, remoteData)
 			}
-		default:
+		}
+	default:
+		if property.Immutable || checkObjectPropertiesUpdates { // checkObjectPropertiesUpdates covers the recursive call from objects that are immutable which also make all its properties immutable
 			if localData != remoteData {
 				return fmt.Errorf("immutable property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
 			}

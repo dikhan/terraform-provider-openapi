@@ -1153,6 +1153,35 @@ func TestCheckImmutableFields(t *testing.T) {
 			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'origin_port' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
+			name: "immutable property inside a mutable object is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "mutable_prop",
+					Type:      typeObject,
+					Immutable: false, // the object in this case is mutable; however some props are immutable
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							immutableProperty,
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: map[string]interface{}{
+						immutableProperty.Name: immutableProperty.Default,
+						"origin_port":          80,
+						"protocol":             "http",
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"mutable_prop": {"string_immutable_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "string_immutable_property": "some_value"}, resourceData.Get("mutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable object 'mutable_prop' property 'string_immutable_property' value updated: [input: map[origin_port:%!s(int64=80) protocol:http string_immutable_property:updatedImmutableValue]; remote: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
+		},
+		{
 			name: "immutable object with nested object property is updated",
 			inputProps: []*specSchemaDefinitionProperty{
 				{
