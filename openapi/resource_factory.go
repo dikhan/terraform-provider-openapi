@@ -358,25 +358,54 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 }
 
 func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI) error {
-	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	remoteData, err := r.readRemote(updatedResourceLocalData.Id(), openAPIClient)
 	if err != nil {
 		return err
 	}
-	immutableProperties := resourceSchema.getImmutableProperties()
-	if len(immutableProperties) > 0 {
-		remoteData, err := r.readRemote(updatedResourceLocalData.Id(), openAPIClient)
+	err = r.validateImmutableProperties(updatedResourceLocalData, remoteData)
+	if err != nil {
+		// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
+		// data inside the updated (*schema.ResourceData) in the state file
+		updateError := updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
+		if updateError != nil {
+			return updateError
+		}
+		return fmt.Errorf("validation for immutable properties failed: %s. Update operation was aborted; no updates were performed", err)
+	}
+	return nil
+}
+
+func (r resourceFactory) validateImmutableProperties(updatedResourceLocalData *schema.ResourceData, remoteData map[string]interface{}) error {
+	localData := r.createPayloadFromLocalStateData(updatedResourceLocalData)
+	s, _ := r.openAPIResource.getResourceSchema()
+	for _, p := range s.Properties {
+		if p.ReadOnly || p.IsParentProperty {
+			continue
+		}
+		err := r.validateImmutableProperty(p, remoteData[p.Name], localData[p.Name])
 		if err != nil {
 			return err
 		}
-		for _, immutablePropertyName := range immutableProperties {
-			if localValue, exists := r.getResourceDataOKExists(immutablePropertyName, updatedResourceLocalData); exists {
-				if localValue != remoteData[immutablePropertyName] {
-					log.Printf("[DEBUG] immutable field updated [updatedValue: %s; actual: %s]", localValue, remoteData[immutablePropertyName])
-					// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
-					// data inside the updated (*schema.ResourceData) in the state file
-					updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
-					return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
+	}
+	return nil
+}
+
+func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}) error {
+	if property.Immutable {
+		switch property.Type {
+		case typeList:
+			if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+				localList := localData.([]interface{})
+				remoteList := remoteData.([]interface{})
+				for idx, elem := range localList {
+					if elem != remoteList[idx] {
+						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
+					}
 				}
+			}
+		default:
+			if localData != remoteData {
+				return fmt.Errorf("immutable property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
 			}
 		}
 	}

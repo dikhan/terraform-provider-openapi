@@ -23,7 +23,6 @@ var slicePrimitiveProperty = newListSchemaDefinitionPropertyWithDefaults("slice_
 
 // testing properties with special configuration
 var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_preferred_property", true, false, "updatedValue")
-var nonImmutableProperty = newStringSchemaDefinitionPropertyWithDefaults("other_string_property", "", true, false, "newValue")
 var someIdentifierProperty = newStringSchemaDefinitionProperty("somePropertyThatShouldBeUsedAsID", "", true, true, false, false, false, false, true, false, "idValue")
 var immutableProperty = newStringSchemaDefinitionProperty("string_immutable_property", "", true, false, false, false, false, true, false, false, "updatedImmutableValue")
 var computedProperty = newStringSchemaDefinitionPropertyWithDefaults("computed_property", "", false, true, nil)

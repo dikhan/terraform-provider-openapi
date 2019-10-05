@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-openapi/spec"
 
+	"encoding/json"
 	"github.com/hashicorp/terraform/helper/schema"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -1004,28 +1004,143 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 }
 
 func TestCheckImmutableFields(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
-		r, resourceData := testCreateResourceFactory(t, immutableProperty, nonImmutableProperty)
-		Convey("When checkImmutableFields is called with an update resource data and an open api client that returns the old expectedValue of the property being changed", func() {
-			client := &clientOpenAPIStub{
+
+	testCases := []struct {
+		name          string
+		inputProps    []*specSchemaDefinitionProperty
+		client        clientOpenAPIStub
+		assertions    func(*schema.ResourceData)
+		expectedError error
+	}{
+		{
+			name: "mutable string property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "mutable_prop",
+					Type:      typeString,
+					Immutable: false,
+					Default:   4,
+				}, // this pretends the property value in the state file has been updated
+			},
+			client: clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
-					immutableProperty.Name:    "originalImmutablePropertyValue",
-					nonImmutableProperty.Name: "originalNonImmutablePropertyValue",
+					"mutable_prop": "originalPropertyValue",
 				},
-			}
-			err := r.checkImmutableFields(resourceData, client)
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the err message returned should be", func() {
-				So(err.Error(), ShouldEqual, fmt.Sprintf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutableProperty.Name))
-			})
-			Convey("And the resource data should contain the original values coming from the responsePayload (so it's assured that local state was not updated)", func() {
-				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
-				So(resourceData.Get(nonImmutableProperty.Name), ShouldEqual, client.responsePayload[nonImmutableProperty.Name])
-			})
-		})
-	})
+			},
+			expectedError: nil,
+		},
+		{
+			name: "immutable string property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeString,
+					Immutable: true,
+					Default:   "updatedImmutableValue",
+				}, // this pretends the property value in the state file has been updated
+			},
+			client: clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					"immutable_prop": "originalImmutablePropertyValue",
+				},
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, "originalImmutablePropertyValue", resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: updatedImmutableValue; remote: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable int property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeInt,
+					Immutable: true,
+					Default:   4,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": 4}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, 4, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: %!s(int=4); remote: %!s(float64=4)]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable float property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeFloat,
+					Immutable: true,
+					Default:   4.5,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": 3.8}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, 3.8, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: %!s(float64=4.5); remote: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable bool property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeBool,
+					Immutable: true,
+					Default:   true,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": false}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, false, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: %!s(bool=true); remote: %!s(bool=false)]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable list property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeString,
+					Immutable:      true,
+					Default:        []interface{}{"value1Updated", "value2Updated"},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": ["value1","value2"]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' elements updated: [input: [value1Updated value2Updated]; remote: [value1 value2]]. Update operation was aborted; no updates were performed"),
+		},
+	}
+
+	for _, tc := range testCases {
+		r, resourceData := testCreateResourceFactory(t, tc.inputProps...)
+		err := r.checkImmutableFields(resourceData, &tc.client)
+		if tc.expectedError == nil {
+			assert.NoError(t, err, tc.name)
+		} else {
+			assert.Equal(t, tc.expectedError, err, tc.name)
+			tc.assertions(resourceData)
+		}
+	}
+}
+
+func getMapFromJson(t *testing.T, input string) map[string]interface{} {
+	var m map[string]interface{}
+	err := json.Unmarshal([]byte(input), &m)
+	assert.NoError(t, err)
+	return m
 }
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
