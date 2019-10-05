@@ -380,6 +380,9 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 }
 
 func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}, isImmutableObjectProperty bool) error {
+	if property.ReadOnly || property.IsParentProperty {
+		return nil
+	}
 	if property.Immutable || isImmutableObjectProperty { // isImmutableObjectProperty covers the recursive call from objects that are immutable which also make all its properties immutable
 		switch property.Type {
 		case typeList:
