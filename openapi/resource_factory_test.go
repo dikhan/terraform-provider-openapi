@@ -1132,6 +1132,7 @@ func TestCheckImmutableFields(t *testing.T) {
 					Immutable: true,
 					SpecSchemaDefinition: &specSchemaDefinition{
 						Properties: specSchemaDefinitionProperties{
+							readOnlyProperty,
 							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 						},
