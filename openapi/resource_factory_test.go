@@ -1124,6 +1124,25 @@ func TestCheckImmutableFields(t *testing.T) {
 			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' elements updated: [input: [value1Updated value2Updated]; remote: [value1 value2]]. Update operation was aborted; no updates were performed"),
 		},
 		{
+			name: "immutable list size is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeString,
+					Immutable:      true,
+					Default:        []interface{}{"value1Updated", "value2Updated", "value3Updated"},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": ["value1","value2"]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' size updated: [input list size: 3; remote list size: 2]. Update operation was aborted; no updates were performed"),
+		},
+		{
 			name: "immutable object property is updated",
 			inputProps: []*specSchemaDefinitionProperty{
 				{
