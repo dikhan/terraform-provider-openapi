@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -339,6 +341,7 @@ func TestUpdate(t *testing.T) {
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
+					idProperty.Name:        "id",
 					stringProperty.Name:    "someExtraValueThatProvesResponseDataIsPersisted",
 					immutableProperty.Name: immutableProperty.Default,
 				},
@@ -358,6 +361,7 @@ func TestUpdate(t *testing.T) {
 		Convey("When update is called with a resource data containing updated values and the immutable check fails due to an immutable property being updated", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
+					idProperty.Name:        "id",
 					stringProperty.Name:    "stringOriginalValue",
 					immutableProperty.Name: "immutableOriginalValue",
 				},
@@ -367,7 +371,7 @@ func TestUpdate(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error returned should equal ", func() {
-				So(err.Error(), ShouldEqual, "property string_immutable_property is immutable and therefore can not be updated. Update operation was aborted; no updates were performed")
+				So(err.Error(), ShouldEqual, "validation for immutable properties failed: immutable property 'string_immutable_property' value updated: [input: updatedImmutableValue; remote: immutableOriginalValue]. Update operation was aborted; no updates were performed")
 			})
 			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Id(), ShouldEqual, idProperty.Default)
@@ -398,9 +402,15 @@ func TestUpdate(t *testing.T) {
 		Convey("When update is called with resource data and a client returns a non expected http code when reading remote", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
+					idProperty.Name:     "id",
 					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
 				},
-				returnHTTPCode: http.StatusInternalServerError,
+				funcPut: func() (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusInternalServerError,
+						Body:       ioutil.NopCloser(strings.NewReader("")),
+					}, nil
+				},
 			}
 			err := r.update(resourceData, client)
 			Convey("And the error returned should be the expected one", func() {
@@ -411,9 +421,12 @@ func TestUpdate(t *testing.T) {
 			expectedError := "some error returned by the PUT operation"
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
-					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+					idProperty.Name:     "id",
+					stringProperty.Name: "someValue",
 				},
-				error: fmt.Errorf(expectedError),
+				funcPut: func() (*http.Response, error) {
+					return nil, fmt.Errorf(expectedError)
+				},
 			}
 			err := r.update(resourceData, client)
 			Convey("And the error returned should be the expected one", func() {
@@ -448,7 +461,7 @@ func TestUpdate(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory that has an asynchronous create operation (put) but the polling operation fails for some reason", t, func() {
+	Convey("Given a resource factory that has an asynchronous create operation (put) but the polling operation fails due to the status field missing", t, func() {
 		expectedReturnCode := 202
 		testSchema := newTestSchema(idProperty, stringProperty)
 		resourceData := testSchema.getResourceData(t)
@@ -459,15 +472,20 @@ func TestUpdate(t *testing.T) {
 		}
 		Convey("When create is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
-				returnHTTPCode: expectedReturnCode,
+				funcPut: func() (*http.Response, error) {
+					return &http.Response{
+						StatusCode: expectedReturnCode,
+						Body:       ioutil.NopCloser(strings.NewReader("")),
+					}, nil
+				},
 				responsePayload: map[string]interface{}{
-					idProperty.Name:     "someID",
-					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+					idProperty.Name:     "id",
+					stringProperty.Name: "someValue",
 				},
 			}
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
+				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error occurred while retrieving status identifier value from payload for resource 'resourceName' (): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
 			})
 		})
 	})
