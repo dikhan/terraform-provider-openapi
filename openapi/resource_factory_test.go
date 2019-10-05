@@ -1274,6 +1274,25 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions:    func(resourceData *schema.ResourceData) {},
 			expectedError: errors.New("some error"),
 		},
+		{
+			name: "immutable property is updated and the client returned more properties than the ones specified in the schema",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeString,
+					Immutable: true,
+					Default:   "updatedImmutableValue",
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					"immutable_prop": "originalImmutablePropertyValue",
+					"unknown_prop":   "some value",
+				},
+			},
+			assertions:    func(resourceData *schema.ResourceData) {},
+			expectedError: errors.New("failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'unknown_prop' not existing in resource schema definition"),
+		},
 	}
 
 	for _, tc := range testCases {
