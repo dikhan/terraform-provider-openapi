@@ -1136,18 +1136,19 @@ func TestCheckImmutableFields(t *testing.T) {
 						},
 					},
 					Default: map[string]interface{}{
-						"origin_port": 80,
-						"protocol":    "http",
+						readOnlyProperty.Name: readOnlyProperty.Default,
+						"origin_port":         80,
+						"protocol":            "http",
 					},
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": {"origin_port":443,"protocol":"https"}}`),
+				responsePayload: getMapFromJson(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https"}, resourceData.Get("immutable_prop"))
+				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'origin_port' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'origin_port' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable object with nested object property is updated",
@@ -1183,6 +1184,36 @@ func TestCheckImmutableFields(t *testing.T) {
 				assert.Equal(t, []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}}, resourceData.Get("immutable_prop"))
 			},
 			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'object_property' value updated: [input: map[object_property:map[some_prop:someUpdatedValue]]; remote: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable list of objects is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeObject,
+					Immutable:      true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: []map[string]interface{}{
+						{
+							"origin_port": 80,
+							"protocol":    "http",
+						},
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": [{"origin_port":443, "protocol":"https"}]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https"}}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable list of objects 'immutable_prop' updated: [input: [map[origin_port:%!s(int=80) protocol:http]]; remote: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
 		},
 	}
 

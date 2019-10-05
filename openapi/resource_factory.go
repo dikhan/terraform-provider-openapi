@@ -365,9 +365,6 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 	localData := r.createPayloadFromLocalStateData(updatedResourceLocalData)
 	s, _ := r.openAPIResource.getResourceSchema()
 	for _, p := range s.Properties {
-		if p.ReadOnly || p.IsParentProperty {
-			continue
-		}
 		err := r.validateImmutableProperty(p, remoteData[p.Name], localData[p.Name], false)
 		if err != nil {
 			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
@@ -392,6 +389,19 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 				for idx, elem := range localList {
 					if elem != remoteList[idx] {
 						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
+					}
+				}
+			} else {
+				for idx, localListObj := range localList {
+					remoteListObj := remoteList[idx]
+					localObj := localListObj.(map[string]interface{})
+					remoteObj := remoteListObj.(map[string]interface{})
+					for _, objectProp := range property.SpecSchemaDefinition.Properties {
+						// TODO: check optional, optional with default and optional-computed cases
+						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], true)
+						if err != nil {
+							return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+						}
 					}
 				}
 			}
