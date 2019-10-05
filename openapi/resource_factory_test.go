@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -1232,7 +1233,9 @@ func TestCheckImmutableFields(t *testing.T) {
 func getMapFromJson(t *testing.T, input string) map[string]interface{} {
 	var m map[string]interface{}
 	err := json.Unmarshal([]byte(input), &m)
-	assert.Nil(t, err)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return m
 }
 
