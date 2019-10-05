@@ -386,9 +386,12 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 	if property.Immutable || isImmutableObjectProperty { // isImmutableObjectProperty covers the recursive call from objects that are immutable which also make all its properties immutable
 		switch property.Type {
 		case typeList:
+			localList := localData.([]interface{})
+			remoteList := remoteData.([]interface{})
+			if len(localList) != len(remoteList) {
+				return fmt.Errorf("immutable list property '%s' size updated: [input: %d; remote: %d]", property.Name, len(localList), len(remoteList))
+			}
 			if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
-				localList := localData.([]interface{})
-				remoteList := remoteData.([]interface{})
 				for idx, elem := range localList {
 					if elem != remoteList[idx] {
 						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
