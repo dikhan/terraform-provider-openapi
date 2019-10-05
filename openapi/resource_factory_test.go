@@ -1122,6 +1122,33 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' elements updated: [input: [value1Updated value2Updated]; remote: [value1 value2]]. Update operation was aborted; no updates were performed"),
 		},
+		{
+			name: "immutable object property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeObject,
+					Immutable: true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJson(t, `{"immutable_prop": {"origin_port":443,"protocol":"https"}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable object property 'immutable_prop' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https]]. Update operation was aborted; no updates were performed"),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1139,7 +1166,7 @@ func TestCheckImmutableFields(t *testing.T) {
 func getMapFromJson(t *testing.T, input string) map[string]interface{} {
 	var m map[string]interface{}
 	err := json.Unmarshal([]byte(input), &m)
-	assert.NoError(t, err)
+	assert.Nil(t, err)
 	return m
 }
 

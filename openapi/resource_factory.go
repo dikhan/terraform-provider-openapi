@@ -382,7 +382,7 @@ func (r resourceFactory) validateImmutableProperties(updatedResourceLocalData *s
 		if p.ReadOnly || p.IsParentProperty {
 			continue
 		}
-		err := r.validateImmutableProperty(p, remoteData[p.Name], localData[p.Name])
+		err := r.validateImmutableProperty(p, remoteData[p.Name], localData[p.Name], false)
 		if err != nil {
 			return err
 		}
@@ -390,8 +390,8 @@ func (r resourceFactory) validateImmutableProperties(updatedResourceLocalData *s
 	return nil
 }
 
-func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}) error {
-	if property.Immutable {
+func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}, isImmutableObjectProperty bool) error {
+	if property.Immutable || isImmutableObjectProperty { // isImmutableObjectProperty covers the recursive call from objects that are immutable which also make all its properties immutable
 		switch property.Type {
 		case typeList:
 			if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
@@ -401,6 +401,15 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 					if elem != remoteList[idx] {
 						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
 					}
+				}
+			}
+		case typeObject:
+			localObject := localData.(map[string]interface{})
+			remoteObject := remoteData.(map[string]interface{})
+			for _, objProp := range property.SpecSchemaDefinition.Properties {
+				err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], true)
+				if err != nil {
+					return fmt.Errorf("immutable object property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
 				}
 			}
 		default:
