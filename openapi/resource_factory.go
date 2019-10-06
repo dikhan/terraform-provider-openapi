@@ -391,9 +391,11 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 			return fmt.Errorf("immutable list property '%s' size updated: [input list size: %d; remote list size: %d]", property.Name, len(localList), len(remoteList))
 		}
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
-			for idx, elem := range localList {
-				if elem != remoteList[idx] {
-					return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
+			if property.Immutable {
+				for idx, elem := range localList {
+					if elem != remoteList[idx] {
+						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
+					}
 				}
 			}
 		} else {
@@ -402,7 +404,7 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 				localObj := localListObj.(map[string]interface{})
 				remoteObj := remoteListObj.(map[string]interface{})
 				for _, objectProp := range property.SpecSchemaDefinition.Properties {
-					err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], true)
+					err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], property.Immutable)
 					if err != nil {
 						return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
 					}
