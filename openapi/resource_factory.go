@@ -196,7 +196,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	}
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-	if err := r.checkImmutableFields(data, providerClient); err != nil {
+	if err := r.checkImmutableFields(data, providerClient, parentsIDs...); err != nil {
 		return err
 	}
 	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentsIDs...)
@@ -357,8 +357,8 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 	}
 }
 
-func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI) error {
-	remoteData, err := r.readRemote(updatedResourceLocalData.Id(), openAPIClient)
+func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI, parentIDs ...string) error {
+	remoteData, err := r.readRemote(updatedResourceLocalData.Id(), openAPIClient, parentIDs...)
 	if err != nil {
 		return err
 	}
