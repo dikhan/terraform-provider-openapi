@@ -1079,7 +1079,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": 4}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": 4}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, 4, resourceData.Get("immutable_prop"))
@@ -1097,7 +1097,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": 3.8}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": 3.8}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, 3.8, resourceData.Get("immutable_prop"))
@@ -1115,7 +1115,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": false}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": false}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, false, resourceData.Get("immutable_prop"))
@@ -1134,7 +1134,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": ["value1","value2"]}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": ["value1","value2"]}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
@@ -1153,7 +1153,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": ["value1","value2"]}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": ["value1","value2"]}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
@@ -1182,7 +1182,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
@@ -1211,7 +1211,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"mutable_prop": {"string_immutable_property":"some_value","origin_port":443,"protocol":"https"}}`),
+				responsePayload: getMapFromJSON(t, `{"mutable_prop": {"string_immutable_property":"some_value","origin_port":443,"protocol":"https"}}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "string_immutable_property": "some_value"}, resourceData.Get("mutable_prop"))
@@ -1246,7 +1246,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": {"object_property": {"some_prop":"someValue"}}}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"object_property": {"some_prop":"someValue"}}}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}}, resourceData.Get("immutable_prop"))
@@ -1276,7 +1276,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			client: clientOpenAPIStub{
-				responsePayload: getMapFromJson(t, `{"immutable_prop": [{"origin_port":443, "protocol":"https"}]}`),
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": [{"origin_port":443, "protocol":"https"}]}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https"}}, resourceData.Get("immutable_prop"))
@@ -1325,7 +1325,7 @@ func TestCheckImmutableFields(t *testing.T) {
 	}
 }
 
-func getMapFromJson(t *testing.T, input string) map[string]interface{} {
+func getMapFromJSON(t *testing.T, input string) map[string]interface{} {
 	var m map[string]interface{}
 	err := json.Unmarshal([]byte(input), &m)
 	if err != nil {
