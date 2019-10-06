@@ -420,8 +420,17 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 		}
 	default:
 		if property.Immutable || checkObjectPropertiesUpdates { // checkObjectPropertiesUpdates covers the recursive call from objects that are immutable which also make all its properties immutable
-			if localData != remoteData {
-				return fmt.Errorf("immutable property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+			switch remoteData.(type) {
+			case float64: // this is due to the json marshalling always mapping ints to float64d
+				if property.Type == typeInt {
+					if localData != int(remoteData.(float64)) {
+						return fmt.Errorf("immutable integer property '%s' value updated: [input: %d; remote: %d]", property.Name, localData, int(remoteData.(float64)))
+					}
+				}
+			default:
+				if localData != remoteData {
+					return fmt.Errorf("immutable property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+				}
 			}
 		}
 	}
