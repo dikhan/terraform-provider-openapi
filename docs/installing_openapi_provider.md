@@ -41,7 +41,7 @@ used as follows:
 
 ````
 $ git clone git@github.com:dikhan/terraform-provider-openapi.git
-$ cd ./scripts
+$ cd terraform-provider-openapi/scripts
 $ PROVIDER_NAME=goa ./install.sh --provider-name $PROVIDER_NAME
 ````
 
