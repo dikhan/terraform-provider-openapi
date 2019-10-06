@@ -1302,6 +1302,68 @@ func TestCheckImmutableFields(t *testing.T) {
 			expectedError: errors.New("validation for immutable properties failed: immutable list of objects 'immutable_prop' updated: [input: [map[origin_port:%!s(int=80) protocol:http]]; remote: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
 		},
 		{
+			name: "mutable list of objects where some properties are immutable and values are not updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeObject,
+					Immutable:      false,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							&specSchemaDefinitionProperty{
+								Name:      "origin_port",
+								Type:      typeInt,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   80,
+							},
+							&specSchemaDefinitionProperty{
+								Name:      "protocol",
+								Type:      typeString,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   "http",
+							},
+							&specSchemaDefinitionProperty{
+								Name:      "float_prop",
+								Type:      typeFloat,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   99.99,
+							},
+							&specSchemaDefinitionProperty{
+								Name:      "enabled",
+								Type:      typeBool,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   true,
+							},
+						},
+					},
+					Default: []map[string]interface{}{
+						{
+							"origin_port": 80,
+							"protocol":    "http",
+							"float_prop":  99.99,
+							"enabled":     true,
+						},
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": [{"origin_port":80, "protocol":"http", "float_prop":99.99,"enabled":true}]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 80, "protocol": "http", "float_prop": 99.99, "enabled": true}}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: nil,
+		},
+		{
 			name:       "client returns an error",
 			inputProps: []*specSchemaDefinitionProperty{},
 			client: clientOpenAPIStub{
