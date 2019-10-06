@@ -1226,6 +1226,35 @@ func TestCheckImmutableFields(t *testing.T) {
 			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'origin_port' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
+			name: "mutable object properties are updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeObject,
+					Immutable: false,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							readOnlyProperty,
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: map[string]interface{}{
+						readOnlyProperty.Name: readOnlyProperty.Default,
+						"origin_port":         80,
+						"protocol":            "http",
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: nil,
+		},
+		{
 			name: "immutable property inside a mutable object is updated",
 			inputProps: []*specSchemaDefinitionProperty{
 				{
