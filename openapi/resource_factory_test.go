@@ -1120,7 +1120,25 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, 3.8, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: %!s(float64=4.5); remote: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: immutable float property 'immutable_prop' value updated: [input: %!s(float64=4.5); remote: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable float property has not changed",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeFloat,
+					Immutable: true,
+					Default:   4.5,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": 4.5}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, 4.5, resourceData.Get("immutable_prop"))
+			},
+			expectedError: nil,
 		},
 		{
 			name: "immutable bool property is updated",
