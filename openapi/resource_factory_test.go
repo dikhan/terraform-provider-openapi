@@ -1185,14 +1185,14 @@ func TestCheckImmutableFields(t *testing.T) {
 					Type:           typeList,
 					ArrayItemsType: typeString,
 					Immutable:      false,
-					Default:        []interface{}{"value1Updated", "value2Updated"},
+					Default:        []interface{}{"value1Updated", "value2Updated", "newValue"},
 				},
 			},
 			client: clientOpenAPIStub{
 				responsePayload: getMapFromJSON(t, `{"mutable_prop": ["value1","value2"]}`),
 			},
 			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, []interface{}{"value1Updated", "value2Updated"}, resourceData.Get("mutable_prop"))
+				assert.Equal(t, []interface{}{"value1Updated", "value2Updated", "newValue"}, resourceData.Get("mutable_prop"))
 			},
 			expectedError: nil,
 		},

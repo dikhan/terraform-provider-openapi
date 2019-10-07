@@ -385,28 +385,29 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 	}
 	switch property.Type {
 	case typeList:
-		localList := localData.([]interface{})
-		remoteList := remoteData.([]interface{})
-		if len(localList) != len(remoteList) {
-			return fmt.Errorf("immutable list property '%s' size updated: [input list size: %d; remote list size: %d]", property.Name, len(localList), len(remoteList))
-		}
-		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
-			if property.Immutable {
+		if property.Immutable {
+			localList := localData.([]interface{})
+			remoteList := remoteData.([]interface{})
+			if len(localList) != len(remoteList) {
+				return fmt.Errorf("immutable list property '%s' size updated: [input list size: %d; remote list size: %d]", property.Name, len(localList), len(remoteList))
+			}
+			if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+
 				for idx, elem := range localList {
 					if elem != remoteList[idx] {
 						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
 					}
 				}
-			}
-		} else {
-			for idx, localListObj := range localList {
-				remoteListObj := remoteList[idx]
-				localObj := localListObj.(map[string]interface{})
-				remoteObj := remoteListObj.(map[string]interface{})
-				for _, objectProp := range property.SpecSchemaDefinition.Properties {
-					err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], property.Immutable)
-					if err != nil {
-						return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+			} else {
+				for idx, localListObj := range localList {
+					remoteListObj := remoteList[idx]
+					localObj := localListObj.(map[string]interface{})
+					remoteObj := remoteListObj.(map[string]interface{})
+					for _, objectProp := range property.SpecSchemaDefinition.Properties {
+						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], property.Immutable)
+						if err != nil {
+							return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+						}
 					}
 				}
 			}
