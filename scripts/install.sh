@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
 _DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="${_DIR}/.."
 
 # installation variables
-LATEST_RELEASE_VERSION="$(cat ${ROOT_DIR}/version)"
+LATEST_RELEASE_VERSION="$(curl https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/version)"
 
 #
 # Installation script to download and install terraform-provider-openapi
