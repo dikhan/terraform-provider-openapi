@@ -24,11 +24,41 @@ func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Sche
 		return nil, err
 	}
 	for propertyName := range terraformSchema {
-		terraformSchema[propertyName].Required = false
-		terraformSchema[propertyName].Optional = true
-		terraformSchema[propertyName].Computed = true
+		p, err := s.getPropertyBasedOnTerraformName(propertyName)
+		if err != nil {
+			return nil, err
+		}
+		if !p.IsParentProperty {
+			terraformSchema[propertyName] = setPropertyForDataSourceSchema(terraformSchema[propertyName])
+		}
 	}
 	return terraformSchema, nil
+}
+
+func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputProperty *schema.Schema) {
+
+	outputProperty = inputProperty // the output is a clone of the input, do changes on the output var
+	outputProperty.Required = false
+	outputProperty.Optional = true
+	outputProperty.Computed = true
+	outputProperty.Default = nil
+
+	isResource := false
+	switch inputProperty.Elem.(type) {
+	case *schema.Resource:
+		isResource = true
+	}
+	// only apply the recursive call if Elem is a Resource (hence a complex item)
+	if isResource {
+		hasChildResources := inputProperty.Elem != nil && len(inputProperty.Elem.(*schema.Resource).Schema) > 0
+		if hasChildResources {
+			childResources := outputProperty.Elem.(*schema.Resource).Schema
+			for _, childR := range childResources {
+				childR = setPropertyForDataSourceSchema(childR)
+			}
+		}
+	}
+	return outputProperty
 }
 
 func (s *specSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {

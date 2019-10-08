@@ -112,7 +112,6 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 
 	err = setStateID(d.openAPIResource, data, filteredResults[0])
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 

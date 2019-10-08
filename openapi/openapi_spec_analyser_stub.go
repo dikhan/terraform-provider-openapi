@@ -3,6 +3,7 @@ package openapi
 // specAnalyserStub is a stubbed spec analyser used for testing purposes that implements the SpecAnalyser interface
 type specAnalyserStub struct {
 	resources            []SpecResource
+	dataSources          []SpecResource
 	security             *specSecurityStub
 	headers              SpecHeaderParameters
 	backendConfiguration SpecBackendConfiguration
@@ -17,7 +18,7 @@ func (s *specAnalyserStub) GetTerraformCompliantResources() ([]SpecResource, err
 }
 
 func (s *specAnalyserStub) GetTerraformCompliantDataSources() []SpecResource {
-	return s.resources
+	return s.dataSources
 }
 
 func (s *specAnalyserStub) GetSecurity() SpecSecurity {
