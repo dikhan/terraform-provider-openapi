@@ -2,12 +2,15 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/http_goclient"
+	"net/http"
 )
 
 // Api Key Header Auth
 type apiRefreshTokenAuthenticator struct {
 	apiKey
 	refreshTokenURL string
+	httpClient      http_goclient.HttpClientIface
 }
 
 func newAPIRefreshTokenAuthenticator(name, refreshToken, refreshTokenURL string) apiRefreshTokenAuthenticator {
@@ -17,6 +20,7 @@ func newAPIRefreshTokenAuthenticator(name, refreshToken, refreshTokenURL string)
 			value: refreshToken,
 		},
 		refreshTokenURL: refreshTokenURL,
+		httpClient:      &http_goclient.HttpClient{HttpClient: &http.Client{}},
 	}
 }
 
@@ -28,17 +32,19 @@ func (a apiRefreshTokenAuthenticator) getType() authType {
 	return authTypeAPIKeyHeader
 }
 
-// prepareAPIKeyAuthentication adds to the map the auth header required for apikey header authentication. The url
-// remains the same
+// prepareAuth will send a post request to the refreshTokenURL and get the access token from the response Authorization
+// header. Otherwise, it will fail.
 func (a apiRefreshTokenAuthenticator) prepareAuth(authContext *authContext) error {
 	apiKey := a.getContext().(apiKey)
-
-	authorizationHeaderValue := apiKey.value
-	fmt.Println(authorizationHeaderValue)
-	// TODO: call refresh token API (POST) a.refreshTokenURL including the refresh token passed in as Authorization header with value apiKey.value
-	//  Get the access token from the response header Authorization
-	//  Strip out the bearer scheme from the header value and return the string
-
-	authContext.headers[apiKey.name] = "access token"
+	headers := map[string]string{apiKey.name: apiKey.value}
+	r, err := a.httpClient.PostJson(a.refreshTokenURL, headers, nil, nil)
+	if err != nil {
+		return err
+	}
+	accessToken := r.Header.Get(authorizationHeader)
+	if accessToken == "" {
+		return fmt.Errorf("refresh token POST response '%s' is missing the access token", a.refreshTokenURL)
+	}
+	authContext.headers[authorizationHeader] = accessToken
 	return nil
 }
