@@ -3,52 +3,53 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
-	"github.com/go-openapi/spec"
 	"strings"
 )
 
-type specAPIKeyHeaderCustomAuthSecurityDefinition struct {
+type specAPIKeyHeaderRefreshTokenSecurityDefinition struct {
 	name            string
-	secDef          *spec.SecurityScheme
 	refreshTokenURL string
 }
 
-// newAPIKeyHeaderBearerSecurityDefinition constructs a SpecSecurityDefinition of Header type using the Bearer authentication
-// scheme. The secDefName value is the identifier of the security definition, and the apiKeyName is the actual value of the header/query that will be user in the HTTP request.
-func newAPIKeyHeaderRefreshTokenSecurityDefinition(secDefName string, secDef *spec.SecurityScheme, refreshTokenURL string) specAPIKeyHeaderCustomAuthSecurityDefinition {
-	return specAPIKeyHeaderCustomAuthSecurityDefinition{secDefName, secDef, refreshTokenURL}
+// newAPIKeyHeaderRefreshTokenSecurityDefinition constructs a SpecSecurityDefinition of Header type using the Bearer authentication
+// scheme. The secDefName value is the identifier of the security definition, and the refreshTokenURL is the URL that the openapi_spec_authenticator_refresh_token.go
+func newAPIKeyHeaderRefreshTokenSecurityDefinition(secDefName string, refreshTokenURL string) specAPIKeyHeaderRefreshTokenSecurityDefinition {
+	return specAPIKeyHeaderRefreshTokenSecurityDefinition{secDefName, refreshTokenURL}
 }
 
-func (s specAPIKeyHeaderCustomAuthSecurityDefinition) getName() string {
+func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) getName() string {
 	return s.name
 }
 
-func (s specAPIKeyHeaderCustomAuthSecurityDefinition) getType() securityDefinitionType {
+func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) getType() securityDefinitionType {
 	return securityDefinitionAPIKeyRefreshToken
 }
 
-func (s specAPIKeyHeaderCustomAuthSecurityDefinition) getTerraformConfigurationName() string {
+func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) getTerraformConfigurationName() string {
 	return terraformutils.ConvertToTerraformCompliantName(s.name)
 }
 
-func (s specAPIKeyHeaderCustomAuthSecurityDefinition) getAPIKey() specAPIKey {
-	apiKey := newAPIKeyHeader(authorization)
+func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) getAPIKey() specAPIKey {
+	apiKey := newAPIKeyHeader(authorizationHeader)
 	apiKey.Metadata = map[apiKeyMetadataKey]interface{}{
 		refreshTokenURLKey: s.refreshTokenURL,
 	}
 	return apiKey
 }
 
-func (s specAPIKeyHeaderCustomAuthSecurityDefinition) buildValue(refreshToken string) string {
+func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) buildValue(refreshToken string) string {
 	if !strings.Contains(refreshToken, bearerScheme) {
 		refreshToken = fmt.Sprintf("Bearer %s", refreshToken)
 	}
 	return refreshToken
 }
 
-func (s specAPIKeyHeaderCustomAuthSecurityDefinition) validate() error {
+func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) validate() error {
 	if s.name == "" {
-		return fmt.Errorf("specAPIKeyHeaderBearerSecurityDefinition missing mandatory security definition name")
+		return fmt.Errorf("APIKeyHeaderRefreshTokenSecurityDefinition missing mandatory security definition name")
+	}
+	if s.refreshTokenURL == "" {
+		return fmt.Errorf("APIKeyHeaderRefreshTokenSecurityDefinition missing mandatory refresh token URL")
 	}
 	return nil
 }
