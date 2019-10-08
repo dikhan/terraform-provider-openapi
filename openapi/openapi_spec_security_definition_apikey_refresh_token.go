@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// TODO: add tests here
+
 type specAPIKeyHeaderRefreshTokenSecurityDefinition struct {
 	name            string
 	refreshTokenURL string

@@ -10,6 +10,7 @@ type specAPIKeyAuthenticator interface {
 func createAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) specAPIKeyAuthenticator {
 	switch secDef.getAPIKey().In {
 	case inHeader:
+		// TODO: add tests here
 		if secDef.getType() == securityDefinitionAPIKeyRefreshToken {
 			return newAPIRefreshTokenAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value), secDef.getAPIKey().Metadata[refreshTokenURLKey].(string))
 		}

@@ -6,6 +6,8 @@ import (
 	"net/http"
 )
 
+// TODO: add tests here
+
 // Api Key Header Auth
 type apiRefreshTokenAuthenticator struct {
 	apiKey
