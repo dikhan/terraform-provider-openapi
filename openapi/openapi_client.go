@@ -117,7 +117,7 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 }
 
 func (o *ProviderClient) appendUserAgentHeader(headers map[string]string, value string) {
-	headers[userAgent] = value
+	headers[userAgentHeader] = value
 }
 
 // logHeadersSafely logs the header names sent to the APIs but the values are redacted for security reasons in case

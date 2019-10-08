@@ -2,6 +2,6 @@ package openapi
 
 // HTTP headers
 const (
-	authorization = "Authorization"
-	userAgent     = "User-Agent"
+	authorizationHeader = "Authorization"
+	userAgentHeader     = "User-Agent"
 )

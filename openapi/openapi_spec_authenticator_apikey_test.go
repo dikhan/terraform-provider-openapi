@@ -7,7 +7,7 @@ import (
 
 func TestCreateAPIKeyAuthenticator(t *testing.T) {
 	Convey("Given a secDef of header type and a auth value ", t, func() {
-		secDef := newAPIKeyHeaderSecurityDefinition("header_auth", authorization)
+		secDef := newAPIKeyHeaderSecurityDefinition("header_auth", authorizationHeader)
 		value := "value"
 		Convey("When createAPIKeyAuthenticator method is constructed", func() {
 			apiKeyAuthenticator := createAPIKeyAuthenticator(secDef, value)
@@ -21,7 +21,7 @@ func TestCreateAPIKeyAuthenticator(t *testing.T) {
 	})
 
 	Convey("Given a secDef of query type and a auth value ", t, func() {
-		secDef := newAPIKeyQuerySecurityDefinition("query_auth", authorization)
+		secDef := newAPIKeyQuerySecurityDefinition("query_auth", authorizationHeader)
 		value := "value"
 		Convey("When createAPIKeyAuthenticator method is constructed", func() {
 			apiKeyAuthenticator := createAPIKeyAuthenticator(secDef, value)
