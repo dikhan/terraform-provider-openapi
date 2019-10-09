@@ -155,6 +155,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 		return nil, err
 	}
 
+	log.Printf("[DEBUG] GET '%s' response payload: %#v", r.openAPIResource.getResourceName(), responsePayload)
 	return responsePayload, nil
 }
 
@@ -195,7 +196,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	}
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
-	if err := r.checkImmutableFields(data, providerClient); err != nil {
+	if err := r.checkImmutableFields(data, providerClient, parentsIDs...); err != nil {
 		return err
 	}
 	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentsIDs...)
@@ -356,24 +357,88 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 	}
 }
 
-func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI) error {
-	resourceSchema, err := r.openAPIResource.getResourceSchema()
+func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.ResourceData, openAPIClient ClientOpenAPI, parentIDs ...string) error {
+	remoteData, err := r.readRemote(updatedResourceLocalData.Id(), openAPIClient, parentIDs...)
 	if err != nil {
 		return err
 	}
-	immutableProperties := resourceSchema.getImmutableProperties()
-	if len(immutableProperties) > 0 {
-		remoteData, err := r.readRemote(updatedResourceLocalData.Id(), openAPIClient)
+	localData := r.createPayloadFromLocalStateData(updatedResourceLocalData)
+	s, _ := r.openAPIResource.getResourceSchema()
+	for _, p := range s.Properties {
+		err := r.validateImmutableProperty(p, remoteData[p.Name], localData[p.Name], false)
 		if err != nil {
-			return err
+			// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
+			// data inside the updated (*schema.ResourceData) in the state file
+			updateError := updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
+			if updateError != nil {
+				return updateError
+			}
+			return fmt.Errorf("validation for immutable properties failed: %s. Update operation was aborted; no updates were performed", err)
 		}
-		for _, immutablePropertyName := range immutableProperties {
-			if localValue, exists := r.getResourceDataOKExists(immutablePropertyName, updatedResourceLocalData); exists {
-				if localValue != remoteData[immutablePropertyName] {
-					// Rolling back data so tf values are not stored in the state file; otherwise terraform would store the
-					// data inside the updated (*schema.ResourceData) in the state file
-					updateStateWithPayloadData(r.openAPIResource, remoteData, updatedResourceLocalData)
-					return fmt.Errorf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutablePropertyName)
+	}
+	return nil
+}
+
+func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}, checkObjectPropertiesUpdates bool) error {
+	if property.ReadOnly || property.IsParentProperty {
+		return nil
+	}
+	switch property.Type {
+	case typeList:
+		if property.Immutable {
+			localList := localData.([]interface{})
+			remoteList := remoteData.([]interface{})
+			if len(localList) != len(remoteList) {
+				return fmt.Errorf("immutable list property '%s' size updated: [input list size: %d; remote list size: %d]", property.Name, len(localList), len(remoteList))
+			}
+			if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
+
+				for idx, elem := range localList {
+					if elem != remoteList[idx] {
+						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
+					}
+				}
+			} else {
+				for idx, localListObj := range localList {
+					remoteListObj := remoteList[idx]
+					localObj := localListObj.(map[string]interface{})
+					remoteObj := remoteListObj.(map[string]interface{})
+					for _, objectProp := range property.SpecSchemaDefinition.Properties {
+						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], property.Immutable)
+						if err != nil {
+							return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+						}
+					}
+				}
+			}
+		}
+	case typeObject:
+		localObject := localData.(map[string]interface{})
+		remoteObject := remoteData.(map[string]interface{})
+		for _, objProp := range property.SpecSchemaDefinition.Properties {
+			err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], property.Immutable)
+			if err != nil {
+				return fmt.Errorf("immutable object '%s' property '%s' value updated: [input: %s; remote: %s]", property.Name, objProp.Name, localData, remoteData)
+			}
+		}
+	default:
+		if property.Immutable || checkObjectPropertiesUpdates { // checkObjectPropertiesUpdates covers the recursive call from objects that are immutable which also make all its properties immutable
+			switch remoteData.(type) {
+			case float64: // this is due to the json marshalling always mapping ints to float64d
+				if property.Type == typeFloat {
+					if localData != remoteData {
+						return fmt.Errorf("immutable float property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+					}
+				} else {
+					if property.Type == typeInt {
+						if localData != int(remoteData.(float64)) {
+							return fmt.Errorf("immutable integer property '%s' value updated: [input: %d; remote: %d]", property.Name, localData, int(remoteData.(float64)))
+						}
+					}
+				}
+			default:
+				if localData != remoteData {
+					return fmt.Errorf("immutable property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
 				}
 			}
 		}
@@ -386,15 +451,20 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 // will automatically translate names into terraform compatible names that can be saved in the state file; otherwise
 // terraform name so the look up in the local state operation works properly. The property names saved in the local state
 // are always converted to terraform compatible names
+// Note the readonly properties will not be posted/put to the API. The payload will always contain the desired state as far
+// as the input is concerned.
 func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
 	resourceSchema, _ := r.openAPIResource.getResourceSchema()
 	for _, property := range resourceSchema.Properties {
 		propertyName := property.Name
-		// IDs and ReadOnly properties are not considered for the payload data
-		if !property.isPropertyNamedID() && !property.isReadOnly() && !property.IsParentProperty {
+		// ReadOnly properties are not considered for the payload data (including the id if it's computed)
+		if property.isReadOnly() {
+			continue
+		}
+		if !property.IsParentProperty {
 			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
-				err := r.getPropertyPayload(input, property, dataValue)
+				err := r.populatePayload(input, property, dataValue)
 				if err != nil {
 					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
 				}
@@ -402,11 +472,14 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 		}
 	}
-	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
+	log.Printf("[DEBUG] [resource='%s'] buildPayloadFromLocalStateDataForPostOperation: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
 	return input
 }
 
-func (r resourceFactory) getPropertyPayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+func (r resourceFactory) populatePayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+	if property.isReadOnly() {
+		return nil
+	}
 	if dataValue == nil {
 		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name)
 	}
@@ -420,7 +493,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 			if err != nil {
 				return err
 			}
-			if err := r.getPropertyPayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
+			if err := r.populatePayload(objectInput, schemaDefinitionProperty, propertyValue); err != nil {
 				return err
 			}
 		}
@@ -437,7 +510,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 				if len(arrayValue) != 1 {
 					return fmt.Errorf("something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 				}
-				if err := r.getPropertyPayload(input, property, arrayValue[0]); err != nil {
+				if err := r.populatePayload(input, property, arrayValue[0]); err != nil {
 					return err
 				}
 			} else {
@@ -445,7 +518,7 @@ func (r resourceFactory) getPropertyPayload(input map[string]interface{}, proper
 				arrayValue := dataValue.([]interface{})
 				for _, arrayItem := range arrayValue {
 					objectInput := map[string]interface{}{}
-					if err := r.getPropertyPayload(objectInput, property, arrayItem); err != nil {
+					if err := r.populatePayload(objectInput, property, arrayItem); err != nil {
 						return err
 					}
 					// Only assign the value of the object, otherwise a dup key will be assigned which will cause problems. Example

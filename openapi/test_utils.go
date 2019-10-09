@@ -23,16 +23,17 @@ var slicePrimitiveProperty = newListSchemaDefinitionPropertyWithDefaults("slice_
 
 // testing properties with special configuration
 var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_preferred_property", true, false, "updatedValue")
-var nonImmutableProperty = newStringSchemaDefinitionPropertyWithDefaults("other_string_property", "", true, false, "newValue")
 var someIdentifierProperty = newStringSchemaDefinitionProperty("somePropertyThatShouldBeUsedAsID", "", true, true, false, false, false, false, true, false, "idValue")
 var immutableProperty = newStringSchemaDefinitionProperty("string_immutable_property", "", true, false, false, false, false, true, false, false, "updatedImmutableValue")
 var computedProperty = newStringSchemaDefinitionPropertyWithDefaults("computed_property", "", false, true, nil)
+var readOnlyProperty = newStringSchemaDefinitionPropertyWithDefaults("read_only_property", "", false, true, "some_value")
 var optionalProperty = newStringSchemaDefinitionPropertyWithDefaults("optional_property", "", false, false, "updatedValue")
 var sensitiveProperty = newStringSchemaDefinitionProperty("sensitive_property", "", false, false, false, false, true, false, false, false, "sensitive")
 var forceNewProperty = newBoolSchemaDefinitionProperty("bool_force_new_property", "", true, false, false, true, false, false, false, false, true)
 var statusProperty = newStringSchemaDefinitionPropertyWithDefaults("status", "", false, true, "pending")
 
 // testing properties with zero values set
+var stringZeroValueProperty = newStringSchemaDefinitionPropertyWithDefaults("string_property", "", true, false, "")
 var intZeroValueProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 0)
 var numberZeroValueProperty = newNumberSchemaDefinitionPropertyWithDefaults("number_property", "", true, false, 0)
 var boolZeroValueProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, false)
@@ -40,6 +41,12 @@ var sliceZeroValueProperty = newListSchemaDefinitionPropertyWithDefaults("slice_
 
 func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
 	return newStringSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, false, defaultValue)
+}
+
+func newParentStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *specSchemaDefinitionProperty {
+	p := newStringSchemaDefinitionPropertyWithDefaults(name, preferredName, required, readOnly, defaultValue)
+	p.IsParentProperty = true
+	return p
 }
 
 func newStringSchemaDefinitionProperty(name, preferredName string, required, readOnly, computed, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}) *specSchemaDefinitionProperty {
@@ -71,7 +78,7 @@ func newBoolSchemaDefinitionProperty(name, preferredName string, required, readO
 }
 
 func newObjectSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly, computed bool, defaultValue interface{}, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
-	return newObjectSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, false, defaultValue, objectSpecSchemaDefinition)
+	return newObjectSchemaDefinitionProperty(name, preferredName, required, readOnly, computed, false, false, false, false, false, defaultValue, objectSpecSchemaDefinition)
 }
 
 func newObjectSchemaDefinitionProperty(name, preferredName string, required, readOnly, computed, forceNew, sensitive, immutable, isIdentifier, isStatusIdentifier bool, defaultValue interface{}, objectSpecSchemaDefinition *specSchemaDefinition) *specSchemaDefinitionProperty {
