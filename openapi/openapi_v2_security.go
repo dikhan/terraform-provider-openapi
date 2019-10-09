@@ -56,7 +56,6 @@ func (s *specV2Security) isBearerScheme(secDef *spec.SecurityScheme) bool {
 	return false
 }
 
-// TODO: add tests here
 func (s *specV2Security) isRefreshTokenAuth(secDef *spec.SecurityScheme) string {
 	refreshTokenURL, isRefreshTokenAuth := secDef.Extensions.GetString(extTfAuthenticationRefreshToken)
 	if isRefreshTokenAuth {

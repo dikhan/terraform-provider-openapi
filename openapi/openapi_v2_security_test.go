@@ -285,3 +285,49 @@ func TestIsBearerScheme(t *testing.T) {
 		})
 	})
 }
+
+func TestIsRefreshTokenAuth(t *testing.T) {
+	Convey("Given a specV2Security", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity:      []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{},
+		}
+		Convey("When isRefreshTokenAuth is called with a SecurityScheme that has the refresh token extension and a value specified", func() {
+			secDef := &spec.SecurityScheme{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfAuthenticationRefreshToken: "refresh token server URL",
+					},
+				},
+			}
+			isRefreshAuth := specV2Security.isRefreshTokenAuth(secDef)
+			Convey("Then the value returned should be as specified in SecuritySchema", func() {
+				So(isRefreshAuth, ShouldEqual, "refresh token server URL")
+			})
+		})
+		Convey("When isRefreshTokenAuth is called with a SecurityScheme that has the refresh token extension with an empty string value", func() {
+			secDef := &spec.SecurityScheme{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfAuthenticationRefreshToken: "",
+					},
+				},
+			}
+			isRefreshAuth := specV2Security.isRefreshTokenAuth(secDef)
+			Convey("Then the value returned should be an empty string", func() {
+				So(isRefreshAuth, ShouldEqual, "")
+			})
+		})
+		Convey("When isRefreshTokenAuth is called with a SecurityScheme that DOES not have the refresh token extension", func() {
+			secDef := &spec.SecurityScheme{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{},
+				},
+			}
+			isRefreshAuth := specV2Security.isRefreshTokenAuth(secDef)
+			Convey("Then the value returned should be an empty string", func() {
+				So(isRefreshAuth, ShouldEqual, "")
+			})
+		})
+	})
+}
