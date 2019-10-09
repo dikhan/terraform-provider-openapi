@@ -102,7 +102,7 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a specV2Security loaded with a security definition of type query bearer", t, func() {
+	Convey("Given a specV2Security loaded with a security definition of type query", t, func() {
 		specV2Security := specV2Security{
 			GlobalSecurity: []map[string][]string{},
 			SecurityDefinitions: spec.SecurityDefinitions{
@@ -128,6 +128,40 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQuerySecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, "queryParamName")
 				So(secDefs[0].buildValue("someToken"), ShouldEqual, "someToken")
+			})
+		})
+	})
+
+	Convey("Given a specV2Security loaded with a security definition of type header bearer", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "query",
+						Type: "apiKey",
+					},
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfAuthenticationSchemeBearer: true,
+						},
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
+			secDefs := *securityDefinitions
+			Convey("Then the the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the security schemes match the expectations", func() {
+				So(secDefs, ShouldNotBeEmpty)
+			})
+			Convey("And the security schemes should be of type query bearer", func() {
+				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQueryBearerSecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "access_token")
+				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "jwtToken")
 			})
 		})
 	})
