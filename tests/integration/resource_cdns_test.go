@@ -648,7 +648,7 @@ func TestAccCDN_CreateWithZeroValues(t *testing.T) {
 
 func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 	testCDNUpdatedImmutableConfig := populateTemplateConfigurationCDN("label updated", cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
-	expectedValidationError, _ := regexp.Compile(".*property label is immutable and therefore can not be updated. Update operation was aborted; no updates were performed.*")
+	expectedValidationError, _ := regexp.Compile("errors during apply: validation for immutable properties failed: immutable property 'label' value updated: \\[input: label updated; remote: someLabel\\]. Update operation was aborted; no updates were performed")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,

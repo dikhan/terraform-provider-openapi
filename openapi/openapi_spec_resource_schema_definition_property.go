@@ -126,11 +126,9 @@ func (s *specSchemaDefinitionProperty) isOptional() bool {
 	return !s.Required
 }
 
-// isOptionalComputed returns true if one of the following cases is met:
+// isComputed returns true if one of the following cases is met:
 //- The property is optional (marked as required=false), in which case there few use cases:
-//  - readOnly properties (marked as readOnly=true, computed=true):
-//    - with default (default={some value})
-//    - with no default (default=nil)
+//  - readOnly properties (marked as readOnly=true):
 //  - optional-computed (marked as readOnly=false, computed=true):
 //    - with no default (default=nil)
 func (s *specSchemaDefinitionProperty) isComputed() bool {
@@ -139,7 +137,7 @@ func (s *specSchemaDefinitionProperty) isComputed() bool {
 
 // isOptionalComputed returns true for properties that are optional and a value (not known at plan time) is computed by the API
 // if the client does not provide a value. In order for a property to be considered optional computed it must meet:
-// - The property must be optional, readOnly, computed and must not have a default value populated
+// - The property must be optional, not readOnly, computed and must not have a default value populated
 // Note: optional-computed properties (marked as readOnly=false, computed=true, default={some value}) are not considered
 // as optional computed since the way they will be treated as far as the terraform schema will differ. The terraform schema property
 // for this properties will contain the default value and the property will not be computed

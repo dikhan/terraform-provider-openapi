@@ -42,7 +42,7 @@ func getFileContent(filePath string) (string, error) {
 	return string(data), nil
 }
 
-func isUrl(str string) bool {
+func isURL(str string) bool {
 	u, err := url.Parse(str)
 	return err == nil && u.Scheme != "" && u.Host != ""
 }

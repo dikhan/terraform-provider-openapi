@@ -81,7 +81,7 @@ func TestIsUrl(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		isUrl := isUrl(tc.input)
-		assert.Equal(t, tc.expectedResult, isUrl, tc.name)
+		isURL := isURL(tc.input)
+		assert.Equal(t, tc.expectedResult, isURL, tc.name)
 	}
 }

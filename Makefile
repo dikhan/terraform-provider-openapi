@@ -5,7 +5,7 @@ RELEASE_MESSAGE?="$(GITHUB_VERSION)"
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
 REPO=github.com/dikhan/terraform-provider-openapi
-LDFLAGS = '-s -w -extldflags "-static" -X "$(REPO)/version.Version=$(VERSION)" -X "$(REPO)/openapi/version.Commit=$(COMMIT)" -X "$(REPO)/openapi/version.Date=$(DATE)"'
+LDFLAGS = '-s -w -extldflags "-static" -X "$(REPO)/openapi/version.Version=$(VERSION)" -X "$(REPO)/openapi/version.Commit=$(COMMIT)" -X "$(REPO)/openapi/version.Date=$(DATE)"'
 
 PROVIDER_NAME?=""
 TF_CMD?="plan"

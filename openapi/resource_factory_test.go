@@ -3,14 +3,18 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-openapi/spec"
 
+	"encoding/json"
 	"github.com/hashicorp/terraform/helper/schema"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -337,6 +341,7 @@ func TestUpdate(t *testing.T) {
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
+					idProperty.Name:        "id",
 					stringProperty.Name:    "someExtraValueThatProvesResponseDataIsPersisted",
 					immutableProperty.Name: immutableProperty.Default,
 				},
@@ -356,6 +361,7 @@ func TestUpdate(t *testing.T) {
 		Convey("When update is called with a resource data containing updated values and the immutable check fails due to an immutable property being updated", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
+					idProperty.Name:        "id",
 					stringProperty.Name:    "stringOriginalValue",
 					immutableProperty.Name: "immutableOriginalValue",
 				},
@@ -365,7 +371,7 @@ func TestUpdate(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error returned should equal ", func() {
-				So(err.Error(), ShouldEqual, "property string_immutable_property is immutable and therefore can not be updated. Update operation was aborted; no updates were performed")
+				So(err.Error(), ShouldEqual, "validation for immutable properties failed: immutable property 'string_immutable_property' value updated: [input: updatedImmutableValue; remote: immutableOriginalValue]. Update operation was aborted; no updates were performed")
 			})
 			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Id(), ShouldEqual, idProperty.Default)
@@ -396,9 +402,15 @@ func TestUpdate(t *testing.T) {
 		Convey("When update is called with resource data and a client returns a non expected http code when reading remote", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
+					idProperty.Name:     "id",
 					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
 				},
-				returnHTTPCode: http.StatusInternalServerError,
+				funcPut: func() (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusInternalServerError,
+						Body:       ioutil.NopCloser(strings.NewReader("")),
+					}, nil
+				},
 			}
 			err := r.update(resourceData, client)
 			Convey("And the error returned should be the expected one", func() {
@@ -409,9 +421,12 @@ func TestUpdate(t *testing.T) {
 			expectedError := "some error returned by the PUT operation"
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
-					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+					idProperty.Name:     "id",
+					stringProperty.Name: "someValue",
 				},
-				error: fmt.Errorf(expectedError),
+				funcPut: func() (*http.Response, error) {
+					return nil, fmt.Errorf(expectedError)
+				},
 			}
 			err := r.update(resourceData, client)
 			Convey("And the error returned should be the expected one", func() {
@@ -446,7 +461,7 @@ func TestUpdate(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory that has an asynchronous create operation (put) but the polling operation fails for some reason", t, func() {
+	Convey("Given a resource factory that has an asynchronous create operation (put) but the polling operation fails due to the status field missing", t, func() {
 		expectedReturnCode := 202
 		testSchema := newTestSchema(idProperty, stringProperty)
 		resourceData := testSchema.getResourceData(t)
@@ -457,15 +472,20 @@ func TestUpdate(t *testing.T) {
 		}
 		Convey("When create is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
-				returnHTTPCode: expectedReturnCode,
+				funcPut: func() (*http.Response, error) {
+					return &http.Response{
+						StatusCode: expectedReturnCode,
+						Body:       ioutil.NopCloser(strings.NewReader("")),
+					}, nil
+				},
 				responsePayload: map[string]interface{}{
-					idProperty.Name:     "someID",
-					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+					idProperty.Name:     "id",
+					stringProperty.Name: "someValue",
 				},
 			}
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' () when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
+				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error occurred while retrieving status identifier value from payload for resource 'resourceName' (): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
 			})
 		})
 	})
@@ -1003,194 +1023,668 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 }
 
 func TestCheckImmutableFields(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
-		r, resourceData := testCreateResourceFactory(t, immutableProperty, nonImmutableProperty)
-		Convey("When checkImmutableFields is called with an update resource data and an open api client that returns the old expectedValue of the property being changed", func() {
-			client := &clientOpenAPIStub{
+
+	testCases := []struct {
+		name          string
+		inputProps    []*specSchemaDefinitionProperty
+		client        clientOpenAPIStub
+		assertions    func(*schema.ResourceData)
+		expectedError error
+	}{
+		{
+			name: "mutable string property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "mutable_prop",
+					Type:      typeString,
+					Immutable: false,
+					Default:   4,
+				}, // this pretends the property value in the state file has been updated
+			},
+			client: clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
-					immutableProperty.Name:    "originalImmutablePropertyValue",
-					nonImmutableProperty.Name: "originalNonImmutablePropertyValue",
+					"mutable_prop": "originalPropertyValue",
 				},
-			}
-			err := r.checkImmutableFields(resourceData, client)
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the err message returned should be", func() {
-				So(err.Error(), ShouldEqual, fmt.Sprintf("property %s is immutable and therefore can not be updated. Update operation was aborted; no updates were performed", immutableProperty.Name))
-			})
-			Convey("And the resource data should contain the original values coming from the responsePayload (so it's assured that local state was not updated)", func() {
-				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
-				So(resourceData.Get(nonImmutableProperty.Name), ShouldEqual, client.responsePayload[nonImmutableProperty.Name])
-			})
-		})
-	})
+			},
+			expectedError: nil,
+		},
+		{
+			name: "immutable string property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeString,
+					Immutable: true,
+					Default:   "updatedImmutableValue",
+				}, // this pretends the property value in the state file has been updated
+			},
+			client: clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					"immutable_prop": "originalImmutablePropertyValue",
+				},
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, "originalImmutablePropertyValue", resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: updatedImmutableValue; remote: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable int property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeInt,
+					Immutable: true,
+					Default:   4,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": 6}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, 6, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable integer property 'immutable_prop' value updated: [input: 4; remote: 6]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable int property has not changed",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeInt,
+					Immutable: true,
+					Default:   4,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": 4}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, 4, resourceData.Get("immutable_prop"))
+			},
+			expectedError: nil,
+		},
+		{
+			name: "immutable float property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeFloat,
+					Immutable: true,
+					Default:   4.5,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": 3.8}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, 3.8, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable float property 'immutable_prop' value updated: [input: %!s(float64=4.5); remote: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable float property has not changed",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeFloat,
+					Immutable: true,
+					Default:   4.5,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": 4.5}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, 4.5, resourceData.Get("immutable_prop"))
+			},
+			expectedError: nil,
+		},
+		{
+			name: "immutable bool property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeBool,
+					Immutable: true,
+					Default:   true,
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": false}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, false, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: %!s(bool=true); remote: %!s(bool=false)]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable list property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeString,
+					Immutable:      true,
+					Default:        []interface{}{"value1Updated", "value2Updated"},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": ["value1","value2"]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' elements updated: [input: [value1Updated value2Updated]; remote: [value1 value2]]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "mutable list property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "mutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeString,
+					Immutable:      false,
+					Default:        []interface{}{"value1Updated", "value2Updated", "newValue"},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"mutable_prop": ["value1","value2"]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{"value1Updated", "value2Updated", "newValue"}, resourceData.Get("mutable_prop"))
+			},
+			expectedError: nil,
+		},
+		{
+			name: "immutable list size is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeString,
+					Immutable:      true,
+					Default:        []interface{}{"value1Updated", "value2Updated", "value3Updated"},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": ["value1","value2"]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' size updated: [input list size: 3; remote list size: 2]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable object property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeObject,
+					Immutable: true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							readOnlyProperty,
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: map[string]interface{}{
+						readOnlyProperty.Name: readOnlyProperty.Default,
+						"origin_port":         80,
+						"protocol":            "http",
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'origin_port' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "mutable object properties are updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeObject,
+					Immutable: false,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							readOnlyProperty,
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: map[string]interface{}{
+						readOnlyProperty.Name: readOnlyProperty.Default,
+						"origin_port":         80,
+						"protocol":            "http",
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: nil,
+		},
+		{
+			name: "immutable property inside a mutable object is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "mutable_prop",
+					Type:      typeObject,
+					Immutable: false, // the object in this case is mutable; however some props are immutable
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							immutableProperty,
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: map[string]interface{}{
+						immutableProperty.Name: immutableProperty.Default,
+						"origin_port":          80,
+						"protocol":             "http",
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"mutable_prop": {"string_immutable_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "string_immutable_property": "some_value"}, resourceData.Get("mutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable object 'mutable_prop' property 'string_immutable_property' value updated: [input: map[origin_port:%!s(int64=80) protocol:http string_immutable_property:updatedImmutableValue]; remote: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable object with nested object property is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeObject,
+					Immutable: true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
+								"some_prop": "someValue",
+							}, &specSchemaDefinition{
+								Properties: specSchemaDefinitionProperties{
+									newStringSchemaDefinitionProperty("some_prop", "", true, false, false, false, false, true, false, false, "someValue"),
+								},
+							}),
+						},
+					},
+					Default: []map[string]interface{}{
+						{
+							"object_property": map[string]interface{}{
+								"some_prop": "someUpdatedValue",
+							},
+						},
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"object_property": {"some_prop":"someValue"}}}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'object_property' value updated: [input: map[object_property:map[some_prop:someUpdatedValue]]; remote: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "immutable list of objects is updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeObject,
+					Immutable:      true,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						},
+					},
+					Default: []map[string]interface{}{
+						{
+							"origin_port": 80,
+							"protocol":    "http",
+						},
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": [{"origin_port":443, "protocol":"https"}]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https"}}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: errors.New("validation for immutable properties failed: immutable list of objects 'immutable_prop' updated: [input: [map[origin_port:%!s(int=80) protocol:http]]; remote: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
+		},
+		{
+			name: "mutable list of objects where some properties are immutable and values are not updated",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:           "immutable_prop",
+					Type:           typeList,
+					ArrayItemsType: typeObject,
+					Immutable:      false,
+					SpecSchemaDefinition: &specSchemaDefinition{
+						Properties: specSchemaDefinitionProperties{
+							&specSchemaDefinitionProperty{
+								Name:      "origin_port",
+								Type:      typeInt,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   80,
+							},
+							&specSchemaDefinitionProperty{
+								Name:      "protocol",
+								Type:      typeString,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   "http",
+							},
+							&specSchemaDefinitionProperty{
+								Name:      "float_prop",
+								Type:      typeFloat,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   99.99,
+							},
+							&specSchemaDefinitionProperty{
+								Name:      "enabled",
+								Type:      typeBool,
+								Required:  true,
+								ReadOnly:  false,
+								Immutable: true,
+								Default:   true,
+							},
+						},
+					},
+					Default: []map[string]interface{}{
+						{
+							"origin_port": 80,
+							"protocol":    "http",
+							"float_prop":  99.99,
+							"enabled":     true,
+						},
+					},
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, `{"immutable_prop": [{"origin_port":80, "protocol":"http", "float_prop":99.99,"enabled":true}]}`),
+			},
+			assertions: func(resourceData *schema.ResourceData) {
+				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 80, "protocol": "http", "float_prop": 99.99, "enabled": true}}, resourceData.Get("immutable_prop"))
+			},
+			expectedError: nil,
+		},
+		{
+			name:       "client returns an error",
+			inputProps: []*specSchemaDefinitionProperty{},
+			client: clientOpenAPIStub{
+				error: errors.New("some error"),
+			},
+			assertions:    func(resourceData *schema.ResourceData) {},
+			expectedError: errors.New("some error"),
+		},
+		{
+			name: "immutable property is updated and the client returned more properties than the ones specified in the schema",
+			inputProps: []*specSchemaDefinitionProperty{
+				{
+					Name:      "immutable_prop",
+					Type:      typeString,
+					Immutable: true,
+					Default:   "updatedImmutableValue",
+				},
+			},
+			client: clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					"immutable_prop": "originalImmutablePropertyValue",
+					"unknown_prop":   "some value",
+				},
+			},
+			assertions:    func(resourceData *schema.ResourceData) {},
+			expectedError: errors.New("failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'unknown_prop' not existing in resource schema definition"),
+		},
+	}
+
+	for _, tc := range testCases {
+		r, resourceData := testCreateResourceFactory(t, tc.inputProps...)
+		err := r.checkImmutableFields(resourceData, &tc.client)
+		if tc.expectedError == nil {
+			assert.NoError(t, err, tc.name)
+		} else {
+			assert.Equal(t, tc.expectedError, err, tc.name)
+			tc.assertions(resourceData)
+		}
+	}
+}
+
+func getMapFromJSON(t *testing.T, input string) map[string]interface{} {
+	var m map[string]interface{}
+	err := json.Unmarshal([]byte(input), &m)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return m
 }
 
 func TestCreatePayloadFromLocalStateData(t *testing.T) {
-
-	Convey("Given a resource factory initialized with a spec resource with schema definitions for each of the supported property types (string, int, number, bool, slice of primitive, slice of objects, object and object with nested objects and a parent property)", t, func() {
-
-		// - Object property configuration
-		// object_property {
-		//	 origin_port = 80
-		//	 protocol = "http"
-		// }
-		objectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
-				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
-			},
-		}
-		objectDefault := map[string]interface{}{
-			"origin_port": objectSchemaDefinition.Properties[0].Default,
-			"protocol":    objectSchemaDefinition.Properties[1].Default,
-		}
-		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
-
-		// - Object property with nested objects configuration
-		// property_with_nested_object {
-		//	id = "id",
-		//	nested_object {
-		//		origin_port = 80
-		//		protocol = "http"
-		//	}
-		//}
-		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+	idProperty := newStringSchemaDefinitionProperty("id", "", false, true, false, false, false, true, false, false, "id")
+	testCases := []struct {
+		name            string
+		inputProps      []*specSchemaDefinitionProperty
+		expectedPayload map[string]interface{}
+	}{
+		{
+			name: "id and computed properties are not part of the payload",
+			inputProps: []*specSchemaDefinitionProperty{
 				idProperty,
-				objectProperty,
+				computedProperty,
 			},
-		}
-		// Tag(NestedStructsWorkaround)
-		// Note: This is the workaround needed to support properties with nested structs. The current Terraform sdk version
-		// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
-		// with the list containing just one element. The below represents the internal representation of the terraform state
-		// for an object property that contains other objects
-		propertyWithNestedObjectDefault := []map[string]interface{}{
-			{
-				"id":              propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
-				"object_property": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+			expectedPayload: map[string]interface{}{},
+		},
+		{
+			name: "id and property marked as preferred identifier is not part of the payload",
+			inputProps: []*specSchemaDefinitionProperty{
+				idProperty,
+				newStringSchemaDefinitionProperty("someOtherID", "", false, true, false, false, false, true, true, false, "someOtherIDValue"),
 			},
-		}
-		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
-
-		// - Array of objects property configuration
-		// slice_object_property [
-		//   {
-		//	   origin_port = 80
-		//     protocol = "http"
-		//   }
-		// ]
-		arrayObjectDefault := []map[string]interface{}{
-			{
-				"origin_port": 80,
-				"protocol":    "http",
+			expectedPayload: map[string]interface{}{},
+		},
+		{
+			name: "parent properties are not part of the payload",
+			inputProps: []*specSchemaDefinitionProperty{
+				newParentStringSchemaDefinitionPropertyWithDefaults("parentProperty", "", true, false, "http"),
+				stringProperty,
 			},
-		}
-		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+			expectedPayload: map[string]interface{}{
+				stringProperty.getTerraformCompliantPropertyName(): stringProperty.Default,
+			},
+		},
+		{
+			// - Representation of resourceData configuration containing an object
+			// {
+			//	 string_property = "updatedValue"
+			//	 object_property = {
+			//		origin_port = 80
+			//		protocol = "http"
+			//	 }
+			// }
+			name: "properties within objects that are computed should not be in the payload",
+			inputProps: []*specSchemaDefinitionProperty{
+				stringProperty,
+				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
+					"origin_port": 80,
+					"protocol":    "http",
+					computedProperty.getTerraformCompliantPropertyName(): computedProperty.Default,
+				}, &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+						newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+						computedProperty,
+					},
+				}),
+			},
+			expectedPayload: map[string]interface{}{
+				stringProperty.getTerraformCompliantPropertyName(): stringProperty.Default,
+				"object_property": map[string]interface{}{
+					"origin_port": int64(80), // this is how ints are stored internally in terraform state
+					"protocol":    "http",
+				},
+			},
+		},
+		{
+			// - Representation of resourceData configuration containing an object which has a property named id
+			// {
+			//	 object_property = {
+			//		id = "someID"
+			//	 }
+			// }
+			name: "properties within objects that are named id and are not readOnly should be included in the payload",
+			inputProps: []*specSchemaDefinitionProperty{
+				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
+					"id": "someID",
+				}, &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						newStringSchemaDefinitionProperty("id", "", false, false, false, false, false, true, false, false, "someID"),
+					},
+				}),
+			},
+			expectedPayload: map[string]interface{}{
+				"object_property": map[string]interface{}{
+					"id": "someID",
+				},
+			},
+		},
+		{
+			// - Representation of resourceData configuration containing a complex object (object with other objects)
+			// {
+			//   string_property = "updatedValue"
+			//   property_with_nested_object = [ <-- complex objects are represented in the terraform schema as typeList with maxElem = 1
+			//     {
+			//       id = "id"
+			//       object_property = {
+			//		   some_prop = "someValue"
+			//		 }
+			//     }
+			//   ]
+			// }
+			name: "nested objects should be added to the payload",
+			inputProps: []*specSchemaDefinitionProperty{
+				stringProperty,
+				newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, []map[string]interface{}{
+					{
+						computedProperty.getTerraformCompliantPropertyName(): computedProperty.Default,
+						"object_property": map[string]interface{}{
+							"some_prop": "someValue",
+						},
+					},
+				}, &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						computedProperty,
+						newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
+							"some_prop": "someValue",
+						}, &specSchemaDefinition{
+							Properties: specSchemaDefinitionProperties{
+								newStringSchemaDefinitionProperty("some_prop", "", true, false, false, false, false, true, false, false, "someValue"),
+							},
+						}),
+					},
+				}),
+			},
+			expectedPayload: map[string]interface{}{
+				stringProperty.getTerraformCompliantPropertyName(): stringProperty.Default,
+				"property_with_nested_object": map[string]interface{}{
+					"object_property": map[string]interface{}{
+						"some_prop": "someValue",
+					},
+				},
+			},
+		},
+		{
+			// - Representation of resourceData configuration containing an array of objects
+			// slice_object_property = [
+			//   {
+			//	   origin_port = 80
+			//     protocol = "http"
+			//   }
+			// ]
+			name: "array properties containing objects and are not readOnly should be included in the payload",
+			inputProps: []*specSchemaDefinitionProperty{
+				newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, []map[string]interface{}{
+					{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				}, typeObject, &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+						newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+					},
+				}),
+			},
+			expectedPayload: map[string]interface{}{
+				"slice_object_property": []interface{}{
+					map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+			},
+		},
+		{
+			name: "properties with zero values should be included in the payload",
+			inputProps: []*specSchemaDefinitionProperty{
+				stringZeroValueProperty,
+				intZeroValueProperty,
+				numberZeroValueProperty,
+				boolZeroValueProperty,
+				sliceZeroValueProperty,
+			},
+			expectedPayload: map[string]interface{}{
+				"bool_property":   false,
+				"int_property":    0,
+				"number_property": float64(0),
+				"slice_property":  []interface{}{interface{}(nil)},
+			},
+		},
+	}
 
-		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("parentProperty", "", true, false, "http")
-		parentProperty.IsParentProperty = true
-
-		r, resourceData := testCreateResourceFactory(t, idProperty, computedProperty, stringProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, sliceObjectProperty, objectProperty, propertyWithNestedObject, parentProperty)
-
-		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
-			payload := r.createPayloadFromLocalStateData(resourceData)
-			Convey("Then the map returned should not be empty", func() {
-				So(payload, ShouldNotBeEmpty)
-			})
-			Convey("And then payload returned should not include the following keys as they are either an identifier or read only (computed) properties", func() {
-				So(payload, ShouldNotContainKey, idProperty.Name)
-				So(payload, ShouldNotContainKey, computedProperty.Name)
-				So(payload, ShouldNotContainKey, parentProperty.Name)
-			})
-			Convey("And then payload returned should include the following keys ", func() {
-				So(payload, ShouldContainKey, stringProperty.Name)
-				So(payload, ShouldContainKey, intProperty.Name)
-				So(payload, ShouldContainKey, numberProperty.Name)
-				So(payload, ShouldContainKey, boolProperty.Name)
-				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
-				So(payload, ShouldContainKey, sliceObjectProperty.Name)
-				So(payload, ShouldContainKey, objectProperty.Name)
-				So(payload, ShouldContainKey, propertyWithNestedObject.Name)
-			})
-			Convey("And then payload returned should contain the expected data values for the string property", func() {
-				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
-			})
-			Convey("And then payload returned should contain the expected data values for the int property", func() {
-				So(payload[intProperty.Name], ShouldEqual, intProperty.Default)
-			})
-			Convey("And then payload returned should contain the expected data values for the number property", func() {
-				So(payload[numberProperty.Name], ShouldEqual, numberProperty.Default)
-			})
-			Convey("And then payload returned should contain the expected data values for the bool property", func() {
-				So(payload[boolProperty.Name], ShouldEqual, boolProperty.Default)
-			})
-			Convey("And then payload returned should contain the expected data values for the slice of primitive property", func() {
-				So(payload[slicePrimitiveProperty.Name], ShouldContain, slicePrimitiveProperty.Default.([]string)[0])
-			})
-			Convey("And then payload returned should contain the expected data values for the slice of objects property", func() {
-				arrayObject := payload[sliceObjectProperty.Name].([]interface{})
-				object := arrayObject[0].(map[string]interface{})
-				So(object["origin_port"], ShouldEqual, arrayObjectDefault[0]["origin_port"])
-				So(object["protocol"], ShouldEqual, arrayObjectDefault[0]["protocol"])
-			})
-			Convey("And then payload returned should cotnain the expected data values for the object properties", func() {
-				object := payload[objectProperty.Name].(map[string]interface{})
-				So(object[objectProperty.SpecSchemaDefinition.Properties[0].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[0].Default.(int))
-				So(object[objectProperty.SpecSchemaDefinition.Properties[1].Name], ShouldEqual, objectProperty.SpecSchemaDefinition.Properties[1].Default)
-			})
-			Convey("And then payload returned should contain the expected data values for the object property with nested object", func() {
-				topLevel := payload[propertyWithNestedObject.Name].(map[string]interface{})
-				So(topLevel, ShouldContainKey, objectProperty.Name)
-				So(topLevel, ShouldContainKey, idProperty.Name)
-				So(topLevel[idProperty.Name], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[0].Default)
-				nestedLevel := topLevel[objectProperty.Name].(map[string]interface{})
-				So(nestedLevel["origin_port"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["origin_port"])
-				So(nestedLevel["protocol"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["protocol"])
-			})
-		})
-	})
-
-	Convey("Given a resource factory initialized with a spec resource with some schema definition and zero values", t, func() {
-		r, resourceData := testCreateResourceFactory(t, intZeroValueProperty, numberZeroValueProperty, boolZeroValueProperty, sliceZeroValueProperty)
-		Convey("When createPayloadFromLocalStateData is called with a terraform resource data", func() {
-			payload := r.createPayloadFromLocalStateData(resourceData)
-			Convey("Then the map returned should not be empty", func() {
-				So(payload, ShouldNotBeEmpty)
-			})
-			Convey("And then payload returned should include the following keys ", func() {
-				So(payload, ShouldContainKey, intZeroValueProperty.Name)
-				So(payload, ShouldContainKey, numberZeroValueProperty.Name)
-				So(payload, ShouldContainKey, boolZeroValueProperty.Name)
-				So(payload, ShouldContainKey, sliceZeroValueProperty.Name)
-			})
-			Convey("And then payload key values should match the values stored in the terraform resource data", func() {
-				So(payload[intZeroValueProperty.Name], ShouldEqual, intZeroValueProperty.Default)
-				So(payload[numberZeroValueProperty.Name], ShouldEqual, numberZeroValueProperty.Default)
-				So(payload[boolZeroValueProperty.Name], ShouldEqual, boolZeroValueProperty.Default)
-			})
-		})
-	})
+	for _, tc := range testCases {
+		r, resourceData := testCreateResourceFactory(t, tc.inputProps...)
+		payload := r.createPayloadFromLocalStateData(resourceData)
+		assert.Equal(t, tc.expectedPayload, payload, tc.name)
+	}
 }
 
 func TestGetPropertyPayload(t *testing.T) {
 	Convey("Given a resource factory"+
-		"When getPropertyPayload is called with a nil property"+
+		"When populatePayload is called with a nil property"+
 		"Then it panics", t, func() {
 		input := map[string]interface{}{}
 		dataValue := struct{}{}
 		resourceFactory := resourceFactory{}
-		So(func() { resourceFactory.getPropertyPayload(input, nil, dataValue) }, ShouldPanic)
+		So(func() { resourceFactory.populatePayload(input, nil, dataValue) }, ShouldPanic)
 	})
 
 	Convey("Given a resource factory"+
-		"When getPropertyPayload is called with a nil datavalue"+
+		"When populatePayload is called with a nil datavalue"+
 		"Then it returns an error", t, func() {
 		input := map[string]interface{}{}
 		resourceFactory := resourceFactory{}
-		So(resourceFactory.getPropertyPayload(input, &specSchemaDefinitionProperty{Name: "buu"}, nil).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
+		So(resourceFactory.populatePayload(input, &specSchemaDefinitionProperty{Name: "buu"}, nil).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
 	})
 
 	Convey("Given a resource factory"+
@@ -1200,7 +1694,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		dataValue := []bool{}
 		property := &specSchemaDefinitionProperty{}
 		resourceFactory := resourceFactory{}
-		So(func() { resourceFactory.getPropertyPayload(input, property, dataValue) }, ShouldPanic)
+		So(func() { resourceFactory.populatePayload(input, property, dataValue) }, ShouldPanic)
 	})
 
 	Convey("Given the function handleSliceOrArray"+
@@ -1210,7 +1704,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		dataValue := []interface{}{}
 		property := &specSchemaDefinitionProperty{}
 		resourceFactory := resourceFactory{}
-		e := resourceFactory.getPropertyPayload(input, property, dataValue)
+		e := resourceFactory.populatePayload(input, property, dataValue)
 		So(e, ShouldBeNil)
 	})
 
@@ -1218,10 +1712,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		// Use case - string property (terraform configuration pseudo representation below):
 		// string_property = "some value"
 		r, resourceData := testCreateResourceFactory(t, stringProperty)
-		Convey("When getPropertyPayload is called with an empty map, the string property in the resource schema and it's corresponding terraform resourceData state data value", func() {
+		Convey("When populatePayload is called with an empty map, the string property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(stringProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, stringProperty, dataValue)
+			err := r.populatePayload(payload, stringProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1241,10 +1735,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		// Use case - int property (terraform configuration pseudo representation below):
 		// int_property = 1234
 		r, resourceData := testCreateResourceFactory(t, intProperty)
-		Convey("When getPropertyPayload is called with an empty map, the int property in the resource schema  and it's corresponding terraform resourceData state data value", func() {
+		Convey("When populatePayload is called with an empty map, the int property in the resource schema  and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(intProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, intProperty, dataValue)
+			err := r.populatePayload(payload, intProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1264,10 +1758,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		// Use case - number property (terraform configuration pseudo representation below):
 		// number_property = 1.1234
 		r, resourceData := testCreateResourceFactory(t, numberProperty)
-		Convey("When getPropertyPayload is called with an empty map, the number property in the resource schema and it's corresponding terraform resourceData state data value", func() {
+		Convey("When populatePayload is called with an empty map, the number property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(numberProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, numberProperty, dataValue)
+			err := r.populatePayload(payload, numberProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1287,10 +1781,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		// Use case - bool property (terraform configuration pseudo representation below):
 		// bool_property = true
 		r, resourceData := testCreateResourceFactory(t, boolProperty)
-		Convey("When getPropertyPayload is called with an empty map, the bool property in the resource schema and it's corresponding terraform resourceData state data value", func() {
+		Convey("When populatePayload is called with an empty map, the bool property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(boolProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, boolProperty, dataValue)
+			err := r.populatePayload(payload, boolProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1324,10 +1818,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		}
 		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, objectProperty)
-		Convey("When getPropertyPayload is called with an empty map, the object property in the resource schema and it's state data value", func() {
+		Convey("When populatePayload is called with an empty map, the object property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(objectProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, objectProperty, dataValue)
+			err := r.populatePayload(payload, objectProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1367,10 +1861,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		}
 		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
-		Convey("When getPropertyPayload is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
+		Convey("When populatePayload is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
+			err := r.populatePayload(payload, sliceObjectProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1392,10 +1886,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		// Use case - slice of srings (terraform configuration pseudo representation below):
 		// slice_property = ["some_value"]
 		r, resourceData := testCreateResourceFactory(t, slicePrimitiveProperty)
-		Convey("When getPropertyPayload is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
+		Convey("When populatePayload is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, slicePrimitiveProperty, dataValue)
+			err := r.populatePayload(payload, slicePrimitiveProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1451,21 +1945,21 @@ func TestGetPropertyPayload(t *testing.T) {
 		expectedPropertyWithNestedObjectName := "property_with_nested_object"
 		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
-		Convey("When getPropertyPayload is called a slice with >1 dataValue, it complains", func() {
-			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"})
+		Convey("When populatePayload is called a slice with >1 dataValue, it complains", func() {
+			err := r.populatePayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{"foo", "bar", "baz"})
 			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 
 		})
-		Convey("When getPropertyPayload is called a slice with <1 dataValue, it complains", func() {
-			err := r.getPropertyPayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{})
+		Convey("When populatePayload is called a slice with <1 dataValue, it complains", func() {
+			err := r.populatePayload(map[string]interface{}{}, propertyWithNestedObject, []interface{}{})
 			So(err.Error(), ShouldEqual, "something is really wrong here...an object property with nested objects should have exactly one elem in the terraform state list")
 
 		})
 
-		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
+		Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, propertyWithNestedObject, dataValue)
+			err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -1515,10 +2009,10 @@ func TestGetPropertyPayload(t *testing.T) {
 		expectedPropertyWithNestedObjectName := "property_with_nested_object"
 		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
-		Convey("When getPropertyPayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
+		Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, propertyWithNestedObject, dataValue)
+			err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
 			})
@@ -1538,10 +2032,10 @@ func TestGetPropertyPayload(t *testing.T) {
 
 		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
 
-		Convey("When getPropertyPayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
+		Convey("When populatePayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
 			payload := map[string]interface{}{}
 			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
-			err := r.getPropertyPayload(payload, sliceObjectProperty, dataValue)
+			err := r.populatePayload(payload, sliceObjectProperty, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property 'slice_object_property_doesn_not_exists' has a nil state dataValue")
 			})
