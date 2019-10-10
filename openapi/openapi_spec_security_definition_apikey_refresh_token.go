@@ -52,8 +52,8 @@ func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) validate() error {
 	if s.refreshTokenURL == "" {
 		return fmt.Errorf("specAPIKeyHeaderRefreshTokenSecurityDefinition missing mandatory refresh token URL")
 	}
-	isUrl := isURL(s.refreshTokenURL)
-	if !isUrl {
+	isURL := isURL(s.refreshTokenURL)
+	if !isURL {
 		return fmt.Errorf("refresh token URL must be a valid URL")
 	}
 	return nil
