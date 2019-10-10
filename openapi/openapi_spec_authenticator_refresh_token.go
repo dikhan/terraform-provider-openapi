@@ -2,11 +2,10 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/http_goclient"
 	"net/http"
-)
 
-// TODO: add tests here
+	"github.com/dikhan/http_goclient"
+)
 
 // Api Key Header Auth
 type apiRefreshTokenAuthenticator struct {
@@ -46,6 +45,9 @@ func (a apiRefreshTokenAuthenticator) prepareAuth(authContext *authContext) erro
 	accessToken := r.Header.Get(authorizationHeader)
 	if accessToken == "" {
 		return fmt.Errorf("refresh token POST response '%s' is missing the access token", a.refreshTokenURL)
+	}
+	if authContext.headers == nil {
+		authContext.headers = map[string]string{}
 	}
 	authContext.headers[authorizationHeader] = accessToken
 	return nil
