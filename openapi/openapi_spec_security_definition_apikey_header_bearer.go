@@ -31,7 +31,7 @@ func (s specAPIKeyHeaderBearerSecurityDefinition) getTerraformConfigurationName(
 }
 
 func (s specAPIKeyHeaderBearerSecurityDefinition) getAPIKey() specAPIKey {
-	return newAPIKeyHeader(authorization)
+	return newAPIKeyHeader(authorizationHeader)
 }
 
 func (s specAPIKeyHeaderBearerSecurityDefinition) buildValue(value string) string {

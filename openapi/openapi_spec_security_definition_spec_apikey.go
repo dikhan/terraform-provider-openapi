@@ -7,9 +7,16 @@ const (
 	inQuery  apiKeyIn = "query"
 )
 
+type apiKeyMetadataKey string
+
+const (
+	refreshTokenURLKey apiKeyMetadataKey = "refreshTokenURL"
+)
+
 type specAPIKey struct {
-	In   apiKeyIn
-	Name string
+	In       apiKeyIn
+	Name     string
+	Metadata map[apiKeyMetadataKey]interface{}
 }
 
 func newAPIKeyHeader(name string) specAPIKey {

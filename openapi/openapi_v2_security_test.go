@@ -35,7 +35,7 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 			Convey("And the security schemes should be of type header bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderBearerSecurityDefinition{})
-				So(secDefs[0].getAPIKey().Name, ShouldEqual, authorization)
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, authorizationHeader)
 				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "Bearer jwtToken")
 			})
 		})
@@ -69,7 +69,106 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a specV2Security loaded with a security definition of type query bearer", t, func() {
+	Convey("Given a specV2Security loaded with a security definition of type header bearer", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "header",
+						Type: "apiKey",
+					},
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfAuthenticationSchemeBearer: true,
+						},
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
+			secDefs := *securityDefinitions
+			Convey("Then the the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the security schemes match the expectations", func() {
+				So(secDefs, ShouldNotBeEmpty)
+			})
+			Convey("And the security schemes should be of type header bearer", func() {
+				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderBearerSecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "Authorization")
+				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "Bearer jwtToken")
+			})
+		})
+	})
+	Convey("Given a specV2Security loaded with a security definition of type query", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "query",
+						Type: "apiKey",
+						Name: "queryParamName",
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
+			secDefs := *securityDefinitions
+			Convey("Then the the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the security schemes match the expectations", func() {
+				So(secDefs, ShouldNotBeEmpty)
+			})
+			Convey("And the security schemes should be of type query bearer", func() {
+				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQuerySecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "queryParamName")
+				So(secDefs[0].buildValue("someToken"), ShouldEqual, "someToken")
+			})
+		})
+	})
+
+	Convey("Given a specV2Security loaded with a security definition of type header refresh token auth", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "header",
+						Type: "apiKey",
+					},
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfAuthenticationRefreshToken: "http://some-refresh-token-url.com/api/token",
+						},
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
+			secDefs := *securityDefinitions
+			Convey("Then the the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the security schemes match the expectations", func() {
+				So(secDefs, ShouldNotBeEmpty)
+			})
+			Convey("And the security schemes should be of type query bearer", func() {
+				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderRefreshTokenSecurityDefinition{})
+				So(secDefs[0].getAPIKey().Name, ShouldEqual, "Authorization")
+				So(secDefs[0].getAPIKey().Metadata, ShouldContainKey, refreshTokenURLKey)
+				So(secDefs[0].getAPIKey().Metadata[refreshTokenURLKey], ShouldEqual, "http://some-refresh-token-url.com/api/token")
+				So(secDefs[0].buildValue("refreshToken"), ShouldEqual, "Bearer refreshToken")
+			})
+		})
+	})
+
+	Convey("Given a specV2Security loaded with a security definition of type header bearer", t, func() {
 		specV2Security := specV2Security{
 			GlobalSecurity: []map[string][]string{},
 			SecurityDefinitions: spec.SecurityDefinitions{
@@ -99,35 +198,6 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQueryBearerSecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, "access_token")
 				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "jwtToken")
-			})
-		})
-	})
-	Convey("Given a specV2Security loaded with a security definition of type query bearer", t, func() {
-		specV2Security := specV2Security{
-			GlobalSecurity: []map[string][]string{},
-			SecurityDefinitions: spec.SecurityDefinitions{
-				"apikey_auth": &spec.SecurityScheme{
-					SecuritySchemeProps: spec.SecuritySchemeProps{
-						In:   "query",
-						Type: "apiKey",
-						Name: "queryParamName",
-					},
-				},
-			},
-		}
-		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
-			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
-			secDefs := *securityDefinitions
-			Convey("Then the the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes match the expectations", func() {
-				So(secDefs, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should be of type query bearer", func() {
-				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQuerySecurityDefinition{})
-				So(secDefs[0].getAPIKey().Name, ShouldEqual, "queryParamName")
-				So(secDefs[0].buildValue("someToken"), ShouldEqual, "someToken")
 			})
 		})
 	})
@@ -177,6 +247,26 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a specV2Security loaded with a apiKey type but the location (In) is not supported", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "some_other_location",
+						Type: "apiKey",
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			_, err := specV2Security.GetAPIKeySecurityDefinitions()
+			Convey("And the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "apiKey In value 'some_other_location' not supported, only 'header' and 'query' values are valid")
+			})
+		})
+	})
 }
 
 func TestGetGlobalSecuritySchemes(t *testing.T) {
@@ -193,7 +283,7 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "header",
 						Type: "apiKey",
-						Name: authorization,
+						Name: authorizationHeader,
 					},
 				},
 			},
@@ -223,7 +313,7 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 					SecuritySchemeProps: spec.SecuritySchemeProps{
 						In:   "header",
 						Type: "apiKey",
-						Name: authorization,
+						Name: authorizationHeader,
 					},
 				},
 			},
@@ -281,6 +371,52 @@ func TestIsBearerScheme(t *testing.T) {
 			isBearerAuth := specV2Security.isBearerScheme(secDef)
 			Convey("The the value returned should be false", func() {
 				So(isBearerAuth, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestIsRefreshTokenAuth(t *testing.T) {
+	Convey("Given a specV2Security", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity:      []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{},
+		}
+		Convey("When isRefreshTokenAuth is called with a SecurityScheme that has the refresh token extension and a value specified", func() {
+			secDef := &spec.SecurityScheme{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfAuthenticationRefreshToken: "refresh token server URL",
+					},
+				},
+			}
+			isRefreshAuth := specV2Security.isRefreshTokenAuth(secDef)
+			Convey("Then the value returned should be as specified in SecuritySchema", func() {
+				So(isRefreshAuth, ShouldEqual, "refresh token server URL")
+			})
+		})
+		Convey("When isRefreshTokenAuth is called with a SecurityScheme that has the refresh token extension with an empty string value", func() {
+			secDef := &spec.SecurityScheme{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfAuthenticationRefreshToken: "",
+					},
+				},
+			}
+			isRefreshAuth := specV2Security.isRefreshTokenAuth(secDef)
+			Convey("Then the value returned should be an empty string", func() {
+				So(isRefreshAuth, ShouldEqual, "")
+			})
+		})
+		Convey("When isRefreshTokenAuth is called with a SecurityScheme that DOES not have the refresh token extension", func() {
+			secDef := &spec.SecurityScheme{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{},
+				},
+			}
+			isRefreshAuth := specV2Security.isRefreshTokenAuth(secDef)
+			Convey("Then the value returned should be an empty string", func() {
+				So(isRefreshAuth, ShouldEqual, "")
 			})
 		})
 	})
