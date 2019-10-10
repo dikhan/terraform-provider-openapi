@@ -2,11 +2,10 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"strings"
-)
 
-// TODO: add tests here
+	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+)
 
 type specAPIKeyHeaderRefreshTokenSecurityDefinition struct {
 	name            string
