@@ -5,6 +5,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
 	"log"
+	"net/url"
 )
 
 func prettyPrint(v interface{}) {
@@ -39,4 +40,9 @@ func getFileContent(filePath string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func isUrl(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }

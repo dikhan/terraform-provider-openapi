@@ -47,10 +47,14 @@ func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) buildValue(refreshToken 
 
 func (s specAPIKeyHeaderRefreshTokenSecurityDefinition) validate() error {
 	if s.name == "" {
-		return fmt.Errorf("APIKeyHeaderRefreshTokenSecurityDefinition missing mandatory security definition name")
+		return fmt.Errorf("specAPIKeyHeaderRefreshTokenSecurityDefinition missing mandatory security definition name")
 	}
 	if s.refreshTokenURL == "" {
-		return fmt.Errorf("APIKeyHeaderRefreshTokenSecurityDefinition missing mandatory refresh token URL")
+		return fmt.Errorf("specAPIKeyHeaderRefreshTokenSecurityDefinition missing mandatory refresh token URL")
+	}
+	isUrl := isUrl(s.refreshTokenURL)
+	if !isUrl {
+		return fmt.Errorf("refresh token URL must be a valid URL")
 	}
 	return nil
 }

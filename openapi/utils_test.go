@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
@@ -53,4 +54,34 @@ func TestGetFileContent(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestIsUrl(t *testing.T) {
+
+	testCases := []struct {
+		name           string
+		input          string
+		expectedResult bool
+	}{
+		{
+			name:           "url well formed",
+			input:          "http://something.com",
+			expectedResult: true,
+		},
+		{
+			name:           "url with path",
+			input:          "http://something.com/something",
+			expectedResult: true,
+		},
+		{
+			name:           "url with no protocol",
+			input:          "something.com",
+			expectedResult: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		isUrl := isUrl(tc.input)
+		assert.Equal(t, tc.expectedResult, isUrl, tc.name)
+	}
 }
