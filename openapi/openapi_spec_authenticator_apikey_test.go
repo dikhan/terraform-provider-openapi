@@ -1,8 +1,9 @@
 package openapi
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestCreateAPIKeyAuthenticator(t *testing.T) {
@@ -30,6 +31,20 @@ func TestCreateAPIKeyAuthenticator(t *testing.T) {
 			})
 			Convey("And the the specAPIKeyAuthenticator returned should be of type authTypeAPIQuery", func() {
 				So(apiKeyAuthenticator.getType(), ShouldEqual, authTypeAPIQuery)
+			})
+		})
+	})
+
+	Convey("Given a RefreshToken secDef of header type and a auth value ", t, func() {
+		secDef := newAPIKeyHeaderRefreshTokenSecurityDefinition("header_auth", authorizationHeader)
+		value := "value"
+		Convey("When createAPIKeyAuthenticator method is constructed", func() {
+			apiKeyAuthenticator := createAPIKeyAuthenticator(secDef, value)
+			Convey("And the the specAPIKeyAuthenticator returned Should Have Same Type As apiKeyHeaderAuthenticator", func() {
+				So(apiKeyAuthenticator, ShouldHaveSameTypeAs, apiRefreshTokenAuthenticator{})
+			})
+			Convey("And the the specAPIKeyAuthenticator returned should be of type authTypeAPIKeyHeader", func() {
+				So(apiKeyAuthenticator.getType(), ShouldEqual, authTypeAPIKeyHeader)
 			})
 		})
 	})
