@@ -247,6 +247,26 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a specV2Security loaded with a apiKey type but the location (In) is not supported", t, func() {
+		specV2Security := specV2Security{
+			GlobalSecurity: []map[string][]string{},
+			SecurityDefinitions: spec.SecurityDefinitions{
+				"apikey_auth": &spec.SecurityScheme{
+					SecuritySchemeProps: spec.SecuritySchemeProps{
+						In:   "some_other_location",
+						Type: "apiKey",
+					},
+				},
+			},
+		}
+		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
+			_, err := specV2Security.GetAPIKeySecurityDefinitions()
+			Convey("And the error should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "apiKey In value 'some_other_location' not supported, only 'header' and 'query' values are valid")
+			})
+		})
+	})
 }
 
 func TestGetGlobalSecuritySchemes(t *testing.T) {
