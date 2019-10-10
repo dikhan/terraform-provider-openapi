@@ -22,7 +22,6 @@ func (s *specV2Security) GetAPIKeySecurityDefinitions() (*SpecSecurityDefinition
 			var securityDefinition SpecSecurityDefinition
 			switch secDef.In {
 			case "header":
-				// TODO: add tests here
 				if refreshTokenURL := s.isRefreshTokenAuth(secDef); refreshTokenURL != "" {
 					securityDefinition = newAPIKeyHeaderRefreshTokenSecurityDefinition(secDefName, refreshTokenURL)
 				} else if s.isBearerScheme(secDef) {
