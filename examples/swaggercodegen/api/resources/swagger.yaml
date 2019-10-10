@@ -444,7 +444,6 @@ securityDefinitions:
   apikey_auth: # basic apikey header auth, the header name will be the value used in the name property, in this case "Authorization", when calling the applicable resource API
     type: "apiKey"
     name: "Authorization"
-    x-terraform-refresh-token-url: "https://api.iam.com/v1/auth/token"
     in: "header"
 #  apikey_header_auth_bearer: // example of header auth using the bearer schema as per the specification
 #    type: "apiKey"
