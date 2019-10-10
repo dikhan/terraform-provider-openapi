@@ -43,7 +43,20 @@ func Test_ApiKeyRefreshTokenAuthenticator_Successfully_Prepares_Authorization(t 
 }
 
 func Test_ApiKeyRefreshTokenAuthenticator_Fails_To_Prepare_Authorization(t *testing.T) {
-	t.Run("crappy path -- the API Server providing the access token Fails", func(t *testing.T) {
+	t.Run("crappy path -- the API Server providing the access token does not return the expected Authorization header containing the access token", func(t *testing.T) {
+		fakeRefreshToken := `eyJ[...]RW.eyJ[...]WQi.eyd[...]SWr`
+		accessTokenBrokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}))
+		refreshTokenAuthenticator := newAPIRefreshTokenAuthenticator("my_fancy_name", fakeRefreshToken, accessTokenBrokenServer.URL)
+		ctx := &authContext{}
+		err := refreshTokenAuthenticator.prepareAuth(ctx)
+
+		assert.Equal(t, err.Error(), fmt.Sprintf("refresh token POST response '%s' is missing the access token", accessTokenBrokenServer.URL))
+		assert.Empty(t, ctx.headers[authorizationHeader])
+	})
+
+	t.Run("crappy path -- the API Server providing the access token returns a non expected response status code", func(t *testing.T) {
 		fakeRefreshToken := `eyJ[...]RW.eyJ[...]WQi.eyd[...]SWr`
 		accessTokenBrokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -52,7 +65,7 @@ func Test_ApiKeyRefreshTokenAuthenticator_Fails_To_Prepare_Authorization(t *test
 		ctx := &authContext{}
 		err := refreshTokenAuthenticator.prepareAuth(ctx)
 
-		assert.Equal(t, err.Error(), fmt.Sprintf("refresh token POST response '%s' is missing the access token", accessTokenBrokenServer.URL))
+		assert.Equal(t, err.Error(), fmt.Sprintf("refresh token POST response '%s' status code '500' not matching expected response status code [200, 204]", accessTokenBrokenServer.URL))
 		assert.Empty(t, ctx.headers[authorizationHeader])
 	})
 

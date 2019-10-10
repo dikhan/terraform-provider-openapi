@@ -42,6 +42,9 @@ func (a apiRefreshTokenAuthenticator) prepareAuth(authContext *authContext) erro
 	if err != nil {
 		return err
 	}
+	if r.StatusCode != http.StatusOK && r.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("refresh token POST response '%s' status code '%d' not matching expected response status code [%d, %d]", a.refreshTokenURL, r.StatusCode, http.StatusOK, http.StatusNoContent)
+	}
 	accessToken := r.Header.Get(authorizationHeader)
 	if accessToken == "" {
 		return fmt.Errorf("refresh token POST response '%s' is missing the access token", a.refreshTokenURL)
