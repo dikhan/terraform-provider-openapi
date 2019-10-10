@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -51,8 +52,7 @@ func Test_ApiKeyRefreshTokenAuthenticator_Fails_To_Prepare_Authorization(t *test
 		ctx := &authContext{}
 		err := refreshTokenAuthenticator.prepareAuth(ctx)
 
-		assert.Contains(t, err.Error(), "refresh token POST response")
-		assert.Contains(t, err.Error(), "is missing the access token")
+		assert.Equal(t, err.Error(), fmt.Sprintf("refresh token POST response '%s' is missing the access token", accessTokenBrokenServer.URL))
 		assert.Empty(t, ctx.headers[authorizationHeader])
 	})
 
