@@ -1280,6 +1280,46 @@ to the security definition as the example below.
 Attribute Name | Type | Description
 ---|:---:|---
 [x-terraform-authentication-scheme-bearer](#xTerraformAuthenticationSchemeBearer) | boolean |  A security definition with this attribute enabled will enable the Bearer auth scheme. This means that the provider will automatically use the header/query names specified in the Auth Bearer specification. Note when using this extension the 'name' param will be ignored as this will automatically use the Bearer specification names behind the scenes, that being "Authorization" for header type and "access_token" for the query type.
+[x-terraform-refresh-token-url](#xTerraformAuthenticationRefreshToken) | string |  The URL that will be used to post the refresh token (provided in the plugin config input - using the sed def name) and will return an access token that then will be used in every API call made by the plugin. This is useful specially for resource that take a long time to complete and the token may expire before they finish.
+
+###### <a name="xTerraformAuthenticationRefreshToken">x-terraform-refresh-token-url</a>
+
+This extension is used as an alternative authenticator mechanism from the default authenticator used in the provider (where 
+the same security definition token provided in the plugin configuration is always posted to the API). This extension enables the 
+user to provide a refresh token URL where instead, the user will provide a refresh token in the configuration and the URL
+provided in the ```x-terraform-refresh-token-url``` extension value will be the one where the refresh token will be posted. Then
+the response from the API should contain a header called ```Authorization``` containing the access token tobe used in the
+subsequent resource API calls.
+
+The following example shows how this authorization works behind the scenes:
+
+- The following security definition will be exposed in the plugin config as a string input ```apikey_auth``` where the user
+wold provide the value for the refresh token.
+
+  - Swagger config
+```yml
+securityDefinitions:
+  apikey_auth:
+    type: "apiKey"
+    in: "header"
+    x-terraform-refresh-token-url: https://api.iam.com/auth/token
+```
+
+  - Provider plugin config with the value of the refresh token
+```
+provider "sp" {
+  apikey_auth = "refresh token value"
+}
+```
+
+- Behind the scenes then the provider will go ahead and perform the following before making any API request to the resource
+endpoints:
+  - Perform a POST request to ```http://api.iam.com/auth/token``` passing in a header with name `Authorization` and as value
+  the refresh token value `refresh token value`
+  - The response is expected to have a status code 200 or 204, and the response header must contain an `Authorization` header
+  containing the session token generated. This session token will be the one used for any API request made to the resource
+  endpoints. Note: the whole contained in the header value will be used as the session token, hence if the value contains
+  the Bearer scheme that will also get send to the API endpoints.
 
 ###### <a name="xTerraformAuthenticationSchemeBearer">x-terraform-authentication-scheme-bearer</a>
 
