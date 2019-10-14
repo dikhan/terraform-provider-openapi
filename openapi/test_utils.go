@@ -19,7 +19,7 @@ var stringProperty = newStringSchemaDefinitionPropertyWithDefaults("string_prope
 var intProperty = newIntSchemaDefinitionPropertyWithDefaults("int_property", "", true, false, 12)
 var numberProperty = newNumberSchemaDefinitionPropertyWithDefaults("number_property", "", true, false, 13.99)
 var boolProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, true)
-var slicePrimitiveProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, false, []string{"value1"}, typeString, nil)
+var slicePrimitiveProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, false, []interface{}{"value1"}, typeString, nil)
 
 // testing properties with special configuration
 var stringWithPreferredNameProperty = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "string_preferred_property", true, false, "updatedValue")

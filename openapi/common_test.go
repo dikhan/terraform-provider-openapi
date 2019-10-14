@@ -255,8 +255,8 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			"protocol":    objectSchemaDefinition.Properties[1].Default,
 		}
 		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectStateValue, objectSchemaDefinition)
-		arrayObjectStateValue := []map[string]interface{}{
-			{
+		arrayObjectStateValue := []interface{}{
+			map[string]interface{}{
 				"origin_port": 80,
 				"protocol":    "http",
 			},
