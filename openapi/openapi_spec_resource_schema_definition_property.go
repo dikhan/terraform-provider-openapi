@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 // schemaDefinitionPropertyType defines the type of a property

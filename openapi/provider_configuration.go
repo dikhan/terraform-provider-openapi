@@ -2,7 +2,7 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 const providerPropertyRegion = "region"

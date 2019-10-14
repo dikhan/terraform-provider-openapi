@@ -14,7 +14,7 @@ import (
 	"github.com/go-openapi/spec"
 
 	"encoding/json"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -1320,8 +1320,8 @@ func TestCheckImmutableFields(t *testing.T) {
 							}),
 						},
 					},
-					Default: []map[string]interface{}{
-						{
+					Default: []interface{}{
+						map[string]interface{}{
 							"object_property": map[string]interface{}{
 								"some_prop": "someUpdatedValue",
 							},
@@ -1351,8 +1351,8 @@ func TestCheckImmutableFields(t *testing.T) {
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 						},
 					},
-					Default: []map[string]interface{}{
-						{
+					Default: []interface{}{
+						map[string]interface{}{
 							"origin_port": 80,
 							"protocol":    "http",
 						},
@@ -1411,8 +1411,8 @@ func TestCheckImmutableFields(t *testing.T) {
 							},
 						},
 					},
-					Default: []map[string]interface{}{
-						{
+					Default: []interface{}{
+						map[string]interface{}{
 							"origin_port": 80,
 							"protocol":    "http",
 							"float_prop":  99.99,
@@ -1584,8 +1584,8 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			name: "nested objects should be added to the payload",
 			inputProps: []*specSchemaDefinitionProperty{
 				stringProperty,
-				newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, []map[string]interface{}{
-					{
+				newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, []interface{}{
+					map[string]interface{}{
 						computedProperty.getTerraformCompliantPropertyName(): computedProperty.Default,
 						"object_property": map[string]interface{}{
 							"some_prop": "someValue",
@@ -1623,8 +1623,8 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			// ]
 			name: "array properties containing objects and are not readOnly should be included in the payload",
 			inputProps: []*specSchemaDefinitionProperty{
-				newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, []map[string]interface{}{
-					{
+				newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, []interface{}{
+					map[string]interface{}{
 						"origin_port": 80,
 						"protocol":    "http",
 					},
@@ -1647,7 +1647,6 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 		{
 			name: "properties with zero values should be included in the payload",
 			inputProps: []*specSchemaDefinitionProperty{
-				stringZeroValueProperty,
 				intZeroValueProperty,
 				numberZeroValueProperty,
 				boolZeroValueProperty,
@@ -1856,7 +1855,7 @@ func TestGetPropertyPayload(t *testing.T) {
 			"origin_port": 80,
 			"protocol":    "http",
 		}
-		arrayObjectDefault := []map[string]interface{}{
+		arrayObjectDefault := []interface{}{
 			objectDefault,
 		}
 		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
@@ -1900,7 +1899,7 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload, ShouldContainKey, slicePrimitiveProperty.Name)
 			})
 			Convey("And then payload returned should have the data value from the state file", func() {
-				So(payload[slicePrimitiveProperty.Name].([]interface{})[0], ShouldEqual, slicePrimitiveProperty.Default.([]string)[0])
+				So(payload[slicePrimitiveProperty.Name].([]interface{})[0], ShouldEqual, slicePrimitiveProperty.Default.([]interface{})[0])
 			})
 		})
 	})
@@ -1936,8 +1935,8 @@ func TestGetPropertyPayload(t *testing.T) {
 		// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
 		// with the list containing just one element. The below represents the internal representation of the terraform state
 		// for an object property that contains other objects
-		propertyWithNestedObjectDefault := []map[string]interface{}{
-			{
+		propertyWithNestedObjectDefault := []interface{}{
+			map[string]interface{}{
 				"id":            propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
 				"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
 			},
@@ -2000,8 +1999,8 @@ func TestGetPropertyPayload(t *testing.T) {
 				nestedObjectNotTFCompliant,
 			},
 		}
-		propertyWithNestedObjectDefault := []map[string]interface{}{
-			{
+		propertyWithNestedObjectDefault := []interface{}{
+			map[string]interface{}{
 				"id":                          propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
 				"nested_object_not_compliant": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
 			},
@@ -2025,8 +2024,10 @@ func TestGetPropertyPayload(t *testing.T) {
 	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing a slice of objects with an invalid slice name definition", t, func() {
 		// Use case -  crappy path while getting properties paylod for properties which do not exists in slices
 		objectSchemaDefinition := &specSchemaDefinition{}
-		arrayObjectDefault := []map[string]interface{}{
-			{"protocol": "http"},
+		arrayObjectDefault := []interface{}{
+			map[string]interface{}{
+				"protocol": "http",
+			},
 		}
 		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property_doesn_not_exists", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
 

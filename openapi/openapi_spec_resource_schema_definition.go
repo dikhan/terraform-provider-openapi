@@ -3,7 +3,7 @@ package openapi
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 // specSchemaDefinitionProperties defines a collection of schema definition properties

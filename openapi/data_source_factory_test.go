@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -127,15 +127,15 @@ func TestDataSourceRead(t *testing.T) {
 
 	testCases := []struct {
 		name            string
-		filtersInput    []map[string]interface{}
+		filtersInput    []interface{}
 		responsePayload []map[string]interface{}
 		expectedResult  map[string]interface{}
 		expectedError   error
 	}{
 		{
 			name: "fetch selected data source as per filter configuration (label=someLabel)",
-			filtersInput: []map[string]interface{}{
-				newFilter("label", []string{"someLabel"}),
+			filtersInput: []interface{}{
+				newFilter("label", []interface{}{"someLabel"}),
 			},
 			responsePayload: []map[string]interface{}{
 				{
@@ -153,8 +153,8 @@ func TestDataSourceRead(t *testing.T) {
 		},
 		{
 			name: "no filter match",
-			filtersInput: []map[string]interface{}{
-				newFilter("label", []string{"some non existing label"}),
+			filtersInput: []interface{}{
+				newFilter("label", []interface{}{"some non existing label"}),
 			},
 			responsePayload: []map[string]interface{}{
 				{
@@ -166,8 +166,8 @@ func TestDataSourceRead(t *testing.T) {
 		},
 		{
 			name: "after filtering the result contains more than one element",
-			filtersInput: []map[string]interface{}{
-				newFilter("label", []string{"my_label"}),
+			filtersInput: []interface{}{
+				newFilter("label", []interface{}{"my_label"}),
 			},
 			responsePayload: []map[string]interface{}{
 				{
@@ -183,8 +183,8 @@ func TestDataSourceRead(t *testing.T) {
 		},
 		{
 			name: "validate input fails",
-			filtersInput: []map[string]interface{}{
-				newFilter("non_existing_property", []string{"my_label"}),
+			filtersInput: []interface{}{
+				newFilter("non_existing_property", []interface{}{"my_label"}),
 			},
 			responsePayload: []map[string]interface{}{},
 			expectedError:   errors.New("filter name does not match any of the schema properties: property with name 'non_existing_property' not existing in resource schema definition"),
@@ -245,8 +245,8 @@ func TestDataSourceRead_Subresource(t *testing.T) {
 
 	filtersInput := map[string]interface{}{
 		"cdns_v1_id": "parentPropertyID", // Since the path is a sub-resource, the user is expected to provide the id of the parent
-		dataSourceFilterPropertyName: []map[string]interface{}{
-			newFilter("label", []string{"my_label"}),
+		dataSourceFilterPropertyName: []interface{}{
+			newFilter("label", []interface{}{"my_label"}),
 		},
 	}
 	resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
@@ -309,8 +309,8 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	require.NoError(t, err)
 
 	filtersInput := map[string]interface{}{
-		dataSourceFilterPropertyName: []map[string]interface{}{
-			newFilter("id", []string{"someID"}),
+		dataSourceFilterPropertyName: []interface{}{
+			newFilter("id", []interface{}{"someID"}),
 		},
 	}
 	resourceData := schema.TestResourceDataRaw(t, dataSourceTFSchema, filtersInput)
@@ -367,8 +367,8 @@ func TestDataSourceRead_Fails_Because_List_Operation_Returns_Err(t *testing.T) {
 	require.NoError(t, err)
 
 	filtersInput := map[string]interface{}{
-		dataSourceFilterPropertyName: []map[string]interface{}{
-			newFilter("label", []string{"someLabel"}),
+		dataSourceFilterPropertyName: []interface{}{
+			newFilter("label", []interface{}{"someLabel"}),
 		},
 	}
 	resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
@@ -400,8 +400,8 @@ func TestDataSourceRead_Fails_Because_Bad_Status_Code(t *testing.T) {
 	require.NoError(t, err)
 
 	filtersInput := map[string]interface{}{
-		dataSourceFilterPropertyName: []map[string]interface{}{
-			newFilter("label", []string{"someLabel"}),
+		dataSourceFilterPropertyName: []interface{}{
+			newFilter("label", []interface{}{"someLabel"}),
 		},
 	}
 	resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
@@ -434,11 +434,11 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
-					newFilter("integer_primitive", []string{"12345"}),
-					newFilter("label", []string{"label_to_fetch"}),
-					newFilter("number_primitive", []string{"12.56"}),
-					newFilter("bool_primitive", []string{"true"}),
+				dataSourceFilterPropertyName: []interface{}{
+					newFilter("integer_primitive", []interface{}{"12345"}),
+					newFilter("label", []interface{}{"label_to_fetch"}),
+					newFilter("number_primitive", []interface{}{"12.56"}),
+					newFilter("bool_primitive", []interface{}{"true"}),
 				},
 			},
 			expectedFilters: filters{},
@@ -452,8 +452,8 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
-					newFilter("non_matching_property_name", []string{"label_to_fetch"}),
+				dataSourceFilterPropertyName: []interface{}{
+					newFilter("non_matching_property_name", []interface{}{"label_to_fetch"}),
 				},
 			},
 			expectedFilters: nil,
@@ -468,9 +468,9 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
-					newFilter("label", []string{"my_label"}),
-					newFilter("not_primitive", []string{"filters for non primitive properties are not supported at the moment"}),
+				dataSourceFilterPropertyName: []interface{}{
+					newFilter("label", []interface{}{"my_label"}),
+					newFilter("not_primitive", []interface{}{"filters for non primitive properties are not supported at the moment"}),
 				},
 			},
 			expectedFilters: nil,
@@ -484,8 +484,8 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
-					newFilter("label", []string{"value1", "value2"}),
+				dataSourceFilterPropertyName: []interface{}{
+					newFilter("label", []interface{}{"value1", "value2"}),
 				},
 			},
 			expectedFilters: nil,
@@ -652,7 +652,7 @@ func assertFilter(t *testing.T, filters filters, expectedFilter filter, msgAndAr
 	return false
 }
 
-func newFilter(name string, values []string) map[string]interface{} {
+func newFilter(name string, values []interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		dataSourceFilterSchemaNamePropertyName:   name,
 		dataSourceFilterSchemaValuesPropertyName: values,

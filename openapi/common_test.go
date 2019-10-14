@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/spec"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 )
@@ -255,8 +255,8 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			"protocol":    objectSchemaDefinition.Properties[1].Default,
 		}
 		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectStateValue, objectSchemaDefinition)
-		arrayObjectStateValue := []map[string]interface{}{
-			{
+		arrayObjectStateValue := []interface{}{
+			map[string]interface{}{
 				"origin_port": 80,
 				"protocol":    "http",
 			},

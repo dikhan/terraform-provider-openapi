@@ -1,9 +1,9 @@
 package api
 
 import (
-	"net/http"
-	"fmt"
 	"errors"
+	"fmt"
+	"net/http"
 )
 
 func AuthenticateRequest(r *http.Request, w http.ResponseWriter) error {

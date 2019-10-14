@@ -24,9 +24,9 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 	// Put your logic here
 	id, _ := uuid.GenerateUUID()
 	response := &app.Bottle{
-		ID: id,
-		Rating: ctx.Payload.Rating,
-		Name: ctx.Payload.Name,
+		ID:      id,
+		Rating:  ctx.Payload.Rating,
+		Name:    ctx.Payload.Name,
 		Vintage: ctx.Payload.Vintage,
 	}
 	db[id] = response
