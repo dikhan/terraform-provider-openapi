@@ -309,7 +309,7 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	require.NoError(t, err)
 
 	filtersInput := map[string]interface{}{
-		dataSourceFilterPropertyName: []map[string]interface{}{
+		dataSourceFilterPropertyName: []interface{}{
 			newFilter("id", []interface{}{"someID"}),
 		},
 	}
@@ -367,7 +367,7 @@ func TestDataSourceRead_Fails_Because_List_Operation_Returns_Err(t *testing.T) {
 	require.NoError(t, err)
 
 	filtersInput := map[string]interface{}{
-		dataSourceFilterPropertyName: []map[string]interface{}{
+		dataSourceFilterPropertyName: []interface{}{
 			newFilter("label", []interface{}{"someLabel"}),
 		},
 	}
@@ -400,7 +400,7 @@ func TestDataSourceRead_Fails_Because_Bad_Status_Code(t *testing.T) {
 	require.NoError(t, err)
 
 	filtersInput := map[string]interface{}{
-		dataSourceFilterPropertyName: []map[string]interface{}{
+		dataSourceFilterPropertyName: []interface{}{
 			newFilter("label", []interface{}{"someLabel"}),
 		},
 	}
@@ -434,7 +434,7 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
+				dataSourceFilterPropertyName: []interface{}{
 					newFilter("integer_primitive", []interface{}{"12345"}),
 					newFilter("label", []interface{}{"label_to_fetch"}),
 					newFilter("number_primitive", []interface{}{"12.56"}),
@@ -452,7 +452,7 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
+				dataSourceFilterPropertyName: []interface{}{
 					newFilter("non_matching_property_name", []interface{}{"label_to_fetch"}),
 				},
 			},
@@ -468,7 +468,7 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
+				dataSourceFilterPropertyName: []interface{}{
 					newFilter("label", []interface{}{"my_label"}),
 					newFilter("not_primitive", []interface{}{"filters for non primitive properties are not supported at the moment"}),
 				},
@@ -484,7 +484,7 @@ func TestValidateInput(t *testing.T) {
 				},
 			},
 			filtersInput: map[string]interface{}{
-				dataSourceFilterPropertyName: []map[string]interface{}{
+				dataSourceFilterPropertyName: []interface{}{
 					newFilter("label", []interface{}{"value1", "value2"}),
 				},
 			},
