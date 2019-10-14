@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/dikhan/terraform-provider-openapi/openapi/version"
-	"github.com/hashicorp/terraform/plugin"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"os"
 	"regexp"
 )

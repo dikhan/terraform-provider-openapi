@@ -3,7 +3,7 @@ package integration
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"log"
 	"os"
 	"strings"

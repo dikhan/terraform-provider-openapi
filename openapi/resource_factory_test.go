@@ -14,7 +14,7 @@ import (
 	"github.com/go-openapi/spec"
 
 	"encoding/json"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

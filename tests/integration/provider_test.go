@@ -2,13 +2,13 @@ package integration
 
 import (
 	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
 	"os"
 	"testing"
 
 	"fmt"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 var exampleSwaggerFile string

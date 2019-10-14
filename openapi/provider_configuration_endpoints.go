@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type providerConfigurationEndPoints struct {
