@@ -19,3 +19,5 @@ examples/*/terraform.tfstate*
 .idea/*
 terraform.tfstate
 dist
+
+.coverage.txt
