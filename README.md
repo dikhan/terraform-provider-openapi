@@ -1,4 +1,4 @@
-# Terraform Provider OpenAPI [![Build Status][travis-image]][travis-url] [![Build Status][godoc-badge]][godoc-url] [![Build Status][goreportcard-badge]][goreportcard-url] 
+# Terraform Provider OpenAPI [![Build Status][travis-image]][travis-url] [![GoDoc][godoc-badge]][godoc-url] [![GoReportCard][goreportcard-badge]][goreportcard-url] [![CodeCov][codecov-badge]][codecov-url]
 
 This terraform provider aims to minimise as much as possible the efforts needed from service providers to create and
 maintain custom terraform providers. This provider uses terraform as the engine that will orchestrate and manage the cycle
@@ -109,3 +109,6 @@ See also the list of [contributors](https://github.com/dikhan/terraform-provider
 
 [goreportcard-url]: https://goreportcard.com/report/github.com/dikhan/terraform-provider-openapi
 [goreportcard-badge]: https://goreportcard.com/badge/github.com/dikhan/terraform-provider-openapi?style=flat-square
+
+[codecov-url]: https://codecov.io/gh/dikhan/terraform-provider-openapi
+[codecov-badge]: https://codecov.io/gh/dikhan/terraform-provider-openapi/branch/master/graph/badge.svg
