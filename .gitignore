@@ -20,4 +20,4 @@ examples/*/terraform.tfstate*
 terraform.tfstate
 dist
 
-.coverage.txt
+coverage.txt
