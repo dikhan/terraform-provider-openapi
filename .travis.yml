@@ -14,3 +14,6 @@ install:
 script:
 - env GO111MODULE=on make test
 - env GO111MODULE=on make integration-test
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
