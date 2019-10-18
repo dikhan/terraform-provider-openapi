@@ -61,7 +61,7 @@ func TestNewProviderConfiguration(t *testing.T) {
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("Adn the error message returned should be equal to", func() {
+			Convey("And the error message returned should be equal to", func() {
 				So(err.Error(), ShouldEqual, "security schema definition 'string_property' is missing the value, please make sure this value is provided in the terraform configuration")
 			})
 		})
@@ -86,7 +86,7 @@ func TestNewProviderConfiguration(t *testing.T) {
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("Adn the error message returned should be equal to", func() {
+			Convey("And the error message returned should be equal to", func() {
 				So(err.Error(), ShouldEqual, "header parameter 'header_property' is missing the value, please make sure this value is provided in the terraform configuration")
 			})
 		})

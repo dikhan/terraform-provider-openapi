@@ -177,7 +177,7 @@ services:
 			Convey("The error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("And the error should containg the following message", func() {
+			Convey("And the error should containing the following message", func() {
 				So(err.Error(), should.ContainSubstring, "'test' not found in provider's services configuration")
 			})
 		})
@@ -195,7 +195,7 @@ services:
 			Convey("The error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("And the error should containg the following message", func() {
+			Convey("And the error should containing the following message", func() {
 				So(err.Error(), should.ContainSubstring, "failed to unmarshall terraform-provider-openapi.yaml configuration file - error = yaml: found character that cannot start any token")
 			})
 		})
@@ -216,7 +216,7 @@ services:
 			Convey("The error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("And the error should containg the following message", func() {
+			Convey("And the error should containing the following message", func() {
 				So(err.Error(), should.ContainSubstring, "error occurred while validating 'terraform-provider-openapi.yaml' - error = provider configuration version not matching current implementation, please use version '1' of provider configuration specification")
 			})
 		})

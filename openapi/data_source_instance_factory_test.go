@@ -165,7 +165,7 @@ func TestDataSourceInstanceRead(t *testing.T) {
 				responsePayload: map[string]interface{}{},
 				returnHTTPCode:  http.StatusNotFound,
 			},
-			expectedError: errors.New("[data source instance=''] GET  failed: HTTP Reponse Status Code 404 - Not Found. Could not find resource instance: "),
+			expectedError: errors.New("[data source instance=''] GET  failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: "),
 		},
 		{
 			name:    "get operation returns an error",

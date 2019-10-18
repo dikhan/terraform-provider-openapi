@@ -55,7 +55,7 @@ func TestApiKeyHeaderAuthenticatorGetType(t *testing.T) {
 		}
 		Convey("When getType method is called", func() {
 			authType := apiKeyHeaderAuthenticator.getType()
-			Convey("Then the authType returned  sould be api key header", func() {
+			Convey("Then the authType returned  should be api key header", func() {
 				So(authType, ShouldEqual, authTypeAPIKeyHeader)
 			})
 		})

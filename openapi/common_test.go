@@ -143,7 +143,7 @@ func TestGetParentIDsAndResourcePath(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Required: []string{"some_string_prop"},
 					Properties: map[string]spec.Schema{
-						"some_string_prop": spec.Schema{
+						"some_string_prop": {
 							SchemaProps: spec.SchemaProps{
 								Required: []string{},
 							},
@@ -220,7 +220,7 @@ func Test_getParentIDs(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Required: []string{"some_string_prop"},
 					Properties: map[string]spec.Schema{
-						"some_string_prop": spec.Schema{
+						"some_string_prop": {
 							SchemaProps: spec.SchemaProps{
 								Required: []string{},
 							},

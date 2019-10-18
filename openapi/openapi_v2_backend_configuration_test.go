@@ -537,7 +537,7 @@ func TestIsHostMultiRegion(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("Then the result shoudl be false", func() {
+			Convey("Then the result should be false", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
 		})

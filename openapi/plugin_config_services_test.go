@@ -121,7 +121,7 @@ func TestServiceConfigV1Validate(t *testing.T) {
 		}
 		Convey("When Validate method is called", func() {
 			err := serviceConfiguration.Validate("0.14.0")
-			Convey("Then the error returned shoudl be the expected one", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "service swagger URL configuration not valid ('htpt:/non-valid-url'). URL must be either a valid formed URL or a path to an existing swagger file stored in the disk")
 			})
 		})
@@ -138,7 +138,7 @@ func TestServiceConfigV1Validate(t *testing.T) {
 		Convey("When Validate method is called with a running version that DOES NOT match the configured one", func() {
 			runningPluginVersion := "0.15.0"
 			err := serviceConfiguration.Validate(runningPluginVersion)
-			Convey("Then the error returned shoudl be the expected one", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "plugin version '0.14.0' in the plugin configuration file does not match the version of the OpenAPI plugin that is running '0.15.0'")
 			})
 		})

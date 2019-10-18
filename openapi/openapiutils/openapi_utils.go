@@ -39,7 +39,7 @@ func GetHostFromURL(url string) string {
 // - localhost:8443
 // - 127.0.0.1
 // - 127.0.0.1:8080
-// Note that if custom ports are used, the protocol used woudl still be the one defined in the swagger doc. Hence, if
+// Note that if custom ports are used, the protocol used would still be the one defined in the swagger doc. Hence, if
 // https is the default protocol as specified in swagger, a host like www.domain.com:8080 would still use https protocol.
 func IsValidHost(url string) bool {
 	re := regexp.MustCompile(hostnameRegex)

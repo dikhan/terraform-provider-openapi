@@ -372,7 +372,7 @@ func TestGetResourceURL(t *testing.T) {
 		})
 
 		Convey("When getResourceURL with a specResource with a resource path that is not parameterised and overrides the global host", func() {
-			expectedHost := "wwww.host-overriden.com"
+			expectedHost := "wwww.host-overridden.com"
 			expectedPath := "/v1/resource"
 			specStubResource := &specStubResource{
 				path: expectedPath,

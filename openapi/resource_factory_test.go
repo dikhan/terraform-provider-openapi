@@ -233,7 +233,7 @@ func TestRead(t *testing.T) {
 			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"some_string_prop": spec.Schema{
+						"some_string_prop": {
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
 							},
@@ -846,7 +846,7 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 			})
 		})
 
-		Convey("When handlePollingIfConfigured is called with a response status code that DOES NOT any of the operation's reponse definitions", func() {
+		Convey("When handlePollingIfConfigured is called with a response status code that DOES NOT any of the operation's response definitions", func() {
 			client := &clientOpenAPIStub{}
 			responseStatusCode := http.StatusAccepted
 			operation := &specResourceOperation{

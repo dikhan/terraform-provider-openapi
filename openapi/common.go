@@ -17,7 +17,7 @@ func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expec
 		var resBody string
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return fmt.Errorf("[resource='%s'] HTTP Reponse Status Code %d - Error '%s' occurred while reading the response body", openAPIResource.getResourceName(), res.StatusCode, err)
+			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Error '%s' occurred while reading the response body", openAPIResource.getResourceName(), res.StatusCode, err)
 		}
 		if b != nil && len(b) > 0 {
 			resBody = string(b)
@@ -26,7 +26,7 @@ func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expec
 		case http.StatusUnauthorized:
 			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", openAPIResource.getResourceName(), res.StatusCode, resBody)
 		case http.StatusNotFound:
-			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Reponse Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
+			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Response Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
 		default:
 			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d not matching expected one %v (%s)", openAPIResource.getResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
 		}
