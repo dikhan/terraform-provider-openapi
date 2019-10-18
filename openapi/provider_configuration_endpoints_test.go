@@ -106,7 +106,7 @@ func TestEndpointsSchema(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a provider configuration endpoints configured withh a spec analyser that has no resources", t, func() {
+	Convey("Given a provider configuration endpoints configured with a spec analyser that has no resources", t, func() {
 		p := providerConfigurationEndPoints{
 			specAnalyser: &specAnalyserStub{
 				resources: []SpecResource{},
@@ -148,7 +148,7 @@ func TestEndpointsToHash(t *testing.T) {
 			})
 			Convey("And the return int from calling the schemaSetFunction() should be the expected one", func() {
 				m := map[string]interface{}{}
-				m[resourceName] = "something to get the string represention from"
+				m[resourceName] = "something to get the string representation from"
 				var buf bytes.Buffer
 				buf.WriteString(fmt.Sprintf("%s-", m[resourceName].(string)))
 				So(schemaSetFunction(m), ShouldEqual, hashcode.String(buf.String()))

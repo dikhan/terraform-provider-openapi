@@ -86,7 +86,7 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 		return nil, err
 	}
 	if isMultiRegion {
-		log.Printf("[DEBUG] service provider is configured with multi-region. API calls will be made against %s and the region provided by the user (or the default value otherwise, being the first element of supported region list: %+v), unless overriden by specific resources", host, regions)
+		log.Printf("[DEBUG] service provider is configured with multi-region. API calls will be made against %s and the region provided by the user (or the default value otherwise, being the first element of supported region list: %+v), unless overridden by specific resources", host, regions)
 		if err := p.configureProviderProperty(s, providerPropertyRegion, regions[0], true, regions); err != nil {
 			return nil, err
 		}

@@ -419,7 +419,7 @@ definitions:
 		})
 	})
 
-	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource taht has a model containing nested objects", t, func() {
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource that has a model containing nested objects", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: "localhost:8443"
 basePath: "/api"
