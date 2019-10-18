@@ -79,6 +79,9 @@ func checkResourcesExist(resourceInstancePath string, resourceID string) error {
 	}
 	c := http.Client{}
 	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("resource %s returned %d HTTP response code", resourceInstanceURL, resp.StatusCode)
 	}
