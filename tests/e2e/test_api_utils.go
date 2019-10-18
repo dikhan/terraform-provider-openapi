@@ -88,7 +88,7 @@ func checkResourcesExist(resourceInstancePath string, resourceID string) error {
 func testAccPreCheck(t *testing.T, swaggerURLEndpoint string) {
 	res, err := http.Get(swaggerURLEndpoint)
 	if err != nil {
-		t.Fatalf("error occured when verifying if the API is up and running: %s", err)
+		t.Fatalf("error occurred when verifying if the API is up and running: %s", err)
 	}
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("GET %s returned not expected response status code %d", swaggerURLEndpoint, res.StatusCode)
