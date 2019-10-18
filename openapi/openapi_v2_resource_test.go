@@ -1719,7 +1719,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"objectProperty": spec.Schema{
+						"objectProperty": {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"string"},
 							},
@@ -1810,12 +1810,12 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"prop1": spec.Schema{
+									"prop1": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"string"},
 										},
 									},
-									"prop2": spec.Schema{
+									"prop2": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"integer"},
 										},
@@ -2019,11 +2019,11 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"nested_obj": spec.Schema{
+						"nested_obj": {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"nested_prop": spec.Schema{
+									"nested_prop": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"string"},
 										},
@@ -2797,7 +2797,7 @@ func TestValidateArrayItems(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"prop1": spec.Schema{},
+									"prop1": {},
 								},
 							},
 						},
@@ -2838,7 +2838,7 @@ func TestGetPropertyType(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"prop1": spec.Schema{},
+						"prop1": {},
 					},
 				},
 			}
@@ -2936,7 +2936,7 @@ func TestResourceIsObjectProperty(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"prop1": spec.Schema{},
+						"prop1": {},
 					},
 				},
 			}
@@ -3095,12 +3095,12 @@ func TestResourceIsArrayProperty(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"prop1": spec.Schema{
+									"prop1": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"string"},
 										},
 									},
-									"prop2": spec.Schema{
+									"prop2": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"integer"},
 										},

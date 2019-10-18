@@ -1210,7 +1210,7 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": spec.Schema{},
+						"id": {},
 					},
 				},
 			}
@@ -1223,7 +1223,7 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"name": spec.Schema{
+						"name": {
 							VendorExtensible: spec.VendorExtensible{
 								Extensions: spec.Extensions{
 									extTfID: true,
@@ -1242,8 +1242,8 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": spec.Schema{},
-						"name": spec.Schema{
+						"id": {},
+						"name": {
 							VendorExtensible: spec.VendorExtensible{
 								Extensions: spec.Extensions{
 									extTfID: true,
@@ -1262,7 +1262,7 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"name": spec.Schema{},
+						"name": {},
 					},
 				},
 			}
@@ -1567,7 +1567,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 							Responses: &spec.Responses{
 								ResponsesProps: spec.ResponsesProps{
 									StatusCodeResponses: map[int]spec.Response{
-										http.StatusOK: spec.Response{
+										http.StatusOK: {
 											ResponseProps: spec.ResponseProps{
 												Schema: &spec.Schema{
 													SchemaProps: spec.SchemaProps{
@@ -1577,7 +1577,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 																SchemaProps: spec.SchemaProps{
 																	Type: spec.StringOrArray{"object"},
 																	Properties: map[string]spec.Schema{
-																		"prop1": spec.Schema{},
+																		"prop1": {},
 																	},
 																},
 															},
@@ -1639,7 +1639,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 							Responses: &spec.Responses{
 								ResponsesProps: spec.ResponsesProps{
 									StatusCodeResponses: map[int]spec.Response{
-										http.StatusOK: spec.Response{},
+										http.StatusOK: {},
 									},
 								},
 							},
@@ -1658,7 +1658,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 							Responses: &spec.Responses{
 								ResponsesProps: spec.ResponsesProps{
 									StatusCodeResponses: map[int]spec.Response{
-										http.StatusOK: spec.Response{
+										http.StatusOK: {
 											ResponseProps: spec.ResponseProps{
 												Schema: &spec.Schema{
 													SchemaProps: spec.SchemaProps{
@@ -1685,7 +1685,7 @@ func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
 							Responses: &spec.Responses{
 								ResponsesProps: spec.ResponsesProps{
 									StatusCodeResponses: map[int]spec.Response{
-										http.StatusOK: spec.Response{
+										http.StatusOK: {
 											ResponseProps: spec.ResponseProps{
 												Schema: &spec.Schema{
 													SchemaProps: spec.SchemaProps{

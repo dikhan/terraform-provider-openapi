@@ -233,7 +233,7 @@ func TestRead(t *testing.T) {
 			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"some_string_prop": spec.Schema{
+						"some_string_prop": {
 							SchemaProps: spec.SchemaProps{
 								Type: []string{"string"},
 							},

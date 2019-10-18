@@ -43,13 +43,13 @@ func TestCreateDataSourceSchema(t *testing.T) {
 				},
 			},
 			expectedResult: map[string]*schema.Schema{
-				"string_prop": &schema.Schema{
+				"string_prop": {
 					Required: false,
 					Optional: true,
 					Computed: true,
 					Type:     schema.TypeString,
 				},
-				"int_prop": &schema.Schema{
+				"int_prop": {
 					Required: false,
 					Optional: true,
 					Computed: true,

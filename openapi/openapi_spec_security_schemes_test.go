@@ -31,8 +31,8 @@ func TestSpecSecuritySchemeGetTerraformConfigurationName(t *testing.T) {
 func TestSecuritySchemeExists(t *testing.T) {
 	Convey("Given a list of specSecuritySchemes", t, func() {
 		securitySchemes := []map[string][]string{
-			map[string][]string{
-				"secDef1": []string{},
+			{
+				"secDef1": {},
 			},
 		}
 		specSecuritySchemes := createSecuritySchemes(securitySchemes)
@@ -47,8 +47,8 @@ func TestSecuritySchemeExists(t *testing.T) {
 
 	Convey("Given a list of specSecuritySchemes", t, func() {
 		securitySchemes := []map[string][]string{
-			map[string][]string{
-				"secDef1": []string{},
+			{
+				"secDef1": {},
 			},
 		}
 		specSecuritySchemes := createSecuritySchemes(securitySchemes)
@@ -65,9 +65,9 @@ func TestSecuritySchemeExists(t *testing.T) {
 func TestCreateSecuritySchemes(t *testing.T) {
 	Convey("Given a map of securitySchemes with multi auth AND support", t, func() {
 		securitySchemes := []map[string][]string{
-			map[string][]string{
-				"secDef1": []string{},
-				"secDef2": []string{},
+			{
+				"secDef1": {},
+				"secDef2": {},
 			},
 		}
 		Convey("When createSecuritySchemes method is called with the securitySchemes", func() {
@@ -84,12 +84,12 @@ func TestCreateSecuritySchemes(t *testing.T) {
 
 	Convey("Given a map of securitySchemes with multi auth OR support", t, func() {
 		securitySchemes := []map[string][]string{
-			map[string][]string{
-				"secDef1": []string{},
-				"secDef2": []string{},
+			{
+				"secDef1": {},
+				"secDef2": {},
 			},
-			map[string][]string{
-				"secDef3": []string{},
+			{
+				"secDef3": {},
 			},
 		}
 		Convey("When createSecuritySchemes method is called with the securitySchemes", func() {

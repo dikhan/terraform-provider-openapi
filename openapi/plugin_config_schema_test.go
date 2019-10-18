@@ -176,7 +176,7 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 				PluginVersion:      expectedPluginVersion,
 				InsecureSkipVerify: expectedInscureSkipVerify,
 				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
-					ServiceSchemaPropertyConfigurationV1{
+					{
 						SchemaPropertyName: "apikey_auth",
 						DefaultValue:       "apiKeyValue",
 						Command:            []string{"echo", "something"},
@@ -229,7 +229,7 @@ services:
 				//PluginVersion: expectedPluginVersion,
 				InsecureSkipVerify: expectedInscureSkipVerify,
 				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
-					ServiceSchemaPropertyConfigurationV1{
+					{
 						SchemaPropertyName: "apikey_auth",
 						DefaultValue:       "apiKeyValue",
 						Command:            []string{"echo", "something"},
