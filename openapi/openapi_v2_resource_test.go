@@ -2706,7 +2706,7 @@ func TestValidateArrayItems(t *testing.T) {
 		Convey("When validateArrayItems method is called with a property that does not have items", func() {
 			property := spec.Schema{}
 			_, err := r.validateArrayItems(property)
-			Convey("The error shoudl not be nil", func() {
+			Convey("The error should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected", func() {
@@ -2722,7 +2722,7 @@ func TestValidateArrayItems(t *testing.T) {
 				},
 			}
 			_, err := r.validateArrayItems(property)
-			Convey("The error shoudl not be nil", func() {
+			Convey("The error should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected", func() {
