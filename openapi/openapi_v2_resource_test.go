@@ -3443,7 +3443,7 @@ func TestCreateResponses(t *testing.T) {
 func TestIsResourcePollingEnabled(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := SpecV2Resource{}
-		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the responses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollEnabled, true)
 			responses := &spec.Responses{
@@ -3462,7 +3462,7 @@ func TestIsResourcePollingEnabled(t *testing.T) {
 				So(isResourcePollingEnabled, ShouldBeTrue)
 			})
 		})
-		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to false", func() {
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the responses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to false", func() {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollEnabled, false)
 			responses := &spec.Responses{
