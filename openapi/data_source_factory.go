@@ -46,6 +46,9 @@ func (d dataSourceFactory) createTerraformDataSourceSchema() (map[string]*schema
 		return nil, err
 	}
 	dataSourceSchema, err := specSchema.createDataSourceSchema()
+	if err != nil {
+		return nil, err
+	}
 	dataSourceSchema[dataSourceFilterPropertyName] = d.dataSourceFiltersSchema()
 	return dataSourceSchema, nil
 }

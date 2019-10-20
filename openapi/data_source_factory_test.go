@@ -82,6 +82,20 @@ func TestCreateTerraformDataSourceSchema(t *testing.T) {
 			},
 			expectedError: errors.New("error due to nil schema def"),
 		},
+		{
+			name: "crappy path - data source schema definition is nil",
+			openAPIResource: &specStubResource{
+				schemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "unsupported_type_prop",
+							Type: "unsupported",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("non supported type unsupported"),
+		},
 	}
 
 	for _, tc := range testCases {
