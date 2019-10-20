@@ -53,8 +53,8 @@ func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputPropert
 		hasChildResources := inputProperty.Elem != nil && len(inputProperty.Elem.(*schema.Resource).Schema) > 0
 		if hasChildResources {
 			childResources := outputProperty.Elem.(*schema.Resource).Schema
-			for _, childR := range childResources {
-				childR = setPropertyForDataSourceSchema(childR)
+			for childName, childR := range childResources {
+				childResources[childName] = setPropertyForDataSourceSchema(childR)
 			}
 		}
 	}
