@@ -41,7 +41,7 @@ func main() {
 }
 
 func getProviderName(binaryName string) (string, error) {
-	r, err := regexp.Compile("\\bterraform-provider-([a-zA-Z0-9]+)(?:_v\\d\\.\\d\\.\\d)?\\b")
+	r, err := regexp.Compile("\\bterraform-provider-([a-zA-Z0-9]+)(?:_v[\\d]+\\.[\\d]+\\.[\\d]+)?\\b")
 	if err != nil {
 		return "", err
 	}
