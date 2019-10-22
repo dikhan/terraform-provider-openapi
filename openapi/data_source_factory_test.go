@@ -83,7 +83,7 @@ func TestCreateTerraformDataSourceSchema(t *testing.T) {
 			expectedError: errors.New("error due to nil schema def"),
 		},
 		{
-			name: "crappy path - data source schema definition is nil",
+			name: "crappy path - internal call to createDataSourceSchema errors out",
 			openAPIResource: &specStubResource{
 				schemaDefinition: &specSchemaDefinition{
 					Properties: specSchemaDefinitionProperties{
