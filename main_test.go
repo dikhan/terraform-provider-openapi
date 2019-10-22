@@ -31,6 +31,18 @@ func TestGetProviderName(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a valid pluginName with correct version using multiple digits", t, func() {
+		binaryName := "terraform-provider-goa_v10.34.1"
+		Convey("When getProviderName method is called", func() {
+			providerName, err := getProviderName(binaryName)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the error message returned should be", func() {
+				So(providerName, ShouldEqual, "goa")
+			})
+		})
+	})
 	Convey("Given a valid pluginName with numbers in the name", t, func() {
 		binaryName := "terraform-provider-goa1234"
 		Convey("When getProviderName method is called", func() {
