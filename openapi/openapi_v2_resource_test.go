@@ -1719,7 +1719,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"objectProperty": spec.Schema{
+						"objectProperty": {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"string"},
 							},
@@ -1810,12 +1810,12 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"prop1": spec.Schema{
+									"prop1": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"string"},
 										},
 									},
-									"prop2": spec.Schema{
+									"prop2": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"integer"},
 										},
@@ -2019,11 +2019,11 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"nested_obj": spec.Schema{
+						"nested_obj": {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"nested_prop": spec.Schema{
+									"nested_prop": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"string"},
 										},
@@ -2706,7 +2706,7 @@ func TestValidateArrayItems(t *testing.T) {
 		Convey("When validateArrayItems method is called with a property that does not have items", func() {
 			property := spec.Schema{}
 			_, err := r.validateArrayItems(property)
-			Convey("The error shoudl not be nil", func() {
+			Convey("The error should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected", func() {
@@ -2722,7 +2722,7 @@ func TestValidateArrayItems(t *testing.T) {
 				},
 			}
 			_, err := r.validateArrayItems(property)
-			Convey("The error shoudl not be nil", func() {
+			Convey("The error should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be the expected", func() {
@@ -2797,7 +2797,7 @@ func TestValidateArrayItems(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"prop1": spec.Schema{},
+									"prop1": {},
 								},
 							},
 						},
@@ -2838,7 +2838,7 @@ func TestGetPropertyType(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"prop1": spec.Schema{},
+						"prop1": {},
 					},
 				},
 			}
@@ -2936,7 +2936,7 @@ func TestResourceIsObjectProperty(t *testing.T) {
 				SchemaProps: spec.SchemaProps{
 					Type: spec.StringOrArray{"object"},
 					Properties: map[string]spec.Schema{
-						"prop1": spec.Schema{},
+						"prop1": {},
 					},
 				},
 			}
@@ -3095,12 +3095,12 @@ func TestResourceIsArrayProperty(t *testing.T) {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"object"},
 								Properties: map[string]spec.Schema{
-									"prop1": spec.Schema{
+									"prop1": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"string"},
 										},
 									},
-									"prop2": spec.Schema{
+									"prop2": {
 										SchemaProps: spec.SchemaProps{
 											Type: spec.StringOrArray{"integer"},
 										},
@@ -3443,7 +3443,7 @@ func TestCreateResponses(t *testing.T) {
 func TestIsResourcePollingEnabled(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := SpecV2Resource{}
-		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the responses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to true", func() {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollEnabled, true)
 			responses := &spec.Responses{
@@ -3462,7 +3462,7 @@ func TestIsResourcePollingEnabled(t *testing.T) {
 				So(isResourcePollingEnabled, ShouldBeTrue)
 			})
 		})
-		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the reponses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to false", func() {
+		Convey("When isResourcePollingEnabled method is called with a list of responses where one of the responses matches the response status received and has the 'x-terraform-resource-poll-enabled' extension set to false", func() {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourcePollEnabled, false)
 			responses := &spec.Responses{

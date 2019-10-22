@@ -230,7 +230,7 @@ func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendCon
 // - The root path for the given path 'resourcePath' has mandatory POST operation defined
 // - The root path for the given path 'resourcePath' has a parameter of type 'body' with a schema property referencing to an existing definition object
 // - The root path POST payload definition and the returned object in the response matches. Similarly, the GET operation should also have the same return object
-// - The resource schema definition must contain a field that uniquelly identifies the resource or have a field with the 'x-terraform-id' extension set to true
+// - The resource schema definition must contain a field that uniquely identifies the resource or have a field with the 'x-terraform-id' extension set to true
 // For instance, if resourcePath was "/users/{id}" and paths contained the following entries and implementations:
 // paths:
 //   /v1/users:

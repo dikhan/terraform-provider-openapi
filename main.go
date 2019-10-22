@@ -23,7 +23,7 @@ func main() {
 
 	providerName, err := getProviderName(ex)
 	if err != nil {
-		log.Fatalf("[ERROR] There was an error when getting the provider's name fomr the binary '%s': %s", ex, err)
+		log.Fatalf("[ERROR] There was an error when getting the provider's name from the binary '%s': %s", ex, err)
 	}
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}

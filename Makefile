@@ -34,7 +34,7 @@ build:
 # make fmt
 fmt:
 	@echo "[INFO] Running gofmt on the current directory"
-	gofmt -w $(GOFMT_FILES)
+	gofmt -s -w $(GOFMT_FILES)
 
 # make vet
 vet:
