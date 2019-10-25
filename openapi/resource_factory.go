@@ -389,13 +389,13 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 			localList := localData.([]interface{})
 			remoteList := remoteData.([]interface{})
 			if len(localList) != len(remoteList) {
-				return fmt.Errorf("immutable list property '%s' size updated: [input list size: %d; remote list size: %d]", property.Name, len(localList), len(remoteList))
+				return fmt.Errorf("user attempted to update an immutable list property ('%s') size: [user input list size: %d; actual list size: %d]", property.Name, len(localList), len(remoteList))
 			}
 			if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 
 				for idx, elem := range localList {
 					if elem != remoteList[idx] {
-						return fmt.Errorf("immutable list property '%s' elements updated: [input: %+v; remote: %+v]", property.Name, localList, remoteList)
+						return fmt.Errorf("user attempted to update an immutable list property ('%s') element: [user input: %+v; actual: %+v]", property.Name, localList, remoteList)
 					}
 				}
 			} else {
@@ -406,7 +406,7 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 					for _, objectProp := range property.SpecSchemaDefinition.Properties {
 						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], property.Immutable)
 						if err != nil {
-							return fmt.Errorf("immutable list of objects '%s' updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+							return fmt.Errorf("user attempted to update an immutable list of objects ('%s'): [user input: %s; actual: %s]", property.Name, localData, remoteData)
 						}
 					}
 				}
@@ -418,7 +418,7 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 		for _, objProp := range property.SpecSchemaDefinition.Properties {
 			err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], property.Immutable)
 			if err != nil {
-				return fmt.Errorf("immutable object '%s' property '%s' value updated: [input: %s; remote: %s]", property.Name, objProp.Name, localData, remoteData)
+				return fmt.Errorf("user attempted to update an immutable object ('%s') property ('%s'): [user input: %s; actual: %s]", property.Name, objProp.Name, localData, remoteData)
 			}
 		}
 	default:
@@ -427,18 +427,18 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 			case float64: // this is due to the json marshalling always mapping ints to float64d
 				if property.Type == typeFloat {
 					if localData != remoteData {
-						return fmt.Errorf("immutable float property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+						return fmt.Errorf("user attempted to update an immutable float property ('%s'): [user input: %s; actual: %s]", property.Name, localData, remoteData)
 					}
 				} else {
 					if property.Type == typeInt {
 						if localData != int(remoteData.(float64)) {
-							return fmt.Errorf("immutable integer property '%s' value updated: [input: %d; remote: %d]", property.Name, localData, int(remoteData.(float64)))
+							return fmt.Errorf("user attempted to update an immutable integer property ('%s'): [user input: %d; actual: %d]", property.Name, localData, int(remoteData.(float64)))
 						}
 					}
 				}
 			default:
 				if localData != remoteData {
-					return fmt.Errorf("immutable property '%s' value updated: [input: %s; remote: %s]", property.Name, localData, remoteData)
+					return fmt.Errorf("user attempted to update an immutable property ('%s'): [user input: %s; actual: %s]", property.Name, localData, remoteData)
 				}
 			}
 		}
