@@ -371,7 +371,7 @@ func TestUpdate(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error returned should equal ", func() {
-				So(err.Error(), ShouldEqual, "validation for immutable properties failed: immutable property 'string_immutable_property' value updated: [input: updatedImmutableValue; remote: immutableOriginalValue]. Update operation was aborted; no updates were performed")
+				So(err.Error(), ShouldEqual, "validation for immutable properties failed: user attempted to update an immutable property ('string_immutable_property'): [user input: updatedImmutableValue; actual: immutableOriginalValue]. Update operation was aborted; no updates were performed")
 			})
 			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Id(), ShouldEqual, idProperty.Default)
@@ -1066,7 +1066,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, "originalImmutablePropertyValue", resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: updatedImmutableValue; remote: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable int property is updated",
@@ -1084,7 +1084,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, 6, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable integer property 'immutable_prop' value updated: [input: 4; remote: 6]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable integer property ('immutable_prop'): [user input: 4; actual: 6]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable int property has not changed",
@@ -1120,7 +1120,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, 3.8, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable float property 'immutable_prop' value updated: [input: %!s(float64=4.5); remote: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable float property ('immutable_prop'): [user input: %!s(float64=4.5); actual: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable float property has not changed",
@@ -1156,7 +1156,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, false, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable property 'immutable_prop' value updated: [input: %!s(bool=true); remote: %!s(bool=false)]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: %!s(bool=true); actual: %!s(bool=false)]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable list property is updated",
@@ -1175,7 +1175,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' elements updated: [input: [value1Updated value2Updated]; remote: [value1 value2]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable list property ('immutable_prop') element: [user input: [value1Updated value2Updated]; actual: [value1 value2]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "mutable list property is updated",
@@ -1213,7 +1213,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable list property 'immutable_prop' size updated: [input list size: 3; remote list size: 2]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable list property ('immutable_prop') size: [user input list size: 3; actual list size: 2]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable object property is updated",
@@ -1242,7 +1242,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'origin_port' value updated: [input: map[origin_port:%!s(int64=80) protocol:http]; remote: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('immutable_prop') property ('origin_port'): [user input: map[origin_port:%!s(int64=80) protocol:http]; actual: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "mutable object properties are updated",
@@ -1300,7 +1300,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "string_immutable_property": "some_value"}, resourceData.Get("mutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable object 'mutable_prop' property 'string_immutable_property' value updated: [input: map[origin_port:%!s(int64=80) protocol:http string_immutable_property:updatedImmutableValue]; remote: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('mutable_prop') property ('string_immutable_property'): [user input: map[origin_port:%!s(int64=80) protocol:http string_immutable_property:updatedImmutableValue]; actual: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable object with nested object property is updated",
@@ -1335,7 +1335,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}}, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable object 'immutable_prop' property 'object_property' value updated: [input: map[object_property:map[some_prop:someUpdatedValue]]; remote: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('immutable_prop') property ('object_property'): [user input: map[object_property:map[some_prop:someUpdatedValue]]; actual: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable list of objects is updated",
@@ -1365,7 +1365,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			assertions: func(resourceData *schema.ResourceData) {
 				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https"}}, resourceData.Get("immutable_prop"))
 			},
-			expectedError: errors.New("validation for immutable properties failed: immutable list of objects 'immutable_prop' updated: [input: [map[origin_port:%!s(int=80) protocol:http]]; remote: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable list of objects ('immutable_prop'): [user input: [map[origin_port:%!s(int=80) protocol:http]]; actual: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "mutable list of objects where some properties are immutable and values are not updated",
@@ -1439,7 +1439,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			expectedError: errors.New("some error"),
 		},
 		{
-			name: "immutable property is updated and the client returned more properties than the ones specified in the schema",
+			name: "immutable property is updated",
 			inputProps: []*specSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
@@ -1455,7 +1455,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			assertions:    func(resourceData *schema.ResourceData) {},
-			expectedError: errors.New("failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'unknown_prop' not existing in resource schema definition"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
 		},
 	}
 

@@ -343,8 +343,12 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 				"some_other_property_not_documented_in_openapi_doc": 15,
 			}
 			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
-			Convey("Then the err returned should matched the expected one", func() {
-				So(err.Error(), ShouldEqual, "failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = property with name 'some_other_property_not_documented_in_openapi_doc' not existing in resource schema definition")
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the resource state data only contains the properties and values for the documented properties", func() {
+				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
+				So(resourceData.Get("some_other_property_not_documented_in_openapi_doc"), ShouldBeNil)
 			})
 		})
 	})
