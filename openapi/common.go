@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -88,7 +89,8 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 	for propertyName, propertyValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
-			return fmt.Errorf("failed to update state with remote data. This usually happens when the API returns properties that are not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
+			log.Printf("[WARN] The API returned a property that is not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
+			continue
 		}
 		if property.isPropertyNamedID() {
 			continue
