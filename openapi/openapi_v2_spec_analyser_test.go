@@ -158,6 +158,71 @@ definitions:
 
 }
 
+func Test_bodyParameterExists(t *testing.T) {
+	Convey("Given a specV2Analyser", t, func() {
+		specV2Analyser := &specV2Analyser{}
+		Convey("When bodyParameterExists is called with an Operation that contains a body parameter", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {},
+					},
+				},
+			}
+			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: s}}
+			resourceRootPostOperation.Parameters = []spec.Parameter{param}
+			schema, err := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
+			Convey("Then the schema returned should not be empty", func() {
+				So(schema, ShouldNotBeNil)
+			})
+			Convey("And the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+		Convey("When bodyParameterExists is called with a nil arg", func() {
+			_, err := specV2Analyser.bodyParameterExists(nil)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "resource root operation does not have a POST operation")
+			})
+		})
+		Convey("When bodyParameterExists is called with an empty Operation (no params)", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			_, err := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "resource root operation missing the body parameter")
+			})
+		})
+		Convey("When bodyParameterExists method is called with an operation that has multiple body parameters", func() {
+			operation := &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Parameters: []spec.Parameter{
+						{
+							ParamProps: spec.ParamProps{
+								In:   "body",
+								Name: "first body",
+							},
+						},
+						{
+							ParamProps: spec.ParamProps{
+								In:   "body",
+								Name: "second body",
+							},
+						},
+					},
+				},
+			}
+			schema, err := specV2Analyser.bodyParameterExists(operation)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the schema returned should match the first body found", func() {
+				So(schema.ParamProps.Name, ShouldEqual, "first body")
+			})
+		})
+	})
+}
+
 func Test_getBodyParameterBodySchema(t *testing.T) {
 	Convey("Given a specV2Analyser", t, func() {
 		specV2Analyser := &specV2Analyser{}

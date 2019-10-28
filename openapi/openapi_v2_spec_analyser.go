@@ -381,13 +381,11 @@ func (SpecAnalyser *specV2Analyser) bodyParameterExists(resourceRootPostOperatio
 	if resourceRootPostOperation == nil {
 		return nil, fmt.Errorf("resource root operation does not have a POST operation")
 	}
-
 	for _, parameter := range resourceRootPostOperation.Parameters {
 		if parameter.In == "body" {
 			return &parameter, nil
 		}
 	}
-
 	return nil, fmt.Errorf("resource root operation missing the body parameter")
 }
 
