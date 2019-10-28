@@ -1324,7 +1324,7 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			resourceRootPath, _, resourceRootPostSchemaDef, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1335,6 +1335,53 @@ definitions:
 			Convey("And the resourceRootPostSchemaDef should contain the expected properties", func() {
 				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "id")
 				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "name")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameters and the GET operation returns a model object containing only readOnly properties", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /deployKey:
+    post:
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/DeployKey"
+  /deployKey/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The deployKey id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/DeployKey"
+definitions:
+  DeployKey:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      deploy_key:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/deployKey/{id}'", func() {
+			resourceRootPath, _, resourceSchemaDef, err := a.validateRootPath("/deployKey/{id}")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resourceRootPath should be", func() {
+				So(resourceRootPath, ShouldContainSubstring, "/deployKey")
+			})
+			Convey("And the resourceSchemaDef should contain the expected properties", func() {
+				So(resourceSchemaDef.Properties, ShouldContainKey, "id")
+				So(resourceSchemaDef.Properties, ShouldContainKey, "deploy_key")
 			})
 		})
 	})
@@ -1366,7 +1413,7 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
@@ -1411,7 +1458,7 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
@@ -1451,7 +1498,7 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
