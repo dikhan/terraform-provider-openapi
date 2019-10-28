@@ -172,25 +172,22 @@ func Test_bodyParameterExists(t *testing.T) {
 			}
 			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: s}}
 			resourceRootPostOperation.Parameters = []spec.Parameter{param}
-			schema, err := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
+			schema := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
 			Convey("Then the schema returned should not be empty", func() {
 				So(schema, ShouldNotBeNil)
 			})
-			Convey("And the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 		})
 		Convey("When bodyParameterExists is called with a nil arg", func() {
-			_, err := specV2Analyser.bodyParameterExists(nil)
-			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation does not have a POST operation")
+			bodyParam := specV2Analyser.bodyParameterExists(nil)
+			Convey("Then the bodyParam returned should be nil", func() {
+				So(bodyParam, ShouldBeNil)
 			})
 		})
 		Convey("When bodyParameterExists is called with an empty Operation (no params)", func() {
 			resourceRootPostOperation := &spec.Operation{}
-			_, err := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
-			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation missing the body parameter")
+			bodyParam := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
+			Convey("Then the bodyParam returned should be nil", func() {
+				So(bodyParam, ShouldBeNil)
 			})
 		})
 		Convey("When bodyParameterExists method is called with an operation that has multiple body parameters", func() {
@@ -212,10 +209,7 @@ func Test_bodyParameterExists(t *testing.T) {
 					},
 				},
 			}
-			schema, err := specV2Analyser.bodyParameterExists(operation)
-			Convey("Then the error should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			schema := specV2Analyser.bodyParameterExists(operation)
 			Convey("Then the schema returned should match the first body found", func() {
 				So(schema.ParamProps.Name, ShouldEqual, "first body")
 			})
@@ -248,14 +242,14 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 		Convey("When getBodyParameterBodySchema is called with a nil arg", func() {
 			_, err := specV2Analyser.getBodyParameterBodySchema(nil)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation does not have a POST operation")
+				So(err.Error(), ShouldEqual, "resource root operation missing body parameter")
 			})
 		})
 		Convey("When getBodyParameterBodySchema is called with an empty Operation (no params)", func() {
 			resourceRootPostOperation := &spec.Operation{}
 			_, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation missing the body parameter")
+				So(err.Error(), ShouldEqual, "resource root operation missing body parameter")
 			})
 		})
 		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and NO Schema ParamProp", func() {
@@ -1310,6 +1304,105 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 			})
 			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource schema is missing a property that uniquely identifies the resource, either a property named 'id' or a property with the extension 'x-terraform-id' set to true")
+			})
+		})
+	})
+}
+
+func TestValidateResourceSchemaDefWithOptions(t *testing.T) {
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
+		Convey("When validateResourceSchemaDefWithOptions method is called with a valid schema definition containing a property ID'", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with a valid schema definition missing an ID property but a different property acts as unique identifier'", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"name": {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfID: true,
+								},
+							},
+						},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with a valid schema definition with both a property that name 'id' and a different property with the 'x-terraform-id' extension'", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {},
+						"name": {
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfID: true,
+								},
+							},
+						},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with a NON valid schema definition due to missing unique identifier'", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"name": {},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
+			Convey("And the error message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "resource schema is missing a property that uniquely identifies the resource, either a property named 'id' or a property with the extension 'x-terraform-id' set to true")
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with shouldReadyOnlyProps set to false and doesn't contain a mix of properties", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id":   {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: true}},
+						"name": {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: false}},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with shouldReadyOnlyProps set to true and contains not just read only props", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id":   {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: true}},
+						"name": {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: false}},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, true)
+			Convey("Then error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, "resource schema contains properties that are not just read only")
 			})
 		})
 	})
