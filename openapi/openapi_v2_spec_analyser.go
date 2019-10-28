@@ -377,25 +377,24 @@ func (specAnalyser *specV2Analyser) postDefined(resourceRootPath string) bool {
 	return true
 }
 
-func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
+func (SpecAnalyser *specV2Analyser) bodyParameterExists(resourceRootPostOperation *spec.Operation) (*spec.Parameter, error) {
 	if resourceRootPostOperation == nil {
 		return nil, fmt.Errorf("resource root operation does not have a POST operation")
 	}
-	bodyCounter := 0
-	var bodyParameter spec.Parameter
+
 	for _, parameter := range resourceRootPostOperation.Parameters {
 		if parameter.In == "body" {
-			bodyCounter = bodyCounter + 1
-			bodyParameter = parameter
+			return &parameter, nil
 		}
 	}
 
-	if bodyCounter <= 0 {
-		return nil, fmt.Errorf("resource root operation missing the body parameter")
-	}
+	return nil, fmt.Errorf("resource root operation missing the body parameter")
+}
 
-	if bodyCounter > 1 {
-		return nil, fmt.Errorf("resource root operation contains multiple 'body' parameters")
+func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
+	bodyParameter, err := specAnalyser.bodyParameterExists(resourceRootPostOperation)
+	if err != nil {
+		return nil, err
 	}
 
 	if bodyParameter.Schema == nil {

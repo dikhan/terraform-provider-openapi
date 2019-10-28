@@ -193,33 +193,6 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 				So(err.Error(), ShouldEqual, "resource root operation missing the body parameter")
 			})
 		})
-		Convey("When getResourcePayloadSchemaRef method is called with an operation that has multiple body parameters", func() {
-			operation := &spec.Operation{
-				OperationProps: spec.OperationProps{
-					Parameters: []spec.Parameter{
-						{
-							ParamProps: spec.ParamProps{
-								In:   "body",
-								Name: "first body",
-							},
-						},
-						{
-							ParamProps: spec.ParamProps{
-								In:   "body",
-								Name: "second body",
-							},
-						},
-					},
-				},
-			}
-			_, err := specV2Analyser.getBodyParameterBodySchema(operation)
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "operation contains multiple 'body' parameters")
-			})
-		})
 		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and NO Schema ParamProp", func() {
 			resourceRootPostOperation := &spec.Operation{}
 			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body"}}
