@@ -343,14 +343,36 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 
 	resourceRootPostSchemaDef, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
 	if err != nil {
-		//bodyParam := specAnalyser.bodyParameterExists(resourceRootPostOperation)
-		//if bodyParam == nil {
-		//	TODO: Integrate specAnalyser.validateResourceSchemaDefWithOptions()
-		//}
+		bodyParam := specAnalyser.bodyParameterExists(resourceRootPostOperation)
+		if bodyParam == nil {
+			resourceSchema, _ := specAnalyser.getResponseModel(resourceRootPostOperation) // TODO: implement this
+			err := specAnalyser.validateResourceSchemaDefWithOptions(resourceSchema, true)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
+			}
+			// TODO: if we have reached this poiunt, that means that the root path should also be considered valid even though the post does not contain a body param. Hence, the resourceRootPostSchemaDef should instead be assigned to the model returned by getResponseModel
+			// TODO: assign resourceRootPostSchemaDef = resourceSchema
+			// TODO: return resourceRootPath, &resourceRootPathItem, resourceRootPostSchemaDef, nil
+		}
 		return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
 	}
 
 	return resourceRootPath, &resourceRootPathItem, resourceRootPostSchemaDef, nil
+}
+
+// getResponseModel is responsible for getting the model definition from the response
+func (specAnalyser *specV2Analyser) getResponseModel(operation *spec.Operation) (*spec.Schema, error) {
+	// TODO: For instance, for the following endpoint post operation the method should return the schema associated with 201 (already expanded - operation.Responses.ResponsesProps.StatusCodeResponses[201].Schema).
+	//  Note the operation could be async or it could return 200. In the case where there are multiple successful responses like 200, 201 and 202 the method should return
+	// and error. Otherwise, it should return the corresponding schema associated with the 'succesful' response code (whathever exists, either 200 or 201 or 202)
+	//  /v1/deployKey:
+	//    post:
+	//      x-terraform-resource-name: "deploykey"
+	//      responses:
+	//        201:
+	//          schema:
+	//            $ref: "#/definitions/DeployKeyV1"
+	return nil, nil
 }
 
 func (specAnalyser *specV2Analyser) validateResourceSchemaDefWithOptions(schema *spec.Schema, shouldPropBeReadOnly bool) error {
