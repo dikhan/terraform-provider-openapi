@@ -415,7 +415,7 @@ func (specAnalyser *specV2Analyser) postDefined(resourceRootPath string) bool {
 	return true
 }
 
-func (SpecAnalyser *specV2Analyser) bodyParameterExists(resourceRootPostOperation *spec.Operation) *spec.Parameter {
+func (specAnalyser *specV2Analyser) bodyParameterExists(resourceRootPostOperation *spec.Operation) *spec.Parameter {
 	if resourceRootPostOperation == nil {
 		return nil
 	}
