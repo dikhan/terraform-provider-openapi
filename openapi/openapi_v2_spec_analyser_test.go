@@ -237,12 +237,12 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 					Responses: &spec.Responses{
 						ResponsesProps: spec.ResponsesProps{
 							StatusCodeResponses: map[int]spec.Response{
-								http.StatusOK: spec.Response{
+								http.StatusOK: {
 									ResponseProps: spec.ResponseProps{
 										Schema: &spec.Schema{
 											SchemaProps: spec.SchemaProps{
 												Properties: map[string]spec.Schema{
-													"id": spec.Schema{
+													"id": {
 														SwaggerSchemaProps: spec.SwaggerSchemaProps{
 															ReadOnly: true,
 														},
@@ -255,7 +255,7 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 										},
 									},
 								},
-								http.StatusNotFound: spec.Response{},
+								http.StatusNotFound: {},
 							},
 						},
 					},
@@ -264,7 +264,7 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 			expectedSchema: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": spec.Schema{
+						"id": {
 							SwaggerSchemaProps: spec.SwaggerSchemaProps{
 								ReadOnly: true,
 							},
@@ -284,12 +284,12 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 					Responses: &spec.Responses{
 						ResponsesProps: spec.ResponsesProps{
 							StatusCodeResponses: map[int]spec.Response{
-								http.StatusCreated: spec.Response{
+								http.StatusCreated: {
 									ResponseProps: spec.ResponseProps{
 										Schema: &spec.Schema{
 											SchemaProps: spec.SchemaProps{
 												Properties: map[string]spec.Schema{
-													"id": spec.Schema{
+													"id": {
 														SwaggerSchemaProps: spec.SwaggerSchemaProps{
 															ReadOnly: true,
 														},
@@ -310,7 +310,7 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 			expectedSchema: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": spec.Schema{
+						"id": {
 							SwaggerSchemaProps: spec.SwaggerSchemaProps{
 								ReadOnly: true,
 							},
@@ -330,12 +330,12 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 					Responses: &spec.Responses{
 						ResponsesProps: spec.ResponsesProps{
 							StatusCodeResponses: map[int]spec.Response{
-								http.StatusAccepted: spec.Response{
+								http.StatusAccepted: {
 									ResponseProps: spec.ResponseProps{
 										Schema: &spec.Schema{
 											SchemaProps: spec.SchemaProps{
 												Properties: map[string]spec.Schema{
-													"id": spec.Schema{
+													"id": {
 														SwaggerSchemaProps: spec.SwaggerSchemaProps{
 															ReadOnly: true,
 														},
@@ -356,7 +356,7 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 			expectedSchema: &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"id": spec.Schema{
+						"id": {
 							SwaggerSchemaProps: spec.SwaggerSchemaProps{
 								ReadOnly: true,
 							},
@@ -376,7 +376,7 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 					Responses: &spec.Responses{
 						ResponsesProps: spec.ResponsesProps{
 							StatusCodeResponses: map[int]spec.Response{
-								http.StatusOK: spec.Response{
+								http.StatusOK: {
 									ResponseProps: spec.ResponseProps{
 										Schema: nil,
 									},
@@ -396,7 +396,7 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 					Responses: &spec.Responses{
 						ResponsesProps: spec.ResponsesProps{
 							StatusCodeResponses: map[int]spec.Response{
-								http.StatusNotFound: spec.Response{},
+								http.StatusNotFound: {},
 							},
 						},
 					},
