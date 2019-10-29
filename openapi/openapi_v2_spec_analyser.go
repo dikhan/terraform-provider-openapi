@@ -343,28 +343,66 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 
 	resourceRootPostSchemaDef, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
 	if err != nil {
+		bodyParam := specAnalyser.bodyParameterExists(resourceRootPostOperation)
+		// Use case where resource does not expect any input as part of the POST root operation, and only produces computed properties
+		if bodyParam == nil {
+			resourceSchema, err := specAnalyser.getSuccessfulResponseDefinition(resourceRootPostOperation)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation (without body parameter) error: %s", resourceRootPath, err)
+			}
+			err = specAnalyser.validateResourceSchemaDefWithOptions(resourceSchema, true)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation (without body parameter) validation error: %s", resourceRootPath, err)
+			}
+			return resourceRootPath, &resourceRootPathItem, resourceSchema, nil
+		}
 		return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
 	}
 
 	return resourceRootPath, &resourceRootPathItem, resourceRootPostSchemaDef, nil
 }
 
-func (specAnalyser *specV2Analyser) validateResourceSchemaDefinition(schema *spec.Schema) error {
-	identifier := ""
-	for propertyName, property := range schema.Properties {
-		if propertyName == "id" {
-			identifier = propertyName
-			continue
-		}
-		if exists, useAsIdentifier := property.Extensions.GetBool(extTfID); exists && useAsIdentifier {
-			identifier = propertyName
-			break
+// getSuccessfulResponseDefinition is responsible for getting the model definition from the response that matches a successful
+// response (either 200, 201 or 202 whichever is found first). It is assumed that the the responses will only include one of the
+// aforementioned successful responses, if multiple are present the first one found will be selected and its corresponding schema
+// will be returned
+func (specAnalyser *specV2Analyser) getSuccessfulResponseDefinition(operation *spec.Operation) (*spec.Schema, error) {
+	if operation == nil || operation.Responses == nil {
+		return nil, fmt.Errorf("operation is missing responses")
+	}
+	for responseStatusCode, response := range operation.Responses.ResponsesProps.StatusCodeResponses {
+		if responseStatusCode == http.StatusOK || responseStatusCode == http.StatusCreated || responseStatusCode == http.StatusAccepted {
+			if response.Schema == nil {
+				return nil, fmt.Errorf("operation response '%d' is missing the schema definition", responseStatusCode)
+			}
+			return response.Schema, nil
 		}
 	}
-	if identifier == "" {
+	return nil, fmt.Errorf("operation is missing successful response")
+}
+
+func (specAnalyser *specV2Analyser) validateResourceSchemaDefWithOptions(schema *spec.Schema, shouldPropBeReadOnly bool) error {
+	containsIdentifier := false
+	for propertyName, property := range schema.Properties {
+		if propertyName == "id" {
+			containsIdentifier = true
+		} else if exists, useAsIdentifier := property.Extensions.GetBool(extTfID); exists && useAsIdentifier {
+			containsIdentifier = true
+		}
+		if shouldPropBeReadOnly {
+			if property.ReadOnly == false {
+				return fmt.Errorf("resource schema contains properties that are not just read only")
+			}
+		}
+	}
+	if containsIdentifier == false {
 		return fmt.Errorf("resource schema is missing a property that uniquely identifies the resource, either a property named 'id' or a property with the extension '%s' set to true", extTfID)
 	}
 	return nil
+}
+
+func (specAnalyser *specV2Analyser) validateResourceSchemaDefinition(schema *spec.Schema) error {
+	return specAnalyser.validateResourceSchemaDefWithOptions(schema, false)
 }
 
 // postIsPresent checks if the given resource has a POST implementation returning true if the path is found
@@ -377,25 +415,22 @@ func (specAnalyser *specV2Analyser) postDefined(resourceRootPath string) bool {
 	return true
 }
 
-func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
+func (specAnalyser *specV2Analyser) bodyParameterExists(resourceRootPostOperation *spec.Operation) *spec.Parameter {
 	if resourceRootPostOperation == nil {
-		return nil, fmt.Errorf("resource root operation does not have a POST operation")
+		return nil
 	}
-	bodyCounter := 0
-	var bodyParameter spec.Parameter
 	for _, parameter := range resourceRootPostOperation.Parameters {
 		if parameter.In == "body" {
-			bodyCounter = bodyCounter + 1
-			bodyParameter = parameter
+			return &parameter
 		}
 	}
+	return nil
+}
 
-	if bodyCounter <= 0 {
-		return nil, fmt.Errorf("resource root operation missing the body parameter")
-	}
-
-	if bodyCounter > 1 {
-		return nil, fmt.Errorf("resource root operation contains multiple 'body' parameters")
+func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostOperation *spec.Operation) (*spec.Schema, error) {
+	bodyParameter := specAnalyser.bodyParameterExists(resourceRootPostOperation)
+	if bodyParameter == nil {
+		return nil, fmt.Errorf("resource root operation missing body parameter")
 	}
 
 	if bodyParameter.Schema == nil {

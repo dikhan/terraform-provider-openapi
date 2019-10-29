@@ -158,6 +158,272 @@ definitions:
 
 }
 
+func Test_bodyParameterExists(t *testing.T) {
+	Convey("Given a specV2Analyser", t, func() {
+		specV2Analyser := &specV2Analyser{}
+		Convey("When bodyParameterExists is called with an Operation that contains a body parameter", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {},
+					},
+				},
+			}
+			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: s}}
+			resourceRootPostOperation.Parameters = []spec.Parameter{param}
+			schema := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
+			Convey("Then the schema returned should not be empty", func() {
+				So(schema, ShouldNotBeNil)
+			})
+		})
+		Convey("When bodyParameterExists is called with a nil arg", func() {
+			bodyParam := specV2Analyser.bodyParameterExists(nil)
+			Convey("Then the bodyParam returned should be nil", func() {
+				So(bodyParam, ShouldBeNil)
+			})
+		})
+		Convey("When bodyParameterExists is called with an empty Operation (no params)", func() {
+			resourceRootPostOperation := &spec.Operation{}
+			bodyParam := specV2Analyser.bodyParameterExists(resourceRootPostOperation)
+			Convey("Then the bodyParam returned should be nil", func() {
+				So(bodyParam, ShouldBeNil)
+			})
+		})
+		Convey("When bodyParameterExists method is called with an operation that has multiple body parameters", func() {
+			operation := &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Parameters: []spec.Parameter{
+						{
+							ParamProps: spec.ParamProps{
+								In:   "body",
+								Name: "first body",
+							},
+						},
+						{
+							ParamProps: spec.ParamProps{
+								In:   "body",
+								Name: "second body",
+							},
+						},
+					},
+				},
+			}
+			schema := specV2Analyser.bodyParameterExists(operation)
+			Convey("Then the schema returned should match the first body found", func() {
+				So(schema.ParamProps.Name, ShouldEqual, "first body")
+			})
+		})
+	})
+}
+
+func Test_getSuccessfulResponseDefinition(t *testing.T) {
+	testCases := []struct {
+		name           string
+		inputOperation *spec.Operation
+		expectedSchema *spec.Schema
+		expectedError  error
+	}{
+		{
+			//  Example:
+			//    post:
+			//      responses:
+			//        201:
+			//          schema:
+			//            ...
+			name: "operation contains a valid successful response (200 OK) schema among other non relevant (for this test) responses",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusOK: {
+									ResponseProps: spec.ResponseProps{
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Properties: map[string]spec.Schema{
+													"id": {
+														SwaggerSchemaProps: spec.SwaggerSchemaProps{
+															ReadOnly: true,
+														},
+														SchemaProps: spec.SchemaProps{
+															Type: spec.StringOrArray{"string"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								http.StatusNotFound: {},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "operation contains a valid successful response (201 Created) schema",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusCreated: {
+									ResponseProps: spec.ResponseProps{
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Properties: map[string]spec.Schema{
+													"id": {
+														SwaggerSchemaProps: spec.SwaggerSchemaProps{
+															ReadOnly: true,
+														},
+														SchemaProps: spec.SchemaProps{
+															Type: spec.StringOrArray{"string"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "operation contains a valid successful response (202 Accepted) schema",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusAccepted: {
+									ResponseProps: spec.ResponseProps{
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Properties: map[string]spec.Schema{
+													"id": {
+														SwaggerSchemaProps: spec.SwaggerSchemaProps{
+															ReadOnly: true,
+														},
+														SchemaProps: spec.SchemaProps{
+															Type: spec.StringOrArray{"string"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "operation contains a valid successful response (200) but the schema is missing",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusOK: {
+									ResponseProps: spec.ResponseProps{
+										Schema: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: nil,
+			expectedError:  errors.New("operation response '200' is missing the schema definition"),
+		},
+		{
+			name: "operation does not contain a valid successful response (200, 201 or 202) schema",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusNotFound: {},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: nil,
+			expectedError:  errors.New("operation is missing successful response"),
+		},
+		{
+			name:           "operation is nil",
+			inputOperation: nil,
+			expectedSchema: nil,
+			expectedError:  errors.New("operation is missing responses"),
+		},
+	}
+
+	for _, tc := range testCases {
+		specV2Analyser := specV2Analyser{}
+		s, err := specV2Analyser.getSuccessfulResponseDefinition(tc.inputOperation)
+		if tc.expectedError != nil {
+			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
+		} else {
+			assert.Equal(t, tc.expectedSchema, s, tc.name)
+		}
+	}
+}
+
 func Test_getBodyParameterBodySchema(t *testing.T) {
 	Convey("Given a specV2Analyser", t, func() {
 		specV2Analyser := &specV2Analyser{}
@@ -183,41 +449,14 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 		Convey("When getBodyParameterBodySchema is called with a nil arg", func() {
 			_, err := specV2Analyser.getBodyParameterBodySchema(nil)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation does not have a POST operation")
+				So(err.Error(), ShouldEqual, "resource root operation missing body parameter")
 			})
 		})
 		Convey("When getBodyParameterBodySchema is called with an empty Operation (no params)", func() {
 			resourceRootPostOperation := &spec.Operation{}
 			_, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "resource root operation missing the body parameter")
-			})
-		})
-		Convey("When getResourcePayloadSchemaRef method is called with an operation that has multiple body parameters", func() {
-			operation := &spec.Operation{
-				OperationProps: spec.OperationProps{
-					Parameters: []spec.Parameter{
-						{
-							ParamProps: spec.ParamProps{
-								In:   "body",
-								Name: "first body",
-							},
-						},
-						{
-							ParamProps: spec.ParamProps{
-								In:   "body",
-								Name: "second body",
-							},
-						},
-					},
-				},
-			}
-			_, err := specV2Analyser.getBodyParameterBodySchema(operation)
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "operation contains multiple 'body' parameters")
+				So(err.Error(), ShouldEqual, "resource root operation missing body parameter")
 			})
 		})
 		Convey("When getBodyParameterBodySchema is called with an Operation with OperationProps with a Parameter with an In:body ParamProp and NO Schema ParamProp", func() {
@@ -1219,7 +1458,26 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 		})
-		Convey("When validateResourceSchemaDefinition method is called with a valid schema definition missing an ID property but a different property acts as unique identifier'", func() {
+	})
+}
+
+func TestValidateResourceSchemaDefWithOptions(t *testing.T) {
+	Convey("Given an specV2Analyser", t, func() {
+		a := specV2Analyser{}
+		Convey("When validateResourceSchemaDefWithOptions method is called with a valid schema definition containing a property ID'", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with a valid schema definition missing an ID property but a different property acts as unique identifier'", func() {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
@@ -1233,12 +1491,12 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 					},
 				},
 			}
-			err := a.validateResourceSchemaDefinition(schema)
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
 			Convey("Then error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 		})
-		Convey("When validateResourceSchemaDefinition method is called with a valid schema definition with both a property that name 'id' and a different property with the 'x-terraform-id' extension'", func() {
+		Convey("When validateResourceSchemaDefWithOptions method is called with a valid schema definition with both a property that name 'id' and a different property with the 'x-terraform-id' extension'", func() {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
@@ -1253,12 +1511,12 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 					},
 				},
 			}
-			err := a.validateResourceSchemaDefinition(schema)
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
 			Convey("Then error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 		})
-		Convey("When validateResourceSchemaDefinition method is called with a NON valid schema definition due to missing unique identifier'", func() {
+		Convey("When validateResourceSchemaDefWithOptions method is called with a NON valid schema definition due to missing unique identifier'", func() {
 			schema := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
@@ -1266,12 +1524,37 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 					},
 				},
 			}
-			err := a.validateResourceSchemaDefinition(schema)
-			Convey("Then error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
 			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource schema is missing a property that uniquely identifies the resource, either a property named 'id' or a property with the extension 'x-terraform-id' set to true")
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with shouldReadyOnlyProps set to false and doesn't contain a mix of properties", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id":   {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: true}},
+						"name": {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: false}},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, false)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+		Convey("When validateResourceSchemaDefWithOptions method is called with shouldReadyOnlyProps set to true and contains not just read only props", func() {
+			schema := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id":   {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: true}},
+						"name": {SwaggerSchemaProps: spec.SwaggerSchemaProps{ReadOnly: false}},
+					},
+				},
+			}
+			err := a.validateResourceSchemaDefWithOptions(schema, true)
+			Convey("Then error returned should be as expected", func() {
+				So(err.Error(), ShouldEqual, "resource schema contains properties that are not just read only")
 			})
 		})
 	})
@@ -1324,7 +1607,7 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			resourceRootPath, _, resourceRootPostSchemaDef, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1335,6 +1618,91 @@ definitions:
 			Convey("And the resourceRootPostSchemaDef should contain the expected properties", func() {
 				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "id")
 				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "name")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameter and contains a successful response 201 with a schema that has only readonly properties", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /deployKey:
+    post:
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/DeployKey"
+  /deployKey/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The deployKey id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/DeployKey"
+definitions:
+  DeployKey:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      deploy_key:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/deployKey/{id}'", func() {
+			resourceRootPath, _, resourceSchemaDef, err := a.validateRootPath("/deployKey/{id}")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resourceRootPath should be", func() {
+				So(resourceRootPath, ShouldContainSubstring, "/deployKey")
+			})
+			Convey("And the resourceSchemaDef should contain the expected properties", func() {
+				So(resourceSchemaDef.Properties, ShouldContainKey, "id")
+				So(resourceSchemaDef.Properties, ShouldContainKey, "deploy_key")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameters and the response 201 schema is empty", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /deployKey:
+    post:
+      responses:
+        201:
+          schema:  # the schema is missing
+  /deployKey/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/DeployKey"
+definitions:
+  DeployKey:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      deploy_key:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/deployKey/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/deployKey/{id}")
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "resource root path '/deployKey' POST operation (without body parameter) error: operation response '201' is missing the schema definition")
 			})
 		})
 	})
@@ -1366,7 +1734,7 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
@@ -1377,7 +1745,7 @@ definitions:
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' but the root is missing the 'body' parameter", t, func() {
+	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' but the root is missing the 'body' parameter AND it's not a compatible resource without input", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -1411,13 +1779,13 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation validation error: resource root operation missing the body parameter")
+				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation (without body parameter) validation error: resource schema contains properties that are not just read only")
 			})
 		})
 	})
@@ -1451,7 +1819,7 @@ definitions:
       name:
         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
-		Convey("When validateResourceSchemaDefinition method is called with '/users/{id}'", func() {
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)

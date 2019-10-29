@@ -214,7 +214,7 @@ the new version is non backwards compatible. See that only the 'Major' version i
 as the service provider will have less paths to maintain overall. if there are minor/patches applied to the backend that 
 should not affect the way consumer interacts with the APIs whatsoever and the namespace should remain as is.
 
-- POST operation should have a body payload referencing a schema object (see example below) defined at the root level 
+- POST operation may have a body payload referencing a schema object (see example below) defined at the root level 
 [definitions](#swaggerDefinitions) section. The $ref can be a link to a local model definition or a definition hosted
 externally. Payload schema should not be defined inside the path’s configuration; however, if it is defined the schema
 must be the same as the GET and PUT operations, including the expected input properties as well as the computed ones.
@@ -244,6 +244,45 @@ definitions:  
         readOnly: true
       name:         
         type: string        
+````
+
+- If the POST operation does not contain a body parameter, in order for the endpoint to be considered terraform compliant:
+  - the operation responses must contain at least one 'successful' response which can be either a 200, 201 or 202 response. The schema associated with
+   the successful response will be the one used as the resource schema. Note if more than one successful response is present in the
+   responses the first one found (in no particular order) will be used.  
+  - the response schema must contain only read only properties; otherwise the resource will not be considered terraform compatible.
+The following shows an example of a compatible terraform resource that does not expect any input upon creation but does return
+computed data:
+
+````
+paths:
+  /v1/deployKey:
+    post:
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/DeployKeyV1"
+  /v1/deployKey/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/DeployKeyV1"
+definitions:
+  DeployKeyV1: # All the properties are readOnly
+    type: "object"
+    properties:
+      id:
+        readOnly: true
+        type: string
+      deploy_key:
+        readOnly: true
+        type: string
 ````
 
 Refer to [readOnly](#attributeDetails) attributes to learn more about how to define an object that has computed properties 
