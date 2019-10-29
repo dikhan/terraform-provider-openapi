@@ -387,7 +387,7 @@ func Test_getSuccessfulResponseDefinition(t *testing.T) {
 				},
 			},
 			expectedSchema: nil,
-			expectedError:  errors.New("operation response '200' is missing the schema definitnion"),
+			expectedError:  errors.New("operation response '200' is missing the schema definition"),
 		},
 		{
 			name: "operation does not contain a valid successful response (200, 201 or 202) schema",
@@ -1622,7 +1622,7 @@ definitions:
 		})
 	})
 
-	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameters and the GET operation returns a model object containing only readOnly properties", t, func() {
+	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameter and contains a successful response 201 with a schema that has only readonly properties", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /deployKey:
@@ -1665,6 +1665,44 @@ definitions:
 			Convey("And the resourceSchemaDef should contain the expected properties", func() {
 				So(resourceSchemaDef.Properties, ShouldContainKey, "id")
 				So(resourceSchemaDef.Properties, ShouldContainKey, "deploy_key")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameters and the response 201 schema is empty", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /deployKey:
+    post:
+      responses:
+        201:
+          schema:  # the schema is missing
+  /deployKey/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/DeployKey"
+definitions:
+  DeployKey:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      deploy_key:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/deployKey/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/deployKey/{id}")
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "resource root path '/deployKey' POST operation (without body parameter) error: operation response '201' is missing the schema definition")
 			})
 		})
 	})

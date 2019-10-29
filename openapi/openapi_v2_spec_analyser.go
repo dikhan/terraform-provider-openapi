@@ -373,7 +373,7 @@ func (specAnalyser *specV2Analyser) getSuccessfulResponseDefinition(operation *s
 	for responseStatusCode, response := range operation.Responses.ResponsesProps.StatusCodeResponses {
 		if responseStatusCode == http.StatusOK || responseStatusCode == http.StatusCreated || responseStatusCode == http.StatusAccepted {
 			if response.Schema == nil {
-				return nil, fmt.Errorf("operation response '%d' is missing the schema definitnion", responseStatusCode)
+				return nil, fmt.Errorf("operation response '%d' is missing the schema definition", responseStatusCode)
 			}
 			return response.Schema, nil
 		}
