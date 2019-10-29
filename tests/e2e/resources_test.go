@@ -47,6 +47,16 @@ paths:
         200:
           schema:
             $ref: "#/definitions/DeployKeyV1"
+    delete:
+      parameters: 
+      - name: "id"
+        in: "path"
+        description: "The deploy key id to be deleted."
+        required: true
+        type: "string"
+      responses: 
+        204: 
+          description: "successful operation, no content is returned"
 definitions:
   DeployKeyV1: # All the properties are readOnly
     type: "object"
@@ -55,9 +65,8 @@ definitions:
         readOnly: true
         type: string
       creation_time:
-        format: int64
         readOnly: true
-        type: integer
+        type: string
       deploy_key:
         readOnly: true
         type: string`, apiHost)
