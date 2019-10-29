@@ -1251,61 +1251,6 @@ func TestValidateResourceSchemaDefinition(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 		})
-		Convey("When validateResourceSchemaDefinition method is called with a valid schema definition missing an ID property but a different property acts as unique identifier'", func() {
-			schema := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"name": {
-							VendorExtensible: spec.VendorExtensible{
-								Extensions: spec.Extensions{
-									extTfID: true,
-								},
-							},
-						},
-					},
-				},
-			}
-			err := a.validateResourceSchemaDefinition(schema)
-			Convey("Then error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-		Convey("When validateResourceSchemaDefinition method is called with a valid schema definition with both a property that name 'id' and a different property with the 'x-terraform-id' extension'", func() {
-			schema := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"id": {},
-						"name": {
-							VendorExtensible: spec.VendorExtensible{
-								Extensions: spec.Extensions{
-									extTfID: true,
-								},
-							},
-						},
-					},
-				},
-			}
-			err := a.validateResourceSchemaDefinition(schema)
-			Convey("Then error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-		Convey("When validateResourceSchemaDefinition method is called with a NON valid schema definition due to missing unique identifier'", func() {
-			schema := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"name": {},
-					},
-				},
-			}
-			err := a.validateResourceSchemaDefinition(schema)
-			Convey("Then error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "resource schema is missing a property that uniquely identifies the resource, either a property named 'id' or a property with the extension 'x-terraform-id' set to true")
-			})
-		})
 	})
 }
 
