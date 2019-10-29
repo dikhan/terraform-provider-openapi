@@ -217,6 +217,213 @@ func Test_bodyParameterExists(t *testing.T) {
 	})
 }
 
+func Test_getSuccessfulResponseDefinition(t *testing.T) {
+	testCases := []struct {
+		name           string
+		inputOperation *spec.Operation
+		expectedSchema *spec.Schema
+		expectedError  error
+	}{
+		{
+			//  Example:
+			//    post:
+			//      responses:
+			//        201:
+			//          schema:
+			//            ...
+			name: "operation contains a valid successful response (200 OK) schema among other non relevant (for this test) responses",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusOK: spec.Response{
+									ResponseProps: spec.ResponseProps{
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Properties: map[string]spec.Schema{
+													"id": spec.Schema{
+														SwaggerSchemaProps: spec.SwaggerSchemaProps{
+															ReadOnly: true,
+														},
+														SchemaProps: spec.SchemaProps{
+															Type: spec.StringOrArray{"string"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								http.StatusNotFound: spec.Response{},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": spec.Schema{
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "operation contains a valid successful response (201 Created) schema",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusCreated: spec.Response{
+									ResponseProps: spec.ResponseProps{
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Properties: map[string]spec.Schema{
+													"id": spec.Schema{
+														SwaggerSchemaProps: spec.SwaggerSchemaProps{
+															ReadOnly: true,
+														},
+														SchemaProps: spec.SchemaProps{
+															Type: spec.StringOrArray{"string"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": spec.Schema{
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "operation contains a valid successful response (202 Accepted) schema",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusAccepted: spec.Response{
+									ResponseProps: spec.ResponseProps{
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Properties: map[string]spec.Schema{
+													"id": spec.Schema{
+														SwaggerSchemaProps: spec.SwaggerSchemaProps{
+															ReadOnly: true,
+														},
+														SchemaProps: spec.SchemaProps{
+															Type: spec.StringOrArray{"string"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": spec.Schema{
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "operation contains a valid successful response (200) but the schema is missing",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusOK: spec.Response{
+									ResponseProps: spec.ResponseProps{
+										Schema: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: nil,
+			expectedError:  errors.New("operation response '200' is missing the schema definitnion"),
+		},
+		{
+			name: "operation does not contain a valid successful response (200, 201 or 202) schema",
+			inputOperation: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								http.StatusNotFound: spec.Response{},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: nil,
+			expectedError:  errors.New("operation is missing successful response"),
+		},
+		{
+			name:           "operation is nil",
+			inputOperation: nil,
+			expectedSchema: nil,
+			expectedError:  errors.New("operation is missing responses"),
+		},
+	}
+
+	for _, tc := range testCases {
+		specV2Analyser := specV2Analyser{}
+		s, err := specV2Analyser.getSuccessfulResponseDefinition(tc.inputOperation)
+		if tc.expectedError != nil {
+			assert.EqualError(t, err, tc.expectedError.Error(), tc.name)
+		} else {
+			assert.Equal(t, tc.expectedSchema, s, tc.name)
+		}
+	}
+}
+
 func Test_getBodyParameterBodySchema(t *testing.T) {
 	Convey("Given a specV2Analyser", t, func() {
 		specV2Analyser := &specV2Analyser{}

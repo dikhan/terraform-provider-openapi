@@ -345,12 +345,12 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 	if err != nil {
 		bodyParam := specAnalyser.bodyParameterExists(resourceRootPostOperation)
 		if bodyParam == nil {
-			resourceSchema, _ := specAnalyser.getResponseModel(resourceRootPostOperation) // TODO: implement this
+			resourceSchema, _ := specAnalyser.getSuccessfulResponseDefinition(resourceRootPostOperation) // TODO: implement this
 			err := specAnalyser.validateResourceSchemaDefWithOptions(resourceSchema, true)
 			if err != nil {
 				return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
 			}
-			// TODO: if we have reached this poiunt, that means that the root path should also be considered valid even though the post does not contain a body param. Hence, the resourceRootPostSchemaDef should instead be assigned to the model returned by getResponseModel
+			// TODO: if we have reached this poiunt, that means that the root path should also be considered valid even though the post does not contain a body param. Hence, the resourceRootPostSchemaDef should instead be assigned to the model returned by getSuccessfulResponseDefinition
 			// TODO: assign resourceRootPostSchemaDef = resourceSchema
 			// TODO: return resourceRootPath, &resourceRootPathItem, resourceRootPostSchemaDef, nil
 		}
@@ -360,19 +360,23 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 	return resourceRootPath, &resourceRootPathItem, resourceRootPostSchemaDef, nil
 }
 
-// getResponseModel is responsible for getting the model definition from the response
-func (specAnalyser *specV2Analyser) getResponseModel(operation *spec.Operation) (*spec.Schema, error) {
-	// TODO: For instance, for the following endpoint post operation the method should return the schema associated with 201 (already expanded - operation.Responses.ResponsesProps.StatusCodeResponses[201].Schema).
-	//  Note the operation could be async or it could return 200. In the case where there are multiple successful responses like 200, 201 and 202 the method should return
-	// and error. Otherwise, it should return the corresponding schema associated with the 'succesful' response code (whathever exists, either 200 or 201 or 202)
-	//  /v1/deployKey:
-	//    post:
-	//      x-terraform-resource-name: "deploykey"
-	//      responses:
-	//        201:
-	//          schema:
-	//            $ref: "#/definitions/DeployKeyV1"
-	return nil, nil
+// getSuccessfulResponseDefinition is responsible for getting the model definition from the response that matches a successful
+// response (either 200, 201 or 202 whichever is found first). It is assumed that the the responses will only include one of the
+// aforementioned successful responses, if multiple are present the first one found will be selected and its corresponding schema
+// will be returned
+func (specAnalyser *specV2Analyser) getSuccessfulResponseDefinition(operation *spec.Operation) (*spec.Schema, error) {
+	if operation == nil || operation.Responses == nil {
+		return nil, fmt.Errorf("operation is missing responses")
+	}
+	for responseStatusCode, response := range operation.Responses.ResponsesProps.StatusCodeResponses {
+		if responseStatusCode == http.StatusOK || responseStatusCode == http.StatusCreated || responseStatusCode == http.StatusAccepted {
+			if response.Schema == nil {
+				return nil, fmt.Errorf("operation response '%d' is missing the schema definitnion", responseStatusCode)
+			}
+			return response.Schema, nil
+		}
+	}
+	return nil, fmt.Errorf("operation is missing successful response")
 }
 
 func (specAnalyser *specV2Analyser) validateResourceSchemaDefWithOptions(schema *spec.Schema, shouldPropBeReadOnly bool) error {
