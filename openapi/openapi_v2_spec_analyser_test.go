@@ -1707,7 +1707,7 @@ definitions:
 		})
 	})
 
-	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' but the root is missing the 'body' parameter", t, func() {
+	Convey("Given an apiSpecAnalyser with a resource instance path such as '/users/{id}' but the root is missing the 'body' parameter AND it's not a compatible resource without input", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -1747,7 +1747,7 @@ definitions:
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the error message should be", func() {
-				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation validation error: resource root operation missing the body parameter")
+				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation (without body parameter) validation error: resource schema contains properties that are not just read only")
 			})
 		})
 	})

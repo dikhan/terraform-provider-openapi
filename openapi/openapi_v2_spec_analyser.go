@@ -344,15 +344,17 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 	resourceRootPostSchemaDef, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
 	if err != nil {
 		bodyParam := specAnalyser.bodyParameterExists(resourceRootPostOperation)
+		// Use case where resource does not expect any input as part of the POST root operation, and only produces computed properties
 		if bodyParam == nil {
-			resourceSchema, _ := specAnalyser.getSuccessfulResponseDefinition(resourceRootPostOperation) // TODO: implement this
-			err := specAnalyser.validateResourceSchemaDefWithOptions(resourceSchema, true)
+			resourceSchema, err := specAnalyser.getSuccessfulResponseDefinition(resourceRootPostOperation)
 			if err != nil {
-				return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
+				return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation (without body parameter) error: %s", resourceRootPath, err)
 			}
-			// TODO: if we have reached this poiunt, that means that the root path should also be considered valid even though the post does not contain a body param. Hence, the resourceRootPostSchemaDef should instead be assigned to the model returned by getSuccessfulResponseDefinition
-			// TODO: assign resourceRootPostSchemaDef = resourceSchema
-			// TODO: return resourceRootPath, &resourceRootPathItem, resourceRootPostSchemaDef, nil
+			err = specAnalyser.validateResourceSchemaDefWithOptions(resourceSchema, true)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation (without body parameter) validation error: %s", resourceRootPath, err)
+			}
+			return resourceRootPath, &resourceRootPathItem, resourceSchema, nil
 		}
 		return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
 	}
