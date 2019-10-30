@@ -3,6 +3,7 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -357,7 +358,7 @@ func TestCreateValidateFunc(t *testing.T) {
 }
 
 func TestCreateTerraformProviderSchema(t *testing.T) {
-	Convey("Given a provider factory containing couple properties with commands (that exit with no error) set up", t, func() {
+	Convey("Given a provider factory containing couple properties with commands (that exit with no error)", t, func() {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 
@@ -396,7 +397,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 		}
 		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
 			backendConfig := &specStubBackendConfiguration{}
-			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig, nil)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldBeNil)
 			})
@@ -444,7 +445,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 		}
 		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
 			backendConfig := &specStubBackendConfiguration{}
-			_, err := p.createTerraformProviderSchema(backendConfig)
+			_, err := p.createTerraformProviderSchema(backendConfig, nil)
 			Convey("Then the expectedValue returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -480,7 +481,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 		}
 		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
 			backendConfig := &specStubBackendConfiguration{}
-			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig, nil)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldBeNil)
 			})
@@ -517,7 +518,7 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			multiRegionHost := "api.${region}.server.com"
 			expectedDefaultRegion := "rst1"
 			backendConfig := newStubBackendMultiRegionConfiguration(multiRegionHost, []string{expectedDefaultRegion})
-			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig, nil)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -551,21 +552,19 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			},
 			serviceConfiguration: &ServiceConfigStub{},
 		}
-		Convey("When createTerraformProviderSchema is called with some backend configuration", func() {
+		Convey("When createTerraformProviderSchema is called a list of resource names", func() {
 			backendConfig := &specStubBackendConfiguration{}
-			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig, &providerConfigurationEndPoints{resourceNames: []string{"resourceName"}})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey(fmt.Sprintf("And the provider schema should contain %s property", providerPropertyEndPoints), func() {
+			Convey("And the providerConfigurationEndPoints should be configured with endpoints", func() {
 				So(providerSchema, ShouldContainKey, providerPropertyEndPoints)
-			})
-			Convey(fmt.Sprintf("And the provider schema %s property should not be nil", providerPropertyEndPoints), func() {
-				So(providerSchema[providerPropertyEndPoints], ShouldNotBeNil)
+				So(providerSchema[providerPropertyEndPoints].Elem.(*schema.Resource).Schema, ShouldContainKey, "resourceName")
 			})
 		})
 	})
-	Convey("Given a provider factory with an spec analyser with no resources (testing endpoints)", t, func() {
+	Convey("Given a provider factory (testing endpoints)", t, func() {
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
@@ -578,9 +577,9 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			},
 			serviceConfiguration: &ServiceConfigStub{},
 		}
-		Convey("When createTerraformProviderSchema is called with some backend configuration (non related)", func() {
+		Convey("When createTerraformProviderSchema is called with a list of empty resource names", func() {
 			backendConfig := &specStubBackendConfiguration{}
-			providerSchema, err := p.createTerraformProviderSchema(backendConfig)
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig, &providerConfigurationEndPoints{resourceNames: []string{}})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -618,7 +617,7 @@ func TestConfigureProvider(t *testing.T) {
 		testProviderSchema := newTestSchema(apiKeyAuthProperty, headerProperty)
 		Convey("When configureProvider is called with a backend that is not multi-region and the returned configureFunc is invoked upon ", func() {
 			backendConfig := &specStubBackendConfiguration{}
-			configureFunc := p.configureProvider(backendConfig)
+			configureFunc := p.configureProvider(backendConfig, &providerConfigurationEndPoints{})
 			client, err := configureFunc(testProviderSchema.getResourceData(t))
 			providerClient := client.(*ProviderClient)
 			Convey("Then error returned should be nil", func() {
@@ -658,7 +657,7 @@ func TestCreateProviderConfig(t *testing.T) {
 		}
 		Convey(fmt.Sprintf("When createProviderConfig is called with a resource data containing the values for api key auth property (%s) and a header property (%s)", apiKeyAuthProperty.Default, headerProperty.Default), func() {
 			testProviderSchema := newTestSchema(apiKeyAuthProperty, headerProperty)
-			providerConfiguration, err := p.createProviderConfig(testProviderSchema.getResourceData(t))
+			providerConfiguration, err := p.createProviderConfig(testProviderSchema.getResourceData(t), &providerConfigurationEndPoints{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -701,7 +700,7 @@ func TestCreateProviderConfig(t *testing.T) {
 		}
 		Convey(fmt.Sprintf("When createProviderConfig is called with a resource data containing the values for api key auth property (%s) and a header property (%s)", apiKeyAuthProperty.Default, headerProperty.Default), func() {
 			testProviderSchema := newTestSchema(apiKeyAuthPreferredNonCompliantNameProperty, headerNonCompliantNameProperty)
-			providerConfiguration, err := p.createProviderConfig(testProviderSchema.getResourceData(t))
+			providerConfiguration, err := p.createProviderConfig(testProviderSchema.getResourceData(t), &providerConfigurationEndPoints{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -734,12 +733,29 @@ func TestCreateProviderConfig(t *testing.T) {
 		}
 		Convey(fmt.Sprintf("When createProviderConfig is called with a resource data containing the values for a header property (%s)", headerProperty.Default), func() {
 			testProviderSchema := newTestSchema(headerPreferredNameProperty)
-			providerConfiguration, err := p.createProviderConfig(testProviderSchema.getResourceData(t))
+			providerConfiguration, err := p.createProviderConfig(testProviderSchema.getResourceData(t), &providerConfigurationEndPoints{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the provider configuration returned should contain the header with its value (coming from the resource schema), the key used to look up the value is the actual header name", func() {
 				So(providerConfiguration.Headers[headerPreferredNameProperty.PreferredName], ShouldEqual, headerProperty.Default)
+			})
+		})
+	})
+
+	Convey("Given a provider factory where the internal specAnalyser.GetSecurity().GetAPIKeySecurityDefinitions() call somehow return an error", t, func() {
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				security: &specSecurityStub{
+					error: fmt.Errorf("some error"),
+				},
+			},
+		}
+		Convey("When createProviderConfig is called", func() {
+			_, err := p.createProviderConfig(nil, &providerConfigurationEndPoints{})
+			Convey("Then the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "some error")
 			})
 		})
 	})
