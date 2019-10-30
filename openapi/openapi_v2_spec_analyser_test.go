@@ -1149,21 +1149,6 @@ func TestIsMultiRegionResource(t *testing.T) {
 	})
 }
 
-func TestResourceInstanceRegex(t *testing.T) {
-	Convey("Given an specV2Analyser", t, func() {
-		a := specV2Analyser{}
-		Convey("When resourceInstanceRegex method is called", func() {
-			regex, err := a.resourceInstanceRegex()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the regex should not be nil", func() {
-				So(regex, ShouldNotBeNil)
-			})
-		})
-	})
-}
-
 func TestResourceInstanceEndPoint(t *testing.T) {
 	Convey("Given an specV2Analyser", t, func() {
 		a := specV2Analyser{}
@@ -1192,6 +1177,24 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 			})
 			Convey("And the value returned should be true", func() {
 				So(resourceInstance, ShouldBeTrue)
+			})
+		})
+		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters and ends with trailing slash '/resource/{name}/subresource/{id}/'", func() {
+			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}/")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be true", func() {
+				So(resourceInstance, ShouldBeTrue)
+			})
+		})
+		Convey("When isResourceInstanceEndPoint method is called with a path that is a root path of a subresource '/resource/{name}/subresource'", func() {
+			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be false since it's the sub-resource root endpoint", func() {
+				So(resourceInstance, ShouldBeFalse)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with an invalid resource path such as '/resource/not/instance/path' not conforming with the expected pattern '/resource/{id}'", func() {

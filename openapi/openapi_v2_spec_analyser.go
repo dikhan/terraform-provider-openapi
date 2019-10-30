@@ -448,23 +448,9 @@ func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostO
 	return nil, fmt.Errorf("POST operation contains an schema with no properties")
 }
 
-// resourceInstanceRegex loads up the regex specified in const resourceInstanceRegex
-// If the regex is not able to compile the regular expression the function exists calling os.Exit(1) as
-// there is the regex is completely busted
-func (specAnalyser *specV2Analyser) resourceInstanceRegex() (*regexp.Regexp, error) {
-	r, err := regexp.Compile(resourceInstanceRegex)
-	if err != nil {
-		return nil, fmt.Errorf("an error occurred while compiling the resourceInstanceRegex regex '%s': %s", resourceInstanceRegex, err)
-	}
-	return r, nil
-}
-
 // isResourceInstanceEndPoint checks if the given path is of form /resource/{id}
 func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) (bool, error) {
-	r, err := specAnalyser.resourceInstanceRegex()
-	if err != nil {
-		return false, err
-	}
+	r, _ := regexp.Compile("^.*{.+}[\\/]?$")
 	return r.MatchString(p), nil
 }
 
@@ -473,10 +459,7 @@ func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) (bool, 
 // how the POST operation (resourceRootPath) of the given resource is defined in swagger.
 // If there is no match the returned string will be empty
 func (specAnalyser *specV2Analyser) findMatchingResourceRootPath(resourceInstancePath string) (string, error) {
-	r, err := specAnalyser.resourceInstanceRegex()
-	if err != nil {
-		return "", err
-	}
+	r, _ := regexp.Compile(resourceInstanceRegex)
 	result := r.FindStringSubmatch(resourceInstancePath)
 	log.Printf("[DEBUG] resource '%s' root path match: %s", resourceInstancePath, result)
 	if len(result) != 2 {
