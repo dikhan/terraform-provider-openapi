@@ -54,7 +54,7 @@ func TestOpenAPIProvider(t *testing.T) {
 		})
 	})
 
-	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource (cdn)", t, func() {
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource (cdn) and subresource (firewall)", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: "localhost:8443"
 basePath: "/api"
@@ -126,6 +126,45 @@ paths:
         204:
           description: "successful operation, no content is returned"
 
+  /v1/cdns/{id}/firewalls:
+    post:
+      summary: "Create firewall"
+      x-terraform-resource-name: "firewall"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn where the firewall will be created"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Created firewall"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+  /v1/cdns/{id}/firewalls/{firewall_id}:
+    get:
+      summary: "Get firewall by id"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn that the firewall belongs to"
+        required: true
+        type: "string"
+      - name: "firewall_id"
+        in: "path"
+        description: "The firewall id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+
 securityDefinitions:
   apikey_auth:
     type: "apiKey"
@@ -142,6 +181,16 @@ definitions:
         type: "string"
         readOnly: true
       label:
+        type: "string"
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    required:
+      - name
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      name:
         type: "string"`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -207,6 +256,48 @@ definitions:
 						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
 					})
 				})
+				Convey("the provider resource map should contain the firewall resource with the expected configuration", func() {
+					So(tfProvider.ResourcesMap, ShouldNotBeNil)
+					resourceName := fmt.Sprintf("%s_cdn_v1_firewall", providerName)
+					So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+					Convey("the provider cdn resource should have the expected schema", func() {
+						So(tfProvider.ResourcesMap, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+						So(tfProvider.ResourcesMap[resourceName].Schema, ShouldContainKey, "name")
+						So(tfProvider.ResourcesMap[resourceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
+						So(tfProvider.ResourcesMap[resourceName].Schema["name"].Required, ShouldBeTrue)
+						So(tfProvider.ResourcesMap[resourceName].Schema["name"].Computed, ShouldBeFalse)
+					})
+					Convey("the provider cdn resource should have the expected operations configured", func() {
+						So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+						So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
+					})
+				})
+				Convey("the provider data source map should contain the firewall data source instance with the expected configuration", func() {
+					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+					dataSourceInstanceName := fmt.Sprintf("%s_cdn_v1_firewall_instance", providerName)
+					So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceInstanceName)
+					Convey("the provider cdn resource should have the expected schema", func() {
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "id")
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Type, ShouldEqual, schema.TypeString)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Required, ShouldBeTrue)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Computed, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "name")
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Required, ShouldBeFalse)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Computed, ShouldBeTrue)
+					})
+					Convey("the provider cdn data source instance should have the expected operations configured", func() {
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
+						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
+					})
+				})
 				Convey("the provider configuration function should not be nil", func() {
 					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
 				})
@@ -223,51 +314,51 @@ schemes:
 - "https"
 
 security:
-  - apikey_auth: []
+ - apikey_auth: []
 
 paths:
-  /v1/cdn_datasource:
-    get:
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+ /v1/cdn_datasource:
+   get:
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
 
 securityDefinitions:
-  apikey_auth:
-    type: "apiKey"
-    name: "Authorization"
-    in: "header"
+ apikey_auth:
+   type: "apiKey"
+   name: "Authorization"
+   in: "header"
 
 definitions:
-  ContentDeliveryNetworkV1Collection:
-    type: array
-    items:
-      $ref: "#/definitions/ContentDeliveryNetworkV1"
-  ContentDeliveryNetworkV1:
-    type: object
-    properties:
-      id:
-        type: string
-        readOnly: true
-      label:
-        type: string
-      owners:
-        type: array
-        items:
-          type: string
-      int_property:
-        type: integer
-      bool_property:
-        type: boolean
-      float_property:
-        type: number
-        format: float
-      obj_property:
-        type: object
-        properties:
-          name:
-            type: string`
+ ContentDeliveryNetworkV1Collection:
+   type: array
+   items:
+     $ref: "#/definitions/ContentDeliveryNetworkV1"
+ ContentDeliveryNetworkV1:
+   type: object
+   properties:
+     id:
+       type: string
+       readOnly: true
+     label:
+       type: string
+     owners:
+       type: array
+       items:
+         type: string
+     int_property:
+       type: integer
+     bool_property:
+       type: boolean
+     float_property:
+       type: number
+       format: float
+     obj_property:
+       type: object
+       properties:
+         name:
+           type: string`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(swaggerContent))
@@ -339,26 +430,27 @@ host: "localhost:8443"
 basePath: "/api"
 
 paths:
-  /v1/cdns/{id}/firewalls:
-    get:
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
+
+ /v1/cdns/{id}/firewalls:
+   get:
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
 
 definitions:
-  ContentDeliveryNetworkV1Collection:
-    type: "array"
-    items:
-      $ref: "#/definitions/ContentDeliveryNetworkV1"
-  ContentDeliveryNetworkV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"`
+ ContentDeliveryNetworkV1Collection:
+   type: "array"
+   items:
+     $ref: "#/definitions/ContentDeliveryNetworkV1"
+ ContentDeliveryNetworkV1:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     label:
+       type: "string"`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(swaggerContent))
@@ -426,59 +518,59 @@ basePath: "/api"
 schemes:
 - "https"
 paths:
-  /v1/cdns:
-    post:
-      summary: "Create cdn"
-      x-terraform-resource-name: "cdn"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Created CDN"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-  /v1/cdns/{id}:
-    get:
-      summary: "Get cdn by id"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
+ /v1/cdns:
+   post:
+     summary: "Create cdn"
+     x-terraform-resource-name: "cdn"
+     parameters:
+     - in: "body"
+       name: "body"
+       description: "Created CDN"
+       required: true
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetworkV1"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkV1"
+ /v1/cdns/{id}:
+   get:
+     summary: "Get cdn by id"
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkV1"
 definitions:
-  ContentDeliveryNetworkV1:
-    type: "object"
-    required:
-      - label
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"
-      object_nested_scheme_property:
-        type: "object"
-        properties:
-          name:
-            type: "string"
-            readOnly: true
-          object_property:
-            type: "object"
-            properties:
-              account:
-                type: string
-              read_only:
-                type: string
-                readOnly: true`
+ ContentDeliveryNetworkV1:
+   type: "object"
+   required:
+     - label
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     label:
+       type: "string"
+     object_nested_scheme_property:
+       type: "object"
+       properties:
+         name:
+           type: "string"
+           readOnly: true
+         object_property:
+           type: "object"
+           properties:
+             account:
+               type: string
+             read_only:
+               type: string
+               readOnly: true`
 
 		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(swaggerContent))
