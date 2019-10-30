@@ -9,41 +9,14 @@ import (
 )
 
 type providerConfigurationEndPoints struct {
-	specAnalyser SpecAnalyser
-}
-
-func newProviderConfigurationEndPoints(specAnalyser SpecAnalyser) (*providerConfigurationEndPoints, error) {
-	if specAnalyser == nil {
-		return nil, fmt.Errorf("specAnalyser must be provided to create a providerConfigurationEndPoints struct")
-	}
-	return &providerConfigurationEndPoints{specAnalyser}, nil
-}
-
-// getResourceNames returns the resources exposed by the provider. The list of resources names returned will then be
-// used to create the provider's endpoint schema property as well as to configure the endpoints values with the data
-// provided bu the user
-func (p *providerConfigurationEndPoints) getResourceNames() ([]string, error) {
-	openAPIResources, err := p.specAnalyser.GetTerraformCompliantResources()
-	if err != nil {
-		return nil, err
-	}
-	resourceNames := []string{}
-	for _, openAPIResource := range openAPIResources {
-		resourceNames = append(resourceNames, openAPIResource.getResourceName())
-
-	}
-	return resourceNames, nil
+	resourceNames []string
 }
 
 // endpointsSchema returns a schema for the provider's endpoint property
-func (p *providerConfigurationEndPoints) endpointsSchema() (*schema.Schema, error) {
-	resourceNames, err := p.getResourceNames()
-	if err != nil {
-		return nil, err
-	}
-	if len(resourceNames) > 0 {
+func (p *providerConfigurationEndPoints) endpointsSchema() *schema.Schema {
+	if p.resourceNames != nil && len(p.resourceNames) > 0 {
 		endpoints := map[string]*schema.Schema{}
-		for _, name := range resourceNames {
+		for _, name := range p.resourceNames {
 			endpoints[name] = &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -58,10 +31,10 @@ func (p *providerConfigurationEndPoints) endpointsSchema() (*schema.Schema, erro
 			Elem: &schema.Resource{
 				Schema: endpoints,
 			},
-			Set: p.endpointsToHash(resourceNames),
-		}, nil
+			Set: p.endpointsToHash(p.resourceNames),
+		}
 	}
-	return nil, nil
+	return nil
 }
 
 func (p *providerConfigurationEndPoints) endpointsValidateFunc() schema.SchemaValidateFunc {
@@ -88,20 +61,18 @@ func (p *providerConfigurationEndPoints) endpointsToHash(resources []string) sch
 
 // configureEndpoints creates a map containing one endpoint per resource exposed by the provider and maps the values
 // with the ones provided by the user (if present)
-func (p *providerConfigurationEndPoints) configureEndpoints(data *schema.ResourceData) (map[string]string, error) {
-	providerConfigEndPoints := map[string]string{}
-	if data.Get(providerPropertyEndPoints) != nil {
-		endpointsSet := data.Get(providerPropertyEndPoints).(*schema.Set)
-		for _, endpointsSetI := range endpointsSet.List() {
-			endpoints := endpointsSetI.(map[string]interface{})
-			resourceNames, err := p.getResourceNames()
-			if err != nil {
-				return nil, err
-			}
-			for _, resource := range resourceNames {
-				providerConfigEndPoints[resource] = endpoints[resource].(string)
+func (p *providerConfigurationEndPoints) configureEndpoints(data *schema.ResourceData) map[string]string {
+	if p.resourceNames != nil && len(p.resourceNames) > 0 {
+		providerConfigEndPoints := map[string]string{}
+		if data.Get(providerPropertyEndPoints) != nil {
+			endpointsSet := data.Get(providerPropertyEndPoints).(*schema.Set)
+			for _, endpointsSetI := range endpointsSet.List() {
+				endpoints := endpointsSetI.(map[string]interface{})
+				for _, resource := range p.resourceNames {
+					providerConfigEndPoints[resource] = endpoints[resource].(string)
+				}
 			}
 		}
 	}
-	return providerConfigEndPoints, nil
+	return nil
 }
