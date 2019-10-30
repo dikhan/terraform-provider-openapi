@@ -471,15 +471,15 @@ func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) (bool, 
 // Example: Given 'resourcePath' being "/users/{username}" the result could be "/users" or "/users/" depending on
 // how the POST operation (resourceRootPath) of the given resource is defined in swagger.
 // If there is no match the returned string will be empty
-func (specAnalyser *specV2Analyser) findMatchingResourceRootPath(resourcePath string) (string, error) {
+func (specAnalyser *specV2Analyser) findMatchingResourceRootPath(resourceInstancePath string) (string, error) {
 	r, err := specAnalyser.resourceInstanceRegex()
 	if err != nil {
 		return "", err
 	}
-	result := r.FindStringSubmatch(resourcePath)
-	log.Printf("[DEBUG] resource root path match result - %s", result)
+	result := r.FindStringSubmatch(resourceInstancePath)
+	log.Printf("[DEBUG] resource '%s' root path match: %s", resourceInstancePath, result)
 	if len(result) != 2 {
-		return "", fmt.Errorf("resource instance path '%s' missing valid resource root path, more than two results returned from match '%s'", resourcePath, result)
+		return "", fmt.Errorf("resource instance path '%s' missing valid resource root path, more than two results returned from match '%s'", resourceInstancePath, result)
 	}
 
 	resourceRootPath := result[1] // e,g: /v1/cdns/{id} /v1/cdns/
@@ -496,5 +496,5 @@ func (specAnalyser *specV2Analyser) findMatchingResourceRootPath(resourcePath st
 		return resourceRootPath, nil
 	}
 
-	return "", fmt.Errorf("resource instance path '%s' missing resource root path", resourcePath)
+	return "", fmt.Errorf("resource instance path '%s' missing resource root path", resourceInstancePath)
 }
