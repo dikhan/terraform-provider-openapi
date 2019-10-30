@@ -140,6 +140,17 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 	return s, nil
 }
 
+// getResourceNames returns the resources exposed by the provider. The list of resources names returned will then be
+// used to create the provider's endpoint schema property as well as to configure the endpoints values with the data
+// provided bu the user
+func (p providerFactory) getResourceNames(resourceMap map[string]*schema.Resource) []string {
+	var resourceNames []string
+	for resourceName := range resourceMap {
+		resourceNames = append(resourceNames, resourceName)
+	}
+	return resourceNames
+}
+
 func (p providerFactory) configureProviderPropertyFromPluginConfig(providerSchema map[string]*schema.Schema, schemaPropertyName string, required bool) error {
 	var defaultValue = ""
 	var err error

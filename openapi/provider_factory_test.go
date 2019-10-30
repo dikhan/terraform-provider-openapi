@@ -81,6 +81,21 @@ func TestNewProviderFactory(t *testing.T) {
 	})
 }
 
+func TestGetResourceNames(t *testing.T) {
+	Convey("Given a provider factory", t, func() {
+		p := providerFactory{}
+		Convey("When getResourceNames is called with a map of resources", func() {
+			resources := map[string]*schema.Resource{
+				"resource_name_v1": {},
+			}
+			resourceNames := p.getResourceNames(resources)
+			Convey("Then the list should contain the expected resources", func() {
+				So(resourceNames, ShouldContain, "resource_name_v1")
+			})
+		})
+	})
+}
+
 func TestCreateProvider(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
