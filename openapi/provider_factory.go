@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
@@ -146,7 +147,7 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 func (p providerFactory) getResourceNames(resourceMap map[string]*schema.Resource) []string {
 	var resourceNames []string
 	for resourceName := range resourceMap {
-		resourceNames = append(resourceNames, resourceName)
+		resourceNames = append(resourceNames, strings.Replace(resourceName, fmt.Sprintf("%s_", p.name), "", 1))
 	}
 	return resourceNames
 }

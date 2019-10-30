@@ -84,10 +84,12 @@ func TestNewProviderFactory(t *testing.T) {
 
 func TestGetResourceNames(t *testing.T) {
 	Convey("Given a provider factory", t, func() {
-		p := providerFactory{}
+		p := providerFactory{
+			name: "provider",
+		}
 		Convey("When getResourceNames is called with a map of resources", func() {
 			resources := map[string]*schema.Resource{
-				"resource_name_v1": {},
+				"provider_resource_name_v1": {},
 			}
 			resourceNames := p.getResourceNames(resources)
 			Convey("Then the list should contain the expected resources", func() {
@@ -146,6 +148,10 @@ func TestCreateProvider(t *testing.T) {
 			})
 			Convey("And the provider should NOT have a property called region since the backend is NOT multi-region", func() {
 				So(p.Schema["region"], ShouldBeNil)
+			})
+			Convey("And the provider schema should contain the endpoints configuration based on the registered resources", func() {
+				So(p.Schema[providerPropertyEndPoints], ShouldNotBeNil)
+				So(p.Schema[providerPropertyEndPoints].Elem.(*schema.Resource).Schema, ShouldContainKey, "resource_v1")
 			})
 		})
 	})
