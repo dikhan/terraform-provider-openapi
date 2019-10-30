@@ -274,6 +274,7 @@ func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendCon
 // then the expected returned value is true. Otherwise if the above criteria is not met, it is considered that
 // the resourcePath provided is not terraform resource compliant.
 func (specAnalyser *specV2Analyser) isEndPointFullyTerraformResourceCompliant(resourcePath string) (string, *spec.PathItem, *spec.Schema, error) {
+	log.Printf("[DEBUG] validating end point terraform compatibility %s", resourcePath)
 	err := specAnalyser.validateInstancePath(resourcePath)
 	if err != nil {
 		return "", nil, nil, err
