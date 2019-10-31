@@ -2923,6 +2923,18 @@ paths:
   ######################
 
   /v1/cdns/{cdn_id}/v1/firewalls:
+    get:
+      summary: List cdns firewalls
+      parameters:
+      - name: cdn_id
+      in: path
+      required: true
+      type: string
+      responses:
+       '200':
+         description: OK
+         schema:
+           $ref: '#/definitions/ContentDeliveryNetworkFirewallV1Collection'
     post:
       x-terraform-resource-host: 178.168.3.4
       parameters:
@@ -2997,6 +3009,10 @@ paths:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
 definitions:
+  ContentDeliveryNetworkFirewallV1Collection:
+    type: array
+    items:
+      $ref: '#/definitions/ContentDeliveryNetworkFirewallV1'
   ContentDeliveryNetworkFirewallV1:
     type: "object"
     properties:
