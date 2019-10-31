@@ -72,6 +72,7 @@ func (p *providerConfigurationEndPoints) configureEndpoints(data *schema.Resourc
 					providerConfigEndPoints[resource] = endpoints[resource].(string)
 				}
 			}
+			return providerConfigEndPoints
 		}
 	}
 	return nil
