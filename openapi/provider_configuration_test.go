@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewProviderConfiguration(t *testing.T) {
-	Convey("Given a headers a SpecHeaderParameters, securitySchemaDefinitions and a schema ResourceData", t, func() {
+	Convey("Given a headers a SpecHeaderParameters, securitySchemaDefinitions, a schema ResourceData and a providerConfigurationEndPoints", t, func() {
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("headerProperty", "header_property", true, false, "updatedValue")
 
 		specAnalyser := &specAnalyserStub{
@@ -24,9 +24,11 @@ func TestNewProviderConfiguration(t *testing.T) {
 			},
 		}
 
+		providerConfigurationEndPoints := &providerConfigurationEndPoints{}
+
 		data := newTestSchema(stringProperty, stringWithPreferredNameProperty, headerProperty).getResourceData(t)
 		Convey("When newProviderConfiguration method is called", func() {
-			providerConfiguration, err := newProviderConfiguration(specAnalyser, data)
+			providerConfiguration, err := newProviderConfiguration(specAnalyser, data, providerConfigurationEndPoints)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -56,8 +58,9 @@ func TestNewProviderConfiguration(t *testing.T) {
 				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 			},
 		}
+		providerConfigurationEndPoints := &providerConfigurationEndPoints{}
 		Convey("When newProviderConfiguration method is called", func() {
-			_, err := newProviderConfiguration(specAnalyser, data)
+			_, err := newProviderConfiguration(specAnalyser, data, providerConfigurationEndPoints)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -80,9 +83,10 @@ func TestNewProviderConfiguration(t *testing.T) {
 				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 			},
 		}
+		providerConfigurationEndPoints := &providerConfigurationEndPoints{}
 		data := newTestSchema().getResourceData(t)
 		Convey("When newProviderConfiguration method is called", func() {
-			_, err := newProviderConfiguration(specAnalyser, data)
+			_, err := newProviderConfiguration(specAnalyser, data, providerConfigurationEndPoints)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -184,6 +188,17 @@ func TestGetEndPoint(t *testing.T) {
 			value := providerConfiguration.getEndPoint("nonExistingResource")
 			Convey("Then the value returned should be empty", func() {
 				So(value, ShouldEqual, "")
+			})
+		})
+	})
+	Convey("Given a providerConfiguration configured with nil endpoints", t, func() {
+		providerConfiguration := providerConfiguration{
+			Endpoints: nil,
+		}
+		Convey("When getEndPoint method is called with an existing resource name", func() {
+			value := providerConfiguration.getEndPoint("cdn_v1")
+			Convey("Then the value returned should be empty", func() {
+				So(value, ShouldBeEmpty)
 			})
 		})
 	})

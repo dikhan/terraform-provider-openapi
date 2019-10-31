@@ -25,7 +25,7 @@ type providerConfiguration struct {
 
 // createProviderConfig returns a providerConfiguration populated with the values provided by the user in the provider's terraform
 // configuration mapped to the corresponding
-func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceData) (*providerConfiguration, error) {
+func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceData, providerConfigurationEndPoints *providerConfigurationEndPoints) (*providerConfiguration, error) {
 	providerConfiguration := &providerConfiguration{}
 	providerConfiguration.Headers = map[string]string{}
 	providerConfiguration.Endpoints = map[string]string{}
@@ -66,17 +66,8 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 		providerConfiguration.Region = region.(string)
 	}
 
-	providerConfigurationEndPoints, err := newProviderConfigurationEndPoints(specAnalyser)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoints, err := providerConfigurationEndPoints.configureEndpoints(data)
-	if err != nil {
-		return nil, err
-	}
-	if endpoints != nil {
-		providerConfiguration.Endpoints = endpoints
+	if providerConfigurationEndPoints != nil {
+		providerConfiguration.Endpoints = providerConfigurationEndPoints.configureEndpoints(data)
 	}
 
 	return providerConfiguration, nil
@@ -99,8 +90,10 @@ func (p *providerConfiguration) getRegion() string {
 
 // getEndPoint resolves the endpoint value for a given resource name
 func (p *providerConfiguration) getEndPoint(resourceName string) string {
-	if endpoint, ok := p.Endpoints[resourceName]; ok {
-		return endpoint
+	if p.Endpoints != nil {
+		if endpoint, ok := p.Endpoints[resourceName]; ok {
+			return endpoint
+		}
 	}
 	return ""
 }

@@ -1149,21 +1149,6 @@ func TestIsMultiRegionResource(t *testing.T) {
 	})
 }
 
-func TestResourceInstanceRegex(t *testing.T) {
-	Convey("Given an specV2Analyser", t, func() {
-		a := specV2Analyser{}
-		Convey("When resourceInstanceRegex method is called", func() {
-			regex, err := a.resourceInstanceRegex()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the regex should not be nil", func() {
-				So(regex, ShouldNotBeNil)
-			})
-		})
-	})
-}
-
 func TestResourceInstanceEndPoint(t *testing.T) {
 	Convey("Given an specV2Analyser", t, func() {
 		a := specV2Analyser{}
@@ -1192,6 +1177,24 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 			})
 			Convey("And the value returned should be true", func() {
 				So(resourceInstance, ShouldBeTrue)
+			})
+		})
+		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters and ends with trailing slash '/resource/{name}/subresource/{id}/'", func() {
+			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}/")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be true", func() {
+				So(resourceInstance, ShouldBeTrue)
+			})
+		})
+		Convey("When isResourceInstanceEndPoint method is called with a path that is a root path of a subresource '/resource/{name}/subresource'", func() {
+			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be false since it's the sub-resource root endpoint", func() {
+				So(resourceInstance, ShouldBeFalse)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with an invalid resource path such as '/resource/not/instance/path' not conforming with the expected pattern '/resource/{id}'", func() {
@@ -1377,6 +1380,131 @@ definitions:
 			})
 		})
 	})
+
+	Convey("Given an apiSpecAnalyser with a valid resource path that is sub-resource", t, func() {
+		swaggerContent := `swagger: "2.0" 
+schemes:
+- "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    post:
+      x-terraform-resource-name: "cdn"
+      summary: "Create cdn"
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+  /v1/cdns/{cdn_id}:
+    get:
+      summary: "Get cdn by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+  ######################
+  ## CDN sub-resource
+  ######################
+
+  /v1/cdns/{cdn_id}/v1/firewalls:
+    post:
+      summary: "Create cdn firewall"
+      operationId: "ContentDeliveryNetworkFirewallCreateV1"
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Created CDN firewall"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+
+  /v1/cdns/{cdn_id}/v1/firewalls/{id}:
+    get:
+      summary: "Get cdn firewall by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkFirewallGetV1"
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that contains the firewall to be fetched."
+        required: true
+        type: "string"
+      - name: "id"
+        in: "path"
+        description: "The cdn firewall id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+
+definitions:
+  ContentDeliveryNetworkFirewallV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When findMatchingResourceRootPath method is called with subresource instance path '/v1/cdns/{cdn_id}/v1/firewalls/{id}'", func() {
+			resourceRootPath, err := a.findMatchingResourceRootPath("/v1/cdns/{cdn_id}/v1/firewalls/{id}")
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the value returned should be '/v1/cdns/{cdn_id}/v1/firewalls/{id}'", func() {
+				So(resourceRootPath, ShouldEqual, "/v1/cdns/{cdn_id}/v1/firewalls")
+			})
+		})
+	})
+
 }
 
 func TestPostIsPresent(t *testing.T) {
@@ -2795,6 +2923,18 @@ paths:
   ######################
 
   /v1/cdns/{cdn_id}/v1/firewalls:
+    get:
+      summary: List cdns firewalls
+      parameters:
+      - name: cdn_id
+      in: path
+      required: true
+      type: string
+      responses:
+       '200':
+         description: OK
+         schema:
+           $ref: '#/definitions/ContentDeliveryNetworkFirewallV1Collection'
     post:
       x-terraform-resource-host: 178.168.3.4
       parameters:
@@ -2869,6 +3009,10 @@ paths:
             $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
 definitions:
+  ContentDeliveryNetworkFirewallV1Collection:
+    type: array
+    items:
+      $ref: '#/definitions/ContentDeliveryNetworkFirewallV1'
   ContentDeliveryNetworkFirewallV1:
     type: "object"
     properties:

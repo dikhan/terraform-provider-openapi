@@ -11,81 +11,15 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestGetResourceNames(t *testing.T) {
-	Convey("Given a provider configuration endpoints configured with a spec analyser that has one resource", t, func() {
-		expectedResourceName := "resource_name_v1"
-		resource := newSpecStubResource(expectedResourceName, "", false, nil)
-		p := providerConfigurationEndPoints{
-			specAnalyser: &specAnalyserStub{
-				resources: []SpecResource{resource},
-				headers:   SpecHeaderParameters{},
-				security: &specSecurityStub{
-					securityDefinitions:   &SpecSecurityDefinitions{},
-					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
-				},
-			},
-		}
-		Convey("When getResourceNames is called with a map containing some resources ", func() {
-			resources, err := p.getResourceNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the list of resource should not be empty", func() {
-				So(resources, ShouldNotBeEmpty)
-			})
-			Convey("And should match the expected number of resources", func() {
-				So(len(resources), ShouldEqual, 1)
-			})
-			Convey("And the list should contain the expected resources", func() {
-				So(resources, ShouldContain, expectedResourceName)
-			})
-		})
-	})
-
-	Convey("Given a provider configuration endpoints configured with a spec analyser that has NO resources", t, func() {
-		p := providerConfigurationEndPoints{
-			specAnalyser: &specAnalyserStub{
-				resources: []SpecResource{},
-				headers:   SpecHeaderParameters{},
-				security: &specSecurityStub{
-					securityDefinitions:   &SpecSecurityDefinitions{},
-					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
-				},
-			},
-		}
-		Convey("When getResourceNames is called with an empty map", func() {
-			resources, err := p.getResourceNames()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the list of resource should be empty", func() {
-				So(resources, ShouldBeEmpty)
-			})
-		})
-	})
-
-}
-
 func TestEndpointsSchema(t *testing.T) {
 	Convey("Given a provider configuration endpoints configured with a spec analyser that has one resource", t, func() {
 		resourceName := "resource_name_v1"
-		resource := newSpecStubResource(resourceName, "", false, nil)
 		p := providerConfigurationEndPoints{
-			specAnalyser: &specAnalyserStub{
-				resources: []SpecResource{resource},
-				headers:   SpecHeaderParameters{},
-				security: &specSecurityStub{
-					securityDefinitions:   &SpecSecurityDefinitions{},
-					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
-				},
-			},
+			resourceNames: []string{resourceName},
 		}
 		Convey("When endpointsSchema is called", func() {
 			resourceName := "resource_name_v1"
-			s, err := p.endpointsSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			s := p.endpointsSchema()
 			Convey("Then the schema returned should NOT be nil", func() {
 				So(s, ShouldNotBeNil)
 			})
@@ -108,20 +42,10 @@ func TestEndpointsSchema(t *testing.T) {
 	})
 	Convey("Given a provider configuration endpoints configured with a spec analyser that has no resources", t, func() {
 		p := providerConfigurationEndPoints{
-			specAnalyser: &specAnalyserStub{
-				resources: []SpecResource{},
-				headers:   SpecHeaderParameters{},
-				security: &specSecurityStub{
-					securityDefinitions:   &SpecSecurityDefinitions{},
-					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
-				},
-			},
+			resourceNames: []string{},
 		}
 		Convey("When endpointsSchema is called", func() {
-			s, err := p.endpointsSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			s := p.endpointsSchema()
 			Convey("Then the schema returned should be nil", func() {
 				So(s, ShouldBeNil)
 			})
@@ -132,13 +56,7 @@ func TestEndpointsSchema(t *testing.T) {
 func TestEndpointsToHash(t *testing.T) {
 	Convey("Given a provider configuration endpoints configured", t, func() {
 		p := providerConfigurationEndPoints{
-			specAnalyser: &specAnalyserStub{
-				headers: SpecHeaderParameters{},
-				security: &specSecurityStub{
-					securityDefinitions:   &SpecSecurityDefinitions{},
-					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
-				},
-			},
+			resourceNames: []string{},
 		}
 		Convey("When endpointsSchema is called with a list of resources", func() {
 			resourceName := "resource_name_v1"

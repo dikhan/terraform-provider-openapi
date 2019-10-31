@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
@@ -51,13 +52,16 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 		return nil, err
 	}
 
-	if providerSchema, err = p.createTerraformProviderSchema(openAPIBackendConfiguration); err != nil {
-		return nil, err
-	}
 	if resourceMap, dataSourcesInstance, err = p.createTerraformProviderResourceMapAndDataSourceInstanceMap(); err != nil {
 		return nil, err
 	}
 
+	resourceNames := p.getResourceNames(resourceMap)
+	providerConfigurationEndPoints := &providerConfigurationEndPoints{resourceNames}
+
+	if providerSchema, err = p.createTerraformProviderSchema(openAPIBackendConfiguration, providerConfigurationEndPoints); err != nil {
+		return nil, err
+	}
 	if dataSources, err = p.createTerraformProviderDataSourceMap(); err != nil {
 		return nil, err
 	}
@@ -70,7 +74,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 		Schema:         providerSchema,
 		ResourcesMap:   resourceMap,
 		DataSourcesMap: dataSources,
-		ConfigureFunc:  p.configureProvider(openAPIBackendConfiguration),
+		ConfigureFunc:  p.configureProvider(openAPIBackendConfiguration, providerConfigurationEndPoints),
 	}
 	return provider, nil
 }
@@ -78,7 +82,8 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 // createTerraformProviderSchema adds support for specific provider configuration such as:
 // - api key auth which will be used as the authentication mechanism when making http requests to the service provider
 // - specific headers used in operations
-func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfiguration SpecBackendConfiguration) (map[string]*schema.Schema, error) {
+// - endpoints override in case the user wants to point the resource to a different API (e,g: staging environment endpoint)
+func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfiguration SpecBackendConfiguration, providerConfigurationEndPoints *providerConfigurationEndPoints) (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 
 	isMultiRegion, host, regions, err := openAPIBackendConfiguration.isMultiRegion()
@@ -126,18 +131,25 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 		}
 	}
 
-	providerConfigurationEndPoints, err := newProviderConfigurationEndPoints(p.specAnalyser)
-	if err != nil {
-		return nil, err
+	if providerConfigurationEndPoints != nil {
+		endpoints := providerConfigurationEndPoints.endpointsSchema()
+		if endpoints != nil {
+			s[providerPropertyEndPoints] = endpoints
+		}
 	}
-	endpoints, err := providerConfigurationEndPoints.endpointsSchema()
-	if err != nil {
-		return nil, err
-	}
-	if endpoints != nil {
-		s[providerPropertyEndPoints] = endpoints
-	}
+
 	return s, nil
+}
+
+// getResourceNames returns the resources exposed by the provider. The list of resources names returned will then be
+// used to create the provider's endpoint schema property as well as to configure the endpoints values with the data
+// provided bu the user
+func (p providerFactory) getResourceNames(resourceMap map[string]*schema.Resource) []string {
+	var resourceNames []string
+	for resourceName := range resourceMap {
+		resourceNames = append(resourceNames, strings.Replace(resourceName, fmt.Sprintf("%s_", p.name), "", 1))
+	}
+	return resourceNames
 }
 
 func (p providerFactory) configureProviderPropertyFromPluginConfig(providerSchema map[string]*schema.Schema, schemaPropertyName string, required bool) error {
@@ -252,14 +264,14 @@ func (p providerFactory) createTerraformProviderResourceMapAndDataSourceInstance
 	return resourceMap, dataSourceInstanceMap, nil
 }
 
-func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBackendConfiguration) schema.ConfigureFunc {
+func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBackendConfiguration, providerConfigurationEndPoints *providerConfigurationEndPoints) schema.ConfigureFunc {
 	return func(data *schema.ResourceData) (interface{}, error) {
 		globalSecuritySchemes, err := p.specAnalyser.GetSecurity().GetGlobalSecuritySchemes()
 		if err != nil {
 			return nil, err
 		}
 		authenticator := newAPIAuthenticator(&globalSecuritySchemes)
-		config, err := p.createProviderConfig(data)
+		config, err := p.createProviderConfig(data, providerConfigurationEndPoints)
 		if err != nil {
 			return nil, err
 		}
@@ -277,8 +289,8 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 // - Header values that might be required by API operations
 // - Security definition values that might be required by API operations (or globally)
 // configuration mapped to the corresponding
-func (p providerFactory) createProviderConfig(data *schema.ResourceData) (*providerConfiguration, error) {
-	providerConfiguration, err := newProviderConfiguration(p.specAnalyser, data)
+func (p providerFactory) createProviderConfig(data *schema.ResourceData, providerConfigurationEndPoints *providerConfigurationEndPoints) (*providerConfiguration, error) {
+	providerConfiguration, err := newProviderConfiguration(p.specAnalyser, data, providerConfigurationEndPoints)
 	if err != nil {
 		return nil, err
 	}

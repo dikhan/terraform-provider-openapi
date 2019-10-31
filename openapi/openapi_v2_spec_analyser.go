@@ -274,6 +274,7 @@ func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendCon
 // then the expected returned value is true. Otherwise if the above criteria is not met, it is considered that
 // the resourcePath provided is not terraform resource compliant.
 func (specAnalyser *specV2Analyser) isEndPointFullyTerraformResourceCompliant(resourcePath string) (string, *spec.PathItem, *spec.Schema, error) {
+	log.Printf("[DEBUG] validating end point terraform compatibility %s", resourcePath)
 	err := specAnalyser.validateInstancePath(resourcePath)
 	if err != nil {
 		return "", nil, nil, err
@@ -447,23 +448,9 @@ func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostO
 	return nil, fmt.Errorf("POST operation contains an schema with no properties")
 }
 
-// resourceInstanceRegex loads up the regex specified in const resourceInstanceRegex
-// If the regex is not able to compile the regular expression the function exists calling os.Exit(1) as
-// there is the regex is completely busted
-func (specAnalyser *specV2Analyser) resourceInstanceRegex() (*regexp.Regexp, error) {
-	r, err := regexp.Compile(resourceInstanceRegex)
-	if err != nil {
-		return nil, fmt.Errorf("an error occurred while compiling the resourceInstanceRegex regex '%s': %s", resourceInstanceRegex, err)
-	}
-	return r, nil
-}
-
 // isResourceInstanceEndPoint checks if the given path is of form /resource/{id}
 func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) (bool, error) {
-	r, err := specAnalyser.resourceInstanceRegex()
-	if err != nil {
-		return false, err
-	}
+	r, _ := regexp.Compile("^.*{.+}[\\/]?$")
 	return r.MatchString(p), nil
 }
 
@@ -471,15 +458,12 @@ func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) (bool, 
 // Example: Given 'resourcePath' being "/users/{username}" the result could be "/users" or "/users/" depending on
 // how the POST operation (resourceRootPath) of the given resource is defined in swagger.
 // If there is no match the returned string will be empty
-func (specAnalyser *specV2Analyser) findMatchingResourceRootPath(resourcePath string) (string, error) {
-	r, err := specAnalyser.resourceInstanceRegex()
-	if err != nil {
-		return "", err
-	}
-	result := r.FindStringSubmatch(resourcePath)
-	log.Printf("[DEBUG] resource root path match result - %s", result)
+func (specAnalyser *specV2Analyser) findMatchingResourceRootPath(resourceInstancePath string) (string, error) {
+	r, _ := regexp.Compile(resourceInstanceRegex)
+	result := r.FindStringSubmatch(resourceInstancePath)
+	log.Printf("[DEBUG] resource '%s' root path match: %s", resourceInstancePath, result)
 	if len(result) != 2 {
-		return "", fmt.Errorf("resource instance path '%s' missing valid resource root path, more than two results returned from match '%s'", resourcePath, result)
+		return "", fmt.Errorf("resource instance path '%s' missing valid resource root path, more than two results returned from match '%s'", resourceInstancePath, result)
 	}
 
 	resourceRootPath := result[1] // e,g: /v1/cdns/{id} /v1/cdns/
@@ -496,5 +480,5 @@ func (specAnalyser *specV2Analyser) findMatchingResourceRootPath(resourcePath st
 		return resourceRootPath, nil
 	}
 
-	return "", fmt.Errorf("resource instance path '%s' missing resource root path", resourcePath)
+	return "", fmt.Errorf("resource instance path '%s' missing resource root path", resourceInstancePath)
 }
