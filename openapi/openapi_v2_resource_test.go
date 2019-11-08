@@ -1500,6 +1500,112 @@ func TestGetSchemaDefinition(t *testing.T) {
 	})
 }
 
+func TestGetSchemaDefinitionWithOptions(t *testing.T) {
+
+	Convey("Given a SpecV2Resource containing a subresource path (one level)", t, func() {
+		r := &SpecV2Resource{
+			Path: "/zone/{zone_id}/recordset/{id}",
+		}
+		Convey("When getSchemaDefinition is called with a subresource schema containing a property that matches the parent property id", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"zone_id": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(s, true)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				// Note due to the model already containing a parent id property (zone_id) it will be reconfigured to be required
+				assertSchemaParentProperty(specSchemaDefinition, "zone_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a subresource path (one level)", t, func() {
+		r := &SpecV2Resource{
+			Path: "/zone/{zone_id}/recordset/{id}",
+		}
+		Convey("When getSchemaDefinition is called with a subresource schema containing a property that matches the parent property id including an array of objects", func() {
+			s := &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"record": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{"object"},
+											Properties: map[string]spec.Schema{
+												"content": {
+													SchemaProps: spec.SchemaProps{
+														Type: spec.StringOrArray{"string"},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(s, true)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "record", typeList, false, false, false)
+			})
+			Convey("And the specSchemaDefinition for the array property should not contain any parent id", func() {
+				recordProp, _ := specSchemaDefinition.getProperty("record")
+				So(recordProp.SpecSchemaDefinition.Properties, ShouldEqual, 1)
+				So(recordProp.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "content")
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "zone_id")
+			})
+		})
+	})
+}
+
 func TestGetResourcePath(t *testing.T) {
 
 	Convey("Given a SpecV2Resource with path resource that is not parameterised (root resource)", t, func() {
