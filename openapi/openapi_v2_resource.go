@@ -329,10 +329,14 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 }
 
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
-	return o.getSchemaDefinition(&o.SchemaDefinition)
+	return o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
 }
 
 func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDefinition, error) {
+	return o.getSchemaDefinitionWithOptions(schema, false)
+}
+
+func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, addParentProps bool) (*specSchemaDefinition, error) {
 	if schema == nil {
 		return nil, fmt.Errorf("schema argument must not be nil")
 	}
@@ -345,14 +349,15 @@ func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDe
 		}
 		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
 	}
-
-	parentResourceInfo := o.getParentResourceInfo()
-	if parentResourceInfo != nil {
-		parentPropertyNames := parentResourceInfo.getParentPropertiesNames()
-		for _, parentPropertyName := range parentPropertyNames {
-			pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
-			pr.IsParentProperty = true
-			schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
+	if addParentProps {
+		parentResourceInfo := o.getParentResourceInfo()
+		if parentResourceInfo != nil {
+			parentPropertyNames := parentResourceInfo.getParentPropertiesNames()
+			for _, parentPropertyName := range parentPropertyNames {
+				pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
+				pr.IsParentProperty = true
+				schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
+			}
 		}
 	}
 	return schemaDefinition, nil
