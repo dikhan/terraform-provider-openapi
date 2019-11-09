@@ -342,12 +342,15 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 	}
 	schemaDefinition := &specSchemaDefinition{}
 	schemaDefinition.Properties = specSchemaDefinitionProperties{}
+
+	// This map ensures no duplicates will happen if the schema happens to have a parent id property. if so, it will be overridden with the expected parent property configuration (e,g: making the prop required)
+	schemaProps := map[string]*specSchemaDefinitionProperty{}
 	for propertyName, property := range schema.Properties {
 		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property, schema.Required)
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
+		schemaProps[propertyName] = schemaDefinitionProperty
 	}
 	if addParentProps {
 		parentResourceInfo := o.getParentResourceInfo()
@@ -356,9 +359,13 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 			for _, parentPropertyName := range parentPropertyNames {
 				pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
 				pr.IsParentProperty = true
-				schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
+				schemaProps[parentPropertyName] = pr
 			}
 		}
+	}
+
+	for _, property := range schemaProps {
+		schemaDefinition.Properties = append(schemaDefinition.Properties, property)
 	}
 	return schemaDefinition, nil
 }
