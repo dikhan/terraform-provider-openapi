@@ -1502,12 +1502,50 @@ func TestGetSchemaDefinition(t *testing.T) {
 
 func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 
-	Convey("Given a SpecV2Resource containing a subresource path (one level)", t, func() {
+	Convey("Given a blank SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		Convey("When getSchemaDefinitionWithOptions is called with a nil arg", func() {
+			_, err := r.getSchemaDefinitionWithOptions(nil, true)
+			Convey("Then the error returned matches the expected one", func() {
+				So(err.Error(), ShouldEqual, "schema argument must not be nil")
+			})
+		})
+		Convey("When getSchemaDefinitionWithOptions is called passing a blank schema", func() {
+			d, e := r.getSchemaDefinitionWithOptions(&spec.Schema{}, true)
+			Convey("Then the error returned is not nil", func() {
+				So(e, ShouldBeNil)
+			})
+			Convey("And the schema definition contains empty Properties", func() {
+				So(d, ShouldNotBeNil)
+				So(d.Properties, ShouldBeEmpty)
+			})
+		})
+		Convey("When getSchemaDefinitionWithOptions is called passing a schema with a weird property type", func() {
+			schema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"something weird"},
+							},
+						},
+					},
+				},
+			}
+			d, e := r.getSchemaDefinitionWithOptions(&schema, true)
+			Convey("Then the error returned is not nil", func() {
+				So(e, ShouldNotBeNil)
+			})
+			Convey("And the schema definition returned is nil", func() {
+				So(d, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a sub-resource path (one level) with a schema containing a property that matches the parent property id", t, func() {
 		r := &SpecV2Resource{
-			Path: "/zone/{zone_id}/recordset/{id}",
-		}
-		Convey("When getSchemaDefinition is called with a subresource schema containing a property that matches the parent property id", func() {
-			s := &spec.Schema{
+			Path: "/zone/{zone_id}/recordset",
+			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Required: []string{"number_required_prop"},
 					Properties: map[string]spec.Schema{
@@ -1526,12 +1564,14 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 						},
 					},
 				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(s, true)
+			},
+		}
+		Convey("When getSchemaDefinitionWithOptions is called with the addParentProps set to true", func() {
+			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(&r.SchemaDefinition, true)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+			Convey("And the specSchemaDefinition returned should be configured with the id and the zone_id properties (and no extra parent property 'zone_id' will be added since it's already there)", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
 			})
 			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
@@ -1544,12 +1584,10 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a subresource path (one level)", t, func() {
+	Convey("Given a SpecV2Resource containing a sub-resource path with a schema containing an array of objects", t, func() {
 		r := &SpecV2Resource{
-			Path: "/zone/{zone_id}/recordset/{id}",
-		}
-		Convey("When getSchemaDefinition is called with a subresource schema containing a property that matches the parent property id including an array of objects", func() {
-			s := &spec.Schema{
+			Path: "/zone/{zone_id}/recordset",
+			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Required: []string{"number_required_prop"},
 					Properties: map[string]spec.Schema{
@@ -1582,13 +1620,15 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 						},
 					},
 				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(s, true)
+			},
+		}
+		Convey("When getSchemaDefinitionWithOptions is called with addParentProps set to true", func() {
+			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(&r.SchemaDefinition, true)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
 			})
 			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
 				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
@@ -1596,7 +1636,7 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 			})
 			Convey("And the specSchemaDefinition for the array property should not contain any parent id", func() {
 				recordProp, _ := specSchemaDefinition.getProperty("record")
-				So(recordProp.SpecSchemaDefinition.Properties, ShouldEqual, 1)
+				So(len(recordProp.SpecSchemaDefinition.Properties), ShouldEqual, 1)
 				So(recordProp.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "content")
 			})
 			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
