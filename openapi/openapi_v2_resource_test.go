@@ -1072,7 +1072,7 @@ func assertSchemaParentProperty(actualSpecSchemaDefinition *specSchemaDefinition
 }
 
 func TestGetResourceSchema(t *testing.T) {
-	Convey("Given a SpecV2Resource containing a root path", t, func() {
+	Convey("Given a SpecV2Resource containing a root path and various properties in the schema", t, func() {
 		r := &SpecV2Resource{
 			Path: "/cdns",
 			SchemaDefinition: spec.Schema{
@@ -1111,7 +1111,7 @@ func TestGetResourceSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+		Convey("When getResourceSchema is called", func() {
 			specSchemaDefinition, err := r.getResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1125,50 +1125,263 @@ func TestGetResourceSchema(t *testing.T) {
 			})
 		})
 	})
-}
 
-func TestGetSchemaDefinition(t *testing.T) {
-
-	Convey("Given a blank SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When getSchemaDefinition is called with a nil arg", func() {
-			_, err := r.getSchemaDefinition(nil)
-			Convey("Then the error returned matches the expected one", func() {
-				So(err.Error(), ShouldEqual, "schema argument must not be nil")
-			})
-		})
-		Convey("When getSchemaDefinition is called passing a blank schema", func() {
-			d, e := r.getSchemaDefinition(&spec.Schema{})
-			Convey("Then the error returned is not nil", func() {
-				So(e, ShouldBeNil)
-			})
-			Convey("And the schema definition contains empty Properties", func() {
-				So(d, ShouldNotBeNil)
-				So(d.Properties, ShouldBeEmpty)
-			})
-		})
-		Convey("When getSchemaDefinition is called passing a schema with a weird property type", func() {
-			schema := spec.Schema{
+	Convey("Given a SpecV2Resource containing a sub-resource path (one level) that has a weird sub-resource path (firewalls is missing firewalls/{id}) and a schema definition with a property", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls/v1/rules",
+			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
 					Properties: map[string]spec.Schema{
 						"string_readonly_prop": {
 							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"something weird"},
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
 							},
 						},
 					},
 				},
-			}
-			d, e := r.getSchemaDefinition(&schema)
-			Convey("Then the error returned is not nil", func() {
-				So(e, ShouldNotBeNil)
+			},
+		}
+		Convey("When getResourceSchema is called", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
 			})
-			Convey("And the schema definition returned is nil", func() {
-				So(d, ShouldBeNil)
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 			})
 		})
-
 	})
+
+	Convey("Given a SpecV2Resource containing a sub-resource path (one level and parent versioned) and a schema containing one property", t, func() {
+		r := &SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceSchema is called", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource that is a sub-resource (one level parent with no version)", t, func() {
+		r := &SpecV2Resource{
+			Path: "/parent/{parent_id}/child",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent one)", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should also include the parent property", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource that is a sub-resource (two level parent) and a schema for child", t, func() {
+		r := &SpecV2Resource{
+			Path: "/parent/{parent_id}/subparent/{subparent_id}/child",
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceSchema is called", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent ones)", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should also include the parents properties", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
+				assertSchemaParentProperty(specSchemaDefinition, "subparent_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/firewalls",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "cdn",
+								},
+							},
+						},
+					},
+				},
+			},
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceSchema is called", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdn_v1_id")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a subresource path (two level and parents versioned)", t, func() {
+		r := &SpecV2Resource{
+			Path:  "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
+			Paths: nil,
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"number_required_prop"},
+					Properties: map[string]spec.Schema{
+						"string_readonly_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"int_optional_computed_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"integer"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfComputed: true,
+								},
+							},
+						},
+						"number_required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"number"},
+							},
+						},
+						"bool_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"boolean"},
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceSchema is called", func() {
+			specSchemaDefinition, err := r.getResourceSchema()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id ones", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 6)
+			})
+			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+			})
+			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
+				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
+				assertSchemaParentProperty(specSchemaDefinition, "firewalls_v2_id")
+			})
+		})
+	})
+}
+
+func TestGetSchemaDefinition(t *testing.T) {
+
 	Convey("Given a SpecV2Resource containing a root path", t, func() {
 		r := &SpecV2Resource{
 			Path: "/cdns",
@@ -1223,75 +1436,15 @@ func TestGetSchemaDefinition(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource containing a subresource path (one level)", t, func() {
+	Convey("Given a SpecV2Resource containing a sub-resource", t, func() {
 		r := &SpecV2Resource{
-			Path: "/v1/cdns/{id}/firewalls",
+			Path: "/zone/{zone_id}/recordset",
 		}
 		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
 			s := &spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Required: []string{"number_required_prop"},
 					Properties: map[string]spec.Schema{
-						"string_readonly_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"string"},
-							},
-							SwaggerSchemaProps: spec.SwaggerSchemaProps{
-								ReadOnly: true,
-							},
-						},
-						"int_optional_computed_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"integer"},
-							},
-							VendorExtensible: spec.VendorExtensible{
-								Extensions: spec.Extensions{
-									extTfComputed: true,
-								},
-							},
-						},
-						"number_required_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"number"},
-							},
-						},
-						"bool_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"boolean"},
-							},
-						},
-					},
-				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
-			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
-				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
-				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
-			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
-				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource containing a subresource path (one level) that has a non restful subresource path", t, func() {
-		r := &SpecV2Resource{
-			Path: "/v1/cdns/{id}/firewalls/v1/rules",
-		}
-		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-			s := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Required: []string{"number_required_prop"},
-					Properties: map[string]spec.Schema{
-						"string_readonly_prop": {
+						"id": {
 							SchemaProps: spec.SchemaProps{
 								Type: spec.StringOrArray{"string"},
 							},
@@ -1306,195 +1459,9 @@ func TestGetSchemaDefinition(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
-			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required", func() {
-				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource containing a subresource path (two level)", t, func() {
-		r := &SpecV2Resource{
-			Path:  "/v1/cdns/{cdn_id}/v2/firewalls/{fw_id}/rules",
-			Paths: nil,
-		}
-		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-			s := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Required: []string{"number_required_prop"},
-					Properties: map[string]spec.Schema{
-						"string_readonly_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"string"},
-							},
-							SwaggerSchemaProps: spec.SwaggerSchemaProps{
-								ReadOnly: true,
-							},
-						},
-						"int_optional_computed_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"integer"},
-							},
-							VendorExtensible: spec.VendorExtensible{
-								Extensions: spec.Extensions{
-									extTfComputed: true,
-								},
-							},
-						},
-						"number_required_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"number"},
-							},
-						},
-						"bool_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"boolean"},
-							},
-						},
-					},
-				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id ones", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+2)
-			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
-				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
-				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
-			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
-				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
-				assertSchemaParentProperty(specSchemaDefinition, "firewalls_v2_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource that is a subresource (one level parent)", t, func() {
-		r := &SpecV2Resource{
-			Path: "/parent/{parent_id}/child",
-		}
-		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-			s := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"string_readonly_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"string"},
-							},
-							SwaggerSchemaProps: spec.SwaggerSchemaProps{
-								ReadOnly: true,
-							},
-						},
-					},
-				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent one)", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-			})
-			Convey("And the specSchemaDefinition returned should also include the parent property", func() {
-				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource that is a subresource (two level parent)", t, func() {
-		r := &SpecV2Resource{
-			Path: "/parent/{parent_id}/subparent/{subparent_id}/child",
-		}
-		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-			s := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"string_readonly_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"string"},
-							},
-							SwaggerSchemaProps: spec.SwaggerSchemaProps{
-								ReadOnly: true,
-							},
-						},
-					},
-				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent ones)", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
-			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-			})
-			Convey("And the specSchemaDefinition returned should also include the parents properties", func() {
-				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
-				assertSchemaParentProperty(specSchemaDefinition, "subparent_id")
-			})
-		})
-	})
-
-	Convey("Given a SpecV2Resource containing a sub-resource path (one level) and the parent resource using a preferred resource name", t, func() {
-		r := SpecV2Resource{
-			Path: "/v1/cdns/{id}/firewalls",
-			Paths: map[string]spec.PathItem{
-				"/v1/cdns": {
-					PathItemProps: spec.PathItemProps{
-						Post: &spec.Operation{
-							VendorExtensible: spec.VendorExtensible{
-								Extensions: spec.Extensions{
-									extTfResourceName: "cdn",
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-			s := &spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Required: []string{"number_required_prop"},
-					Properties: map[string]spec.Schema{
-						"string_readonly_prop": {
-							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"string"},
-							},
-							SwaggerSchemaProps: spec.SwaggerSchemaProps{
-								ReadOnly: true,
-							},
-						},
-					},
-				},
-			}
-			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
-				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties)+1)
-			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
-				assertSchemaParentProperty(specSchemaDefinition, "cdn_v1_id")
+			Convey("And the specSchemaDefinition returned should be 1 and no parent id should be in the schema. Only getResourceSchema() allows parent ids to be injects", func() {
+				So(len(specSchemaDefinition.Properties), ShouldEqual, 1)
+				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
 			})
 		})
 	})
@@ -1578,7 +1545,7 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
 			})
 			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
-				// Note due to the model already containing a parent id property (zone_id) it will be reconfigured to be required
+				// Note due to the model already containing a parent id property (zone_id) it will be reconfigured to be required. This ensures the resource tf configuration requires the parent id property to be populated.
 				assertSchemaParentProperty(specSchemaDefinition, "zone_id")
 			})
 		})
