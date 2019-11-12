@@ -3462,11 +3462,29 @@ func TestGetResourceTerraformName(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a SpecV2Resource with a root path item containing a post operation with the extension 'x-terraform-resource-name'", t, func() {
+	Convey("Given a SpecV2Resource with a root path item containing the extension 'x-terraform-resource-name'", t, func() {
+		extensions := spec.Extensions{}
+		expectedResourceName := "rootLevelPreferredName"
+		extensions.Add(extTfResourceName, expectedResourceName)
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: extensions,
+				},
+			},
+		}
+		Convey("When getResourceTerraformName method is called an existing extension", func() {
+			value := r.getResourceTerraformName()
+			Convey("Then the value returned should match the value in the extension", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource without a rootPathItem", t, func() {
 		r := SpecV2Resource{}
 		Convey("When getResourceTerraformName method is called", func() {
 			value := r.getResourceTerraformName()
-			Convey("Then the value returned should be empty since the resource does not have such extension defined in the post operations", func() {
+			Convey("Then the value returned should be empty since the resource does not have such extension defined", func() {
 				So(value, ShouldEqual, "")
 			})
 		})
