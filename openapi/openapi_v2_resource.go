@@ -297,6 +297,7 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 		preferredParentName := ""
 		for _, parentURI := range parentURIs {
 			// `o.Paths` is used to read the preferred name over that resource if `x-terraform-preferred-name` is set
+			// TODO: How is this affected if x-terraform-resource-name is set on root path and not on post?
 			if o.Paths != nil {
 				if parent, ok := o.Paths[parentURI]; ok {
 					preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
@@ -645,10 +646,13 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 }
 
 func (o *SpecV2Resource) getResourceTerraformName() string {
-	if o.RootPathItem.Post == nil {
-		return ""
+	if o.RootPathItem.Extensions != nil {
+		return o.getExtensionStringValue(o.RootPathItem.Extensions, extTfResourceName)
 	}
-	return o.getExtensionStringValue(o.RootPathItem.Post.Extensions, extTfResourceName)
+	if o.RootPathItem.Post != nil {
+		return o.getExtensionStringValue(o.RootPathItem.Post.Extensions, extTfResourceName)
+	}
+	return ""
 }
 
 func (o *SpecV2Resource) getExtensionStringValue(extensions spec.Extensions, key string) string {
