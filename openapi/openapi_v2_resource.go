@@ -329,31 +329,43 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 }
 
 func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
-	return o.getSchemaDefinition(&o.SchemaDefinition)
+	return o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
 }
 
 func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDefinition, error) {
+	return o.getSchemaDefinitionWithOptions(schema, false)
+}
+
+func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, addParentProps bool) (*specSchemaDefinition, error) {
 	if schema == nil {
 		return nil, fmt.Errorf("schema argument must not be nil")
 	}
 	schemaDefinition := &specSchemaDefinition{}
 	schemaDefinition.Properties = specSchemaDefinitionProperties{}
+
+	// This map ensures no duplicates will happen if the schema happens to have a parent id property. if so, it will be overridden with the expected parent property configuration (e,g: making the prop required)
+	schemaProps := map[string]*specSchemaDefinitionProperty{}
 	for propertyName, property := range schema.Properties {
 		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property, schema.Required)
 		if err != nil {
 			return nil, err
 		}
-		schemaDefinition.Properties = append(schemaDefinition.Properties, schemaDefinitionProperty)
+		schemaProps[propertyName] = schemaDefinitionProperty
+	}
+	if addParentProps {
+		parentResourceInfo := o.getParentResourceInfo()
+		if parentResourceInfo != nil {
+			parentPropertyNames := parentResourceInfo.getParentPropertiesNames()
+			for _, parentPropertyName := range parentPropertyNames {
+				pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
+				pr.IsParentProperty = true
+				schemaProps[parentPropertyName] = pr
+			}
+		}
 	}
 
-	parentResourceInfo := o.getParentResourceInfo()
-	if parentResourceInfo != nil {
-		parentPropertyNames := parentResourceInfo.getParentPropertiesNames()
-		for _, parentPropertyName := range parentPropertyNames {
-			pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
-			pr.IsParentProperty = true
-			schemaDefinition.Properties = append(schemaDefinition.Properties, pr)
-		}
+	for _, property := range schemaProps {
+		schemaDefinition.Properties = append(schemaDefinition.Properties, property)
 	}
 	return schemaDefinition, nil
 }
