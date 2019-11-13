@@ -3090,7 +3090,10 @@ definitions:
 				So(idExists, ShouldBeTrue)
 				labelExists, _ := assertPropertyExists(actualResourceSchema.Properties, "label")
 				So(labelExists, ShouldBeTrue)
-				So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdn_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
+				parentPropExists, _ := assertPropertyExists(actualResourceSchema.Properties, "cdn_v1_id")
+				So(parentPropExists, ShouldBeTrue)
+				// TODO: Fix the below assertion - fails on some test runs when the order of the properties isn't as expected
+				//So(actualResourceSchema.Properties[2].Name, ShouldEqual, "cdn_v1_id") //property added on the fly: is a reference to the parent as Firewall is a sub resource
 			})
 
 		})
