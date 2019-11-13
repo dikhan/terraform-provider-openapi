@@ -646,8 +646,9 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 }
 
 func (o *SpecV2Resource) getResourceTerraformName() string {
-	if o.RootPathItem.Extensions != nil {
-		return o.getExtensionStringValue(o.RootPathItem.Extensions, extTfResourceName)
+	preferredName, _ := o.RootPathItem.Extensions.GetString(extTfResourceName)
+	if preferredName != "" {
+		return preferredName
 	}
 	if o.RootPathItem.Post != nil {
 		return o.getExtensionStringValue(o.RootPathItem.Post.Extensions, extTfResourceName)
