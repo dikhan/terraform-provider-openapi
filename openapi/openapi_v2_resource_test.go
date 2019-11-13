@@ -3502,7 +3502,34 @@ func TestGetResourceTerraformName(t *testing.T) {
 		}
 		Convey("When getResourceTerraformName method is called an existing extension", func() {
 			value := r.getResourceTerraformName()
-			Convey("Then the value returned should match the value in the extension", func() {
+			Convey("Then the value returned should match the value in the extension on the post level", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource with a preferred name extension on both root and post levels", t, func() {
+		expectedResourceName := "rootPreferredName"
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfResourceName: expectedResourceName,
+					},
+				},
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: "postPreferredName",
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When getResourceTerraformName method is called an existing extension", func() {
+			value := r.getResourceTerraformName()
+			Convey("Then the value returned should match the value in the extension on the root level", func() {
 				So(value, ShouldEqual, expectedResourceName)
 			})
 		})
