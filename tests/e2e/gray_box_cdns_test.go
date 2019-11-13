@@ -47,6 +47,7 @@ paths:
   ######################
 
   /v1/cdns:
+    x-terraform-resource-name: "cdn"
     get:
       summary: "Get all cdns"
       responses:
@@ -55,7 +56,7 @@ paths:
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkCollectionV1"
     post:
-      x-terraform-resource-name: "cdn"
+      # x-terraform-resource-name: "cdn" (this extension has been deprecated and should be used on the root level path)
       summary: "Create cdn"
       operationId: "ContentDeliveryNetworkCreateV1"
       parameters:

@@ -297,14 +297,21 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 		preferredParentName := ""
 		for _, parentURI := range parentURIs {
 			// `o.Paths` is used to read the preferred name over that resource if `x-terraform-preferred-name` is set
-			// TODO: How is this affected if x-terraform-resource-name is set on root path and not on post?
 			if o.Paths != nil {
 				if parent, ok := o.Paths[parentURI]; ok {
-					preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+					// TODO: DRY up repeated logic to get x-terraform-resource-name here and in getResourceTerraformName
+					// TODO: deprecate x-terraform-resource-name on the post operation? encourage users to put the extension on the post operation?
+					preferredParentName, _ = parent.Extensions.GetString(extTfResourceName)
+					if preferredParentName == "" {
+						preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+					}
 				} else {
 					// Falling back to checking path with trailing slash
 					if parent, ok := o.Paths[parentURI+"/"]; ok {
-						preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+						preferredParentName, _ = parent.Extensions.GetString(extTfResourceName)
+						if preferredParentName == "" {
+							preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
+						}
 					}
 				}
 			}
