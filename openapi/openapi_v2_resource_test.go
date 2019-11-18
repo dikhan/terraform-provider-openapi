@@ -3590,6 +3590,104 @@ func TestGetResourceTerraformName(t *testing.T) {
 	})
 }
 
+func TestGetPreferredName(t *testing.T) {
+	Convey("Given a path item with the extension 'x-terraform-resource-name' on the POST level", t, func() {
+		extensions := spec.Extensions{}
+		expectedResourceName := "postLevelPreferredName"
+		extensions.Add(extTfResourceName, expectedResourceName)
+		pathItem := spec.PathItem{
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: extensions,
+					},
+				},
+			},
+		}
+		Convey("When getPreferredName is called", func() {
+			value := getPreferredName(pathItem)
+			Convey("Then the value returned should match the value in the extension", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+	Convey("Given a path item with the extension 'x-terraform-resource-name' on the root level", t, func() {
+		extensions := spec.Extensions{}
+		expectedResourceName := "rootLevelPreferredName"
+		extensions.Add(extTfResourceName, expectedResourceName)
+		pathItem := spec.PathItem{
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: extensions,
+			},
+		}
+		Convey("When getPreferredName is called", func() {
+			value := getPreferredName(pathItem)
+			Convey("Then the value returned should match the value in the extension", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+	Convey("Given a path item with the extension 'x-terraform-resource-name' on the POST and a different extension on the root level", t, func() {
+		postExtensions := spec.Extensions{}
+		expectedResourceName := "postPreferredName"
+		postExtensions.Add(extTfResourceName, expectedResourceName)
+		pathItem := spec.PathItem{
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					"x-something": "something ext value",
+				},
+			},
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: postExtensions,
+					},
+				},
+			},
+		}
+		Convey("When getPreferredName is called", func() {
+			value := getPreferredName(pathItem)
+			Convey("Then the value returned should match the value in the extension on the POST level", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+	Convey("Given a path item with the extension 'x-terraform-resource-name' on both the POST and root levels", t, func() {
+		expectedResourceName := "rootPreferredName"
+		pathItem := spec.PathItem{
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					extTfResourceName: expectedResourceName,
+				},
+			},
+			PathItemProps: spec.PathItemProps{
+				Post: &spec.Operation{
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceName: "postPreferredName",
+						},
+					},
+				},
+			},
+		}
+		Convey("When getPreferredName is called", func() {
+			value := getPreferredName(pathItem)
+			Convey("Then the value returned should match the value in the extension on the root level", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+	Convey("Given an empty path item", t, func() {
+		pathItem := spec.PathItem{}
+		Convey("When getPreferredName is called", func() {
+			value := getPreferredName(pathItem)
+			Convey("Then the value returned should be empty since the resource does not have the extension defined", func() {
+				So(value, ShouldEqual, "")
+			})
+		})
+	})
+}
+
 func TestGetExtensionStringValue(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := SpecV2Resource{}
