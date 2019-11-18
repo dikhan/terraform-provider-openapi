@@ -3525,60 +3525,6 @@ func TestGetResourceTerraformName(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a SpecV2Resource with a preferred name extension on the post and another extension on the root level", t, func() {
-		postExtensions := spec.Extensions{}
-		expectedResourceName := "postPreferredName"
-		postExtensions.Add(extTfResourceName, expectedResourceName)
-		r := SpecV2Resource{
-			RootPathItem: spec.PathItem{
-				VendorExtensible: spec.VendorExtensible{
-					Extensions: spec.Extensions{
-						"x-something": "something ext value",
-					},
-				},
-				PathItemProps: spec.PathItemProps{
-					Post: &spec.Operation{
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: postExtensions,
-						},
-					},
-				},
-			},
-		}
-		Convey("When getResourceTerraformName method is called an existing extension", func() {
-			value := r.getResourceTerraformName()
-			Convey("Then the value returned should match the value in the extension on the post level", func() {
-				So(value, ShouldEqual, expectedResourceName)
-			})
-		})
-	})
-	Convey("Given a SpecV2Resource with a preferred name extension on both root and post levels", t, func() {
-		expectedResourceName := "rootPreferredName"
-		r := SpecV2Resource{
-			RootPathItem: spec.PathItem{
-				VendorExtensible: spec.VendorExtensible{
-					Extensions: spec.Extensions{
-						extTfResourceName: expectedResourceName,
-					},
-				},
-				PathItemProps: spec.PathItemProps{
-					Post: &spec.Operation{
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								extTfResourceName: "postPreferredName",
-							},
-						},
-					},
-				},
-			},
-		}
-		Convey("When getResourceTerraformName method is called an existing extension", func() {
-			value := r.getResourceTerraformName()
-			Convey("Then the value returned should match the value in the extension on the root level", func() {
-				So(value, ShouldEqual, expectedResourceName)
-			})
-		})
-	})
 	Convey("Given a SpecV2Resource without a rootPathItem", t, func() {
 		r := SpecV2Resource{}
 		Convey("When getResourceTerraformName method is called", func() {
