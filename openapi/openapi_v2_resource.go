@@ -299,18 +299,11 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 			// `o.Paths` is used to read the preferred name over that resource if `x-terraform-preferred-name` is set
 			if o.Paths != nil {
 				if parent, ok := o.Paths[parentURI]; ok {
-					// TODO: DRY up repeated logic to get x-terraform-resource-name here and in getResourceTerraformName
-					preferredParentName, _ = parent.Extensions.GetString(extTfResourceName)
-					if preferredParentName == "" {
-						preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
-					}
+					preferredParentName = getPreferredName(parent)
 				} else {
 					// Falling back to checking path with trailing slash
 					if parent, ok := o.Paths[parentURI+"/"]; ok {
-						preferredParentName, _ = parent.Extensions.GetString(extTfResourceName)
-						if preferredParentName == "" {
-							preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
-						}
+						preferredParentName = getPreferredName(parent)
 					}
 				}
 			}
@@ -652,11 +645,7 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 }
 
 func (o *SpecV2Resource) getResourceTerraformName() string {
-	preferredName, _ := o.RootPathItem.Extensions.GetString(extTfResourceName)
-	if preferredName == "" && o.RootPathItem.Post != nil {
-		preferredName, _ = o.RootPathItem.Post.Extensions.GetString(extTfResourceName)
-	}
-	return preferredName
+	return getPreferredName(o.RootPathItem)
 }
 
 func getPreferredName(path spec.PathItem) string {
