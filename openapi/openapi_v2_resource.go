@@ -300,7 +300,6 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 			if o.Paths != nil {
 				if parent, ok := o.Paths[parentURI]; ok {
 					// TODO: DRY up repeated logic to get x-terraform-resource-name here and in getResourceTerraformName
-					// TODO: deprecate x-terraform-resource-name on the post operation? encourage users to put the extension on the post operation?
 					preferredParentName, _ = parent.Extensions.GetString(extTfResourceName)
 					if preferredParentName == "" {
 						preferredParentName, _ = parent.Post.Extensions.GetString(extTfResourceName)
