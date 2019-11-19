@@ -306,7 +306,7 @@ that internally will be mapped to the GET operation (in the previous example tha
 This type of data source is named data source instance. The data source name will be formed from the resource name 
 plus the ```_instance``` string attach to it.
 
-####### Argument Reference
+###### Argument Reference
 
 ````
 data "openapi_resource_v1_instance" "my_resource_data_source" {
@@ -316,7 +316,7 @@ data "openapi_resource_v1_instance" "my_resource_data_source" {
 
 - id: string value of the resource instance id to be fetched
 
-####### Attributes Reference
+###### Attributes Reference
 
 The data source state will be filled with the corresponding properties defined in the resource model definition, in the 
 example above that would be ```resourceV1```. Please note that all the properties from the model will be configured as computed 
