@@ -18,7 +18,7 @@ const pathParameterRegex = "/({[\\w]*})*/"
 // to the resource in question and not any other version showing in the path before the resource name
 const resourceVersionRegexTemplate = "/(v[\\d]*)/%s"
 
-const resourceNameRegex = "((/\\w*[/]?))+$"
+const resourceNameRegex = "((/[\\w-]*[/]?))+$"
 
 // resourceParentNameRegex is the regex used to identify the different parents from a path that is a sub-resource. If used
 // calling FindStringSubmatch, any match will contain the following groups in the corresponding array index:
