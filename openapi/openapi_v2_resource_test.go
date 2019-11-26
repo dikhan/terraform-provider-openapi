@@ -377,6 +377,7 @@ func TestShouldIgnoreResource(t *testing.T) {
 func TestBuildResourceName(t *testing.T) {
 
 	testCases := []struct {
+		name                 string
 		path                 string
 		paths                map[string]spec.PathItem
 		rootPathItem         spec.PathItem
@@ -384,6 +385,19 @@ func TestBuildResourceName(t *testing.T) {
 		expectedError        error
 	}{
 		{
+			name:  "resource name built from path itself",
+			path:  "/v1/cdns",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			name:  "preferred resource name in root level post operation",
 			path:  "/v1/cdns",
 			paths: nil,
 			rootPathItem: spec.PathItem{
@@ -401,6 +415,24 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			name:  "preferred resource name in root level path",
+			path:  "/v1/cdns",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfResourceName: "cdn",
+					},
+				},
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+			expectedResourceName: "cdn_v1",
+			expectedError:        nil,
+		},
+		{
+			name: "first level sub-resource with no preferred parent names",
 			path: "/cdns/{id}/firewalls",
 			paths: map[string]spec.PathItem{
 				"/cdns": {
@@ -413,6 +445,25 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			name: "first level sub-resource with preferred parent names",
+			path: "/cdns/{id}/firewalls",
+			paths: map[string]spec.PathItem{
+				"/cdns": {
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceName: "cdn",
+						},
+					},
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
+			expectedResourceName: "cdn_firewalls",
+			expectedError:        nil,
+		},
+		{
+			name: "two level sub-resource with version and only one parent using preferred name",
 			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
 			paths: map[string]spec.PathItem{
 				"/v1/cdns": {
@@ -436,6 +487,36 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			name: "two level sub-resource with preferred parent names",
+			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceName: "cdn",
+						},
+					},
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "firewall",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedResourceName: "cdn_v1_firewall_v2_rules_v3",
+			expectedError:        nil,
+		},
+		{
+			name:  "",
 			path:  "?",
 			paths: nil,
 			rootPathItem: spec.PathItem{
@@ -449,25 +530,18 @@ func TestBuildResourceName(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
-			r := SpecV2Resource{
-				Path:         tc.path,
-				Paths:        tc.paths,
-				RootPathItem: tc.rootPathItem,
-			}
-
-			Convey("When buildResourceName is called", func() {
-				resourceName, err := r.buildResourceName()
-				if tc.expectedError != nil {
-					Convey("Then the error returned should be the expected one", func() {
-						So(err.Error(), ShouldEqual, tc.expectedError.Error())
-					})
-				}
-				Convey("And the resource name should be the expected one", func() {
-					So(resourceName, ShouldEqual, tc.expectedResourceName)
-				})
-			})
-		})
+		r := SpecV2Resource{
+			Path:         tc.path,
+			Paths:        tc.paths,
+			RootPathItem: tc.rootPathItem,
+		}
+		resourceName, err := r.buildResourceName()
+		if tc.expectedError != nil {
+			assert.Error(t, err, tc.expectedError.Error(), tc.name)
+		} else {
+			assert.NoError(t, err, tc.name)
+			assert.Equal(t, tc.expectedResourceName, resourceName, tc.name)
+		}
 	}
 }
 
