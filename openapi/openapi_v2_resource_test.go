@@ -3,6 +3,7 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"
 	"testing"
@@ -376,6 +377,7 @@ func TestShouldIgnoreResource(t *testing.T) {
 func TestBuildResourceName(t *testing.T) {
 
 	testCases := []struct {
+		name                 string
 		path                 string
 		paths                map[string]spec.PathItem
 		rootPathItem         spec.PathItem
@@ -383,6 +385,19 @@ func TestBuildResourceName(t *testing.T) {
 		expectedError        error
 	}{
 		{
+			name:  "resource name built from path itself",
+			path:  "/v1/cdns",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+			expectedResourceName: "cdns_v1",
+			expectedError:        nil,
+		},
+		{
+			name:  "preferred resource name in root level post operation",
 			path:  "/v1/cdns",
 			paths: nil,
 			rootPathItem: spec.PathItem{
@@ -400,6 +415,24 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			name:  "preferred resource name in root level path",
+			path:  "/v1/cdns",
+			paths: nil,
+			rootPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfResourceName: "cdn",
+					},
+				},
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{},
+				},
+			},
+			expectedResourceName: "cdn_v1",
+			expectedError:        nil,
+		},
+		{
+			name: "first level sub-resource with no preferred parent names",
 			path: "/cdns/{id}/firewalls",
 			paths: map[string]spec.PathItem{
 				"/cdns": {
@@ -412,6 +445,25 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			name: "first level sub-resource with preferred parent names",
+			path: "/cdns/{id}/firewalls",
+			paths: map[string]spec.PathItem{
+				"/cdns": {
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceName: "cdn",
+						},
+					},
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+			},
+			expectedResourceName: "cdn_firewalls",
+			expectedError:        nil,
+		},
+		{
+			name: "two level sub-resource with version and only one parent using preferred name",
 			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
 			paths: map[string]spec.PathItem{
 				"/v1/cdns": {
@@ -435,6 +487,36 @@ func TestBuildResourceName(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			name: "two level sub-resource with preferred parent names",
+			path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceName: "cdn",
+						},
+					},
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					PathItemProps: spec.PathItemProps{
+						Post: &spec.Operation{
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfResourceName: "firewall",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedResourceName: "cdn_v1_firewall_v2_rules_v3",
+			expectedError:        nil,
+		},
+		{
+			name:  "",
 			path:  "?",
 			paths: nil,
 			rootPathItem: spec.PathItem{
@@ -448,25 +530,18 @@ func TestBuildResourceName(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		Convey("Given a SpecV2Resource with a sub-resource root path", t, func() {
-			r := SpecV2Resource{
-				Path:         tc.path,
-				Paths:        tc.paths,
-				RootPathItem: tc.rootPathItem,
-			}
-
-			Convey("When buildResourceName is called", func() {
-				resourceName, err := r.buildResourceName()
-				if tc.expectedError != nil {
-					Convey("Then the error returned should be the expected one", func() {
-						So(err.Error(), ShouldEqual, tc.expectedError.Error())
-					})
-				}
-				Convey("And the resource name should be the expected one", func() {
-					So(resourceName, ShouldEqual, tc.expectedResourceName)
-				})
-			})
-		})
+		r := SpecV2Resource{
+			Path:         tc.path,
+			Paths:        tc.paths,
+			RootPathItem: tc.rootPathItem,
+		}
+		resourceName, err := r.buildResourceName()
+		if tc.expectedError != nil {
+			assert.Error(t, err, tc.expectedError.Error(), tc.name)
+		} else {
+			assert.NoError(t, err, tc.name)
+			assert.Equal(t, tc.expectedResourceName, resourceName, tc.name)
+		}
 	}
 }
 
@@ -1002,7 +1077,7 @@ func TestParentResourceInfo(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource configured with a path that is a subresource and the parents have preferred names", t, func() {
+	Convey("Given a SpecV2Resource configured with a path that is a subresource and the parents have preferred names on the post operation", t, func() {
 		expectedCDNResourceName := "cdn"
 		expectedFirewallResourceName := "firewall"
 		r := SpecV2Resource{
@@ -1027,6 +1102,51 @@ func TestParentResourceInfo(t *testing.T) {
 									extTfResourceName: expectedFirewallResourceName,
 								},
 							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When parentResourceInfo is called", func() {
+			parentResourceInfo := r.getParentResourceInfo()
+			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
+				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
+				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewall_v2")
+			})
+			Convey("And the fullParentResourceName should match the expected name", func() {
+				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1_firewall_v2")
+			})
+			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
+				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls")
+			})
+			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
+				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
+				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls/{id}")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource configured with a path that is a subresource and the parents have preferred names on the root level path", t, func() {
+		expectedCDNResourceName := "cdn"
+		expectedFirewallResourceName := "firewall"
+		r := SpecV2Resource{
+			Path: "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
+			Paths: map[string]spec.PathItem{
+				"/v1/cdns": {
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceName: expectedCDNResourceName,
+						},
+					},
+				},
+				"/v1/cdns/{id}/v2/firewalls": {
+					VendorExtensible: spec.VendorExtensible{
+						Extensions: spec.Extensions{
+							extTfResourceName: expectedFirewallResourceName,
 						},
 					},
 				},
@@ -3462,15 +3582,113 @@ func TestGetResourceTerraformName(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a SpecV2Resource with a root path item containing a post operation with the extension 'x-terraform-resource-name'", t, func() {
+	Convey("Given a SpecV2Resource with a root path item containing the extension 'x-terraform-resource-name'", t, func() {
+		extensions := spec.Extensions{}
+		expectedResourceName := "rootLevelPreferredName"
+		extensions.Add(extTfResourceName, expectedResourceName)
+		r := SpecV2Resource{
+			RootPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: extensions,
+				},
+			},
+		}
+		Convey("When getResourceTerraformName method is called an existing extension", func() {
+			value := r.getResourceTerraformName()
+			Convey("Then the value returned should match the value in the extension", func() {
+				So(value, ShouldEqual, expectedResourceName)
+			})
+		})
+	})
+	Convey("Given a SpecV2Resource without a rootPathItem", t, func() {
 		r := SpecV2Resource{}
 		Convey("When getResourceTerraformName method is called", func() {
 			value := r.getResourceTerraformName()
-			Convey("Then the value returned should be empty since the resource does not have such extension defined in the post operations", func() {
+			Convey("Then the value returned should be empty since the resource does not have such extension defined", func() {
 				So(value, ShouldEqual, "")
 			})
 		})
 	})
+}
+
+func TestGetPreferredName(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		inputPathItem        spec.PathItem
+		expectedResourceName string
+	}{
+		{
+			name: "path item with the extension 'x-terraform-resource-name' on the POST level",
+			inputPathItem: spec.PathItem{
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{extTfResourceName: "postLevelPreferredName"},
+						},
+					},
+				},
+			},
+			expectedResourceName: "postLevelPreferredName",
+		},
+		{
+			name: "path item with the extension 'x-terraform-resource-name' on the root level",
+			inputPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{extTfResourceName: "rootLevelPreferredName"},
+				},
+			},
+			expectedResourceName: "rootLevelPreferredName",
+		},
+		{
+			name: "path item with the extension 'x-terraform-resource-name' on the POST and a different extension on the root level",
+			inputPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						"x-something": "something ext value",
+					},
+				},
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{extTfResourceName: "postLevelPreferredName"},
+						},
+					},
+				},
+			},
+			expectedResourceName: "postLevelPreferredName",
+		},
+		{
+			name: "path item with the extension 'x-terraform-resource-name' on both the POST and root levels",
+			inputPathItem: spec.PathItem{
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfResourceName: "rootLevelPreferredName",
+					},
+				},
+				PathItemProps: spec.PathItemProps{
+					Post: &spec.Operation{
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								extTfResourceName: "postPreferredName",
+							},
+						},
+					},
+				},
+			},
+			expectedResourceName: "rootLevelPreferredName",
+		},
+		{
+			name:                 " an empty path item",
+			inputPathItem:        spec.PathItem{},
+			expectedResourceName: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		specV2Resource := SpecV2Resource{}
+		value := specV2Resource.getPreferredName(tc.inputPathItem)
+		assert.Equal(t, tc.expectedResourceName, value, tc.name)
+	}
 }
 
 func TestGetExtensionStringValue(t *testing.T) {

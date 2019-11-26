@@ -306,7 +306,7 @@ that internally will be mapped to the GET operation (in the previous example tha
 This type of data source is named data source instance. The data source name will be formed from the resource name 
 plus the ```_instance``` string attach to it.
 
-####### Argument Reference
+###### Argument Reference
 
 ````
 data "openapi_resource_v1_instance" "my_resource_data_source" {
@@ -316,7 +316,7 @@ data "openapi_resource_v1_instance" "my_resource_data_source" {
 
 - id: string value of the resource instance id to be fetched
 
-####### Attributes Reference
+###### Attributes Reference
 
 The data source state will be filled with the corresponding properties defined in the resource model definition, in the 
 example above that would be ```resourceV1```. Please note that all the properties from the model will be configured as computed 
@@ -441,7 +441,7 @@ Extension Name | Type | Description
 [x-terraform-resource-timeout](#xTerraformResourceTimeout) | string | Only available in operation level. Defines the timeout for a given operation. This value overrides the default timeout operation value which is 10 minutes.
 [x-terraform-header](#xTerraformHeader) | string | Only available in operation level parameters at the moment. Defines that he given header should be passed as part of the request.
 [x-terraform-resource-poll-enabled](#xTerraformResourcePollEnabled) | bool | Only supported in operation responses (e,g: 202). Defines that if the API responds with the given HTTP Status code (e,g: 202), the polling mechanism will be enabled. This allows the OpenAPI Terraform provider to perform read calls to the remote API and check the resource state. The polling mechanism finalises if the remote resource state arrives at completion, failure state or times-out (60s)
-[x-terraform-resource-name](#xTerraformResourceName) | string | Only available in resource root's POST operation. Defines the name that will be used for the resource in the Terraform configuration. If the extension is not preset, default value will be the name of the resource in the path. For instance, a path such as /v1/users will translate into a terraform resource name users_v1
+[x-terraform-resource-name](#xTerraformResourceName) | string | Only supported in resource root level. Defines the name that will be used for the resource in the Terraform configuration. If the extension is not preset, default value will be the name of the resource in the path. For instance, a path such as /v1/users will translate into a terraform resource name users_v1
 [x-terraform-resource-host](#xTerraformResourceHost) | string | Only supported in resource root's POST operation. Defines the host that should be used when managing this specific resource. The value of this extension effectively overrides the global host configuration, making the OpenAPI Terraform provider client make thje API calls against the host specified in this extension value instead of the global host configuration. The protocols (HTTP/HTTPS) and base path (if anything other than "/") used when performing the API calls will still come from the global configuration.
 [x-terraform-resource-regions-%s](#xTerraformResourceRegions) | string | Only supported in the root level. Defines the regions supported by a given resource identified by the %s variable. This extension only works if the ```x-terraform-resource-host``` extension contains a value that is parametrized and identifies the matching ```x-terraform-resource-regions-%s``` extension. The values of this extension must be comma separated strings.
 
@@ -661,11 +661,10 @@ This extension enables service providers to write a preferred resource name for 
 ````
 paths:
   /cdns:
-    post:
-      x-terraform-resource-name: "cdn"
+    x-terraform-resource-name: "cdn"
 ````
 
-In the example above, the resource POST operation contains the extension ``x-terraform-resource-name`` with value ``cdn``.
+In the example above, the resource  contains the extension ``x-terraform-resource-name`` with value ``cdn``.
 This value will be the name used in the terraform configuration``cdn``.
 
 ````
@@ -678,8 +677,7 @@ using version path ``/v1/cdns``, the appropriate postfix including the version w
 ````
 paths:
   /v1/cdns:
-    post:
-      x-terraform-resource-name: "cdn"
+    x-terraform-resource-name: "cdn"
 ````
 
 The corresponding terraform configuration in this case will be (note the ``_v1`` after the resource name):
@@ -688,12 +686,12 @@ The corresponding terraform configuration in this case will be (note the ``_v1``
 resource "swaggercodegen_cdn_v1" "my_cdn" {...} # ==> 'cdn' name is used instead of 'cdns'
 ````
 
-If the ``x-terraform-resource-name`` extension is not present in the resource root POST operation, the default resource
-name will be picked from the resource root POST path. In the above example ``/v1/cdns`` would translate into ``cdns_v1``
+If the ``x-terraform-resource-name`` extension is not present in the resource root level operation or the resource POST level operation*, 
+the default resource name will be picked from the resource root path. In the above example ``/v1/cdns`` would translate into ``cdns_v1``
 resource name.
 
-*Note: This extension is only interpreted and handled in resource root POST operations (e,g: /v1/resource) in the
-above example*
+*Note: Support for this extension on the resource root POST operation is still currently supported but 
+will be deprecated in the future, so users are encouraged to use the extension on the resource root level.
 
 
 ###### <a name="xTerraformResourceHost">x-terraform-resource-host</a>
