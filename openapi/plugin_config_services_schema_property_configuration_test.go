@@ -54,7 +54,7 @@ func TestServiceSchemaConfigurationV1ExecuteCommand(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the err message returned should be the expected", func() {
-				So(err.Error(), ShouldEqual, "failed to execute 'some_property_name' command '[cat nonexistingfile]': cat: nonexistingfile: No such file or directory\n(exit status 1)")
+				So(err.Error(), ShouldEqual, "provider schema property 'some_property_name' command failed: command '[cat nonexistingfile]' failed: cat: nonexistingfile: No such file or directory\n(exit status 1)")
 			})
 		})
 	})
@@ -70,7 +70,7 @@ func TestServiceSchemaConfigurationV1ExecuteCommand(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the err message returned should be the expected", func() {
-				So(err.Error(), ShouldEqual, "command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
+				So(err.Error(), ShouldEqual, "provider schema property 'some_property_name' command failed: command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
 			})
 		})
 	})
@@ -104,7 +104,7 @@ func TestServiceSchemaConfigurationV1Exec(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the err message returned should be the expected", func() {
-				So(err.Error(), ShouldEqual, "failed to execute 'some_property_name' command '[cat nonexistingfile]': cat: nonexistingfile: No such file or directory\n(exit status 1)")
+				So(err.Error(), ShouldEqual, "command '[cat nonexistingfile]' failed: cat: nonexistingfile: No such file or directory\n(exit status 1)")
 			})
 		})
 	})
