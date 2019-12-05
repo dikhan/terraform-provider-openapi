@@ -154,7 +154,6 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 			SchemaPropertyName: "schemaPropertyName",
 			DefaultValue:       "defaultValue",
 			ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
-				//KeyName:     "someKeyName",
 				ContentType: "raw",
 				File:        tmpFile.Name(),
 			},
@@ -216,6 +215,26 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 			})
 			Convey("And the err message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "'schemaPropertyName': 'nonSupported' content type not supported")
+			})
+		})
+	})
+
+	Convey("Given an external config file and a ServiceSchemaPropertyConfigurationV1 with an external configuration pointing a non existing file", t, func() {
+		serviceSchemaConfigurationV1 := ServiceSchemaPropertyConfigurationV1{
+			SchemaPropertyName: "schemaPropertyName",
+			DefaultValue:       "defaultValue",
+			ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
+				ContentType: "nonSupported",
+				File:        "som_non_existing_file",
+			},
+		}
+		Convey("When GetDefaultValue method is called", func() {
+			_, err := serviceSchemaConfigurationV1.GetDefaultValue()
+			Convey("And the err returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "failed to read external configuration file 'som_non_existing_file' for schema property 'schemaPropertyName': open som_non_existing_file: no such file or directory")
 			})
 		})
 	})
