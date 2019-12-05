@@ -127,9 +127,9 @@ paths:
           description: "successful operation, no content is returned"
 
   /v1/cdns/{id}/firewalls:
+    x-terraform-resource-name: "firewall"
     post:
       summary: "Create firewall"
-      x-terraform-resource-name: "firewall"
       parameters:
       - name: "id"
         in: "path"
@@ -305,7 +305,7 @@ definitions:
 		})
 	})
 
-	Convey("Given a local server that exposes a swagger file containing a terraform compatible data source (cdn_datasource)", t, func() {
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible data source (cdn_datasource) using a preferred name defined in the root path level", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: "localhost:8443"
 basePath: "/api"
@@ -317,7 +317,8 @@ security:
  - apikey_auth: []
 
 paths:
- /v1/cdn_datasource:
+ /v1/cdndatasource:
+   x-terraform-resource-name: "cdn_datasource"
    get:
      responses:
        200:
