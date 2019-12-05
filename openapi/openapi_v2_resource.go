@@ -185,6 +185,7 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 		return "", fmt.Errorf("could not find a valid name for resource instance path '%s'", resourcePath)
 	}
 	resourceName = strings.Replace(matches[len(matches)-1], "/", "", -1)
+	resourceName = strings.ReplaceAll(resourceName, "-", "_")
 
 	versionRegex, _ := regexp.Compile(fmt.Sprintf(resourceVersionRegexTemplate, resourceName))
 
