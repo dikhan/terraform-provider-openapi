@@ -238,6 +238,32 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given an external config file and a ServiceSchemaPropertyConfigurationV1 with an external configuration pointing a json file but the keyName is wrong", t, func() {
+		expectedValue := "someName"
+		tmpFile, err := ioutil.TempFile("", "")
+		defer os.Remove(tmpFile.Name())
+		So(err, ShouldBeNil)
+		tmpFile.Write([]byte(fmt.Sprintf(`{"firstName":"%s"}`, expectedValue)))
+		serviceSchemaConfigurationV1 := ServiceSchemaPropertyConfigurationV1{
+			SchemaPropertyName: "schemaPropertyName",
+			DefaultValue:       "defaultValue",
+			ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
+				KeyName:     "$.wrong",
+				ContentType: "json",
+				File:        tmpFile.Name(),
+			},
+		}
+		Convey("When GetDefaultValue method is called", func() {
+			_, err := serviceSchemaConfigurationV1.GetDefaultValue()
+			Convey("And the err returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "key error: wrong not found in object")
+			})
+		})
+	})
 }
 
 func TestServiceExternalConfigurationV1GetFileParser(t *testing.T) {
