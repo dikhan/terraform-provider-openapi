@@ -336,7 +336,7 @@ func TestAccProviderConfiguration_PluginExternalFile_NotFound(t *testing.T) {
 	initPluginWithExternalConfigFile("/some/non/existing/path")
 	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
 	_, err := p.CreateSchemaProvider()
-	if !strings.Contains(err.Error(), "swagger url not provided, please export OTF_VAR_<provider_name>_SWAGGER_URL env variable with the URL where 'openapi' service provider is exposing the swagger file OR create a plugin configuration file at ~/.terraform.d/plugins following the Plugin configuration schema specifications") {
+	if !strings.Contains(err.Error(), "plugin init error: open api plugin configuration not present at /some/non/existing/path") {
 		log.Fatalf("test failed, non expected output: %s", err)
 	}
 }
