@@ -560,6 +560,12 @@ func TestBuildResourceNameFromPath(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			path:                 "/cdns-test",
+			preferredName:        "",
+			expectedResourceName: "cdns_test",
+			expectedError:        nil,
+		},
+		{
 			path:                 "/v1/cdns",
 			preferredName:        "",
 			expectedResourceName: "cdns_v1",
