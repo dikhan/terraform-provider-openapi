@@ -451,12 +451,13 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 		}
 		Convey("When createTerraformProviderSchema is called with a backend configuration that is not multi-region", func() {
 			backendConfig := &specStubBackendConfiguration{}
-			_, err := p.createTerraformProviderSchema(backendConfig, nil)
-			Convey("Then the expectedValue returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
+			providerSchema, err := p.createTerraformProviderSchema(backendConfig, nil)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
 			})
-			Convey("And the error message should be the expected one", func() {
-				So(err.Error(), ShouldEqual, expectedError)
+			Convey("And the provider schema for the resource should contain the attribute with default empty value", func() {
+				So(providerSchema, ShouldContainKey, apiKeyAuthProperty.Name)
+				So(providerSchema[apiKeyAuthProperty.Name].Default, ShouldBeEmpty)
 			})
 			Convey("And the provider schema properties commands should have been executed", func() {
 				So(serviceConfig.SchemaConfiguration[0].ExecuteCommandCalled, ShouldBeTrue)
@@ -591,6 +592,84 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			})
 			Convey(fmt.Sprintf("And the provider schema should NOT contain the %s property", providerPropertyEndPoints), func() {
 				So(providerSchema, ShouldNotContainKey, providerPropertyEndPoints)
+			})
+		})
+	})
+}
+
+func TestConfigureProviderPropertyFromPluginConfig(t *testing.T) {
+
+	Convey("Given a provider factory containing a command that works and also gets the default value from the external source successfully", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		serviceConfig := &ServiceConfigStub{
+			SchemaConfiguration: []*ServiceSchemaPropertyConfigurationStub{
+				{
+					SchemaPropertyName:   "apikey_auth",
+					ExecuteCommandCalled: false,
+					DefaultValue:         "someDefaultValue",
+				},
+			},
+		}
+		p := providerFactory{
+			name:                 "provider",
+			specAnalyser:         &specAnalyserStub{},
+			serviceConfiguration: serviceConfig,
+		}
+		Convey("When createTerraformProviderSchema is called with an empty provider schema", func() {
+			providerSchema := map[string]*schema.Schema{}
+			p.configureProviderPropertyFromPluginConfig(providerSchema, "apikey_auth", true)
+			Convey("Then the provider schema for the resource should contain the attribute with the expected default value", func() {
+				So(providerSchema, ShouldContainKey, apiKeyAuthProperty.Name)
+				defaultValue, err := providerSchema[apiKeyAuthProperty.Name].DefaultFunc()
+				So(err, ShouldBeNil)
+				So(defaultValue, ShouldEqual, "someDefaultValue")
+			})
+			Convey("And the provider schema properties commands should have been executed", func() {
+				So(serviceConfig.SchemaConfiguration[0].ExecuteCommandCalled, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given a provider factory containing a command that fails to execute and also fails to get the default value from the external source", t, func() {
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		serviceConfig := &ServiceConfigStub{
+			SchemaConfiguration: []*ServiceSchemaPropertyConfigurationStub{
+				{
+					SchemaPropertyName:   "apikey_auth",
+					ExecuteCommandCalled: false,
+					Err:                  errors.New("some error executing the command"),
+					GetDefaultValueFunc:  func() (string, error) { return "", fmt.Errorf("some error gettign the default value") },
+				},
+			},
+		}
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorizationHeader),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+			},
+			serviceConfiguration: serviceConfig,
+		}
+		Convey("When createTerraformProviderSchema is called with an empty provider schema", func() {
+			providerSchema := map[string]*schema.Schema{}
+			p.configureProviderPropertyFromPluginConfig(providerSchema, "apikey_auth", true)
+			Convey("Then the provider schema for the resource should contain the attribute with default empty value", func() {
+				// The APIs are expected to complain about the value being empty instead of the plugin failing at this stage
+				So(providerSchema, ShouldContainKey, apiKeyAuthProperty.Name)
+				defaultValue, err := providerSchema[apiKeyAuthProperty.Name].DefaultFunc()
+				So(err, ShouldBeNil)
+				So(defaultValue, ShouldBeEmpty)
+			})
+			Convey("And the provider schema properties commands should have been executed", func() {
+				So(serviceConfig.SchemaConfiguration[0].ExecuteCommandCalled, ShouldBeTrue)
 			})
 		})
 	})
