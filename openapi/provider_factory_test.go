@@ -372,10 +372,12 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			SchemaConfiguration: []*ServiceSchemaPropertyConfigurationStub{
 				{
 					SchemaPropertyName:   "apikey_auth",
+					DefaultValue:         "someDefaultAuthToken",
 					ExecuteCommandCalled: false,
 				},
 				{
 					SchemaPropertyName:   "header_name",
+					DefaultValue:         "someDefaultHeaderValue",
 					ExecuteCommandCalled: false,
 				},
 			},
@@ -417,6 +419,16 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 			Convey("And the provider schema properties commands should have been executed", func() {
 				So(serviceConfig.SchemaConfiguration[0].ExecuteCommandCalled, ShouldBeTrue)
 				So(serviceConfig.SchemaConfiguration[1].ExecuteCommandCalled, ShouldBeTrue)
+			})
+			Convey("And the provider schema 'apikey_auth' property default value should be the expected default", func() {
+				defaultValue, err := providerSchema[apiKeyAuthProperty.Name].DefaultFunc()
+				So(err, ShouldBeNil)
+				So(defaultValue, ShouldEqual, "someDefaultAuthToken")
+			})
+			Convey("And the provider schema 'header_name' property default value should be the expected default", func() {
+				defaultValue, err := providerSchema[headerProperty.Name].DefaultFunc()
+				So(err, ShouldBeNil)
+				So(defaultValue, ShouldEqual, "someDefaultHeaderValue")
 			})
 		})
 	})
@@ -466,8 +478,8 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 	})
 
 	Convey("Given a provider factory that is configured with security definitions that are not all part of the global schemes", t, func() {
-		var globalSecurityDefinitionName = "apiKeyAuth"
-		var otherSecurityDefinitionName = "otherSecurityDefinitionName"
+		var globalSecurityDefinitionName = "api_key_auth"
+		var otherSecurityDefinitionName = "other_security_definition_name"
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
@@ -493,18 +505,18 @@ func TestCreateTerraformProviderSchema(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the provider schema for the resource should contain the expected attributes with names automatically converted to be compliant", func() {
-				So(providerSchema, ShouldContainKey, "api_key_auth")
-				So(providerSchema, ShouldContainKey, "other_security_definition_name")
+				So(providerSchema, ShouldContainKey, globalSecurityDefinitionName)
+				So(providerSchema, ShouldContainKey, otherSecurityDefinitionName)
 			})
 			Convey("And the api_key_auth should be required as it's a global scheme", func() {
-				So(providerSchema["api_key_auth"].Required, ShouldBeTrue)
+				So(providerSchema[globalSecurityDefinitionName].Required, ShouldBeTrue)
 			})
 			Convey("And the other_security_definition_name should be optional as it's not referred in the global schemes", func() {
-				So(providerSchema["other_security_definition_name"].Optional, ShouldBeTrue)
+				So(providerSchema[otherSecurityDefinitionName].Optional, ShouldBeTrue)
 			})
 			Convey("And the provider schema default function for all the properties", func() {
-				So(providerSchema["api_key_auth"].DefaultFunc, ShouldNotBeNil)
-				So(providerSchema["other_security_definition_name"].DefaultFunc, ShouldNotBeNil)
+				So(providerSchema[globalSecurityDefinitionName].DefaultFunc, ShouldNotBeNil)
+				So(providerSchema[otherSecurityDefinitionName].DefaultFunc, ShouldNotBeNil)
 			})
 		})
 	})
