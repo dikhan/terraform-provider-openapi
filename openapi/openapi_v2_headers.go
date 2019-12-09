@@ -30,9 +30,9 @@ func getHeaderConfigurationsForParameterGroups(parametersGroup parameterGroups) 
 				switch parameter.In {
 				case "header":
 					if preferredName, exists := parameter.Extensions.GetString(extTfHeader); exists {
-						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, TerraformName: preferredName, isRequired: parameter.Required})
+						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, TerraformName: preferredName, IsRequired: parameter.Required})
 					} else {
-						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, isRequired: parameter.Required})
+						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, IsRequired: parameter.Required})
 					}
 				}
 			} else {
