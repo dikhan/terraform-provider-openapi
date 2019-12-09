@@ -47,12 +47,13 @@ func TestAppendOperationHeaders(t *testing.T) {
 			},
 			apiAuthenticator: &specStubAuthenticator{},
 		}
-		Convey("When appendOperationHeaders with an operation headers, the provider config containing the values of the headers and a map that should contain the final result", func() {
+		Convey("When appendOperationHeaders with an operation headers and a map that should contain the final result", func() {
 			resourcePostOperation := &specResourceOperation{
 				HeaderParameters: SpecHeaderParameters{
 					{
 						Name:          operationHeader,
 						TerraformName: operationHeaderTfName,
+						IsRequired:    false,
 					},
 				},
 				responses:       specResponses{},
@@ -61,7 +62,10 @@ func TestAppendOperationHeaders(t *testing.T) {
 			headersMap := map[string]string{
 				"someHeaderAlreadyPresent": "someValue",
 			}
-			providerClient.appendOperationHeaders(resourcePostOperation.HeaderParameters, providerClient.providerConfiguration, headersMap)
+			err := providerClient.appendOperationHeaders(resourcePostOperation.HeaderParameters, headersMap)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("And the headersMap should contain whatever headers where already in the map", func() {
 				So(headersMap, ShouldContainKey, "someHeaderAlreadyPresent")
 				So(headersMap["someHeaderAlreadyPresent"], ShouldEqual, "someValue")
@@ -69,6 +73,37 @@ func TestAppendOperationHeaders(t *testing.T) {
 			Convey("And the headersMap should contain the new ones added from the operation headers", func() {
 				So(headersMap, ShouldContainKey, operationHeader)
 				So(headersMap[operationHeader], ShouldEqual, "operationHeaderValue")
+			})
+		})
+	})
+
+	Convey("Given a providerClient NOT set up with a provider configuration containing a value for the required header", t, func() {
+		operationHeader := "operationHeader"
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{},
+			httpClient:                  &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration{
+				Headers: map[string]string{
+					// leaving this blank on purpose, reproducing use case where the provider does not contain the value for the required header
+				},
+			},
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When appendOperationHeaders with an operation headers and a map that should contain the final result", func() {
+			resourcePostOperation := &specResourceOperation{
+				HeaderParameters: SpecHeaderParameters{
+					{
+						Name:       operationHeader,
+						IsRequired: true,
+					},
+				},
+				responses:       specResponses{},
+				SecuritySchemes: SpecSecuritySchemes{},
+			}
+			headersMap := map[string]string{}
+			err := providerClient.appendOperationHeaders(resourcePostOperation.HeaderParameters, headersMap)
+			Convey("Then the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "required header 'operationHeader' value is missing")
 			})
 		})
 	})
