@@ -793,7 +793,7 @@ func TestGetResourceURL(t *testing.T) {
 func TestPerformRequest(t *testing.T) {
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -897,7 +897,7 @@ func TestProviderClientPost(t *testing.T) {
 
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1041,7 +1041,7 @@ func TestProviderClientPut(t *testing.T) {
 
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1174,7 +1174,7 @@ func TestProviderClientGet(t *testing.T) {
 				Body: ioutil.NopCloser(strings.NewReader(`{"property1":"value1"}`)),
 			},
 		}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1292,7 +1292,7 @@ func TestProviderClientList(t *testing.T) {
 				Body: ioutil.NopCloser(strings.NewReader(`{"property1":"value1"}`)),
 			},
 		}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1414,7 +1414,7 @@ func TestProviderClientDelete(t *testing.T) {
 				Body: ioutil.NopCloser(strings.NewReader(`{"property1":"value1"}`)),
 			},
 		}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
