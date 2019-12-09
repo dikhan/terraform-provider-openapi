@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"github.com/go-openapi/spec"
+	"log"
 )
 
 const extTfHeader = "x-terraform-header"
@@ -29,11 +30,13 @@ func getHeaderConfigurationsForParameterGroups(parametersGroup parameterGroups) 
 				switch parameter.In {
 				case "header":
 					if preferredName, exists := parameter.Extensions.GetString(extTfHeader); exists {
-						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, TerraformName: preferredName})
+						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, TerraformName: preferredName, isRequired: parameter.Required})
 					} else {
-						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name})
+						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, isRequired: parameter.Required})
 					}
 				}
+			} else {
+				log.Printf("[DEBUG] found duplicate header '%s' for an operation, ignoring it as it has been registered already", parameter.Name)
 			}
 		}
 	}

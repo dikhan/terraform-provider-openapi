@@ -8,7 +8,45 @@ import (
 )
 
 func TestGetHeaderConfigurations(t *testing.T) {
-	Convey("Given a list of parameters containing one header parameter with the 'x-terraform-header' extension", t, func() {
+	Convey("Given a list of parameters containing one required header parameter", t, func() {
+		parameters := parameterGroups{
+			[]spec.Parameter{
+				{
+					ParamProps: spec.ParamProps{
+						Name:     "X-Request-ID",
+						In:       "header",
+						Required: true,
+					},
+				},
+			},
+		}
+		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
+			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameters)
+			Convey("Then the header configs returned should contain 'x_request_id'", func() {
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "", isRequired: true})
+			})
+		})
+	})
+	Convey("Given a list of parameters containing one optional header parameter", t, func() {
+		parameters := parameterGroups{
+			[]spec.Parameter{
+				{
+					ParamProps: spec.ParamProps{
+						Name:     "X-Request-ID",
+						In:       "header",
+						Required: false,
+					},
+				},
+			},
+		}
+		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
+			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameters)
+			Convey("Then the header configs returned should contain 'x_request_id'", func() {
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "", isRequired: false})
+			})
+		})
+	})
+	Convey("Given a list of parameters containing one required header parameter with the 'x-terraform-header' extension", t, func() {
 		parameters := parameterGroups{
 			[]spec.Parameter{
 				{
@@ -28,7 +66,7 @@ func TestGetHeaderConfigurations(t *testing.T) {
 		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
 			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameters)
 			Convey("Then the header configs returned should contain 'x_request_id'", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id", isRequired: true})
 			})
 		})
 	})
@@ -52,11 +90,11 @@ func TestGetHeaderConfigurations(t *testing.T) {
 		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
 			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameters)
 			Convey("Then the header configs returned should contain 'x_request_id' as a terraform field name translation (converting dashes to underscores) should have been performed", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x-request-id"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x-request-id", isRequired: true})
 			})
 		})
 	})
-	Convey("Given a list of parameters containing multiple header parameter", t, func() {
+	Convey("Given a list of parameters containing multiple required header parameter", t, func() {
 		parameters := parameterGroups{
 			[]spec.Parameter{
 				{
@@ -88,14 +126,14 @@ func TestGetHeaderConfigurations(t *testing.T) {
 		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
 			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameters)
 			Convey("Then the header configs returned should contain 'x_request_id'", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id", isRequired: true})
 			})
 			Convey("And the header configs returned should also contain 'x_some_other_header'", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Some-Other-Header", TerraformName: "x_some_other_header"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Some-Other-Header", TerraformName: "x_some_other_header", isRequired: true})
 			})
 		})
 	})
-	Convey("Given a multiple list of parameters containing one parameter", t, func() {
+	Convey("Given a multiple list of parameters containing one required parameter", t, func() {
 		parameterGroups := parameterGroups{
 			[]spec.Parameter{
 				{
@@ -129,30 +167,10 @@ func TestGetHeaderConfigurations(t *testing.T) {
 		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
 			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameterGroups)
 			Convey("Then the header configs returned should contain 'x_request_id'", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id", isRequired: true})
 			})
 			Convey("Then the header configs returned should contain 'x_request_id_2'", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID2", TerraformName: "x_request_id2"})
-			})
-		})
-	})
-	Convey("Given a list of parameters containing one parameter that does not contain the extension 'x-terraform-header'", t, func() {
-		parameters := parameterGroups{
-			[]spec.Parameter{
-				{
-					ParamProps: spec.ParamProps{
-						Name:     "X-Request-ID",
-						In:       "header",
-						Required: true,
-					},
-				},
-			},
-		}
-		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
-			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameters)
-			Convey("Then the header configs returned should contain 'x_request_id' due to the automatic conversion from header name 'X-Request-ID' to a terraform compliant field name", func() {
-				// This prevent terraform from throwing the following error: * X-Request-ID: Field name may only contain lowercase alphanumeric characters & underscores.
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID2", TerraformName: "x_request_id2", isRequired: true})
 			})
 		})
 	})
