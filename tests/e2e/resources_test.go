@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -12,6 +13,91 @@ import (
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestAcc_ResourceMissingHeaderValue(t *testing.T) {
+	apiCalled := false
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiCalled = true
+	}))
+	apiHost := apiServer.URL[7:]
+
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerYAMLTemplate := fmt.Sprintf(`swagger: "2.0"
+host: %s 
+schemes:
+- "http"
+paths:
+  /cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      - in: header
+        type: string
+        name: required_header_example
+        required: true
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`, apiHost)
+		w.Write([]byte(swaggerYAMLTemplate))
+	}))
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{
+		SwaggerURL: swaggerServer.URL,
+	})
+	assert.NoError(t, err)
+
+	tfFileContents := fmt.Sprintf(`
+resource "openapi_cdns" "my_cdn" {
+  label = "some label"
+}`)
+
+	expectedValidationError, _ := regexp.Compile(".*required header 'required_header_example' for resource 'cdns' is missing the value. Please make sure the value is provided in the provider terraform configuration.*")
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Providers:  testAccProviders,
+		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		Steps: []resource.TestStep{
+			{
+				Config:      tfFileContents,
+				ExpectError: expectedValidationError,
+			},
+		},
+	})
+	assert.False(t, apiCalled)
+}
 
 func TestAcc_ResourceWithNoBodyInput(t *testing.T) {
 
