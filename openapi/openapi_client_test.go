@@ -909,6 +909,22 @@ func TestPerformRequest(t *testing.T) {
 				So(err.Error(), ShouldEqual, "method 'NotSupportedMethod' not supported")
 			})
 		})
+		Convey("When performRequest with a resource operation containing a required header that is not set in the provider configuration", func() {
+			resourcePostOperation := &specResourceOperation{
+				HeaderParameters: SpecHeaderParameters{
+					{
+						Name:       "some_not_configured_header",
+						IsRequired: true,
+					},
+				},
+				responses:       specResponses{},
+				SecuritySchemes: SpecSecuritySchemes{},
+			}
+			_, err := providerClient.performRequest("POST", "http://host.com/resource", resourcePostOperation, nil, nil)
+			Convey("Then the error message returned should be", func() {
+				So(err.Error(), ShouldEqual, "failed to set up headers configuration for POST http://host.com/resource: required header 'some_not_configured_header' is missing the value. Please make sure the property 'some_not_configured_header' is configured with a value in the provider's terraform configuration")
+			})
+		})
 		Convey("When performRequest prepareAuth returns an error", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{},

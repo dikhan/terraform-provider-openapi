@@ -98,7 +98,7 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 
 	err = o.appendOperationHeaders(operation.HeaderParameters, reqContext.headers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to append headers for %s %s: %s", method, resourceURL, err)
+		return nil, fmt.Errorf("failed to set up headers configuration for %s %s: %s", method, resourceURL, err)
 	}
 	log.Printf("[DEBUG] Performing %s %s", method, reqContext.url)
 
@@ -143,7 +143,7 @@ func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderPara
 		for _, headerParam := range operationHeaders {
 			headerValue := o.providerConfiguration.getHeaderValueFor(headerParam)
 			if headerParam.IsRequired && headerValue == "" {
-				return fmt.Errorf("required header '%s' value is missing", headerParam.Name)
+				return fmt.Errorf("required header '%s' is missing the value. Please make sure the property '%s' is configured with a value in the provider's terraform configuration", headerParam.Name, headerParam.GetHeaderTerraformConfigurationName())
 			}
 			// Setting the actual name of the header with the expectedValue coming from the provider configuration
 			headers[headerParam.Name] = o.providerConfiguration.getHeaderValueFor(headerParam)
