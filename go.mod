@@ -39,10 +39,10 @@ require (
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
-	golang.org/x/net v0.0.0-20191206103017-1ddd1de85cb0 // indirect
+	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20191204072324-ce4227a45e2e // indirect
-	golang.org/x/tools v0.0.0-20191206202126-6d582d504c7b // indirect
+	golang.org/x/sys v0.0.0-20191206220618-eeba5f6aabab // indirect
+	golang.org/x/tools v0.0.0-20191206204035-259af5ff87bd // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528 // indirect
 	gopkg.in/yaml.v2 v2.2.2
