@@ -99,6 +99,92 @@ resource "openapi_cdns" "my_cdn" {
 	assert.False(t, apiCalled)
 }
 
+func TestAcc_ResourceMissingSecurityDefinitionValue(t *testing.T) {
+	apiCalled := false
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiCalled = true
+	}))
+	apiHost := apiServer.URL[7:]
+
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerYAMLTemplate := fmt.Sprintf(`swagger: "2.0"
+host: %s 
+schemes:
+- "http"
+paths:
+  /cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      security:
+      - some_not_global_sec_def: []
+  /cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+securityDefinitions:
+  some_not_global_sec_def:
+    type: apiKey
+    name: some_not_global_sec_def
+    in: header`, apiHost)
+		w.Write([]byte(swaggerYAMLTemplate))
+	}))
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{
+		SwaggerURL: swaggerServer.URL,
+	})
+	assert.NoError(t, err)
+
+	tfFileContents := fmt.Sprintf(`
+resource "openapi_cdns" "my_cdn" {
+  label = "some label"
+}`)
+
+	expectedValidationError, _ := regexp.Compile(".*required security definition 'some_not_global_sec_def' for resource 'cdns' is missing the value. Please make sure this value is provided in the provider terraform configuration.*")
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Providers:  testAccProviders,
+		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		Steps: []resource.TestStep{
+			{
+				Config:      tfFileContents,
+				ExpectError: expectedValidationError,
+			},
+		},
+	})
+	assert.False(t, apiCalled)
+}
+
 func TestAcc_ResourceWithNoBodyInput(t *testing.T) {
 
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
