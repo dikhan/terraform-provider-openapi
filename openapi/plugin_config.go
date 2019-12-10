@@ -42,14 +42,15 @@ func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 		return nil, err
 	}
 	if _, err := os.Stat(configurationFilePath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("open api plugin configuration not present at %s", configurationFilePath)
+		log.Printf("[INFO] open api plugin configuration not present at %s", configurationFilePath)
+	} else {
+		log.Printf("[INFO] found open api plugin configuration at %s", configurationFilePath)
+		file, err := os.Open(configurationFilePath)
+		if err != nil {
+			return nil, err
+		}
+		configurationFile = bufio.NewReader(file)
 	}
-	log.Printf("[INFO] found open api plugin configuration at %s", configurationFilePath)
-	file, err := os.Open(configurationFilePath)
-	if err != nil {
-		return nil, err
-	}
-	configurationFile = bufio.NewReader(file)
 	return &PluginConfiguration{
 		ProviderName:  providerName,
 		Configuration: configurationFile,
