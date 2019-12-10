@@ -111,6 +111,17 @@ func TestAPIRefreshTokenAuthenticatorValidate(t *testing.T) {
 			},
 			expectedError: errors.New("required security definition 'api_token' is missing the value. Please make sure the property 'api_token' is configured with a value in the provider's terraform configuration"),
 		},
+		{
+			name: "validate does not pass since api key value only contains the Bearer scheme and not the value",
+			apiRefreshTokenAuthenticator: apiRefreshTokenAuthenticator{
+				apiKey: apiKey{
+					name:  "Authorization",
+					value: "Bearer",
+				},
+				terraformConfigurationName: "api_token",
+			},
+			expectedError: errors.New("required security definition 'api_token' is missing the value. Please make sure the property 'api_token' is configured with a value in the provider's terraform configuration"),
+		},
 	}
 
 	for _, tc := range testCases {
