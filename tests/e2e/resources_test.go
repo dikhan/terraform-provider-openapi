@@ -169,7 +169,7 @@ resource "openapi_cdns" "my_cdn" {
   label = "some label"
 }`)
 
-	expectedValidationError, _ := regexp.Compile(".*required security definition 'some_not_global_sec_def' for resource 'cdns' is missing the value. Please make sure this value is provided in the provider terraform configuration.*")
+	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required security definition 'some_not_global_sec_def' is missing the value. Please make sure the property 'some_not_global_sec_def' is configured with a value in the provider's terraform configuration.*")
 	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
 		IsUnitTest: true,
