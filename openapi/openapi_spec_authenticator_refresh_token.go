@@ -59,7 +59,7 @@ func (a apiRefreshTokenAuthenticator) prepareAuth(authContext *authContext) erro
 }
 
 func (a apiRefreshTokenAuthenticator) validate() error {
-	if a.value == "" {
+	if a.value == "" || a.value == "Bearer " {
 		return fmt.Errorf("required security definition '%s' is missing the value. Please make sure the property '%s' is configured with a value in the provider's terraform configuration", a.terraformConfigurationName, a.terraformConfigurationName)
 	}
 	return nil
