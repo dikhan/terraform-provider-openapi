@@ -219,7 +219,7 @@ func TestPrepareAuth(t *testing.T) {
 		},
 		{
 			name:                          "apiAuthenticator set up with global security schemes that match security definitions defined in the provider configuration and the operation does not override the global security",
-			apiAuthenticator:              newAPIAuthenticator(&SpecSecuritySchemes{SpecSecurityScheme{Name: "apiKey"}}),
+			apiAuthenticator:              newAPIAuthenticator(&SpecSecuritySchemes{SpecSecurityScheme{Name: "api_key"}}),
 			inputURL:                      "https://www.host.com/v1/resource",
 			inputOperationSecuritySchemes: SpecSecuritySchemes{},
 			inputProviderConfig: providerConfiguration{
@@ -237,8 +237,8 @@ func TestPrepareAuth(t *testing.T) {
 			expectedError:   nil,
 		},
 		{
-			name:                          "apiAuthenticator set up with global security schemes 'apiKey' that match security definitions defined in the provider configuration and the operation overrides the global security schemes with (apiKeyOverride)",
-			apiAuthenticator:              newAPIAuthenticator(&SpecSecuritySchemes{SpecSecurityScheme{Name: "apiKey"}}),
+			name:                          "apiAuthenticator set up with global security schemes 'api_key' that match security definitions defined in the provider configuration and the operation overrides the global security schemes with (apiKeyOverride)",
+			apiAuthenticator:              newAPIAuthenticator(&SpecSecuritySchemes{SpecSecurityScheme{Name: "api_key"}}),
 			inputURL:                      "https://www.host.com/v1/resource",
 			inputOperationSecuritySchemes: SpecSecuritySchemes{SpecSecurityScheme{Name: "apiKeyOverride"}},
 			inputProviderConfig: providerConfiguration{
@@ -268,7 +268,7 @@ func TestPrepareAuth(t *testing.T) {
 			inputOperationSecuritySchemes: SpecSecuritySchemes{},
 			inputProviderConfig: providerConfiguration{
 				SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
-					"apiKey": apiKeyHeaderAuthenticator{
+					"api_key": apiKeyHeaderAuthenticator{
 						apiKey: apiKey{
 							name:  "X-API-KEY",
 							value: "superSecretKeyForApiKey",
@@ -287,7 +287,7 @@ func TestPrepareAuth(t *testing.T) {
 			inputOperationSecuritySchemes: SpecSecuritySchemes{SpecSecurityScheme{Name: "not_defined_scheme"}},
 			inputProviderConfig: providerConfiguration{
 				SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
-					"apiKey": apiKeyHeaderAuthenticator{
+					"api_key": apiKeyHeaderAuthenticator{
 						apiKey: apiKey{
 							name:  "X-API-KEY",
 							value: "superSecretKeyForApiKey",
@@ -298,6 +298,46 @@ func TestPrepareAuth(t *testing.T) {
 			expectedHeaders: map[string]string{},
 			expectedURL:     "https://www.host.com/v1/resource",
 			expectedError:   errors.New("operation's security policy '{not_defined_scheme}' is not defined, please make sure the swagger file contains a security definition named '{not_defined_scheme}' under the securityDefinitions section"),
+		},
+		{
+			name:                          "apiAuthenticator set up with global security schemes 'api_key' that match security definitions defined in the provider configuration but it's missing the value",
+			apiAuthenticator:              newAPIAuthenticator(&SpecSecuritySchemes{SpecSecurityScheme{Name: "api_key"}}),
+			inputURL:                      "https://www.host.com/v1/resource",
+			inputOperationSecuritySchemes: SpecSecuritySchemes{},
+			inputProviderConfig: providerConfiguration{
+				SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+					"api_key": apiKeyHeaderAuthenticator{
+						apiKey: apiKey{
+							name:  "X-API-KEY",
+							value: "", //The provider was configured with the 'api_key' but its missing the value
+						},
+						terraformConfigurationName: "api_key",
+					},
+				},
+			},
+			expectedHeaders: map[string]string{},
+			expectedURL:     "https://www.host.com/v1/resource",
+			expectedError:   errors.New("required security definition 'api_key' is missing the value. Please make sure the property 'api_key' is configured with a value in the provider's terraform configuration"),
+		},
+		{
+			name:                          "apiAuthenticator set up with no global security schemes and the operation has a security scheme that matches one security definition defined in the provider configuration but it's missing the value",
+			apiAuthenticator:              newAPIAuthenticator(nil),
+			inputURL:                      "https://www.host.com/v1/resource",
+			inputOperationSecuritySchemes: SpecSecuritySchemes{SpecSecurityScheme{Name: "api_key"}},
+			inputProviderConfig: providerConfiguration{
+				SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
+					"api_key": apiKeyHeaderAuthenticator{
+						apiKey: apiKey{
+							name:  "X-API-KEY",
+							value: "", //The provider was configured with the 'api_key' but its missing the value
+						},
+						terraformConfigurationName: "api_key",
+					},
+				},
+			},
+			expectedHeaders: map[string]string{},
+			expectedURL:     "https://www.host.com/v1/resource",
+			expectedError:   errors.New("required security definition 'api_key' is missing the value. Please make sure the property 'api_key' is configured with a value in the provider's terraform configuration"),
 		},
 	}
 
