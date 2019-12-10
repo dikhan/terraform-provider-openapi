@@ -79,6 +79,10 @@ definitions:
 	assert.NoError(t, err)
 
 	tfFileContents := fmt.Sprintf(`
+provider "openapi" {
+  required_header_example = ""
+}
+
 resource "openapi_cdns" "my_cdn" {
   label = "some label"
 }`)
