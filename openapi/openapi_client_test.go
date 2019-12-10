@@ -103,7 +103,7 @@ func TestAppendOperationHeaders(t *testing.T) {
 			headersMap := map[string]string{}
 			err := providerClient.appendOperationHeaders(resourcePostOperation.HeaderParameters, headersMap)
 			Convey("Then the error should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "required header 'operationHeader' value is missing")
+				So(err.Error(), ShouldEqual, "required header 'operationHeader' is missing the value. Please make sure the property 'operation_header' is configured with a value in the provider's terraform configuration")
 			})
 		})
 	})
@@ -938,7 +938,7 @@ func TestPerformRequest(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("Then the error message returned should be", func() {
-				So(err.Error(), ShouldEqual, "some error with prep auth")
+				So(err.Error(), ShouldEqual, "failed to configure the API request for POST : some error with prep auth")
 			})
 		})
 	})
