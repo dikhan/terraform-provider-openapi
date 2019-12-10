@@ -55,8 +55,6 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 			headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
 			if value, exists := data.GetOkExists(headerTerraformCompliantName); exists {
 				providerConfiguration.Headers[headerTerraformCompliantName] = value.(string)
-			} else {
-				return nil, fmt.Errorf("header parameter '%s' is missing the value, please make sure this value is provided in the terraform configuration", headerTerraformCompliantName)
 			}
 		}
 	}
