@@ -93,7 +93,7 @@ func (o *ProviderClient) Delete(resource SpecResource, id string, parentIDs ...s
 func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *specResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
 	reqContext, err := o.apiAuthenticator.prepareAuth(resourceURL, operation.SecuritySchemes, o.providerConfiguration)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to configure the API request for %s %s: %s", method, resourceURL, err)
 	}
 
 	err = o.appendOperationHeaders(operation.HeaderParameters, reqContext.headers)
