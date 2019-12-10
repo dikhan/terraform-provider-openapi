@@ -922,7 +922,7 @@ func TestPerformRequest(t *testing.T) {
 			}
 			_, err := providerClient.performRequest("POST", "http://host.com/resource", resourcePostOperation, nil, nil)
 			Convey("Then the error message returned should be", func() {
-				So(err.Error(), ShouldEqual, "failed to set up headers configuration for POST http://host.com/resource: required header 'some_not_configured_header' is missing the value. Please make sure the property 'some_not_configured_header' is configured with a value in the provider's terraform configuration")
+				So(err.Error(), ShouldEqual, "failed to configure the API request for POST http://host.com/resource: required header 'some_not_configured_header' is missing the value. Please make sure the property 'some_not_configured_header' is configured with a value in the provider's terraform configuration")
 			})
 		})
 		Convey("When performRequest prepareAuth returns an error", func() {

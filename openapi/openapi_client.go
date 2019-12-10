@@ -98,7 +98,7 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 
 	err = o.appendOperationHeaders(operation.HeaderParameters, reqContext.headers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set up headers configuration for %s %s: %s", method, resourceURL, err)
+		return nil, fmt.Errorf("failed to configure the API request for %s %s: %s", method, resourceURL, err)
 	}
 	log.Printf("[DEBUG] Performing %s %s", method, reqContext.url)
 
