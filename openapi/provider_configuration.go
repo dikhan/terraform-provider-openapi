@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -41,7 +40,8 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 			if value, exists := data.GetOkExists(secDefTerraformCompliantName); exists {
 				providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = createAPIKeyAuthenticator(secDef, value.(string))
 			} else {
-				return nil, fmt.Errorf("security schema definition '%s' is missing the value, please make sure this value is provided in the terraform configuration", secDefTerraformCompliantName)
+				// Initialise the api authenticator with an empty value since the user did not provide one
+				providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = createAPIKeyAuthenticator(secDef, "")
 			}
 		}
 	}
