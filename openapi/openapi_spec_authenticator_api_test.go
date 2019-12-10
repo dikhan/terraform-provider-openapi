@@ -69,7 +69,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
-					expectedAPIKey,
+					apiKey: expectedAPIKey,
 				},
 			},
 		}
@@ -94,7 +94,7 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  authorizationHeader,
 						value: "superSecretKey",
 					},
@@ -121,7 +121,7 @@ func TestPrepareAuth(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  authorizationHeader,
 						value: "superSecretKey",
 					},
@@ -153,7 +153,7 @@ func TestPrepareAuth(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				securityPolicyName: apiKeyQueryAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  authorizationHeader,
 						value: "superSecretKey",
 					},
@@ -183,13 +183,13 @@ func TestPrepareAuth(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				apiKeyHeaderSecurityPolicyName: apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  authorizationHeader,
 						value: "superSecretKeyInHeader",
 					},
 				},
 				apiKeyQuerySecurityPolicyName: apiKeyQueryAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "someQueryParam",
 						value: "superSecretKeyInQuery",
 					},
@@ -218,13 +218,13 @@ func TestPrepareAuth(t *testing.T) {
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				// provider config keys are always terraform name compliant - snake case
 				"api_key": apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
 				},
 				"app_id": apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "X-APP-ID",
 						value: "superSecretKeyForAppId",
 					},
@@ -252,7 +252,7 @@ func TestPrepareAuth(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
@@ -281,13 +281,13 @@ func TestPrepareAuth(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
 				},
 				"api_key_override": apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "X-API-KEY_OVERRIDE",
 						value: "superSecretKeyForSpecialOperationApiKey",
 					},
@@ -314,7 +314,7 @@ func TestPrepareAuth(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"apiKey": apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
@@ -342,7 +342,7 @@ func TestPrepareAuth(t *testing.T) {
 		providerConfig := providerConfiguration{
 			SecuritySchemaDefinitions: map[string]specAPIKeyAuthenticator{
 				"api_key": apiKeyHeaderAuthenticator{
-					apiKey{
+					apiKey: apiKey{
 						name:  "X-API-KEY",
 						value: "superSecretKeyForApiKey",
 					},
