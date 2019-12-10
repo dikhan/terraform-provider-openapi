@@ -223,8 +223,8 @@ func TestGetAllHeaderParameters(t *testing.T) {
 		Convey("When getPathHeaderParams method is called", func() {
 			headerConfigProps := getAllHeaderParameters(spec.Paths.Paths)
 			Convey("Then the header configs returned should contain all the different headers found", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-cdn"})
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-lb"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-cdn", IsRequired: true})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-lb", IsRequired: true})
 			})
 		})
 	})
@@ -277,7 +277,7 @@ func TestGetAllHeaderParameters(t *testing.T) {
 				So(len(headerConfigProps), ShouldEqual, 1)
 			})
 			Convey("Then the header configs returned ", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", IsRequired: true})
 			})
 		})
 	})
@@ -318,7 +318,7 @@ func TestGetPathHeaderParams(t *testing.T) {
 		Convey("When getPathHeaderParams method is called", func() {
 			headerConfigProps := getPathHeaderParams(spec.Paths.Paths["/v1/cdns"])
 			Convey("Then the header configs returned should contain 'x_request_id'", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id", IsRequired: true})
 			})
 		})
 	})
@@ -391,10 +391,10 @@ func TestGetPathHeaderParams(t *testing.T) {
 		Convey("When getPathHeaderParams method is called", func() {
 			headerConfigProps := getPathHeaderParams(spec.Paths.Paths["/v1/cdns"])
 			Convey("Then the header configs returned should contain all header parameters specified in the path operation", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-post"})
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-get"})
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-put"})
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-delete"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-post", IsRequired: true})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-get", IsRequired: true})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-put", IsRequired: true})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID-delete", IsRequired: true})
 			})
 		})
 	})
@@ -470,7 +470,7 @@ func TestGetPathHeaderParams(t *testing.T) {
 				So(len(headerConfigProps), ShouldEqual, 1)
 			})
 			Convey("Then the header configs returned should contain all header parameters specified in the path operation", func() {
-				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID"})
+				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", IsRequired: true})
 			})
 		})
 	})
