@@ -83,7 +83,7 @@ resource "openapi_cdns" "my_cdn" {
   label = "some label"
 }`)
 
-	expectedValidationError, _ := regexp.Compile(".*required header 'required_header_example' for resource 'cdns' is missing the value. Please make sure the value is provided in the provider terraform configuration.*")
+	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required header 'required_header_example' is missing the value. Please make sure the property 'required_header_example' is configured with a value in the provider's terraform configuration.*")
 	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
 		IsUnitTest: true,
