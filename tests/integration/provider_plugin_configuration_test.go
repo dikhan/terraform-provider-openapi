@@ -366,7 +366,7 @@ services:
       cmd: ['date']
       schema_property_external_configuration:
         content_type: json
-        key_name: $.apikey_auth
+        key_name: $.wrong_name
         file: %s`, apiKeyAuthFile.Name())
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
