@@ -20,7 +20,7 @@ func Test_ApiKeyRefreshTokenAuthenticator_Successfully_Prepares_Authorization(t 
 		w.Header().Add(authorizationHeader, accessTokenExpectedReturn)
 	}))
 
-	refreshTokenAuthenticator := newAPIRefreshTokenAuthenticator("my_fancy_name", fakeRefreshToken, accessTokenFakeServer.URL)
+	refreshTokenAuthenticator := newAPIRefreshTokenAuthenticator("my_fancy_name", fakeRefreshToken, accessTokenFakeServer.URL, "my_fancy_name")
 
 	t.Run("happy path -- Successful AuthContext is populated with an Access Token when the authContext have no headers map", func(t *testing.T) {
 		ctx := &authContext{}
@@ -42,13 +42,13 @@ func Test_ApiKeyRefreshTokenAuthenticator_Successfully_Prepares_Authorization(t 
 
 }
 
-func Test_ApiKeyRefreshTokenAuthenticator_Fails_To_Prepare_Authorization(t *testing.T) {
+func Test_ApiKeyRefreshT8999999999999okenAuthenticator_Fails_To_Prepare_Authorization(t *testing.T) {
 	t.Run("crappy path -- the API Server providing the access token does not return the expected Authorization header containing the access token", func(t *testing.T) {
 		fakeRefreshToken := `eyJ[...]RW.eyJ[...]WQi.eyd[...]SWr`
 		accessTokenBrokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}))
-		refreshTokenAuthenticator := newAPIRefreshTokenAuthenticator("my_fancy_name", fakeRefreshToken, accessTokenBrokenServer.URL)
+		refreshTokenAuthenticator := newAPIRefreshTokenAuthenticator("my_fancy_name", fakeRefreshToken, accessTokenBrokenServer.URL, "my_fancy_name")
 		ctx := &authContext{}
 		err := refreshTokenAuthenticator.prepareAuth(ctx)
 
@@ -61,7 +61,7 @@ func Test_ApiKeyRefreshTokenAuthenticator_Fails_To_Prepare_Authorization(t *test
 		accessTokenBrokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}))
-		refreshTokenAuthenticator := newAPIRefreshTokenAuthenticator("my_fancy_name", fakeRefreshToken, accessTokenBrokenServer.URL)
+		refreshTokenAuthenticator := newAPIRefreshTokenAuthenticator("my_fancy_name", fakeRefreshToken, accessTokenBrokenServer.URL, "my_fancy_name")
 		ctx := &authContext{}
 		err := refreshTokenAuthenticator.prepareAuth(ctx)
 
@@ -81,4 +81,40 @@ func Test_ApiKeyRefreshTokenAuthenticator_Fails_To_Prepare_Authorization(t *test
 		err := refreshTokenAuthenticator.prepareAuth(ctx)
 		assert.EqualError(t, err, "postJSON failed")
 	})
+}
+
+func TestAPIRefreshTokenAuthenticatorValidate(t *testing.T) {
+	testCases := []struct {
+		name                         string
+		apiRefreshTokenAuthenticator apiRefreshTokenAuthenticator
+		expectedError                error
+	}{
+		{
+			name: "validate passes since api key value is populated",
+			apiRefreshTokenAuthenticator: apiRefreshTokenAuthenticator{
+				apiKey: apiKey{
+					name:  "Authorization",
+					value: "some refresh token",
+				},
+				terraformConfigurationName: "api_token",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "validate does not pass since api key value is NOT populated/empty",
+			apiRefreshTokenAuthenticator: apiRefreshTokenAuthenticator{
+				apiKey: apiKey{
+					name:  "Authorization",
+					value: "",
+				},
+				terraformConfigurationName: "api_token",
+			},
+			expectedError: errors.New("required security definition 'api_token' is missing the value. Please make sure the property 'api_token' is configured with a value in the provider's terraform configuration"),
+		},
+	}
+
+	for _, tc := range testCases {
+		err := tc.apiRefreshTokenAuthenticator.validate()
+		assert.Equal(t, tc.expectedError, err, tc.name)
+	}
 }

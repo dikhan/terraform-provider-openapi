@@ -9,13 +9,15 @@ import (
 
 // Api Key Header Auth
 type apiRefreshTokenAuthenticator struct {
+	terraformConfigurationName string
 	apiKey
 	refreshTokenURL string
 	httpClient      http_goclient.HttpClientIface
 }
 
-func newAPIRefreshTokenAuthenticator(name, refreshToken, refreshTokenURL string) apiRefreshTokenAuthenticator {
+func newAPIRefreshTokenAuthenticator(name, refreshToken, refreshTokenURL, terraformConfigurationName string) apiRefreshTokenAuthenticator {
 	return apiRefreshTokenAuthenticator{
+		terraformConfigurationName: terraformConfigurationName,
 		apiKey: apiKey{
 			name:  name,
 			value: refreshToken,
@@ -53,5 +55,12 @@ func (a apiRefreshTokenAuthenticator) prepareAuth(authContext *authContext) erro
 		authContext.headers = map[string]string{}
 	}
 	authContext.headers[authorizationHeader] = accessToken
+	return nil
+}
+
+func (a apiRefreshTokenAuthenticator) validate() error {
+	if a.value == "" {
+		return fmt.Errorf("required security definition '%s' is missing the value. Please make sure the property '%s' is configured with a value in the provider's terraform configuration", a.terraformConfigurationName, a.terraformConfigurationName)
+	}
 	return nil
 }
