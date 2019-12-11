@@ -60,6 +60,10 @@ func (oa apiAuth) prepareAuth(url string, operationSecuritySchemes SpecSecurityS
 			return authContext, err
 		}
 		for _, authenticator := range authenticators {
+			err := authenticator.validate()
+			if err != nil {
+				return authContext, err
+			}
 			if err := authenticator.prepareAuth(authContext); err != nil {
 				return authContext, err
 			}

@@ -46,55 +46,6 @@ func TestNewProviderConfiguration(t *testing.T) {
 			})
 		})
 	})
-
-	Convey("Given securitySchemaDefinitions and a schema ResourceData not containing values for the security definitions", t, func() {
-		data := newTestSchema().getResourceData(t)
-		specAnalyser := &specAnalyserStub{
-			headers: SpecHeaderParameters{},
-			security: &specSecurityStub{
-				securityDefinitions: &SpecSecurityDefinitions{
-					newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
-				},
-				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
-			},
-		}
-		providerConfigurationEndPoints := &providerConfigurationEndPoints{}
-		Convey("When newProviderConfiguration method is called", func() {
-			_, err := newProviderConfiguration(specAnalyser, data, providerConfigurationEndPoints)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message returned should be equal to", func() {
-				So(err.Error(), ShouldEqual, "security schema definition 'string_property' is missing the value, please make sure this value is provided in the terraform configuration")
-			})
-		})
-	})
-
-	Convey("Given a headers a SpecHeaderParameters and a schema ResourceData not containing values for the security definitions", t, func() {
-		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("headerProperty", "header_property", true, false, "updatedValue")
-		specAnalyser := &specAnalyserStub{
-			headers: SpecHeaderParameters{
-				SpecHeaderParam{
-					Name: headerProperty.getTerraformCompliantPropertyName(),
-				},
-			},
-			security: &specSecurityStub{
-				securityDefinitions:   &SpecSecurityDefinitions{},
-				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
-			},
-		}
-		providerConfigurationEndPoints := &providerConfigurationEndPoints{}
-		data := newTestSchema().getResourceData(t)
-		Convey("When newProviderConfiguration method is called", func() {
-			_, err := newProviderConfiguration(specAnalyser, data, providerConfigurationEndPoints)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message returned should be equal to", func() {
-				So(err.Error(), ShouldEqual, "header parameter 'header_property' is missing the value, please make sure this value is provided in the terraform configuration")
-			})
-		})
-	})
 }
 
 func TestGetAuthenticatorFor(t *testing.T) {

@@ -1,8 +1,10 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -12,7 +14,7 @@ func TestApiKeyQueryAuthenticator(t *testing.T) {
 		value := ""
 		Convey("When specV2Analyser method is constructed", func() {
 			apiKeyQueryAuthenticator := &apiKeyQueryAuthenticator{
-				apiKey{
+				apiKey: apiKey{
 					name:  name,
 					value: value,
 				},
@@ -93,4 +95,40 @@ func TestApiKeyQueryAuthenticatorPrepareAuth(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestApiKeyQueryAuthenticatorValidate(t *testing.T) {
+	testCases := []struct {
+		name                     string
+		apiKeyQueryAuthenticator apiKeyQueryAuthenticator
+		expectedError            error
+	}{
+		{
+			name: "validate passes since api key value is populated",
+			apiKeyQueryAuthenticator: apiKeyQueryAuthenticator{
+				apiKey: apiKey{
+					name:  "Authorization",
+					value: "some refresh token",
+				},
+				terraformConfigurationName: "api_token",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "validate does not pass since api key value is NOT populated/empty",
+			apiKeyQueryAuthenticator: apiKeyQueryAuthenticator{
+				apiKey: apiKey{
+					name:  "Authorization",
+					value: "",
+				},
+				terraformConfigurationName: "api_token",
+			},
+			expectedError: errors.New("required security definition 'api_token' is missing the value. Please make sure the property 'api_token' is configured with a value in the provider's terraform configuration"),
+		},
+	}
+
+	for _, tc := range testCases {
+		err := tc.apiKeyQueryAuthenticator.validate()
+		assert.Equal(t, tc.expectedError, err, tc.name)
+	}
 }

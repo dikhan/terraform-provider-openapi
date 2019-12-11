@@ -114,9 +114,7 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 		if globalSecuritySchemes.securitySchemeExists(securityDefinition) {
 			required = true
 		}
-		if err := p.configureProviderPropertyFromPluginConfig(s, secDefName, required); err != nil {
-			return nil, err
-		}
+		p.configureProviderPropertyFromPluginConfig(s, secDefName, required)
 	}
 
 	headers, err := p.specAnalyser.GetAllHeaderParameters()
@@ -126,9 +124,7 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 	}
 	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
-		if err := p.configureProviderPropertyFromPluginConfig(s, headerTerraformCompliantName, false); err != nil {
-			return nil, err
-		}
+		p.configureProviderPropertyFromPluginConfig(s, headerTerraformCompliantName, false)
 	}
 
 	if providerConfigurationEndPoints != nil {
@@ -152,23 +148,22 @@ func (p providerFactory) getResourceNames(resourceMap map[string]*schema.Resourc
 	return resourceNames
 }
 
-func (p providerFactory) configureProviderPropertyFromPluginConfig(providerSchema map[string]*schema.Schema, schemaPropertyName string, required bool) error {
+func (p providerFactory) configureProviderPropertyFromPluginConfig(providerSchema map[string]*schema.Schema, schemaPropertyName string, required bool) {
 	var defaultValue = ""
 	var err error
 	schemaPropertyConfiguration := p.serviceConfiguration.GetSchemaPropertyConfiguration(schemaPropertyName)
 	if schemaPropertyConfiguration != nil {
 		err = schemaPropertyConfiguration.ExecuteCommand()
 		if err != nil {
-			return err
+			log.Printf("[ERROR] %s", err)
 		}
 		defaultValue, err = schemaPropertyConfiguration.GetDefaultValue()
 		if err != nil {
-			return err
+			log.Printf("[ERROR] %s", err)
 		}
 	}
 	providerSchema[schemaPropertyName] = terraformutils.CreateStringSchemaProperty(schemaPropertyName, required, defaultValue)
-	log.Printf("[DEBUG] registered new property '%s' into provider schema", schemaPropertyName)
-	return nil
+	log.Printf("[DEBUG] registered new property '%s' (required=%t) into provider schema", schemaPropertyName, required)
 }
 
 func (p providerFactory) configureProviderProperty(providerSchema map[string]*schema.Schema, schemaPropertyName string, defaultValue string, required bool, allowedValues []string) error {
