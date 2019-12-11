@@ -77,7 +77,7 @@ func (s ServiceSchemaPropertyConfigurationV1) ExecuteCommand() error {
 	go s.exec(doneChan)
 	err := <-doneChan
 	if err != nil {
-		return err
+		return fmt.Errorf("provider schema property '%s' command failed: %s", s.SchemaPropertyName, err)
 	}
 	return nil
 }
@@ -115,7 +115,7 @@ func (s ServiceSchemaPropertyConfigurationV1) exec(doneChan chan error) {
 
 		// If there's no context error, we know the command completed (or errored).
 		if err != nil {
-			doneChan <- fmt.Errorf("failed to execute '%s' command '%s': %s(%s)", s.SchemaPropertyName, s.Command, stderr.String(), err)
+			doneChan <- fmt.Errorf("command '%s' failed: %s(%s)", s.Command, stderr.String(), err)
 			return
 		}
 		log.Printf("[INFO] provider schema property '%s' command '%s' executed successfully (time:%s): %s", s.SchemaPropertyName, s.Command, time.Since(start), stdout.String())

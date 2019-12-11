@@ -17,6 +17,7 @@ type ServiceSchemaPropertyConfigurationStub struct {
 	SchemaPropertyName   string
 	DefaultValue         string
 	Err                  error
+	GetDefaultValueFunc  func() (string, error)
 	ExecuteCommandCalled bool
 }
 
@@ -52,6 +53,9 @@ func (s ServiceConfigStub) GetSchemaPropertyConfiguration(schemaPropertyName str
 
 // GetDefaultValue returns the dafult value configured in the ServiceSchemaPropertyConfigurationStub.defaultValue field
 func (s *ServiceSchemaPropertyConfigurationStub) GetDefaultValue() (string, error) {
+	if s.GetDefaultValueFunc != nil {
+		return s.GetDefaultValueFunc()
+	}
 	return s.DefaultValue, nil
 }
 
