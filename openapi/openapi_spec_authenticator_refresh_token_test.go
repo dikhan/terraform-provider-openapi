@@ -42,7 +42,7 @@ func Test_ApiKeyRefreshTokenAuthenticator_Successfully_Prepares_Authorization(t 
 
 }
 
-func Test_ApiKeyRefreshT8999999999999okenAuthenticator_Fails_To_Prepare_Authorization(t *testing.T) {
+func Test_ApiKeyRefreshTokenAuthenticator_Fails_To_Prepare_Authorization(t *testing.T) {
 	t.Run("crappy path -- the API Server providing the access token does not return the expected Authorization header containing the access token", func(t *testing.T) {
 		fakeRefreshToken := `eyJ[...]RW.eyJ[...]WQi.eyd[...]SWr`
 		accessTokenBrokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
