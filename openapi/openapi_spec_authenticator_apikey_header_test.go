@@ -1,7 +1,9 @@
 package openapi
 
 import (
+	"errors"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -11,7 +13,7 @@ func TestApiKeyHeaderAuthenticator(t *testing.T) {
 		value := ""
 		Convey("When specV2Analyser method is constructed", func() {
 			apiKeyHeaderAuthenticator := &apiKeyHeaderAuthenticator{
-				apiKey{
+				apiKey: apiKey{
 					name:  name,
 					value: value,
 				},
@@ -91,4 +93,40 @@ func TestApiKeyHeaderAuthenticatorPrepareAuth(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestApiKeyHeaderAuthenticatorValidate(t *testing.T) {
+	testCases := []struct {
+		name                      string
+		apiKeyHeaderAuthenticator apiKeyHeaderAuthenticator
+		expectedError             error
+	}{
+		{
+			name: "validate passes since api key value is populated",
+			apiKeyHeaderAuthenticator: apiKeyHeaderAuthenticator{
+				apiKey: apiKey{
+					name:  "Authorization",
+					value: "some refresh token",
+				},
+				terraformConfigurationName: "api_token",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "validate does not pass since api key value is NOT populated/empty",
+			apiKeyHeaderAuthenticator: apiKeyHeaderAuthenticator{
+				apiKey: apiKey{
+					name:  "Authorization",
+					value: "",
+				},
+				terraformConfigurationName: "api_token",
+			},
+			expectedError: errors.New("required security definition 'api_token' is missing the value. Please make sure the property 'api_token' is configured with a value in the provider's terraform configuration"),
+		},
+	}
+
+	for _, tc := range testCases {
+		err := tc.apiKeyHeaderAuthenticator.validate()
+		assert.Equal(t, tc.expectedError, err, tc.name)
+	}
 }

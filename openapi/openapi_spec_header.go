@@ -9,6 +9,7 @@ type SpecHeaderParameters []SpecHeaderParam
 type SpecHeaderParam struct {
 	Name          string
 	TerraformName string
+	IsRequired    bool
 }
 
 // GetHeaderTerraformConfigurationName returns the terraform compliant name of the header. If the header TerraformName

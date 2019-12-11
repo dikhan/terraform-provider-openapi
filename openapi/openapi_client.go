@@ -93,9 +93,13 @@ func (o *ProviderClient) Delete(resource SpecResource, id string, parentIDs ...s
 func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *specResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
 	reqContext, err := o.apiAuthenticator.prepareAuth(resourceURL, operation.SecuritySchemes, o.providerConfiguration)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to configure the API request for %s %s: %s", method, resourceURL, err)
 	}
-	o.appendOperationHeaders(operation.HeaderParameters, o.providerConfiguration, reqContext.headers)
+
+	err = o.appendOperationHeaders(operation.HeaderParameters, reqContext.headers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure the API request for %s %s: %s", method, resourceURL, err)
+	}
 	log.Printf("[DEBUG] Performing %s %s", method, reqContext.url)
 
 	userAgentHeader := version.BuildUserAgent(runtime.GOOS, runtime.GOARCH)
@@ -134,13 +138,18 @@ func (o *ProviderClient) logHeadersSafely(headers map[string]string) {
 
 // appendOperationHeaders returns a maps containing the headers passed in and adds whatever headers the operation requires. The values
 // are retrieved from the provider configuration.
-func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderParam, providerConfig providerConfiguration, headers map[string]string) {
+func (o ProviderClient) appendOperationHeaders(operationHeaders []SpecHeaderParam, headers map[string]string) error {
 	if operationHeaders != nil && len(operationHeaders) > 0 {
 		for _, headerParam := range operationHeaders {
+			headerValue := o.providerConfiguration.getHeaderValueFor(headerParam)
+			if headerParam.IsRequired && headerValue == "" {
+				return fmt.Errorf("required header '%s' is missing the value. Please make sure the property '%s' is configured with a value in the provider's terraform configuration", headerParam.Name, headerParam.GetHeaderTerraformConfigurationName())
+			}
 			// Setting the actual name of the header with the expectedValue coming from the provider configuration
-			headers[headerParam.Name] = providerConfig.getHeaderValueFor(headerParam)
+			headers[headerParam.Name] = o.providerConfiguration.getHeaderValueFor(headerParam)
 		}
 	}
+	return nil
 }
 
 func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string) (string, error) {
