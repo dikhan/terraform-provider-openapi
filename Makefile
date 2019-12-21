@@ -1,7 +1,8 @@
 VERSION  = $(shell cat ./version)
-GITHUB_VERSION=v$(VERSION)
-RELEASE_TAG?="$(GITHUB_VERSION)"
-RELEASE_MESSAGE?="$(GITHUB_VERSION)"
+RELEASE_TAG?=v$(VERSION)
+CURRENT_RELEASE_TAG?=$(shell git describe --abbrev=0 --tags)
+NEW_RELEASE_VERSION_VALIDATION?=$(shell ./scripts/semver.sh $(RELEASE_TAG) $(CURRENT_RELEASE_TAG))
+
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
 REPO=github.com/dikhan/terraform-provider-openapi
@@ -103,14 +104,21 @@ delete-tag:
 	@git tag -d $(RELEASE_TAG) | echo
 	@git push origin :refs/tags/$(RELEASE_TAG) | echo
 
-# RELEASE_TAG="v0.1.1" RELEASE_MESSAGE="v0.1.1" GITHUB_TOKEN="PERSONAL_TOKEN" make release-version
-release-version:
-	@echo "[INFO] Creating release tag $(RELEASE_TAG)"
-	@git tag -a $(RELEASE_TAG) -m $(RELEASE_MESSAGE)
-	@echo "[INFO] Pushing release tag"
-	@git push origin $(RELEASE_TAG)
-	@echo "[INFO] Performing release"
-	@GITHUB_TOKEN=$(GITHUB_TOKEN) goreleaser --rm-dist
+release-notes:
+	@./scripts/release_notes.sh
+
+# RELEASE_TAG="v0.1.1" GITHUB_TOKEN="PERSONAL_TOKEN" make release-version
+release-version: release-notes
+	@echo "Attempting to release new version $(CURRENT_RELEASE_TAG); current release $(RELEASE_TAG)"
+ifeq ($(NEW_RELEASE_VERSION_VALIDATION),1) # This checks that the new release version present in './version' is greater than the latest version released
+	@echo "[INFO] New version $(RELEASE_TAG) valid for release"
+	@echo "[INFO] Creating a new tag $(RELEASE_TAG)"
+	@git tag -a $(RELEASE_TAG) -m $(RELEASE_TAG)
+	@echo "[INFO] Releasing $(RELEASE_TAG)"
+	@GITHUB_TOKEN=$(GITHUB_TOKEN) goreleaser --rm-dist --release-notes ./release-notes.md
+else
+	@echo "Cancelling release due to new version $(RELEASE_TAG) <= latest release version $(CURRENT_RELEASE_TAG)"
+endif
 
 define install_plugin
     @$(eval TF_PROVIDER_PLUGIN_NAME := $(TF_PROVIDER_NAMING_CONVENTION)$(1))
