@@ -10,10 +10,26 @@ services:
   - docker
 
 install:
+  - go get github.com/buchanae/github-release-notes
+  - export BINDIR=/home/travis/bin && curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
 
-script:
-- env GO111MODULE=on make test
-- env GO111MODULE=on make integration-test
+jobs:
+  include:
+    - stage: test
+      script:
+        - env GO111MODULE=on make test
+        - env GO111MODULE=on make integration-test
+    - stage: deploy
+      script:
+        # Set up git user name and tag this commit
+        - git config --local user.name $GIT_USER
+        - git config --local user.email $GIT_USER_EMAIL
+        - make release-version
+stages:
+  - name: test
+    if: type = pull_request OR (type = push AND branch = master)
+  - name: deploy
+    if: type = push AND branch = master
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

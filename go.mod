@@ -9,6 +9,7 @@ require (
 	github.com/dikhan/http_goclient v0.0.0-20181010015730-b9de9b5ee7b6
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible // indirect
+	github.com/git-chglog/git-chglog v0.0.0-20190923122001-6050f20bcdb0 // indirect
 	github.com/go-openapi/analysis v0.0.0-20171215055114-2bbaa248df98 // indirect
 	github.com/go-openapi/errors v0.0.0-20170426151106-03cfca65330d // indirect
 	github.com/go-openapi/jsonreference v0.17.0
@@ -24,6 +25,7 @@ require (
 	github.com/hashicorp/hcl v0.0.0-20171017181929-23c074d0eceb // indirect
 	github.com/hashicorp/terraform-plugin-sdk v1.1.0
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
+	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
@@ -36,6 +38,8 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
 	github.com/spf13/cobra v0.0.3
 	github.com/stretchr/testify v1.3.0
+	github.com/tsuyoshiwada/go-gitcmd v0.0.0-20180205145712-5f1f5f9475df // indirect
+	github.com/urfave/cli v1.22.2 // indirect
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
@@ -44,6 +48,8 @@ require (
 	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
 	golang.org/x/tools v0.0.0-20191210221141-98df12377212 // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
+	gopkg.in/AlecAivazis/survey.v1 v1.8.7 // indirect
+	gopkg.in/kyokomi/emoji.v1 v1.5.1 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
