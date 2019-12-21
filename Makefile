@@ -65,6 +65,16 @@ pre-requirements:
 	@echo "[INFO] Creating $(TF_INSTALLED_PLUGINS_PATH) if it does not exist"
 	@[ -d $(TF_INSTALLED_PLUGINS_PATH) ] || mkdir -p $(TF_INSTALLED_PLUGINS_PATH)
 
+release-pre-requirements:
+ifeq (, $(shell which github-release-notes))
+    @echo "[INFO] No github-release-notes in $(PATH), installing github-release-notes")
+    go get github.com/buchanae/github-release-notes
+endif
+ifeq (, $(shell which goreleaser))
+        @echo "[INFO] No goreleaser in $(PATH), installing goreleaser")
+        brew install goreleaser
+endif
+
 # PROVIDER_NAME="goa" make install
 install: build pre-requirements
 	$(call install_plugin,$(PROVIDER_NAME))
@@ -104,7 +114,7 @@ delete-tag:
 	@git tag -d $(RELEASE_TAG) | echo
 	@git push origin :refs/tags/$(RELEASE_TAG) | echo
 
-release-notes:
+release-notes: release-pre-requirements
 	@./scripts/release_notes.sh
 
 # RELEASE_TAG="v0.1.1" GITHUB_TOKEN="PERSONAL_TOKEN" make release-version
