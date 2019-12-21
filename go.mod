@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+	github.com/buchanae/github-release-notes v0.0.0-20180827045457-200e1dacadbb // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dikhan/http_goclient v0.0.0-20181010015730-b9de9b5ee7b6
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
@@ -17,6 +18,8 @@ require (
 	github.com/go-openapi/spec v0.19.0
 	github.com/go-openapi/strfmt v0.0.0-20171222154016-4dd3d302e100 // indirect
 	github.com/goadesign/goa v0.0.0-20180629224717-ed6ccb1eb93a
+	github.com/google/go-github v17.0.0+incompatible // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gxui v0.0.0-20151028112939-f85e0a97b3a4 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/gorilla/context v1.1.1 // indirect
