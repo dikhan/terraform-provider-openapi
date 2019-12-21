@@ -108,12 +108,6 @@ latest-tag:
 	@echo "[INFO] Latest tag released..."
 	@git for-each-ref --sort=-taggerdate --count=1 --format '%(tag)' 'v*' refs/tags
 
-# RELEASE_TAG=v.0.1.5 make delete-tag
-delete-tag:
-	@echo "[INFO] Deleting tag specified $(RELEASE_TAG) (local and remote)..."
-	@git tag -d $(RELEASE_TAG) | echo
-	@git push origin :refs/tags/$(RELEASE_TAG) | echo
-
 release-notes: release-pre-requirements
 	@./scripts/release_notes.sh
 
