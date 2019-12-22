@@ -26,9 +26,15 @@ issue templates are available to help filling out the blanks.
 
 Pull requests are appreciated, please follow the steps below when creating a new pull request:
 
-1. Read [Creating a Pull Request](https://help.github.com/articles/creating-a-pull-request/) to learn more about how to
-submit a Pull Request in Github.
-2. A [Pull request template](PULL_REQUEST_TEMPLATE.md) is provided to help populating the PR. Please provide a clear 
+- Create an issue that describes the problem being solved if not already created.
+- Create a pull request and link to the related issue. For more information on creating a pull request, please see the [Github Pull Request docs](https://help.github.com/articles/creating-a-pull-request/).
+  - The title of the PR should follow the below convention. Pick the appropriate option for the type of change. This 
+  is important because the release notes will include this information.
+    - Feature Request: `[FeatureRequest: Issue #X] <PR Title>`
+    - Bug Fixes: `[BugFix: Issue #X] <PR Title>`
+    - Tech Debt: `[TechDebt: Issue #X] <PR Title>` 
+    - New Release: `[NewRelease] vX.Y.Z`
+  - A [pull request template](PULL_REQUEST_TEMPLATE.md) is provided to help populating the PR. Please provide a clear 
 description about the change requested.
 
 ## Contributing Code 
@@ -40,15 +46,15 @@ and follow the below:
     - Bug fix: `git checkout -b **bugfix**/my-bug-fix`
     - Feature requests: `git checkout -b **feature**/my-new-feature`
 - Commit your changes: `git commit -am 'Add some feature'`
-- Execute ```make test``` from the terraform_provider_api directory and make sure the exit code is clean. This will
-make sure that the Pull Request will have a clean build. The [test target](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L31)
-in the Makefile will run gofmt, govet, golint and then it will run the unit tests.
+- Execute ```make test-all``` from the terraform_provider_api directory and make sure the exit code is clean. This will
+make sure that the Pull Request will have a clean build. The [test-all target](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile)
+in the Makefile will run gofmt, govet, golint and then it will run the unit and integration tests.
 - Push to the branch: `git push origin <branch-name>`
 - Submit a pull request following the [Pull request guidelines](#pull-request-submissio)
 
 ## Licensing
 
-Code on the Terraform Provider API GitHub repository is licensed under the terms of the Apache 2.0 license: https://www.apache.org/licenses/LICENSE-2.0 and [https://github.com/dikhan/terraform-provider-api/blob/master/LICENSE]. This license ensures a balance between openness and allowing you to use the code with minimal requirements.
+Code on the Terraform Provider API GitHub repository is licensed under the terms of the Apache 2.0 license: https://www.apache.org/licenses/LICENSE-2.0 and https://github.com/dikhan/terraform-provider-api/blob/master/LICENSE. This license ensures a balance between openness and allowing you to use the code with minimal requirements.
 
 ## Licensing Code Contributions
 
@@ -74,15 +80,15 @@ it by reading the commit message - then write the commit message.
 
 The terraform provider OpenAPI uses the following coding standards to make sure the code is maintained clean and organised.
 
-- Go format [gofmt](https://golang.org/cmd/gofmt/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L15)
+- Go format [gofmt](https://golang.org/cmd/gofmt/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile)
 ```
 $ make fmt
 ```
-- Go vet, simplified dead code detector [govet](https://golang.org/cmd/vet/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L19)
+- Go vet, simplified dead code detector [govet](https://golang.org/cmd/vet/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile)
 ```
 $ make vet
 ```
-- Go lint, detects style mistakes [golint](https://github.com/golang/lint), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-api/blob/master/terraform_provider_api/Makefile#L26)
+- Go lint, detects style mistakes [golint](https://github.com/golang/lint), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile)
  ```
  $ make lint
  ```
