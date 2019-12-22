@@ -17,8 +17,7 @@ jobs:
   include:
     - stage: test
       script:
-        - env GO111MODULE=on make test
-        - env GO111MODULE=on make integration-test
+        - env GO111MODULE=on make test-all
     - stage: deploy
       script:
         # Set up git user name and tag this commit
