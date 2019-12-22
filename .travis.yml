@@ -23,7 +23,7 @@ jobs:
         # Set up git user name and tag this commit
         - git config --local user.name $GIT_USER
         - git config --local user.email $GIT_USER_EMAIL
-        - make release-version
+        - env GO111MODULE=on make release-version
 stages:
   - name: test
     if: type = pull_request OR (type = push AND branch = master)
