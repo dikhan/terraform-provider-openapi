@@ -16,12 +16,20 @@ Steps to reproduce the behavior:
 ## Expected behaviour
 A clear and concise description of what you expected to happen.
 
+Example:
+```gherkin
+Scenario:
+Given ...
+When ...
+Then ... 
+```
+
 ## Additional context
 Add any other context about the problem here.
 
-### Checklist
+### Checklist (for admin only)
 
 **Don't forget to go through the checklist to make sure the issue is created properly**:
 
-- [ ] I have added a corresponding label (feature request/bug/etc) to the issue (right side menu)
+- [ ] I have added a corresponding label (bug) to the issue (right side menu)
 - [ ] I have added this issue to the 'API Terraform Provider' GitHub project (right side menu)
