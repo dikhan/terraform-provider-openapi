@@ -61,6 +61,8 @@ integration-test: local-env-down local-env
 		exit 1; \
 	fi
 
+test-all: test integration-test
+
 pre-requirements:
 	@echo "[INFO] Creating $(TF_INSTALLED_PLUGINS_PATH) if it does not exist"
 	@[ -d $(TF_INSTALLED_PLUGINS_PATH) ] || mkdir -p $(TF_INSTALLED_PLUGINS_PATH)
