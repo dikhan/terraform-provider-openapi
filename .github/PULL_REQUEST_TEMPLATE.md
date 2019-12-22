@@ -30,3 +30,4 @@ Please put an `x` (w/o heading/trailing white spaces) in the boxes that apply:
 ## Checklist for Admins
 - [ ] Label is populated
 - [ ] PR is assigned to the corresponding project
+- [ ] PR has at least 1 reviewer and 1 assignee
