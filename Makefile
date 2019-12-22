@@ -114,7 +114,7 @@ release-notes: release-pre-requirements
 	@./scripts/release_notes.sh
 
 # RELEASE_TAG="v0.1.1" GITHUB_TOKEN="PERSONAL_TOKEN" make release-version
-release-version: test release-notes
+release-version: release-notes
 	@echo "Attempting to release new version $(CURRENT_RELEASE_TAG); current release $(RELEASE_TAG)"
 ifeq ($(NEW_RELEASE_VERSION_VALIDATION),1) # This checks that the new release version present in './version' is greater than the latest version released
 	@echo "[INFO] New version $(RELEASE_TAG) valid for release"
