@@ -3,6 +3,7 @@ module github.com/dikhan/terraform-provider-openapi
 go 1.12
 
 require (
+	github.com/DataDog/datadog-go v2.2.0+incompatible
 	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/buchanae/github-release-notes v0.0.0-20180827045457-200e1dacadbb // indirect
