@@ -52,8 +52,33 @@ This is the root document object for the plugin configuration specification.
 Field Name | Type | Description
 ---|:---:|---
 version | `string` | **Required.** Specifies the OpenAPI plugin configuration spec version being used. The value MUST be `'1'`.
+telemetry | [Telemetry Object](#telemetry-object) | Telemetry configuration
 services | [Services Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#services-object) | Specifies the service configurations
 
+##### Telemetry Object
+
+Describes the telemetry providers configurations.
+
+Field Name | Type | Description
+---|:---:|---
+graphite | [Graphite Object](#graphite-object) | Graphite Telemetry configuration
+
+Note: At the moment, only Graphite telemetry si supported.
+
+###### Graphite Object
+
+Describes the configuration for Graphite telemetry.
+
+Field Name | Type | Description
+---|:---:|---
+host | `string` | **Required.** Graphite host to ship the metrics to
+port | `integer` | **Required.** Graphite port to connect to
+prefix | `string` | Some prefix to append to the metrics pushed to Graphite. If populated, metrics pushed to Graphite will be of the following form: `statsd.<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix.
+
+The following metrics will be shipped to the corresponding configured Graphite host upon plugin execution:
+
+  - Terraform OpenAPI version used by the user: `statsd.<prefix>.terraform.openapi_plugin_version.*.total_runs` where * would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc)
+  - Service used by the user: `statsd.<prefix>.terraform.providers.*.total_runs` where * would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn')
 
 ##### Services Object
 
