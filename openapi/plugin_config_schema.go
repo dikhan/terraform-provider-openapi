@@ -45,10 +45,11 @@ type PluginConfigSchemaV1 struct {
 }
 
 // NewPluginConfigSchemaV1 creates a new PluginConfigSchemaV1 that implements PluginConfigSchema interface
-func NewPluginConfigSchemaV1(services map[string]*ServiceConfigV1) *PluginConfigSchemaV1 {
+func NewPluginConfigSchemaV1(services map[string]*ServiceConfigV1, telemetryConfig *TelemetryConfig) *PluginConfigSchemaV1 {
 	return &PluginConfigSchemaV1{
-		Version:  "1",
-		Services: services,
+		Version:         "1",
+		Services:        services,
+		TelemetryConfig: telemetryConfig,
 	}
 }
 
@@ -106,9 +107,11 @@ func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) Telemetr
 			}
 		} else {
 			log.Printf("[DEBUG] graphite telemetry configuration not present")
+			return nil
 		}
 	} else {
 		log.Printf("[DEBUG] telemetry not configured")
+		return nil
 	}
 	return telemetryHandlerTimeoutSupport{
 		timeout:            telemetryTimeout,
