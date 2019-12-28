@@ -23,7 +23,7 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 	var otfVarPluginConfigurationFileUc = strings.ToUpper(otfVarPluginConfigurationFileLc)
 	Convey("Given an environment variable set using lower case provider name with the plugin configuration file path", t, func() {
 		os.Setenv(otfVarPluginConfigurationFileLc, otfVarPluginConfigurationFileValue)
-		Convey("When getServiceConfiguration is called", func() {
+		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -36,7 +36,7 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 	})
 	Convey("Given an environment variable set using lower case provider name with the plugin configuration file path", t, func() {
 		os.Setenv(otfVarPluginConfigurationFileUc, otfVarPluginConfigurationFileValue)
-		Convey("When getServiceConfiguration is called", func() {
+		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -48,7 +48,7 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 		os.Unsetenv(otfVarPluginConfigurationFileUc)
 	})
 	Convey("Given no environment variables set for the plugin configuration file", t, func() {
-		Convey("When getServiceConfiguration is called", func() {
+		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
