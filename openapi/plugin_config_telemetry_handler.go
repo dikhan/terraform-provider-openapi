@@ -5,11 +5,16 @@ import (
 	"time"
 )
 
+// TelemetryHandler is responsible for making sure that metrics are shipped to all the telemetry providers registered and
+// also ensures that metrics submissions are configured with timeouts. Hence, if the telemetry provider is taking longer than the
+// timeout set or it errors when sending the metric, the provider execution will not be affected by it and the corresponding error
+// will be logged for the reference
 type TelemetryHandler interface {
+	// SubmitMetrics
 	SubmitMetrics()
 }
 
-const telemetry_timeout = 2
+const telemetryTimeout = 2
 
 type telemetryHandlerTimeoutSupport struct {
 	timeout            int
@@ -18,6 +23,7 @@ type telemetryHandlerTimeoutSupport struct {
 	telemetryProviders []TelemetryProvider
 }
 
+// MetricSubmitter is the function holding the logic that actually submits the metric
 type MetricSubmitter func() error
 
 func (t telemetryHandlerTimeoutSupport) SubmitMetrics() {

@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// TelemetryProvider holds the behaviour expected to be implemented for the Telemetry Providers supported. At the moment
+// only Graphite is supported.
 type TelemetryProvider interface {
 	// Validate performs a check to confirm that the telemetry configuration is valid
 	Validate() error
@@ -17,16 +19,26 @@ type TelemetryProvider interface {
 	IncServiceProviderTotalRunsCounter(providerName string) error
 }
 
+// TelemetryConfig contains the configuration for the telemetry
 type TelemetryConfig struct {
+	// Graphite defines the configuration needed to ship telemetry to Graphite
 	Graphite *TelemetryProviderGraphite `yaml:"graphite,omitempty"`
 }
 
+// TelemetryProviderGraphite defines the configuration for Graphite. This struct also implements the TelemetryProvider interface
+// and ships metrics to the following namespace by default statsd.<prefix>.terraform.* where '<prefix>' can be configured.
 type TelemetryProviderGraphite struct {
-	Host   string `yaml:"host"`
-	Port   int    `yaml:"port"`
+	// Host describes the graphite host (fqdn)
+	Host string `yaml:"host"`
+	// Port describes the port to where metrics will be pushed in Graphite
+	Port int `yaml:"port"`
+	// Prefix enables to append a prefix to the metrics pushed to graphite
 	Prefix string `yaml:"prefix,omitempty"`
 }
 
+// Validate checks whether the provider is configured correctly. This validation is performed upon telemetry provider registration. If this
+// method returns an error the error will be logged but the telemetry will be disabled. Otherwise, the telemetry will be enabled
+// and the corresponding metrics will be shipped to Graphite
 func (g TelemetryProviderGraphite) Validate() error {
 	if g.Host == "" {
 		return errors.New("graphite telemetry configuration is missing a value for the 'host property'")
@@ -37,6 +49,8 @@ func (g TelemetryProviderGraphite) Validate() error {
 	return nil
 }
 
+// IncOpenAPIPluginVersionTotalRunsCounter will increment the counter 'statsd.<prefix>.terraform.openapi_plugin_version.%s.total_runs' metric to 1. The
+// %s will be replaced by the OpenAPI plugin version used at runtime
 func (g TelemetryProviderGraphite) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error {
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	metric := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
@@ -48,6 +62,8 @@ func (g TelemetryProviderGraphite) IncOpenAPIPluginVersionTotalRunsCounter(openA
 	return nil
 }
 
+// IncServiceProviderTotalRunsCounter will increment the counter for a given provider 'statsd.<prefix>.terraform.providers.%s.total_runs' metric to 1. The
+// %s will be replaced by the provider name used at runtime
 func (g TelemetryProviderGraphite) IncServiceProviderTotalRunsCounter(providerName string) error {
 	metric := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
 	log.Printf("[INFO] graphite metric to be submitted: %s", metric)

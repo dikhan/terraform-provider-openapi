@@ -111,7 +111,7 @@ func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) Telemetr
 		log.Printf("[DEBUG] telemetry not configured")
 	}
 	return telemetryHandlerTimeoutSupport{
-		timeout:            telemetry_timeout,
+		timeout:            telemetryTimeout,
 		providerName:       providerName,
 		openAPIVersion:     version.Version,
 		telemetryProviders: telemetryProviders,
