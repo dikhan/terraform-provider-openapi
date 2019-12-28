@@ -3,14 +3,14 @@ package openapi
 import (
 	"bytes"
 	"fmt"
+	"github.com/smartystreets/assertions/should"
+	. "github.com/smartystreets/goconvey/convey"
 	"log"
 	"net"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/smartystreets/assertions/should"
-	. "github.com/smartystreets/goconvey/convey"
+	"time"
 )
 
 const providerName = "test"
@@ -203,10 +203,8 @@ services:
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing telemetry configured and a service called 'test'", t, func() {
-		metricsReceived := []string{}
-		pc, telemetryHost, telemetryPort := udpServer(func(metric string) {
-			metricsReceived = append(metricsReceived, metric)
-		})
+		c := make(chan string)
+		pc, telemetryHost, telemetryPort := udpServer(c)
 		defer pc.Close()
 
 		pluginConfig := fmt.Sprintf(`version: '1'
@@ -236,11 +234,20 @@ services:
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
 			Convey("And the telemetry server should have been received the expected counter metrics increase", func() {
-				So(metricsReceived, ShouldContain, "openapi.terraform.providers.test.total_runs:1|c")
-				So(metricsReceived, ShouldContain, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
+				select {
+				case metricReceived1 := <-c:
+					So(metricReceived1, ShouldEqual, "openapi.terraform.providers.test.total_runs:1|c")
+				case <-time.After(500 * time.Millisecond):
+					t.Fatalf("[FAIL] getServiceConfiguration test (telemetry configured, service called 'test' - metric1) has timed out")
+				}
+				select {
+				case metricReceived2 := <-c:
+					So(metricReceived2, ShouldEqual, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
+				case <-time.After(500 * time.Millisecond):
+					t.Fatalf("[FAIL] getServiceConfiguration test (telemetry configured, service called 'test' - metric2) has timed out")
+				}
 			})
 		})
-
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration that DOES NOT contain a service called 'test'", t, func() {
@@ -327,7 +334,7 @@ services:
 
 }
 
-func udpServer(f func(string)) (net.PacketConn, string, string) {
+func udpServer(c chan string) (net.PacketConn, string, string) {
 	pc, err := net.ListenPacket("udp", "127.0.0.1:")
 	if err != nil {
 		log.Fatal(err)
@@ -343,7 +350,7 @@ func udpServer(f func(string)) (net.PacketConn, string, string) {
 				continue
 			}
 			body := string(buf[:n])
-			f(body)
+			c <- body
 		}
 	}()
 	return pc, telemetryHost, telemetryPort

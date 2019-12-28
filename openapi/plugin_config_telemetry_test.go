@@ -6,11 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net"
-	"net/http"
-	"net/http/httptest"
 	"strconv"
-	"strings"
 	"testing"
+	"time"
 )
 
 func TestTelemetryProviderGraphite_Validate(t *testing.T) {
@@ -54,15 +52,32 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter(t *te
 	openAPIPluginVersion := "0.25.0"
 	expectedLogMetricToSubmit := "[INFO] graphite metric to be submitted: terraform.openapi_plugin_version.0_25_0.total_runs"
 	expectedLogMetricSuccess := "[INFO] graphite metric successfully submitted: terraform.openapi_plugin_version.0_25_0.total_runs"
+	expectedMetric := "myPrefixName.terraform.openapi_plugin_version.0_25_0.total_runs:1|c"
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	tpg := createTestGraphiteProvider()
-	err := tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion)
 
-	assert.Nil(t, err)
-	assert.Contains(t, buf.String(), expectedLogMetricToSubmit)
-	assert.Contains(t, buf.String(), expectedLogMetricSuccess)
+	c := make(chan string)
+	pc, telemetryHost, telemetryPort := udpServer(c)
+	defer pc.Close()
+
+	telemetryPortInt, err := strconv.Atoi(telemetryPort)
+	tpg := TelemetryProviderGraphite{
+		Host:   telemetryHost,
+		Port:   telemetryPortInt,
+		Prefix: "myPrefixName",
+	}
+	err = tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion)
+
+	select {
+	case metricReceived := <-c:
+		assert.Contains(t, metricReceived, expectedMetric)
+		assert.Nil(t, err)
+		assert.Contains(t, buf.String(), expectedLogMetricToSubmit)
+		assert.Contains(t, buf.String(), expectedLogMetricSuccess)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatalf("[FAIL] TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter has timed out")
+	}
 }
 
 func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter_BadHost(t *testing.T) {
@@ -79,15 +94,31 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter(t *testing
 	providerName := "myProviderName"
 	expectedLogMetricToSubmit := "[INFO] graphite metric to be submitted: terraform.providers.myProviderName.total_runs"
 	expectedLogMetricSuccess := "[INFO] graphite metric successfully submitted: terraform.providers.myProviderName.total_runs"
+	expectedMetric := "myPrefixName.terraform.providers.myProviderName.total_runs:1|c"
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	tpg := createTestGraphiteProvider()
-	err := tpg.IncServiceProviderTotalRunsCounter(providerName)
 
-	assert.Nil(t, err)
-	assert.Contains(t, buf.String(), expectedLogMetricToSubmit)
-	assert.Contains(t, buf.String(), expectedLogMetricSuccess)
+	c := make(chan string)
+	pc, telemetryHost, telemetryPort := udpServer(c)
+	defer pc.Close()
+
+	telemetryPortInt, err := strconv.Atoi(telemetryPort)
+	tpg := TelemetryProviderGraphite{
+		Host:   telemetryHost,
+		Port:   telemetryPortInt,
+		Prefix: "myPrefixName",
+	}
+	err = tpg.IncServiceProviderTotalRunsCounter(providerName)
+	select {
+	case metricReceived := <-c:
+		assert.Contains(t, metricReceived, expectedMetric)
+		assert.Nil(t, err)
+		assert.Contains(t, buf.String(), expectedLogMetricToSubmit)
+		assert.Contains(t, buf.String(), expectedLogMetricSuccess)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatalf("[FAIL] TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter has timed out")
+	}
 }
 
 func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter_BadHost(t *testing.T) {
@@ -98,19 +129,6 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter_BadHost(t 
 	err := tpg.IncServiceProviderTotalRunsCounter(providerName)
 
 	assert.Equal(t, expectedError, err)
-}
-
-func createTestGraphiteProvider() TelemetryProviderGraphite {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	url := s.URL[7:]
-	host := strings.Split(url, ":")[0]
-	port, _ := strconv.Atoi(strings.Split(url, ":")[1])
-	tpg := TelemetryProviderGraphite{
-		Host:   host,
-		Port:   port,
-		Prefix: "myPrefixName",
-	}
-	return tpg
 }
 
 func createTestGraphiteProvider_badHost() TelemetryProviderGraphite {
