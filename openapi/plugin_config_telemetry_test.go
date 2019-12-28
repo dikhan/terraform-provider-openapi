@@ -115,6 +115,39 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter_BadHost(t 
 	assert.Equal(t, expectedError, err)
 }
 
+func TestTelemetryProviderGraphite_BuildMetricName(t *testing.T) {
+	testCases := []struct {
+		testName               string
+		prefix                 string
+		metricName             string
+		expectedFullMetricName string
+	}{
+		{
+			testName:               "happy path - with prefix",
+			prefix:                 "myPrefixName",
+			metricName:             "myMetricName",
+			expectedFullMetricName: "myPrefixName.myMetricName",
+		},
+		{
+			testName:               "happy path - without prefix",
+			metricName:             "myMetricName",
+			expectedFullMetricName: "myMetricName",
+		},
+	}
+
+	for _, tc := range testCases {
+		tpg := TelemetryProviderGraphite{
+			Host:   "myTelemetryHost",
+			Port:   8125,
+			Prefix: tc.prefix,
+		}
+
+		fullMetricName := tpg.buildMetricName(tc.metricName)
+
+		assert.Equal(t, tc.expectedFullMetricName, fullMetricName)
+	}
+}
+
 func createTestGraphiteProviderBadHost() TelemetryProviderGraphite {
 	tpg := TelemetryProviderGraphite{
 		Host:   "bad graphite host",
