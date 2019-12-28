@@ -293,7 +293,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 				},
 			},
 			inputPluginName: "pluginName",
-			expectedLogging: "[INFO] graphite telemetry provider enabled",
+			expectedLogging: "[DEBUG] graphite telemetry provider enabled",
 		},
 		{
 			name: "handler skips graphite telemetry due to the validation not passing",
