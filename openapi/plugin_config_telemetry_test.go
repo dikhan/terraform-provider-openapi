@@ -8,7 +8,6 @@ import (
 	"net"
 	"strconv"
 	"testing"
-	"time"
 )
 
 func TestTelemetryProviderGraphite_Validate(t *testing.T) {
@@ -54,11 +53,11 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter(t *te
 	expectedLogMetricSuccess := "[INFO] graphite metric successfully submitted: terraform.openapi_plugin_version.0_25_0.total_runs"
 	expectedMetric := "myPrefixName.terraform.openapi_plugin_version.0_25_0.total_runs:1|c"
 
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
+	var logging bytes.Buffer
+	log.SetOutput(&logging)
 
-	c := make(chan string)
-	pc, telemetryHost, telemetryPort := udpServer(c)
+	metricChannel := make(chan string)
+	pc, telemetryHost, telemetryPort := udpServer(metricChannel)
 	defer pc.Close()
 
 	telemetryPortInt, err := strconv.Atoi(telemetryPort)
@@ -68,16 +67,8 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter(t *te
 		Prefix: "myPrefixName",
 	}
 	err = tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion)
-
-	select {
-	case metricReceived := <-c:
-		assert.Contains(t, metricReceived, expectedMetric)
-		assert.Nil(t, err)
-		assert.Contains(t, buf.String(), expectedLogMetricToSubmit)
-		assert.Contains(t, buf.String(), expectedLogMetricSuccess)
-	case <-time.After(500 * time.Millisecond):
-		t.Fatalf("[FAIL] TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter has timed out")
-	}
+	assert.Nil(t, err)
+	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess, &logging)
 }
 
 func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter_BadHost(t *testing.T) {
@@ -96,11 +87,11 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter(t *testing
 	expectedLogMetricSuccess := "[INFO] graphite metric successfully submitted: terraform.providers.myProviderName.total_runs"
 	expectedMetric := "myPrefixName.terraform.providers.myProviderName.total_runs:1|c"
 
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
+	var logging bytes.Buffer
+	log.SetOutput(&logging)
 
-	c := make(chan string)
-	pc, telemetryHost, telemetryPort := udpServer(c)
+	metricChannel := make(chan string)
+	pc, telemetryHost, telemetryPort := udpServer(metricChannel)
 	defer pc.Close()
 
 	telemetryPortInt, err := strconv.Atoi(telemetryPort)
@@ -110,15 +101,8 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter(t *testing
 		Prefix: "myPrefixName",
 	}
 	err = tpg.IncServiceProviderTotalRunsCounter(providerName)
-	select {
-	case metricReceived := <-c:
-		assert.Contains(t, metricReceived, expectedMetric)
-		assert.Nil(t, err)
-		assert.Contains(t, buf.String(), expectedLogMetricToSubmit)
-		assert.Contains(t, buf.String(), expectedLogMetricSuccess)
-	case <-time.After(500 * time.Millisecond):
-		t.Fatalf("[FAIL] TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter has timed out")
-	}
+	assert.Nil(t, err)
+	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess, &logging)
 }
 
 func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter_BadHost(t *testing.T) {

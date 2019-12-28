@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/smartystreets/assertions/should"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"net"
 	"os"
@@ -203,8 +204,8 @@ services:
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing telemetry configured and a service called 'test'", t, func() {
-		c := make(chan string)
-		pc, telemetryHost, telemetryPort := udpServer(c)
+		metricChannel := make(chan string)
+		pc, telemetryHost, telemetryPort := udpServer(metricChannel)
 		defer pc.Close()
 
 		pluginConfig := fmt.Sprintf(`version: '1'
@@ -234,18 +235,8 @@ services:
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
 			Convey("And the telemetry server should have been received the expected counter metrics increase", func() {
-				select {
-				case metricReceived1 := <-c:
-					So(metricReceived1, ShouldEqual, "openapi.terraform.providers.test.total_runs:1|c")
-				case <-time.After(500 * time.Millisecond):
-					t.Fatalf("[FAIL] getServiceConfiguration test (telemetry configured, service called 'test' - metric1) has timed out")
-				}
-				select {
-				case metricReceived2 := <-c:
-					So(metricReceived2, ShouldEqual, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
-				case <-time.After(500 * time.Millisecond):
-					t.Fatalf("[FAIL] getServiceConfiguration test (telemetry configured, service called 'test' - metric2) has timed out")
-				}
+				assertExpectedMetric(t, metricChannel, "openapi.terraform.providers.test.total_runs:1|c")
+				assertExpectedMetric(t, metricChannel, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
 			})
 		})
 	})
@@ -334,7 +325,26 @@ services:
 
 }
 
-func udpServer(c chan string) (net.PacketConn, string, string) {
+func assertExpectedMetric(t *testing.T, metricChannel chan string, expectedMetric string) {
+	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, "", "", nil)
+}
+
+func assertExpectedMetricAndLogging(t *testing.T, metricChannel chan string, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess string, logging *bytes.Buffer) {
+	select {
+	case metricReceived := <-metricChannel:
+		assert.Contains(t, metricReceived, expectedMetric)
+		if expectedLogMetricToSubmit != "" {
+			assert.Contains(t, logging.String(), expectedLogMetricToSubmit)
+		}
+		if expectedLogMetricSuccess != "" {
+			assert.Contains(t, logging.String(), expectedLogMetricSuccess)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatalf("[FAIL] '%s' not reveided within the expected timeframe (timed out)", expectedMetric)
+	}
+}
+
+func udpServer(metricChannel chan string) (net.PacketConn, string, string) {
 	pc, err := net.ListenPacket("udp", "127.0.0.1:")
 	if err != nil {
 		log.Fatal(err)
@@ -350,7 +360,7 @@ func udpServer(c chan string) (net.PacketConn, string, string) {
 				continue
 			}
 			body := string(buf[:n])
-			c <- body
+			metricChannel <- body
 		}
 	}()
 	return pc, telemetryHost, telemetryPort
