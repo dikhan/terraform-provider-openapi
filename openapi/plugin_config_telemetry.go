@@ -80,11 +80,7 @@ func (g TelemetryProviderGraphite) submitMetric(name string) error {
 		return err
 	}
 	nameWithPrefix := g.buildMetricName(name)
-	err = c.Incr(nameWithPrefix, nil, 1.0)
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.Incr(nameWithPrefix, nil, 1.0)
 }
 
 func (g TelemetryProviderGraphite) buildMetricName(name string) string {
