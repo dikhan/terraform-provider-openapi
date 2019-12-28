@@ -9,6 +9,8 @@ type TelemetryHandler interface {
 	SubmitMetrics()
 }
 
+const telemetry_timeout = 2
+
 type telemetryHandlerTimeoutSupport struct {
 	timeout            int
 	providerName       string
