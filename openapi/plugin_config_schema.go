@@ -35,8 +35,9 @@ type PluginConfigSchema interface {
 //   vm:
 //     swagger-url: http://vm-api.com/swagger.json
 type PluginConfigSchemaV1 struct {
-	Version  string                      `yaml:"version"`
-	Services map[string]*ServiceConfigV1 `yaml:"services"`
+	Version         string                      `yaml:"version"`
+	TelemetryConfig *TelemetryConfig            `yaml:"telemetry,omitempty"`
+	Services        map[string]*ServiceConfigV1 `yaml:"services"`
 }
 
 // NewPluginConfigSchemaV1 creates a new PluginConfigSchemaV1 that implements PluginConfigSchema interface
