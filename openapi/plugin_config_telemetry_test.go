@@ -5,8 +5,11 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -62,6 +65,16 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter(t *te
 	assert.Contains(t, buf.String(), expectedLogMetricSuccess)
 }
 
+func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter_BadHost(t *testing.T) {
+	openAPIPluginVersion := "0.25.0"
+	expectedError := &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false}
+
+	tpg := createTestGraphiteProvider_badHost()
+	err := tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion)
+
+	assert.Equal(t, expectedError, err)
+}
+
 func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter(t *testing.T) {
 	providerName := "myProviderName"
 	expectedLogMetricToSubmit := "[INFO] graphite metric to be submitted: terraform.providers.myProviderName.total_runs"
@@ -77,10 +90,32 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter(t *testing
 	assert.Contains(t, buf.String(), expectedLogMetricSuccess)
 }
 
+func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter_BadHost(t *testing.T) {
+	providerName := "myProviderName"
+	expectedError := &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false}
+
+	tpg := createTestGraphiteProvider_badHost()
+	err := tpg.IncServiceProviderTotalRunsCounter(providerName)
+
+	assert.Equal(t, expectedError, err)
+}
+
 func createTestGraphiteProvider() TelemetryProviderGraphite {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	url := s.URL[7:]
+	host := strings.Split(url, ":")[0]
+	port, _ := strconv.Atoi(strings.Split(url, ":")[1])
 	tpg := TelemetryProviderGraphite{
-		Host:   s.URL[7:16],
+		Host:   host,
+		Port:   port,
+		Prefix: "myPrefixName",
+	}
+	return tpg
+}
+
+func createTestGraphiteProvider_badHost() TelemetryProviderGraphite {
+	tpg := TelemetryProviderGraphite{
+		Host:   "bad graphite host",
 		Port:   8125,
 		Prefix: "myPrefixName",
 	}
