@@ -124,6 +124,8 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 			if err != nil {
 				return nil, fmt.Errorf("error occurred when getting service configuration from plugin configuration file %s - error = %s", OpenAPIPluginConfigurationFileName, err)
 			}
+			telemetryHandler := pluginConfig.GetTelemetryHandler(p.ProviderName)
+			telemetryHandler.SubmitMetrics()
 		}
 	}
 
