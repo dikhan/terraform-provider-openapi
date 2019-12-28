@@ -13,7 +13,6 @@ type telemetryHandlerTimeoutSupport struct {
 	timeout            int
 	providerName       string
 	openAPIVersion     string
-	terraformVersion   string
 	telemetryProviders []TelemetryProvider
 }
 
@@ -26,9 +25,6 @@ func (t telemetryHandlerTimeoutSupport) SubmitMetrics() {
 		})
 		t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
 			return telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion)
-		})
-		t.submitMetric("IncTerraformVersionTotalRunsCounter", func() error {
-			return telemetryProvider.IncTerraformVersionTotalRunsCounter(t.terraformVersion)
 		})
 	}
 }

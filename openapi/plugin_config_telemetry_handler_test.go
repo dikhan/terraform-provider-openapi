@@ -19,10 +19,9 @@ func TestSubmitMetrics(t *testing.T) {
 		{
 			name: "submitMetrics works fine",
 			ths: telemetryHandlerTimeoutSupport{
-				providerName:     "providerName",
-				timeout:          1,
-				terraformVersion: "v011",
-				openAPIVersion:   "0.25.0",
+				providerName:   "providerName",
+				timeout:        1,
+				openAPIVersion: "0.25.0",
 				telemetryProviders: []TelemetryProvider{
 					stub,
 				},
@@ -38,7 +37,6 @@ func TestSubmitMetrics(t *testing.T) {
 		// The below confirm that the corresponding inc methods were called and also the info passed in was the correct one
 		assert.Equal(t, tc.ths.openAPIVersion, stub.openAPIPluginVersionReceived, tc.name)
 		assert.Equal(t, tc.ths.providerName, stub.providerNameReceived, tc.name)
-		assert.Equal(t, tc.ths.terraformVersion, stub.terraformVersionReceived, tc.name)
 	}
 }
 
