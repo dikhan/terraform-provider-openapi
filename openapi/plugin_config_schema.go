@@ -22,8 +22,8 @@ type PluginConfigSchema interface {
 	GetVersion() (string, error)
 	// Marshal serializes the value provided into a YAML document
 	Marshal() ([]byte, error)
-
-	// TODO: GetTelemetryHandler() TelemetryHandler
+	// GetTelemetryHandler returns a handler containing validated telemetry providers
+	GetTelemetryHandler(providerName string) TelemetryHandler
 }
 
 // PluginConfigSchemaV1 defines PluginConfigSchema version 1
