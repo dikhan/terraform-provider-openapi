@@ -107,6 +107,7 @@ func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) Telemetr
 		}
 	}
 	return telemetryHandlerTimeoutSupport{
+		timeout:            telemetry_timeout,
 		providerName:       providerName,
 		openAPIVersion:     version.Version,
 		telemetryProviders: telemetryProviders,
