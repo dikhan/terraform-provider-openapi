@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -137,7 +138,9 @@ services:
 		os.Unsetenv(otfVarNameLc)
 	})
 
-	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set", t, func() {
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set AND telemetry not configured", t, func() {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
 		pluginConfig := fmt.Sprintf(`version: '1'
 services:
     %s:
@@ -159,8 +162,44 @@ services:
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
+			Convey("And the logging should show that the telemetry is not configured", func() {
+				fmt.Println(buf.String())
+				So(buf.String(), ShouldContainSubstring, "[DEBUG] telemetry not configured")
+			})
 		})
+	})
 
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set AND the telemetry for graphite is not configured", t, func() {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		pluginConfig := fmt.Sprintf(`version: '1'
+telemetry:
+  graphite:
+services:
+    %s:
+        swagger-url: %s`, providerName, otfVarSwaggerURLValue)
+		configReader := strings.NewReader(pluginConfig)
+		pluginConfiguration := PluginConfiguration{
+			ProviderName:  providerName,
+			Configuration: configReader,
+		}
+		Convey("When getServiceConfiguration is called", func() {
+			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the serviceConfiguration returned should not be nil ", func() {
+				So(serviceConfiguration, ShouldNotBeNil)
+			})
+			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
+				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
+				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
+			})
+			Convey("And the logging should show that the telemetry for graphite is not present", func() {
+				fmt.Println(buf.String())
+				So(buf.String(), ShouldContainSubstring, "[DEBUG] graphite telemetry configuration not present")
+			})
+		})
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing telemetry configured and a service called 'test'", t, func() {

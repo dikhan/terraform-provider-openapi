@@ -102,9 +102,13 @@ func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) Telemetr
 				log.Printf("[WARN] ignoring graphite telemetry due to the following validation error: %s", err)
 			} else {
 				telemetryProviders = append(telemetryProviders, p.TelemetryConfig.Graphite)
-				log.Printf("[INFO] graphite telemetry provider enabled")
+				log.Printf("[DEBUG] graphite telemetry provider enabled")
 			}
+		} else {
+			log.Printf("[DEBUG] graphite telemetry configuration not present")
 		}
+	} else {
+		log.Printf("[DEBUG] telemetry not configured")
 	}
 	return telemetryHandlerTimeoutSupport{
 		timeout:            telemetry_timeout,
