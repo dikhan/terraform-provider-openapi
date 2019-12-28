@@ -1,8 +1,11 @@
 package openapi
 
 import (
+	"bytes"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
 )
 
@@ -269,4 +272,48 @@ services:
 			})
 		})
 	})
+}
+
+func TestGetTelemetryHandler(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		pluginConfigSchemaV1 PluginConfigSchemaV1
+		inputPluginName      string
+		expectedError        string
+		expectedLogging      string
+	}{
+		{
+			name: "handler is configured correctly",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "my-graphite.com",
+						Port: 8125,
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedLogging: "[INFO] graphite telemetry provider enabled",
+		},
+		{
+			name: "handler skips graphite telemetry due to the validation not passing",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "", // Configuration is missing the required host
+						//Port: 8125,
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedLogging: "[WARN] ignoring graphite telemetry due to the following validation error: graphite telemetry configuration is missing a value for the 'host property'",
+		},
+	}
+	for _, tc := range testCases {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		telemetryHandler := tc.pluginConfigSchemaV1.GetTelemetryHandler(tc.inputPluginName)
+		assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler, tc.name)
+		assert.Contains(t, buf.String(), tc.expectedLogging, tc.name)
+	}
 }
