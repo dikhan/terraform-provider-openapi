@@ -1,14 +1,17 @@
 package openapi
 
 import (
+	"bytes"
 	"fmt"
-	"os"
-	"testing"
-
-	"strings"
-
 	"github.com/smartystreets/assertions/should"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"log"
+	"net"
+	"os"
+	"strings"
+	"testing"
+	"time"
 )
 
 const providerName = "test"
@@ -23,7 +26,7 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 	var otfVarPluginConfigurationFileUc = strings.ToUpper(otfVarPluginConfigurationFileLc)
 	Convey("Given an environment variable set using lower case provider name with the plugin configuration file path", t, func() {
 		os.Setenv(otfVarPluginConfigurationFileLc, otfVarPluginConfigurationFileValue)
-		Convey("When getServiceConfiguration is called", func() {
+		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -36,7 +39,7 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 	})
 	Convey("Given an environment variable set using lower case provider name with the plugin configuration file path", t, func() {
 		os.Setenv(otfVarPluginConfigurationFileUc, otfVarPluginConfigurationFileValue)
-		Convey("When getServiceConfiguration is called", func() {
+		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -48,7 +51,7 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 		os.Unsetenv(otfVarPluginConfigurationFileUc)
 	})
 	Convey("Given no environment variables set for the plugin configuration file", t, func() {
-		Convey("When getServiceConfiguration is called", func() {
+		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
@@ -136,7 +139,9 @@ services:
 		os.Unsetenv(otfVarNameLc)
 	})
 
-	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set", t, func() {
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set AND telemetry not configured", t, func() {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
 		pluginConfig := fmt.Sprintf(`version: '1'
 services:
     %s:
@@ -158,8 +163,82 @@ services:
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
+			Convey("And the logging should show that the telemetry is not configured", func() {
+				fmt.Println(buf.String())
+				So(buf.String(), ShouldContainSubstring, "[DEBUG] telemetry not configured")
+			})
 		})
+	})
 
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set AND the telemetry for graphite is not configured", t, func() {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		pluginConfig := fmt.Sprintf(`version: '1'
+telemetry:
+  graphite:
+services:
+    %s:
+        swagger-url: %s`, providerName, otfVarSwaggerURLValue)
+		configReader := strings.NewReader(pluginConfig)
+		pluginConfiguration := PluginConfiguration{
+			ProviderName:  providerName,
+			Configuration: configReader,
+		}
+		Convey("When getServiceConfiguration is called", func() {
+			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the serviceConfiguration returned should not be nil ", func() {
+				So(serviceConfiguration, ShouldNotBeNil)
+			})
+			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
+				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
+				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
+			})
+			Convey("And the logging should show that the telemetry for graphite is not present", func() {
+				fmt.Println(buf.String())
+				So(buf.String(), ShouldContainSubstring, "[DEBUG] graphite telemetry configuration not present")
+			})
+		})
+	})
+
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing telemetry configured and a service called 'test'", t, func() {
+		metricChannel := make(chan string)
+		pc, telemetryHost, telemetryPort := udpServer(metricChannel)
+		defer pc.Close()
+
+		pluginConfig := fmt.Sprintf(`version: '1'
+telemetry:
+  graphite:
+    host: %s
+    port: %s
+    prefix: openapi
+services:
+    %s:
+      swagger-url: %s`, telemetryHost, telemetryPort, providerName, otfVarSwaggerURLValue)
+		configReader := strings.NewReader(pluginConfig)
+		pluginConfiguration := PluginConfiguration{
+			ProviderName:  providerName,
+			Configuration: configReader,
+		}
+		Convey("When getServiceConfiguration is called", func() {
+			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the serviceConfiguration returned should not be nil ", func() {
+				So(serviceConfiguration, ShouldNotBeNil)
+			})
+			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
+				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
+				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
+			})
+			Convey("And the telemetry server should have been received the expected counter metrics increase", func() {
+				assertExpectedMetric(t, metricChannel, "openapi.terraform.providers.test.total_runs:1|c")
+				assertExpectedMetric(t, metricChannel, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
+			})
+		})
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration that DOES NOT contain a service called 'test'", t, func() {
@@ -244,4 +323,45 @@ services:
 		})
 	})
 
+}
+
+func assertExpectedMetric(t *testing.T, metricChannel chan string, expectedMetric string) {
+	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, "", "", nil)
+}
+
+func assertExpectedMetricAndLogging(t *testing.T, metricChannel chan string, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess string, logging *bytes.Buffer) {
+	select {
+	case metricReceived := <-metricChannel:
+		assert.Contains(t, metricReceived, expectedMetric)
+		if expectedLogMetricToSubmit != "" {
+			assert.Contains(t, logging.String(), expectedLogMetricToSubmit)
+		}
+		if expectedLogMetricSuccess != "" {
+			assert.Contains(t, logging.String(), expectedLogMetricSuccess)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatalf("[FAIL] '%s' not reveided within the expected timeframe (timed out)", expectedMetric)
+	}
+}
+
+func udpServer(metricChannel chan string) (net.PacketConn, string, string) {
+	pc, err := net.ListenPacket("udp", "127.0.0.1:")
+	if err != nil {
+		log.Fatal(err)
+	}
+	telemetryServer := pc.LocalAddr().String()
+	telemetryHost := strings.Split(telemetryServer, ":")[0]
+	telemetryPort := strings.Split(telemetryServer, ":")[1]
+	go func() {
+		for {
+			buf := make([]byte, 1024)
+			n, _, err := pc.ReadFrom(buf)
+			if err != nil {
+				continue
+			}
+			body := string(buf[:n])
+			metricChannel <- body
+		}
+	}()
+	return pc, telemetryHost, telemetryPort
 }

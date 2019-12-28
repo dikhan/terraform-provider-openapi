@@ -54,7 +54,7 @@ func TestServiceSchemaConfigurationV1ExecuteCommand(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the err message returned should be the expected", func() {
-				So(err.Error(), ShouldEqual, "failed to execute 'some_property_name' command '[cat nonexistingfile]': cat: nonexistingfile: No such file or directory\n(exit status 1)")
+				So(err.Error(), ShouldEqual, "provider schema property 'some_property_name' command failed: command '[cat nonexistingfile]' failed: cat: nonexistingfile: No such file or directory\n(exit status 1)")
 			})
 		})
 	})
@@ -70,7 +70,7 @@ func TestServiceSchemaConfigurationV1ExecuteCommand(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the err message returned should be the expected", func() {
-				So(err.Error(), ShouldEqual, "command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
+				So(err.Error(), ShouldEqual, "provider schema property 'some_property_name' command failed: command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
 			})
 		})
 	})
@@ -104,7 +104,7 @@ func TestServiceSchemaConfigurationV1Exec(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("And the err message returned should be the expected", func() {
-				So(err.Error(), ShouldEqual, "failed to execute 'some_property_name' command '[cat nonexistingfile]': cat: nonexistingfile: No such file or directory\n(exit status 1)")
+				So(err.Error(), ShouldEqual, "command '[cat nonexistingfile]' failed: cat: nonexistingfile: No such file or directory\n(exit status 1)")
 			})
 		})
 	})
@@ -154,7 +154,6 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 			SchemaPropertyName: "schemaPropertyName",
 			DefaultValue:       "defaultValue",
 			ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
-				//KeyName:     "someKeyName",
 				ContentType: "raw",
 				File:        tmpFile.Name(),
 			},
@@ -216,6 +215,52 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 			})
 			Convey("And the err message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "'schemaPropertyName': 'nonSupported' content type not supported")
+			})
+		})
+	})
+
+	Convey("Given an external config file and a ServiceSchemaPropertyConfigurationV1 with an external configuration pointing a non existing file", t, func() {
+		serviceSchemaConfigurationV1 := ServiceSchemaPropertyConfigurationV1{
+			SchemaPropertyName: "schemaPropertyName",
+			DefaultValue:       "defaultValue",
+			ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
+				ContentType: "nonSupported",
+				File:        "som_non_existing_file",
+			},
+		}
+		Convey("When GetDefaultValue method is called", func() {
+			_, err := serviceSchemaConfigurationV1.GetDefaultValue()
+			Convey("And the err returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "failed to read external configuration file 'som_non_existing_file' for schema property 'schemaPropertyName': open som_non_existing_file: no such file or directory")
+			})
+		})
+	})
+
+	Convey("Given an external config file and a ServiceSchemaPropertyConfigurationV1 with an external configuration pointing a json file but the keyName is wrong", t, func() {
+		expectedValue := "someName"
+		tmpFile, err := ioutil.TempFile("", "")
+		defer os.Remove(tmpFile.Name())
+		So(err, ShouldBeNil)
+		tmpFile.Write([]byte(fmt.Sprintf(`{"firstName":"%s"}`, expectedValue)))
+		serviceSchemaConfigurationV1 := ServiceSchemaPropertyConfigurationV1{
+			SchemaPropertyName: "schemaPropertyName",
+			DefaultValue:       "defaultValue",
+			ExternalConfiguration: ServiceSchemaPropertyExternalConfigurationV1{
+				KeyName:     "$.wrong",
+				ContentType: "json",
+				File:        tmpFile.Name(),
+			},
+		}
+		Convey("When GetDefaultValue method is called", func() {
+			_, err := serviceSchemaConfigurationV1.GetDefaultValue()
+			Convey("And the err returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+			Convey("And the err message should be", func() {
+				So(err.Error(), ShouldContainSubstring, "key error: wrong not found in object")
 			})
 		})
 	})

@@ -52,8 +52,33 @@ This is the root document object for the plugin configuration specification.
 Field Name | Type | Description
 ---|:---:|---
 version | `string` | **Required.** Specifies the OpenAPI plugin configuration spec version being used. The value MUST be `'1'`.
+telemetry | [Telemetry Object](#telemetry-object) | Telemetry configuration
 services | [Services Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#services-object) | Specifies the service configurations
 
+##### Telemetry Object
+
+Describes the telemetry providers configurations.
+
+Field Name | Type | Description
+---|:---:|---
+graphite | [Graphite Object](#graphite-object) | Graphite Telemetry configuration
+
+Note: At the moment, only Graphite telemetry si supported.
+
+###### Graphite Object
+
+Describes the configuration for Graphite telemetry.
+
+Field Name | Type | Description
+---|:---:|---
+host | `string` | **Required.** Graphite host to ship the metrics to
+port | `integer` | **Required.** Graphite port to connect to
+prefix | `string` | Some prefix to append to the metrics pushed to Graphite. If populated, metrics pushed to Graphite will be of the following form: `statsd.<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix.
+
+The following metrics will be shipped to the corresponding configured Graphite host upon plugin execution:
+
+  - Terraform OpenAPI version used by the user: `statsd.<prefix>.terraform.openapi_plugin_version.*.total_runs` where * would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc)
+  - Service used by the user: `statsd.<prefix>.terraform.providers.*.total_runs` where * would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn')
 
 ##### Services Object
 
@@ -81,10 +106,10 @@ Describes the schema configuration for the service provider:
 Field Name | Type | Description
 ---|:---:|---
 schema_property_name | `string` | Defines the name of the provider's schema property. For more info refer to [OpenAPI Provider Configuration](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#configuration)
-cmd | `[]string` | Defines the command to execute (using exec form: ```["executable","param1","param2"]```) before the value is assigned to the schema property. This command can be used for example to refresh non static tokens before the value is assigned. Note, there must be at least one value in the array for the cmd to be executed.
+cmd | `[]string` | Defines the command to execute (using exec form: ```["executable","param1","param2"]```) before the value is assigned to the schema property. This command can be used for example to refresh non static tokens before the value is assigned. Note, there must be at least one value in the array for the cmd to be executed. If the command fails to execute, the plugin will log the error and continue its execution.
 cmd_timeout | `int` | Defines the max timeout, in seconds, for the command to execute. If the timeout is not specified the default value is 10s.
 default_value | `string` | Defines the default value for the property. If ```schema_property_external_configuration``` is defined, it takes preference over this value.
-schema_property_external_configuration | [Schema Property External Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-property-external-configuration) | Schema Property External Configuration Object
+schema_property_external_configuration | [Schema Property External Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-property-external-configuration) | Schema Property External Configuration Object. If there is an error when retriving the info from the external source, the plugin will log the error and continue its execution and will set the default value as empty ultimately delegating the responsibility to the API to complain about any missing required property. 
 
 ##### Schema Property External Configuration Object
 

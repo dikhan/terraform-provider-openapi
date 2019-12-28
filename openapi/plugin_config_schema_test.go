@@ -1,8 +1,11 @@
 package openapi
 
 import (
+	"bytes"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
 )
 
@@ -30,10 +33,23 @@ func TestNewPluginConfigSchemaV1(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
+		telemetryConfig := &TelemetryConfig{
+			Graphite: &TelemetryProviderGraphite{
+				Host:   "some-host.com",
+				Port:   8125,
+				Prefix: "some_prefix",
+			},
+		}
 		Convey("When NewPluginConfigSchemaV1 method is called", func() {
-			pluginConfigSchemaV1 := NewPluginConfigSchemaV1(services)
+			pluginConfigSchemaV1 := NewPluginConfigSchemaV1(services, telemetryConfig)
 			Convey("And the pluginConfigSchema returned should implement PluginConfigSchema interface", func() {
 				var _ PluginConfigSchema = pluginConfigSchemaV1
+			})
+			Convey("And the pluginConfigSchema services", func() {
+				So(pluginConfigSchemaV1.Services, ShouldNotBeNil)
+			})
+			Convey("And the pluginConfigSchema telemetry should not be nil", func() {
+				So(pluginConfigSchemaV1.TelemetryConfig, ShouldNotBeNil)
 			})
 		})
 	})
@@ -48,7 +64,7 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services, nil)
 		Convey("When Validate method is called", func() {
 			err := pluginConfigSchema.Validate()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -66,8 +82,8 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 			},
 		}
 		pluginConfigSchema = &PluginConfigSchemaV1{
-			version,
-			services,
+			Version:  version,
+			Services: services,
 		}
 		Convey("When Validate method is called", func() {
 			err := pluginConfigSchema.Validate()
@@ -91,7 +107,7 @@ func TestPluginConfigSchemaV1GetServiceConfig(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services, nil)
 		Convey("When GetServiceConfig method is called with a service described in the configuration", func() {
 			serviceConfig, err := pluginConfigSchema.GetServiceConfig("test")
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -123,7 +139,7 @@ func TestPluginConfigSchemaV1GetVersion(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services, nil)
 		Convey("When GetVersion method is called", func() {
 			configVersion, err := pluginConfigSchema.GetVersion()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -147,7 +163,7 @@ func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services, nil)
 		Convey("When GetAllServiceConfigurations method is called", func() {
 			serviceConfigurations, err := pluginConfigSchema.GetAllServiceConfigurations()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -190,7 +206,7 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 				},
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services, nil)
 		Convey("When Marshal method is called", func() {
 			marshalConfig, err := pluginConfigSchema.Marshal()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -243,7 +259,7 @@ services:
 				},
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services, nil)
 		Convey("When Marshal method is called", func() {
 			marshalConfig, err := pluginConfigSchema.Marshal()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -269,4 +285,48 @@ services:
 			})
 		})
 	})
+}
+
+func TestGetTelemetryHandler(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		pluginConfigSchemaV1 PluginConfigSchemaV1
+		inputPluginName      string
+		expectedError        string
+		expectedLogging      string
+	}{
+		{
+			name: "handler is configured correctly",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "my-graphite.com",
+						Port: 8125,
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedLogging: "[DEBUG] graphite telemetry provider enabled",
+		},
+		{
+			name: "handler skips graphite telemetry due to the validation not passing",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "", // Configuration is missing the required host
+						//Port: 8125,
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedLogging: "[WARN] ignoring graphite telemetry due to the following validation error: graphite telemetry configuration is missing a value for the 'host property'",
+		},
+	}
+	for _, tc := range testCases {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		telemetryHandler := tc.pluginConfigSchemaV1.GetTelemetryHandler(tc.inputPluginName)
+		assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler, tc.name)
+		assert.Contains(t, buf.String(), tc.expectedLogging, tc.name)
+	}
 }

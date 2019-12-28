@@ -21,14 +21,15 @@ release:
   # Default is false.
   prerelease: false
 
-archive:
-  name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
-  format: tar.gz
-  format_overrides:
-  - goos: windows
-    format: zip
-  files:
-    - LICENSE
+archives:
+  - id: terraform-provider-openapi-archives
+    name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
 
 checksum:
   name_template: "{{ .ProjectName }}_{{.Version}}_checksums.txt"

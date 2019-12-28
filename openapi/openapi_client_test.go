@@ -47,12 +47,13 @@ func TestAppendOperationHeaders(t *testing.T) {
 			},
 			apiAuthenticator: &specStubAuthenticator{},
 		}
-		Convey("When appendOperationHeaders with an operation headers, the provider config containing the values of the headers and a map that should contain the final result", func() {
+		Convey("When appendOperationHeaders with an operation headers and a map that should contain the final result", func() {
 			resourcePostOperation := &specResourceOperation{
 				HeaderParameters: SpecHeaderParameters{
 					{
 						Name:          operationHeader,
 						TerraformName: operationHeaderTfName,
+						IsRequired:    false,
 					},
 				},
 				responses:       specResponses{},
@@ -61,7 +62,10 @@ func TestAppendOperationHeaders(t *testing.T) {
 			headersMap := map[string]string{
 				"someHeaderAlreadyPresent": "someValue",
 			}
-			providerClient.appendOperationHeaders(resourcePostOperation.HeaderParameters, providerClient.providerConfiguration, headersMap)
+			err := providerClient.appendOperationHeaders(resourcePostOperation.HeaderParameters, headersMap)
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 			Convey("And the headersMap should contain whatever headers where already in the map", func() {
 				So(headersMap, ShouldContainKey, "someHeaderAlreadyPresent")
 				So(headersMap["someHeaderAlreadyPresent"], ShouldEqual, "someValue")
@@ -69,6 +73,37 @@ func TestAppendOperationHeaders(t *testing.T) {
 			Convey("And the headersMap should contain the new ones added from the operation headers", func() {
 				So(headersMap, ShouldContainKey, operationHeader)
 				So(headersMap[operationHeader], ShouldEqual, "operationHeaderValue")
+			})
+		})
+	})
+
+	Convey("Given a providerClient NOT set up with a provider configuration containing a value for the required header", t, func() {
+		operationHeader := "operationHeader"
+		providerClient := &ProviderClient{
+			openAPIBackendConfiguration: &specStubBackendConfiguration{},
+			httpClient:                  &http_goclient.HttpClientStub{},
+			providerConfiguration: providerConfiguration{
+				Headers: map[string]string{
+					// leaving this blank on purpose, reproducing use case where the provider does not contain the value for the required header
+				},
+			},
+			apiAuthenticator: &specStubAuthenticator{},
+		}
+		Convey("When appendOperationHeaders with an operation headers and a map that should contain the final result", func() {
+			resourcePostOperation := &specResourceOperation{
+				HeaderParameters: SpecHeaderParameters{
+					{
+						Name:       operationHeader,
+						IsRequired: true,
+					},
+				},
+				responses:       specResponses{},
+				SecuritySchemes: SpecSecuritySchemes{},
+			}
+			headersMap := map[string]string{}
+			err := providerClient.appendOperationHeaders(resourcePostOperation.HeaderParameters, headersMap)
+			Convey("Then the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "required header 'operationHeader' is missing the value. Please make sure the property 'operation_header' is configured with a value in the provider's terraform configuration")
 			})
 		})
 	})
@@ -793,7 +828,7 @@ func TestGetResourceURL(t *testing.T) {
 func TestPerformRequest(t *testing.T) {
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -874,6 +909,22 @@ func TestPerformRequest(t *testing.T) {
 				So(err.Error(), ShouldEqual, "method 'NotSupportedMethod' not supported")
 			})
 		})
+		Convey("When performRequest with a resource operation containing a required header that is not set in the provider configuration", func() {
+			resourcePostOperation := &specResourceOperation{
+				HeaderParameters: SpecHeaderParameters{
+					{
+						Name:       "some_not_configured_header",
+						IsRequired: true,
+					},
+				},
+				responses:       specResponses{},
+				SecuritySchemes: SpecSecuritySchemes{},
+			}
+			_, err := providerClient.performRequest("POST", "http://host.com/resource", resourcePostOperation, nil, nil)
+			Convey("Then the error message returned should be", func() {
+				So(err.Error(), ShouldEqual, "failed to configure the API request for POST http://host.com/resource: required header 'some_not_configured_header' is missing the value. Please make sure the property 'some_not_configured_header' is configured with a value in the provider's terraform configuration")
+			})
+		})
 		Convey("When performRequest prepareAuth returns an error", func() {
 			providerClient := &ProviderClient{
 				openAPIBackendConfiguration: &specStubBackendConfiguration{},
@@ -887,7 +938,7 @@ func TestPerformRequest(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("Then the error message returned should be", func() {
-				So(err.Error(), ShouldEqual, "some error with prep auth")
+				So(err.Error(), ShouldEqual, "failed to configure the API request for POST : some error with prep auth")
 			})
 		})
 	})
@@ -897,7 +948,7 @@ func TestProviderClientPost(t *testing.T) {
 
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1041,7 +1092,7 @@ func TestProviderClientPut(t *testing.T) {
 
 	Convey("Given a providerClient set up with stub auth that injects some headers to the request", t, func() {
 		httpClient := &http_goclient.HttpClientStub{}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1174,7 +1225,7 @@ func TestProviderClientGet(t *testing.T) {
 				Body: ioutil.NopCloser(strings.NewReader(`{"property1":"value1"}`)),
 			},
 		}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1292,7 +1343,7 @@ func TestProviderClientList(t *testing.T) {
 				Body: ioutil.NopCloser(strings.NewReader(`{"property1":"value1"}`)),
 			},
 		}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}
@@ -1414,7 +1465,7 @@ func TestProviderClientDelete(t *testing.T) {
 				Body: ioutil.NopCloser(strings.NewReader(`{"property1":"value1"}`)),
 			},
 		}
-		headerParameter := SpecHeaderParam{"Operation-Specific-Header", "operation_specific_header"}
+		headerParameter := SpecHeaderParam{Name: "Operation-Specific-Header", TerraformName: "operation_specific_header"}
 		providerConfiguration := providerConfiguration{
 			Headers: map[string]string{headerParameter.TerraformName: "some-value"},
 		}

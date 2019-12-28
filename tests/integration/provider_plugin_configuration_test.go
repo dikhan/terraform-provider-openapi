@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"strings"
@@ -305,9 +306,7 @@ services:
 
 	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
 	_, err := p.CreateSchemaProvider()
-	if !strings.Contains(err.Error(), "plugin terraform-provider-openapi init error while creating schema provider: failed to execute 'apikey_auth' command '[cat nonExistingFile]': cat: nonExistingFile: No such file or directory") {
-		log.Fatalf("test failed, non expected output: %s", err)
-	}
+	assert.NoError(t, err)
 	os.Unsetenv(otfVarPluginConfigEnvVariableName)
 }
 
@@ -326,9 +325,55 @@ services:
 	initPluginWithExternalConfigFile(file.Name())
 	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
 	_, err := p.CreateSchemaProvider()
-	if !strings.Contains(err.Error(), "plugin terraform-provider-openapi init error while creating schema provider: command '[sleep 2]' did not finish executing within the expected time 1s") {
-		log.Fatalf("test failed, non expected output: %s", err)
-	}
+	assert.NoError(t, err)
+	os.Unsetenv(otfVarPluginConfigEnvVariableName)
+}
+
+func TestAccProviderConfiguration_PluginExternalFile_SchemaProperty_ExternalConfiguration_FileNotExists(t *testing.T) {
+	testPluginConfig := fmt.Sprintf(`version: '1'
+services:
+  openapi:
+    swagger-url: https://localhost:8443/swagger.yaml
+    insecure_skip_verify: true
+    schema_configuration:
+    - schema_property_name: "apikey_auth"
+      cmd: ['date']
+      schema_property_external_configuration:
+        content_type: json
+        key_name: $.apikey_auth
+        file: /path_to_non_existing_file.json`)
+	file := createPluginConfigFile(testPluginConfig)
+	defer os.Remove(file.Name())
+	initPluginWithExternalConfigFile(file.Name())
+	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
+	_, err := p.CreateSchemaProvider()
+	assert.NoError(t, err)
+	os.Unsetenv(otfVarPluginConfigEnvVariableName)
+}
+
+func TestAccProviderConfiguration_PluginExternalFile_SchemaProperty_ExternalConfiguration_FileKeyNameWrong(t *testing.T) {
+	apiKeyAuthFileContentJSON := `{"apikey_auth":"apiKeyValue"}`
+	apiKeyAuthFile := createPluginConfigFile(apiKeyAuthFileContentJSON)
+	defer os.Remove(apiKeyAuthFile.Name())
+
+	testPluginConfig := fmt.Sprintf(`version: '1'
+services:
+  openapi:
+    swagger-url: https://localhost:8443/swagger.yaml
+    insecure_skip_verify: true
+    schema_configuration:
+    - schema_property_name: "apikey_auth"
+      cmd: ['date']
+      schema_property_external_configuration:
+        content_type: json
+        key_name: $.wrong_name
+        file: %s`, apiKeyAuthFile.Name())
+	file := createPluginConfigFile(testPluginConfig)
+	defer os.Remove(file.Name())
+	initPluginWithExternalConfigFile(file.Name())
+	p := &openapi.ProviderOpenAPI{ProviderName: providerName}
+	_, err := p.CreateSchemaProvider()
+	assert.NoError(t, err)
 	os.Unsetenv(otfVarPluginConfigEnvVariableName)
 }
 
