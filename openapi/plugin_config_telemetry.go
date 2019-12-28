@@ -10,8 +10,6 @@ import (
 type TelemetryProvider interface {
 	// Validate performs a check to confirm that the telemetry configuration is valid
 	Validate() error
-	// IncTerraformVersionTotalRunsCounter is the method responsible for submitting to the corresponding telemetry platform the counter increase for the Terraform Version used
-	IncTerraformVersionTotalRunsCounter(terraformVersion string) error
 	// IncOpenAPIPluginVersionTotalRunsCounter is the method responsible for submitting to the corresponding telemetry platform the counter increase for the OpenAPI plugin Version used
 	IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error
 	// IncServiceProviderTotalRunsCounter is the method responsible for submitting to the corresponding telemetry platform the counter increase for the service provider used
@@ -34,14 +32,6 @@ func (g TelemetryProviderGraphite) Validate() error {
 	}
 	if g.Port <= 0 {
 		return errors.New("graphite telemetry configuration is missing a valid value (>0) for the 'port' property'")
-	}
-	return nil
-}
-
-func (g TelemetryProviderGraphite) IncTerraformVersionTotalRunsCounter(terraformVersion string) error {
-	metric := fmt.Sprintf("terraform.version.%s.total_runs", terraformVersion)
-	if err := g.submitMetric(metric); err != nil {
-		return err
 	}
 	return nil
 }

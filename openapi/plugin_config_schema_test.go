@@ -66,8 +66,8 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 			},
 		}
 		pluginConfigSchema = &PluginConfigSchemaV1{
-			version,
-			services,
+			Version:  version,
+			Services: services,
 		}
 		Convey("When Validate method is called", func() {
 			err := pluginConfigSchema.Validate()
