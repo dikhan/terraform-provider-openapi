@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/DataDog/datadog-go/statsd"
+	"log"
 	"strings"
 )
 
@@ -39,17 +40,21 @@ func (g TelemetryProviderGraphite) Validate() error {
 func (g TelemetryProviderGraphite) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error {
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	metric := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
+	log.Printf("[INFO] graphite metric to be submitted: %s", metric)
 	if err := g.submitMetric(metric); err != nil {
 		return err
 	}
+	log.Printf("[INFO] graphite metric successfully submitted: %s", metric)
 	return nil
 }
 
 func (g TelemetryProviderGraphite) IncServiceProviderTotalRunsCounter(providerName string) error {
 	metric := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
+	log.Printf("[INFO] graphite metric to be submitted: %s", metric)
 	if err := g.submitMetric(metric); err != nil {
 		return err
 	}
+	log.Printf("[INFO] graphite metric successfully submitted: %s", metric)
 	return nil
 }
 
