@@ -16,6 +16,11 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() error {
 	if err != nil {
 		return err
 	}
+	t.printProviderResources(analyser)
+	return nil
+}
+
+func (t TerraformProviderDocGenerator) printProviderResources(analyser openapi.SpecAnalyser) error {
 	resources, err := analyser.GetTerraformCompliantResources()
 	if err != nil {
 		return err
@@ -33,16 +38,16 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() error {
 	return nil
 }
 
-func (o TerraformProviderDocGenerator) printResourceDoc(resourceName string, resourceSchema *openapi.SpecSchemaDefinition) {
-	required, optional, computed := o.createRequiredOptionalComputedMaps(resourceSchema)
-	o.Printer.PrintResourceHeader()
-	o.Printer.PrintResourceInfo(o.ProviderName, resourceName)
-	o.Printer.PrintResourceExample(o.ProviderName, resourceName, required)
-	o.Printer.PrintArguments(required, optional)
-	o.Printer.PrintAttributes(computed)
+func (t TerraformProviderDocGenerator) printResourceDoc(resourceName string, resourceSchema *openapi.SpecSchemaDefinition) {
+	required, optional, computed := t.createRequiredOptionalComputedMaps(resourceSchema)
+	t.Printer.PrintResourceHeader()
+	t.Printer.PrintResourceInfo(t.ProviderName, resourceName)
+	t.Printer.PrintResourceExample(t.ProviderName, resourceName, required)
+	t.Printer.PrintArguments(required, optional)
+	t.Printer.PrintAttributes(computed)
 }
 
-func (o TerraformProviderDocGenerator) createRequiredOptionalComputedMaps(resourceSchema *openapi.SpecSchemaDefinition) (openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties) {
+func (t TerraformProviderDocGenerator) createRequiredOptionalComputedMaps(resourceSchema *openapi.SpecSchemaDefinition) (openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties) {
 	required := openapi.SpecSchemaDefinitionProperties{}
 	optional := openapi.SpecSchemaDefinitionProperties{}
 	computed := openapi.SpecSchemaDefinitionProperties{}
