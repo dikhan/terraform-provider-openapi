@@ -18,18 +18,18 @@ func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expec
 		var resBody string
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Error '%s' occurred while reading the response body", openAPIResource.getResourceName(), res.StatusCode, err)
+			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Error '%s' occurred while reading the response body", openAPIResource.GetResourceName(), res.StatusCode, err)
 		}
 		if b != nil && len(b) > 0 {
 			resBody = string(b)
 		}
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", openAPIResource.getResourceName(), res.StatusCode, resBody)
+			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Unauthorized: API access is denied due to invalid credentials (%s)", openAPIResource.GetResourceName(), res.StatusCode, resBody)
 		case http.StatusNotFound:
 			return &openapierr.NotFoundError{OriginalError: fmt.Errorf("HTTP Response Status Code %d - Not Found. Could not find resource instance: %s", res.StatusCode, resBody)}
 		default:
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d not matching expected one %v (%s)", openAPIResource.getResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
+			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d not matching expected one %v (%s)", openAPIResource.GetResourceName(), res.StatusCode, expectedHTTPStatusCodes, resBody)
 		}
 	}
 	return nil
@@ -82,7 +82,7 @@ func getParentIDs(openAPIResource SpecResource, data *schema.ResourceData) ([]st
 // updateStateWithPayloadData is in charge of saving the given payload into the state file. The property names are
 // converted into compliant terraform names if needed.
 func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
-	resourceSchema, err := openAPIResource.getResourceSchema()
+	resourceSchema, err := openAPIResource.GetResourceSchema()
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 	return nil
 }
 
-func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
+func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
 	if propertyValue == nil {
 		return nil, nil
 	}
@@ -124,7 +124,7 @@ func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty,
 			}
 			var propValue interface{}
 			// Here we are processing the items of the list which are objects. In this case we need to keep the original
-			// types as Terraform honors property types for resource schemas attached to typeList properties
+			// types as Terraform honors property types for resource schemas attached to TypeList properties
 			if property.isArrayOfObjectsProperty() {
 				propValue, err = convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, false)
 			} else { // Here we need to use strings as values as terraform typeMap only supports string items
@@ -133,7 +133,7 @@ func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty,
 			if err != nil {
 				return nil, err
 			}
-			objectInput[schemaDefinitionProperty.getTerraformCompliantPropertyName()] = propValue
+			objectInput[schemaDefinitionProperty.GetTerraformCompliantPropertyName()] = propValue
 		}
 
 		// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
@@ -172,7 +172,7 @@ func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty,
 	case reflect.Float64:
 		// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
 		// an actual int or if not then casting to float64
-		if property.Type == typeInt {
+		if property.Type == TypeInt {
 			if useString {
 				return fmt.Sprintf("%d", int(propertyValue.(float64))), nil
 			}
@@ -203,18 +203,18 @@ func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty,
 
 // setResourceDataProperty sets the expectedValue for the given schemaDefinitionPropertyName using the terraform compliant property name
 func setResourceDataProperty(openAPIResource SpecResource, schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
-	resourceSchema, _ := openAPIResource.getResourceSchema()
+	resourceSchema, _ := openAPIResource.GetResourceSchema()
 	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
 	if err != nil {
 		return fmt.Errorf("could not find schema definition property name %s in the resource data: %s", schemaDefinitionPropertyName, err)
 	}
-	return resourceLocalData.Set(schemaDefinitionProperty.getTerraformCompliantPropertyName(), value)
+	return resourceLocalData.Set(schemaDefinitionProperty.GetTerraformCompliantPropertyName(), value)
 }
 
 // setStateID sets the local resource's data ID with the newly identifier created in the POST API request. Refer to
 // r.resourceInfo.getResourceIdentifier() for more info regarding what property is selected as the identifier.
 func setStateID(openAPIres SpecResource, resourceLocalData *schema.ResourceData, payload map[string]interface{}) error {
-	resourceSchema, err := openAPIres.getResourceSchema()
+	resourceSchema, err := openAPIres.GetResourceSchema()
 	if err != nil {
 		return err
 	}

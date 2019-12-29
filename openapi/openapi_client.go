@@ -197,7 +197,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 		host = hostOverride
 	}
 
-	if endPointHost := o.providerConfiguration.getEndPoint(resource.getResourceName()); endPointHost != "" {
+	if endPointHost := o.providerConfiguration.getEndPoint(resource.GetResourceName()); endPointHost != "" {
 		log.Printf("[INFO] resource '%s' is configured with endpoint override, API calls will be made against '%s' instead of '%s'", resourceRelativePath, endPointHost, host)
 		host = endPointHost
 	}

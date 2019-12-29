@@ -106,7 +106,7 @@ func TestCreateProvider(t *testing.T) {
 		p := providerFactory{
 			name: "provider",
 			specAnalyser: &specAnalyserStub{
-				resources: []SpecResource{newSpecStubResource("resource_v1", "/v1/resource", false, &specSchemaDefinition{})},
+				resources: []SpecResource{newSpecStubResource("resource_v1", "/v1/resource", false, &SpecSchemaDefinition{})},
 				headers: SpecHeaderParameters{
 					SpecHeaderParam{
 						Name: headerProperty.Name,
@@ -303,8 +303,8 @@ func TestCreateProvider(t *testing.T) {
 						name:         "",
 						path:         "/v1/resource",
 						shouldIgnore: false,
-						schemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{},
+						schemaDefinition: &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{},
 						},
 						resourceGetOperation: &specResourceOperation{},
 						timeouts:             &specTimeouts{},
@@ -904,7 +904,7 @@ func TestCreateTerraformProviderResourceMapAndDataSourceInstanceMap(t *testing.T
 		{
 			name: "happy path",
 			specV2stub: &specAnalyserStub{
-				resources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+				resources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &SpecSchemaDefinition{})},
 			},
 			expectedResourceName: "provider_resource",
 		},
@@ -918,7 +918,7 @@ func TestCreateTerraformProviderResourceMapAndDataSourceInstanceMap(t *testing.T
 		{
 			name: "getProviderResourceName fails ",
 			specV2stub: &specAnalyserStub{
-				resources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
+				resources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &SpecSchemaDefinition{})},
 			},
 			expectedError: "resource name can not be empty",
 		},
@@ -927,7 +927,7 @@ func TestCreateTerraformProviderResourceMapAndDataSourceInstanceMap(t *testing.T
 			specV2stub: &specAnalyserStub{
 				resources: []SpecResource{&specStubResource{
 					name: "hello",
-					funcGetResourceSchema: func() (*specSchemaDefinition, error) {
+					funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
 						return nil, errors.New("createTerraformDataSource failed")
 					},
 				}},
@@ -958,7 +958,7 @@ func TestCreateTerraformProviderDataSourceInstanceMap_ignore_resource(t *testing
 		name: "provider",
 		specAnalyser: &specAnalyserStub{
 			resources: []SpecResource{
-				newSpecStubResource("resource", "/v1/resource", true, &specSchemaDefinition{}),
+				newSpecStubResource("resource", "/v1/resource", true, &SpecSchemaDefinition{}),
 			},
 		},
 	}
@@ -973,8 +973,8 @@ func TestCreateTerraformProviderDataSourceInstanceMap_duplicate_resource(t *test
 		name: "provider",
 		specAnalyser: &specAnalyserStub{
 			resources: []SpecResource{
-				newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{}),
-				newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+				newSpecStubResource("resource", "/v1/resource", false, &SpecSchemaDefinition{}),
+				newSpecStubResource("resource", "/v1/resource", false, &SpecSchemaDefinition{})},
 		},
 	}
 	resourceMap, dataSourceMap, err := p.createTerraformProviderResourceMapAndDataSourceInstanceMap()
@@ -994,14 +994,14 @@ func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
 		{
 			name: "happy path",
 			specV2stub: &specAnalyserStub{
-				dataSources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &specSchemaDefinition{})},
+				dataSources: []SpecResource{newSpecStubResource("resource", "/v1/resource", false, &SpecSchemaDefinition{})},
 			},
 			expectedResourceName: "provider_resource",
 		},
 		{
 			name: "getProviderResourceName fails ",
 			specV2stub: &specAnalyserStub{
-				dataSources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &specSchemaDefinition{})},
+				dataSources: []SpecResource{newSpecStubResource("", "/v1/resource", false, &SpecSchemaDefinition{})},
 			},
 			expectedError: "resource name can not be empty",
 		},
@@ -1010,7 +1010,7 @@ func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
 			specV2stub: &specAnalyserStub{
 				dataSources: []SpecResource{&specStubResource{
 					name: "hello",
-					funcGetResourceSchema: func() (*specSchemaDefinition, error) {
+					funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
 						return nil, errors.New("createTerraformDataSource failed")
 					},
 				}},

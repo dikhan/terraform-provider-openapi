@@ -41,7 +41,7 @@ func (d dataSourceFactory) createTerraformDataSource() (*schema.Resource, error)
 }
 
 func (d dataSourceFactory) createTerraformDataSourceSchema() (map[string]*schema.Schema, error) {
-	specSchema, err := d.openAPIResource.getResourceSchema()
+	specSchema, err := d.openAPIResource.GetResourceSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	}
 
 	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil {
-		return fmt.Errorf("[data source='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
+		return fmt.Errorf("[data source='%s'] GET %s failed: %s", d.openAPIResource.GetResourceName(), resourcePath, err)
 	}
 
 	var filteredResults []map[string]interface{}
@@ -122,22 +122,22 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 }
 
 func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]interface{}) bool {
-	specSchemaDefinition, _ := d.openAPIResource.getResourceSchema() // ignoring error because will be caught beforehand when data source is constructed via createTerraformDataSourceSchema
+	specSchemaDefinition, _ := d.openAPIResource.GetResourceSchema() // ignoring error because will be caught beforehand when data source is constructed via createTerraformDataSourceSchema
 	for _, filter := range filters {
 		if val, exists := payloadItem[filter.name]; exists {
 			schemaProperty, _ := specSchemaDefinition.getProperty(filter.name)
 			var value string
 			switch schemaProperty.Type {
-			case typeInt:
+			case TypeInt:
 				value = strconv.Itoa(val.(int))
-			case typeFloat:
+			case TypeFloat:
 				v := val.(float64)                            //because of payloadItem is map[string]interface{} a float with decimal point is treat as an int
 				if _, decimal := math.Modf(v); decimal == 0 { //we recognize this special case here and print the value accordingly
 					value = fmt.Sprintf("%.1f", val) //if it's like 6.0, force the .0 to be there and match the filetr condition
 				} else {
 					value = fmt.Sprintf("%g", val) //if the float has a decimal part != 0  the use the %g to keep it real float value
 				}
-			case typeBool:
+			case TypeBool:
 				value = strconv.FormatBool(val.(bool))
 			default:
 				value = val.(string)
@@ -157,7 +157,7 @@ func (d dataSourceFactory) validateInput(data *schema.ResourceData) (filters, er
 	for _, inputFilter := range inputFilters.(*schema.Set).List() {
 		f := inputFilter.(map[string]interface{})
 		filterPropertyName := f[dataSourceFilterSchemaNamePropertyName].(string)
-		s, _ := d.openAPIResource.getResourceSchema() // ignoring error because will be caught beforehand when data source is constructed via createTerraformDataSourceSchema
+		s, _ := d.openAPIResource.GetResourceSchema() // ignoring error because will be caught beforehand when data source is constructed via createTerraformDataSourceSchema
 
 		specSchemaDefinitionProperty, err := s.getProperty(filterPropertyName)
 		if err != nil {
@@ -165,7 +165,7 @@ func (d dataSourceFactory) validateInput(data *schema.ResourceData) (filters, er
 		}
 
 		if !specSchemaDefinitionProperty.isPrimitiveProperty() {
-			return nil, fmt.Errorf("property not supported as as filter: %s", specSchemaDefinitionProperty.getTerraformCompliantPropertyName())
+			return nil, fmt.Errorf("property not supported as as filter: %s", specSchemaDefinitionProperty.GetTerraformCompliantPropertyName())
 		}
 
 		filterValue := f[dataSourceFilterSchemaValuesPropertyName].([]interface{})

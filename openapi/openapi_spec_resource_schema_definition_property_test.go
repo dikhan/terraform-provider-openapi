@@ -12,54 +12,54 @@ import (
 )
 
 func TestGetTerraformCompliantPropertyName(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that has a name and not preferred name and name is compliant already", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that has a name and not preferred name and name is compliant already", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name: "compliant_prop_name",
-			Type: typeString,
+			Type: TypeString,
 		}
-		Convey("When getTerraformCompliantPropertyName method is called", func() {
-			compliantName := s.getTerraformCompliantPropertyName()
+		Convey("When GetTerraformCompliantPropertyName method is called", func() {
+			compliantName := s.GetTerraformCompliantPropertyName()
 			Convey("Then the resulting name should be terraform compliant", func() {
 				So(compliantName, ShouldEqual, "compliant_prop_name")
 			})
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that has a name and not preferred name and name is NOT compliant", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that has a name and not preferred name and name is NOT compliant", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name: "nonCompliantName",
-			Type: typeString,
+			Type: TypeString,
 		}
-		Convey("When getTerraformCompliantPropertyName method is called", func() {
-			compliantName := s.getTerraformCompliantPropertyName()
+		Convey("When GetTerraformCompliantPropertyName method is called", func() {
+			compliantName := s.GetTerraformCompliantPropertyName()
 			Convey("Then the resulting name should be terraform compliant", func() {
 				So(compliantName, ShouldEqual, "non_compliant_name")
 			})
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that has a name AND a preferred name and name is compliant", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that has a name AND a preferred name and name is compliant", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:          "compliant_prop_name",
 			PreferredName: "preferred_compliant_name",
-			Type:          typeString,
+			Type:          TypeString,
 		}
-		Convey("When getTerraformCompliantPropertyName method is called", func() {
-			compliantName := s.getTerraformCompliantPropertyName()
+		Convey("When GetTerraformCompliantPropertyName method is called", func() {
+			compliantName := s.GetTerraformCompliantPropertyName()
 			Convey("Then the resulting name should be the preferred name", func() {
 				So(compliantName, ShouldEqual, "preferred_compliant_name")
 			})
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that has a name AND a preferred name and preferred name is NOT compliant", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that has a name AND a preferred name and preferred name is NOT compliant", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:          "compliant_prop_name",
 			PreferredName: "preferredNonCompliantName",
-			Type:          typeString,
+			Type:          TypeString,
 		}
-		Convey("When getTerraformCompliantPropertyName method is called", func() {
-			compliantName := s.getTerraformCompliantPropertyName()
+		Convey("When GetTerraformCompliantPropertyName method is called", func() {
+			compliantName := s.GetTerraformCompliantPropertyName()
 			Convey("Then the resulting name should be preferred name verbatim", func() {
 				// If preferred name is set, whether the value is compliant or not that will be the value configured for
 				// the terraform schema property. If the name is not terraform name compliant, Terraform will complain about
@@ -73,46 +73,46 @@ func TestGetTerraformCompliantPropertyName(t *testing.T) {
 func TestIsPrimitiveProperty(t *testing.T) {
 	testCases := []struct {
 		name                 string
-		specSchemaDefinition specSchemaDefinitionProperty
+		specSchemaDefinition SpecSchemaDefinitionProperty
 		expectedResult       bool
 	}{
 		{
 			name: "pecSchemaDefinitionProperty that is a primitive string",
-			specSchemaDefinition: specSchemaDefinitionProperty{
+			specSchemaDefinition: SpecSchemaDefinitionProperty{
 				Name: "primitive_property",
-				Type: typeString,
+				Type: TypeString,
 			},
 			expectedResult: true,
 		},
 		{
 			name: "pecSchemaDefinitionProperty that is a primitive int",
-			specSchemaDefinition: specSchemaDefinitionProperty{
+			specSchemaDefinition: SpecSchemaDefinitionProperty{
 				Name: "primitive_property",
-				Type: typeInt,
+				Type: TypeInt,
 			},
 			expectedResult: true,
 		},
 		{
 			name: "pecSchemaDefinitionProperty that is a primitive float",
-			specSchemaDefinition: specSchemaDefinitionProperty{
+			specSchemaDefinition: SpecSchemaDefinitionProperty{
 				Name: "primitive_property",
-				Type: typeFloat,
+				Type: TypeFloat,
 			},
 			expectedResult: true,
 		},
 		{
 			name: "pecSchemaDefinitionProperty that is a primitive bool",
-			specSchemaDefinition: specSchemaDefinitionProperty{
+			specSchemaDefinition: SpecSchemaDefinitionProperty{
 				Name: "primitive_property",
-				Type: typeBool,
+				Type: TypeBool,
 			},
 			expectedResult: true,
 		},
 		{
 			name: "pecSchemaDefinitionProperty that is not a primitive",
-			specSchemaDefinition: specSchemaDefinitionProperty{
+			specSchemaDefinition: SpecSchemaDefinitionProperty{
 				Name: "primitive_property",
-				Type: typeObject,
+				Type: TypeObject,
 			},
 			expectedResult: false,
 		},
@@ -125,10 +125,10 @@ func TestIsPrimitiveProperty(t *testing.T) {
 }
 
 func TestIsPropertyNamedID(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is PropertyNamedID", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is PropertyNamedID", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name: idDefaultPropertyName,
-			Type: typeString,
+			Type: TypeString,
 		}
 		Convey("When isPropertyNamedID method is called", func() {
 			isPropertyNamedStatus := s.isPropertyNamedID()
@@ -138,10 +138,10 @@ func TestIsPropertyNamedID(t *testing.T) {
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that is PropertyNamedID with no compliant name", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is PropertyNamedID with no compliant name", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name: "ID",
-			Type: typeString,
+			Type: TypeString,
 		}
 		Convey("When isPropertyNamedID method is called", func() {
 			isPropertyNamedStatus := s.isPropertyNamedID()
@@ -151,10 +151,10 @@ func TestIsPropertyNamedID(t *testing.T) {
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that is NOT PropertyNamedID", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT PropertyNamedID", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "some_other_property_name",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 		}
 		Convey("When isPropertyNamedID method is called", func() {
@@ -167,10 +167,10 @@ func TestIsPropertyNamedID(t *testing.T) {
 }
 
 func TestIsPropertyNamedStatus(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is PropertyNamedStatus", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is PropertyNamedStatus", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name: statusDefaultPropertyName,
-			Type: typeString,
+			Type: TypeString,
 		}
 		Convey("When isPropertyNamedStatus method is called", func() {
 			isPropertyNamedStatus := s.isPropertyNamedStatus()
@@ -180,10 +180,10 @@ func TestIsPropertyNamedStatus(t *testing.T) {
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that is PropertyNamedStatus with no compliant name", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is PropertyNamedStatus with no compliant name", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name: "Status",
-			Type: typeString,
+			Type: TypeString,
 		}
 		Convey("When isPropertyNamedStatus method is called", func() {
 			isPropertyNamedStatus := s.isPropertyNamedStatus()
@@ -193,10 +193,10 @@ func TestIsPropertyNamedStatus(t *testing.T) {
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that is NOT PropertyNamedStatus", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT PropertyNamedStatus", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "some_other_property_name",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 		}
 		Convey("When isPropertyNamedStatus method is called", func() {
@@ -209,10 +209,10 @@ func TestIsPropertyNamedStatus(t *testing.T) {
 }
 
 func TestIsObjectProperty(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is ObjectProperty", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is ObjectProperty", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name: "object_prop",
-			Type: typeObject,
+			Type: TypeObject,
 		}
 		Convey("When isObjectProperty method is called", func() {
 			isArrayProperty := s.isObjectProperty()
@@ -222,10 +222,10 @@ func TestIsObjectProperty(t *testing.T) {
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that is NOT ObjectProperty", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT ObjectProperty", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 		}
 		Convey("When isObjectProperty method is called", func() {
@@ -238,10 +238,10 @@ func TestIsObjectProperty(t *testing.T) {
 }
 
 func TestIsArrayProperty(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is ArrayProperty", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is ArrayProperty", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeList,
+			Type:     TypeList,
 			Required: true,
 		}
 		Convey("When isArrayTypeProperty method is called", func() {
@@ -252,10 +252,10 @@ func TestIsArrayProperty(t *testing.T) {
 		})
 	})
 
-	Convey("Given a specSchemaDefinitionProperty that is NOT ArrayProperty", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT ArrayProperty", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 		}
 		Convey("When isArrayTypeProperty method is called", func() {
@@ -268,27 +268,27 @@ func TestIsArrayProperty(t *testing.T) {
 }
 
 func TestIsReadOnly(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is readOnly", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is readOnly", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			ReadOnly: true,
 		}
-		Convey("When isReadOnly method is called", func() {
-			isOptional := s.isReadOnly()
+		Convey("When IsReadOnly method is called", func() {
+			isOptional := s.IsReadOnly()
 			Convey("Then the resulted bool should be true", func() {
 				So(isOptional, ShouldBeTrue)
 			})
 		})
 	})
-	Convey("Given a specSchemaDefinitionProperty that is NOT readOnly", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT readOnly", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			ReadOnly: false,
 		}
-		Convey("When isReadOnly method is called", func() {
-			isOptional := s.isReadOnly()
+		Convey("When IsReadOnly method is called", func() {
+			isOptional := s.IsReadOnly()
 			Convey("Then the resulted bool should be false", func() {
 				So(isOptional, ShouldBeFalse)
 			})
@@ -297,27 +297,27 @@ func TestIsReadOnly(t *testing.T) {
 }
 
 func TestIsOptional(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT Required", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 		}
-		Convey("When isOptional method is called", func() {
-			isOptional := s.isOptional()
+		Convey("When IsOptional method is called", func() {
+			isOptional := s.IsOptional()
 			Convey("Then the resulted bool should be true", func() {
 				So(isOptional, ShouldBeTrue)
 			})
 		})
 	})
-	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT Required", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: true,
 		}
-		Convey("When isOptional method is called", func() {
-			isOptional := s.isOptional()
+		Convey("When IsOptional method is called", func() {
+			isOptional := s.IsOptional()
 			Convey("Then the resulted bool should be false", func() {
 				So(isOptional, ShouldBeFalse)
 			})
@@ -326,27 +326,27 @@ func TestIsOptional(t *testing.T) {
 }
 
 func TestIsRequired(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is Required", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is Required", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: true,
 		}
-		Convey("When isRequired method is called", func() {
-			isRequired := s.isRequired()
+		Convey("When IsRequired method is called", func() {
+			isRequired := s.IsRequired()
 			Convey("Then the resulted bool should be true", func() {
 				So(isRequired, ShouldBeTrue)
 			})
 		})
 	})
-	Convey("Given a specSchemaDefinitionProperty that is NOT Required", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT Required", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 		}
-		Convey("When isRequired method is called", func() {
-			isRequired := s.isRequired()
+		Convey("When IsRequired method is called", func() {
+			isRequired := s.IsRequired()
 			Convey("Then the resulted bool should be false", func() {
 				So(isRequired, ShouldBeFalse)
 			})
@@ -355,10 +355,10 @@ func TestIsRequired(t *testing.T) {
 }
 
 func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
-	Convey("Given a specSchemaDefinitionProperty that is optional and readonly", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is optional and readonly", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 			ReadOnly: true,
 		}
@@ -369,10 +369,10 @@ func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a specSchemaDefinitionProperty that is optional, NOT readonly BUT is optional-computed", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is optional, NOT readonly BUT is optional-computed", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: false,
 			ReadOnly: false,
 			Computed: true,
@@ -385,10 +385,10 @@ func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a specSchemaDefinitionProperty that NOT optional", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that NOT optional", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			Required: true,
 		}
 		Convey("When isComputed method is called", func() {
@@ -398,10 +398,10 @@ func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 			})
 		})
 	})
-	Convey("Given a specSchemaDefinitionProperty that is NOT readonly", t, func() {
-		s := &specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinitionProperty that is NOT readonly", t, func() {
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			ReadOnly: false,
 		}
 		Convey("When isComputed method is called", func() {
@@ -415,70 +415,70 @@ func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 
 func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
 	Convey("Given a property that is optional, not readOnly, is computed and does not have a default value (optional-computed of property where value is not known at plan time)", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type:     typeString,
+		s := &SpecSchemaDefinitionProperty{
+			Type:     TypeString,
 			Required: false,
 			ReadOnly: false,
 			Computed: true,
 			Default:  nil,
 		}
-		Convey("When isOptionalComputed method is called", func() {
-			isOptionalComputed := s.isOptionalComputed()
+		Convey("When IsOptionalComputed method is called", func() {
+			isOptionalComputed := s.IsOptionalComputed()
 			Convey("Then value returned should be true", func() {
 				So(isOptionalComputed, ShouldBeTrue)
 			})
 		})
 	})
 	Convey("Given a property that is not optional", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type:     typeString,
+		s := &SpecSchemaDefinitionProperty{
+			Type:     TypeString,
 			Required: true,
 		}
-		Convey("When isOptionalComputed method is called", func() {
-			isOptionalComputed := s.isOptionalComputed()
+		Convey("When IsOptionalComputed method is called", func() {
+			isOptionalComputed := s.IsOptionalComputed()
 			Convey("Then value returned should be false", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
 	})
 	Convey("Given a property that is optional but readOnly", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type:     typeString,
+		s := &SpecSchemaDefinitionProperty{
+			Type:     TypeString,
 			Required: false,
 			ReadOnly: true,
 		}
-		Convey("When isOptionalComputed method is called", func() {
-			isOptionalComputed := s.isOptionalComputed()
+		Convey("When IsOptionalComputed method is called", func() {
+			isOptionalComputed := s.IsOptionalComputed()
 			Convey("Then value returned should be false", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
 	})
 	Convey("Given a property that is optional, not readOnly and it's not computed (purely optional use case)", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type:     typeString,
+		s := &SpecSchemaDefinitionProperty{
+			Type:     TypeString,
 			Required: false,
 			ReadOnly: false,
 			Computed: false,
 			Default:  nil,
 		}
-		Convey("When isOptionalComputed method is called", func() {
-			isOptionalComputed := s.isOptionalComputed()
+		Convey("When IsOptionalComputed method is called", func() {
+			isOptionalComputed := s.IsOptionalComputed()
 			Convey("Then value returned should be false", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
 	})
 	Convey("Given a property that is optional, not readOnly, computed but has a default value (optional-computed use case, but as far as terraform is concerned the default will be set om the terraform schema, making it available at plan time - this is by design in terraform)", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type:     typeString,
+		s := &SpecSchemaDefinitionProperty{
+			Type:     TypeString,
 			Required: false,
 			ReadOnly: false,
 			Computed: true,
 			Default:  "something",
 		}
-		Convey("When isOptionalComputed method is called", func() {
-			isOptionalComputed := s.isOptionalComputed()
+		Convey("When IsOptionalComputed method is called", func() {
+			isOptionalComputed := s.IsOptionalComputed()
 			Convey("Then value returned should be false", func() {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
@@ -488,8 +488,8 @@ func TestSchemaDefinitionPropertyIsOptionalComputed(t *testing.T) {
 
 func TestTerraformType(t *testing.T) {
 	Convey("Given a swagger schema definition that has a property of type string", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type: typeString,
+		s := &SpecSchemaDefinitionProperty{
+			Type: TypeString,
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
@@ -502,8 +502,8 @@ func TestTerraformType(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type int", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type: typeInt,
+		s := &SpecSchemaDefinitionProperty{
+			Type: TypeInt,
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
@@ -516,8 +516,8 @@ func TestTerraformType(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type float", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type: typeFloat,
+		s := &SpecSchemaDefinitionProperty{
+			Type: TypeFloat,
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
@@ -530,8 +530,8 @@ func TestTerraformType(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type bool", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type: typeBool,
+		s := &SpecSchemaDefinitionProperty{
+			Type: TypeBool,
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
@@ -544,7 +544,7 @@ func TestTerraformType(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has an unsupported property type", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Type: "unsupported",
 		}
 		Convey("When terraformType method is called", func() {
@@ -558,8 +558,8 @@ func TestTerraformType(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type object", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type: typeObject,
+		s := &SpecSchemaDefinitionProperty{
+			Type: TypeObject,
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
@@ -572,8 +572,8 @@ func TestTerraformType(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type list", t, func() {
-		s := &specSchemaDefinitionProperty{
-			Type: typeList,
+		s := &SpecSchemaDefinitionProperty{
+			Type: TypeList,
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
@@ -589,10 +589,10 @@ func TestTerraformType(t *testing.T) {
 
 func TestIsTerraformListOfSimpleValues(t *testing.T) {
 	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type string", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "list_prop",
-			Type:           typeList,
-			ArrayItemsType: typeString,
+			Type:           TypeList,
+			ArrayItemsType: TypeString,
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
@@ -605,10 +605,10 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type int", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "list_prop",
-			Type:           typeList,
-			ArrayItemsType: typeInt,
+			Type:           TypeList,
+			ArrayItemsType: TypeInt,
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
@@ -621,10 +621,10 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type float", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "list_prop",
-			Type:           typeList,
-			ArrayItemsType: typeFloat,
+			Type:           TypeList,
+			ArrayItemsType: TypeFloat,
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
@@ -637,10 +637,10 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type 'list' with elements of type bool", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "list_prop",
-			Type:           typeList,
-			ArrayItemsType: typeBool,
+			Type:           TypeList,
+			ArrayItemsType: TypeBool,
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
@@ -653,10 +653,10 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type 'list' with non primitive element", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "list_prop",
-			Type:           typeList,
-			ArrayItemsType: typeObject,
+			Type:           TypeList,
+			ArrayItemsType: TypeObject,
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
@@ -672,14 +672,14 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 
 func TestTerraformObjectSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has a property of type 'object'", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "object_prop",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			Type: TypeObject,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name: "protocol",
-						Type: typeString,
+						Type: TypeString,
 					},
 				},
 			},
@@ -694,17 +694,17 @@ func TestTerraformObjectSchema(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has a property of type 'list' and arrays items type object", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeObject,
+			Type:           TypeList,
+			ArrayItemsType: TypeObject,
 			ReadOnly:       false,
 			Required:       true,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name: "protocol",
-						Type: typeString,
+						Type: TypeString,
 					},
 				},
 			},
@@ -720,9 +720,9 @@ func TestTerraformObjectSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a non supported property type for building object schmea", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "prop",
-			Type: typeString,
+			Type: TypeString,
 		}
 		Convey("When terraformObjectSchema method is called", func() {
 			_, err := s.terraformObjectSchema()
@@ -736,9 +736,9 @@ func TestTerraformObjectSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a object property type for building object schema", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "prop",
-			Type: typeObject,
+			Type: TypeObject,
 		}
 		Convey("When terraformObjectSchema method is called", func() {
 			_, err := s.terraformObjectSchema()
@@ -755,37 +755,37 @@ func TestTerraformObjectSchema(t *testing.T) {
 func TestIsLegacyComplexObjectExtensionEnabled(t *testing.T) {
 	testCases := []struct {
 		name                              string
-		inputSpecSchemaDefinitionProperty specSchemaDefinitionProperty
+		inputSpecSchemaDefinitionProperty SpecSchemaDefinitionProperty
 		expectedResult                    bool
 	}{
 		{
 			name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration enabled",
-			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Type: typeObject,
+			inputSpecSchemaDefinitionProperty: SpecSchemaDefinitionProperty{
+				Type: TypeObject,
 				EnableLegacyComplexObjectBlockConfiguration: true,
 			},
 			expectedResult: true,
 		},
 		{
 			name: "property that is an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
-			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Type: typeObject,
+			inputSpecSchemaDefinitionProperty: SpecSchemaDefinitionProperty{
+				Type: TypeObject,
 				EnableLegacyComplexObjectBlockConfiguration: false,
 			},
 			expectedResult: false,
 		},
 		{
 			name: "property that is NOT an object and has the EnableLegacyComplexObjectBlockConfiguration NOT enabled",
-			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Type: typeString,
+			inputSpecSchemaDefinitionProperty: SpecSchemaDefinitionProperty{
+				Type: TypeString,
 				EnableLegacyComplexObjectBlockConfiguration: false,
 			},
 			expectedResult: false,
 		},
 		{
 			name: "property that is NOT an object but somehow has the EnableLegacyComplexObjectBlockConfiguration turned on",
-			inputSpecSchemaDefinitionProperty: specSchemaDefinitionProperty{
-				Type: typeString,
+			inputSpecSchemaDefinitionProperty: SpecSchemaDefinitionProperty{
+				Type: TypeString,
 				EnableLegacyComplexObjectBlockConfiguration: true,
 			},
 			expectedResult: false,
@@ -802,29 +802,29 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 	testcases := []struct {
 		name                         string
 		schemaDefinitionPropertyType schemaDefinitionPropertyType
-		specSchemaDefinition         *specSchemaDefinition
+		specSchemaDefinition         *SpecSchemaDefinition
 		expected                     bool
 	}{
 		{name: "swagger schema definition property that is not of type 'object'",
-			schemaDefinitionPropertyType: typeBool,
-			specSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type: typeString,
+			schemaDefinitionPropertyType: TypeBool,
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type: TypeString,
 					},
 				},
 			},
 			expected: false},
 		{name: "swagger schema definition property that has nested objects",
-			schemaDefinitionPropertyType: typeObject,
-			specSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type: typeObject,
-						SpecSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
-									Type: typeString,
+			schemaDefinitionPropertyType: TypeObject,
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type: TypeObject,
+						SpecSchemaDefinition: &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{
+								&SpecSchemaDefinitionProperty{
+									Type: TypeString,
 								},
 							},
 						},
@@ -833,21 +833,21 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 			},
 			expected: true},
 		{name: "swagger schema definition property that DOES NOT have nested objects",
-			specSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type: typeString,
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type: TypeString,
 					},
 				},
 			},
 			expected: false},
 		{name: "spec definition property of type object that does not have a corresponding spec schema definition",
-			schemaDefinitionPropertyType: typeObject,
+			schemaDefinitionPropertyType: TypeObject,
 			specSchemaDefinition:         nil,
 			expected:                     false},
 	}
 	for _, tc := range testcases {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Type:                 tc.schemaDefinitionPropertyType,
 			SpecSchemaDefinition: tc.specSchemaDefinition,
 		}
@@ -861,25 +861,25 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 func TestTerraformSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has two nested properties - one being a simple object and the other one a primitive", t, func() {
 		expectedNestedObjectPropertyName := "nested_object1"
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "top_level_object",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type: typeObject,
+			Type: TypeObject,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type: TypeObject,
 						Name: expectedNestedObjectPropertyName,
-						SpecSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
-									Type: typeString,
+						SpecSchemaDefinition: &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{
+								&SpecSchemaDefinitionProperty{
+									Type: TypeString,
 									Name: "string_property_1",
 								},
 							},
 						},
 					},
-					&specSchemaDefinitionProperty{
-						Type:          typeFloat,
+					&SpecSchemaDefinitionProperty{
+						Type:          TypeFloat,
 						Name:          "nested_float2",
 						PreferredName: "nested_float_2",
 					},
@@ -908,30 +908,30 @@ func TestTerraformSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has two nested simple object properties", t, func() {
 		expectedNestedObjectPropertyName1 := "nested_object1"
 		expectedNestedObjectPropertyName2 := "nested_object2"
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "top_level_object",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type: typeObject,
+			Type: TypeObject,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type: TypeObject,
 						Name: expectedNestedObjectPropertyName1,
-						SpecSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
-									Type: typeString,
+						SpecSchemaDefinition: &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{
+								&SpecSchemaDefinitionProperty{
+									Type: TypeString,
 									Name: "string_property_1",
 								},
 							},
 						},
 					},
-					&specSchemaDefinitionProperty{
-						Type: typeObject,
+					&SpecSchemaDefinitionProperty{
+						Type: TypeObject,
 						Name: expectedNestedObjectPropertyName2,
-						SpecSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
-									Type: typeString,
+						SpecSchemaDefinition: &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{
+								&SpecSchemaDefinitionProperty{
+									Type: TypeString,
 									Name: "string_property_2",
 								},
 							},
@@ -963,23 +963,23 @@ func TestTerraformSchema(t *testing.T) {
 
 	Convey("Given a swagger schema definition of type object and a complex object nested into it", t, func() {
 		complexObjectName := "complex_object_which_is_nested"
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "top_level_object",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type: typeObject,
+			Type: TypeObject,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type: TypeObject,
 						Name: complexObjectName,
 						EnableLegacyComplexObjectBlockConfiguration: true,
-						SpecSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
-									Type: typeString,
+						SpecSchemaDefinition: &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{
+								&SpecSchemaDefinitionProperty{
+									Type: TypeString,
 									Name: "string_property",
 								},
-								&specSchemaDefinitionProperty{
-									Type:     typeInt,
+								&SpecSchemaDefinitionProperty{
+									Type:     TypeInt,
 									Name:     "int_property",
 									ReadOnly: true,
 								},
@@ -995,7 +995,7 @@ func TestTerraformSchema(t *testing.T) {
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
 			})
-			Convey("And the returned terraform schema contains the schema for the first nested AND complex object property with the right configuration --> typeList", func() {
+			Convey("And the returned terraform schema contains the schema for the first nested AND complex object property with the right configuration --> TypeList", func() {
 				nestedAndComplexObj := tfPropSchema.Elem.(*schema.Resource).Schema[complexObjectName]
 				So(nestedAndComplexObj, ShouldNotBeNil)
 				So(nestedAndComplexObj.Type, ShouldEqual, schema.TypeList)
@@ -1009,16 +1009,16 @@ func TestTerraformSchema(t *testing.T) {
 
 	Convey("Given a swagger schema definition that contains a nested object", t, func() {
 		complexObjectName := "complex_object_which_is_nested"
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "complex object",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type:                 typeObject,
+			Type: TypeObject,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type:                 TypeObject,
 						Name:                 complexObjectName,
 						ReadOnly:             true,
-						SpecSchemaDefinition: &specSchemaDefinition{},
+						SpecSchemaDefinition: &SpecSchemaDefinition{},
 					},
 				},
 			}}
@@ -1034,13 +1034,13 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that contains a object with no SpecSchemaDefinition", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "object",
-			Type: typeObject,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type: typeObject,
+			Type: TypeObject,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type: TypeObject,
 						Name: "the object",
 					},
 				},
@@ -1057,17 +1057,17 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition tha is a complex object (EnableLegacyComplexObjectBlockConfiguration set to true)", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "top level complex object",
-			Type: typeObject,
+			Type: TypeObject,
 			EnableLegacyComplexObjectBlockConfiguration: true,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type:                 typeInt,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type:                 TypeInt,
 						Name:                 "my_int_prop",
 						ReadOnly:             true,
-						SpecSchemaDefinition: &specSchemaDefinition{},
+						SpecSchemaDefinition: &SpecSchemaDefinition{},
 					},
 				},
 			}}
@@ -1083,17 +1083,17 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition tha is a simple object (EnableLegacyComplexObjectBlockConfiguration not present or set to false)", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "top level complex object",
-			Type: typeObject,
+			Type: TypeObject,
 			//EnableLegacyComplexObjectBlockConfiguration: true, ==> This field is not present or set to false
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
-						Type:                 typeInt,
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
+						Type:                 TypeInt,
 						Name:                 "my_int_prop",
 						ReadOnly:             true,
-						SpecSchemaDefinition: &specSchemaDefinition{},
+						SpecSchemaDefinition: &SpecSchemaDefinition{},
 					},
 				},
 			}}
@@ -1108,9 +1108,9 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'string' which is required", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "string_prop",
-			Type:     typeString,
+			Type:     TypeString,
 			ReadOnly: false,
 			Required: true,
 		}
@@ -1124,7 +1124,7 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 	Convey("Given a swagger schema definition that has an unsupported property type", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name: "rune_prop",
 			Type: "unsupported",
 		}
@@ -1138,9 +1138,9 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'integer'", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "int_prop",
-			Type:     typeInt,
+			Type:     TypeInt,
 			ReadOnly: false,
 			Required: true,
 		}
@@ -1154,9 +1154,9 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'number'", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "number_prop",
-			Type:     typeFloat,
+			Type:     TypeFloat,
 			ReadOnly: false,
 			Required: true,
 		}
@@ -1170,9 +1170,9 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'boolean'", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "boolean_prop",
-			Type:     typeBool,
+			Type:     TypeBool,
 			ReadOnly: false,
 			Required: true,
 		}
@@ -1186,10 +1186,10 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type string", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeString,
+			Type:           TypeList,
+			ArrayItemsType: TypeString,
 			ReadOnly:       false,
 			Required:       true,
 		}
@@ -1207,10 +1207,10 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type integer", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeInt,
+			Type:           TypeList,
+			ArrayItemsType: TypeInt,
 			ReadOnly:       false,
 			Required:       true,
 		}
@@ -1228,10 +1228,10 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type number", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeFloat,
+			Type:           TypeList,
+			ArrayItemsType: TypeFloat,
 			ReadOnly:       false,
 			Required:       true,
 		}
@@ -1249,10 +1249,10 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type bool", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeBool,
+			Type:           TypeList,
+			ArrayItemsType: TypeBool,
 			ReadOnly:       false,
 			Required:       true,
 		}
@@ -1270,17 +1270,17 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type object", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:           "array_prop",
-			Type:           typeList,
-			ArrayItemsType: typeObject,
+			Type:           TypeList,
+			ArrayItemsType: TypeObject,
 			ReadOnly:       false,
 			Required:       true,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name: "protocol",
-						Type: typeString,
+						Type: TypeString,
 					},
 				},
 			},
@@ -1299,9 +1299,9 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are not set", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "array_prop",
-			Type:     typeList,
+			Type:     TypeList,
 			ReadOnly: false,
 			Required: true,
 		}
@@ -1317,16 +1317,16 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type object and a ref pointing to the schema", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "object_prop",
-			Type:     typeObject,
+			Type:     TypeObject,
 			ReadOnly: false,
 			Required: true,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name: "message",
-						Type: typeString,
+						Type: TypeString,
 					},
 				},
 			},
@@ -1346,20 +1346,20 @@ func TestTerraformSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a property of type object that has nested schema and property named id", t, func() {
-		s := &specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinitionProperty{
 			Name:     "object_prop",
-			Type:     typeObject,
+			Type:     TypeObject,
 			ReadOnly: false,
 			Required: true,
-			SpecSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			SpecSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name: "id",
-						Type: typeString,
+						Type: TypeString,
 					},
-					&specSchemaDefinitionProperty{
+					&SpecSchemaDefinitionProperty{
 						Name: "message",
-						Type: typeString,
+						Type: TypeString,
 					},
 				},
 			},
@@ -1605,63 +1605,63 @@ func Test_shouldUseLegacyTerraformSDKBlockApproachForComplexObjects(t *testing.T
 	Convey("shouldUseLegacyTerraformSDKBlockApproachForComplexObject", t, func() {
 
 		Convey("returns false", func() {
-			Convey("Given a blank specSchemaDefinitionProperty "+
+			Convey("Given a blank SpecSchemaDefinitionProperty "+
 				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
 				"Then it should return false with no error", func() {
-				p := &specSchemaDefinitionProperty{}
+				p := &SpecSchemaDefinitionProperty{}
 				b := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 				So(b, ShouldBeFalse)
 			})
 
-			Convey("Given a specSchemaDefinitionProperty with Type of 'boolean' and nothing else"+
+			Convey("Given a SpecSchemaDefinitionProperty with Type of 'boolean' and nothing else"+
 				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
 				"Then it should return false with no error", func() {
-				p := &specSchemaDefinitionProperty{Type: typeBool}
+				p := &SpecSchemaDefinitionProperty{Type: TypeBool}
 				b := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 				So(b, ShouldBeFalse)
 			})
 
-			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition"+
+			Convey("Given a SpecSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition"+
 				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
 				"Then it should return false with no error", func() {
-				p := &specSchemaDefinitionProperty{Type: typeObject, SpecSchemaDefinition: &specSchemaDefinition{}}
+				p := &SpecSchemaDefinitionProperty{Type: TypeObject, SpecSchemaDefinition: &SpecSchemaDefinition{}}
 				b := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 				So(b, ShouldBeFalse)
 			})
 
-			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty which is blank"+
+			Convey("Given a SpecSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one SpecSchemaDefinitionProperty which is blank"+
 				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
 				"Then it should return false with no error", func() {
-				p := &specSchemaDefinitionProperty{Type: typeObject,
-					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{}}}}
+				p := &SpecSchemaDefinitionProperty{Type: TypeObject,
+					SpecSchemaDefinition: &SpecSchemaDefinition{Properties: SpecSchemaDefinitionProperties{&SpecSchemaDefinitionProperty{}}}}
 				b := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 				So(b, ShouldBeFalse)
 			})
-			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty with Type 'boolean' "+
+			Convey("Given a SpecSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one SpecSchemaDefinitionProperty with Type 'boolean' "+
 				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
 				"Then it should return true with no error", func() {
-				p := &specSchemaDefinitionProperty{Type: typeObject,
-					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{Type: typeBool}}}}
+				p := &SpecSchemaDefinitionProperty{Type: TypeObject,
+					SpecSchemaDefinition: &SpecSchemaDefinition{Properties: SpecSchemaDefinitionProperties{&SpecSchemaDefinitionProperty{Type: TypeBool}}}}
 				b := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 				So(b, ShouldBeFalse)
 			})
 		})
 
 		Convey("returns true", func() {
-			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one specSchemaDefinitionProperty with Type 'object' "+
+			Convey("Given a SpecSchemaDefinitionProperty with Type of 'object' and a SpecSchemaDefinition with one SpecSchemaDefinitionProperty with Type 'object' "+
 				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
 				"Then it should return false with no error", func() {
-				p := &specSchemaDefinitionProperty{Type: typeObject,
-					SpecSchemaDefinition: &specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{Type: typeObject}}}}
+				p := &SpecSchemaDefinitionProperty{Type: TypeObject,
+					SpecSchemaDefinition: &SpecSchemaDefinition{Properties: SpecSchemaDefinitionProperties{&SpecSchemaDefinitionProperty{Type: TypeObject}}}}
 				b := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 				So(b, ShouldBeTrue)
 			})
 
-			Convey("Given a specSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition and EnableLegacyComplexObjectBlockConfiguration = true"+
+			Convey("Given a SpecSchemaDefinitionProperty with Type of 'object' and a blank SpecSchemaDefinition and EnableLegacyComplexObjectBlockConfiguration = true"+
 				"When shouldUseLegacyTerraformSDKBlockApproachForComplexObjects is called"+
 				"Then it should return true with no error", func() {
-				p := &specSchemaDefinitionProperty{Type: typeObject,
-					SpecSchemaDefinition:                        &specSchemaDefinition{},
+				p := &SpecSchemaDefinitionProperty{Type: TypeObject,
+					SpecSchemaDefinition:                        &SpecSchemaDefinition{},
 					EnableLegacyComplexObjectBlockConfiguration: true}
 				b := p.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects()
 				So(b, ShouldBeTrue)

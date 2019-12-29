@@ -244,8 +244,8 @@ func Test_getParentIDs(t *testing.T) {
 
 func TestUpdateStateWithPayloadData(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
-		objectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		objectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
@@ -261,10 +261,10 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 				"protocol":    "http",
 			},
 		}
-		listOfObjectsProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectStateValue, typeObject, objectSchemaDefinition)
+		listOfObjectsProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectStateValue, TypeObject, objectSchemaDefinition)
 
-		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				idProperty,
 				objectProperty,
 			},
@@ -307,30 +307,30 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			})
 			Convey("And the expectedValue should equal to the expectedValue coming from remote, and also the key expectedValue should be the preferred as defined in the property", func() {
 				// keys stores in the resource data struct are always snake case
-				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
-				So(resourceData.Get(intProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[intProperty.Name])
-				So(resourceData.Get(numberProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[numberProperty.Name])
-				So(resourceData.Get(boolProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[boolProperty.Name])
-				So(len(resourceData.Get(slicePrimitiveProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
-				So(resourceData.Get(slicePrimitiveProperty.getTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, remoteData[slicePrimitiveProperty.Name].([]interface{})[0])
-				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "origin_port")
-				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "protocol")
-				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
-				So(resourceData.Get(objectProperty.getTerraformCompliantPropertyName()).(map[string]interface{})["protocol"], ShouldEqual, remoteData[objectProperty.Name].(map[string]interface{})["protocol"])
+				So(resourceData.Get(stringWithPreferredNameProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
+				So(resourceData.Get(intProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[intProperty.Name])
+				So(resourceData.Get(numberProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[numberProperty.Name])
+				So(resourceData.Get(boolProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[boolProperty.Name])
+				So(len(resourceData.Get(slicePrimitiveProperty.GetTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(slicePrimitiveProperty.GetTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, remoteData[slicePrimitiveProperty.Name].([]interface{})[0])
+				So(resourceData.Get(objectProperty.GetTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(objectProperty.GetTerraformCompliantPropertyName()).(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(objectProperty.GetTerraformCompliantPropertyName()).(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
+				So(resourceData.Get(objectProperty.GetTerraformCompliantPropertyName()).(map[string]interface{})["protocol"], ShouldEqual, remoteData[objectProperty.Name].(map[string]interface{})["protocol"])
 
-				So(len(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
-				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "origin_port")
-				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "protocol")
-				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"].(int))
-				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"])
+				So(len(resourceData.Get(listOfObjectsProperty.GetTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(listOfObjectsProperty.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"])
 
-				So(len(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
-				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, idProperty.Name)
-				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, objectProperty.Name)
-				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "origin_port")
-				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "protocol")
-				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
-				So(resourceData.Get(propertyWithNestedObject.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"], ShouldEqual, remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"])
+				So(len(resourceData.Get(propertyWithNestedObject.GetTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 1)
+				So(resourceData.Get(propertyWithNestedObject.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, idProperty.Name)
+				So(resourceData.Get(propertyWithNestedObject.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, objectProperty.Name)
+				So(resourceData.Get(propertyWithNestedObject.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(propertyWithNestedObject.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(propertyWithNestedObject.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"], ShouldEqual, strconv.Itoa(remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["origin_port"].(int)))
+				So(resourceData.Get(propertyWithNestedObject.GetTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"], ShouldEqual, remoteData[propertyWithNestedObject.Name].(map[string]interface{})[objectProperty.Name].(map[string]interface{})["protocol"])
 			})
 		})
 	})
@@ -347,7 +347,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the resource state data only contains the properties and values for the documented properties", func() {
-				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
+				So(resourceData.Get(stringWithPreferredNameProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
 				So(resourceData.Get("some_other_property_not_documented_in_openapi_doc"), ShouldBeNil)
 			})
 		})
@@ -497,8 +497,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		})
 
 		Convey("When convertPayloadToLocalStateDataValue is called with an list property and a with items object", func() {
-			objectSchemaDefinition := &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			objectSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
@@ -511,7 +511,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"example_bool":   true,
 				"example_float":  10.45,
 			}
-			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeObject, objectSchemaDefinition)
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeObject, objectSchemaDefinition)
 			dataValue := []interface{}{objectDefault}
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
 			Convey("Then the error should be nil", func() {
@@ -529,7 +529,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			})
 		})
 		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with items string value", func() {
-			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeString, nil)
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeString, nil)
 			dataValue := []interface{}{"value1"}
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
 			Convey("Then the error should be nil", func() {
@@ -541,9 +541,9 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		})
 
 		Convey("When convertPayloadToLocalStateDataValue is called with simple object property and an empty map as value", func() {
-			property := &specSchemaDefinitionProperty{
+			property := &SpecSchemaDefinitionProperty{
 				Name:     "some_object",
-				Type:     typeObject,
+				Type:     TypeObject,
 				Required: true,
 			}
 			resultValue, err := convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
@@ -557,7 +557,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 
 		// Edge case
 		Convey("When convertPayloadToLocalStateDataValue is called with a slice of map interfaces", func() {
-			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, typeString, nil)
+			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeString, nil)
 			_, err := convertPayloadToLocalStateDataValue(property, []map[string]interface{}{}, false)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -565,9 +565,9 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		})
 
 		Convey("When convertPayloadToLocalStateDataValue is called with a property list that the array items are of unknown type", func() {
-			property := &specSchemaDefinitionProperty{
+			property := &SpecSchemaDefinitionProperty{
 				Name:           "not_well_configured_property",
-				Type:           typeList,
+				Type:           TypeList,
 				ArrayItemsType: schemaDefinitionPropertyType("unknown"),
 			}
 			_, err := convertPayloadToLocalStateDataValue(property, []interface{}{}, false)
@@ -578,8 +578,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 
 		Convey("When convertPayloadToLocalStateDataValue is called with a simple object", func() {
 			// Simple objects are considered objects that all the properties are of the same type and are not computed
-			objectSchemaDefinition := &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			objectSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_string_2", "", true, false, nil),
 				},
@@ -601,8 +601,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 
 		// Simple objects are considered objects that contain properties that are of different types and configuration (e,g: mix of required/optional/computed properties)
 		Convey("When convertPayloadToLocalStateDataValue is called with a complex object", func() {
-			objectSchemaDefinition := &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			objectSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, true, nil),
@@ -634,8 +634,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		})
 
 		Convey("When convertPayloadToLocalStateDataValue is called with an object containing objects", func() {
-			nestedObjectSchemaDefinition := &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			nestedObjectSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 					newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 				},
@@ -645,8 +645,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
 			}
 			nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
-			propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					idProperty,
 					nestedObject,
 				},

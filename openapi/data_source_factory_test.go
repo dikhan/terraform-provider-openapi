@@ -31,8 +31,8 @@ func TestCreateTerraformDataSource(t *testing.T) {
 	for _, tc := range testCases {
 		dataSourceFactory := dataSourceFactory{
 			openAPIResource: &specStubResource{
-				schemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+				schemaDefinition: &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 						newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
 					},
@@ -65,8 +65,8 @@ func TestCreateTerraformDataSourceSchema(t *testing.T) {
 		{
 			name: "happy path - data source schema is configured as expected",
 			openAPIResource: &specStubResource{
-				schemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+				schemaDefinition: &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 						newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
 					},
@@ -85,9 +85,9 @@ func TestCreateTerraformDataSourceSchema(t *testing.T) {
 		{
 			name: "crappy path - internal call to createDataSourceSchema errors out",
 			openAPIResource: &specStubResource{
-				schemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
-						&specSchemaDefinitionProperty{
+				schemaDefinition: &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
+						&SpecSchemaDefinitionProperty{
 							Name: "unsupported_type_prop",
 							Type: "unsupported",
 						},
@@ -129,11 +129,11 @@ func TestDataSourceRead(t *testing.T) {
 	// Given
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
-					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, typeString, nil),
+					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, TypeString, nil),
 				},
 			},
 		},
@@ -241,8 +241,8 @@ func TestDataSourceRead_Subresource(t *testing.T) {
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
 			path: "/v1/cdns/{id}/firewall",
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", false, true, nil), // This simulates an openAPIResource that is subresource and the schema has already been populated with the parent property
@@ -283,8 +283,8 @@ func TestDataSourceRead_Subresource(t *testing.T) {
 func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	// Given ...
 	// ... a schema describing a nested object which is used to ...
-	nestedObjectSchemaDefinition := &specSchemaDefinition{
-		Properties: specSchemaDefinitionProperties{
+	nestedObjectSchemaDefinition := &SpecSchemaDefinition{
+		Properties: SpecSchemaDefinitionProperties{
 			newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 			newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 		},
@@ -294,8 +294,8 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 		"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
 	}
 	nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
-	propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-		Properties: specSchemaDefinitionProperties{
+	propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+		Properties: SpecSchemaDefinitionProperties{
 			idProperty,
 			nestedObject,
 		},
@@ -310,8 +310,8 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	// ... build a data source (using a dataSourceFactory)
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					idProperty,
 					objectProperty,
 				},
@@ -370,8 +370,8 @@ func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
 func TestDataSourceRead_Fails_Because_List_Operation_Returns_Err(t *testing.T) {
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
 				},
 			},
@@ -403,8 +403,8 @@ func TestDataSourceRead_Fails_Because_Bad_Status_Code(t *testing.T) {
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
 			name: "some resource",
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
 				},
 			},
@@ -432,15 +432,15 @@ func TestValidateInput(t *testing.T) {
 
 	testCases := []struct {
 		name                 string
-		specSchemaDefinition *specSchemaDefinition
+		specSchemaDefinition *SpecSchemaDefinition
 		filtersInput         map[string]interface{}
 		expectedError        error
 		expectedFilters      filters
 	}{
 		{
 			name: "data source populated with a different filters of primitive property types",
-			specSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newBoolSchemaDefinitionPropertyWithDefaults("bool_primitive", "", false, true, nil),
 					newNumberSchemaDefinitionPropertyWithDefaults("number_primitive", "", false, true, nil),
 					newIntSchemaDefinitionPropertyWithDefaults("integer_primitive", "", false, true, nil),
@@ -460,8 +460,8 @@ func TestValidateInput(t *testing.T) {
 		},
 		{
 			name: "data source populated with an incorrect filter containing a property that does not match any of the schema definition",
-			specSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 				},
 			},
@@ -475,9 +475,9 @@ func TestValidateInput(t *testing.T) {
 		},
 		{
 			name: "data source populated with an incorrect filter containing a property that is not a primitive",
-			specSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					newListSchemaDefinitionPropertyWithDefaults("not_primitive", "", false, true, false, nil, typeString, nil),
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					newListSchemaDefinitionPropertyWithDefaults("not_primitive", "", false, true, false, nil, TypeString, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 				},
 			},
@@ -492,8 +492,8 @@ func TestValidateInput(t *testing.T) {
 		},
 		{
 			name: "data source populated with an incorrect filter containing multiple values for a primitive property",
-			specSchemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 				},
 			},
@@ -535,7 +535,7 @@ func TestValidateInput(t *testing.T) {
 func TestFilterMatch(t *testing.T) {
 	testCases := []struct {
 		name                           string
-		specSchemaDefinitionProperties specSchemaDefinitionProperties
+		specSchemaDefinitionProperties SpecSchemaDefinitionProperties
 		filters                        filters
 		payloadItem                    map[string]interface{}
 		expectedResult                 bool
@@ -543,7 +543,7 @@ func TestFilterMatch(t *testing.T) {
 	}{
 		{
 			name: "happy path - payloadItem matches the filter for string property",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+			specSchemaDefinitionProperties: SpecSchemaDefinitionProperties{
 				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 			},
 			filters: filters{
@@ -557,7 +557,7 @@ func TestFilterMatch(t *testing.T) {
 		},
 		{
 			name: "happy path - payloadItem matches the filter for int property",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+			specSchemaDefinitionProperties: SpecSchemaDefinitionProperties{
 				newIntSchemaDefinitionPropertyWithDefaults("int property name", "", false, true, nil),
 			},
 			filters: filters{
@@ -571,7 +571,7 @@ func TestFilterMatch(t *testing.T) {
 		},
 		{
 			name: "happy path - payloadItem matches the filter for float property WHEN FLOAT HAS A DECIMAL PART == 0 ",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+			specSchemaDefinitionProperties: SpecSchemaDefinitionProperties{
 				newNumberSchemaDefinitionPropertyWithDefaults("float property name", "", false, true, nil),
 			},
 			filters: filters{
@@ -585,7 +585,7 @@ func TestFilterMatch(t *testing.T) {
 		},
 		{
 			name: "happy path - payloadItem matches the filter for float property WHEN FLOAT HAS A DECIMAL PART != 0 ",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+			specSchemaDefinitionProperties: SpecSchemaDefinitionProperties{
 				newNumberSchemaDefinitionPropertyWithDefaults("float property name", "", false, true, nil),
 			},
 			filters: filters{
@@ -599,7 +599,7 @@ func TestFilterMatch(t *testing.T) {
 		},
 		{
 			name: "happy path - payloadItem matches the filter for bool property",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+			specSchemaDefinitionProperties: SpecSchemaDefinitionProperties{
 				newBoolSchemaDefinitionPropertyWithDefaults("bool property name", "", false, true, nil),
 			},
 			filters: filters{
@@ -613,7 +613,7 @@ func TestFilterMatch(t *testing.T) {
 		},
 		{
 			name: "crappy path - payloadItem doesn't match the filter name",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+			specSchemaDefinitionProperties: SpecSchemaDefinitionProperties{
 				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 			},
 			filters: filters{
@@ -627,7 +627,7 @@ func TestFilterMatch(t *testing.T) {
 		},
 		{
 			name: "crappy path - payloadItem doesn't match the filter value",
-			specSchemaDefinitionProperties: specSchemaDefinitionProperties{
+			specSchemaDefinitionProperties: SpecSchemaDefinitionProperties{
 				newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 			},
 			filters: filters{
@@ -645,7 +645,7 @@ func TestFilterMatch(t *testing.T) {
 		// Given
 		dataSourceFactory := dataSourceFactory{
 			openAPIResource: &specStubResource{
-				schemaDefinition: &specSchemaDefinition{
+				schemaDefinition: &SpecSchemaDefinition{
 					Properties: tc.specSchemaDefinitionProperties,
 				},
 			},

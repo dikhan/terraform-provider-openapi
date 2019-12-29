@@ -1026,17 +1026,17 @@ func TestCheckImmutableFields(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		inputProps    []*specSchemaDefinitionProperty
+		inputProps    []*SpecSchemaDefinitionProperty
 		client        clientOpenAPIStub
 		assertions    func(*schema.ResourceData)
 		expectedError error
 	}{
 		{
 			name: "mutable string property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "mutable_prop",
-					Type:      typeString,
+					Type:      TypeString,
 					Immutable: false,
 					Default:   4,
 				}, // this pretends the property value in the state file has been updated
@@ -1050,10 +1050,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable string property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeString,
+					Type:      TypeString,
 					Immutable: true,
 					Default:   "updatedImmutableValue",
 				}, // this pretends the property value in the state file has been updated
@@ -1070,10 +1070,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable int property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeInt,
+					Type:      TypeInt,
 					Immutable: true,
 					Default:   4,
 				},
@@ -1088,10 +1088,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable int property has not changed",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeInt,
+					Type:      TypeInt,
 					Immutable: true,
 					Default:   4,
 				},
@@ -1106,10 +1106,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable float property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeFloat,
+					Type:      TypeFloat,
 					Immutable: true,
 					Default:   4.5,
 				},
@@ -1124,10 +1124,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable float property has not changed",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeFloat,
+					Type:      TypeFloat,
 					Immutable: true,
 					Default:   4.5,
 				},
@@ -1142,10 +1142,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable bool property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeBool,
+					Type:      TypeBool,
 					Immutable: true,
 					Default:   true,
 				},
@@ -1160,11 +1160,11 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable list property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:           "immutable_prop",
-					Type:           typeList,
-					ArrayItemsType: typeString,
+					Type:           TypeList,
+					ArrayItemsType: TypeString,
 					Immutable:      true,
 					Default:        []interface{}{"value1Updated", "value2Updated"},
 				},
@@ -1179,11 +1179,11 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "mutable list property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:           "mutable_prop",
-					Type:           typeList,
-					ArrayItemsType: typeString,
+					Type:           TypeList,
+					ArrayItemsType: TypeString,
 					Immutable:      false,
 					Default:        []interface{}{"value1Updated", "value2Updated", "newValue"},
 				},
@@ -1198,11 +1198,11 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable list size is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:           "immutable_prop",
-					Type:           typeList,
-					ArrayItemsType: typeString,
+					Type:           TypeList,
+					ArrayItemsType: TypeString,
 					Immutable:      true,
 					Default:        []interface{}{"value1Updated", "value2Updated", "value3Updated"},
 				},
@@ -1217,13 +1217,13 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable object property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeObject,
+					Type:      TypeObject,
 					Immutable: true,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
 							readOnlyProperty,
 							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
@@ -1246,13 +1246,13 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "mutable object properties are updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeObject,
+					Type:      TypeObject,
 					Immutable: false,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
 							readOnlyProperty,
 							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
@@ -1275,13 +1275,13 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable property inside a mutable object is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "mutable_prop",
-					Type:      typeObject,
+					Type:      TypeObject,
 					Immutable: false, // the object in this case is mutable; however some props are immutable
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
 							immutableProperty,
 							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
@@ -1304,17 +1304,17 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable object with nested object property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeObject,
+					Type:      TypeObject,
 					Immutable: true,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
 							newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
 								"some_prop": "someValue",
-							}, &specSchemaDefinition{
-								Properties: specSchemaDefinitionProperties{
+							}, &SpecSchemaDefinition{
+								Properties: SpecSchemaDefinitionProperties{
 									newStringSchemaDefinitionProperty("some_prop", "", true, false, false, false, false, true, false, false, "someValue"),
 								},
 							}),
@@ -1339,14 +1339,14 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable list of objects is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:           "immutable_prop",
-					Type:           typeList,
-					ArrayItemsType: typeObject,
+					Type:           TypeList,
+					ArrayItemsType: TypeObject,
 					Immutable:      true,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
 							newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 						},
@@ -1369,41 +1369,41 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "mutable list of objects where some properties are immutable and values are not updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:           "immutable_prop",
-					Type:           typeList,
-					ArrayItemsType: typeObject,
+					Type:           TypeList,
+					ArrayItemsType: TypeObject,
 					Immutable:      false,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
-							&specSchemaDefinitionProperty{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
+							&SpecSchemaDefinitionProperty{
 								Name:      "origin_port",
-								Type:      typeInt,
+								Type:      TypeInt,
 								Required:  true,
 								ReadOnly:  false,
 								Immutable: true,
 								Default:   80,
 							},
-							&specSchemaDefinitionProperty{
+							&SpecSchemaDefinitionProperty{
 								Name:      "protocol",
-								Type:      typeString,
+								Type:      TypeString,
 								Required:  true,
 								ReadOnly:  false,
 								Immutable: true,
 								Default:   "http",
 							},
-							&specSchemaDefinitionProperty{
+							&SpecSchemaDefinitionProperty{
 								Name:      "float_prop",
-								Type:      typeFloat,
+								Type:      TypeFloat,
 								Required:  true,
 								ReadOnly:  false,
 								Immutable: true,
 								Default:   99.99,
 							},
-							&specSchemaDefinitionProperty{
+							&SpecSchemaDefinitionProperty{
 								Name:      "enabled",
-								Type:      typeBool,
+								Type:      TypeBool,
 								Required:  true,
 								ReadOnly:  false,
 								Immutable: true,
@@ -1431,7 +1431,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name:       "client returns an error",
-			inputProps: []*specSchemaDefinitionProperty{},
+			inputProps: []*SpecSchemaDefinitionProperty{},
 			client: clientOpenAPIStub{
 				error: errors.New("some error"),
 			},
@@ -1440,10 +1440,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		{
 			name: "immutable property is updated",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				{
 					Name:      "immutable_prop",
-					Type:      typeString,
+					Type:      TypeString,
 					Immutable: true,
 					Default:   "updatedImmutableValue",
 				},
@@ -1484,12 +1484,12 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 	idProperty := newStringSchemaDefinitionProperty("id", "", false, true, false, false, false, true, false, false, "id")
 	testCases := []struct {
 		name            string
-		inputProps      []*specSchemaDefinitionProperty
+		inputProps      []*SpecSchemaDefinitionProperty
 		expectedPayload map[string]interface{}
 	}{
 		{
 			name: "id and computed properties are not part of the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				idProperty,
 				computedProperty,
 			},
@@ -1497,7 +1497,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 		},
 		{
 			name: "id and property marked as preferred identifier is not part of the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				idProperty,
 				newStringSchemaDefinitionProperty("someOtherID", "", false, true, false, false, false, true, true, false, "someOtherIDValue"),
 			},
@@ -1505,12 +1505,12 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 		},
 		{
 			name: "parent properties are not part of the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				newParentStringSchemaDefinitionPropertyWithDefaults("parentProperty", "", true, false, "http"),
 				stringProperty,
 			},
 			expectedPayload: map[string]interface{}{
-				stringProperty.getTerraformCompliantPropertyName(): stringProperty.Default,
+				stringProperty.GetTerraformCompliantPropertyName(): stringProperty.Default,
 			},
 		},
 		{
@@ -1523,14 +1523,14 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			//	 }
 			// }
 			name: "properties within objects that are computed should not be in the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				stringProperty,
 				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
 					"origin_port": 80,
 					"protocol":    "http",
-					computedProperty.getTerraformCompliantPropertyName(): computedProperty.Default,
-				}, &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+					computedProperty.GetTerraformCompliantPropertyName(): computedProperty.Default,
+				}, &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 						newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 						computedProperty,
@@ -1538,7 +1538,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				}),
 			},
 			expectedPayload: map[string]interface{}{
-				stringProperty.getTerraformCompliantPropertyName(): stringProperty.Default,
+				stringProperty.GetTerraformCompliantPropertyName(): stringProperty.Default,
 				"object_property": map[string]interface{}{
 					"origin_port": int64(80), // this is how ints are stored internally in terraform state
 					"protocol":    "http",
@@ -1553,11 +1553,11 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			//	 }
 			// }
 			name: "properties within objects that are named id and are not readOnly should be included in the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
 					"id": "someID",
-				}, &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+				}, &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						newStringSchemaDefinitionProperty("id", "", false, false, false, false, false, true, false, false, "someID"),
 					},
 				}),
@@ -1572,7 +1572,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			// - Representation of resourceData configuration containing a complex object (object with other objects)
 			// {
 			//   string_property = "updatedValue"
-			//   property_with_nested_object = [ <-- complex objects are represented in the terraform schema as typeList with maxElem = 1
+			//   property_with_nested_object = [ <-- complex objects are represented in the terraform schema as TypeList with maxElem = 1
 			//     {
 			//       id = "id"
 			//       object_property = {
@@ -1582,22 +1582,22 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			//   ]
 			// }
 			name: "nested objects should be added to the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				stringProperty,
 				newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, []interface{}{
 					map[string]interface{}{
-						computedProperty.getTerraformCompliantPropertyName(): computedProperty.Default,
+						computedProperty.GetTerraformCompliantPropertyName(): computedProperty.Default,
 						"object_property": map[string]interface{}{
 							"some_prop": "someValue",
 						},
 					},
-				}, &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+				}, &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						computedProperty,
 						newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
 							"some_prop": "someValue",
-						}, &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
+						}, &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{
 								newStringSchemaDefinitionProperty("some_prop", "", true, false, false, false, false, true, false, false, "someValue"),
 							},
 						}),
@@ -1605,7 +1605,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 				}),
 			},
 			expectedPayload: map[string]interface{}{
-				stringProperty.getTerraformCompliantPropertyName(): stringProperty.Default,
+				stringProperty.GetTerraformCompliantPropertyName(): stringProperty.Default,
 				"property_with_nested_object": map[string]interface{}{
 					"object_property": map[string]interface{}{
 						"some_prop": "someValue",
@@ -1622,14 +1622,14 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			//   }
 			// ]
 			name: "array properties containing objects and are not readOnly should be included in the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, []interface{}{
 					map[string]interface{}{
 						"origin_port": 80,
 						"protocol":    "http",
 					},
-				}, typeObject, &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+				}, TypeObject, &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 						newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 					},
@@ -1646,7 +1646,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 		},
 		{
 			name: "properties with zero values should be included in the payload",
-			inputProps: []*specSchemaDefinitionProperty{
+			inputProps: []*SpecSchemaDefinitionProperty{
 				intZeroValueProperty,
 				numberZeroValueProperty,
 				boolZeroValueProperty,
@@ -1683,7 +1683,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		"Then it returns an error", t, func() {
 		input := map[string]interface{}{}
 		resourceFactory := resourceFactory{}
-		So(resourceFactory.populatePayload(input, &specSchemaDefinitionProperty{Name: "buu"}, nil).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
+		So(resourceFactory.populatePayload(input, &SpecSchemaDefinitionProperty{Name: "buu"}, nil).Error(), ShouldEqual, `property 'buu' has a nil state dataValue`)
 	})
 
 	Convey("Given a resource factory"+
@@ -1691,7 +1691,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		"Then it panics", t, func() {
 		input := map[string]interface{}{}
 		dataValue := []bool{}
-		property := &specSchemaDefinitionProperty{}
+		property := &SpecSchemaDefinitionProperty{}
 		resourceFactory := resourceFactory{}
 		So(func() { resourceFactory.populatePayload(input, property, dataValue) }, ShouldPanic)
 	})
@@ -1701,7 +1701,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		"Then it should not return an error", t, func() {
 		input := map[string]interface{}{}
 		dataValue := []interface{}{}
-		property := &specSchemaDefinitionProperty{}
+		property := &SpecSchemaDefinitionProperty{}
 		resourceFactory := resourceFactory{}
 		e := resourceFactory.populatePayload(input, property, dataValue)
 		So(e, ShouldBeNil)
@@ -1713,7 +1713,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, stringProperty)
 		Convey("When populatePayload is called with an empty map, the string property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(stringProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(stringProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, stringProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1736,7 +1736,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, intProperty)
 		Convey("When populatePayload is called with an empty map, the int property in the resource schema  and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(intProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(intProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, intProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1759,7 +1759,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, numberProperty)
 		Convey("When populatePayload is called with an empty map, the number property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(numberProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(numberProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, numberProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1782,7 +1782,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, boolProperty)
 		Convey("When populatePayload is called with an empty map, the bool property in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(boolProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(boolProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, boolProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1805,8 +1805,8 @@ func TestGetPropertyPayload(t *testing.T) {
 		//	 origin_port = 80
 		//	 protocol = "http"
 		// }
-		objectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		objectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
@@ -1819,7 +1819,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, objectProperty)
 		Convey("When populatePayload is called with an empty map, the object property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(objectProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(objectProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, objectProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1845,8 +1845,8 @@ func TestGetPropertyPayload(t *testing.T) {
 		//	 protocol = "http"
 		// }
 		// ]
-		objectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		objectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
@@ -1858,11 +1858,11 @@ func TestGetPropertyPayload(t *testing.T) {
 		arrayObjectDefault := []interface{}{
 			objectDefault,
 		}
-		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectDefault, TypeObject, objectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
 		Convey("When populatePayload is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, sliceObjectProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1887,7 +1887,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, slicePrimitiveProperty)
 		Convey("When populatePayload is called with an empty map, the slice of strings property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(slicePrimitiveProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, slicePrimitiveProperty, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1913,8 +1913,8 @@ func TestGetPropertyPayload(t *testing.T) {
 		//		protocol = "http"
 		//	}
 		//}
-		nestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		nestedObjectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
@@ -1924,8 +1924,8 @@ func TestGetPropertyPayload(t *testing.T) {
 			"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
 		}
 		nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
-		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				idProperty,
 				nestedObject,
 			},
@@ -1957,7 +1957,7 @@ func TestGetPropertyPayload(t *testing.T) {
 
 		Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1984,8 +1984,8 @@ func TestGetPropertyPayload(t *testing.T) {
 
 	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing one nested struct but having terraform property names that are not valid within the resource definition", t, func() {
 		// Use case -  crappy path while getting properties paylod for properties which do not exists in nested objects
-		nestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		nestedObjectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
 		}
@@ -1993,8 +1993,8 @@ func TestGetPropertyPayload(t *testing.T) {
 			"badprotocoldoesntexist": nestedObjectSchemaDefinition.Properties[0].Default,
 		}
 		nestedObjectNotTFCompliant := newObjectSchemaDefinitionPropertyWithDefaults("nested_object_not_compliant", "", true, false, false, nestedObjectNoTFCompliantName, nestedObjectSchemaDefinition)
-		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				idProperty,
 				nestedObjectNotTFCompliant,
 			},
@@ -2010,7 +2010,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
 		Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
@@ -2023,19 +2023,19 @@ func TestGetPropertyPayload(t *testing.T) {
 
 	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing a slice of objects with an invalid slice name definition", t, func() {
 		// Use case -  crappy path while getting properties paylod for properties which do not exists in slices
-		objectSchemaDefinition := &specSchemaDefinition{}
+		objectSchemaDefinition := &SpecSchemaDefinition{}
 		arrayObjectDefault := []interface{}{
 			map[string]interface{}{
 				"protocol": "http",
 			},
 		}
-		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property_doesn_not_exists", "", true, false, false, arrayObjectDefault, typeObject, objectSchemaDefinition)
+		sliceObjectProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property_doesn_not_exists", "", true, false, false, arrayObjectDefault, TypeObject, objectSchemaDefinition)
 
 		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
 
 		Convey("When populatePayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.getTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, sliceObjectProperty, dataValue)
 			Convey("Then the error should not be nil", func() {
 				So(err.Error(), ShouldEqual, "property 'slice_object_property_doesn_not_exists' has a nil state dataValue")
@@ -2053,11 +2053,11 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 			"resourceName",
 			"/v1/resource",
 			false,
-			&specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			&SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name:     statusDefaultPropertyName,
-						Type:     typeString,
+						Type:     TypeString,
 						ReadOnly: true,
 					},
 				},
@@ -2112,22 +2112,22 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 			"resourceName",
 			"/v1/resource",
 			false,
-			&specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			&SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name:     "id",
-						Type:     typeString,
+						Type:     TypeString,
 						ReadOnly: true,
 					},
-					&specSchemaDefinitionProperty{
+					&SpecSchemaDefinitionProperty{
 						Name:     statusDefaultPropertyName,
-						Type:     typeObject,
+						Type:     TypeObject,
 						ReadOnly: true,
-						SpecSchemaDefinition: &specSchemaDefinition{
-							Properties: specSchemaDefinitionProperties{
-								&specSchemaDefinitionProperty{
+						SpecSchemaDefinition: &SpecSchemaDefinition{
+							Properties: SpecSchemaDefinitionProperties{
+								&SpecSchemaDefinitionProperty{
 									Name:               expectedStatusProperty,
-									Type:               typeString,
+									Type:               TypeString,
 									ReadOnly:           true,
 									IsStatusIdentifier: true,
 								},
@@ -2206,7 +2206,7 @@ func TestGetResourceDataOKExists(t *testing.T) {
 
 // testCreateResourceFactoryWithID configures the resourceData with the Id field. This is used for tests that rely on the
 // resource state to be fully created. For instance, update or delete operations.
-func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *specSchemaDefinitionProperty, schemaDefinitionProperties ...*specSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *SpecSchemaDefinitionProperty, schemaDefinitionProperties ...*SpecSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	schemaDefinitionProperties = append(schemaDefinitionProperties, idSchemaDefinitionProperty)
 	resourceFactory, resourceData := testCreateResourceFactory(t, schemaDefinitionProperties...)
 	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
@@ -2214,14 +2214,14 @@ func testCreateResourceFactoryWithID(t *testing.T, idSchemaDefinitionProperty *s
 }
 
 // testCreateResourceFactory configures the resourceData with some properties.
-func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*specSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*SpecSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	testSchema := newTestSchema(schemaDefinitionProperties...)
 	resourceData := testSchema.getResourceData(t)
 	specResource := newSpecStubResourceWithOperations("resourceName", "/v1/resource", false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
 	return newResourceFactory(specResource), resourceData
 }
 
-func testCreateSubResourceFactory(t *testing.T, path string, parentResourceNames, parentPropertyNames []string, fullParentResourceName string, idSchemaDefinitionProperty *specSchemaDefinitionProperty, schemaDefinitionProperties ...*specSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+func testCreateSubResourceFactory(t *testing.T, path string, parentResourceNames, parentPropertyNames []string, fullParentResourceName string, idSchemaDefinitionProperty *SpecSchemaDefinitionProperty, schemaDefinitionProperties ...*SpecSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	testSchema := newTestSchema(schemaDefinitionProperties...)
 	resourceData := testSchema.getResourceData(t)
 	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))

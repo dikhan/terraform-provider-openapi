@@ -192,7 +192,7 @@ func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*sch
 	dataSourceMap := map[string]*schema.Resource{}
 	openAPIDataResources := p.specAnalyser.GetTerraformCompliantDataSources()
 	for _, openAPIDataSource := range openAPIDataResources {
-		dataSourceName, err := p.getProviderResourceName(openAPIDataSource.getResourceName())
+		dataSourceName, err := p.getProviderResourceName(openAPIDataSource.GetResourceName())
 		if err != nil {
 			return nil, err
 		}
@@ -222,13 +222,13 @@ func (p providerFactory) createTerraformProviderResourceMapAndDataSourceInstance
 	for _, openAPIResource := range openAPIResources {
 		start := time.Now()
 
-		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
+		resourceName, err := p.getProviderResourceName(openAPIResource.GetResourceName())
 		if err != nil {
 			return nil, nil, err
 		}
 
-		if openAPIResource.shouldIgnoreResource() {
-			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+		if openAPIResource.ShouldIgnoreResource() {
+			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.GetResourceName())
 			continue
 		}
 
@@ -237,7 +237,7 @@ func (p providerFactory) createTerraformProviderResourceMapAndDataSourceInstance
 		fullDataSourceInstanceName, _ := p.getProviderResourceName(d.getDataSourceInstanceName())
 
 		if _, alreadyThere := resourceMap[resourceName]; alreadyThere {
-			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
+			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.GetResourceName())
 			delete(resourceMap, resourceName)
 			delete(dataSourceInstanceMap, fullDataSourceInstanceName)
 			continue
