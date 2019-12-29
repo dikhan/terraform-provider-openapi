@@ -3,7 +3,6 @@ package openapi
 import (
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/printers"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type TerraformProviderDocGenerator struct {
@@ -12,39 +11,49 @@ type TerraformProviderDocGenerator struct {
 	Printer       printers.Printer
 }
 
-func (o TerraformProviderDocGenerator) generateDocumentation() error {
-	p := openapi.ProviderOpenAPI{ProviderName: o.ProviderName}
-	serviceConfig := &openapi.ServiceConfigV1{SwaggerURL: o.OpenAPIDocURL}
-	tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(serviceConfig)
+func (t TerraformProviderDocGenerator) GenerateDocumentation() error {
+	analyser, err := openapi.CreateSpecAnalyser("v2", t.OpenAPIDocURL)
 	if err != nil {
 		return err
 	}
-	for resourceName, resource := range tfProvider.ResourcesMap {
-		o.printResourceDoc(resourceName, *resource)
+	resources, err := analyser.GetTerraformCompliantResources()
+	if err != nil {
+		return err
+	}
+	for _, resource := range resources {
+		if resource.ShouldIgnoreResource() {
+			continue
+		}
+		resourceSchema, err := resource.GetResourceSchema()
+		if err != nil {
+			return err
+		}
+		t.printResourceDoc(resource.GetResourceName(), resourceSchema)
 	}
 	return nil
 }
 
-func (o TerraformProviderDocGenerator) printResourceDoc(resourceName string, resource schema.Resource) {
-	required, optional, computed := o.createRequiredOptionalComputedMaps(resource.Schema)
+func (o TerraformProviderDocGenerator) printResourceDoc(resourceName string, resourceSchema *openapi.SpecSchemaDefinition) {
+	required, optional, computed := o.createRequiredOptionalComputedMaps(resourceSchema)
+	o.Printer.PrintResourceHeader()
 	o.Printer.PrintResourceInfo(o.ProviderName, resourceName)
 	o.Printer.PrintResourceExample(o.ProviderName, resourceName, required)
 	o.Printer.PrintArguments(required, optional)
 	o.Printer.PrintAttributes(computed)
 }
 
-func (o TerraformProviderDocGenerator) createRequiredOptionalComputedMaps(s map[string]*schema.Schema) (map[string]*schema.Schema, map[string]*schema.Schema, map[string]*schema.Schema) {
-	required := map[string]*schema.Schema{}
-	optional := map[string]*schema.Schema{}
-	computed := map[string]*schema.Schema{}
-	for k, v := range s {
-		if v.Required {
-			required[k] = v
+func (o TerraformProviderDocGenerator) createRequiredOptionalComputedMaps(resourceSchema *openapi.SpecSchemaDefinition) (openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties) {
+	required := openapi.SpecSchemaDefinitionProperties{}
+	optional := openapi.SpecSchemaDefinitionProperties{}
+	computed := openapi.SpecSchemaDefinitionProperties{}
+	for _, property := range resourceSchema.Properties {
+		if property.Required {
+			required = append(required, property)
 		} else {
-			if v.Computed {
-				computed[k] = v
+			if property.Computed {
+				computed = append(computed, property)
 			} else {
-				optional[k] = v
+				optional = append(optional, property)
 			}
 		}
 	}
