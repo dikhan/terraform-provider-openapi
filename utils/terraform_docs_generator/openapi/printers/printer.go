@@ -1,10 +1,13 @@
 package printers
 
-import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+import (
+	"github.com/dikhan/terraform-provider-openapi/openapi"
+)
 
 type Printer interface {
+	PrintResourceHeader()
 	PrintResourceInfo(providerName, resourceName string)
-	PrintResourceExample(providerName, resourceName string, required map[string]*schema.Schema)
-	PrintArguments(required, optional map[string]*schema.Schema)
-	PrintAttributes(computed map[string]*schema.Schema)
+	PrintResourceExample(providerName, resourceName string, required openapi.SpecSchemaDefinitionProperties)
+	PrintArguments(required, optional openapi.SpecSchemaDefinitionProperties)
+	PrintAttributes(computed openapi.SpecSchemaDefinitionProperties)
 }

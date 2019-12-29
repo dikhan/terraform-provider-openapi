@@ -2,63 +2,76 @@ package printers
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/dikhan/terraform-provider-openapi/openapi"
 )
 
 type MarkdownPrinter struct{}
 
-func (p MarkdownPrinter) PrintResourceInfo(providerName, resourceName string) {
-	fmt.Printf("# Resource %s_%s\n", providerName, resourceName)
+func (p MarkdownPrinter) PrintResourceHeader() {
+	fmt.Println("## Provider Resources")
 	fmt.Println()
 }
 
-func (p MarkdownPrinter) PrintResourceExample(providerName, resourceName string, required map[string]*schema.Schema) {
-	fmt.Println("## Example")
+func (p MarkdownPrinter) PrintResourceInfo(providerName, resourceName string) {
+	fmt.Printf("### %s_%s\n", providerName, resourceName)
+	// TODO: add support for extension x-terraform-docs-resource-description
+	fmt.Println()
+}
+
+func (p MarkdownPrinter) PrintResourceExample(providerName, resourceName string, required openapi.SpecSchemaDefinitionProperties) {
+	fmt.Println("#### Example usage")
+	fmt.Println("````")
 	fmt.Printf("resource \"%s_%s\" \"my_%s\" {\n", providerName, resourceName, resourceName)
-	for k, v := range required {
-		switch v.Type {
-		case schema.TypeString:
-			fmt.Printf("    %s = \"string value\"\n", k)
-		case schema.TypeInt:
-			fmt.Printf("    %s = 123\n", k)
-		case schema.TypeBool:
-			fmt.Printf("    %s = true\n", k)
-		case schema.TypeFloat:
-			fmt.Printf("    %s = 12.99\n", k)
+	for _, property := range required {
+		propertyName := property.GetTerraformCompliantPropertyName()
+		switch property.Type {
+		case openapi.TypeString:
+			fmt.Printf("    %s = \"string value\"\n", propertyName)
+		case openapi.TypeInt:
+			fmt.Printf("    %s = 123\n", propertyName)
+		case openapi.TypeBool:
+			fmt.Printf("    %s = true\n", propertyName)
+		case openapi.TypeFloat:
+			fmt.Printf("    %s = 12.99\n", propertyName)
 		}
 	}
 	fmt.Println(`}`)
+	fmt.Println("````")
 	fmt.Println()
 }
 
-func (p MarkdownPrinter) PrintArguments(required, optional map[string]*schema.Schema) {
-	fmt.Println("## Argument Reference (input)")
-	for k, v := range required {
-		p.printProperty(k, v)
-	}
-	for k, v := range optional {
-		p.printProperty(k, v)
-	}
+func (p MarkdownPrinter) PrintArguments(required, optional openapi.SpecSchemaDefinitionProperties) {
+	fmt.Println("#### Arguments Reference (input)")
+	fmt.Println("The following arguments are supported:")
 	fmt.Println()
-}
-
-func (p MarkdownPrinter) PrintAttributes(computed map[string]*schema.Schema) {
-	fmt.Println("## Attributes Reference (output)")
-	for k, v := range computed {
-		p.printProperty(k, v)
+	for _, property := range required {
+		p.printProperty(property)
+	}
+	for _, property := range optional {
+		p.printProperty(property)
 	}
 	fmt.Println()
 }
 
-func (p MarkdownPrinter) printProperty(propertyName string, s *schema.Schema) {
-	if s.Required {
-		fmt.Printf("**%s** [%s] (required): %s\n", propertyName, s.Type, s.Description)
+func (p MarkdownPrinter) PrintAttributes(computed openapi.SpecSchemaDefinitionProperties) {
+	fmt.Println("#### Attributes Reference (output)")
+	fmt.Println("In addition to all arguments above, the following attributes are exported:")
+	fmt.Println()
+	for _, property := range computed {
+		p.printProperty(property)
+	}
+	fmt.Println()
+}
+
+func (p MarkdownPrinter) printProperty(property *openapi.SpecSchemaDefinitionProperty) {
+	propertyName := property.GetTerraformCompliantPropertyName()
+	if property.IsRequired() {
+		fmt.Printf("- %s [%s] (required): \n", propertyName, property.Type) // TODO: add support for description
 	} else {
-		if s.Computed {
-			// TODO: handle complex objects
-			fmt.Printf("**%s** [%s]: %s\n", propertyName, s.Type, s.Description)
+		if property.IsOptionalComputed() {
+			fmt.Printf("- %s [%s] (optional): \n", propertyName, property.Type)
 		} else {
-			fmt.Printf("**%s** [%s] (optional): %s\n", propertyName, s.Type, s.Description)
+			fmt.Printf("- %s [%s]: \n", propertyName, property.Type)
 		}
 	}
 }
