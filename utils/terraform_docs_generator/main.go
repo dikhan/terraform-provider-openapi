@@ -1,56 +1,87 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi"
 	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/printers"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
+	"net/http"
+	"net/http/httptest"
 )
 
 func main() {
 
-	providerName := "openapi"
-	resourceName := "resource"
-	s := map[string]*schema.Schema{
-		"requiredInputProp": {
-			Required:    true,
-			Type:        schema.TypeString,
-			Description: "this is the description for the input string required property",
-		},
-		"optionalInputProp": {
-			Optional:    true,
-			Type:        schema.TypeInt,
-			Description: "this is the description for the input integer optional property",
-		},
-		"computedProperty": {
-			Optional:    true,
-			Computed:    true,
-			Type:        schema.TypeBool,
-			Description: "this is the description for the computed bool property",
-		},
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerYAMLTemplate := fmt.Sprintf(`swagger: "2.0"
+host: my-api.com
+schemes:
+- "http"
+security:
+  - api_auth: []
+securityDefinitions:
+  api_auth:
+    type: apiKey
+    name: Authorization
+    in: header
+paths:
+  /cdns:
+    x-terraform-resource-name: cdn
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      - in: header
+        type: string
+        name: required_header_example
+        required: true
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /cdns/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`)
+		w.Write([]byte(swaggerYAMLTemplate))
+	}))
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	terraformDocGenerator := openapi.TerraformProviderDocGenerator{
+		OpenAPIDocURL: swaggerServer.URL,
+		Printer:       &printers.MarkdownPrinter{},
+		ProviderName:  "cloudflare", // TODO: add support for extension x-terraform-docs-provider-name
 	}
 
-	required := map[string]*schema.Schema{}
-	optional := map[string]*schema.Schema{}
-	computed := map[string]*schema.Schema{}
-
-	for k, v := range s {
-		if v.Required {
-			required[k] = v
-		} else {
-			if v.Computed {
-				computed[k] = v
-			} else {
-				optional[k] = v
-			}
-		}
+	err := terraformDocGenerator.GenerateDocumentation()
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	var p printers.Printer
-
-	// Use Markdown printer
-	p = printers.MarkdownPrinter{}
-
-	p.PrintResourceInfo(providerName, resourceName)
-	p.PrintResourceExample(providerName, resourceName, required)
-	p.PrintArguments(required, optional)
-	p.PrintAttributes(computed)
 }
