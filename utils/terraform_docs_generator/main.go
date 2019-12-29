@@ -66,8 +66,10 @@ definitions:
       id:
         type: "string"
         readOnly: true
+        description: System generated identifier for the CDN
       label:
-        type: "string"`)
+        type: "string"
+        description: Label to use for the CDN`)
 		w.Write([]byte(swaggerYAMLTemplate))
 	}))
 

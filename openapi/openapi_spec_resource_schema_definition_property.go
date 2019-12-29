@@ -25,6 +25,7 @@ const statusDefaultPropertyName = "status"
 // SpecSchemaDefinitionProperty defines the attributes for a schema property
 type SpecSchemaDefinitionProperty struct {
 	Name           string
+	Description    string
 	PreferredName  string
 	Type           schemaDefinitionPropertyType
 	ArrayItemsType schemaDefinitionPropertyType

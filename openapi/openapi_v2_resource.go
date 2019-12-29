@@ -462,6 +462,8 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.EnableLegacyComplexObjectBlockConfiguration = true
 	}
 
+	schemaDefinitionProperty.Description = property.Description
+
 	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default
 	// value is the one that the server uses if the client does not supply the parameter value in the request.
 	// Link: https://swagger.io/docs/specification/describing-parameters#default
