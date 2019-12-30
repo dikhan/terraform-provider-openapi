@@ -11,7 +11,7 @@ func TestSpecSecuritySchemeGetTerraformConfigurationName(t *testing.T) {
 		expectedName := "some_compliant_name"
 		specSecurityScheme := SpecSecurityScheme{Name: expectedName}
 		Convey("When newAPIKeySecurityDefinition method is called", func() {
-			secSchemeTerraformName := specSecurityScheme.getTerraformConfigurationName()
+			secSchemeTerraformName := specSecurityScheme.GetTerraformConfigurationName()
 			Convey("Then the secSchemeTerraformName name should match", func() {
 				So(secSchemeTerraformName, ShouldEqual, expectedName)
 			})
@@ -20,7 +20,7 @@ func TestSpecSecuritySchemeGetTerraformConfigurationName(t *testing.T) {
 	Convey("Given a SpecSecurityScheme with a Non terraform compliant name", t, func() {
 		specSecurityScheme := SpecSecurityScheme{Name: "nonCompliantName"}
 		Convey("When newAPIKeySecurityDefinition method is called", func() {
-			secSchemeTerraformName := specSecurityScheme.getTerraformConfigurationName()
+			secSchemeTerraformName := specSecurityScheme.GetTerraformConfigurationName()
 			Convey("Then the secSchemeTerraformName name should be compliant", func() {
 				So(secSchemeTerraformName, ShouldEqual, "non_compliant_name")
 			})

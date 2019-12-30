@@ -35,7 +35,7 @@ func TestAPIKeyHeaderRefreshTokenSecurityDefinitionGetType(t *testing.T) {
 func TestAPIKeyHeaderRefreshTokenSecurityDefinitionGetTerraformConfigurationName(t *testing.T) {
 	Convey("Given an APIKeyHeaderSecurityDefinition with a compliant name", t, func() {
 		apiKeyHeaderRefreshTokenSecurityDefinition := newAPIKeyHeaderRefreshTokenSecurityDefinition("apikey_auth", "https://api.iam.com/token")
-		Convey("When getTerraformConfigurationName method is called", func() {
+		Convey("When GetTerraformConfigurationName method is called", func() {
 			secDefTfName := apiKeyHeaderRefreshTokenSecurityDefinition.getTerraformConfigurationName()
 			Convey("Then the result should be securityDefinitionAPIKey", func() {
 				So(secDefTfName, ShouldEqual, "apikey_auth")
@@ -45,7 +45,7 @@ func TestAPIKeyHeaderRefreshTokenSecurityDefinitionGetTerraformConfigurationName
 
 	Convey("Given an APIKeyHeaderSecurityDefinition with a NON compliant name", t, func() {
 		apiKeyHeaderRefreshTokenSecurityDefinition := newAPIKeyHeaderRefreshTokenSecurityDefinition("nonCompliantName", "https://api.iam.com/token")
-		Convey("When getTerraformConfigurationName method is called", func() {
+		Convey("When GetTerraformConfigurationName method is called", func() {
 			secDefTfName := apiKeyHeaderRefreshTokenSecurityDefinition.getTerraformConfigurationName()
 			Convey("Then the result should be securityDefinitionAPIKey", func() {
 				So(secDefTfName, ShouldEqual, "non_compliant_name")
@@ -57,7 +57,7 @@ func TestAPIKeyHeaderRefreshTokenSecurityDefinitionGetTerraformConfigurationName
 func TestAPIKeyHeaderRefreshTokenSecurityDefinitionGetAPIKey(t *testing.T) {
 	Convey("Given an APIKeyHeaderSecurityDefinition", t, func() {
 		apiKeyHeaderRefreshTokenSecurityDefinition := newAPIKeyHeaderRefreshTokenSecurityDefinition("apikey_auth", "https://api.iam.com/token")
-		Convey("When getTerraformConfigurationName method is called", func() {
+		Convey("When GetTerraformConfigurationName method is called", func() {
 			apiKey := apiKeyHeaderRefreshTokenSecurityDefinition.getAPIKey()
 			Convey("Then the result should contain the right apikey name and location", func() {
 				So(apiKey.Name, ShouldEqual, "Authorization")
