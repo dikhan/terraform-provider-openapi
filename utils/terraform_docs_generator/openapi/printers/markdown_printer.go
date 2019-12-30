@@ -17,12 +17,17 @@ type MultiRegionConfiguration struct {
 	DefaultRegion string
 }
 
-func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string, multiRegionConfiguration *MultiRegionConfiguration) {
+func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string, multiRegionConfiguration *MultiRegionConfiguration, requiredSecuritySchemes []string) {
 	fmt.Println("#### Example usage")
 	fmt.Println("````")
 	fmt.Printf("provider \"%s\" {\n", providerName)
 	if multiRegionConfiguration != nil {
 		fmt.Printf("    region = \"%s\"\n", multiRegionConfiguration.DefaultRegion)
+	}
+	if requiredSecuritySchemes != nil {
+		for _, securityScheme := range requiredSecuritySchemes {
+			fmt.Printf("    %s = \"value\"\n", securityScheme)
+		}
 	}
 	fmt.Println(`}`)
 	fmt.Println("````")
