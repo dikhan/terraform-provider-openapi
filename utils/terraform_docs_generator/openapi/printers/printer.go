@@ -5,6 +5,9 @@ import (
 )
 
 type Printer interface {
+	PrintProviderConfigurationHeader()
+	PrintProviderConfigurationExample(providerName string)
+	PrintProviderConfiguration()
 	PrintResourceHeader()
 	PrintResourceInfo(providerName, resourceName string)
 	PrintResourceExample(providerName, resourceName string, required openapi.SpecSchemaDefinitionProperties)

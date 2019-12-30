@@ -7,6 +7,26 @@ import (
 
 type MarkdownPrinter struct{}
 
+func (p MarkdownPrinter) PrintProviderConfigurationHeader() {
+	fmt.Println("## Provider Configuration")
+	fmt.Println()
+}
+
+func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string) {
+	fmt.Println("#### Example usage")
+	fmt.Println("````")
+	fmt.Printf("provider \"%s\" {\n", providerName)
+	fmt.Println(`}`)
+	fmt.Println("````")
+	fmt.Println()
+}
+
+func (p MarkdownPrinter) PrintProviderConfiguration() {
+	fmt.Println("#### Arguments Reference")
+	// TODO: #### Arguments Reference
+	fmt.Println()
+}
+
 func (p MarkdownPrinter) PrintResourceHeader() {
 	fmt.Println("## Provider Resources")
 	fmt.Println()
