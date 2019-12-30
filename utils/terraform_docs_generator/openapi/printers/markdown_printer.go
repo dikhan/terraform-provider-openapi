@@ -48,12 +48,12 @@ func (p MarkdownPrinter) PrintProviderConfiguration(multiRegionConfiguration *Mu
 	}
 	if requiredSecuritySchemes != nil {
 		for _, securityScheme := range requiredSecuritySchemes {
-			fmt.Printf("- %s [string] (required): \n", securityScheme)
+			fmt.Printf("- %s [string] (required): \n", securityScheme) // TODO: add support for security schemes description (eg: using security scheme description field or adding support for a new extension 'x-terraform-docs-resource-description') so it can be injected here
 		}
 	}
 	if requiredHeaders != nil {
 		for _, header := range requiredHeaders {
-			fmt.Printf("- %s [string] (required): \n", header)
+			fmt.Printf("- %s [string] (required): \n", header) // TODO: add support for header description (eg: using the descripton field from the header swagger) so it can be injected here
 		}
 	}
 	fmt.Println()
