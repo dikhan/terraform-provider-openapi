@@ -22,7 +22,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() error {
 }
 
 func (t TerraformProviderDocGenerator) printProviderConfiguration(analyser openapi.SpecAnalyser) error {
-	t.Printer.PrintProviderConfigurationHeader()
+	t.Printer.PrintProviderConfigurationHeader(t.ProviderName)
 	multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, err := t.getRequiredProviderConfigurationProperties(analyser)
 	if err != nil {
 		return err

@@ -7,8 +7,11 @@ import (
 
 type MarkdownPrinter struct{}
 
-func (p MarkdownPrinter) PrintProviderConfigurationHeader() {
+func (p MarkdownPrinter) PrintProviderConfigurationHeader(providerName string) {
 	fmt.Println("## Provider Configuration")
+	fmt.Printf("The provider (%s) provider is used to interact with the many resources supported by %s's API. The "+
+		"provider may need to be configured with the proper credentials before it can be used. Refer to the provider "+
+		"confgiguration's arguments to learn more about the required configuration properties.\n", providerName, providerName)
 	fmt.Println()
 }
 

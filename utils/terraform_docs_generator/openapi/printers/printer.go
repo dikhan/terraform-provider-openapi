@@ -5,7 +5,7 @@ import (
 )
 
 type Printer interface {
-	PrintProviderConfigurationHeader()
+	PrintProviderConfigurationHeader(providerName string)
 	// Example will display the provider configuration properties that are required. For instance:
 	//  - region (if multi-region is configured for the provider)
 	//  - global security definitions (if provider has global definitions they are considered required)
