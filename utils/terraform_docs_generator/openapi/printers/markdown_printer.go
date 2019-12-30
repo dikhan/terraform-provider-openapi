@@ -17,7 +17,7 @@ type MultiRegionConfiguration struct {
 	DefaultRegion string
 }
 
-func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string, multiRegionConfiguration *MultiRegionConfiguration, requiredSecuritySchemes []string) {
+func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string, multiRegionConfiguration *MultiRegionConfiguration, requiredSecuritySchemes, requiredHeaders []string) {
 	fmt.Println("#### Example usage")
 	fmt.Println("````")
 	fmt.Printf("provider \"%s\" {\n", providerName)
@@ -29,14 +29,33 @@ func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string, 
 			fmt.Printf("    %s = \"value\"\n", securityScheme)
 		}
 	}
+	if requiredHeaders != nil {
+		for _, header := range requiredHeaders {
+			fmt.Printf("    %s = \"value\"\n", header)
+		}
+	}
 	fmt.Println(`}`)
 	fmt.Println("````")
 	fmt.Println()
 }
 
-func (p MarkdownPrinter) PrintProviderConfiguration() {
+func (p MarkdownPrinter) PrintProviderConfiguration(multiRegionConfiguration *MultiRegionConfiguration, requiredSecuritySchemes, requiredHeaders []string) {
 	fmt.Println("#### Arguments Reference")
-	// TODO: #### Arguments Reference
+	fmt.Println("The following arguments are supported:")
+	fmt.Println()
+	if multiRegionConfiguration != nil {
+		fmt.Printf("- region [string] (required): The core data center location to be used (%s). If region isn't specified, the default is '%s'.\n", multiRegionConfiguration.Regions, multiRegionConfiguration.DefaultRegion)
+	}
+	if requiredSecuritySchemes != nil {
+		for _, securityScheme := range requiredSecuritySchemes {
+			fmt.Printf("- %s [string] (required): \n", securityScheme)
+		}
+	}
+	if requiredHeaders != nil {
+		for _, header := range requiredHeaders {
+			fmt.Printf("- %s [string] (required): \n", header)
+		}
+	}
 	fmt.Println()
 }
 
