@@ -24,6 +24,8 @@ securityDefinitions:
     type: apiKey
     name: Authorization
     in: header
+x-terraform-provider-multiregion-fqdn: api.${region}.cloudflare.com
+x-terraform-provider-regions: sea, dub, rst, fra
 paths:
   /cdns:
     x-terraform-resource-name: cdn
