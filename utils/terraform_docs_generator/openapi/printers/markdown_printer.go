@@ -12,10 +12,18 @@ func (p MarkdownPrinter) PrintProviderConfigurationHeader() {
 	fmt.Println()
 }
 
-func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string) {
+type MultiRegionConfiguration struct {
+	Regions       []string
+	DefaultRegion string
+}
+
+func (p MarkdownPrinter) PrintProviderConfigurationExample(providerName string, multiRegionConfiguration *MultiRegionConfiguration) {
 	fmt.Println("#### Example usage")
 	fmt.Println("````")
 	fmt.Printf("provider \"%s\" {\n", providerName)
+	if multiRegionConfiguration != nil {
+		fmt.Printf("    region = \"%s\"\n", multiRegionConfiguration.DefaultRegion)
+	}
 	fmt.Println(`}`)
 	fmt.Println("````")
 	fmt.Println()

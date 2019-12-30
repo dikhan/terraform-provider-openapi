@@ -6,7 +6,7 @@ import (
 
 type Printer interface {
 	PrintProviderConfigurationHeader()
-	PrintProviderConfigurationExample(providerName string)
+	PrintProviderConfigurationExample(providerName string, multiRegionConfiguration *MultiRegionConfiguration)
 	PrintProviderConfiguration()
 	PrintResourceHeader()
 	PrintResourceInfo(providerName, resourceName string)
