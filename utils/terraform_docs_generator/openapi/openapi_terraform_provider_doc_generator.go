@@ -16,8 +16,59 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() error {
 	if err != nil {
 		return err
 	}
+	t.printProviderConfiguration(analyser)
 	t.printProviderResources(analyser)
 	return nil
+}
+
+func (t TerraformProviderDocGenerator) printProviderConfiguration(analyser openapi.SpecAnalyser) error {
+	t.Printer.PrintProviderConfigurationHeader()
+	multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, err := t.getRequiredProviderConfigurationProperties(analyser)
+	if err != nil {
+		return err
+	}
+	t.Printer.PrintProviderConfigurationExample(t.ProviderName, multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders)
+	t.Printer.PrintProviderConfiguration(multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders)
+
+	return nil
+}
+
+func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) (*printers.MultiRegionConfiguration, []string, []string, error) {
+	var multiRegionConfiguration *printers.MultiRegionConfiguration
+	var requiredSecuritySchemes []string
+	var requiredHeaders []string
+	backendConfig, err := analyser.GetAPIBackendConfiguration()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	isMultiRegion, _, regions, err := backendConfig.IsMultiRegion()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if isMultiRegion {
+		defaultRegion, err := backendConfig.GetDefaultRegion(regions)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		multiRegionConfiguration = &printers.MultiRegionConfiguration{
+			Regions:       regions,
+			DefaultRegion: defaultRegion,
+		}
+	}
+	globalSecuritySchemes, err := analyser.GetSecurity().GetGlobalSecuritySchemes()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	for _, securityScheme := range globalSecuritySchemes {
+		requiredSecuritySchemes = append(requiredSecuritySchemes, securityScheme.GetTerraformConfigurationName())
+	}
+	headers, err := analyser.GetAllHeaderParameters()
+	for _, header := range headers {
+		if header.IsRequired {
+			requiredHeaders = append(requiredHeaders, header.GetHeaderTerraformConfigurationName())
+		}
+	}
+	return multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, nil
 }
 
 func (t TerraformProviderDocGenerator) printProviderResources(analyser openapi.SpecAnalyser) error {
