@@ -44,7 +44,7 @@ func (o specV2BackendConfiguration) getHostByRegion(region string) (string, erro
 	if region == "" {
 		return "", fmt.Errorf("can't get host by region, missing region value")
 	}
-	isMultiRegion, host, allowedRegions, err := o.isMultiRegion()
+	isMultiRegion, host, allowedRegions, err := o.IsMultiRegion()
 	if err != nil {
 		return "", err
 	}
@@ -70,14 +70,14 @@ func (o specV2BackendConfiguration) validateRegion(region string, allowedRegions
 	return fmt.Errorf("region %s not matching allowed ones %+v", region, allowedRegions)
 }
 
-func (o specV2BackendConfiguration) getDefaultRegion(regions []string) (string, error) {
+func (o specV2BackendConfiguration) GetDefaultRegion(regions []string) (string, error) {
 	if regions == nil || len(regions) == 0 {
 		return "", fmt.Errorf("empty regions provided")
 	}
 	return regions[0], nil
 }
 
-func (o specV2BackendConfiguration) isMultiRegion() (bool, string, []string, error) {
+func (o specV2BackendConfiguration) IsMultiRegion() (bool, string, []string, error) {
 	isHostMultiRegion, host, err := o.isHostMultiRegion()
 	if err != nil {
 		return false, "", nil, err

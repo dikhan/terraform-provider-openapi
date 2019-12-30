@@ -718,7 +718,7 @@ func TestGetResourceURL(t *testing.T) {
 		})
 	})
 
-	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration isMultiRegion() call throws an error", t, func() {
+	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration IsMultiRegion() call throws an error", t, func() {
 		expectedError := "someError"
 		providerClient := &ProviderClient{
 			openAPIBackendConfiguration: &specStubBackendConfiguration{
@@ -744,7 +744,7 @@ func TestGetResourceURL(t *testing.T) {
 		})
 	})
 
-	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration getDefaultRegion() call throws an error", t, func() {
+	Convey("Given a providerClient set up with a backend configuration that is multi-region but the openAPIBackendConfiguration GetDefaultRegion() call throws an error", t, func() {
 		expectedError := "some error thrown by default region method"
 		providerConfiguration := providerConfiguration{}
 		providerClient := &ProviderClient{

@@ -86,7 +86,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfiguration SpecBackendConfiguration, providerConfigurationEndPoints *providerConfigurationEndPoints) (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 
-	isMultiRegion, host, regions, err := openAPIBackendConfiguration.isMultiRegion()
+	isMultiRegion, host, regions, err := openAPIBackendConfiguration.IsMultiRegion()
 	if err != nil {
 		return nil, err
 	}
