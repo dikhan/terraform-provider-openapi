@@ -44,6 +44,12 @@ type PluginConfigSchemaV1 struct {
 	Services        map[string]*ServiceConfigV1 `yaml:"services"`
 }
 
+// TelemetryConfig contains the configuration for the telemetry
+type TelemetryConfig struct {
+	// Graphite defines the configuration needed to ship telemetry to Graphite
+	Graphite *TelemetryProviderGraphite `yaml:"graphite,omitempty"`
+}
+
 // NewPluginConfigSchemaV1 creates a new PluginConfigSchemaV1 that implements PluginConfigSchema interface
 func NewPluginConfigSchemaV1(services map[string]*ServiceConfigV1, telemetryConfig *TelemetryConfig) *PluginConfigSchemaV1 {
 	return &PluginConfigSchemaV1{
