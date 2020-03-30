@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"net/http"
 	"testing"
 )
 
@@ -45,20 +44,17 @@ func TestCreateNewRequest(t *testing.T) {
 	testCases := []struct {
 		testName              string
 		expectedCounterMetric telemetryMetric
-		expectedReqHeader     http.Header
-		expectedErr           error
+		expectedContentType   string
+		expectedUserAgent     string
 	}{
 		{
-			testName: "happy path",
+			testName: "happy path - request is created with the expected Header and telemetryMetric ",
 			expectedCounterMetric: telemetryMetric{
 				MetricType: metricTypeCounter,
 				MetricName: "prefix.terraform.openapi_plugin_version.version.total_runs",
 			},
-			expectedReqHeader: http.Header{
-				"Content-Type": []string{"application/json"},
-				"User-Agent":   []string{"OpenAPI Terraform Provider/dev-none (darwin/amd64)"},
-			},
-			expectedErr: nil,
+			expectedContentType: "application/json",
+			expectedUserAgent:   "OpenAPI Terraform Provider",
 		},
 	}
 
@@ -73,7 +69,8 @@ func TestCreateNewRequest(t *testing.T) {
 		err = json.Unmarshal(reqBody, &telemetryMetric)
 		assert.Nil(t, err)
 
-		assert.Equal(t, tc.expectedReqHeader, request.Header)
+		assert.Equal(t, tc.expectedContentType, request.Header.Get(contentType))
+		assert.Contains(t, request.Header.Get(userAgentHeader), tc.expectedUserAgent)
 		assert.Equal(t, tc.expectedCounterMetric, telemetryMetric)
 	}
 }
