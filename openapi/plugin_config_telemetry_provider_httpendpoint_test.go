@@ -3,9 +3,11 @@ package openapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -75,5 +77,51 @@ func TestCreateNewRequest(t *testing.T) {
 
 		assert.Equal(t, tc.expectedReqHeader, request.Header)
 		assert.Equal(t, tc.expectedCounterMetric, telemetryMetric)
+	}
+}
+
+func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
+	testCases := []struct {
+		testName             string
+		returnedResponseCode int
+		expectedErr          error
+	}{
+		{
+			testName:             "happy path",
+			returnedResponseCode: http.StatusOK,
+			expectedErr:          nil,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		expectedCounterMetric := telemetryMetric{
+			MetricType: metricTypeCounter,
+			MetricName: "prefix.terraform.openapi_plugin_version.version.total_runs",
+		}
+
+		api := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, req.Method, http.MethodPost, tc.testName)
+			assert.Equal(t, "/v1/metrics", req.URL.String(), tc.testName)
+			assert.Equal(t, req.Header.Get(contentType), "application/json", tc.testName)
+			assert.Contains(t, req.Header.Get(userAgentHeader), "OpenAPI Terraform Provider", tc.testName)
+			reqBody, err := ioutil.ReadAll(req.Body)
+			assert.Nil(t, err, tc.testName)
+			telemetryMetric := telemetryMetric{}
+			err = json.Unmarshal(reqBody, &telemetryMetric)
+			assert.Nil(t, err, tc.testName)
+			assert.Equal(t, expectedCounterMetric.MetricType, telemetryMetric.MetricType, tc.testName)
+			assert.Equal(t, expectedCounterMetric.MetricName, telemetryMetric.MetricName, tc.testName)
+			rw.WriteHeader(tc.returnedResponseCode)
+		}))
+		// Close the server when test finishes
+		defer api.Close()
+
+		tph := TelemetryProviderHttpEndpoint{
+			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
+			HttpClient: *api.Client(),
+		}
+		err := tph.submitMetric(expectedCounterMetric)
+		assert.Nil(t, err, tc.testName)
 	}
 }
