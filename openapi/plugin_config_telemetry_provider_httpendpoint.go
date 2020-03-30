@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"log"
 	"net/http"
+	"runtime"
 	"strings"
 )
 
@@ -28,15 +30,15 @@ const (
 )
 
 type telemetryMetric struct {
-	metricType metricType `json:"metric_type"`
-	metricName string     `json:"metric_name"`
+	MetricType metricType `json:"metric_type"`
+	MetricName string     `json:"metric_name"`
 }
 
 func createNewCounterMetric(prefix, metricName string) telemetryMetric {
 	if prefix != "" {
 		metricName = fmt.Sprintf("%s.%s", prefix, metricName)
 	}
-	return telemetryMetric{metricType: metricTypeCounter, metricName: metricName}
+	return telemetryMetric{MetricType: metricTypeCounter, MetricName: metricName}
 }
 
 // Validate checks whether the provider is configured correctly. This validation is performed upon telemetry provider registration. If this
@@ -81,7 +83,7 @@ func (g TelemetryProviderHttpEndpoint) submitMetric(metric telemetryMetric) erro
 	if err != nil {
 		return fmt.Errorf("request POST %s failed. Response Error: '%s'", g.URL, err.Error())
 	}
-	if resp.StatusCode != http.StatusOK || resp.StatusCode != http.StatusCreated || resp.StatusCode != http.StatusAccepted {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("response returned from POST '%s' returned a non expected status code %d", g.URL, resp.StatusCode)
 	}
 	return nil
@@ -99,6 +101,6 @@ func (g TelemetryProviderHttpEndpoint) createNewRequest(metric telemetryMetric) 
 		return nil, err
 	}
 	req.Header.Set(contentType, "application/json")
-	req.Header.Set(userAgentHeader, "application/json")
+	req.Header.Set(userAgentHeader, version.BuildUserAgent(runtime.GOOS, runtime.GOARCH))
 	return req, nil
 }
