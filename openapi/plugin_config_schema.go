@@ -115,6 +115,9 @@ func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) Telemetr
 			log.Printf("[DEBUG] graphite telemetry configuration not present")
 			return nil
 		}
+
+		// TODO: check here if p.TelemetryConfig.HttpEndpoint != nil and add to telemetryProviders if HttpEndpoint validation is successful
+
 	} else {
 		log.Printf("[DEBUG] telemetry not configured")
 		return nil
