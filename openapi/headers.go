@@ -4,4 +4,5 @@ package openapi
 const (
 	authorizationHeader = "Authorization"
 	userAgentHeader     = "User-Agent"
+	contentType         = "Content-Type"
 )
