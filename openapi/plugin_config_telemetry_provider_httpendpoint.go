@@ -1,5 +1,11 @@
 package openapi
 
+import (
+	"errors"
+	"fmt"
+	"github.com/asaskevich/govalidator"
+)
+
 // TelemetryProviderHttpEndpoint defines the configuration for HttpEndpoint. This struct also implements the TelemetryProvider interface
 // and ships metrics to the following namespace by default <prefix>.terraform.* where '<prefix>' can be configured.
 type TelemetryProviderHttpEndpoint struct {
@@ -13,7 +19,12 @@ type TelemetryProviderHttpEndpoint struct {
 // method returns an error the error will be logged but the telemetry will be disabled. Otherwise, the telemetry will be enabled
 // and the corresponding metrics will be shipped to Graphite
 func (g TelemetryProviderHttpEndpoint) Validate() error {
-
+	if g.URL == "" {
+		return errors.New("http endpoint telemetry configuration is missing a value for the 'url property'")
+	}
+	if !govalidator.IsURL(g.URL) {
+		return fmt.Errorf("http endpoint telemetry configuration does not have a valid URL '%s'", g.URL)
+	}
 	return nil
 }
 
