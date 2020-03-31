@@ -47,7 +47,8 @@ type PluginConfigSchemaV1 struct {
 // TelemetryConfig contains the configuration for the telemetry
 type TelemetryConfig struct {
 	// Graphite defines the configuration needed to ship telemetry to Graphite
-	Graphite     *TelemetryProviderGraphite     `yaml:"graphite,omitempty"`
+	Graphite *TelemetryProviderGraphite `yaml:"graphite,omitempty"`
+	// HttpEndpoint defines the configuration needed to ship telemetry to an http endpoint
 	HttpEndpoint *TelemetryProviderHttpEndpoint `yaml:"http_endpoint,omitempty"`
 }
 
