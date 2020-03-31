@@ -132,13 +132,13 @@ services:
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1.my_cdn", "label", "some_label"),
-					func(s *terraform.State) error {
+					func(s *terraform.State) error { // asserting that the httpendpoint server received the expected metrics counter
 						if !httpEndpointTelemetryCalled {
 							return fmt.Errorf("http endpoint telemetry not called")
 						}
 						return nil
 					},
-					func(s *terraform.State) error {
+					func(s *terraform.State) error { // asserting that the graphite server received the expected metrics counter
 						assertExpectedMetric(t, metricChannel, "terraform.providers.openapi.total_runs:1|c")
 						assertExpectedMetric(t, metricChannel, "terraform.openapi_plugin_version.dev.total_runs:1|c")
 						return nil
@@ -155,7 +155,7 @@ func assertExpectedMetric(t *testing.T, metricChannel chan string, expectedMetri
 	case metricReceived := <-metricChannel:
 		assert.Contains(t, metricReceived, expectedMetric)
 	case <-time.After(500 * time.Millisecond):
-		t.Fatalf("[FAIL] '%s' not reveided within the expected timeframe (timed out)", expectedMetric)
+		t.Fatalf("[FAIL] '%s' not received within the expected timeframe (timed out)", expectedMetric)
 	}
 }
 
