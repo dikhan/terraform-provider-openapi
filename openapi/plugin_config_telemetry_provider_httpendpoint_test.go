@@ -209,3 +209,50 @@ func TestTelemetryProviderHttpEndpointIncOpenAPIPluginVersionTotalRunsCounter(t 
 		}
 	}
 }
+
+func TestTelemetryProviderHttpEndpointIncServiceProviderTotalRunsCounter(t *testing.T) {
+	testCases := []struct {
+		testName             string
+		returnedResponseCode int
+		expectedErr          error
+	}{
+		{
+			testName:             "happy path",
+			returnedResponseCode: http.StatusOK,
+			expectedErr:          nil,
+		},
+		{
+			testName:             "metric submission fails",
+			returnedResponseCode: http.StatusNotFound,
+			expectedErr:          errors.New("/v1/metrics' returned a non expected status code 404"),
+		},
+	}
+
+	for _, tc := range testCases {
+
+		api := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			reqBody, err := ioutil.ReadAll(req.Body)
+			assert.Nil(t, err, tc.testName)
+			telemetryMetric := telemetryMetric{}
+			err = json.Unmarshal(reqBody, &telemetryMetric)
+			assert.Nil(t, err, tc.testName)
+			assert.Equal(t, metricTypeCounter, telemetryMetric.MetricType, tc.testName)
+			assert.Equal(t, "terraform.providers.cdn.total_runs", telemetryMetric.MetricName, tc.testName)
+			rw.WriteHeader(tc.returnedResponseCode)
+		}))
+		// Close the server when test finishes
+		defer api.Close()
+
+		tph := TelemetryProviderHttpEndpoint{
+			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
+			HttpClient: *api.Client(),
+		}
+		err := tph.IncServiceProviderTotalRunsCounter("cdn")
+		if tc.expectedErr == nil {
+			assert.NoError(t, err, tc.testName)
+		} else {
+			assert.Error(t, err, tc.testName)
+			assert.Contains(t, err.Error(), tc.expectedErr.Error(), tc.testName)
+		}
+	}
+}
