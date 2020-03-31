@@ -10,7 +10,7 @@ services:
   - docker
 
 install:
-  # - go get github.com/buchanae/github-release-notes
+  - go get github.com/buchanae/github-release-notes
   - export BINDIR=/home/travis/bin && curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
 
 jobs:
