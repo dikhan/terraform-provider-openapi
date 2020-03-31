@@ -62,8 +62,7 @@ Describes the telemetry providers configurations.
 Field Name | Type | Description
 ---|:---:|---
 graphite | [Graphite Object](#graphite-object) | Graphite Telemetry configuration
-
-Note: At the moment, only Graphite telemetry si supported.
+http_endpoint | [HTTP Endpoint Object](#http-endpoint-object) | HTTP Endpoint Telemetry configuration
 
 ###### Graphite Object
 
@@ -79,6 +78,33 @@ The following metrics will be shipped to the corresponding configured Graphite h
 
   - Terraform OpenAPI version used by the user: `statsd.<prefix>.terraform.openapi_plugin_version.*.total_runs` where * would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc)
   - Service used by the user: `statsd.<prefix>.terraform.providers.*.total_runs` where * would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn')
+
+###### HTTP Endpoint Object
+
+Describes the configuration for HTTP endpoint telemetry.
+
+Field Name | Type | Description
+---|:---:|---
+url | `string` | **Required.** URL endpoint to where the metrics will be sent to (eg: https://my-app.com/v1/metrics)
+prefix | `string` | Some prefix to append to the metrics pushed to the http endpoint. If populated, metrics pushed to Graphite will be of the following form: `<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix.
+
+The following metrics will be shipped to the corresponding configured URL endpoint upon plugin execution:
+
+  - Terraform OpenAPI version used by the user: `<prefix>.terraform.openapi_plugin_version.*.total_runs` where * would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc).
+  - Service used by the user: `<prefix>.terraform.providers.*.total_runs` where * would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn')
+
+The above will result into two separate POST HTTP requests to the corresponding configured URL passing in a JSON payload containing the `metric_type` with value 'IncCounter' and the `metric_name` being one of the above values. The 'IncCounter' value describes an increase of 1 in the corresponding counter metric, the consumer (eg: API) then will decide how to handle this information. The request will also contain a `User-Agent` header identifying the OpenAPI Terraform provider as the client.
+
+- Example of HTTP request sent to the HTTP endpoint increasing the `<prefix>.terraform.openapi_plugin_version.*.total_runs` counter:
+````
+curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.openapi_plugin_version.0_26_0.total_runs"}' -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
+````  
+
+- Example of HTTP request sent to the HTTP endpoint increasing the `<prefix>.terraform.providers.*.total_runs` counter:
+
+````
+curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.providers.cdn.total_runs"}' -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
+````
 
 ##### Services Object
 
