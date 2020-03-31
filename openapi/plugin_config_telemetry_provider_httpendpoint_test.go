@@ -91,6 +91,11 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 			returnedResponseCode: http.StatusOK,
 			expectedErr:          nil,
 		},
+		{
+			testName:             "api server returns non 2xx code",
+			returnedResponseCode: http.StatusNotFound,
+			expectedErr:          errors.New("/v1/metrics' returned a non expected status code 404"),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -122,6 +127,38 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 			HttpClient: *api.Client(),
 		}
 		err := tph.submitMetric(expectedCounterMetric)
-		assert.Nil(t, err, tc.testName)
+		if tc.expectedErr == nil {
+			assert.NoError(t, err, tc.testName)
+		} else {
+			assert.Error(t, err, tc.testName)
+			assert.Contains(t, err.Error(), tc.expectedErr.Error(), tc.testName)
+		}
+	}
+}
+
+func TestTelemetryProviderHttpEndpointSubmitMetricFailureScenarios(t *testing.T) {
+	testCases := []struct {
+		testName    string
+		inputURL    string
+		expectedErr error
+	}{
+		{
+			testName:    "url is missing the protocol",
+			inputURL:    "?",
+			expectedErr: errors.New("request POST ? failed. Response Error: 'Post ?: unsupported protocol scheme \"\"'"),
+		},
+		{
+			testName:    "url contains invalid characters",
+			inputURL:    "&^%",
+			expectedErr: errors.New("parse &^%: invalid URL escape \"%\""),
+		},
+	}
+
+	for _, tc := range testCases {
+		tph := TelemetryProviderHttpEndpoint{
+			URL: tc.inputURL,
+		}
+		err := tph.submitMetric(telemetryMetric{metricTypeCounter, "prefix.terraform.openapi_plugin_version.version.total_runs"})
+		assert.EqualError(t, err, tc.expectedErr.Error())
 	}
 }
