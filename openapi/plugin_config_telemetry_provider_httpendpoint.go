@@ -60,21 +60,25 @@ func (g TelemetryProviderHttpEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(o
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	metricName := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
 	metric := createNewCounterMetric(g.Prefix, metricName)
-	log.Printf("[INFO] http endpoint metric to be submitted: %s", metric)
 	if err := g.submitMetric(metric); err != nil {
 		return err
 	}
-	log.Printf("[INFO] http endpoint metric successfully submitted: %s", metric)
 	return nil
 }
 
 // IncServiceProviderTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.providers.%s.total_runs'. The
 // %s will be replaced by the provider name used at runtime
 func (g TelemetryProviderHttpEndpoint) IncServiceProviderTotalRunsCounter(providerName string) error {
+	metricName := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
+	metric := createNewCounterMetric(g.Prefix, metricName)
+	if err := g.submitMetric(metric); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (g TelemetryProviderHttpEndpoint) submitMetric(metric telemetryMetric) error {
+	log.Printf("[INFO] http endpoint metric to be submitted: %s", metric.MetricName)
 	req, err := g.createNewRequest(metric)
 	if err != nil {
 		return err
@@ -86,6 +90,7 @@ func (g TelemetryProviderHttpEndpoint) submitMetric(metric telemetryMetric) erro
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("response returned from POST '%s' returned a non expected status code %d", g.URL, resp.StatusCode)
 	}
+	log.Printf("[INFO] http endpoint metric successfully submitted: %s", metric)
 	return nil
 }
 
