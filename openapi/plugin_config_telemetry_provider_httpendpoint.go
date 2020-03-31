@@ -12,15 +12,15 @@ import (
 	"strings"
 )
 
-// TelemetryProviderHttpEndpoint defines the configuration for HttpEndpoint. This struct also implements the TelemetryProvider interface
+// TelemetryProviderHTTPEndpoint defines the configuration for HTTPEndpoint. This struct also implements the TelemetryProvider interface
 // and ships metrics to the following namespace by default <prefix>.terraform.* where '<prefix>' can be configured.
-type TelemetryProviderHttpEndpoint struct {
+type TelemetryProviderHTTPEndpoint struct {
 	// URL describes the HTTP endpoint to send the metric to
 	URL string `yaml:"url"`
 	// Prefix enables to append a prefix to the metrics pushed to graphite
 	Prefix string `yaml:"prefix,omitempty"`
-	// HttpClient holds the http client used to submit the metrics to the API
-	HttpClient http.Client
+	// HTTPClient holds the http client used to submit the metrics to the API
+	HTTPClient http.Client
 }
 
 type metricType string
@@ -44,7 +44,7 @@ func createNewCounterMetric(prefix, metricName string) telemetryMetric {
 // Validate checks whether the provider is configured correctly. This validation is performed upon telemetry provider registration. If this
 // method returns an error the error will be logged but the telemetry will be disabled. Otherwise, the telemetry will be enabled
 // and the corresponding metrics will be shipped to Graphite
-func (g TelemetryProviderHttpEndpoint) Validate() error {
+func (g TelemetryProviderHTTPEndpoint) Validate() error {
 	if g.URL == "" {
 		return errors.New("http endpoint telemetry configuration is missing a value for the 'url property'")
 	}
@@ -56,7 +56,7 @@ func (g TelemetryProviderHttpEndpoint) Validate() error {
 
 // IncOpenAPIPluginVersionTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.openapi_plugin_version.%s.total_runs'. The
 // %s will be replaced by the OpenAPI plugin version used at runtime
-func (g TelemetryProviderHttpEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error {
+func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error {
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	metricName := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
 	metric := createNewCounterMetric(g.Prefix, metricName)
@@ -68,7 +68,7 @@ func (g TelemetryProviderHttpEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(o
 
 // IncServiceProviderTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.providers.%s.total_runs'. The
 // %s will be replaced by the provider name used at runtime
-func (g TelemetryProviderHttpEndpoint) IncServiceProviderTotalRunsCounter(providerName string) error {
+func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(providerName string) error {
 	metricName := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
 	metric := createNewCounterMetric(g.Prefix, metricName)
 	if err := g.submitMetric(metric); err != nil {
@@ -77,13 +77,13 @@ func (g TelemetryProviderHttpEndpoint) IncServiceProviderTotalRunsCounter(provid
 	return nil
 }
 
-func (g TelemetryProviderHttpEndpoint) submitMetric(metric telemetryMetric) error {
+func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric) error {
 	log.Printf("[INFO] http endpoint metric to be submitted: %s", metric.MetricName)
 	req, err := g.createNewRequest(metric)
 	if err != nil {
 		return err
 	}
-	resp, err := g.HttpClient.Do(req)
+	resp, err := g.HTTPClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("request POST %s failed. Response Error: '%s'", g.URL, err.Error())
 	}
@@ -94,7 +94,7 @@ func (g TelemetryProviderHttpEndpoint) submitMetric(metric telemetryMetric) erro
 	return nil
 }
 
-func (g TelemetryProviderHttpEndpoint) createNewRequest(metric telemetryMetric) (*http.Request, error) {
+func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric) (*http.Request, error) {
 	var body []byte
 	var err error
 	body, err = json.Marshal(metric)

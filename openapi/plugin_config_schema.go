@@ -48,8 +48,8 @@ type PluginConfigSchemaV1 struct {
 type TelemetryConfig struct {
 	// Graphite defines the configuration needed to ship telemetry to Graphite
 	Graphite *TelemetryProviderGraphite `yaml:"graphite,omitempty"`
-	// HttpEndpoint defines the configuration needed to ship telemetry to an http endpoint
-	HttpEndpoint *TelemetryProviderHttpEndpoint `yaml:"http_endpoint,omitempty"`
+	// HTTPEndpoint defines the configuration needed to ship telemetry to an http endpoint
+	HTTPEndpoint *TelemetryProviderHTTPEndpoint `yaml:"http_endpoint,omitempty"`
 }
 
 // NewPluginConfigSchemaV1 creates a new PluginConfigSchemaV1 that implements PluginConfigSchema interface
@@ -117,12 +117,12 @@ func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) Telemetr
 			log.Printf("[DEBUG] graphite telemetry configuration not present")
 		}
 
-		if p.TelemetryConfig.HttpEndpoint != nil {
-			err := p.TelemetryConfig.HttpEndpoint.Validate()
+		if p.TelemetryConfig.HTTPEndpoint != nil {
+			err := p.TelemetryConfig.HTTPEndpoint.Validate()
 			if err != nil {
 				log.Printf("[WARN] ignoring http endpoint telemetry due to the following validation error: %s", err)
 			} else {
-				telemetryProviders = append(telemetryProviders, p.TelemetryConfig.HttpEndpoint)
+				telemetryProviders = append(telemetryProviders, p.TelemetryConfig.HTTPEndpoint)
 				log.Printf("[DEBUG] http endpoint telemetry provider enabled")
 			}
 		} else {

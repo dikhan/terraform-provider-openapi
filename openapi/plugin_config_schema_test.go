@@ -314,7 +314,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 			name: "handler is configured correctly with a httpendpoint provider",
 			pluginConfigSchemaV1: PluginConfigSchemaV1{
 				TelemetryConfig: &TelemetryConfig{
-					HttpEndpoint: &TelemetryProviderHttpEndpoint{
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
 						URL: "http://telemetry.myhost.com/v1/metrics",
 					},
 				},
@@ -331,7 +331,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 						Host: "my-graphite.com",
 						Port: 8125,
 					},
-					HttpEndpoint: &TelemetryProviderHttpEndpoint{
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
 						URL: "http://telemetry.myhost.com/v1/metrics",
 					},
 				},
@@ -358,7 +358,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 			name: "handler skips httpendpoint telemetry due to the validation not passing",
 			pluginConfigSchemaV1: PluginConfigSchemaV1{
 				TelemetryConfig: &TelemetryConfig{
-					HttpEndpoint: &TelemetryProviderHttpEndpoint{
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
 						URL: "", // Configuration is missing the required url
 					},
 				},
