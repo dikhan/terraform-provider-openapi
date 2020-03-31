@@ -292,6 +292,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 		name                 string
 		pluginConfigSchemaV1 PluginConfigSchemaV1
 		inputPluginName      string
+		expectedType         interface{}
 		expectedError        string
 		expectedLogging      string
 	}{
@@ -306,6 +307,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 				},
 			},
 			inputPluginName: "pluginName",
+			expectedType:    telemetryHandlerTimeoutSupport{},
 			expectedLogging: "[DEBUG] graphite telemetry provider enabled",
 		},
 		{
@@ -319,6 +321,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 				},
 			},
 			inputPluginName: "pluginName",
+			expectedType:    nil,
 			expectedLogging: "[WARN] ignoring graphite telemetry due to the following validation error: graphite telemetry configuration is missing a value for the 'host property'",
 		},
 	}
@@ -326,7 +329,7 @@ func TestGetTelemetryHandler(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		telemetryHandler := tc.pluginConfigSchemaV1.GetTelemetryHandler(tc.inputPluginName)
-		assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler, tc.name)
+		assert.IsType(t, tc.expectedType, telemetryHandler, tc.name)
 		assert.Contains(t, buf.String(), tc.expectedLogging, tc.name)
 	}
 }
