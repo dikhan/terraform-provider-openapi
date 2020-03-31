@@ -35,7 +35,7 @@ func TestTelemetryProviderHttpEndpoint_Validate(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tpg := TelemetryProviderHttpEndpoint{
+		tpg := TelemetryProviderHTTPEndpoint{
 			URL: tc.url,
 		}
 		err := tpg.Validate()
@@ -98,7 +98,7 @@ func TestCreateNewRequest(t *testing.T) {
 		var request *http.Request
 		var reqBody []byte
 		telemetryMetric := telemetryMetric{}
-		tph := TelemetryProviderHttpEndpoint{
+		tph := TelemetryProviderHTTPEndpoint{
 			URL: tc.url,
 		}
 
@@ -158,9 +158,9 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 		// Close the server when test finishes
 		defer api.Close()
 
-		tph := TelemetryProviderHttpEndpoint{
+		tph := TelemetryProviderHTTPEndpoint{
 			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
-			HttpClient: *api.Client(),
+			HTTPClient: *api.Client(),
 		}
 		err := tph.submitMetric(expectedCounterMetric)
 		if tc.expectedErr == nil {
@@ -191,7 +191,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetricFailureScenarios(t *testing.T)
 	}
 
 	for _, tc := range testCases {
-		tph := TelemetryProviderHttpEndpoint{
+		tph := TelemetryProviderHTTPEndpoint{
 			URL: tc.inputURL,
 		}
 		err := tph.submitMetric(telemetryMetric{metricTypeCounter, "prefix.terraform.openapi_plugin_version.version.total_runs"})
@@ -232,9 +232,9 @@ func TestTelemetryProviderHttpEndpointIncOpenAPIPluginVersionTotalRunsCounter(t 
 		// Close the server when test finishes
 		defer api.Close()
 
-		tph := TelemetryProviderHttpEndpoint{
+		tph := TelemetryProviderHTTPEndpoint{
 			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
-			HttpClient: *api.Client(),
+			HTTPClient: *api.Client(),
 		}
 		err := tph.IncOpenAPIPluginVersionTotalRunsCounter("0.26.0")
 		if tc.expectedErr == nil {
@@ -279,9 +279,9 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderTotalRunsCounter(t *test
 		// Close the server when test finishes
 		defer api.Close()
 
-		tph := TelemetryProviderHttpEndpoint{
+		tph := TelemetryProviderHTTPEndpoint{
 			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
-			HttpClient: *api.Client(),
+			HTTPClient: *api.Client(),
 		}
 		err := tph.IncServiceProviderTotalRunsCounter("cdn")
 		if tc.expectedErr == nil {
