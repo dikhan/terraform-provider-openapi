@@ -86,7 +86,7 @@ Describes the configuration for HTTP endpoint telemetry.
 Field Name | Type | Description
 ---|:---:|---
 url | `string` | **Required.** URL endpoint to where the metrics will be sent to (eg: https://my-app.com/v1/metrics)
-prefix | `string` | Some prefix to append to the metrics pushed to the http endpoint. If populated, metrics pushed to Graphite will be of the following form: `<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix.
+prefix | `string` | Some prefix to append to the metrics pushed to the http endpoint. If populated, metrics pushed to the endpoint will be of the following form: `<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix.
 
 The following metrics will be shipped to the corresponding configured URL endpoint upon plugin execution:
 
