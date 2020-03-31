@@ -43,6 +43,30 @@ func TestTelemetryProviderHttpEndpoint_Validate(t *testing.T) {
 	}
 }
 
+func TestCreateNewCounterMetric(t *testing.T) {
+	testCases := []struct {
+		testName       string
+		prefix         string
+		expectedMetric telemetryMetric
+	}{
+		{
+			testName:       "prefix is not empty",
+			prefix:         "prefix",
+			expectedMetric: telemetryMetric{metricTypeCounter, "prefix.metric_name"},
+		},
+		{
+			testName:       "prefix is empty",
+			prefix:         "",
+			expectedMetric: telemetryMetric{metricTypeCounter, "metric_name"},
+		},
+	}
+
+	for _, tc := range testCases {
+		telemetryMetric := createNewCounterMetric(tc.prefix, "metric_name")
+		assert.Equal(t, tc.expectedMetric, telemetryMetric, tc.testName)
+	}
+}
+
 func TestCreateNewRequest(t *testing.T) {
 	testCases := []struct {
 		testName              string
