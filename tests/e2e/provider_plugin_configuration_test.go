@@ -30,8 +30,12 @@ func TestAcc_ProviderConfiguration_PluginExternalFile(t *testing.T) {
 			httpEndpointTelemetryCalled = true
 			w.WriteHeader(http.StatusOK)
 			break
+		case "/v1/cdns", "/v1/cdns/someID":
+			httpEndpointTelemetryCalled = true
+			w.Write([]byte(`{"id":"someID", "label": "some_label"}`))
+			w.WriteHeader(http.StatusOK)
+			break
 		}
-		w.Write([]byte(`{"id":"someID", "label": "some_label"}`))
 	}))
 	apiHost := apiServer.URL[7:]
 
