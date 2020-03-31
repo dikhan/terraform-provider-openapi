@@ -103,15 +103,15 @@ func TestCreateNewRequest(t *testing.T) {
 		}
 
 		request, err = tph.createNewRequest(tc.expectedCounterMetric)
-		if tc.expectedErr != nil {
-			assert.Equal(t, tc.expectedErr, errors.New(err.Error()), tc.testName)
-		} else {
+		if tc.expectedErr == nil {
 			reqBody, err = ioutil.ReadAll(request.Body)
 			err = json.Unmarshal(reqBody, &telemetryMetric)
-			assert.Nil(t, err, tc.testName)
+			assert.NoError(t, err, tc.testName)
 			assert.Equal(t, tc.expectedContentType, request.Header.Get(contentType), tc.testName)
 			assert.Contains(t, request.Header.Get(userAgentHeader), tc.expectedUserAgent, tc.testName)
 			assert.Equal(t, tc.expectedCounterMetric, telemetryMetric, tc.testName)
+		} else {
+			assert.EqualError(t, err, tc.expectedErr.Error(), tc.testName)
 		}
 	}
 }
