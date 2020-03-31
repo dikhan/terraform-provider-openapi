@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"net/http"
 	"testing"
 )
 
@@ -43,34 +44,48 @@ func TestTelemetryProviderHttpEndpoint_Validate(t *testing.T) {
 func TestCreateNewRequest(t *testing.T) {
 	testCases := []struct {
 		testName              string
+		url                   string
 		expectedCounterMetric telemetryMetric
 		expectedContentType   string
 		expectedUserAgent     string
+		expectedErr           error
 	}{
 		{
-			testName: "happy path - request is created with the expected Header and telemetryMetric ",
+			testName: "happy path - request is created with the expected Header and telemetryMetric",
 			expectedCounterMetric: telemetryMetric{
 				MetricType: metricTypeCounter,
 				MetricName: "prefix.terraform.openapi_plugin_version.version.total_runs",
 			},
 			expectedContentType: "application/json",
 			expectedUserAgent:   "OpenAPI Terraform Provider",
+			expectedErr:         nil,
+		},
+		{
+			testName:    "crappy path - bad url",
+			url:         "&^%",
+			expectedErr: errors.New("parse &^%: invalid URL escape \"%\""),
 		},
 	}
 
 	for _, tc := range testCases {
+		var err error
+		var request *http.Request
+		var reqBody []byte
 		telemetryMetric := telemetryMetric{}
-		tph := TelemetryProviderHttpEndpoint{}
+		tph := TelemetryProviderHttpEndpoint{
+			URL: tc.url,
+		}
 
-		request, err := tph.createNewRequest(tc.expectedCounterMetric)
-		assert.Nil(t, err)
-		reqBody, err := ioutil.ReadAll(request.Body)
-		assert.Nil(t, err)
-		err = json.Unmarshal(reqBody, &telemetryMetric)
-		assert.Nil(t, err)
-
-		assert.Equal(t, tc.expectedContentType, request.Header.Get(contentType))
-		assert.Contains(t, request.Header.Get(userAgentHeader), tc.expectedUserAgent)
-		assert.Equal(t, tc.expectedCounterMetric, telemetryMetric)
+		request, err = tph.createNewRequest(tc.expectedCounterMetric)
+		if tc.expectedErr != nil {
+			assert.Equal(t, tc.expectedErr, errors.New(err.Error()), tc.testName)
+		} else {
+			reqBody, err = ioutil.ReadAll(request.Body)
+			err = json.Unmarshal(reqBody, &telemetryMetric)
+			assert.Nil(t, err, tc.testName)
+			assert.Equal(t, tc.expectedContentType, request.Header.Get(contentType), tc.testName)
+			assert.Contains(t, request.Header.Get(userAgentHeader), tc.expectedUserAgent, tc.testName)
+			assert.Equal(t, tc.expectedCounterMetric, telemetryMetric, tc.testName)
+		}
 	}
 }
