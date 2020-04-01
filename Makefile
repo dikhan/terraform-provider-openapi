@@ -69,11 +69,11 @@ pre-requirements:
 
 release-pre-requirements:
 ifeq (, $(shell which github-release-notes))
-	@echo "[INFO] No github-release-notes in $(PATH), installing github-release-notes")
+	@echo "[INFO] No github-release-notes in $(PATH), installing github-release-notes"
 	go get github.com/buchanae/github-release-notes
 endif
 ifeq (, $(shell which goreleaser))
-		@echo "[INFO] No goreleaser in $(PATH), installing goreleaser")
+		@echo "[INFO] No goreleaser in $(PATH), installing goreleaser"
 		brew install goreleaser
 endif
 
