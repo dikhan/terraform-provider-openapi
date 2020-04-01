@@ -28,6 +28,16 @@ func TestSubmitMetrics(t *testing.T) {
 			},
 			expectedLogging: "",
 		},
+		{
+			name: "submitMetrics does nothing when telemetryHandlerTimeoutSupport is configured with a nil telemetryProviders",
+			ths: telemetryHandlerTimeoutSupport{
+				providerName:       "providerName",
+				timeout:            1,
+				openAPIVersion:     "0.25.0",
+				telemetryProviders: nil,
+			},
+			expectedLogging: "",
+		},
 	}
 	for _, tc := range testCases {
 		var buf bytes.Buffer

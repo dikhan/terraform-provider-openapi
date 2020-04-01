@@ -69,12 +69,12 @@ pre-requirements:
 
 release-pre-requirements:
 ifeq (, $(shell which github-release-notes))
-    @echo "[INFO] No github-release-notes in $(PATH), installing github-release-notes")
-    go get github.com/buchanae/github-release-notes
+	@echo "[INFO] No github-release-notes in $(PATH), installing github-release-notes")
+	go get github.com/buchanae/github-release-notes
 endif
 ifeq (, $(shell which goreleaser))
-        @echo "[INFO] No goreleaser in $(PATH), installing goreleaser")
-        brew install goreleaser
+		@echo "[INFO] No goreleaser in $(PATH), installing goreleaser")
+		brew install goreleaser
 endif
 
 # PROVIDER_NAME="goa" make install
@@ -127,29 +127,29 @@ else
 endif
 
 define install_plugin
-    @$(eval TF_PROVIDER_PLUGIN_NAME := $(TF_PROVIDER_NAMING_CONVENTION)$(1))
+	@$(eval TF_PROVIDER_PLUGIN_NAME := $(TF_PROVIDER_NAMING_CONVENTION)$(1))
 
 	@echo "[INFO] Installing $(TF_PROVIDER_PLUGIN_NAME) binary in -> $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)"
 	@mv ./$(TF_OPENAPI_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)
 endef
 
 define run_terraform_example
-    @$(eval OTF_VAR_SWAGGER_URL := $(1))
-    @$(eval PROVIDER_NAME := $(2))
+	@$(eval OTF_VAR_SWAGGER_URL := $(1))
+	@$(eval PROVIDER_NAME := $(2))
 
 	$(call install_plugin,$(PROVIDER_NAME))
 
-    @$(eval TF_EXAMPLE_FOLDER := ./examples/$(PROVIDER_NAME))
+	@$(eval TF_EXAMPLE_FOLDER := ./examples/$(PROVIDER_NAME))
 
 	@echo "[INFO] Performing sanity check against the service provider's swagger endpoint '$(OTF_VAR_SWAGGER_URL)'"
 	@$(eval SWAGGER_HTTP_STATUS := $(shell curl -s -o /dev/null -w '%{http_code}' $(OTF_VAR_SWAGGER_URL) -k))
 	@if [ "$(SWAGGER_HTTP_STATUS)" = 200 ]; then\
-        echo "[INFO] Terraform Configuration file located at $(TF_EXAMPLE_FOLDER)";\
-        echo "[INFO] Executing TF command: OTF_INSECURE_SKIP_VERIFY=true OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD}";\
-        cd $(TF_EXAMPLE_FOLDER) && export OTF_INSECURE_SKIP_VERIFY=true OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD};\
-    else\
-        echo "[ERROR] Sanity check against swagger endpoint[$(OTF_VAR_SWAGGER_URL)] failed...Please make sure the service provider API is up and running and exposes swagger APIs on '$(OTF_VAR_SWAGGER_URL)'";\
-    fi
+		echo "[INFO] Terraform Configuration file located at $(TF_EXAMPLE_FOLDER)";\
+		echo "[INFO] Executing TF command: OTF_INSECURE_SKIP_VERIFY=true OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD}";\
+		cd $(TF_EXAMPLE_FOLDER) && export OTF_INSECURE_SKIP_VERIFY=true OTF_VAR_$(PROVIDER_NAME)_SWAGGER_URL=$(OTF_VAR_SWAGGER_URL) && terraform init && terraform ${TF_CMD};\
+	else\
+		echo "[ERROR] Sanity check against swagger endpoint[$(OTF_VAR_SWAGGER_URL)] failed...Please make sure the service provider API is up and running and exposes swagger APIs on '$(OTF_VAR_SWAGGER_URL)'";\
+	fi
 endef
 
 .PHONY: all build fmt vet lint test run_terraform

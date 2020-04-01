@@ -292,11 +292,12 @@ func TestGetTelemetryHandler(t *testing.T) {
 		name                 string
 		pluginConfigSchemaV1 PluginConfigSchemaV1
 		inputPluginName      string
+		expectedType         interface{}
 		expectedError        string
-		expectedLogging      string
+		expectedLogging      []string
 	}{
 		{
-			name: "handler is configured correctly",
+			name: "handler is configured correctly with a graphite provider",
 			pluginConfigSchemaV1: PluginConfigSchemaV1{
 				TelemetryConfig: &TelemetryConfig{
 					Graphite: &TelemetryProviderGraphite{
@@ -306,7 +307,38 @@ func TestGetTelemetryHandler(t *testing.T) {
 				},
 			},
 			inputPluginName: "pluginName",
-			expectedLogging: "[DEBUG] graphite telemetry provider enabled",
+			expectedType:    telemetryHandlerTimeoutSupport{},
+			expectedLogging: []string{"[DEBUG] graphite telemetry provider enabled"},
+		},
+		{
+			name: "handler is configured correctly with a httpendpoint provider",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: &TelemetryConfig{
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
+						URL: "http://telemetry.myhost.com/v1/metrics",
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    telemetryHandlerTimeoutSupport{},
+			expectedLogging: []string{"[DEBUG] http endpoint telemetry provider enabled"},
+		},
+		{
+			name: "handler is configured correctly with graphite and httpendpoint providers",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "my-graphite.com",
+						Port: 8125,
+					},
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
+						URL: "http://telemetry.myhost.com/v1/metrics",
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    telemetryHandlerTimeoutSupport{},
+			expectedLogging: []string{"[DEBUG] graphite telemetry provider enabled", "[DEBUG] http endpoint telemetry provider enabled"},
 		},
 		{
 			name: "handler skips graphite telemetry due to the validation not passing",
@@ -319,14 +351,39 @@ func TestGetTelemetryHandler(t *testing.T) {
 				},
 			},
 			inputPluginName: "pluginName",
-			expectedLogging: "[WARN] ignoring graphite telemetry due to the following validation error: graphite telemetry configuration is missing a value for the 'host property'",
+			expectedType:    nil,
+			expectedLogging: []string{"[WARN] ignoring graphite telemetry due to the following validation error: graphite telemetry configuration is missing a value for the 'host property'"},
+		},
+		{
+			name: "handler skips httpendpoint telemetry due to the validation not passing",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: &TelemetryConfig{
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
+						URL: "", // Configuration is missing the required url
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    nil,
+			expectedLogging: []string{"[WARN] ignoring http endpoint telemetry due to the following validation error: http endpoint telemetry configuration is missing a value for the 'url property'"},
+		},
+		{
+			name: "TelemetryConfig is nil",
+			pluginConfigSchemaV1: PluginConfigSchemaV1{
+				TelemetryConfig: nil,
+			},
+			inputPluginName: "pluginName",
+			expectedType:    nil,
+			expectedLogging: []string{"[DEBUG] telemetry not configured"},
 		},
 	}
 	for _, tc := range testCases {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		telemetryHandler := tc.pluginConfigSchemaV1.GetTelemetryHandler(tc.inputPluginName)
-		assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler, tc.name)
-		assert.Contains(t, buf.String(), tc.expectedLogging, tc.name)
+		assert.IsType(t, tc.expectedType, telemetryHandler, tc.name)
+		for _, log := range tc.expectedLogging {
+			assert.Contains(t, buf.String(), log, tc.name)
+		}
 	}
 }

@@ -15,7 +15,7 @@ import (
 )
 
 func TestProviderClient(t *testing.T) {
-	Convey("Given a SpecBackendConfiguration, HttpClient, providerConfiguration and specAuthenticator", t, func() {
+	Convey("Given a SpecBackendConfiguration, HTTPClient, providerConfiguration and specAuthenticator", t, func() {
 		var openAPIBackendConfiguration SpecBackendConfiguration
 		providerConfiguration := providerConfiguration{}
 		var apiAuthenticator specAuthenticator
