@@ -159,8 +159,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 		defer api.Close()
 
 		tph := TelemetryProviderHTTPEndpoint{
-			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
-			HTTPClient: *api.Client(),
+			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
 		err := tph.submitMetric(expectedCounterMetric)
 		if tc.expectedErr == nil {
@@ -233,8 +232,7 @@ func TestTelemetryProviderHttpEndpointIncOpenAPIPluginVersionTotalRunsCounter(t 
 		defer api.Close()
 
 		tph := TelemetryProviderHTTPEndpoint{
-			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
-			HTTPClient: *api.Client(),
+			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
 		err := tph.IncOpenAPIPluginVersionTotalRunsCounter("0.26.0")
 		if tc.expectedErr == nil {
@@ -280,8 +278,7 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderTotalRunsCounter(t *test
 		defer api.Close()
 
 		tph := TelemetryProviderHTTPEndpoint{
-			URL:        fmt.Sprintf("%s/v1/metrics", api.URL),
-			HTTPClient: *api.Client(),
+			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
 		err := tph.IncServiceProviderTotalRunsCounter("cdn")
 		if tc.expectedErr == nil {
