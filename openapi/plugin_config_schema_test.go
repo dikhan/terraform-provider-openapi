@@ -206,7 +206,17 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 				},
 			},
 		}
-		pluginConfigSchema = NewPluginConfigSchemaV1(services, nil)
+		pluginConfigSchema = NewPluginConfigSchemaV1(services, &TelemetryConfig{
+			Graphite: &TelemetryProviderGraphite{
+				Host:   "some-host.com",
+				Port:   8080,
+				Prefix: "some_prefix",
+			},
+			HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
+				URL:    "http://my-api.com/v1/metrics",
+				Prefix: "some_prefix",
+			},
+		})
 		Convey("When Marshal method is called", func() {
 			marshalConfig, err := pluginConfigSchema.Marshal()
 			Convey("Then the error returned should be nil as configuration is correct", func() {
@@ -214,6 +224,14 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 			})
 			Convey("And the marshalConfig should contain the right marshal configuration", func() {
 				expectedConfig := fmt.Sprintf(`version: "1"
+telemetry:
+  graphite:
+    host: some-host.com
+    port: 8080
+    prefix: some_prefix
+  http_endpoint:
+    url: http://my-api.com/v1/metrics
+    prefix: some_prefix
 services:
   test:
     swagger-url: %s

@@ -19,8 +19,6 @@ type TelemetryProviderHTTPEndpoint struct {
 	URL string `yaml:"url"`
 	// Prefix enables to append a prefix to the metrics pushed to graphite
 	Prefix string `yaml:"prefix,omitempty"`
-	// HTTPClient holds the http client used to submit the metrics to the API
-	HTTPClient http.Client
 }
 
 type metricType string
@@ -83,7 +81,8 @@ func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric) erro
 	if err != nil {
 		return err
 	}
-	resp, err := g.HTTPClient.Do(req)
+	c := http.Client{}
+	resp, err := c.Do(req)
 	if err != nil {
 		return fmt.Errorf("request POST %s failed. Response Error: '%s'", g.URL, err.Error())
 	}
