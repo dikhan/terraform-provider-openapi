@@ -98,7 +98,7 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 	if apiDiscoveryURL != "" {
 		log.Printf("[INFO] %s set with value %s", swaggerURLEnvVar, apiDiscoveryURL)
 		pluginConfigV1.Services = map[string]*ServiceConfigV1{}
-		pluginConfigV1.Services[p.ProviderName] = NewServiceConfigV1(apiDiscoveryURL, skipVerify)
+		pluginConfigV1.Services[p.ProviderName] = NewServiceConfigV1(apiDiscoveryURL, skipVerify, nil)
 		serviceConfig, err = pluginConfigV1.GetServiceConfig(p.ProviderName)
 		if err != nil {
 			return nil, err
@@ -124,10 +124,10 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 			if err != nil {
 				return nil, fmt.Errorf("error occurred when getting service configuration from plugin configuration file %s - error = %s", OpenAPIPluginConfigurationFileName, err)
 			}
-			telemetryHandler := pluginConfig.GetTelemetryHandler(p.ProviderName)
-			if telemetryHandler != nil {
-				telemetryHandler.SubmitMetrics()
-			}
+			//telemetryHandler := pluginConfig.GetTelemetryHandler(p.ProviderName)
+			//if telemetryHandler != nil {
+			//	telemetryHandler.SubmitMetrics()
+			//}
 		}
 	}
 

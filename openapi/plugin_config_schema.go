@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"gopkg.in/yaml.v2"
-	"log"
 )
 
 // ServiceConfigurations contains the map with all service configurations
@@ -39,25 +38,15 @@ type PluginConfigSchema interface {
 //   vm:
 //     swagger-url: http://vm-api.com/swagger.json
 type PluginConfigSchemaV1 struct {
-	Version         string                      `yaml:"version"`
-	TelemetryConfig *TelemetryConfig            `yaml:"telemetry,omitempty"`
-	Services        map[string]*ServiceConfigV1 `yaml:"services"`
-}
-
-// TelemetryConfig contains the configuration for the telemetry
-type TelemetryConfig struct {
-	// Graphite defines the configuration needed to ship telemetry to Graphite
-	Graphite *TelemetryProviderGraphite `yaml:"graphite,omitempty"`
-	// HTTPEndpoint defines the configuration needed to ship telemetry to an http endpoint
-	HTTPEndpoint *TelemetryProviderHTTPEndpoint `yaml:"http_endpoint,omitempty"`
+	Version  string                      `yaml:"version"`
+	Services map[string]*ServiceConfigV1 `yaml:"services"`
 }
 
 // NewPluginConfigSchemaV1 creates a new PluginConfigSchemaV1 that implements PluginConfigSchema interface
-func NewPluginConfigSchemaV1(services map[string]*ServiceConfigV1, telemetryConfig *TelemetryConfig) *PluginConfigSchemaV1 {
+func NewPluginConfigSchemaV1(services map[string]*ServiceConfigV1) *PluginConfigSchemaV1 {
 	return &PluginConfigSchemaV1{
-		Version:         "1",
-		Services:        services,
-		TelemetryConfig: telemetryConfig,
+		Version:  "1",
+		Services: services,
 	}
 }
 
@@ -103,42 +92,16 @@ func (p *PluginConfigSchemaV1) Marshal() ([]byte, error) {
 
 // GetTelemetryHandler returns a handler containing validated telemetry providers
 func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) TelemetryHandler {
-	var telemetryProviders []TelemetryProvider
-	if p.TelemetryConfig != nil {
-		if p.TelemetryConfig.Graphite != nil {
-			err := p.TelemetryConfig.Graphite.Validate()
-			if err != nil {
-				log.Printf("[WARN] ignoring graphite telemetry due to the following validation error: %s", err)
-			} else {
-				telemetryProviders = append(telemetryProviders, p.TelemetryConfig.Graphite)
-				log.Printf("[DEBUG] graphite telemetry provider enabled")
-			}
-		} else {
-			log.Printf("[DEBUG] graphite telemetry configuration not present")
-		}
-
-		if p.TelemetryConfig.HTTPEndpoint != nil {
-			err := p.TelemetryConfig.HTTPEndpoint.Validate()
-			if err != nil {
-				log.Printf("[WARN] ignoring http endpoint telemetry due to the following validation error: %s", err)
-			} else {
-				telemetryProviders = append(telemetryProviders, p.TelemetryConfig.HTTPEndpoint)
-				log.Printf("[DEBUG] http endpoint telemetry provider enabled")
-			}
-		} else {
-			log.Printf("[DEBUG] http endpoint telemetry configuration not present")
-		}
+	s, err := p.GetServiceConfig(providerName)
+	if err != nil {
+		return telemetryHandlerTimeoutSupport{}
 	}
-
-	if len(telemetryProviders) == 0 {
-		log.Printf("[DEBUG] telemetry not configured")
-		return nil
-	}
-
+	telemetryProvider := s.GetTelemetryConfiguration()
 	return telemetryHandlerTimeoutSupport{
-		timeout:            telemetryTimeout,
-		providerName:       providerName,
-		openAPIVersion:     version.Version,
-		telemetryProviders: telemetryProviders,
+		timeout:        telemetryTimeout,
+		providerName:   providerName,
+		openAPIVersion: version.Version,
+		//telemetryProviders: telemetryProviders,
+		telemetryProvider: telemetryProvider,
 	}
 }

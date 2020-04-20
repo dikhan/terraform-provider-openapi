@@ -1,8 +1,11 @@
 package openapi
 
 import (
+	"bytes"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"log"
 	"os"
 	"testing"
 )
@@ -12,9 +15,12 @@ func TestNewServiceConfigV1(t *testing.T) {
 		url := "http://host.com/swagger.json"
 		insecureSkipVerifyEnabled := true
 		Convey("When NewServiceConfigV1 method is called", func() {
-			pluginConfigSchemaV1 := NewServiceConfigV1(url, insecureSkipVerifyEnabled)
+			pluginConfigSchemaV1 := NewServiceConfigV1(url, insecureSkipVerifyEnabled, &TelemetryConfig{})
 			Convey("And the pluginConfigSchema returned should implement PluginConfigSchema interface", func() {
 				var _ ServiceConfiguration = pluginConfigSchemaV1
+			})
+			Convey("And the pluginConfigSchema should contain the configured telemetry", func() {
+				So(pluginConfigSchemaV1.TelemetryConfig, ShouldNotBeNil)
 			})
 		})
 	})
@@ -24,7 +30,7 @@ func TestServiceConfigV1GetSwaggerURL(t *testing.T) {
 	Convey("Given a ServiceConfigV1 containing a swagger file", t, func() {
 		var serviceConfiguration ServiceConfiguration
 		expectedSwaggerURL := "http://sevice-api.com/swagger.yaml"
-		serviceConfiguration = NewServiceConfigV1(expectedSwaggerURL, false)
+		serviceConfiguration = NewServiceConfigV1(expectedSwaggerURL, false, nil)
 		Convey("When GetSwaggerURL method is called", func() {
 			swaggerURL := serviceConfiguration.GetSwaggerURL()
 			Convey("Then the swagger url returned should be equal to expected one", func() {
@@ -55,7 +61,7 @@ func TestServiceConfigV1IsSecureSkipVerifyEnabled(t *testing.T) {
 		var serviceConfiguration ServiceConfiguration
 		expectedSwaggerURL := "http://sevice-api.com/swagger.yaml"
 		expectedIsSecureSkipVerifyEnabled := true
-		serviceConfiguration = NewServiceConfigV1(expectedSwaggerURL, expectedIsSecureSkipVerifyEnabled)
+		serviceConfiguration = NewServiceConfigV1(expectedSwaggerURL, expectedIsSecureSkipVerifyEnabled, nil)
 		Convey("When IsInsecureSkipVerifyEnabled method is called", func() {
 			isInsecureSkipVerifyEnabled := serviceConfiguration.IsInsecureSkipVerifyEnabled()
 			Convey("Then the IsSecureSkipVerifyEnabled returned should be equal to expected one", func() {
@@ -143,4 +149,105 @@ func TestServiceConfigV1Validate(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestGetTelemetryConfiguration(t *testing.T) {
+	testCases := []struct {
+		name            string
+		serviceConfigV1 *ServiceConfigV1
+		inputPluginName string
+		expectedType    interface{}
+		expectedError   string
+		expectedLogging []string
+	}{
+		{
+			name: "service is configured correctly with a graphite provider",
+			serviceConfigV1: &ServiceConfigV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "my-graphite.com",
+						Port: 8125,
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    TelemetryProviderGraphite{},
+			expectedLogging: []string{"[DEBUG] graphite telemetry provider enabled"},
+		},
+		{
+			name: "service is configured correctly with a httpendpoint provider",
+			serviceConfigV1: &ServiceConfigV1{
+				TelemetryConfig: &TelemetryConfig{
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
+						URL: "http://telemetry.myhost.com/v1/metrics",
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    TelemetryProviderHTTPEndpoint{},
+			expectedLogging: []string{"[DEBUG] http endpoint telemetry provider enabled"},
+		},
+		{
+			name: "service is configured correctly with graphite and httpendpoint providers",
+			serviceConfigV1: &ServiceConfigV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "my-graphite.com",
+						Port: 8125,
+					},
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
+						URL: "http://telemetry.myhost.com/v1/metrics",
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    nil,
+			expectedLogging: []string{"[WARN] ignoring telemetry due multiple telemetry providers configured (graphite and http_endpoint): select only one"},
+		},
+		{
+			name: "service skips graphite telemetry due to the validation not passing",
+			serviceConfigV1: &ServiceConfigV1{
+				TelemetryConfig: &TelemetryConfig{
+					Graphite: &TelemetryProviderGraphite{
+						Host: "", // Configuration is missing the required host
+						//Port: 8125,
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    nil,
+			expectedLogging: []string{"[WARN] ignoring graphite telemetry due to the following validation error: graphite telemetry configuration is missing a value for the 'host property'"},
+		},
+		{
+			name: "service skips httpendpoint telemetry due to the validation not passing",
+			serviceConfigV1: &ServiceConfigV1{
+				TelemetryConfig: &TelemetryConfig{
+					HTTPEndpoint: &TelemetryProviderHTTPEndpoint{
+						URL: "", // Configuration is missing the required url
+					},
+				},
+			},
+			inputPluginName: "pluginName",
+			expectedType:    nil,
+			expectedLogging: []string{"[WARN] ignoring http endpoint telemetry due to the following validation error: http endpoint telemetry configuration is missing a value for the 'url property'"},
+		},
+		{
+			name: "TelemetryConfig is nil",
+			serviceConfigV1: &ServiceConfigV1{
+				TelemetryConfig: nil,
+			},
+			inputPluginName: "pluginName",
+			expectedType:    nil,
+			expectedLogging: []string{"[DEBUG] telemetry not configured"},
+		},
+	}
+	for _, tc := range testCases {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		telemetryHandler := tc.serviceConfigV1.GetTelemetryConfiguration()
+		assert.IsType(t, tc.expectedType, telemetryHandler, tc.name)
+		for _, log := range tc.expectedLogging {
+			assert.Contains(t, buf.String(), log, tc.name)
+		}
+	}
 }
