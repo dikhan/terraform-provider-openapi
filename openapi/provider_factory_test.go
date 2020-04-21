@@ -1,10 +1,17 @@
 package openapi
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -688,7 +695,11 @@ func TestConfigureProviderPropertyFromPluginConfig(t *testing.T) {
 }
 
 func TestConfigureProvider(t *testing.T) {
-	Convey("Given a provider factory", t, func() {
+	Convey("Given a provider factory configured with an analyser and graphite telemetry", t, func() {
+		metricChannel := make(chan string)
+		pc, telemetryHost, telemetryPort := udpServer(metricChannel)
+		port, _ := strconv.Atoi(telemetryPort)
+		defer pc.Close()
 		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
 		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
 		p := providerFactory{
@@ -710,6 +721,13 @@ func TestConfigureProvider(t *testing.T) {
 					}),
 				},
 			},
+			serviceConfiguration: &ServiceConfigStub{
+				Telemetry: &TelemetryProviderGraphite{
+					Port:   port,
+					Host:   telemetryHost,
+					Prefix: "openapi",
+				},
+			},
 		}
 		testProviderSchema := newTestSchema(apiKeyAuthProperty, headerProperty)
 		Convey("When configureProvider is called with a backend that is not multi-region and the returned configureFunc is invoked upon ", func() {
@@ -723,8 +741,89 @@ func TestConfigureProvider(t *testing.T) {
 			Convey("And the client should implement ClientOpenAPI interface", func() {
 				var _ ClientOpenAPI = providerClient
 			})
+			Convey("And the telemetry server should have been received the expected counter metrics increase", func() {
+				assertExpectedMetric(t, metricChannel, "openapi.terraform.providers.provider.total_runs:1|c")
+				assertExpectedMetric(t, metricChannel, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
+			})
 		})
 	})
+
+	Convey("Given a provider factory configured with an analyser and http_endpoint telemetry", t, func() {
+		httpMetricsSubmitted := false
+		metricsReceived := []byte{}
+		api := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			metricsReceived, _ = ioutil.ReadAll(req.Body)
+			httpMetricsSubmitted = true
+		}))
+		// Close the server when test finishes
+		defer api.Close()
+
+		apiKeyAuthProperty := newStringSchemaDefinitionPropertyWithDefaults("apikey_auth", "", true, false, "someAuthValue")
+		headerProperty := newStringSchemaDefinitionPropertyWithDefaults("header_name", "", true, false, "someHeaderValue")
+		p := providerFactory{
+			name: "provider",
+			specAnalyser: &specAnalyserStub{
+				headers: SpecHeaderParameters{
+					SpecHeaderParam{
+						Name: headerProperty.Name,
+					},
+				},
+				security: &specSecurityStub{
+					securityDefinitions: &SpecSecurityDefinitions{
+						newAPIKeyHeaderSecurityDefinition(apiKeyAuthProperty.Name, authorizationHeader),
+					},
+					globalSecuritySchemes: createSecuritySchemes([]map[string][]string{
+						{
+							apiKeyAuthProperty.Name: []string{""},
+						},
+					}),
+				},
+			},
+			serviceConfiguration: &ServiceConfigStub{
+				Telemetry: &TelemetryProviderHTTPEndpoint{
+					URL:    fmt.Sprintf("%s/v1/metrics", api.URL),
+					Prefix: "openapi",
+				},
+			},
+		}
+		testProviderSchema := newTestSchema(apiKeyAuthProperty, headerProperty)
+		Convey("When configureProvider is called with a backend that is not multi-region and the returned configureFunc is invoked upon ", func() {
+			backendConfig := &specStubBackendConfiguration{}
+			configureFunc := p.configureProvider(backendConfig, &providerConfigurationEndPoints{})
+			client, err := configureFunc(testProviderSchema.getResourceData(t))
+			providerClient := client.(*ProviderClient)
+			Convey("Then error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the client should implement ClientOpenAPI interface", func() {
+				var _ ClientOpenAPI = providerClient
+			})
+			Convey("And the http_endpoint telemetry server should have been received the expected counter metrics increase", func() {
+				So(httpMetricsSubmitted, ShouldBeTrue)
+				So(string(metricsReceived), ShouldContainSubstring, string(metricTypeCounter))
+				So(string(metricsReceived), ShouldContainSubstring, "openapi.terraform.openapi_plugin_version.dev.total_runs")
+			})
+		})
+	})
+}
+
+func assertExpectedMetric(t *testing.T, metricChannel chan string, expectedMetric string) {
+	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, "", "", nil)
+}
+
+func assertExpectedMetricAndLogging(t *testing.T, metricChannel chan string, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess string, logging *bytes.Buffer) {
+	select {
+	case metricReceived := <-metricChannel:
+		assert.Contains(t, metricReceived, expectedMetric)
+		if expectedLogMetricToSubmit != "" {
+			assert.Contains(t, logging.String(), expectedLogMetricToSubmit)
+		}
+		if expectedLogMetricSuccess != "" {
+			assert.Contains(t, logging.String(), expectedLogMetricSuccess)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatalf("[FAIL] '%s' not reveided within the expected timeframe (timed out)", expectedMetric)
+	}
 }
 
 func TestCreateProviderConfig(t *testing.T) {
@@ -1034,5 +1133,26 @@ func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
 		}
 
 	}
+
+}
+
+func TestGetTelemetryHandler(t *testing.T) {
+	expectedTelemetryProvider := &TelemetryProviderHTTPEndpoint{}
+	expectedResourceData := &schema.ResourceData{}
+	expectedProviderName := "provider_name"
+	providerFactory := providerFactory{
+		name: expectedProviderName,
+		serviceConfiguration: &ServiceConfigStub{
+			Telemetry: expectedTelemetryProvider,
+		},
+	}
+	telemetryHandler := providerFactory.GetTelemetryHandler(expectedResourceData)
+	assert.NotNil(t, telemetryHandler)
+	assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler)
+	assert.Equal(t, expectedProviderName, telemetryHandler.(telemetryHandlerTimeoutSupport).providerName)
+	assert.Equal(t, version.Version, telemetryHandler.(telemetryHandlerTimeoutSupport).openAPIVersion)
+	assert.Equal(t, telemetryTimeout, telemetryHandler.(telemetryHandlerTimeoutSupport).timeout)
+	assert.Equal(t, expectedTelemetryProvider, telemetryHandler.(telemetryHandlerTimeoutSupport).telemetryProvider)
+	assert.Equal(t, expectedResourceData, telemetryHandler.(telemetryHandlerTimeoutSupport).data)
 
 }

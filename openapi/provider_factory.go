@@ -271,7 +271,7 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 		if err != nil {
 			return nil, err
 		}
-		telemetryHandler := p.GetTelemetryHandler()
+		telemetryHandler := p.GetTelemetryHandler(data)
 		telemetryHandler.SubmitPluginExecutionMetrics()
 		openAPIClient := &ProviderClient{
 			openAPIBackendConfiguration: openAPIBackendConfiguration,
@@ -280,6 +280,18 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 			providerConfiguration:       *config,
 		}
 		return openAPIClient, nil
+	}
+}
+
+// GetTelemetryHandler returns a handler containing validated telemetry providers
+func (p providerFactory) GetTelemetryHandler(data *schema.ResourceData) TelemetryHandler {
+	telemetryProvider := p.serviceConfiguration.GetTelemetryConfiguration()
+	return telemetryHandlerTimeoutSupport{
+		timeout:           telemetryTimeout,
+		providerName:      p.name,
+		openAPIVersion:    version.Version,
+		telemetryProvider: telemetryProvider,
+		data:              data,
 	}
 }
 
@@ -301,16 +313,4 @@ func (p providerFactory) getProviderResourceName(resourceName string) (string, e
 	}
 	fullResourceName := fmt.Sprintf("%s_%s", p.name, resourceName)
 	return fullResourceName, nil
-}
-
-// GetTelemetryHandler returns a handler containing validated telemetry providers
-func (p providerFactory) GetTelemetryHandler() TelemetryHandler {
-	telemetryProvider := p.serviceConfiguration.GetTelemetryConfiguration()
-	return telemetryHandlerTimeoutSupport{
-		timeout:        telemetryTimeout,
-		providerName:   p.name,
-		openAPIVersion: version.Version,
-		//telemetryProviders: telemetryProviders,
-		telemetryProvider: telemetryProvider,
-	}
 }

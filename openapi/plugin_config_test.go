@@ -1,18 +1,14 @@
 package openapi
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/smartystreets/assertions/should"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
-	"time"
 )
 
 const providerName = "test"
@@ -166,19 +162,17 @@ services:
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing telemetry configured and a service called 'test'", t, func() {
-		metricChannel := make(chan string)
-		pc, telemetryHost, telemetryPort := udpServer(metricChannel)
-		defer pc.Close()
-
+		expectedTelemetryHost := "some-host"
+		expectedTelemetryPort := 2654
 		pluginConfig := fmt.Sprintf(`version: '1'
 services:
     %s:
       telemetry:
         graphite:
           host: %s
-          port: %s
+          port: %d
           prefix: openapi
-      swagger-url: %s`, providerName, telemetryHost, telemetryPort, otfVarSwaggerURLValue)
+      swagger-url: %s`, providerName, expectedTelemetryHost, expectedTelemetryPort, otfVarSwaggerURLValue)
 		configReader := strings.NewReader(pluginConfig)
 		pluginConfiguration := PluginConfiguration{
 			ProviderName:  providerName,
@@ -197,19 +191,51 @@ services:
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
 			Convey("And the serviceConfiguration contains the expected graphite telemetry configuration", func() {
-				port, _ := strconv.Atoi(telemetryPort)
 				expectedGraphiteProvider := &TelemetryProviderGraphite{
-					Host:   telemetryHost,
-					Port:   port,
+					Host:   expectedTelemetryHost,
+					Port:   expectedTelemetryPort,
 					Prefix: "openapi",
 				}
 				So(serviceConfiguration.GetTelemetryConfiguration(), ShouldResemble, TelemetryProvider(expectedGraphiteProvider))
 			})
-			// TODO: This should be checked where the telemetry metric is moved
-			//Convey("And the telemetry server should have been received the expected counter metrics increase", func() {
-			//	assertExpectedMetric(t, metricChannel, "openapi.terraform.providers.test.total_runs:1|c")
-			//	assertExpectedMetric(t, metricChannel, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
-			//})
+		})
+	})
+
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing http_endpoint telemetry configured and a service called 'test'", t, func() {
+		expectedTelemetryHost := "http://some-host/v1/metrics"
+		expectedPrefix := "openapi"
+		pluginConfig := fmt.Sprintf(`version: '1'
+services:
+    %s:
+      telemetry:
+        http_endpoint:
+          url: %s
+          prefix: %s
+      swagger-url: %s`, providerName, expectedTelemetryHost, expectedPrefix, otfVarSwaggerURLValue)
+		configReader := strings.NewReader(pluginConfig)
+		pluginConfiguration := PluginConfiguration{
+			ProviderName:  providerName,
+			Configuration: configReader,
+		}
+		Convey("When getServiceConfiguration is called", func() {
+			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the serviceConfiguration returned should not be nil ", func() {
+				So(serviceConfiguration, ShouldNotBeNil)
+			})
+			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
+				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
+				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
+			})
+			Convey("And the serviceConfiguration contains the expected http_endpoint telemetry configuration", func() {
+				expectedHttpEndpointProvider := &TelemetryProviderHTTPEndpoint{
+					URL:    expectedTelemetryHost,
+					Prefix: expectedPrefix,
+				}
+				So(serviceConfiguration.GetTelemetryConfiguration(), ShouldResemble, TelemetryProvider(expectedHttpEndpointProvider))
+			})
 		})
 	})
 
@@ -295,25 +321,6 @@ services:
 		})
 	})
 
-}
-
-func assertExpectedMetric(t *testing.T, metricChannel chan string, expectedMetric string) {
-	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, "", "", nil)
-}
-
-func assertExpectedMetricAndLogging(t *testing.T, metricChannel chan string, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess string, logging *bytes.Buffer) {
-	select {
-	case metricReceived := <-metricChannel:
-		assert.Contains(t, metricReceived, expectedMetric)
-		if expectedLogMetricToSubmit != "" {
-			assert.Contains(t, logging.String(), expectedLogMetricToSubmit)
-		}
-		if expectedLogMetricSuccess != "" {
-			assert.Contains(t, logging.String(), expectedLogMetricSuccess)
-		}
-	case <-time.After(500 * time.Millisecond):
-		t.Fatalf("[FAIL] '%s' not reveided within the expected timeframe (timed out)", expectedMetric)
-	}
 }
 
 func udpServer(metricChannel chan string) (net.PacketConn, string, string) {
