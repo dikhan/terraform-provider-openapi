@@ -11,9 +11,6 @@ import (
 // timeout set or it errors when sending the metric, the provider execution will not be affected by it and the corresponding error
 // will be logged for the reference
 type TelemetryHandler interface {
-	// SubmitMetrics
-	SubmitMetrics()
-
 	// SubmitPluginExecutionMetrics submits the metrics for the total number of times the plugin and specific OpenAPI plugin version
 	// have been executed
 	SubmitPluginExecutionMetrics()
@@ -22,28 +19,15 @@ type TelemetryHandler interface {
 const telemetryTimeout = 2
 
 type telemetryHandlerTimeoutSupport struct {
-	timeout            int
-	providerName       string
-	openAPIVersion     string
-	telemetryProviders []TelemetryProvider // TODO: deprecate this
-	telemetryProvider  TelemetryProvider
-	data               *schema.ResourceData
+	timeout           int
+	providerName      string
+	openAPIVersion    string
+	telemetryProvider TelemetryProvider
+	data              *schema.ResourceData
 }
 
 // MetricSubmitter is the function holding the logic that actually submits the metric
 type MetricSubmitter func() error
-
-// TODO: Remove once SubmitPluginExecutionMetrics and SubmitResourceExecutionMetric have been integrated
-func (t telemetryHandlerTimeoutSupport) SubmitMetrics() {
-	for _, telemetryProvider := range t.telemetryProviders {
-		t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-			return telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName)
-		})
-		t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-			return telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion)
-		})
-	}
-}
 
 func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
 	//telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
