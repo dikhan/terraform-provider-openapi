@@ -74,8 +74,7 @@ func (s *ServiceConfigV1) IsInsecureSkipVerifyEnabled() bool {
 	return s.InsecureSkipVerify
 }
 
-// IsInsecureSkipVerifyEnabled returns true if the given provider's service configuration has InsecureSkipVerify enabled; false
-// otherwise
+// GetTelemetryConfiguration returns a TelemetryProvider configured for Graphite or HTTPEndpoint
 func (s *ServiceConfigV1) GetTelemetryConfiguration() TelemetryProvider {
 	if s.TelemetryConfig != nil {
 		if s.TelemetryConfig.Graphite != nil && s.TelemetryConfig.HTTPEndpoint != nil {
@@ -88,10 +87,9 @@ func (s *ServiceConfigV1) GetTelemetryConfiguration() TelemetryProvider {
 			if err != nil {
 				log.Printf("[WARN] ignoring graphite telemetry due to the following validation error: %s", err)
 				return nil
-			} else {
-				log.Printf("[DEBUG] graphite telemetry provider enabled")
-				return s.TelemetryConfig.Graphite
 			}
+			log.Printf("[DEBUG] graphite telemetry provider enabled")
+			return s.TelemetryConfig.Graphite
 		}
 		if s.TelemetryConfig.HTTPEndpoint != nil {
 			log.Printf("[DEBUG] http endpoint telemetry configuration present")
@@ -99,10 +97,9 @@ func (s *ServiceConfigV1) GetTelemetryConfiguration() TelemetryProvider {
 			if err != nil {
 				log.Printf("[WARN] ignoring http endpoint telemetry due to the following validation error: %s", err)
 				return nil
-			} else {
-				log.Printf("[DEBUG] http endpoint telemetry provider enabled")
-				return s.TelemetryConfig.HTTPEndpoint
 			}
+			log.Printf("[DEBUG] http endpoint telemetry provider enabled")
+			return s.TelemetryConfig.HTTPEndpoint
 		}
 	}
 	log.Printf("[DEBUG] telemetry not configured")

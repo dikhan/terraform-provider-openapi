@@ -230,11 +230,11 @@ services:
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
 			Convey("And the serviceConfiguration contains the expected http_endpoint telemetry configuration", func() {
-				expectedHttpEndpointProvider := &TelemetryProviderHTTPEndpoint{
+				expectedHTTPEndpointProvider := &TelemetryProviderHTTPEndpoint{
 					URL:    expectedTelemetryHost,
 					Prefix: expectedPrefix,
 				}
-				So(serviceConfiguration.GetTelemetryConfiguration(), ShouldResemble, TelemetryProvider(expectedHttpEndpointProvider))
+				So(serviceConfiguration.GetTelemetryConfiguration(), ShouldResemble, TelemetryProvider(expectedHTTPEndpointProvider))
 			})
 		})
 	})

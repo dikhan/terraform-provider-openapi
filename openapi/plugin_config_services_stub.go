@@ -52,11 +52,12 @@ func (s ServiceConfigStub) GetSchemaPropertyConfiguration(schemaPropertyName str
 	return nil
 }
 
+// GetTelemetryConfiguration returns the TelemetryProvider configured in the ServiceConfigStub
 func (s ServiceConfigStub) GetTelemetryConfiguration() TelemetryProvider {
 	return s.Telemetry
 }
 
-// GetDefaultValue returns the dafult value configured in the ServiceSchemaPropertyConfigurationStub.defaultValue field
+// GetDefaultValue returns the default value configured in the ServiceSchemaPropertyConfigurationStub.defaultValue field
 func (s *ServiceSchemaPropertyConfigurationStub) GetDefaultValue() (string, error) {
 	if s.GetDefaultValueFunc != nil {
 		return s.GetDefaultValueFunc()
