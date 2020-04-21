@@ -171,7 +171,7 @@ func TestGetTelemetryConfiguration(t *testing.T) {
 				},
 			},
 			inputPluginName: "pluginName",
-			expectedType:    TelemetryProviderGraphite{},
+			expectedType:    &TelemetryProviderGraphite{},
 			expectedLogging: []string{"[DEBUG] graphite telemetry provider enabled"},
 		},
 		{
@@ -184,7 +184,7 @@ func TestGetTelemetryConfiguration(t *testing.T) {
 				},
 			},
 			inputPluginName: "pluginName",
-			expectedType:    TelemetryProviderHTTPEndpoint{},
+			expectedType:    &TelemetryProviderHTTPEndpoint{},
 			expectedLogging: []string{"[DEBUG] http endpoint telemetry provider enabled"},
 		},
 		{
