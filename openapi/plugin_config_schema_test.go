@@ -167,7 +167,7 @@ func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 }
 
 func TestPluginConfigSchemaV1Marshal(t *testing.T) {
-	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services", t, func() {
+	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services containing telemetry", t, func() {
 		var pluginConfigSchema PluginConfigSchema
 		expectedURL := "http://sevice-api.com/swagger.yaml"
 		expectedPluginVersion := "0.14.0"
@@ -214,14 +214,6 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 				expectedConfig := fmt.Sprintf(`version: "1"
 services:
   test:
-    telemetry:
-      graphite:
-        host: some-host.com
-        port: 8080
-        prefix: some_prefix
-      http_endpoint:
-        url: http://my-api.com/v1/metrics
-        prefix: some_prefix
     swagger-url: %s
     plugin_version: %s
     insecure_skip_verify: %t
@@ -234,6 +226,14 @@ services:
         file: some_file
         key_name: some_key_name
         content_type: json
+    telemetry:
+      graphite:
+        host: some-host.com
+        port: 8080
+        prefix: some_prefix
+      http_endpoint:
+        url: http://my-api.com/v1/metrics
+        prefix: some_prefix
 `, expectedURL, expectedPluginVersion, expectedInscureSkipVerify)
 				So(string(marshalConfig), ShouldEqual, expectedConfig)
 			})
@@ -286,6 +286,45 @@ services:
         file: some_file
         key_name: some_key_name
         content_type: json
+`, expectedURL, expectedInscureSkipVerify)
+				So(string(marshalConfig), ShouldEqual, expectedConfig)
+			})
+		})
+	})
+	Convey("Given a PluginConfigSchemaV1 containing a version supported and a SchemaConfigurationV1 without a Command, CommandTimeout, or ExternalConfiguration", t, func() {
+		var pluginConfigSchema PluginConfigSchema
+		expectedURL := "http://sevice-api.com/swagger.yaml"
+		serviceConfigName := "test"
+		expectedInscureSkipVerify := true
+		services := map[string]*ServiceConfigV1{
+			serviceConfigName: {
+				SwaggerURL:         expectedURL,
+				PluginVersion:      "0.14.0",
+				InsecureSkipVerify: expectedInscureSkipVerify,
+				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
+					{
+						SchemaPropertyName: "apikey_auth",
+						DefaultValue:       "apiKeyValue",
+					},
+				},
+			},
+		}
+		pluginConfigSchema = NewPluginConfigSchemaV1(services)
+		Convey("When Marshal method is called", func() {
+			marshalConfig, err := pluginConfigSchema.Marshal()
+			Convey("Then the error returned should be nil as configuration is correct", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the marshalConfig should contain the right marshal configuration (and the plugin_version property should not be present)", func() {
+				expectedConfig := fmt.Sprintf(`version: "1"
+services:
+  test:
+    swagger-url: %s
+    plugin_version: 0.14.0
+    insecure_skip_verify: %t
+    schema_configuration:
+    - schema_property_name: apikey_auth
+      default_value: apiKeyValue
 `, expectedURL, expectedInscureSkipVerify)
 				So(string(marshalConfig), ShouldEqual, expectedConfig)
 			})
