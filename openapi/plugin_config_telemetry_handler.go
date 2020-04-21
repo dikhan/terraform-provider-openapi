@@ -37,22 +37,22 @@ type MetricSubmitter func() error
 func (t telemetryHandlerTimeoutSupport) SubmitMetrics() {
 	for _, telemetryProvider := range t.telemetryProviders {
 		t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-			return telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, nil)
+			return telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName)
 		})
 		t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-			return telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, nil)
+			return telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion)
 		})
 	}
 }
 
 func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
-	telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
-	t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-		return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
-	})
-	t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-		return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
-	})
+	//telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
+	//t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
+	//	return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
+	//})
+	//t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
+	//	return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
+	//})
 }
 
 func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSubmitter MetricSubmitter) {
