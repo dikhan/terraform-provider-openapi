@@ -17,12 +17,12 @@ import (
 	"time"
 )
 
-// TestAcc_ProviderConfiguration_PluginExternalFile confirms regressions introduced in the logic related to the plugin
+// TestAcc_ProviderConfiguration_PluginExternalFile_HTTPEndpointTelemetry confirms regressions introduced in the logic related to the plugin
 // external configuration. This test confirms that the plugin is able to start up properly and functions as expected even
 // when the plugin uses the external configuration containing:
-// - Telemetry configuration
+// - HTTPEndpoint telemetry configuration
 // - Service configurations
-func TestAcc_ProviderConfiguration_PluginExternalFile(t *testing.T) {
+func TestAcc_ProviderConfiguration_PluginExternalFile_HTTPEndpointTelemetry(t *testing.T) {
 	httpEndpointTelemetryCalled := false
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -99,21 +99,14 @@ definitions:
 		w.Write([]byte(swaggerYAMLTemplate))
 	}))
 
-	metricChannel := make(chan string)
-	pc, telemetryHost, telemetryPort := graphiteServer(metricChannel)
-	defer pc.Close()
-
 	testPluginConfig := fmt.Sprintf(`version: '1'
-telemetry:
-  graphite:
-    host: %s
-    port: %s
-  http_endpoint:
-    url: http://%s/v1/metrics
 services:
   openapi:
+    telemetry:
+      http_endpoint:
+        url: http://%s/v1/metrics
     swagger-url: %s
-    insecure_skip_verify: true`, telemetryHost, telemetryPort, apiHost, swaggerServer.URL)
+    insecure_skip_verify: true`, apiHost, swaggerServer.URL)
 
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
@@ -142,6 +135,120 @@ services:
 						}
 						return nil
 					},
+				),
+			},
+		},
+	})
+	os.Unsetenv(otfVarPluginConfigEnvVariableName)
+}
+
+// TestAcc_ProviderConfiguration_PluginExternalFile_GraphiteTelemetry confirms regressions introduced in the logic related to the plugin
+// external configuration. This test confirms that the plugin is able to start up properly and functions as expected even
+// when the plugin uses the external configuration containing:
+// - Graphite telemetry configuration
+// - Service configurations
+func TestAcc_ProviderConfiguration_PluginExternalFile_GraphiteTelemetry(t *testing.T) {
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"id":"someID", "label": "some_label"}`))
+		w.WriteHeader(http.StatusOK)
+	}))
+	apiHost := apiServer.URL[7:]
+
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerYAMLTemplate := fmt.Sprintf(`swagger: "2.0"
+host: "%s"
+
+schemes:
+- "http"
+
+paths:
+  /v1/cdns:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+  /v1/cdns/{cdn_id}:
+    get:
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    delete:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn that needs to be deleted"
+        required: true
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`, apiHost)
+		w.Write([]byte(swaggerYAMLTemplate))
+	}))
+
+	metricChannel := make(chan string)
+	pc, telemetryHost, telemetryPort := graphiteServer(metricChannel)
+	defer pc.Close()
+
+	testPluginConfig := fmt.Sprintf(`version: '1'
+services:
+  openapi:
+    telemetry:
+      graphite:
+        host: %s
+        port: %s
+    swagger-url: %s
+    insecure_skip_verify: true`, telemetryHost, telemetryPort, swaggerServer.URL)
+
+	file := createPluginConfigFile(testPluginConfig)
+	defer os.Remove(file.Name())
+
+	otfVarPluginConfigEnvVariableName := fmt.Sprintf("OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE", providerName)
+	os.Setenv(otfVarPluginConfigEnvVariableName, file.Name())
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProvider()
+	assert.NoError(t, err)
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Providers:  testAccProviders,
+		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`resource "openapi_cdns_v1" "my_cdn" { label = "some_label"}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"openapi_cdns_v1.my_cdn", "label", "some_label"),
 					func(s *terraform.State) error { // asserting that the graphite server received the expected metrics counter
 						assertExpectedMetric(t, metricChannel, "terraform.providers.openapi.total_runs:1|c")
 						assertExpectedMetric(t, metricChannel, "terraform.openapi_plugin_version.dev.total_runs:1|c")
