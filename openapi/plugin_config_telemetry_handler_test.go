@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestSubmitMetrics(t *testing.T) {
+func TestSubmitPluginExecutionMetrics(t *testing.T) {
 	stub := &telemetryProviderStub{}
 	testCases := []struct {
 		name            string
@@ -17,32 +17,30 @@ func TestSubmitMetrics(t *testing.T) {
 		expectedLogging string
 	}{
 		{
-			name: "submitMetrics works fine",
+			name: "SubmitPluginExecutionMetrics works fine",
 			ths: telemetryHandlerTimeoutSupport{
-				providerName:   "providerName",
-				timeout:        1,
-				openAPIVersion: "0.25.0",
-				telemetryProviders: []TelemetryProvider{
-					stub,
-				},
+				providerName:      "providerName",
+				timeout:           1,
+				openAPIVersion:    "0.25.0",
+				telemetryProvider: stub,
 			},
 			expectedLogging: "",
 		},
 		{
-			name: "submitMetrics does nothing when telemetryHandlerTimeoutSupport is configured with a nil telemetryProviders",
+			name: "SubmitPluginExecutionMetrics does nothing when telemetryHandlerTimeoutSupport is configured with a nil telemetryProvider",
 			ths: telemetryHandlerTimeoutSupport{
-				providerName:       "providerName",
-				timeout:            1,
-				openAPIVersion:     "0.25.0",
-				telemetryProviders: nil,
+				providerName:      "providerName",
+				timeout:           1,
+				openAPIVersion:    "0.25.0",
+				telemetryProvider: nil,
 			},
-			expectedLogging: "",
+			expectedLogging: "[INFO] Telemetry provider not configured",
 		},
 	}
 	for _, tc := range testCases {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
-		tc.ths.SubmitMetrics()
+		tc.ths.SubmitPluginExecutionMetrics()
 		assert.Contains(t, buf.String(), tc.expectedLogging, tc.name)
 		// The below confirm that the corresponding inc methods were called and also the info passed in was the correct one
 		assert.Equal(t, tc.ths.openAPIVersion, stub.openAPIPluginVersionReceived, tc.name)

@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"net/http"
 	"strings"
 	"time"
@@ -270,6 +271,8 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 		if err != nil {
 			return nil, err
 		}
+		telemetryHandler := p.GetTelemetryHandler()
+		telemetryHandler.SubmitPluginExecutionMetrics()
 		openAPIClient := &ProviderClient{
 			openAPIBackendConfiguration: openAPIBackendConfiguration,
 			apiAuthenticator:            authenticator,
@@ -298,4 +301,16 @@ func (p providerFactory) getProviderResourceName(resourceName string) (string, e
 	}
 	fullResourceName := fmt.Sprintf("%s_%s", p.name, resourceName)
 	return fullResourceName, nil
+}
+
+// GetTelemetryHandler returns a handler containing validated telemetry providers
+func (p providerFactory) GetTelemetryHandler() TelemetryHandler {
+	telemetryProvider := p.serviceConfiguration.GetTelemetryConfiguration()
+	return telemetryHandlerTimeoutSupport{
+		timeout:        telemetryTimeout,
+		providerName:   p.name,
+		openAPIVersion: version.Version,
+		//telemetryProviders: telemetryProviders,
+		telemetryProvider: telemetryProvider,
+	}
 }

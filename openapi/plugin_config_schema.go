@@ -2,7 +2,6 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"gopkg.in/yaml.v2"
 )
 
@@ -21,8 +20,6 @@ type PluginConfigSchema interface {
 	GetVersion() (string, error)
 	// Marshal serializes the value provided into a YAML document
 	Marshal() ([]byte, error)
-	// GetTelemetryHandler returns a handler containing validated telemetry providers
-	GetTelemetryHandler(providerName string) TelemetryHandler
 }
 
 // PluginConfigSchemaV1 defines PluginConfigSchema version 1
@@ -88,20 +85,4 @@ func (p *PluginConfigSchemaV1) GetAllServiceConfigurations() (ServiceConfigurati
 func (p *PluginConfigSchemaV1) Marshal() ([]byte, error) {
 	out, err := yaml.Marshal(p)
 	return out, err
-}
-
-// GetTelemetryHandler returns a handler containing validated telemetry providers
-func (p *PluginConfigSchemaV1) GetTelemetryHandler(providerName string) TelemetryHandler {
-	s, err := p.GetServiceConfig(providerName)
-	if err != nil {
-		return telemetryHandlerTimeoutSupport{}
-	}
-	telemetryProvider := s.GetTelemetryConfiguration()
-	return telemetryHandlerTimeoutSupport{
-		timeout:        telemetryTimeout,
-		providerName:   providerName,
-		openAPIVersion: version.Version,
-		//telemetryProviders: telemetryProviders,
-		telemetryProvider: telemetryProvider,
-	}
 }

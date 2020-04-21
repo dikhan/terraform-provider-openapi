@@ -47,12 +47,16 @@ func (t telemetryHandlerTimeoutSupport) SubmitMetrics() {
 
 func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
 	//telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
-	//t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-	//	return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
-	//})
-	//t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-	//	return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
-	//})
+	if t.telemetryProvider == nil {
+		log.Println("[INFO] Telemetry provider not configured")
+		return
+	}
+	t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
+		return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName)
+	})
+	t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
+		return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion)
+	})
 }
 
 func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSubmitter MetricSubmitter) {
