@@ -102,7 +102,7 @@ func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric, tele
 		var ok bool
 		telemetryConfiguration, ok = telemetryProviderConfiguration.(TelemetryProviderConfigurationHTTPEndpoint)
 		if !ok {
-			return fmt.Errorf("wrong TelemetryProviderConfiguration object")
+			return fmt.Errorf("telemetryProviderConfiguration object not the expected one: TelemetryProviderConfigurationHTTPEndpoint")
 		}
 	}
 

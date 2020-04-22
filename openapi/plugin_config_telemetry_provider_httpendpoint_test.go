@@ -123,14 +123,47 @@ func TestCreateNewRequest(t *testing.T) {
 
 func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 	testCases := []struct {
-		testName             string
-		returnedResponseCode int
-		expectedErr          error
+		testName                       string
+		returnedResponseCode           int
+		telemetryProviderConfiguration TelemetryProviderConfiguration
+		expectedHeaders                map[string]string
+		expectedErr                    error
 	}{
 		{
-			testName:             "happy path",
+			testName:             "happy path with no telemetryProviderConfiguration",
 			returnedResponseCode: http.StatusOK,
-			expectedErr:          nil,
+			expectedHeaders: map[string]string{
+				contentType:     "application/json",
+				userAgentHeader: "OpenAPI Terraform Provider",
+			},
+			telemetryProviderConfiguration: nil,
+			expectedErr:                    nil,
+		},
+		{
+			testName:             "happy path with expected TelemetryProviderConfigurationHTTPEndpoint",
+			returnedResponseCode: http.StatusOK,
+			telemetryProviderConfiguration: TelemetryProviderConfigurationHTTPEndpoint{
+				Headers: map[string]string{
+					"prop_name": "prop_value",
+				},
+			},
+			expectedHeaders: map[string]string{
+				contentType:     "application/json",
+				userAgentHeader: "OpenAPI Terraform Provider",
+				"prop_name":     "prop_value",
+			},
+			expectedErr: nil,
+		},
+		{
+			testName:                       "happy path with wrong TelemetryProviderConfiguration",
+			returnedResponseCode:           http.StatusOK,
+			telemetryProviderConfiguration: struct{}{}, // random struct
+			expectedErr:                    errors.New("telemetryProviderConfiguration object not the expected one: TelemetryProviderConfigurationHTTPEndpoint"),
+		},
+		{
+			testName:             "api server returns non 2xx code",
+			returnedResponseCode: http.StatusNotFound,
+			expectedErr:          errors.New("/v1/metrics' returned a non expected status code 404"),
 		},
 		{
 			testName:             "api server returns non 2xx code",
@@ -149,8 +182,9 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 		api := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, req.Method, http.MethodPost, tc.testName)
 			assert.Equal(t, "/v1/metrics", req.URL.String(), tc.testName)
-			assert.Equal(t, req.Header.Get(contentType), "application/json", tc.testName)
-			assert.Contains(t, req.Header.Get(userAgentHeader), "OpenAPI Terraform Provider", tc.testName)
+			for headerName, headerValue := range tc.expectedHeaders {
+				assert.Contains(t, req.Header.Get(headerName), headerValue, tc.testName)
+			}
 			reqBody, err := ioutil.ReadAll(req.Body)
 			assert.Nil(t, err, tc.testName)
 			telemetryMetric := telemetryMetric{}
@@ -166,7 +200,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 		tph := TelemetryProviderHTTPEndpoint{
 			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
-		err := tph.submitMetric(expectedCounterMetric, nil)
+		err := tph.submitMetric(expectedCounterMetric, tc.telemetryProviderConfiguration)
 		if tc.expectedErr == nil {
 			assert.NoError(t, err, tc.testName)
 		} else {
