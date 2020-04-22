@@ -71,6 +71,37 @@ func TestServiceConfigV1IsSecureSkipVerifyEnabled(t *testing.T) {
 	})
 }
 
+func TestGetSchemaPropertyConfiguration(t *testing.T) {
+	Convey("Given a service configuration containing a some properties", t, func() {
+		expectedServiceSchemaPropertyConfigurationV1 := ServiceSchemaPropertyConfigurationV1{SchemaPropertyName: "prop_name"}
+		serviceConfiguration := &ServiceConfigV1{
+			SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
+				expectedServiceSchemaPropertyConfigurationV1,
+			},
+		}
+		Convey("When GetSchemaPropertyConfiguration method is called with an existing prop_name", func() {
+			serviceSchemaPropertyConfigurationV1 := serviceConfiguration.GetSchemaPropertyConfiguration("prop_name")
+			Convey("Then the error returned should be nil", func() {
+				So(serviceSchemaPropertyConfigurationV1, ShouldResemble, expectedServiceSchemaPropertyConfigurationV1)
+			})
+		})
+	})
+	Convey("Given a service configuration containing a some properties", t, func() {
+		expectedServiceSchemaPropertyConfigurationV1 := ServiceSchemaPropertyConfigurationV1{SchemaPropertyName: "prop_name"}
+		serviceConfiguration := &ServiceConfigV1{
+			SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
+				expectedServiceSchemaPropertyConfigurationV1,
+			},
+		}
+		Convey("When GetSchemaPropertyConfiguration method is called with a NON existing prop_name", func() {
+			serviceSchemaPropertyConfigurationV1 := serviceConfiguration.GetSchemaPropertyConfiguration("non_existing")
+			Convey("Then the error returned should be nil", func() {
+				So(serviceSchemaPropertyConfigurationV1, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestServiceConfigV1Validate(t *testing.T) {
 	Convey("Given a ServiceConfigV1 containing a valid swagger URL and a specific plugin version", t, func() {
 		var serviceConfiguration ServiceConfiguration
