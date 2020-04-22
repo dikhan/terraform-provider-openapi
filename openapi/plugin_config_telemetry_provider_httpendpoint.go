@@ -38,13 +38,14 @@ const (
 type telemetryMetric struct {
 	MetricType metricType `json:"metric_type"`
 	MetricName string     `json:"metric_name"`
+	Tags       []string   `json:"tags"`
 }
 
-func createNewCounterMetric(prefix, metricName string) telemetryMetric {
+func createNewCounterMetric(prefix, metricName string, tags []string) telemetryMetric {
 	if prefix != "" {
 		metricName = fmt.Sprintf("%s.%s", prefix, metricName)
 	}
-	return telemetryMetric{MetricType: metricTypeCounter, MetricName: metricName}
+	return telemetryMetric{MetricType: metricTypeCounter, MetricName: metricName, Tags: tags}
 }
 
 // Validate checks whether the provider is configured correctly. This validation is performed upon telemetry provider registration. If this
@@ -64,8 +65,9 @@ func (g TelemetryProviderHTTPEndpoint) Validate() error {
 // %s will be replaced by the OpenAPI plugin version used at runtime
 func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
-	metricName := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
-	metric := createNewCounterMetric(g.Prefix, metricName)
+	tags := []string{"openapi_plugin_version:" + version}
+	metricName := "terraform.openapi_plugin_version.total_runs"
+	metric := createNewCounterMetric(g.Prefix, metricName, tags)
 	if err := g.submitMetric(metric, telemetryProviderConfiguration); err != nil {
 		return err
 	}
@@ -75,8 +77,9 @@ func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(o
 // IncServiceProviderTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.providers.%s.total_runs'. The
 // %s will be replaced by the provider name used at runtime
 func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
-	metricName := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
-	metric := createNewCounterMetric(g.Prefix, metricName)
+	tags := []string{"provider_name:" + providerName}
+	metricName := "terraform.providers.total_runs"
+	metric := createNewCounterMetric(g.Prefix, metricName, tags)
 	if err := g.submitMetric(metric, telemetryProviderConfiguration); err != nil {
 		return err
 	}

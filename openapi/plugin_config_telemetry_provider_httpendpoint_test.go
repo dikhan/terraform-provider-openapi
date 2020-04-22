@@ -52,17 +52,17 @@ func TestCreateNewCounterMetric(t *testing.T) {
 		{
 			testName:       "prefix is not empty",
 			prefix:         "prefix",
-			expectedMetric: telemetryMetric{metricTypeCounter, "prefix.metric_name"},
+			expectedMetric: telemetryMetric{metricTypeCounter, "prefix.metric_name", []string{"tag_name:tag_value"}},
 		},
 		{
 			testName:       "prefix is empty",
 			prefix:         "",
-			expectedMetric: telemetryMetric{metricTypeCounter, "metric_name"},
+			expectedMetric: telemetryMetric{metricTypeCounter, "metric_name", []string{"tag_name:tag_value"}},
 		},
 	}
 
 	for _, tc := range testCases {
-		telemetryMetric := createNewCounterMetric(tc.prefix, "metric_name")
+		telemetryMetric := createNewCounterMetric(tc.prefix, "metric_name", []string{"tag_name:tag_value"})
 		assert.Equal(t, tc.expectedMetric, telemetryMetric, tc.testName)
 	}
 }
@@ -80,7 +80,8 @@ func TestCreateNewRequest(t *testing.T) {
 			testName: "happy path - request is created with the expected Header and telemetryMetric",
 			expectedCounterMetric: telemetryMetric{
 				MetricType: metricTypeCounter,
-				MetricName: "prefix.terraform.openapi_plugin_version.version.total_runs",
+				MetricName: "prefix.terraform.openapi_plugin_version.total_runs",
+				Tags:       []string{"openapi_plugin_version:version"},
 			},
 			telemetryProviderConfiguration: &TelemetryProviderConfigurationHTTPEndpoint{
 				Headers: map[string]string{
@@ -176,7 +177,8 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 
 		expectedCounterMetric := telemetryMetric{
 			MetricType: metricTypeCounter,
-			MetricName: "prefix.terraform.openapi_plugin_version.version.total_runs",
+			MetricName: "prefix.terraform.openapi_plugin_version.total_runs",
+			Tags:       []string{"openapi_plugin_version:version"},
 		}
 
 		api := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -192,6 +194,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 			assert.Nil(t, err, tc.testName)
 			assert.Equal(t, expectedCounterMetric.MetricType, telemetryMetric.MetricType, tc.testName)
 			assert.Equal(t, expectedCounterMetric.MetricName, telemetryMetric.MetricName, tc.testName)
+			assert.Equal(t, expectedCounterMetric.Tags, telemetryMetric.Tags, tc.testName)
 			rw.WriteHeader(tc.returnedResponseCode)
 		}))
 		// Close the server when test finishes
@@ -232,7 +235,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetricFailureScenarios(t *testing.T)
 		tph := TelemetryProviderHTTPEndpoint{
 			URL: tc.inputURL,
 		}
-		err := tph.submitMetric(telemetryMetric{metricTypeCounter, "prefix.terraform.openapi_plugin_version.version.total_runs"}, nil)
+		err := tph.submitMetric(telemetryMetric{metricTypeCounter, "prefix.terraform.openapi_plugin_version.version.total_runs", []string{"openapi_plugin_version:version"}}, nil)
 		assert.EqualError(t, err, tc.expectedErr.Error())
 	}
 }
@@ -264,7 +267,8 @@ func TestTelemetryProviderHttpEndpointIncOpenAPIPluginVersionTotalRunsCounter(t 
 			err = json.Unmarshal(reqBody, &telemetryMetric)
 			assert.Nil(t, err, tc.testName)
 			assert.Equal(t, metricTypeCounter, telemetryMetric.MetricType, tc.testName)
-			assert.Equal(t, "terraform.openapi_plugin_version.0_26_0.total_runs", telemetryMetric.MetricName, tc.testName)
+			assert.Equal(t, "terraform.openapi_plugin_version.total_runs", telemetryMetric.MetricName, tc.testName)
+			assert.Equal(t, []string{"openapi_plugin_version:0_26_0"}, telemetryMetric.Tags, tc.testName)
 			rw.WriteHeader(tc.returnedResponseCode)
 		}))
 		// Close the server when test finishes
@@ -310,7 +314,8 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderTotalRunsCounter(t *test
 			err = json.Unmarshal(reqBody, &telemetryMetric)
 			assert.Nil(t, err, tc.testName)
 			assert.Equal(t, metricTypeCounter, telemetryMetric.MetricType, tc.testName)
-			assert.Equal(t, "terraform.providers.cdn.total_runs", telemetryMetric.MetricName, tc.testName)
+			assert.Equal(t, "terraform.providers.total_runs", telemetryMetric.MetricName, tc.testName)
+			assert.Equal(t, []string{"provider_name:cdn"}, telemetryMetric.Tags, tc.testName)
 			rw.WriteHeader(tc.returnedResponseCode)
 		}))
 		// Close the server when test finishes
