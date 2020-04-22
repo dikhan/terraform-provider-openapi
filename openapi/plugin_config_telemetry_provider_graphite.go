@@ -58,6 +58,7 @@ func (g TelemetryProviderGraphite) IncServiceProviderTotalRunsCounter(providerNa
 	return nil
 }
 
+// GetTelemetryProviderConfiguration returns nil since Graphite does not need any TelemetryProviderConfiguration at the moment
 func (g TelemetryProviderGraphite) GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration {
 	return nil
 }

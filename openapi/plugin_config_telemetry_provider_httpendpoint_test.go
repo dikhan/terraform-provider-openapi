@@ -73,7 +73,7 @@ func TestCreateNewRequest(t *testing.T) {
 		url                            string
 		expectedCounterMetric          telemetryMetric
 		expectedHeaders                map[string]string
-		telemetryProviderConfiguration *TelemetryProviderConfigurationHTTPEndpoint
+		telemetryProviderConfiguration *telemetryProviderConfigurationHTTPEndpoint
 		expectedErr                    error
 	}{
 		{
@@ -83,7 +83,7 @@ func TestCreateNewRequest(t *testing.T) {
 				MetricName: "prefix.terraform.openapi_plugin_version.total_runs",
 				Tags:       []string{"openapi_plugin_version:version"},
 			},
-			telemetryProviderConfiguration: &TelemetryProviderConfigurationHTTPEndpoint{
+			telemetryProviderConfiguration: &telemetryProviderConfigurationHTTPEndpoint{
 				Headers: map[string]string{
 					"property_name": "property_value",
 				},
@@ -141,9 +141,9 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 			expectedErr:                    nil,
 		},
 		{
-			testName:             "happy path with expected TelemetryProviderConfigurationHTTPEndpoint",
+			testName:             "happy path with expected telemetryProviderConfigurationHTTPEndpoint",
 			returnedResponseCode: http.StatusOK,
-			telemetryProviderConfiguration: TelemetryProviderConfigurationHTTPEndpoint{
+			telemetryProviderConfiguration: telemetryProviderConfigurationHTTPEndpoint{
 				Headers: map[string]string{
 					"prop_name": "prop_value",
 				},
@@ -159,7 +159,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 			testName:                       "happy path with wrong TelemetryProviderConfiguration",
 			returnedResponseCode:           http.StatusOK,
 			telemetryProviderConfiguration: struct{}{}, // random struct
-			expectedErr:                    errors.New("telemetryProviderConfiguration object not the expected one: TelemetryProviderConfigurationHTTPEndpoint"),
+			expectedErr:                    errors.New("telemetryProviderConfiguration object not the expected one: telemetryProviderConfigurationHTTPEndpoint"),
 		},
 		{
 			testName:             "api server returns non 2xx code",
@@ -341,6 +341,6 @@ func TestGetTelemetryProviderConfiguration(t *testing.T) {
 	propSchema := newStringSchemaDefinitionPropertyWithDefaults("prop_name", "", true, false, "prop_value")
 	testSchema := newTestSchema(propSchema)
 	tpConfig := tp.GetTelemetryProviderConfiguration(testSchema.getResourceData(t))
-	assert.IsType(t, TelemetryProviderConfigurationHTTPEndpoint{}, tpConfig)
-	assert.Equal(t, "prop_value", tpConfig.(TelemetryProviderConfigurationHTTPEndpoint).Headers["prop_name"])
+	assert.IsType(t, telemetryProviderConfigurationHTTPEndpoint{}, tpConfig)
+	assert.Equal(t, "prop_value", tpConfig.(telemetryProviderConfigurationHTTPEndpoint).Headers["prop_name"])
 }

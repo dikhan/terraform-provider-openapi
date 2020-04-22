@@ -2,6 +2,10 @@ package openapi
 
 import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
+// TelemetryProviderConfiguration defines the struct type that specific telemetry providers can configure based on the
+// resource data received in GetTelemetryProviderConfiguration. The struct serves as a way to document in the metric
+// methods signature (eg: IncOpenAPIPluginVersionTotalRunsCounter) that a specific telemetry provider configuration struct
+// can be passed in if needed
 type TelemetryProviderConfiguration interface{}
 
 // TelemetryProvider holds the behaviour expected to be implemented for the Telemetry Providers supported. At the moment

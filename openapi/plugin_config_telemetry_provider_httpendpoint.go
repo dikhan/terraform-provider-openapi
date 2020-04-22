@@ -25,7 +25,9 @@ type TelemetryProviderHTTPEndpoint struct {
 	ProviderSchemaProperties []string `yaml:"provider_schema_properties,omitempty"`
 }
 
-type TelemetryProviderConfigurationHTTPEndpoint struct {
+// telemetryProviderConfigurationHTTPEndpoint defines the specific telemetry configuration for the  HTTPEndpoint telemetry provider. This
+// struct is populated inside the GetTelemetryProviderConfiguration method given the resource data received.
+type telemetryProviderConfigurationHTTPEndpoint struct {
 	Headers map[string]string
 }
 
@@ -86,8 +88,10 @@ func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(provid
 	return nil
 }
 
+// GetTelemetryProviderConfiguration returns a telemetryProviderConfigurationHTTPEndpoint loaded with headers mapping to
+// the plugin configuration schema properties that match the ones specified in the TelemetryProviderHTTPEndpoint ProviderSchemaProperties values
 func (g TelemetryProviderHTTPEndpoint) GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration {
-	tpConfig := TelemetryProviderConfigurationHTTPEndpoint{
+	tpConfig := telemetryProviderConfigurationHTTPEndpoint{
 		Headers: map[string]string{},
 	}
 	for _, propSchemaName := range g.ProviderSchemaProperties {
@@ -100,12 +104,12 @@ func (g TelemetryProviderHTTPEndpoint) GetTelemetryProviderConfiguration(data *s
 }
 
 func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
-	var telemetryConfiguration TelemetryProviderConfigurationHTTPEndpoint
+	var telemetryConfiguration telemetryProviderConfigurationHTTPEndpoint
 	if telemetryProviderConfiguration != nil {
 		var ok bool
-		telemetryConfiguration, ok = telemetryProviderConfiguration.(TelemetryProviderConfigurationHTTPEndpoint)
+		telemetryConfiguration, ok = telemetryProviderConfiguration.(telemetryProviderConfigurationHTTPEndpoint)
 		if !ok {
-			return fmt.Errorf("telemetryProviderConfiguration object not the expected one: TelemetryProviderConfigurationHTTPEndpoint")
+			return fmt.Errorf("telemetryProviderConfiguration object not the expected one: telemetryProviderConfigurationHTTPEndpoint")
 		}
 	}
 
@@ -126,7 +130,7 @@ func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric, tele
 	return nil
 }
 
-func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric, telemetryProviderConfiguration *TelemetryProviderConfigurationHTTPEndpoint) (*http.Request, error) {
+func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric, telemetryProviderConfiguration *telemetryProviderConfigurationHTTPEndpoint) (*http.Request, error) {
 	var body []byte
 	var err error
 	body, err = json.Marshal(metric)
