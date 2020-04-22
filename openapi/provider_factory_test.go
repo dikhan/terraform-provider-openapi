@@ -783,9 +783,9 @@ func TestConfigureProvider(t *testing.T) {
 			},
 			serviceConfiguration: &ServiceConfigStub{
 				Telemetry: &TelemetryProviderHTTPEndpoint{
-					URL:     fmt.Sprintf("%s/v1/metrics", api.URL),
-					Prefix:  "openapi",
-					Headers: []string{"header_name"},
+					URL:                      fmt.Sprintf("%s/v1/metrics", api.URL),
+					Prefix:                   "openapi",
+					ProviderSchemaProperties: []string{"header_name"},
 				},
 			},
 		}

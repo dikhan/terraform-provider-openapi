@@ -2,7 +2,7 @@ package openapi
 
 import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
-type TelemetryProviderConfiguration map[string]interface{}
+type TelemetryProviderConfiguration interface{}
 
 // TelemetryProvider holds the behaviour expected to be implemented for the Telemetry Providers supported. At the moment
 // only Graphite is supported.

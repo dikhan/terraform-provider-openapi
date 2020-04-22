@@ -20,9 +20,13 @@ type TelemetryProviderHTTPEndpoint struct {
 	URL string `yaml:"url"`
 	// Prefix enables to append a prefix to the metrics pushed to the HTTP endpoint
 	Prefix string `yaml:"prefix,omitempty"`
-	// Headers defines what specific provider configuration properties and their values that will be injected into
+	// ProviderSchemaProperties defines what specific provider configuration properties and their values that will be injected into
 	// metric API request headers. Values must match a real property name in provider schema configuration.
-	Headers []string `yaml:"headers,omitempty"`
+	ProviderSchemaProperties []string `yaml:"provider_schema_properties,omitempty"`
+}
+
+type TelemetryProviderConfigurationHTTPEndpoint struct {
+	Headers map[string]string
 }
 
 type metricType string
@@ -80,19 +84,30 @@ func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(provid
 }
 
 func (g TelemetryProviderHTTPEndpoint) GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration {
-	tpConfig := map[string]interface{}{}
-	for _, propSchemaName := range g.Headers {
+	tpConfig := TelemetryProviderConfigurationHTTPEndpoint{
+		Headers: map[string]string{},
+	}
+	for _, propSchemaName := range g.ProviderSchemaProperties {
 		propSchemaValue := data.Get(propSchemaName)
 		if propSchemaValue != nil {
-			tpConfig[propSchemaName] = propSchemaValue
+			tpConfig.Headers[propSchemaName] = propSchemaValue.(string)
 		}
 	}
 	return tpConfig
 }
 
 func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
+	var telemetryConfiguration TelemetryProviderConfigurationHTTPEndpoint
+	if telemetryProviderConfiguration != nil {
+		var ok bool
+		telemetryConfiguration, ok = telemetryProviderConfiguration.(TelemetryProviderConfigurationHTTPEndpoint)
+		if !ok {
+			return fmt.Errorf("wrong TelemetryProviderConfiguration object")
+		}
+	}
+
 	log.Printf("[INFO] http endpoint metric to be submitted: %s", metric.MetricName)
-	req, err := g.createNewRequest(metric, telemetryProviderConfiguration)
+	req, err := g.createNewRequest(metric, &telemetryConfiguration)
 	if err != nil {
 		return err
 	}
@@ -108,7 +123,7 @@ func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric, tele
 	return nil
 }
 
-func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric, telemetryProviderConfiguration TelemetryProviderConfiguration) (*http.Request, error) {
+func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric, telemetryProviderConfiguration *TelemetryProviderConfigurationHTTPEndpoint) (*http.Request, error) {
 	var body []byte
 	var err error
 	body, err = json.Marshal(metric)
@@ -121,5 +136,10 @@ func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric, 
 	}
 	req.Header.Set(contentType, "application/json")
 	req.Header.Set(userAgentHeader, version.BuildUserAgent(runtime.GOOS, runtime.GOARCH))
+	if telemetryProviderConfiguration != nil && telemetryProviderConfiguration.Headers != nil {
+		for schemaPropertyName, schemaPropertyValue := range telemetryProviderConfiguration.Headers {
+			req.Header.Set(schemaPropertyName, schemaPropertyValue)
+		}
+	}
 	return req, nil
 }

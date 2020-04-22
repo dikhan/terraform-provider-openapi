@@ -9,7 +9,7 @@ const providerPropertyEndPoints = "endpoints"
 
 // providerConfiguration contains all the configuration related to the OpenAPI provider. The configuration at the moment
 // supports:
-// - Headers: The headers map contains the header names as well as the values provided by the user in the terraform configuration
+// - ProviderSchemaProperties: The headers map contains the header names as well as the values provided by the user in the terraform configuration
 // file. These headers may be sent as part of the HTTP calls if the resource requires them (as specified in the swagger doc)
 // - Security Definitions: The security definitions map contains the security definition names as well as the values provided by the user in the terraform configuration
 // file. These headers may be sent as part of the HTTP calls if the resource requires them (as specified in the swagger doc)

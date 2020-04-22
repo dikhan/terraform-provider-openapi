@@ -69,12 +69,12 @@ func TestCreateNewCounterMetric(t *testing.T) {
 
 func TestCreateNewRequest(t *testing.T) {
 	testCases := []struct {
-		testName              string
-		url                   string
-		expectedCounterMetric telemetryMetric
-		expectedContentType   string
-		expectedUserAgent     string
-		expectedErr           error
+		testName                       string
+		url                            string
+		expectedCounterMetric          telemetryMetric
+		expectedHeaders                map[string]string
+		telemetryProviderConfiguration *TelemetryProviderConfigurationHTTPEndpoint
+		expectedErr                    error
 	}{
 		{
 			testName: "happy path - request is created with the expected Header and telemetryMetric",
@@ -82,9 +82,13 @@ func TestCreateNewRequest(t *testing.T) {
 				MetricType: metricTypeCounter,
 				MetricName: "prefix.terraform.openapi_plugin_version.version.total_runs",
 			},
-			expectedContentType: "application/json",
-			expectedUserAgent:   "OpenAPI Terraform Provider",
-			expectedErr:         nil,
+			telemetryProviderConfiguration: &TelemetryProviderConfigurationHTTPEndpoint{
+				Headers: map[string]string{
+					"property_name": "property_value",
+				},
+			},
+			expectedHeaders: map[string]string{contentType: "application/json", userAgentHeader: "OpenAPI Terraform Provider", "property_name": "property_value"},
+			expectedErr:     nil,
 		},
 		{
 			testName:    "crappy path - bad url",
@@ -102,13 +106,14 @@ func TestCreateNewRequest(t *testing.T) {
 			URL: tc.url,
 		}
 
-		request, err = tph.createNewRequest(tc.expectedCounterMetric, nil)
+		request, err = tph.createNewRequest(tc.expectedCounterMetric, tc.telemetryProviderConfiguration)
 		if tc.expectedErr == nil {
 			reqBody, err = ioutil.ReadAll(request.Body)
 			err = json.Unmarshal(reqBody, &telemetryMetric)
 			assert.NoError(t, err, tc.testName)
-			assert.Equal(t, tc.expectedContentType, request.Header.Get(contentType), tc.testName)
-			assert.Contains(t, request.Header.Get(userAgentHeader), tc.expectedUserAgent, tc.testName)
+			for expectedHeaderName, expectedHeaderValue := range tc.expectedHeaders {
+				assert.Contains(t, request.Header.Get(expectedHeaderName), expectedHeaderValue, tc.testName)
+			}
 			assert.Equal(t, tc.expectedCounterMetric, telemetryMetric, tc.testName)
 		} else {
 			assert.EqualError(t, err, tc.expectedErr.Error(), tc.testName)
@@ -292,10 +297,11 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderTotalRunsCounter(t *test
 
 func TestGetTelemetryProviderConfiguration(t *testing.T) {
 	tp := TelemetryProviderHTTPEndpoint{
-		Headers: []string{"prop_name"},
+		ProviderSchemaProperties: []string{"prop_name"},
 	}
 	propSchema := newStringSchemaDefinitionPropertyWithDefaults("prop_name", "", true, false, "prop_value")
 	testSchema := newTestSchema(propSchema)
 	tpConfig := tp.GetTelemetryProviderConfiguration(testSchema.getResourceData(t))
-	assert.Equal(t, "prop_value", tpConfig["prop_name"])
+	assert.IsType(t, TelemetryProviderConfigurationHTTPEndpoint{}, tpConfig)
+	assert.Equal(t, "prop_value", tpConfig.(TelemetryProviderConfigurationHTTPEndpoint).Headers["prop_name"])
 }
