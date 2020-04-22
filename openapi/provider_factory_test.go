@@ -1182,14 +1182,6 @@ func TestGetTelemetryHandlerReturnsNilTelemetryProviderDueToTelemetryValidationE
 			},
 		},
 	}
-
 	telemetryHandler := providerFactory.GetTelemetryHandler(expectedResourceData)
-
-	assert.NotNil(t, telemetryHandler)
-	assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler)
-	assert.Equal(t, expectedProviderName, telemetryHandler.(telemetryHandlerTimeoutSupport).providerName)
-	assert.Equal(t, version.Version, telemetryHandler.(telemetryHandlerTimeoutSupport).openAPIVersion)
-	assert.Equal(t, telemetryTimeout, telemetryHandler.(telemetryHandlerTimeoutSupport).timeout)
-	assert.Nil(t, telemetryHandler.(telemetryHandlerTimeoutSupport).telemetryProvider)
-	assert.Equal(t, expectedResourceData, telemetryHandler.(telemetryHandlerTimeoutSupport).data)
+	assert.Nil(t, telemetryHandler)
 }

@@ -272,7 +272,9 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 			return nil, err
 		}
 		telemetryHandler := p.GetTelemetryHandler(data)
-		telemetryHandler.SubmitPluginExecutionMetrics()
+		if telemetryHandler != nil {
+			telemetryHandler.SubmitPluginExecutionMetrics()
+		}
 		openAPIClient := &ProviderClient{
 			openAPIBackendConfiguration: openAPIBackendConfiguration,
 			apiAuthenticator:            authenticator,
@@ -290,7 +292,7 @@ func (p providerFactory) GetTelemetryHandler(data *schema.ResourceData) Telemetr
 		err := telemetryProvider.Validate()
 		if err != nil {
 			log.Printf("[WARN] telemetry validation failed: %s, ignoring telemetry", err)
-			telemetryProvider = nil
+			return nil
 		}
 	}
 	return telemetryHandlerTimeoutSupport{
