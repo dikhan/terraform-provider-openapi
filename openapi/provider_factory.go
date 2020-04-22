@@ -286,6 +286,10 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 // GetTelemetryHandler returns a handler containing validated telemetry providers
 func (p providerFactory) GetTelemetryHandler(data *schema.ResourceData) TelemetryHandler {
 	telemetryProvider := p.serviceConfiguration.GetTelemetryConfiguration()
+	err := telemetryProvider.Validate()
+	if err != nil {
+		return nil
+	}
 	return telemetryHandlerTimeoutSupport{
 		timeout:           telemetryTimeout,
 		providerName:      p.name,
