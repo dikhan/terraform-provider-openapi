@@ -24,10 +24,12 @@ import (
 // - Service configurations
 func TestAcc_ProviderConfiguration_PluginExternalFile_HTTPEndpointTelemetry(t *testing.T) {
 	httpEndpointTelemetryCalled := false
+	var headersReceived http.Header
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/metrics":
 			httpEndpointTelemetryCalled = true
+			headersReceived = r.Header
 			w.WriteHeader(http.StatusOK)
 			break
 		case "/v1/cdns", "/v1/cdns/someID":
@@ -56,6 +58,11 @@ paths:
         required: true
         schema:
           $ref: "#/definitions/ContentDeliveryNetworkV1"
+      - type: string
+        x-terraform-header: some_header
+        name: some_header
+        in: header
+        required: true
       responses:
         201:
           description: "successful operation"
@@ -95,7 +102,12 @@ definitions:
         type: "string"
         readOnly: true
       label:
-        type: "string"`, apiHost)
+        type: "string"
+securityDefinitions:
+  some_token:
+    in: header
+    name: Token
+    type: apiKey`, apiHost)
 		w.Write([]byte(swaggerYAMLTemplate))
 	}))
 
@@ -105,6 +117,7 @@ services:
     telemetry:
       http_endpoint:
         url: http://%s/v1/metrics
+        provider_schema_properties: ["some_token", "some_header"]
     swagger-url: %s
     insecure_skip_verify: true`, apiHost, swaggerServer.URL)
 
@@ -125,13 +138,26 @@ services:
 		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(`resource "openapi_cdns_v1" "my_cdn" { label = "some_label"}`),
+				Config: fmt.Sprintf(`
+provider "openapi" {
+  some_token = "token_value"
+  some_header = "header_value" 
+}
+resource "openapi_cdns_v1" "my_cdn" { 
+   label = "some_label"
+}`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1.my_cdn", "label", "some_label"),
 					func(s *terraform.State) error { // asserting that the httpendpoint server received the expected metrics counter
 						if !httpEndpointTelemetryCalled {
 							return fmt.Errorf("http endpoint telemetry not called")
+						}
+						if headersReceived.Get("some_token") != "token_value" {
+							return fmt.Errorf("expected header `some_token` in the metric API not received or not expected value received: %s", headersReceived.Get("some_token"))
+						}
+						if headersReceived.Get("some_header") != "header_value" {
+							return fmt.Errorf("expected header `some_header` in the metric API not received or not expected value received: %s", headersReceived.Get("some_header"))
 						}
 						return nil
 					},
