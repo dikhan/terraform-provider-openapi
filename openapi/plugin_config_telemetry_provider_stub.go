@@ -1,10 +1,13 @@
 package openapi
 
+import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+
 type telemetryProviderStub struct {
 	validationError              error
 	terraformVersionReceived     string
 	openAPIPluginVersionReceived string
 	providerNameReceived         string
+	telemetryProviderConfig      TelemetryProviderConfiguration
 }
 
 func (t *telemetryProviderStub) Validate() error {
@@ -24,4 +27,8 @@ func (t *telemetryProviderStub) IncOpenAPIPluginVersionTotalRunsCounter(openAPIP
 func (t *telemetryProviderStub) IncServiceProviderTotalRunsCounter(providerName string) error {
 	t.providerNameReceived = providerName
 	return nil
+}
+
+func (t *telemetryProviderStub) GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration {
+	return t.telemetryProviderConfig
 }

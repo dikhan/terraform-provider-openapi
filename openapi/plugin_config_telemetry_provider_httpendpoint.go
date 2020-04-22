@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/dikhan/terraform-provider-openapi/openapi/version"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
 	"net/http"
 	"runtime"
@@ -17,8 +18,11 @@ import (
 type TelemetryProviderHTTPEndpoint struct {
 	// URL describes the HTTP endpoint to send the metric to
 	URL string `yaml:"url"`
-	// Prefix enables to append a prefix to the metrics pushed to graphite
+	// Prefix enables to append a prefix to the metrics pushed to the HTTP endpoint
 	Prefix string `yaml:"prefix,omitempty"`
+	// Headers defines what specific provider configuration properties and their values that will be injected into
+	// metric API request headers. Values must match a real property name in provider schema configuration.
+	Headers []string `yaml:"headers,omitempty"`
 }
 
 type metricType string
@@ -73,6 +77,17 @@ func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(provid
 		return err
 	}
 	return nil
+}
+
+func (g TelemetryProviderHTTPEndpoint) GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration {
+	tpConfig := map[string]interface{}{}
+	for _, propSchemaName := range g.Headers {
+		propSchemaValue := data.Get(propSchemaName)
+		if propSchemaValue != nil {
+			tpConfig[propSchemaName] = propSchemaValue
+		}
+	}
+	return tpConfig
 }
 
 func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric) error {

@@ -289,3 +289,13 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderTotalRunsCounter(t *test
 		}
 	}
 }
+
+func TestGetTelemetryProviderConfiguration(t *testing.T) {
+	tp := TelemetryProviderHTTPEndpoint{
+		Headers: []string{"prop_name"},
+	}
+	propSchema := newStringSchemaDefinitionPropertyWithDefaults("prop_name", "", true, false, "prop_value")
+	testSchema := newTestSchema(propSchema)
+	tpConfig := tp.GetTelemetryProviderConfiguration(testSchema.getResourceData(t))
+	assert.Equal(t, "prop_value", tpConfig["prop_name"])
+}

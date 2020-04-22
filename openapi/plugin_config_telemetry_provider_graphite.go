@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/DataDog/datadog-go/statsd"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
 	"strings"
 )
@@ -54,6 +55,10 @@ func (g TelemetryProviderGraphite) IncServiceProviderTotalRunsCounter(providerNa
 		return err
 	}
 	log.Printf("[INFO] graphite metric successfully submitted: %s", metric)
+	return nil
+}
+
+func (g TelemetryProviderGraphite) GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration {
 	return nil
 }
 
