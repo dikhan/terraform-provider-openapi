@@ -30,17 +30,16 @@ type telemetryHandlerTimeoutSupport struct {
 type MetricSubmitter func() error
 
 func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
-	//telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
-	if t.telemetryProvider == nil {
-		log.Println("[INFO] Telemetry provider not configured")
-		return
+	if t.telemetryProvider != nil {
+		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
+		t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
+			return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
+		})
+		t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
+			return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
+		})
 	}
-	t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-		return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName)
-	})
-	t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-		return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion)
-	})
+	log.Println("[INFO] Telemetry provider not configured")
 }
 
 func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSubmitter MetricSubmitter) {

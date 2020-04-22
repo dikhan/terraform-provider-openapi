@@ -35,7 +35,7 @@ func (g TelemetryProviderGraphite) Validate() error {
 
 // IncOpenAPIPluginVersionTotalRunsCounter will increment the counter 'statsd.<prefix>.terraform.openapi_plugin_version.%s.total_runs' metric to 1. The
 // %s will be replaced by the OpenAPI plugin version used at runtime
-func (g TelemetryProviderGraphite) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error {
+func (g TelemetryProviderGraphite) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	metric := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
 	log.Printf("[INFO] graphite metric to be submitted: %s", metric)
@@ -48,7 +48,7 @@ func (g TelemetryProviderGraphite) IncOpenAPIPluginVersionTotalRunsCounter(openA
 
 // IncServiceProviderTotalRunsCounter will increment the counter for a given provider 'statsd.<prefix>.terraform.providers.%s.total_runs' metric to 1. The
 // %s will be replaced by the provider name used at runtime
-func (g TelemetryProviderGraphite) IncServiceProviderTotalRunsCounter(providerName string) error {
+func (g TelemetryProviderGraphite) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	metric := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
 	log.Printf("[INFO] graphite metric to be submitted: %s", metric)
 	if err := g.submitMetric(metric); err != nil {

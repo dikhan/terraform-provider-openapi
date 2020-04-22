@@ -66,7 +66,7 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter(t *te
 		Port:   telemetryPortInt,
 		Prefix: "myPrefixName",
 	}
-	err = tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion)
+	err = tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion, nil)
 	assert.Nil(t, err)
 	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess, &logging)
 }
@@ -76,7 +76,7 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter_BadHo
 	expectedError := &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false}
 
 	tpg := createTestGraphiteProviderBadHost()
-	err := tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion)
+	err := tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion, nil)
 
 	assert.Equal(t, expectedError, err)
 }
@@ -100,7 +100,7 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter(t *testing
 		Port:   telemetryPortInt,
 		Prefix: "myPrefixName",
 	}
-	err = tpg.IncServiceProviderTotalRunsCounter(providerName)
+	err = tpg.IncServiceProviderTotalRunsCounter(providerName, nil)
 	assert.Nil(t, err)
 	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess, &logging)
 }
@@ -110,7 +110,7 @@ func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter_BadHost(t 
 	expectedError := &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false}
 
 	tpg := createTestGraphiteProviderBadHost()
-	err := tpg.IncServiceProviderTotalRunsCounter(providerName)
+	err := tpg.IncServiceProviderTotalRunsCounter(providerName, nil)
 
 	assert.Equal(t, expectedError, err)
 }

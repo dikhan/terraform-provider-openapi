@@ -58,7 +58,7 @@ func (g TelemetryProviderHTTPEndpoint) Validate() error {
 
 // IncOpenAPIPluginVersionTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.openapi_plugin_version.%s.total_runs'. The
 // %s will be replaced by the OpenAPI plugin version used at runtime
-func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error {
+func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	metricName := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
 	metric := createNewCounterMetric(g.Prefix, metricName)
@@ -70,7 +70,7 @@ func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(o
 
 // IncServiceProviderTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.providers.%s.total_runs'. The
 // %s will be replaced by the provider name used at runtime
-func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(providerName string) error {
+func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	metricName := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
 	metric := createNewCounterMetric(g.Prefix, metricName)
 	if err := g.submitMetric(metric); err != nil {

@@ -234,7 +234,7 @@ func TestTelemetryProviderHttpEndpointIncOpenAPIPluginVersionTotalRunsCounter(t 
 		tph := TelemetryProviderHTTPEndpoint{
 			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
-		err := tph.IncOpenAPIPluginVersionTotalRunsCounter("0.26.0")
+		err := tph.IncOpenAPIPluginVersionTotalRunsCounter("0.26.0", nil)
 		if tc.expectedErr == nil {
 			assert.NoError(t, err, tc.testName)
 		} else {
@@ -280,7 +280,7 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderTotalRunsCounter(t *test
 		tph := TelemetryProviderHTTPEndpoint{
 			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
-		err := tph.IncServiceProviderTotalRunsCounter("cdn")
+		err := tph.IncServiceProviderTotalRunsCounter("cdn", nil)
 		if tc.expectedErr == nil {
 			assert.NoError(t, err, tc.testName)
 		} else {

@@ -19,12 +19,12 @@ func (t *telemetryProviderStub) IncTerraformVersionTotalRunsCounter(terraformVer
 	return nil
 }
 
-func (t *telemetryProviderStub) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string) error {
+func (t *telemetryProviderStub) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	t.openAPIPluginVersionReceived = openAPIPluginVersion
 	return nil
 }
 
-func (t *telemetryProviderStub) IncServiceProviderTotalRunsCounter(providerName string) error {
+func (t *telemetryProviderStub) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	t.providerNameReceived = providerName
 	return nil
 }
