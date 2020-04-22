@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/version"
@@ -803,10 +804,14 @@ func TestConfigureProvider(t *testing.T) {
 			})
 			Convey("And the http_endpoint telemetry server should have been received the expected counter metrics increase", func() {
 				So(httpMetricsSubmitted, ShouldBeTrue)
-				// TODO: Fix failing test - pending implementation of httpendpoing telemetry headers
 				So(headersReceived.Get("header_name"), ShouldEqual, "someHeaderValue")
-				So(string(metricsReceived), ShouldContainSubstring, string(metricTypeCounter))
-				So(string(metricsReceived), ShouldContainSubstring, "openapi.terraform.openapi_plugin_version.dev.total_runs")
+
+				tm := telemetryMetric{}
+				err = json.Unmarshal(metricsReceived, &tm)
+				So(err, ShouldBeNil)
+				So(tm.MetricType, ShouldEqual, metricTypeCounter)
+				So(tm.MetricName, ShouldEqual, "openapi.terraform.openapi_plugin_version.total_runs")
+				So(tm.Tags, ShouldResemble, []string{"openapi_plugin_version:dev"})
 			})
 		})
 	})
