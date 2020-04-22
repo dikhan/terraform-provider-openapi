@@ -751,8 +751,10 @@ func TestConfigureProvider(t *testing.T) {
 	Convey("Given a provider factory configured with an analyser and http_endpoint telemetry", t, func() {
 		httpMetricsSubmitted := false
 		metricsReceived := []byte{}
+		headersReceived := http.Header{}
 		api := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			metricsReceived, _ = ioutil.ReadAll(req.Body)
+			headersReceived = req.Header
 			httpMetricsSubmitted = true
 		}))
 		// Close the server when test finishes
@@ -781,8 +783,9 @@ func TestConfigureProvider(t *testing.T) {
 			},
 			serviceConfiguration: &ServiceConfigStub{
 				Telemetry: &TelemetryProviderHTTPEndpoint{
-					URL:    fmt.Sprintf("%s/v1/metrics", api.URL),
-					Prefix: "openapi",
+					URL:     fmt.Sprintf("%s/v1/metrics", api.URL),
+					Prefix:  "openapi",
+					Headers: []string{"header_name"},
 				},
 			},
 		}
@@ -800,6 +803,8 @@ func TestConfigureProvider(t *testing.T) {
 			})
 			Convey("And the http_endpoint telemetry server should have been received the expected counter metrics increase", func() {
 				So(httpMetricsSubmitted, ShouldBeTrue)
+				// TODO: Fix failing test - pending implementation of httpendpoing telemetry headers
+				So(headersReceived.Get("header_name"), ShouldEqual, "someHeaderValue")
 				So(string(metricsReceived), ShouldContainSubstring, string(metricTypeCounter))
 				So(string(metricsReceived), ShouldContainSubstring, "openapi.terraform.openapi_plugin_version.dev.total_runs")
 			})
