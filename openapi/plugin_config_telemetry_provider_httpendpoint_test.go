@@ -102,7 +102,7 @@ func TestCreateNewRequest(t *testing.T) {
 			URL: tc.url,
 		}
 
-		request, err = tph.createNewRequest(tc.expectedCounterMetric)
+		request, err = tph.createNewRequest(tc.expectedCounterMetric, nil)
 		if tc.expectedErr == nil {
 			reqBody, err = ioutil.ReadAll(request.Body)
 			err = json.Unmarshal(reqBody, &telemetryMetric)
@@ -161,7 +161,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 		tph := TelemetryProviderHTTPEndpoint{
 			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
-		err := tph.submitMetric(expectedCounterMetric)
+		err := tph.submitMetric(expectedCounterMetric, nil)
 		if tc.expectedErr == nil {
 			assert.NoError(t, err, tc.testName)
 		} else {
@@ -193,7 +193,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetricFailureScenarios(t *testing.T)
 		tph := TelemetryProviderHTTPEndpoint{
 			URL: tc.inputURL,
 		}
-		err := tph.submitMetric(telemetryMetric{metricTypeCounter, "prefix.terraform.openapi_plugin_version.version.total_runs"})
+		err := tph.submitMetric(telemetryMetric{metricTypeCounter, "prefix.terraform.openapi_plugin_version.version.total_runs"}, nil)
 		assert.EqualError(t, err, tc.expectedErr.Error())
 	}
 }

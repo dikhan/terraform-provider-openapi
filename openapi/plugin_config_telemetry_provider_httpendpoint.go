@@ -62,7 +62,7 @@ func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(o
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	metricName := fmt.Sprintf("terraform.openapi_plugin_version.%s.total_runs", version)
 	metric := createNewCounterMetric(g.Prefix, metricName)
-	if err := g.submitMetric(metric); err != nil {
+	if err := g.submitMetric(metric, telemetryProviderConfiguration); err != nil {
 		return err
 	}
 	return nil
@@ -73,7 +73,7 @@ func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(o
 func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	metricName := fmt.Sprintf("terraform.providers.%s.total_runs", providerName)
 	metric := createNewCounterMetric(g.Prefix, metricName)
-	if err := g.submitMetric(metric); err != nil {
+	if err := g.submitMetric(metric, telemetryProviderConfiguration); err != nil {
 		return err
 	}
 	return nil
@@ -90,9 +90,9 @@ func (g TelemetryProviderHTTPEndpoint) GetTelemetryProviderConfiguration(data *s
 	return tpConfig
 }
 
-func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric) error {
+func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	log.Printf("[INFO] http endpoint metric to be submitted: %s", metric.MetricName)
-	req, err := g.createNewRequest(metric)
+	req, err := g.createNewRequest(metric, telemetryProviderConfiguration)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (g TelemetryProviderHTTPEndpoint) submitMetric(metric telemetryMetric) erro
 	return nil
 }
 
-func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric) (*http.Request, error) {
+func (g TelemetryProviderHTTPEndpoint) createNewRequest(metric telemetryMetric, telemetryProviderConfiguration TelemetryProviderConfiguration) (*http.Request, error) {
 	var body []byte
 	var err error
 	body, err = json.Marshal(metric)
