@@ -1147,49 +1147,49 @@ func TestCreateTerraformProviderDataSourceMap(t *testing.T) {
 }
 
 func TestGetTelemetryHandler(t *testing.T) {
-	testcases := []struct {
-		name                  string
-		telemetryProvider     TelemetryProvider
-		expectValidationError bool
-	}{
-		{
-			name: "happy path",
-			telemetryProvider: &TelemetryProviderHTTPEndpoint{
-				URL: "https://endpoint/v1/metrics",
-			},
-			expectValidationError: false,
+	expectedTelemetryProvider := &TelemetryProviderHTTPEndpoint{
+		URL: "https://endpoint/v1/metrics",
+	}
+	expectedResourceData := &schema.ResourceData{}
+	expectedProviderName := "provider_name"
+	providerFactory := providerFactory{
+		name: expectedProviderName,
+		serviceConfiguration: &ServiceConfigStub{
+			Telemetry: expectedTelemetryProvider,
 		},
-		{
-			name: "getProviderResourceName fails ",
-			telemetryProvider: &TelemetryProviderHTTPEndpoint{
+	}
+
+	telemetryHandler := providerFactory.GetTelemetryHandler(expectedResourceData)
+
+	assert.NotNil(t, telemetryHandler)
+	assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler)
+	assert.Equal(t, expectedProviderName, telemetryHandler.(telemetryHandlerTimeoutSupport).providerName)
+	assert.Equal(t, version.Version, telemetryHandler.(telemetryHandlerTimeoutSupport).openAPIVersion)
+	assert.Equal(t, telemetryTimeout, telemetryHandler.(telemetryHandlerTimeoutSupport).timeout)
+	assert.Equal(t, expectedTelemetryProvider, telemetryHandler.(telemetryHandlerTimeoutSupport).telemetryProvider)
+	assert.Equal(t, expectedResourceData, telemetryHandler.(telemetryHandlerTimeoutSupport).data)
+
+}
+
+func TestGetTelemetryHandlerReturnsNilTelemetryProviderDueToTelemetryValidationError(t *testing.T) {
+	expectedResourceData := &schema.ResourceData{}
+	expectedProviderName := "provider_name"
+	providerFactory := providerFactory{
+		name: expectedProviderName,
+		serviceConfiguration: &ServiceConfigStub{
+			Telemetry: &TelemetryProviderHTTPEndpoint{
 				URL: "",
 			},
-			expectValidationError: true,
 		},
 	}
 
-	for _, tc := range testcases {
-		expectedResourceData := &schema.ResourceData{}
-		expectedProviderName := "provider_name"
-		providerFactory := providerFactory{
-			name: expectedProviderName,
-			serviceConfiguration: &ServiceConfigStub{
-				Telemetry: tc.telemetryProvider,
-			},
-		}
+	telemetryHandler := providerFactory.GetTelemetryHandler(expectedResourceData)
 
-		telemetryHandler := providerFactory.GetTelemetryHandler(expectedResourceData)
-		if tc.expectValidationError {
-			assert.Nil(t, telemetryHandler)
-		} else {
-			assert.NotNil(t, telemetryHandler)
-			assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler)
-			assert.Equal(t, expectedProviderName, telemetryHandler.(telemetryHandlerTimeoutSupport).providerName)
-			assert.Equal(t, version.Version, telemetryHandler.(telemetryHandlerTimeoutSupport).openAPIVersion)
-			assert.Equal(t, telemetryTimeout, telemetryHandler.(telemetryHandlerTimeoutSupport).timeout)
-			assert.Equal(t, tc.telemetryProvider, telemetryHandler.(telemetryHandlerTimeoutSupport).telemetryProvider)
-			assert.Equal(t, expectedResourceData, telemetryHandler.(telemetryHandlerTimeoutSupport).data)
-		}
-	}
-
+	assert.NotNil(t, telemetryHandler)
+	assert.IsType(t, telemetryHandlerTimeoutSupport{}, telemetryHandler)
+	assert.Equal(t, expectedProviderName, telemetryHandler.(telemetryHandlerTimeoutSupport).providerName)
+	assert.Equal(t, version.Version, telemetryHandler.(telemetryHandlerTimeoutSupport).openAPIVersion)
+	assert.Equal(t, telemetryTimeout, telemetryHandler.(telemetryHandlerTimeoutSupport).timeout)
+	assert.Nil(t, telemetryHandler.(telemetryHandlerTimeoutSupport).telemetryProvider)
+	assert.Equal(t, expectedResourceData, telemetryHandler.(telemetryHandlerTimeoutSupport).data)
 }
