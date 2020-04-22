@@ -160,7 +160,7 @@ Describes the configuration for HTTP endpoint telemetry.
 
 Field Name | Type | Description
 ---|:---:|---
-url | `string` | **Required.** URL endpoint to where the metrics will be sent to (eg: https://my-app.com/v1/metrics). The endpoint must use HTTPs protocol.
+url | `string` | **Required.** URL endpoint to where the metrics will be sent to (eg: https://my-app.com/v1/metrics).
 prefix | `string` | Some prefix to append to the metrics pushed to the http endpoint. If populated, metrics pushed to the endpoint will be of the following form: `<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix. 
 provider_schema_properties | `[]string` | Defines what specific provider configuration properties and their values will be injected into metric API request headers. This is useful in cases where you need the specified provider configuration's properties as part of for instance the metric tags. Values must match a real property name in provider schema configuration.
 
