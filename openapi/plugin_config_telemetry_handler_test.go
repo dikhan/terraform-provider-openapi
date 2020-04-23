@@ -48,6 +48,37 @@ func TestSubmitPluginExecutionMetrics(t *testing.T) {
 	}
 }
 
+func TestSubmitResourceExecutionMetrics(t *testing.T) {
+	expectedProviderName := "providerName"
+	expectedResourceName := "resourceName"
+	expectedTfOperation := TelemetryResourceOperationCreate
+	stub := &telemetryProviderStub{}
+	ths := telemetryHandlerTimeoutSupport{
+		providerName:      expectedProviderName,
+		timeout:           1,
+		openAPIVersion:    "0.25.0",
+		telemetryProvider: stub,
+	}
+	ths.SubmitResourceExecutionMetrics(expectedResourceName, expectedTfOperation)
+	// The below confirm that the corresponding inc methods were called and also the info passed in was the correct one
+	assert.Equal(t, expectedProviderName, stub.providerNameReceived)
+	assert.Equal(t, expectedResourceName, stub.resourceNameReceived)
+	assert.Equal(t, expectedTfOperation, stub.tfOperationReceived)
+}
+
+func TestSubmitResourceExecutionMetrics_FailsNilTelemetryProvider(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	ths := telemetryHandlerTimeoutSupport{
+		providerName:      "providerName",
+		timeout:           1,
+		openAPIVersion:    "0.25.0",
+		telemetryProvider: nil,
+	}
+	ths.SubmitResourceExecutionMetrics("resourceName", TelemetryResourceOperationCreate)
+	assert.Contains(t, buf.String(), "[INFO] Telemetry provider not configured")
+}
+
 func TestSubmitMetric(t *testing.T) {
 	testCases := []struct {
 		name                 string

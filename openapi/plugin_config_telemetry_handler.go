@@ -42,6 +42,16 @@ func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
 	log.Println("[INFO] Telemetry provider not configured")
 }
 
+func (t telemetryHandlerTimeoutSupport) SubmitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation) {
+	if t.telemetryProvider != nil {
+		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
+		t.submitMetric("IncServiceProviderResourceTotalRunsCounter", func() error {
+			return t.telemetryProvider.IncServiceProviderResourceTotalRunsCounter(t.providerName, resourceName, tfOperation, telemetryConfig)
+		})
+	}
+	log.Println("[INFO] Telemetry provider not configured")
+}
+
 func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSubmitter MetricSubmitter) {
 	doneChan := make(chan error)
 	go func() {
