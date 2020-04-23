@@ -88,6 +88,16 @@ func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(provid
 	return nil
 }
 
+func (g TelemetryProviderHTTPEndpoint) IncServiceProviderResourceTotalRunsCounter(providerName, resourceName, tfOperation string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
+	tags := []string{"provider_name:" + providerName, "resource_name:" + resourceName, "terraform_operation:" + tfOperation}
+	metricName := "terraform.provider"
+	metric := createNewCounterMetric(g.Prefix, metricName, tags)
+	if err := g.submitMetric(metric, telemetryProviderConfiguration); err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetTelemetryProviderConfiguration returns a telemetryProviderConfigurationHTTPEndpoint loaded with headers mapping to
 // the plugin configuration schema properties that match the ones specified in the TelemetryProviderHTTPEndpoint ProviderSchemaProperties values
 func (g TelemetryProviderHTTPEndpoint) GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration {
