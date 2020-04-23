@@ -8,6 +8,15 @@ import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 // can be passed in if needed
 type TelemetryProviderConfiguration interface{}
 
+type TelemetryResourceOperation string
+
+const (
+	TelemetryResourceOperationCreate TelemetryResourceOperation = "create"
+	TelemetryResourceOperationRead   TelemetryResourceOperation = "read"
+	TelemetryResourceOperationUpdate TelemetryResourceOperation = "update"
+	TelemetryResourceOperationDelete TelemetryResourceOperation = "delete"
+)
+
 // TelemetryProvider holds the behaviour expected to be implemented for the Telemetry Providers supported. At the moment
 // only Graphite is supported.
 type TelemetryProvider interface {
