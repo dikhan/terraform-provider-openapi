@@ -7,6 +7,8 @@ type telemetryProviderStub struct {
 	terraformVersionReceived     string
 	openAPIPluginVersionReceived string
 	providerNameReceived         string
+	resourceNameReceived         string
+	tfOperationReceived          TelemetryResourceOperation
 	telemetryProviderConfig      TelemetryProviderConfiguration
 }
 
@@ -26,6 +28,13 @@ func (t *telemetryProviderStub) IncOpenAPIPluginVersionTotalRunsCounter(openAPIP
 
 func (t *telemetryProviderStub) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	t.providerNameReceived = providerName
+	return nil
+}
+
+func (t *telemetryProviderStub) IncServiceProviderResourceTotalRunsCounter(providerName, resourceName string, tfOperation TelemetryResourceOperation, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
+	t.providerNameReceived = providerName
+	t.resourceNameReceived = resourceName
+	t.tfOperationReceived = tfOperation
 	return nil
 }
 
