@@ -361,7 +361,7 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderResourceTotalRunsCounter
 			assert.Nil(t, err, tc.testName)
 			assert.Equal(t, metricTypeCounter, telemetryMetric.MetricType, tc.testName)
 			assert.Equal(t, "terraform.provider", telemetryMetric.MetricName, tc.testName)
-			assert.Equal(t, []string{"provider_name:cdn", "resource_name:cdn_resource", "terraform_operation:create"}, telemetryMetric.Tags, tc.testName)
+			assert.Equal(t, []string{"provider_name:cdn", "resource_name:cdn_resource", fmt.Sprintf("terraform_operation:%s", TelemetryResourceOperationCreate)}, telemetryMetric.Tags, tc.testName)
 			rw.WriteHeader(tc.returnedResponseCode)
 		}))
 		// Close the server when test finishes
@@ -370,7 +370,7 @@ func TestTelemetryProviderHttpEndpointIncServiceProviderResourceTotalRunsCounter
 		tph := TelemetryProviderHTTPEndpoint{
 			URL: fmt.Sprintf("%s/v1/metrics", api.URL),
 		}
-		err := tph.IncServiceProviderResourceTotalRunsCounter("cdn", "cdn_resource", "create", nil)
+		err := tph.IncServiceProviderResourceTotalRunsCounter("cdn", "cdn_resource", TelemetryResourceOperationCreate, nil)
 		if tc.expectedErr == nil {
 			assert.NoError(t, err, tc.testName)
 		} else {
