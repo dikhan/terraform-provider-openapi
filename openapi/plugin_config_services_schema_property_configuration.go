@@ -23,11 +23,11 @@ const cmdTimeout = 10
 // fields supported that enable the configuration of the provider's properties via the terraform-provider-openapi.yaml plugin
 // config file
 type ServiceSchemaPropertyConfigurationV1 struct {
-	SchemaPropertyName    string                                       `yaml:"schema_property_name"`
-	DefaultValue          string                                       `yaml:"default_value"`
-	Command               []string                                     `yaml:"cmd,flow"`
-	CommandTimeout        int                                          `yaml:"cmd_timeout"`
-	ExternalConfiguration ServiceSchemaPropertyExternalConfigurationV1 `yaml:"schema_property_external_configuration"`
+	SchemaPropertyName    string                                       `yaml:"schema_property_name,omitempty"`
+	DefaultValue          string                                       `yaml:"default_value,omitempty"`
+	Command               []string                                     `yaml:"cmd,flow,omitempty"`
+	CommandTimeout        int                                          `yaml:"cmd_timeout,omitempty"`
+	ExternalConfiguration ServiceSchemaPropertyExternalConfigurationV1 `yaml:"schema_property_external_configuration,omitempty"`
 }
 
 // ServiceSchemaPropertyExternalConfigurationV1 defines the external configuration for a provider property.

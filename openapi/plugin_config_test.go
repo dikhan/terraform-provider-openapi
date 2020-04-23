@@ -1,17 +1,14 @@
 package openapi
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/smartystreets/assertions/should"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"net"
 	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
 const providerName = "test"
@@ -115,8 +112,8 @@ func TestGetServiceProviderConfiguration(t *testing.T) {
 	Convey("Given a PluginConfiguration for 'test' provider, a OTF_VAR_test_SWAGGER_URL is set using lower case provider name and a plugin configuration file containing a service called 'test'", t, func() {
 		pluginConfig := fmt.Sprintf(`version: '1'
 services:
-    %s:
-        swagger-url: %s`, providerName, "http://some-other-api/swagger.yaml")
+   %s:
+       swagger-url: %s`, providerName, "http://some-other-api/swagger.yaml")
 		configReader := strings.NewReader(pluginConfig)
 		pluginConfiguration := PluginConfiguration{
 			ProviderName:  providerName,
@@ -139,13 +136,11 @@ services:
 		os.Unsetenv(otfVarNameLc)
 	})
 
-	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set AND telemetry not configured", t, func() {
-		var buf bytes.Buffer
-		log.SetOutput(&buf)
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set", t, func() {
 		pluginConfig := fmt.Sprintf(`version: '1'
 services:
-    %s:
-        swagger-url: %s`, providerName, otfVarSwaggerURLValue)
+   %s:
+       swagger-url: %s`, providerName, otfVarSwaggerURLValue)
 		configReader := strings.NewReader(pluginConfig)
 		pluginConfiguration := PluginConfiguration{
 			ProviderName:  providerName,
@@ -162,61 +157,22 @@ services:
 			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
-			})
-			Convey("And the logging should show that the telemetry is not configured", func() {
-				fmt.Println(buf.String())
-				So(buf.String(), ShouldContainSubstring, "[DEBUG] telemetry not configured")
-			})
-		})
-	})
-
-	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' and OTF_VAR_test_SWAGGER_URL not being set AND the telemetry for graphite is not configured", t, func() {
-		var buf bytes.Buffer
-		log.SetOutput(&buf)
-		pluginConfig := fmt.Sprintf(`version: '1'
-telemetry:
-  graphite:
-services:
-    %s:
-        swagger-url: %s`, providerName, otfVarSwaggerURLValue)
-		configReader := strings.NewReader(pluginConfig)
-		pluginConfiguration := PluginConfiguration{
-			ProviderName:  providerName,
-			Configuration: configReader,
-		}
-		Convey("When getServiceConfiguration is called", func() {
-			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfiguration returned should not be nil ", func() {
-				So(serviceConfiguration, ShouldNotBeNil)
-			})
-			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
-				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
-				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
-			})
-			Convey("And the logging should show that the telemetry for graphite is not present", func() {
-				fmt.Println(buf.String())
-				So(buf.String(), ShouldContainSubstring, "[DEBUG] graphite telemetry configuration not present")
 			})
 		})
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing telemetry configured and a service called 'test'", t, func() {
-		metricChannel := make(chan string)
-		pc, telemetryHost, telemetryPort := udpServer(metricChannel)
-		defer pc.Close()
-
+		expectedTelemetryHost := "some-host"
+		expectedTelemetryPort := 2654
 		pluginConfig := fmt.Sprintf(`version: '1'
-telemetry:
-  graphite:
-    host: %s
-    port: %s
-    prefix: openapi
 services:
     %s:
-      swagger-url: %s`, telemetryHost, telemetryPort, providerName, otfVarSwaggerURLValue)
+      telemetry:
+        graphite:
+          host: %s
+          port: %d
+          prefix: openapi
+      swagger-url: %s`, providerName, expectedTelemetryHost, expectedTelemetryPort, otfVarSwaggerURLValue)
 		configReader := strings.NewReader(pluginConfig)
 		pluginConfiguration := PluginConfiguration{
 			ProviderName:  providerName,
@@ -234,9 +190,51 @@ services:
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
-			Convey("And the telemetry server should have been received the expected counter metrics increase", func() {
-				assertExpectedMetric(t, metricChannel, "openapi.terraform.providers.test.total_runs:1|c")
-				assertExpectedMetric(t, metricChannel, "openapi.terraform.openapi_plugin_version.dev.total_runs:1|c")
+			Convey("And the serviceConfiguration contains the expected graphite telemetry configuration", func() {
+				expectedGraphiteProvider := &TelemetryProviderGraphite{
+					Host:   expectedTelemetryHost,
+					Port:   expectedTelemetryPort,
+					Prefix: "openapi",
+				}
+				So(serviceConfiguration.GetTelemetryConfiguration(), ShouldResemble, TelemetryProvider(expectedGraphiteProvider))
+			})
+		})
+	})
+
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing http_endpoint telemetry configured and a service called 'test'", t, func() {
+		expectedTelemetryHost := "http://some-host/v1/metrics"
+		expectedPrefix := "openapi"
+		pluginConfig := fmt.Sprintf(`version: '1'
+services:
+    %s:
+      telemetry:
+        http_endpoint:
+          url: %s
+          prefix: %s
+      swagger-url: %s`, providerName, expectedTelemetryHost, expectedPrefix, otfVarSwaggerURLValue)
+		configReader := strings.NewReader(pluginConfig)
+		pluginConfiguration := PluginConfiguration{
+			ProviderName:  providerName,
+			Configuration: configReader,
+		}
+		Convey("When getServiceConfiguration is called", func() {
+			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the serviceConfiguration returned should not be nil ", func() {
+				So(serviceConfiguration, ShouldNotBeNil)
+			})
+			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
+				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
+				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
+			})
+			Convey("And the serviceConfiguration contains the expected http_endpoint telemetry configuration", func() {
+				expectedHTTPEndpointProvider := &TelemetryProviderHTTPEndpoint{
+					URL:    expectedTelemetryHost,
+					Prefix: expectedPrefix,
+				}
+				So(serviceConfiguration.GetTelemetryConfiguration(), ShouldResemble, TelemetryProvider(expectedHTTPEndpointProvider))
 			})
 		})
 	})
@@ -323,25 +321,6 @@ services:
 		})
 	})
 
-}
-
-func assertExpectedMetric(t *testing.T, metricChannel chan string, expectedMetric string) {
-	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, "", "", nil)
-}
-
-func assertExpectedMetricAndLogging(t *testing.T, metricChannel chan string, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess string, logging *bytes.Buffer) {
-	select {
-	case metricReceived := <-metricChannel:
-		assert.Contains(t, metricReceived, expectedMetric)
-		if expectedLogMetricToSubmit != "" {
-			assert.Contains(t, logging.String(), expectedLogMetricToSubmit)
-		}
-		if expectedLogMetricSuccess != "" {
-			assert.Contains(t, logging.String(), expectedLogMetricSuccess)
-		}
-	case <-time.After(500 * time.Millisecond):
-		t.Fatalf("[FAIL] '%s' not reveided within the expected timeframe (timed out)", expectedMetric)
-	}
 }
 
 func udpServer(metricChannel chan string) (net.PacketConn, string, string) {

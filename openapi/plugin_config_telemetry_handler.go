@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
 	"time"
 )
@@ -10,31 +11,35 @@ import (
 // timeout set or it errors when sending the metric, the provider execution will not be affected by it and the corresponding error
 // will be logged for the reference
 type TelemetryHandler interface {
-	// SubmitMetrics
-	SubmitMetrics()
+	// SubmitPluginExecutionMetrics submits the metrics for the total number of times the plugin and specific OpenAPI plugin version
+	// have been executed
+	SubmitPluginExecutionMetrics()
 }
 
 const telemetryTimeout = 2
 
 type telemetryHandlerTimeoutSupport struct {
-	timeout            int
-	providerName       string
-	openAPIVersion     string
-	telemetryProviders []TelemetryProvider
+	timeout           int
+	providerName      string
+	openAPIVersion    string
+	telemetryProvider TelemetryProvider
+	data              *schema.ResourceData
 }
 
 // MetricSubmitter is the function holding the logic that actually submits the metric
 type MetricSubmitter func() error
 
-func (t telemetryHandlerTimeoutSupport) SubmitMetrics() {
-	for _, telemetryProvider := range t.telemetryProviders {
+func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
+	if t.telemetryProvider != nil {
+		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
 		t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-			return telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName)
+			return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
 		})
 		t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-			return telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion)
+			return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
 		})
 	}
+	log.Println("[INFO] Telemetry provider not configured")
 }
 
 func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSubmitter MetricSubmitter) {

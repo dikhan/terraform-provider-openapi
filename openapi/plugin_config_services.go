@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
+	"log"
 	"os"
 )
 
@@ -19,6 +20,17 @@ type ServiceConfiguration interface {
 	GetSchemaPropertyConfiguration(schemaPropertyName string) ServiceSchemaPropertyConfiguration
 	// Validate makes sure the configuration is valid
 	Validate(runningPluginVersion string) error
+
+	// GetTelemetryConfiguration returns the telemetry configuration for this service provider
+	GetTelemetryConfiguration() TelemetryProvider
+}
+
+// TelemetryConfig contains the configuration for the telemetry
+type TelemetryConfig struct {
+	// Graphite defines the configuration needed to ship telemetry to Graphite
+	Graphite *TelemetryProviderGraphite `yaml:"graphite,omitempty"`
+	// HTTPEndpoint defines the configuration needed to ship telemetry to an http endpoint
+	HTTPEndpoint *TelemetryProviderHTTPEndpoint `yaml:"http_endpoint,omitempty"`
 }
 
 // ServiceConfigV1 defines configuration for the service provider
@@ -29,17 +41,20 @@ type ServiceConfigV1 struct {
 	PluginVersion string `yaml:"plugin_version,omitempty"`
 	// InsecureSkipVerify defines whether the internal http client used to fetch the swagger file should verify the server cert
 	// or not. This should only be used purposefully if the server is using a self-signed cert and only if the server is trusted
-	InsecureSkipVerify bool `yaml:"insecure_skip_verify"`
+	InsecureSkipVerify bool `yaml:"insecure_skip_verify,omitempty"`
 	// SchemaConfigurationV1 represents the list of schema property configurations
-	SchemaConfigurationV1 []ServiceSchemaPropertyConfigurationV1 `yaml:"schema_configuration"`
+	SchemaConfigurationV1 []ServiceSchemaPropertyConfigurationV1 `yaml:"schema_configuration,omitempty"`
+
+	TelemetryConfig *TelemetryConfig `yaml:"telemetry,omitempty"`
 }
 
 // NewServiceConfigV1 creates a new instance of NewServiceConfigV1 struct with the values provided
-func NewServiceConfigV1(swaggerURL string, insecureSkipVerifyEnabled bool) *ServiceConfigV1 {
+func NewServiceConfigV1(swaggerURL string, insecureSkipVerifyEnabled bool, telemetryConfig *TelemetryConfig) *ServiceConfigV1 {
 	return &ServiceConfigV1{
 		SwaggerURL:            swaggerURL,
 		InsecureSkipVerify:    insecureSkipVerifyEnabled,
 		SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{},
+		TelemetryConfig:       telemetryConfig,
 	}
 }
 
@@ -57,6 +72,38 @@ func (s *ServiceConfigV1) GetPluginVersion() string {
 // otherwise
 func (s *ServiceConfigV1) IsInsecureSkipVerifyEnabled() bool {
 	return s.InsecureSkipVerify
+}
+
+// GetTelemetryConfiguration returns a TelemetryProvider configured for Graphite or HTTPEndpoint
+func (s *ServiceConfigV1) GetTelemetryConfiguration() TelemetryProvider {
+	if s.TelemetryConfig != nil {
+		if s.TelemetryConfig.Graphite != nil && s.TelemetryConfig.HTTPEndpoint != nil {
+			log.Printf("[WARN] ignoring telemetry due multiple telemetry providers configured (graphite and http_endpoint): select only one")
+			return nil
+		}
+		if s.TelemetryConfig.Graphite != nil {
+			log.Printf("[DEBUG] graphite telemetry configuration present")
+			err := s.TelemetryConfig.Graphite.Validate()
+			if err != nil {
+				log.Printf("[WARN] ignoring graphite telemetry due to the following validation error: %s", err)
+				return nil
+			}
+			log.Printf("[DEBUG] graphite telemetry provider enabled")
+			return s.TelemetryConfig.Graphite
+		}
+		if s.TelemetryConfig.HTTPEndpoint != nil {
+			log.Printf("[DEBUG] http endpoint telemetry configuration present")
+			err := s.TelemetryConfig.HTTPEndpoint.Validate()
+			if err != nil {
+				log.Printf("[WARN] ignoring http endpoint telemetry due to the following validation error: %s", err)
+				return nil
+			}
+			log.Printf("[DEBUG] http endpoint telemetry provider enabled")
+			return s.TelemetryConfig.HTTPEndpoint
+		}
+	}
+	log.Printf("[DEBUG] telemetry not configured")
+	return nil
 }
 
 // GetSchemaPropertyConfiguration returns the external configuration for the given schema property name; nil is returned

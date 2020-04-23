@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/version"
 	"net/http"
 	"strings"
 	"time"
@@ -270,6 +271,10 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 		if err != nil {
 			return nil, err
 		}
+		telemetryHandler := p.GetTelemetryHandler(data)
+		if telemetryHandler != nil {
+			telemetryHandler.SubmitPluginExecutionMetrics()
+		}
 		openAPIClient := &ProviderClient{
 			openAPIBackendConfiguration: openAPIBackendConfiguration,
 			apiAuthenticator:            authenticator,
@@ -277,6 +282,25 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 			providerConfiguration:       *config,
 		}
 		return openAPIClient, nil
+	}
+}
+
+// GetTelemetryHandler returns a handler containing validated telemetry providers
+func (p providerFactory) GetTelemetryHandler(data *schema.ResourceData) TelemetryHandler {
+	telemetryProvider := p.serviceConfiguration.GetTelemetryConfiguration()
+	if telemetryProvider != nil {
+		err := telemetryProvider.Validate()
+		if err != nil {
+			log.Printf("[WARN] telemetry validation failed: %s, ignoring telemetry", err)
+			return nil
+		}
+	}
+	return telemetryHandlerTimeoutSupport{
+		timeout:           telemetryTimeout,
+		providerName:      p.name,
+		openAPIVersion:    version.Version,
+		telemetryProvider: telemetryProvider,
+		data:              data,
 	}
 }
 

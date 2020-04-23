@@ -7,6 +7,7 @@ type ServiceConfigStub struct {
 	SwaggerURL          string
 	PluginVersion       string
 	InsecureSkipVerify  bool
+	Telemetry           TelemetryProvider
 	SchemaConfiguration []*ServiceSchemaPropertyConfigurationStub
 	Err                 error
 }
@@ -51,7 +52,12 @@ func (s ServiceConfigStub) GetSchemaPropertyConfiguration(schemaPropertyName str
 	return nil
 }
 
-// GetDefaultValue returns the dafult value configured in the ServiceSchemaPropertyConfigurationStub.defaultValue field
+// GetTelemetryConfiguration returns the TelemetryProvider configured in the ServiceConfigStub
+func (s ServiceConfigStub) GetTelemetryConfiguration() TelemetryProvider {
+	return s.Telemetry
+}
+
+// GetDefaultValue returns the default value configured in the ServiceSchemaPropertyConfigurationStub.defaultValue field
 func (s *ServiceSchemaPropertyConfigurationStub) GetDefaultValue() (string, error) {
 	if s.GetDefaultValueFunc != nil {
 		return s.GetDefaultValueFunc()
