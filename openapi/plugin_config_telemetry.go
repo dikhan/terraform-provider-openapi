@@ -26,6 +26,9 @@ type TelemetryProvider interface {
 	IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string, telemetryProviderConfiguration TelemetryProviderConfiguration) error
 	// IncServiceProviderTotalRunsCounter is the method responsible for submitting to the corresponding telemetry platform the counter increase for the service provider used
 	IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error
+	// IncServiceProviderResourceTotalRunsCounter is the method responsible for submitting to the corresponding telemetry platform the counter increase for service provider used along
+	// with tags for provider name, resource name, and Terraform operation
+	IncServiceProviderResourceTotalRunsCounter(providerName, resourceName string, tfOperation TelemetryResourceOperation, telemetryProviderConfiguration TelemetryProviderConfiguration) error
 	// GetTelemetryProviderConfiguration is the method responsible for getting a specific telemetry provider config given the input data provided
 	GetTelemetryProviderConfiguration(data *schema.ResourceData) TelemetryProviderConfiguration
 }
