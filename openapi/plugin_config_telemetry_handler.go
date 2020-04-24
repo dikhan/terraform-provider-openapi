@@ -6,14 +6,16 @@ import (
 	"time"
 )
 
-// TelemetryHandler is responsible for making sure that metrics are shipped to all the telemetry providers registered and
+// telemetryHandler is responsible for making sure that metrics are shipped to all the telemetry providers registered and
 // also ensures that metrics submissions are configured with timeouts. Hence, if the telemetry provider is taking longer than the
 // timeout set or it errors when sending the metric, the provider execution will not be affected by it and the corresponding error
 // will be logged for the reference
-type TelemetryHandler interface {
-	// SubmitPluginExecutionMetrics submits the metrics for the total number of times the plugin and specific OpenAPI plugin version
+type telemetryHandler interface {
+	// submitPluginExecutionMetrics submits the metrics for the total number of times the plugin and specific OpenAPI plugin version
 	// have been executed
-	SubmitPluginExecutionMetrics()
+	submitPluginExecutionMetrics()
+	// submitResourceExecutionMetrics submits the metrics related to resource operation execution
+	submitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation)
 }
 
 const telemetryTimeout = 2
@@ -29,7 +31,7 @@ type telemetryHandlerTimeoutSupport struct {
 // MetricSubmitter is the function holding the logic that actually submits the metric
 type MetricSubmitter func() error
 
-func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
+func (t telemetryHandlerTimeoutSupport) submitPluginExecutionMetrics() {
 	if t.telemetryProvider != nil {
 		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
 		t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
@@ -42,7 +44,7 @@ func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
 	log.Println("[INFO] Telemetry provider not configured")
 }
 
-func (t telemetryHandlerTimeoutSupport) SubmitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation) {
+func (t telemetryHandlerTimeoutSupport) submitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation) {
 	if t.telemetryProvider != nil {
 		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
 		t.submitMetric("IncServiceProviderResourceTotalRunsCounter", func() error {

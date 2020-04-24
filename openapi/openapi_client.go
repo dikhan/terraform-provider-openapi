@@ -38,6 +38,7 @@ type ProviderClient struct {
 	httpClient                  http_goclient.HttpClientIface
 	providerConfiguration       providerConfiguration
 	apiAuthenticator            specAuthenticator
+	telemetryHandler            telemetryHandler
 }
 
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in

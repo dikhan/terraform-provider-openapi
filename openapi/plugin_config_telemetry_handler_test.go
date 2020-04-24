@@ -17,7 +17,7 @@ func TestSubmitPluginExecutionMetrics(t *testing.T) {
 		openAPIVersion:    "0.25.0",
 		telemetryProvider: stub,
 	}
-	ths.SubmitPluginExecutionMetrics()
+	ths.submitPluginExecutionMetrics()
 	// The below confirm that the corresponding inc methods were called and also the info passed in was the correct one
 	assert.Equal(t, ths.openAPIVersion, stub.openAPIPluginVersionReceived)
 	assert.Equal(t, ths.providerName, stub.providerNameReceived)
@@ -32,7 +32,7 @@ func TestSubmitPluginExecutionMetrics_FailsNilTelemetryProvider(t *testing.T) {
 		openAPIVersion:    "0.25.0",
 		telemetryProvider: nil,
 	}
-	ths.SubmitPluginExecutionMetrics()
+	ths.submitPluginExecutionMetrics()
 	assert.Contains(t, buf.String(), "[INFO] Telemetry provider not configured")
 }
 
@@ -46,7 +46,7 @@ func TestSubmitResourceExecutionMetrics(t *testing.T) {
 		openAPIVersion:    "0.25.0",
 		telemetryProvider: stub,
 	}
-	ths.SubmitResourceExecutionMetrics(expectedResourceName, expectedTfOperation)
+	ths.submitResourceExecutionMetrics(expectedResourceName, expectedTfOperation)
 	// The below confirm that the corresponding inc methods were called and also the info passed in was the correct one
 	assert.Equal(t, ths.providerName, stub.providerNameReceived)
 	assert.Equal(t, expectedResourceName, stub.resourceNameReceived)
@@ -62,7 +62,7 @@ func TestSubmitResourceExecutionMetrics_FailsNilTelemetryProvider(t *testing.T) 
 		openAPIVersion:    "0.25.0",
 		telemetryProvider: nil,
 	}
-	ths.SubmitResourceExecutionMetrics("resourceName", TelemetryResourceOperationCreate)
+	ths.submitResourceExecutionMetrics("resourceName", TelemetryResourceOperationCreate)
 	assert.Contains(t, buf.String(), "[INFO] Telemetry provider not configured")
 }
 
