@@ -602,6 +602,24 @@ func TestDelete(t *testing.T) {
 	})
 }
 
+func TestSubmitTelemetryMetric(t *testing.T) {
+	expectedResourceName := "resourceName"
+	r := resourceFactory{
+		openAPIResource: &specStubResource{
+			name: expectedResourceName,
+		},
+	}
+	telemetryProviderStub := telemetryProviderStub{}
+	clientStub := &clientOpenAPIStub{
+		telemetryHandler: telemetryHandlerTimeoutSupport{
+			telemetryProvider: &telemetryProviderStub,
+		},
+	}
+	r.submitTelemetryMetric(clientStub, TelemetryResourceOperationCreate)
+	assert.Equal(t, expectedResourceName, telemetryProviderStub.resourceNameReceived)
+	assert.Equal(t, TelemetryResourceOperationCreate, telemetryProviderStub.tfOperationReceived)
+}
+
 func TestImporter(t *testing.T) {
 	Convey("Given a resource factory configured with a root resource (and the already populated id property value provided by the user)", t, func() {
 		importedIDProperty := idProperty

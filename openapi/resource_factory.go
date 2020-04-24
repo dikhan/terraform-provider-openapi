@@ -248,6 +248,13 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	return nil
 }
 
+func (r resourceFactory) submitTelemetryMetric(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation) {
+	telemetryHandler := providerClient.GetTelemetryHandler()
+	if telemetryHandler != nil {
+		telemetryHandler.submitResourceExecutionMetrics(r.openAPIResource.getResourceName(), tfOperation)
+	}
+}
+
 func (r resourceFactory) importer() *schema.ResourceImporter {
 	return &schema.ResourceImporter{
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
