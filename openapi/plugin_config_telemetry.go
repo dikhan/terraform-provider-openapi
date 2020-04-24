@@ -8,13 +8,19 @@ import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 // can be passed in if needed
 type TelemetryProviderConfiguration interface{}
 
+// TelemetryResourceOperation defines the resource operation (CRUD) to be used in the telemetry metric
 type TelemetryResourceOperation string
 
 const (
+	// TelemetryResourceOperationCreate represents the create operation invocation
 	TelemetryResourceOperationCreate TelemetryResourceOperation = "create"
-	TelemetryResourceOperationRead   TelemetryResourceOperation = "read"
+	// TelemetryResourceOperationRead represents the read operation invocation
+	TelemetryResourceOperationRead TelemetryResourceOperation = "read"
+	// TelemetryResourceOperationUpdate represents the update operation invocation
 	TelemetryResourceOperationUpdate TelemetryResourceOperation = "update"
+	// TelemetryResourceOperationDelete represents the delete operation invocation
 	TelemetryResourceOperationDelete TelemetryResourceOperation = "delete"
+	// TelemetryResourceOperationImport represents the import operation invocation
 	TelemetryResourceOperationImport TelemetryResourceOperation = "import"
 )
 

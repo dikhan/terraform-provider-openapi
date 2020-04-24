@@ -260,7 +260,7 @@ func (r resourceFactory) submitTelemetryMetric(providerClient ClientOpenAPI, tfO
 	if providerClient != nil {
 		telemetryHandler := providerClient.GetTelemetryHandler()
 		if telemetryHandler != nil {
-			telemetryHandler.submitResourceExecutionMetrics(r.openAPIResource.getResourceName(), tfOperation)
+			telemetryHandler.SubmitResourceExecutionMetrics(r.openAPIResource.getResourceName(), tfOperation)
 		}
 	}
 }

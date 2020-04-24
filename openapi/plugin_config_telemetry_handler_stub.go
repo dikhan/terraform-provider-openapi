@@ -5,10 +5,10 @@ type telemetryHandlerStub struct {
 	submitResourceExecutionMetricsFunc func(resourceName string, tfOperation TelemetryResourceOperation)
 }
 
-func (t *telemetryHandlerStub) submitPluginExecutionMetrics() {
+func (t *telemetryHandlerStub) SubmitPluginExecutionMetrics() {
 	t.submitPluginExecutionMetricsFunc()
 }
 
-func (t *telemetryHandlerStub) submitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation) {
+func (t *telemetryHandlerStub) SubmitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation) {
 	t.submitResourceExecutionMetricsFunc(resourceName, tfOperation)
 }

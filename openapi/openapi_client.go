@@ -28,7 +28,7 @@ type ClientOpenAPI interface {
 	Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)
 	List(resource SpecResource, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
-	GetTelemetryHandler() telemetryHandler
+	GetTelemetryHandler() TelemetryHandler
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
@@ -39,7 +39,7 @@ type ProviderClient struct {
 	httpClient                  http_goclient.HttpClientIface
 	providerConfiguration       providerConfiguration
 	apiAuthenticator            specAuthenticator
-	telemetryHandler            telemetryHandler
+	telemetryHandler            TelemetryHandler
 }
 
 // Post performs a POST request to the server API based on the resource configuration and the payload passed in
@@ -92,7 +92,8 @@ func (o *ProviderClient) Delete(resource SpecResource, id string, parentIDs ...s
 	return o.performRequest(httpDelete, resourceURL, operation, nil, nil)
 }
 
-func (o *ProviderClient) GetTelemetryHandler() telemetryHandler {
+// GetTelemetryHandler returns the configured telemetry handler
+func (o *ProviderClient) GetTelemetryHandler() TelemetryHandler {
 	return o.telemetryHandler
 }
 

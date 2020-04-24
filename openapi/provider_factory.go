@@ -273,7 +273,7 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 		}
 		telemetryHandler := p.GetTelemetryHandler(data)
 		if telemetryHandler != nil {
-			telemetryHandler.submitPluginExecutionMetrics()
+			telemetryHandler.SubmitPluginExecutionMetrics()
 		}
 		openAPIClient := &ProviderClient{
 			openAPIBackendConfiguration: openAPIBackendConfiguration,
@@ -287,7 +287,7 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 }
 
 // GetTelemetryHandler returns a handler containing validated telemetry providers
-func (p providerFactory) GetTelemetryHandler(data *schema.ResourceData) telemetryHandler {
+func (p providerFactory) GetTelemetryHandler(data *schema.ResourceData) TelemetryHandler {
 	telemetryProvider := p.serviceConfiguration.GetTelemetryConfiguration()
 	if telemetryProvider != nil {
 		err := telemetryProvider.Validate()
