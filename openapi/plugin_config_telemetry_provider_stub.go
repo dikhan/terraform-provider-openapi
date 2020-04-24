@@ -16,6 +16,7 @@ func (t *telemetryProviderStub) Validate() error {
 	return t.validationError
 }
 
+// TODO: Implement this - plugin execution metrics should also send the tf version used
 func (t *telemetryProviderStub) IncTerraformVersionTotalRunsCounter(terraformVersion string) error {
 	t.terraformVersionReceived = terraformVersion
 	return nil
