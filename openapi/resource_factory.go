@@ -90,6 +90,8 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
+	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationCreate)
+
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err

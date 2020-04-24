@@ -104,11 +104,17 @@ func TestCreate(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When create is called with resource data and a client", func() {
+			telemetryProviderStub := &telemetryProviderStub{}
+			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
+				telemetryProvider: telemetryProviderStub,
+				providerName:      "openapi",
+			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name:     "someID",
 					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
 				},
+				telemetryHandler: telemetryHandlerTimeoutSupport,
 			}
 			err := r.create(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -117,6 +123,11 @@ func TestCreate(t *testing.T) {
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(resourceData.Id(), ShouldEqual, client.responsePayload[idProperty.Name])
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
+				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
+				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationCreate)
 			})
 		})
 		Convey("When create is called with resource data and a client configured to return an error when POST is called", func() {
