@@ -249,9 +249,11 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 }
 
 func (r resourceFactory) submitTelemetryMetric(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation) {
-	telemetryHandler := providerClient.GetTelemetryHandler()
-	if telemetryHandler != nil {
-		telemetryHandler.submitResourceExecutionMetrics(r.openAPIResource.getResourceName(), tfOperation)
+	if providerClient != nil {
+		telemetryHandler := providerClient.GetTelemetryHandler()
+		if telemetryHandler != nil {
+			telemetryHandler.submitResourceExecutionMetrics(r.openAPIResource.getResourceName(), tfOperation)
+		}
 	}
 }
 
