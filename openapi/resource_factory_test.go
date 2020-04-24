@@ -238,7 +238,6 @@ func TestRead(t *testing.T) {
 				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
 				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationRead)
 			})
-
 		})
 	})
 
@@ -362,12 +361,18 @@ func TestUpdate(t *testing.T) {
 	Convey("Given a resource factory containing some properties including an immutable property", t, func() {
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, immutableProperty)
 		Convey("When update is called with resource data and a client", func() {
+			telemetryProviderStub := &telemetryProviderStub{}
+			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
+				telemetryProvider: telemetryProviderStub,
+				providerName:      "openapi",
+			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name:        "id",
 					stringProperty.Name:    "someExtraValueThatProvesResponseDataIsPersisted",
 					immutableProperty.Name: immutableProperty.Default,
 				},
+				telemetryHandler: telemetryHandlerTimeoutSupport,
 			}
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -379,6 +384,11 @@ func TestUpdate(t *testing.T) {
 			Convey("And resourceData should be populated with the values returned by the API", func() {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
+			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
+				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
+				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
 			})
 		})
 		Convey("When update is called with a resource data containing updated values and the immutable check fails due to an immutable property being updated", func() {

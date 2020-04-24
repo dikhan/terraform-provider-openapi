@@ -189,6 +189,8 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
+	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationUpdate)
+
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
