@@ -32,26 +32,28 @@ type telemetryHandlerTimeoutSupport struct {
 type MetricSubmitter func() error
 
 func (t telemetryHandlerTimeoutSupport) submitPluginExecutionMetrics() {
-	if t.telemetryProvider != nil {
-		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
-		t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-			return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
-		})
-		t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-			return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
-		})
+	if t.telemetryProvider == nil {
+		log.Println("[INFO] Telemetry provider not configured")
+		return
 	}
-	log.Println("[INFO] Telemetry provider not configured")
+	telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
+	t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
+		return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
+	})
+	t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
+		return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
+	})
 }
 
 func (t telemetryHandlerTimeoutSupport) submitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation) {
-	if t.telemetryProvider != nil {
-		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
-		t.submitMetric("IncServiceProviderResourceTotalRunsCounter", func() error {
-			return t.telemetryProvider.IncServiceProviderResourceTotalRunsCounter(t.providerName, resourceName, tfOperation, telemetryConfig)
-		})
+	if t.telemetryProvider == nil {
+		log.Println("[INFO] Telemetry provider not configured")
+		return
 	}
-	log.Println("[INFO] Telemetry provider not configured")
+	telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
+	t.submitMetric("IncServiceProviderResourceTotalRunsCounter", func() error {
+		return t.telemetryProvider.IncServiceProviderResourceTotalRunsCounter(t.providerName, resourceName, tfOperation, telemetryConfig)
+	})
 }
 
 func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSubmitter MetricSubmitter) {

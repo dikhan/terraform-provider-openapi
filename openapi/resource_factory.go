@@ -268,6 +268,9 @@ func (r resourceFactory) submitTelemetryMetric(providerClient ClientOpenAPI, tfO
 func (r resourceFactory) importer() *schema.ResourceImporter {
 	return &schema.ResourceImporter{
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
+			providerClient := i.(ClientOpenAPI)
+			r.submitTelemetryMetric(providerClient, TelemetryResourceOperationImport)
+
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
 			parentResourceInfo := r.openAPIResource.getParentResourceInfo()

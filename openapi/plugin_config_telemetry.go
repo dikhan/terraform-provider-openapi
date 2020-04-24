@@ -15,6 +15,7 @@ const (
 	TelemetryResourceOperationRead   TelemetryResourceOperation = "read"
 	TelemetryResourceOperationUpdate TelemetryResourceOperation = "update"
 	TelemetryResourceOperationDelete TelemetryResourceOperation = "delete"
+	TelemetryResourceOperationImport TelemetryResourceOperation = "import"
 )
 
 // TelemetryProvider holds the behaviour expected to be implemented for the Telemetry Providers supported. At the moment
