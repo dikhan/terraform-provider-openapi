@@ -102,19 +102,21 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When create is called with resource data and a client", func() {
-			telemetryProviderStub := &telemetryProviderStub{}
-			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
-				telemetryProvider: telemetryProviderStub,
-				providerName:      "openapi",
-			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name:     "someID",
 					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
 				},
-				telemetryHandler: telemetryHandlerTimeoutSupport,
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
+				},
 			}
 			err := r.create(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -125,9 +127,8 @@ func TestCreate(t *testing.T) {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 			})
 			Convey("And the expected telemetry provider should have been called", func() {
-				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
-				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
-				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationCreate)
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationCreate)
 			})
 		})
 		Convey("When create is called with resource data and a client configured to return an error when POST is called", func() {
@@ -213,18 +214,20 @@ func TestCreate(t *testing.T) {
 
 func TestRead(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When readRemote is called with resource data and a client that returns ", func() {
-			telemetryProviderStub := &telemetryProviderStub{}
-			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
-				telemetryProvider: telemetryProviderStub,
-				providerName:      "openapi",
-			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					stringProperty.Name: "someOtherStringValue",
 				},
-				telemetryHandler: telemetryHandlerTimeoutSupport,
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
+				},
 			}
 			err := r.read(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -234,9 +237,8 @@ func TestRead(t *testing.T) {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 			})
 			Convey("And the expected telemetry provider should have been called", func() {
-				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
-				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
-				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationRead)
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationRead)
 			})
 		})
 	})
@@ -359,20 +361,22 @@ func TestReadRemote(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	Convey("Given a resource factory containing some properties including an immutable property", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, immutableProperty)
 		Convey("When update is called with resource data and a client", func() {
-			telemetryProviderStub := &telemetryProviderStub{}
-			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
-				telemetryProvider: telemetryProviderStub,
-				providerName:      "openapi",
-			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name:        "id",
 					stringProperty.Name:    "someExtraValueThatProvesResponseDataIsPersisted",
 					immutableProperty.Name: immutableProperty.Default,
 				},
-				telemetryHandler: telemetryHandlerTimeoutSupport,
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
+				},
 			}
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -386,9 +390,8 @@ func TestUpdate(t *testing.T) {
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
 			})
 			Convey("And the expected telemetry provider should have been called", func() {
-				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
-				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
-				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
 			})
 		})
 		Convey("When update is called with a resource data containing updated values and the immutable check fails due to an immutable property being updated", func() {
@@ -526,18 +529,20 @@ func TestUpdate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty)
 		Convey("When delete is called with resource data and a client", func() {
-			telemetryProviderStub := &telemetryProviderStub{}
-			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
-				telemetryProvider: telemetryProviderStub,
-				providerName:      "openapi",
-			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name: idProperty.Default,
 				},
-				telemetryHandler: telemetryHandlerTimeoutSupport,
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
+				},
 			}
 			err := r.delete(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -547,9 +552,8 @@ func TestDelete(t *testing.T) {
 				So(client.responsePayload, ShouldNotContainKey, idProperty.Name)
 			})
 			Convey("And the expected telemetry provider should have been called", func() {
-				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
-				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
-				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationDelete)
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationDelete)
 			})
 		})
 		Convey("When delete is called with resource data and a client configured to return an error when delete is called", func() {
