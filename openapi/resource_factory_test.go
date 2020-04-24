@@ -528,10 +528,16 @@ func TestDelete(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty)
 		Convey("When delete is called with resource data and a client", func() {
+			telemetryProviderStub := &telemetryProviderStub{}
+			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
+				telemetryProvider: telemetryProviderStub,
+				providerName:      "openapi",
+			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name: idProperty.Default,
 				},
+				telemetryHandler: telemetryHandlerTimeoutSupport,
 			}
 			err := r.delete(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -539,6 +545,11 @@ func TestDelete(t *testing.T) {
 			})
 			Convey("Then the expectedValue returned should be true", func() {
 				So(client.responsePayload, ShouldNotContainKey, idProperty.Name)
+			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
+				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
+				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationDelete)
 			})
 		})
 		Convey("When delete is called with resource data and a client configured to return an error when delete is called", func() {
