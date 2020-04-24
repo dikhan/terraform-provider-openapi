@@ -215,10 +215,16 @@ func TestRead(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When readRemote is called with resource data and a client that returns ", func() {
+			telemetryProviderStub := &telemetryProviderStub{}
+			telemetryHandlerTimeoutSupport := telemetryHandlerTimeoutSupport{
+				telemetryProvider: telemetryProviderStub,
+				providerName:      "openapi",
+			}
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					stringProperty.Name: "someOtherStringValue",
 				},
+				telemetryHandler: telemetryHandlerTimeoutSupport,
 			}
 			err := r.read(resourceData, client)
 			Convey("Then the error returned should be nil", func() {
@@ -227,6 +233,12 @@ func TestRead(t *testing.T) {
 			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryProviderStub.providerNameReceived, ShouldEqual, telemetryHandlerTimeoutSupport.providerName)
+				So(telemetryProviderStub.resourceNameReceived, ShouldEqual, r.openAPIResource.getResourceName())
+				So(telemetryProviderStub.tfOperationReceived, ShouldEqual, TelemetryResourceOperationRead)
+			})
+
 		})
 	})
 

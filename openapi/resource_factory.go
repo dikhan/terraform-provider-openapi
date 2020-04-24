@@ -126,6 +126,8 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
+	r.submitTelemetryMetric(openAPIClient, TelemetryResourceOperationRead)
+
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
