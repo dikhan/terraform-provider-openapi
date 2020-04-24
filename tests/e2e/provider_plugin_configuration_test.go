@@ -25,11 +25,15 @@ import (
 func TestAcc_ProviderConfiguration_PluginExternalFile_HTTPEndpointTelemetry(t *testing.T) {
 	httpEndpointTelemetryCalled := false
 	var headersReceived http.Header
+	var metricsReceived []string
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/metrics":
 			httpEndpointTelemetryCalled = true
 			headersReceived = r.Header
+			body, err := ioutil.ReadAll(r.Body)
+			assert.Nil(t, err)
+			metricsReceived = append(metricsReceived, string(body))
 			w.WriteHeader(http.StatusOK)
 			break
 		case "/v1/cdns", "/v1/cdns/someID":
@@ -158,6 +162,18 @@ resource "openapi_cdns_v1" "my_cdn" {
 						}
 						if headersReceived.Get("some_header") != "header_value" {
 							return fmt.Errorf("expected header `some_header` in the metric API not received or not expected value received: %s", headersReceived.Get("some_header"))
+						}
+						expectedPluginServiceProviderMetric := `{"metric_type":"IncCounter","metric_name":"terraform.providers.total_runs","tags":["provider_name:openapi"]}`
+						if metricsReceived[0] != expectedPluginServiceProviderMetric {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[0], expectedPluginServiceProviderMetric)
+						}
+						expectedPluginVersionMetric := `{"metric_type":"IncCounter","metric_name":"terraform.openapi_plugin_version.total_runs","tags":["openapi_plugin_version:dev"]}`
+						if metricsReceived[1] != expectedPluginVersionMetric {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[1], expectedPluginVersionMetric)
+						}
+						expectedResourceMetrics := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:cdns_v1","terraform_operation:create"]}`
+						if metricsReceived[4] != expectedResourceMetrics {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[4], expectedResourceMetrics)
 						}
 						return nil
 					},
