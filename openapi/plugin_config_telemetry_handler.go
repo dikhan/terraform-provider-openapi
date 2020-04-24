@@ -37,9 +37,6 @@ func (t telemetryHandlerTimeoutSupport) submitPluginExecutionMetrics() {
 		return
 	}
 	telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
-	t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-		return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
-	})
 	t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
 		return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
 	})

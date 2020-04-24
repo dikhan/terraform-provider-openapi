@@ -743,7 +743,6 @@ func TestConfigureProvider(t *testing.T) {
 				var _ ClientOpenAPI = providerClient
 			})
 			Convey("And the telemetry server should have been received the expected counter metrics increase", func() {
-				assertExpectedMetric(t, metricChannel, "openapi.terraform.providers.total_runs:1|c|#provider_name:provider")
 				assertExpectedMetric(t, metricChannel, "openapi.terraform.openapi_plugin_version.total_runs:1|c|#openapi_plugin_version:dev")
 			})
 		})

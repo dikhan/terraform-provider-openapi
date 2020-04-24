@@ -48,19 +48,8 @@ func (g TelemetryProviderGraphite) IncOpenAPIPluginVersionTotalRunsCounter(openA
 	return nil
 }
 
-// IncServiceProviderTotalRunsCounter will increment the counter for a given provider 'statsd.<prefix>.terraform.providers.total_runs' metric to 1 and appends
-//// a tag containing the 'provider_name' being used (plugin name)
-func (g TelemetryProviderGraphite) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
-	tags := []string{"provider_name:" + providerName}
-	metricName := "terraform.providers.total_runs"
-	log.Printf("[INFO] graphite metric to be submitted: %s", metricName)
-	if err := g.submitMetric(metricName, tags); err != nil {
-		return err
-	}
-	log.Printf("[INFO] graphite metric successfully submitted: %s (tags: %s)", metricName, tags)
-	return nil
-}
-
+// IncServiceProviderResourceTotalRunsCounter will increment the counter for a given provider 'statsd.<prefix>.terraform.provider' metric
+// to 1 and appends tags containing the 'provider_name', 'resource_name', and 'terraform_operation' called
 func (g TelemetryProviderGraphite) IncServiceProviderResourceTotalRunsCounter(providerName, resourceName string, tfOperation TelemetryResourceOperation, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	tags := []string{"provider_name:" + providerName, "resource_name:" + resourceName, fmt.Sprintf("terraform_operation:%s", tfOperation)}
 	metricName := "terraform.provider"

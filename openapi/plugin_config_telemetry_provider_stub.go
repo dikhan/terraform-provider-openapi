@@ -26,11 +26,6 @@ func (t *telemetryProviderStub) IncOpenAPIPluginVersionTotalRunsCounter(openAPIP
 	return nil
 }
 
-func (t *telemetryProviderStub) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
-	t.providerNameReceived = providerName
-	return nil
-}
-
 func (t *telemetryProviderStub) IncServiceProviderResourceTotalRunsCounter(providerName, resourceName string, tfOperation TelemetryResourceOperation, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	t.providerNameReceived = providerName
 	t.resourceNameReceived = resourceName

@@ -81,40 +81,6 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter_BadHo
 	assert.Equal(t, expectedError, err)
 }
 
-func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter(t *testing.T) {
-	providerName := "myProviderName"
-	expectedLogMetricToSubmit := "[INFO] graphite metric to be submitted: terraform.providers.total_runs"
-	expectedLogMetricSuccess := "[INFO] graphite metric successfully submitted: terraform.providers.total_runs (tags: [provider_name:myProviderName])"
-	expectedMetric := "myPrefixName.terraform.providers.total_runs:1|c|#provider_name:myProviderName"
-
-	var logging bytes.Buffer
-	log.SetOutput(&logging)
-
-	metricChannel := make(chan string)
-	pc, telemetryHost, telemetryPort := udpServer(metricChannel)
-	defer pc.Close()
-
-	telemetryPortInt, err := strconv.Atoi(telemetryPort)
-	tpg := TelemetryProviderGraphite{
-		Host:   telemetryHost,
-		Port:   telemetryPortInt,
-		Prefix: "myPrefixName",
-	}
-	err = tpg.IncServiceProviderTotalRunsCounter(providerName, nil)
-	assert.Nil(t, err)
-	assertExpectedMetricAndLogging(t, metricChannel, expectedMetric, expectedLogMetricToSubmit, expectedLogMetricSuccess, &logging)
-}
-
-func TestTelemetryProviderGraphite_IncServiceProviderTotalRunsCounter_BadHost(t *testing.T) {
-	providerName := "myProviderName"
-	expectedError := &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false}
-
-	tpg := createTestGraphiteProviderBadHost()
-	err := tpg.IncServiceProviderTotalRunsCounter(providerName, nil)
-
-	assert.Equal(t, expectedError, err)
-}
-
 func TestTelemetryProviderGraphite_IncServiceProviderResourceTotalRunsCounter(t *testing.T) {
 	providerName := "myProviderName"
 	expectedLogMetricToSubmit := "[INFO] graphite metric to be submitted: terraform.provider"
