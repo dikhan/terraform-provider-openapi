@@ -1571,3 +1571,18 @@ func TestProviderClientDelete(t *testing.T) {
 		})
 	})
 }
+
+func TestProviderClientGetTelemetryHandler(t *testing.T) {
+	Convey("Given a providerClient set up with a telemetry handler", t, func() {
+		telemetryHandler := telemetryHandlerTimeoutSupport{}
+		providerClient := &ProviderClient{
+			telemetryHandler: telemetryHandler,
+		}
+		Convey("When GetTelemetryHandler method is called", func() {
+			telemetryHandler := providerClient.GetTelemetryHandler()
+			Convey("Then the telemetry handler returned should be the configured in the provider client", func() {
+				So(&telemetryHandler, ShouldEqual, &telemetryHandler)
+			})
+		})
+	})
+}

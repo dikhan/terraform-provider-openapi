@@ -28,6 +28,7 @@ type ClientOpenAPI interface {
 	Get(resource SpecResource, id string, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
 	Delete(resource SpecResource, id string, parentIDs ...string) (*http.Response, error)
 	List(resource SpecResource, responsePayload interface{}, parentIDs ...string) (*http.Response, error)
+	GetTelemetryHandler() telemetryHandler
 }
 
 // ProviderClient defines a client that is configured based on the OpenAPI server side documentation
@@ -89,6 +90,10 @@ func (o *ProviderClient) Delete(resource SpecResource, id string, parentIDs ...s
 	}
 	operation := resource.getResourceOperations().Delete
 	return o.performRequest(httpDelete, resourceURL, operation, nil, nil)
+}
+
+func (o *ProviderClient) GetTelemetryHandler() telemetryHandler {
+	return o.telemetryHandler
 }
 
 func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL string, operation *specResourceOperation, requestPayload interface{}, responsePayload interface{}) (*http.Response, error) {
