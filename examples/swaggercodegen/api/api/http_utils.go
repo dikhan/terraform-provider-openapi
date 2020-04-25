@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,7 +34,8 @@ func sendResponse(httpResponseStatusCode int, w http.ResponseWriter, out interfa
 	if len(resBody) > 0 {
 		w.Write(resBody)
 	}
-	log.Printf("Response sent '%+v'", out)
+	log.Printf("Response sent '%s'", spew.Sdump(out))
+
 }
 
 func sendErrorResponse(httpStatusCode int, message string, w http.ResponseWriter) {
