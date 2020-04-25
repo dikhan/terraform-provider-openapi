@@ -169,7 +169,7 @@ func TestAccLB_CreateTimeout(t *testing.T) {
 }
 
 func TestAccLB_CreateDoesNotTimeoutDueToUserSpecifyingAShorterTimeout(t *testing.T) {
-	timeToProcess := 3
+	timeToProcess := 1
 	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
 	testCreateConfigLB = fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
@@ -182,11 +182,11 @@ resource "%s" "%s" {
   time_to_process = %d # the operation (post,update,delete) will take 15s in the API to complete
   simulate_failure = %v # no failures wished now ;) (post,update,delete)
   timeouts {
-    create = "1s"
+    create = "0s"
   }
 }`, providerName, openAPIResourceNameLB, openAPIResourceInstanceNameLB, lb.Name, arrayToString(lb.Backends), timeToProcess, lb.SimulateFailure)
 
-	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\((?:last state: '(?:deploy_in_progress|deploy_pending)', )?timeout: 1s\\).*")
+	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed'*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:   func() { testAccPreCheck(t) },
 		IsUnitTest: true,
