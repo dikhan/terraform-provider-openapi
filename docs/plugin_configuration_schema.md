@@ -149,10 +149,10 @@ host | `string` | **Required.** Graphite host to ship the metrics to
 port | `integer` | **Required.** Graphite port to connect to
 prefix | `string` | Some prefix to append to the metrics pushed to Graphite. If populated, metrics pushed to Graphite will be of the following form: `statsd.<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix.
 
-The following metrics will be shipped to the corresponding configured Graphite host upon plugin execution:
+The following metrics will be shipped to the corresponding configured Graphite host upon plugin execution
 
-  - Terraform OpenAPI version used by the user: `statsd.<prefix>.terraform.openapi_plugin_version.*.total_runs` where * would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc)
-  - Service used by the user: `statsd.<prefix>.terraform.providers.*.total_runs` where * would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn')
+  - Terraform OpenAPI version used by the user: `statsd.<prefix>.terraform.openapi_plugin_version.*.total_runs:1|c|#openapi_plugin_version:0_25_0` where the tagged `openapi_plugin_version` value would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc)
+  - Service used by the user: `statsd.<prefix>.terraform.provider:1|c|#provider_name:myProviderName,resource_name:cdn_v1,terraform_operation:create` where the tagged `provider_name`, `resource_name` and `terraform_operation` values would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn'), resource name being provisioned and operation performed (eg: create, read, update, delete)
 
 ###### HTTP Endpoint Object
 
