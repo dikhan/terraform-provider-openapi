@@ -102,12 +102,20 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When create is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name:     "someID",
 					stringProperty.Name: "someExtraValueThatProvesResponseDataIsPersisted",
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
 				},
 			}
 			err := r.create(resourceData, client)
@@ -117,6 +125,10 @@ func TestCreate(t *testing.T) {
 			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(resourceData.Id(), ShouldEqual, client.responsePayload[idProperty.Name])
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationCreate)
 			})
 		})
 		Convey("When create is called with resource data and a client configured to return an error when POST is called", func() {
@@ -202,11 +214,19 @@ func TestCreate(t *testing.T) {
 
 func TestRead(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When readRemote is called with resource data and a client that returns ", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					stringProperty.Name: "someOtherStringValue",
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
 				},
 			}
 			err := r.read(resourceData, client)
@@ -215,6 +235,10 @@ func TestRead(t *testing.T) {
 			})
 			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationRead)
 			})
 		})
 	})
@@ -337,6 +361,8 @@ func TestReadRemote(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	Convey("Given a resource factory containing some properties including an immutable property", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty, stringProperty, immutableProperty)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
@@ -344,6 +370,12 @@ func TestUpdate(t *testing.T) {
 					idProperty.Name:        "id",
 					stringProperty.Name:    "someExtraValueThatProvesResponseDataIsPersisted",
 					immutableProperty.Name: immutableProperty.Default,
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
 				},
 			}
 			err := r.update(resourceData, client)
@@ -356,6 +388,10 @@ func TestUpdate(t *testing.T) {
 			Convey("And resourceData should be populated with the values returned by the API", func() {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
+			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
 			})
 		})
 		Convey("When update is called with a resource data containing updated values and the immutable check fails due to an immutable property being updated", func() {
@@ -493,11 +529,19 @@ func TestUpdate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	Convey("Given a resource factory", t, func() {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactoryWithID(t, idProperty)
 		Convey("When delete is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					idProperty.Name: idProperty.Default,
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
 				},
 			}
 			err := r.delete(resourceData, client)
@@ -506,6 +550,10 @@ func TestDelete(t *testing.T) {
 			})
 			Convey("Then the expectedValue returned should be true", func() {
 				So(client.responsePayload, ShouldNotContainKey, idProperty.Name)
+			})
+			Convey("And the expected telemetry provider should have been called", func() {
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationDelete)
 			})
 		})
 		Convey("When delete is called with resource data and a client configured to return an error when delete is called", func() {
@@ -602,14 +650,40 @@ func TestDelete(t *testing.T) {
 	})
 }
 
+func TestSubmitTelemetryMetric(t *testing.T) {
+	expectedResourceName := "resourceName"
+	r := resourceFactory{
+		openAPIResource: &specStubResource{
+			name: expectedResourceName,
+		},
+	}
+	telemetryProviderStub := telemetryProviderStub{}
+	clientStub := &clientOpenAPIStub{
+		telemetryHandler: telemetryHandlerTimeoutSupport{
+			telemetryProvider: &telemetryProviderStub,
+		},
+	}
+	r.submitTelemetryMetric(clientStub, TelemetryResourceOperationCreate)
+	assert.Equal(t, expectedResourceName, telemetryProviderStub.resourceNameReceived)
+	assert.Equal(t, TelemetryResourceOperationCreate, telemetryProviderStub.tfOperationReceived)
+}
+
 func TestImporter(t *testing.T) {
 	Convey("Given a resource factory configured with a root resource (and the already populated id property value provided by the user)", t, func() {
+		var telemetryHandlerResourceNameReceived []string
+		var telemetryHandlerTFOperationReceived []TelemetryResourceOperation
 		importedIDProperty := idProperty
 		r, resourceData := testCreateResourceFactoryWithID(t, importedIDProperty, stringProperty)
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					stringProperty.Name: "someOtherStringValue",
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = append(telemetryHandlerResourceNameReceived, resourceName)
+						telemetryHandlerTFOperationReceived = append(telemetryHandlerTFOperationReceived, tfOperation)
+					},
 				},
 			}
 			resourceImporter := r.importer()
@@ -632,6 +706,12 @@ func TestImporter(t *testing.T) {
 				})
 				Convey("And the data returned should contained the imported string field with the right value returned from the API", func() {
 					So(data[0].Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
+				})
+				Convey("And the expected telemetry provider should have been called", func() {
+					So(telemetryHandlerResourceNameReceived[0], ShouldEqual, "resourceName")
+					So(telemetryHandlerTFOperationReceived[0], ShouldEqual, TelemetryResourceOperationImport)
+					So(telemetryHandlerResourceNameReceived[1], ShouldEqual, "resourceName")
+					So(telemetryHandlerTFOperationReceived[1], ShouldEqual, TelemetryResourceOperationRead)
 				})
 			})
 		})

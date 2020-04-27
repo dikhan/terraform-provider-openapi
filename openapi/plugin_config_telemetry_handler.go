@@ -14,6 +14,8 @@ type TelemetryHandler interface {
 	// SubmitPluginExecutionMetrics submits the metrics for the total number of times the plugin and specific OpenAPI plugin version
 	// have been executed
 	SubmitPluginExecutionMetrics()
+	// SubmitResourceExecutionMetrics submits the metrics related to resource operation execution
+	SubmitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation)
 }
 
 const telemetryTimeout = 2
@@ -30,16 +32,25 @@ type telemetryHandlerTimeoutSupport struct {
 type MetricSubmitter func() error
 
 func (t telemetryHandlerTimeoutSupport) SubmitPluginExecutionMetrics() {
-	if t.telemetryProvider != nil {
-		telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
-		t.submitMetric("IncServiceProviderTotalRunsCounter", func() error {
-			return t.telemetryProvider.IncServiceProviderTotalRunsCounter(t.providerName, telemetryConfig)
-		})
-		t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
-			return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
-		})
+	if t.telemetryProvider == nil {
+		log.Println("[INFO] Telemetry provider not configured")
+		return
 	}
-	log.Println("[INFO] Telemetry provider not configured")
+	telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
+	t.submitMetric("IncOpenAPIPluginVersionTotalRunsCounter", func() error {
+		return t.telemetryProvider.IncOpenAPIPluginVersionTotalRunsCounter(t.openAPIVersion, telemetryConfig)
+	})
+}
+
+func (t telemetryHandlerTimeoutSupport) SubmitResourceExecutionMetrics(resourceName string, tfOperation TelemetryResourceOperation) {
+	if t.telemetryProvider == nil {
+		log.Println("[INFO] Telemetry provider not configured")
+		return
+	}
+	telemetryConfig := t.telemetryProvider.GetTelemetryProviderConfiguration(t.data)
+	t.submitMetric("IncServiceProviderResourceTotalRunsCounter", func() error {
+		return t.telemetryProvider.IncServiceProviderResourceTotalRunsCounter(t.providerName, resourceName, tfOperation, telemetryConfig)
+	})
 }
 
 func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSubmitter MetricSubmitter) {

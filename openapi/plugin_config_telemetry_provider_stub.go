@@ -7,6 +7,8 @@ type telemetryProviderStub struct {
 	terraformVersionReceived     string
 	openAPIPluginVersionReceived string
 	providerNameReceived         string
+	resourceNameReceived         string
+	tfOperationReceived          TelemetryResourceOperation
 	telemetryProviderConfig      TelemetryProviderConfiguration
 }
 
@@ -14,6 +16,7 @@ func (t *telemetryProviderStub) Validate() error {
 	return t.validationError
 }
 
+// TODO: Implement this - plugin execution metrics should also send the tf version used
 func (t *telemetryProviderStub) IncTerraformVersionTotalRunsCounter(terraformVersion string) error {
 	t.terraformVersionReceived = terraformVersion
 	return nil
@@ -24,8 +27,10 @@ func (t *telemetryProviderStub) IncOpenAPIPluginVersionTotalRunsCounter(openAPIP
 	return nil
 }
 
-func (t *telemetryProviderStub) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
+func (t *telemetryProviderStub) IncServiceProviderResourceTotalRunsCounter(providerName, resourceName string, tfOperation TelemetryResourceOperation, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	t.providerNameReceived = providerName
+	t.resourceNameReceived = resourceName
+	t.tfOperationReceived = tfOperation
 	return nil
 }
 

@@ -135,14 +135,14 @@ func pretendResourceOperationIsProcessing(lb *Lbv1, pendingStatues []status, com
 
 func sleepAndUpdateLB(lb *Lbv1, newStatus status, waitTime int32) {
 	timeToProcessPerStatusDuration := time.Duration(waitTime) * time.Second
-	log.Printf("Precessing resource [%s] [%s => %s] - timeToProcess = %ds", lb.Id, lb.Status, newStatus, waitTime)
+	log.Printf("Precessing resource [%s] [%s => %s] - timeToProcess = %ds", lb.Id, lb.NewStatus.Status, newStatus, waitTime)
 	time.Sleep(timeToProcessPerStatusDuration)
 	updateLBStatus(lb, newStatus)
 }
 
 func sleepAndDestroyLB(lb *Lbv1, waitTime int32) {
 	timeToProcessPerStatusDuration := time.Duration(waitTime) * time.Second
-	log.Printf("Destroying resource [%s] [%s] - timeToProcess = %ds", lb.Id, lb.Status, waitTime)
+	log.Printf("Destroying resource [%s] [%s] - timeToProcess = %ds", lb.Id, lb.NewStatus.Status, waitTime)
 	time.Sleep(timeToProcessPerStatusDuration)
 	delete(lbsDB, lb.Id)
 	log.Printf("resource [%s] destroyed", lb.Id)

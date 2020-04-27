@@ -149,10 +149,10 @@ host | `string` | **Required.** Graphite host to ship the metrics to
 port | `integer` | **Required.** Graphite port to connect to
 prefix | `string` | Some prefix to append to the metrics pushed to Graphite. If populated, metrics pushed to Graphite will be of the following form: `statsd.<prefix>.terraform....`. If the value is not provided, the metrics will not contain the prefix.
 
-The following metrics will be shipped to the corresponding configured Graphite host upon plugin execution:
+The following metrics will be shipped to the corresponding configured Graphite host upon plugin execution
 
-  - Terraform OpenAPI version used by the user: `statsd.<prefix>.terraform.openapi_plugin_version.*.total_runs` where * would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc)
-  - Service used by the user: `statsd.<prefix>.terraform.providers.*.total_runs` where * would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn')
+  - Terraform OpenAPI version used by the user: `statsd.<prefix>.terraform.openapi_plugin_version.*.total_runs:1|c|#openapi_plugin_version:0_25_0` where the tagged `openapi_plugin_version` value would contain the corresponding OpenAPI terraform plugin version used by the user (e,g: v0_25_0, etc)
+  - Service used by the user: `statsd.<prefix>.terraform.provider:1|c|#provider_name:myProviderName,resource_name:cdn_v1,terraform_operation:create` where the tagged `provider_name`, `resource_name` and `terraform_operation` values would contain the corresponding plugin name (service provider) used by the user (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn'), resource name being provisioned and operation performed (eg: create, read, update, delete)
 
 ###### HTTP Endpoint Object
 
@@ -166,26 +166,30 @@ provider_schema_properties | `[]string` | Defines what specific provider configu
 
 The following metrics will be shipped to the corresponding configured URL endpoint upon plugin execution:
 
-  - Terraform OpenAPI version used by the user: `<prefix>.terraform.openapi_plugin_version.total_runs` 
-  - Service used by the user: `<prefix>.terraform.providers.total_runs`
+  - Terraform OpenAPI version used by the user: `<prefix>.terraform.openapi_plugin_version.total_runs`. This metric is posted
+  any time the plugin is executed.
+  - Service used by the user: `<prefix>.terraform.provider`. This metric is posted any time the plugin is provisioning a resource
+  via any of the CRUD operations.
 
-The above will result into two separate POST HTTP requests to the corresponding configured URL passing in a JSON payload 
+The above will result into separate POST HTTP requests to the corresponding configured URL passing in a JSON payload 
 containing the `metric_type` with value 'IncCounter' and the `metric_name` being one of the above values. The 'IncCounter' 
 value describes an increase of 1 in the corresponding counter metric, the consumer (eg: API) then will decide how to handle this 
 information. The request will also contain a `User-Agent` header identifying the OpenAPI Terraform provider as the client.
 
 - Example of HTTP request sent to the HTTP endpoint increasing the `<prefix>.terraform.openapi_plugin_version.total_runs` counter:
 ````
-curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.openapi_plugin_versiontotal_runs", "tags": ["openapi_plugin_version:0_25_0"]}' -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
+curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.openapi_plugin_version.total_runs", "tags": ["openapi_plugin_version:0_25_0"]}' -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
 ````  
 
 Note the specific OpenAPI terraform plugin version used is passed in the `tags` property (e,g: 0_25_0, etc).
 
-- Example of HTTP request sent to the HTTP endpoint increasing the `<prefix>.terraform.providers.total_runs` counter:
+- Example of HTTP request sent to the HTTP endpoint increasing the `<prefix>.<prefix>.terraform.provider` counter:
 
 ````
-curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.providers.total_runs", "tags": ["provider_name:cdn"]}' -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
+curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.provider", "tags": ["provider_name:cdn", "resource_name":"cdn_v1", "terraform_operation":"create"]}' -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
 ````
+
+The `terraform_operation` value will correspond the specific operation executed by Terraform. That is: create, update, read or delete. 
 
 Note the specific plugin name (service provider) used is passed in the `tags` property (e,g: if the plugin name was terraform-provider-cdn the provider name in the metric would be 'cdn')
 
@@ -196,10 +200,14 @@ Note the specific plugin name (service provider) used is passed in the `tags` pr
 provider openapi {
   billing_id = "some_id"
 }
+
+resource "openapi.cdn_v1" "my_cdn" {
+...
+}
 ````
 
 ````
-curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.providers.total_runs", "tags": ["provider_name:cdn"]}' -H "billing_id: some_id" -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
+curl -X POST https://my-app.com/v1/metrics -d '{"metric_type": "IncCounter", "metric_name":"<prefix>.terraform.provider", "tags": ["provider_name:openapi", "resource_name":"cdn_v1", "terraform_operation":"create"]}' -H "billing_id: some_id" -H "Content-Type: application/json" -H "User-Agent: OpenAPI Terraform Provider/v0.26.0-b8364420eb450a34ff02e4c7832ad52165cd05b4 (darwin/amd64)"
 ````
 
 Note the provider configuration property and its value is attached to the header (following the OpenAPI plugin behaviour when appending to

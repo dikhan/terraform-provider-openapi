@@ -90,6 +90,8 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
+	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationCreate)
+
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
@@ -123,6 +125,8 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
+
+	r.submitTelemetryMetric(openAPIClient, TelemetryResourceOperationRead)
 
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
@@ -185,6 +189,8 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
+	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationUpdate)
+
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
@@ -218,6 +224,8 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
+	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationDelete)
+
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
 		return err
@@ -248,9 +256,21 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	return nil
 }
 
+func (r resourceFactory) submitTelemetryMetric(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation) {
+	if providerClient != nil {
+		telemetryHandler := providerClient.GetTelemetryHandler()
+		if telemetryHandler != nil {
+			telemetryHandler.SubmitResourceExecutionMetrics(r.openAPIResource.getResourceName(), tfOperation)
+		}
+	}
+}
+
 func (r resourceFactory) importer() *schema.ResourceImporter {
 	return &schema.ResourceImporter{
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
+			providerClient := i.(ClientOpenAPI)
+			r.submitTelemetryMetric(providerClient, TelemetryResourceOperationImport)
+
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
 			parentResourceInfo := r.openAPIResource.getParentResourceInfo()

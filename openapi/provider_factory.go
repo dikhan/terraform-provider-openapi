@@ -280,6 +280,7 @@ func (p providerFactory) configureProvider(openAPIBackendConfiguration SpecBacke
 			apiAuthenticator:            authenticator,
 			httpClient:                  &http_goclient.HttpClient{HttpClient: &http.Client{}},
 			providerConfiguration:       *config,
+			telemetryHandler:            telemetryHandler,
 		}
 		return openAPIClient, nil
 	}

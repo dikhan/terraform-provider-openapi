@@ -25,11 +25,15 @@ import (
 func TestAcc_ProviderConfiguration_PluginExternalFile_HTTPEndpointTelemetry(t *testing.T) {
 	httpEndpointTelemetryCalled := false
 	var headersReceived http.Header
+	var metricsReceived []string
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/metrics":
 			httpEndpointTelemetryCalled = true
 			headersReceived = r.Header
+			body, err := ioutil.ReadAll(r.Body)
+			assert.Nil(t, err)
+			metricsReceived = append(metricsReceived, string(body))
 			w.WriteHeader(http.StatusOK)
 			break
 		case "/v1/cdns", "/v1/cdns/someID":
@@ -159,6 +163,14 @@ resource "openapi_cdns_v1" "my_cdn" {
 						if headersReceived.Get("some_header") != "header_value" {
 							return fmt.Errorf("expected header `some_header` in the metric API not received or not expected value received: %s", headersReceived.Get("some_header"))
 						}
+						expectedPluginVersionMetric := `{"metric_type":"IncCounter","metric_name":"terraform.openapi_plugin_version.total_runs","tags":["openapi_plugin_version:dev"]}`
+						if metricsReceived[0] != expectedPluginVersionMetric {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[0], expectedPluginVersionMetric)
+						}
+						expectedResourceMetrics := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:cdns_v1","terraform_operation:create"]}`
+						if metricsReceived[2] != expectedResourceMetrics {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[2], expectedResourceMetrics)
+						}
 						return nil
 					},
 				),
@@ -241,7 +253,7 @@ definitions:
 	}))
 
 	metricChannel := make(chan string)
-	pc, telemetryHost, telemetryPort := graphiteServer(metricChannel)
+	pc, telemetryHost, telemetryPort := graphiteServer(&metricChannel)
 	defer pc.Close()
 
 	testPluginConfig := fmt.Sprintf(`version: '1'
@@ -276,8 +288,9 @@ services:
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1.my_cdn", "label", "some_label"),
 					func(s *terraform.State) error { // asserting that the graphite server received the expected metrics counter
-						assertExpectedMetric(t, metricChannel, "terraform.providers.openapi.total_runs:1|c")
-						assertExpectedMetric(t, metricChannel, "terraform.openapi_plugin_version.dev.total_runs:1|c")
+						assertExpectedMetric(t, &metricChannel, "terraform.openapi_plugin_version.total_runs:1|c|#openapi_plugin_version:dev") //Plan
+						assertExpectedMetric(t, &metricChannel, "terraform.openapi_plugin_version.total_runs:1|c|#openapi_plugin_version:dev") //Apply
+						assertExpectedMetric(t, &metricChannel, "terraform.provider:1|c|#provider_name:openapi,resource_name:cdns_v1,terraform_operation:create")
 						return nil
 					},
 				),
@@ -287,9 +300,9 @@ services:
 	os.Unsetenv(otfVarPluginConfigEnvVariableName)
 }
 
-func assertExpectedMetric(t *testing.T, metricChannel chan string, expectedMetric string) {
+func assertExpectedMetric(t *testing.T, metricChannel *chan string, expectedMetric string) {
 	select {
-	case metricReceived := <-metricChannel:
+	case metricReceived := <-*metricChannel:
 		assert.Contains(t, metricReceived, expectedMetric)
 	case <-time.After(500 * time.Millisecond):
 		t.Fatalf("[FAIL] '%s' not received within the expected timeframe (timed out)", expectedMetric)
@@ -305,7 +318,7 @@ func createPluginConfigFile(content string) *os.File {
 	return file
 }
 
-func graphiteServer(metricChannel chan string) (net.PacketConn, string, string) {
+func graphiteServer(metricChannel *chan string) (net.PacketConn, string, string) {
 	pc, err := net.ListenPacket("udp", "127.0.0.1:")
 	if err != nil {
 		log.Fatal(err)
@@ -315,13 +328,13 @@ func graphiteServer(metricChannel chan string) (net.PacketConn, string, string) 
 	telemetryPort := strings.Split(telemetryServer, ":")[1]
 	go func() {
 		for {
-			buf := make([]byte, 1024)
+			buf := make([]byte, 2048)
 			n, _, err := pc.ReadFrom(buf)
 			if err != nil {
 				continue
 			}
 			body := string(buf[:n])
-			metricChannel <- body
+			*metricChannel <- body
 		}
 	}()
 	return pc, telemetryHost, telemetryPort

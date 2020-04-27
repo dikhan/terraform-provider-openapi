@@ -63,8 +63,8 @@ func (g TelemetryProviderHTTPEndpoint) Validate() error {
 	return nil
 }
 
-// IncOpenAPIPluginVersionTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.openapi_plugin_version.%s.total_runs'. The
-// %s will be replaced by the OpenAPI plugin version used at runtime
+// IncOpenAPIPluginVersionTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.openapi_plugin_version.total_runs' including
+// any other tag present in the TelemetryProviderConfiguration.
 func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
 	version := strings.Replace(openAPIPluginVersion, ".", "_", -1)
 	tags := []string{"openapi_plugin_version:" + version}
@@ -76,11 +76,11 @@ func (g TelemetryProviderHTTPEndpoint) IncOpenAPIPluginVersionTotalRunsCounter(o
 	return nil
 }
 
-// IncServiceProviderTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.providers.%s.total_runs'. The
-// %s will be replaced by the provider name used at runtime
-func (g TelemetryProviderHTTPEndpoint) IncServiceProviderTotalRunsCounter(providerName string, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
-	tags := []string{"provider_name:" + providerName}
-	metricName := "terraform.providers.total_runs"
+// IncServiceProviderResourceTotalRunsCounter will submit an increment to 1 the metric type counter '<prefix>.terraform.provider'.
+// In addition, it will send tags with the provider name, resource name, and terrraform operation called.
+func (g TelemetryProviderHTTPEndpoint) IncServiceProviderResourceTotalRunsCounter(providerName, resourceName string, tfOperation TelemetryResourceOperation, telemetryProviderConfiguration TelemetryProviderConfiguration) error {
+	tags := []string{"provider_name:" + providerName, "resource_name:" + resourceName, fmt.Sprintf("terraform_operation:%s", tfOperation)}
+	metricName := "terraform.provider"
 	metric := createNewCounterMetric(g.Prefix, metricName, tags)
 	if err := g.submitMetric(metric, telemetryProviderConfiguration); err != nil {
 		return err

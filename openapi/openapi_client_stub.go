@@ -14,6 +14,7 @@ type clientOpenAPIStub struct {
 	returnHTTPCode      int
 	idReceived          string
 	parentIDsReceived   []string
+	telemetryHandler    TelemetryHandler
 
 	funcPut func() (*http.Response, error)
 }
@@ -89,6 +90,10 @@ func (c *clientOpenAPIStub) Delete(resource SpecResource, id string, parentIDs .
 	c.parentIDsReceived = parentIDs
 	delete(c.responsePayload, id)
 	return c.generateStubResponse(http.StatusNoContent), nil
+}
+
+func (c *clientOpenAPIStub) GetTelemetryHandler() TelemetryHandler {
+	return c.telemetryHandler
 }
 
 func (c *clientOpenAPIStub) generateStubResponse(defaultHTTPCode int) *http.Response {
