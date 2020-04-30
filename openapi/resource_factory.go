@@ -90,7 +90,12 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationCreate)
+	if r.openAPIResource == nil {
+		return fmt.Errorf("missing openAPI resource configuration")
+	}
+	resourceName := r.openAPIResource.getResourceName()
+
+	submitTelemetryMetric(providerClient, TelemetryResourceOperationCreate, resourceName, "")
 
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
@@ -126,7 +131,12 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	r.submitTelemetryMetric(openAPIClient, TelemetryResourceOperationRead)
+	if r.openAPIResource == nil {
+		return fmt.Errorf("missing openAPI resource configuration")
+	}
+	resourceName := r.openAPIResource.getResourceName()
+
+	submitTelemetryMetric(openAPIClient, TelemetryResourceOperationRead, resourceName, "")
 
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
@@ -189,7 +199,12 @@ func (r resourceFactory) getParentIDs(data *schema.ResourceData) ([]string, erro
 func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationUpdate)
+	if r.openAPIResource == nil {
+		return fmt.Errorf("missing openAPI resource configuration")
+	}
+	resourceName := r.openAPIResource.getResourceName()
+
+	submitTelemetryMetric(providerClient, TelemetryResourceOperationUpdate, resourceName, "")
 
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
@@ -224,7 +239,12 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error {
 	providerClient := i.(ClientOpenAPI)
 
-	r.submitTelemetryMetric(providerClient, TelemetryResourceOperationDelete)
+	if r.openAPIResource == nil {
+		return fmt.Errorf("missing openAPI resource configuration")
+	}
+	resourceName := r.openAPIResource.getResourceName()
+
+	submitTelemetryMetric(providerClient, TelemetryResourceOperationDelete, resourceName, "")
 
 	parentsIDs, resourcePath, err := getParentIDsAndResourcePath(r.openAPIResource, data)
 	if err != nil {
@@ -256,20 +276,17 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	return nil
 }
 
-func (r resourceFactory) submitTelemetryMetric(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation) {
-	if providerClient != nil {
-		telemetryHandler := providerClient.GetTelemetryHandler()
-		if telemetryHandler != nil {
-			telemetryHandler.SubmitResourceExecutionMetrics(r.openAPIResource.getResourceName(), tfOperation)
-		}
-	}
-}
-
 func (r resourceFactory) importer() *schema.ResourceImporter {
 	return &schema.ResourceImporter{
 		State: func(data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
 			providerClient := i.(ClientOpenAPI)
-			r.submitTelemetryMetric(providerClient, TelemetryResourceOperationImport)
+
+			if r.openAPIResource == nil {
+				return nil, fmt.Errorf("missing openAPI resource configuration")
+			}
+			resourceName := r.openAPIResource.getResourceName()
+
+			submitTelemetryMetric(providerClient, TelemetryResourceOperationImport, resourceName, "")
 
 			results := make([]*schema.ResourceData, 1, 1)
 			results[0] = data
