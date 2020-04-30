@@ -141,6 +141,6 @@ func TestSubmitTelemetryMetric_EmptyResourceName(t *testing.T) {
 			},
 		},
 	}
-	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, "resourceName", "prefix_")
+	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, "", "prefix_")
 	assert.False(t, submitResourceExecutionMetricsFuncCalled)
 }
