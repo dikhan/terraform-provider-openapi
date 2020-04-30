@@ -56,6 +56,9 @@ func (d dataSourceInstanceFactory) dataSourceInstanceSchema() *schema.Schema {
 
 func (d dataSourceInstanceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
+
+	submitTelemetryMetricDataSource(openAPIClient, TelemetryResourceOperationRead, d.openAPIResource)
+
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
 	if err != nil {
 		return err
