@@ -179,7 +179,7 @@ func TestDataSourceInstanceRead(t *testing.T) {
 			inputID:         "ID",
 			responsePayload: map[string]interface{}{},
 			returnHTTPCode:  http.StatusNotFound,
-			expectedError:   errors.New("[data source instance='resourceName'] GET  failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: "),
+			expectedError:   errors.New("[data source instance='resourceName_instance'] GET  failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: "),
 		},
 		{
 			name:          "get operation returns an error",
@@ -226,11 +226,11 @@ func TestDataSourceInstanceRead(t *testing.T) {
 			assert.NotNil(t, owners, tc.name)
 			assert.NotNil(t, len(expectedOwners), len(owners), tc.name)
 			assert.Equal(t, expectedOwners[0], owners[0], tc.name)
-			assert.Equal(t, "data_resourceName", telemetryHandlerResourceNameReceived)
+			assert.Equal(t, "data_resourceName_instance", telemetryHandlerResourceNameReceived)
 			assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
-			assert.Equal(t, "data_resourceName", telemetryHandlerResourceNameReceived)
+			assert.Equal(t, "data_resourceName_instance", telemetryHandlerResourceNameReceived)
 			assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
 		}
 	}
@@ -254,8 +254,13 @@ func TestDataSourceInstanceRead_Fails_Because_Schema_is_not_valid(t *testing.T) 
 }
 
 func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
-	err := dataSourceInstanceFactory{}.read(nil, &clientOpenAPIStub{})
-	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
+	err := dataSourceInstanceFactory{
+		openAPIResource: &specStubResource{
+			funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+				return "", errors.New("getResourcePath() failed")
+			}},
+	}.read(nil, &clientOpenAPIStub{})
+	assert.EqualError(t, err, "getResourcePath() failed")
 }
 
 func TestDataSourceInstanceRead_Subresource(t *testing.T) {

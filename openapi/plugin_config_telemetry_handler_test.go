@@ -127,10 +127,7 @@ func TestSubmitTelemetryMetric(t *testing.T) {
 			},
 		},
 	}
-	specResource := &specStubResource{
-		name: "resourceName",
-	}
-	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, specResource, "prefix_")
+	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, "resourceName", "prefix_")
 	assert.Equal(t, "prefix_resourceName", resourceNameReceived)
 	assert.Equal(t, TelemetryResourceOperationCreate, tfOperationReceived)
 }
@@ -144,9 +141,6 @@ func TestSubmitTelemetryMetric_EmptyResourceName(t *testing.T) {
 			},
 		},
 	}
-	specResource := &specStubResource{
-		name: "",
-	}
-	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, specResource, "prefix_")
+	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, "resourceName", "prefix_")
 	assert.False(t, submitResourceExecutionMetricsFuncCalled)
 }

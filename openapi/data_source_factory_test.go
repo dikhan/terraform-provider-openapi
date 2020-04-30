@@ -397,9 +397,20 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
 }
 
-func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
+func TestDataSourceRead_Fails_NilOpenAPIResource(t *testing.T) {
 	err := dataSourceFactory{}.read(nil, &clientOpenAPIStub{})
-	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
+	assert.EqualError(t, err, "missing openAPI resource configuration")
+}
+
+func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
+	err := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+				return "", errors.New("getResourcePath() failed")
+			}},
+	}.read(nil, &clientOpenAPIStub{})
+
+	assert.EqualError(t, err, "getResourcePath() failed")
 }
 
 func TestDataSourceRead_Fails_Because_List_Operation_Returns_Err(t *testing.T) {

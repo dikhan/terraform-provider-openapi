@@ -38,6 +38,10 @@ func TestAcc_ProviderConfiguration_PluginExternalFile_HTTPEndpointTelemetry(t *t
 			break
 		case "/v1/cdns", "/v1/cdns/someID":
 			httpEndpointTelemetryCalled = true
+			if r.Method == http.MethodGet && r.URL.Path == "/v1/cdns" { // When the data source (with filters support) is calling the GET endpoint
+				w.Write([]byte(`[{"id":"someID", "label": "some_label"}]`))
+				break
+			}
 			w.Write([]byte(`{"id":"someID", "label": "some_label"}`))
 			w.WriteHeader(http.StatusOK)
 			break
@@ -54,6 +58,11 @@ schemes:
 
 paths:
   /v1/cdns:
+    get:
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
     post:
       parameters:
       - in: "body"
@@ -72,6 +81,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
+
   /v1/cdns/{cdn_id}:
     get:
       parameters:
@@ -106,6 +116,10 @@ definitions:
         readOnly: true
       label:
         type: "string"
+  ContentDeliveryNetworkV1Collection:
+    type: array
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
 securityDefinitions:
   some_token:
     in: header
@@ -150,16 +164,16 @@ resource "openapi_cdns_v1" "my_cdn" {
    label = "some_label"
 }
 
-data "openapi_cdns_v1_instance" "my_cdn" {
-  id = "someID"
+data "openapi_cdns_v1" "my_data_cdn" { 
+  filter {
+	name = "id"
+	values = ["someID"]
+  }
 }
 
-#data "openapi_cdns_v1" "my_cdn" { 
-#  filter {
-#    name = "id"
-#    values = ["someID"]
-#  }
-#}`),
+data "openapi_cdns_v1_instance" "my_cdn" {
+  id = "someID"
+}`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1.my_cdn", "label", "some_label"),
@@ -178,12 +192,16 @@ data "openapi_cdns_v1_instance" "my_cdn" {
 						if metricsReceived[0] != expectedPluginVersionMetric {
 							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[0], expectedPluginVersionMetric)
 						}
-						expectedDataSourceMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1","terraform_operation:read"]}`
-						if metricsReceived[1] != expectedDataSourceMetric {
-							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[1], expectedDataSourceMetric)
+						expectedDataSourceInstanceMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1_instance","terraform_operation:read"]}`
+						if metricsReceived[1] != expectedDataSourceInstanceMetric {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[1], expectedDataSourceInstanceMetric)
+						}
+						expectedDataSourceWithFiltersMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1","terraform_operation:read"]}`
+						if metricsReceived[2] != expectedDataSourceWithFiltersMetric {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[1], expectedDataSourceWithFiltersMetric)
 						}
 						expectedResourceMetrics := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:cdns_v1","terraform_operation:create"]}`
-						if metricsReceived[4] != expectedResourceMetrics {
+						if metricsReceived[5] != expectedResourceMetrics {
 							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[4], expectedResourceMetrics)
 						}
 						return nil

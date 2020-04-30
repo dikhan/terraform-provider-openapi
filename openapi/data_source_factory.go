@@ -77,7 +77,12 @@ func (d dataSourceFactory) dataSourceFiltersSchema() *schema.Schema {
 func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
 
-	submitTelemetryMetricDataSource(openAPIClient, TelemetryResourceOperationRead, d.openAPIResource)
+	if d.openAPIResource == nil {
+		return fmt.Errorf("missing openAPI resource configuration")
+	}
+	resourceName := d.openAPIResource.getResourceName()
+
+	submitTelemetryMetricDataSource(openAPIClient, TelemetryResourceOperationRead, resourceName)
 
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
 	if err != nil {
@@ -96,7 +101,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 	}
 
 	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil {
-		return fmt.Errorf("[data source='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
+		return fmt.Errorf("[data source='%s'] GET %s failed: %s", resourceName, resourcePath, err)
 	}
 
 	var filteredResults []map[string]interface{}

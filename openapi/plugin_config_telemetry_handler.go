@@ -70,21 +70,18 @@ func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSu
 	}
 }
 
-func submitTelemetryMetric(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation, openaAPIResource SpecResource, prefix string) {
+func submitTelemetryMetric(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation, resourceName string, prefix string) {
 	if providerClient != nil {
-		if openaAPIResource != nil {
-			resourceName := openaAPIResource.getResourceName()
-			if resourceName != "" {
-				resourceName = fmt.Sprintf("%s%s", prefix, resourceName)
-				telemetryHandler := providerClient.GetTelemetryHandler()
-				if telemetryHandler != nil {
-					telemetryHandler.SubmitResourceExecutionMetrics(resourceName, tfOperation)
-				}
+		if resourceName != "" {
+			resourceName = fmt.Sprintf("%s%s", prefix, resourceName)
+			telemetryHandler := providerClient.GetTelemetryHandler()
+			if telemetryHandler != nil {
+				telemetryHandler.SubmitResourceExecutionMetrics(resourceName, tfOperation)
 			}
 		}
 	}
 }
 
-func submitTelemetryMetricDataSource(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation, openaAPIResource SpecResource) {
-	submitTelemetryMetric(providerClient, tfOperation, openaAPIResource, "data_")
+func submitTelemetryMetricDataSource(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation, resourceName string) {
+	submitTelemetryMetric(providerClient, tfOperation, resourceName, "data_")
 }
