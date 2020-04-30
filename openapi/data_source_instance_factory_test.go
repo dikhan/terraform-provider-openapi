@@ -253,6 +253,11 @@ func TestDataSourceInstanceRead_Fails_Because_Schema_is_not_valid(t *testing.T) 
 	assert.EqualError(t, err, "non supported type unknown")
 }
 
+func TestDataSourceInstanceRead_Fails_NilOpenAPIResource(t *testing.T) {
+	err := dataSourceInstanceFactory{}.read(nil, &clientOpenAPIStub{})
+	assert.EqualError(t, err, "missing openAPI resource configuration")
+}
+
 func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
 	err := dataSourceInstanceFactory{
 		openAPIResource: &specStubResource{
