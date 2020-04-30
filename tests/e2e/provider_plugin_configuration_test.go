@@ -72,7 +72,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ContentDeliveryNetworkV1"
-
   /v1/cdns/{cdn_id}:
     get:
       parameters:
@@ -149,7 +148,18 @@ provider "openapi" {
 }
 resource "openapi_cdns_v1" "my_cdn" { 
    label = "some_label"
-}`),
+}
+
+data "openapi_cdns_v1_instance" "my_cdn" {
+  id = "someID"
+}
+
+#data "openapi_cdns_v1" "my_cdn" { 
+#  filter {
+#    name = "id"
+#    values = ["someID"]
+#  }
+#}`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1.my_cdn", "label", "some_label"),
@@ -163,13 +173,18 @@ resource "openapi_cdns_v1" "my_cdn" {
 						if headersReceived.Get("some_header") != "header_value" {
 							return fmt.Errorf("expected header `some_header` in the metric API not received or not expected value received: %s", headersReceived.Get("some_header"))
 						}
+						fmt.Println(metricsReceived)
 						expectedPluginVersionMetric := `{"metric_type":"IncCounter","metric_name":"terraform.openapi_plugin_version.total_runs","tags":["openapi_plugin_version:dev"]}`
 						if metricsReceived[0] != expectedPluginVersionMetric {
 							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[0], expectedPluginVersionMetric)
 						}
+						expectedDataSourceMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1","terraform_operation:read"]}`
+						if metricsReceived[1] != expectedDataSourceMetric {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[1], expectedDataSourceMetric)
+						}
 						expectedResourceMetrics := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:cdns_v1","terraform_operation:create"]}`
-						if metricsReceived[2] != expectedResourceMetrics {
-							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[2], expectedResourceMetrics)
+						if metricsReceived[4] != expectedResourceMetrics {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[4], expectedResourceMetrics)
 						}
 						return nil
 					},
