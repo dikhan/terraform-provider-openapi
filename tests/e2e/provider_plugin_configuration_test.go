@@ -187,18 +187,19 @@ data "openapi_cdns_v1_instance" "my_cdn" {
 						if headersReceived.Get("some_header") != "header_value" {
 							return fmt.Errorf("expected header `some_header` in the metric API not received or not expected value received: %s", headersReceived.Get("some_header"))
 						}
-						fmt.Println(metricsReceived)
 						expectedPluginVersionMetric := `{"metric_type":"IncCounter","metric_name":"terraform.openapi_plugin_version.total_runs","tags":["openapi_plugin_version:dev"]}`
 						if metricsReceived[0] != expectedPluginVersionMetric {
 							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[0], expectedPluginVersionMetric)
 						}
 						expectedDataSourceInstanceMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1_instance","terraform_operation:read"]}`
-						if metricsReceived[1] != expectedDataSourceInstanceMetric {
-							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[1], expectedDataSourceInstanceMetric)
+						err := assertMetricExists(expectedDataSourceInstanceMetric, metricsReceived, []int{1, 2})
+						if err != nil {
+							return err
 						}
 						expectedDataSourceWithFiltersMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1","terraform_operation:read"]}`
-						if metricsReceived[2] != expectedDataSourceWithFiltersMetric {
-							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[1], expectedDataSourceWithFiltersMetric)
+						err = assertMetricExists(expectedDataSourceWithFiltersMetric, metricsReceived, []int{1, 2})
+						if err != nil {
+							return err
 						}
 						expectedResourceMetrics := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:cdns_v1","terraform_operation:create"]}`
 						if metricsReceived[5] != expectedResourceMetrics {
@@ -211,6 +212,15 @@ data "openapi_cdns_v1_instance" "my_cdn" {
 		},
 	})
 	os.Unsetenv(otfVarPluginConfigEnvVariableName)
+}
+
+func assertMetricExists(expectedMetric string, metrics []string, expectedIdx []int) error {
+	for _, idx := range expectedIdx {
+		if metrics[idx] == expectedMetric {
+			return nil
+		}
+	}
+	return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metrics, expectedMetric)
 }
 
 // TestAcc_ProviderConfiguration_PluginExternalFile_GraphiteTelemetry confirms regressions introduced in the logic related to the plugin
