@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
 	"time"
@@ -67,4 +68,20 @@ func (t telemetryHandlerTimeoutSupport) submitMetric(metricName string, metricSu
 	case <-time.After(time.Duration(t.timeout) * time.Second):
 		log.Printf("metric '%s' submission did not finish within the expected time %ds", metricName, t.timeout)
 	}
+}
+
+func submitTelemetryMetric(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation, resourceName string, prefix string) {
+	if providerClient != nil {
+		if resourceName != "" {
+			resourceName = fmt.Sprintf("%s%s", prefix, resourceName)
+			telemetryHandler := providerClient.GetTelemetryHandler()
+			if telemetryHandler != nil {
+				telemetryHandler.SubmitResourceExecutionMetrics(resourceName, tfOperation)
+			}
+		}
+	}
+}
+
+func submitTelemetryMetricDataSource(providerClient ClientOpenAPI, tfOperation TelemetryResourceOperation, resourceName string) {
+	submitTelemetryMetric(providerClient, tfOperation, resourceName, "data_")
 }

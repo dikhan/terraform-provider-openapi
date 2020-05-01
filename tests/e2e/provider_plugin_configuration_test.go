@@ -38,6 +38,10 @@ func TestAcc_ProviderConfiguration_PluginExternalFile_HTTPEndpointTelemetry(t *t
 			break
 		case "/v1/cdns", "/v1/cdns/someID":
 			httpEndpointTelemetryCalled = true
+			if r.Method == http.MethodGet && r.URL.Path == "/v1/cdns" { // When the data source (with filters support) is calling the GET endpoint
+				w.Write([]byte(`[{"id":"someID", "label": "some_label"}]`))
+				break
+			}
 			w.Write([]byte(`{"id":"someID", "label": "some_label"}`))
 			w.WriteHeader(http.StatusOK)
 			break
@@ -54,6 +58,11 @@ schemes:
 
 paths:
   /v1/cdns:
+    get:
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkV1Collection"
     post:
       parameters:
       - in: "body"
@@ -107,6 +116,10 @@ definitions:
         readOnly: true
       label:
         type: "string"
+  ContentDeliveryNetworkV1Collection:
+    type: array
+    items:
+      $ref: "#/definitions/ContentDeliveryNetworkV1"
 securityDefinitions:
   some_token:
     in: header
@@ -149,6 +162,17 @@ provider "openapi" {
 }
 resource "openapi_cdns_v1" "my_cdn" { 
    label = "some_label"
+}
+
+data "openapi_cdns_v1" "my_data_cdn" { 
+  filter {
+	name = "id"
+	values = ["someID"]
+  }
+}
+
+data "openapi_cdns_v1_instance" "my_cdn" {
+  id = "someID"
 }`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
@@ -167,9 +191,19 @@ resource "openapi_cdns_v1" "my_cdn" {
 						if metricsReceived[0] != expectedPluginVersionMetric {
 							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[0], expectedPluginVersionMetric)
 						}
+						expectedDataSourceInstanceMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1_instance","terraform_operation:read"]}`
+						err := assertMetricExists(expectedDataSourceInstanceMetric, metricsReceived, []int{1, 2})
+						if err != nil {
+							return err
+						}
+						expectedDataSourceWithFiltersMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1","terraform_operation:read"]}`
+						err = assertMetricExists(expectedDataSourceWithFiltersMetric, metricsReceived, []int{1, 2})
+						if err != nil {
+							return err
+						}
 						expectedResourceMetrics := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:cdns_v1","terraform_operation:create"]}`
-						if metricsReceived[2] != expectedResourceMetrics {
-							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[2], expectedResourceMetrics)
+						if metricsReceived[5] != expectedResourceMetrics {
+							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[4], expectedResourceMetrics)
 						}
 						return nil
 					},
@@ -178,6 +212,15 @@ resource "openapi_cdns_v1" "my_cdn" {
 		},
 	})
 	os.Unsetenv(otfVarPluginConfigEnvVariableName)
+}
+
+func assertMetricExists(expectedMetric string, metrics []string, expectedIdx []int) error {
+	for _, idx := range expectedIdx {
+		if metrics[idx] == expectedMetric {
+			return nil
+		}
+	}
+	return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metrics, expectedMetric)
 }
 
 // TestAcc_ProviderConfiguration_PluginExternalFile_GraphiteTelemetry confirms regressions introduced in the logic related to the plugin

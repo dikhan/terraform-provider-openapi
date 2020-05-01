@@ -176,13 +176,13 @@ func TestCreate(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+	Convey("Given an empty resource factory with an empty OpenAPI resource", t, func() {
 		r := resourceFactory{}
 		Convey("When create is called with empty data and a empty client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.create(nil, client)
-			Convey("Then the error should not be nil", func() {
-				So(err, ShouldNotBeNil)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "missing openAPI resource configuration")
 			})
 		})
 	})
@@ -207,6 +207,21 @@ func TestCreate(t *testing.T) {
 			err := r.create(resourceData, client)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "polling mechanism failed after POST /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error on retrieving resource 'resourceName' (someID) when waiting: [resource='resourceName'] HTTP Response Status Code 202 not matching expected one [200] ()")
+			})
+		})
+	})
+
+	Convey("Given a resource factory where getResourcePath returns an error", t, func() {
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+					return "", errors.New("getResourcePath() failed")
+				}},
+		}
+		Convey("When create is called with resource data and an empty clientOpenAPI", func() {
+			err := r.create(nil, &clientOpenAPIStub{})
+			Convey("Then the error returned should be the expected one", func() {
+				assert.EqualError(t, err, "getResourcePath() failed")
 			})
 		})
 	})
@@ -287,8 +302,23 @@ func TestRead(t *testing.T) {
 		Convey("When create is called with empty data and a empty client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.read(nil, client)
-			Convey("Then the error should not be nil", func() {
-				So(err, ShouldNotBeNil)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "missing openAPI resource configuration")
+			})
+		})
+	})
+
+	Convey("Given a resource factory where getResourcePath returns an error", t, func() {
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+					return "", errors.New("getResourcePath() failed")
+				}},
+		}
+		Convey("When read is called with resource data and an empty clientOpenAPI", func() {
+			err := r.read(nil, &clientOpenAPIStub{})
+			Convey("Then the error returned should be the expected one", func() {
+				assert.EqualError(t, err, "getResourcePath() failed")
 			})
 		})
 	})
@@ -491,8 +521,8 @@ func TestUpdate(t *testing.T) {
 		Convey("When create is called with empty data and a empty client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.update(nil, client)
-			Convey("Then the error should not be nil", func() {
-				So(err, ShouldNotBeNil)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "missing openAPI resource configuration")
 			})
 		})
 	})
@@ -522,6 +552,21 @@ func TestUpdate(t *testing.T) {
 			err := r.update(resourceData, client)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "polling mechanism failed after PUT /v1/resource call with response status code (202): error waiting for resource to reach a completion status ([]) [valid pending statuses ([])]: error occurred while retrieving status identifier value from payload for resource 'resourceName' (): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+			})
+		})
+	})
+
+	Convey("Given a resource factory where getResourcePath returns an error", t, func() {
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+					return "", errors.New("getResourcePath() failed")
+				}},
+		}
+		Convey("When update is called with resource data and an empty clientOpenAPI", func() {
+			err := r.update(nil, &clientOpenAPIStub{})
+			Convey("Then the error returned should be the expected one", func() {
+				assert.EqualError(t, err, "getResourcePath() failed")
 			})
 		})
 	})
@@ -619,8 +664,8 @@ func TestDelete(t *testing.T) {
 		Convey("When delete is called with empty data and a empty client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.delete(nil, client)
-			Convey("Then the error should not be nil", func() {
-				So(err, ShouldNotBeNil)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "missing openAPI resource configuration")
 			})
 		})
 	})
@@ -648,24 +693,21 @@ func TestDelete(t *testing.T) {
 			})
 		})
 	})
-}
 
-func TestSubmitTelemetryMetric(t *testing.T) {
-	expectedResourceName := "resourceName"
-	r := resourceFactory{
-		openAPIResource: &specStubResource{
-			name: expectedResourceName,
-		},
-	}
-	telemetryProviderStub := telemetryProviderStub{}
-	clientStub := &clientOpenAPIStub{
-		telemetryHandler: telemetryHandlerTimeoutSupport{
-			telemetryProvider: &telemetryProviderStub,
-		},
-	}
-	r.submitTelemetryMetric(clientStub, TelemetryResourceOperationCreate)
-	assert.Equal(t, expectedResourceName, telemetryProviderStub.resourceNameReceived)
-	assert.Equal(t, TelemetryResourceOperationCreate, telemetryProviderStub.tfOperationReceived)
+	Convey("Given a resource factory where getResourcePath returns an error", t, func() {
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+					return "", errors.New("getResourcePath() failed")
+				}},
+		}
+		Convey("When delete is called with resource data and an empty clientOpenAPI", func() {
+			err := r.delete(nil, &clientOpenAPIStub{})
+			Convey("Then the error returned should be the expected one", func() {
+				assert.EqualError(t, err, "getResourcePath() failed")
+			})
+		})
+	})
 }
 
 func TestImporter(t *testing.T) {
@@ -855,6 +897,46 @@ func TestImporter(t *testing.T) {
 				_, err := resourceImporter.State(resourceData, client)
 				Convey("Then the err returned should be the expected one", func() {
 					So(err.Error(), ShouldEqual, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
+				})
+			})
+		})
+	})
+
+	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+		r := resourceFactory{}
+		Convey("When import is called", func() {
+			resourceImporter := r.importer()
+			Convey("Then resourceImporter not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+				Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+					data, err := resourceImporter.State(&schema.ResourceData{}, &clientOpenAPIStub{})
+					Convey("Then the error returned should be the expected one and data should be nil", func() {
+						So(err.Error(), ShouldEqual, "missing openAPI resource configuration")
+						So(data, ShouldBeNil)
+					})
+				})
+			})
+		})
+	})
+
+	Convey("Given a resource factory where getResourcePath returns an error", t, func() {
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+					return "", errors.New("getResourcePath() failed")
+				}},
+		}
+		Convey("When import is called", func() {
+			resourceImporter := r.importer()
+			Convey("Then resourceImporter not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+				Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+					resourceData := &schema.ResourceData{}
+					data, err := resourceImporter.State(resourceData, &clientOpenAPIStub{})
+					Convey("Then the error returned should be the expected one and data should be nil", func() {
+						So(err.Error(), ShouldEqual, "getResourcePath() failed")
+						So(data[0], ShouldResemble, resourceData)
+					})
 				})
 			})
 		})

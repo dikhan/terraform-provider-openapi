@@ -115,3 +115,32 @@ func TestSubmitMetric(t *testing.T) {
 		assert.Contains(t, buf.String(), tc.expectedLogging, tc.name)
 	}
 }
+
+func TestSubmitTelemetryMetric(t *testing.T) {
+	var resourceNameReceived string
+	var tfOperationReceived TelemetryResourceOperation
+	clientOpenAPI := &clientOpenAPIStub{
+		telemetryHandler: &telemetryHandlerStub{
+			submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+				resourceNameReceived = resourceName
+				tfOperationReceived = tfOperation
+			},
+		},
+	}
+	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, "resourceName", "prefix_")
+	assert.Equal(t, "prefix_resourceName", resourceNameReceived)
+	assert.Equal(t, TelemetryResourceOperationCreate, tfOperationReceived)
+}
+
+func TestSubmitTelemetryMetric_EmptyResourceName(t *testing.T) {
+	var submitResourceExecutionMetricsFuncCalled bool
+	clientOpenAPI := &clientOpenAPIStub{
+		telemetryHandler: &telemetryHandlerStub{
+			submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+				submitResourceExecutionMetricsFuncCalled = true
+			},
+		},
+	}
+	submitTelemetryMetric(clientOpenAPI, TelemetryResourceOperationCreate, "", "prefix_")
+	assert.False(t, submitResourceExecutionMetricsFuncCalled)
+}

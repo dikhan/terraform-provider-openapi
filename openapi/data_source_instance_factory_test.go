@@ -119,64 +119,6 @@ func TestCreateTerraformDataSourceInstance(t *testing.T) {
 
 func TestDataSourceInstanceRead(t *testing.T) {
 
-	testCases := []struct {
-		name           string
-		inputID        string
-		client         *clientOpenAPIStub
-		expectedResult map[string]interface{}
-		expectedError  error
-	}{
-		{
-			name:    "fetch selected data source as per input ID",
-			inputID: "ID",
-			client: &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					"id":     "someID",
-					"label":  "someLabel",
-					"owners": []string{"someOwner"},
-				},
-			},
-			expectedError: nil,
-		},
-		{
-			name:    "input ID is empty",
-			inputID: "",
-			client: &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					"id":     "someID",
-					"label":  "someLabel",
-					"owners": []string{"someOwner"},
-				},
-			},
-			expectedError: errors.New("data source 'id' property value must be populated"),
-		},
-		{
-			name:    "empty response from API",
-			inputID: "ID",
-			client: &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{},
-			},
-			expectedError: errors.New("response object returned from the API is missing mandatory identifier property 'id'"),
-		},
-		{
-			name:    "api returns a non expected code 404",
-			inputID: "ID",
-			client: &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{},
-				returnHTTPCode:  http.StatusNotFound,
-			},
-			expectedError: errors.New("[data source instance=''] GET  failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: "),
-		},
-		{
-			name:    "get operation returns an error",
-			inputID: "ID",
-			client: &clientOpenAPIStub{
-				error: errors.New("some api error in the get operation"),
-			},
-			expectedError: errors.New("some api error in the get operation"),
-		},
-	}
-
 	dataSourceFactory := dataSourceInstanceFactory{
 		openAPIResource: &specStubResource{
 			schemaDefinition: &specSchemaDefinition{
@@ -186,10 +128,72 @@ func TestDataSourceInstanceRead(t *testing.T) {
 					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, typeString, nil),
 				},
 			},
+			name: "resourceName",
+		},
+	}
+
+	testCases := []struct {
+		name                          string
+		inputID                       string
+		client                        *clientOpenAPIStub
+		responsePayload               map[string]interface{}
+		returnHTTPCode                int
+		returnedError                 error
+		expectedTelemetryResourceName string
+		expectedTelemetryOperation    TelemetryResourceOperation
+		expectedError                 error
+	}{
+		{
+			name:    "fetch selected data source as per input ID",
+			inputID: "ID",
+			responsePayload: map[string]interface{}{
+				"id":     "someID",
+				"label":  "someLabel",
+				"owners": []string{"someOwner"},
+			},
+			returnHTTPCode:                http.StatusOK,
+			expectedTelemetryResourceName: "data_resourceName",
+			expectedTelemetryOperation:    TelemetryResourceOperationRead,
+			expectedError:                 nil,
+		},
+		{
+			name:    "input ID is empty",
+			inputID: "",
+			responsePayload: map[string]interface{}{
+				"id":     "someID",
+				"label":  "someLabel",
+				"owners": []string{"someOwner"},
+			},
+			returnHTTPCode: http.StatusOK,
+			expectedError:  errors.New("data source 'id' property value must be populated"),
+		},
+		{
+			name:            "empty response from API",
+			inputID:         "ID",
+			responsePayload: map[string]interface{}{},
+			returnHTTPCode:  http.StatusOK,
+			expectedError:   errors.New("response object returned from the API is missing mandatory identifier property 'id'"),
+		},
+		{
+			name:            "api returns a non expected code 404",
+			inputID:         "ID",
+			responsePayload: map[string]interface{}{},
+			returnHTTPCode:  http.StatusNotFound,
+			expectedError:   errors.New("[data source instance='resourceName_instance'] GET  failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: "),
+		},
+		{
+			name:          "get operation returns an error",
+			inputID:       "ID",
+			returnedError: errors.New("some api error in the get operation"),
+			expectedError: errors.New("some api error in the get operation"),
 		},
 	}
 
 	for _, tc := range testCases {
+
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
+
 		resourceSchema, err := dataSourceFactory.createTerraformDataSourceInstanceSchema()
 		require.NoError(t, err)
 
@@ -197,20 +201,37 @@ func TestDataSourceInstanceRead(t *testing.T) {
 			dataSourceInstanceIDProperty: tc.inputID,
 		}
 		resourceData := schema.TestResourceDataRaw(t, resourceSchema, dataSourceUserInput)
+
+		client := &clientOpenAPIStub{
+			responsePayload: tc.responsePayload,
+			returnHTTPCode:  tc.returnHTTPCode,
+			error:           tc.returnedError,
+			telemetryHandler: &telemetryHandlerStub{
+				submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+					telemetryHandlerResourceNameReceived = resourceName
+					telemetryHandlerTFOperationReceived = tfOperation
+				},
+			},
+		}
+
 		// When
-		err = dataSourceFactory.read(resourceData, tc.client)
+		err = dataSourceFactory.read(resourceData, client)
 		// Then
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
-			assert.Equal(t, tc.client.responsePayload["id"], resourceData.Id(), tc.name)
-			assert.Equal(t, tc.client.responsePayload["label"], resourceData.Get("label"), tc.name)
-			expectedOwners := tc.client.responsePayload["owners"].([]string)
+			assert.Equal(t, tc.responsePayload["id"], resourceData.Id(), tc.name)
+			assert.Equal(t, tc.responsePayload["label"], resourceData.Get("label"), tc.name)
+			expectedOwners := tc.responsePayload["owners"].([]string)
 			owners := resourceData.Get("owners").([]interface{})
 			assert.NotNil(t, owners, tc.name)
 			assert.NotNil(t, len(expectedOwners), len(owners), tc.name)
 			assert.Equal(t, expectedOwners[0], owners[0], tc.name)
+			assert.Equal(t, "data_resourceName_instance", telemetryHandlerResourceNameReceived)
+			assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+			assert.Equal(t, "data_resourceName_instance", telemetryHandlerResourceNameReceived)
+			assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
 		}
 	}
 }
@@ -232,9 +253,19 @@ func TestDataSourceInstanceRead_Fails_Because_Schema_is_not_valid(t *testing.T) 
 	assert.EqualError(t, err, "non supported type unknown")
 }
 
-func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
+func TestDataSourceInstanceRead_Fails_NilOpenAPIResource(t *testing.T) {
 	err := dataSourceInstanceFactory{}.read(nil, &clientOpenAPIStub{})
-	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
+	assert.EqualError(t, err, "missing openAPI resource configuration")
+}
+
+func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
+	err := dataSourceInstanceFactory{
+		openAPIResource: &specStubResource{
+			funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+				return "", errors.New("getResourcePath() failed")
+			}},
+	}.read(nil, &clientOpenAPIStub{})
+	assert.EqualError(t, err, "getResourcePath() failed")
 }
 
 func TestDataSourceInstanceRead_Subresource(t *testing.T) {

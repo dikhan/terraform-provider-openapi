@@ -129,6 +129,7 @@ func TestDataSourceRead(t *testing.T) {
 	// Given
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
+			name: "resourceName",
 			schemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
@@ -206,6 +207,9 @@ func TestDataSourceRead(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		var telemetryHandlerResourceNameReceived string
+		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
+
 		resourceSchema, err := dataSourceFactory.createTerraformDataSourceSchema()
 		require.NoError(t, err)
 
@@ -215,6 +219,12 @@ func TestDataSourceRead(t *testing.T) {
 		resourceData := schema.TestResourceDataRaw(t, resourceSchema, filtersInput)
 		client := &clientOpenAPIStub{
 			responseListPayload: tc.responsePayload,
+			telemetryHandler: &telemetryHandlerStub{
+				submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+					telemetryHandlerResourceNameReceived = resourceName
+					telemetryHandlerTFOperationReceived = tfOperation
+				},
+			},
 		}
 		// When
 		err = dataSourceFactory.read(resourceData, client)
@@ -230,6 +240,8 @@ func TestDataSourceRead(t *testing.T) {
 			assert.NotNil(t, owners, tc.name)
 			assert.NotNil(t, len(expectedOwners), len(owners), tc.name)
 			assert.Equal(t, expectedOwners[0], owners[0], tc.name)
+			assert.Equal(t, "data_resourceName", telemetryHandlerResourceNameReceived)
+			assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
 		} else {
 			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
 		}
@@ -237,9 +249,12 @@ func TestDataSourceRead(t *testing.T) {
 }
 
 func TestDataSourceRead_Subresource(t *testing.T) {
+	var telemetryHandlerResourceNameReceived string
+	var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
+			name: "resourceName",
 			path: "/v1/cdns/{id}/firewall",
 			schemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
@@ -272,17 +287,28 @@ func TestDataSourceRead_Subresource(t *testing.T) {
 				"label": "my_label",
 			},
 		},
+		telemetryHandler: &telemetryHandlerStub{
+			submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+				telemetryHandlerResourceNameReceived = resourceName
+				telemetryHandlerTFOperationReceived = tfOperation
+			},
+		},
 	}
 	err = dataSourceFactory.read(resourceData, client)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"parentPropertyID"}, client.parentIDsReceived) // check that the parent id is passed as expected
 	assert.Equal(t, "someID", resourceData.Id())
 	assert.Equal(t, "my_label", resourceData.Get("label"))
+	assert.Equal(t, "data_resourceName", telemetryHandlerResourceNameReceived)
+	assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
 }
 
 func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	// Given ...
 	// ... a schema describing a nested object which is used to ...
+	var telemetryHandlerResourceNameReceived string
+	var telemetryHandlerTFOperationReceived TelemetryResourceOperation
+
 	nestedObjectSchemaDefinition := &specSchemaDefinition{
 		Properties: specSchemaDefinitionProperties{
 			newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
@@ -310,6 +336,7 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	// ... build a data source (using a dataSourceFactory)
 	dataSourceFactory := dataSourceFactory{
 		openAPIResource: &specStubResource{
+			name: "resourceName",
 			schemaDefinition: &specSchemaDefinition{
 				Properties: specSchemaDefinitionProperties{
 					idProperty,
@@ -351,6 +378,12 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 				},
 			},
 		},
+		telemetryHandler: &telemetryHandlerStub{
+			submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+				telemetryHandlerResourceNameReceived = resourceName
+				telemetryHandlerTFOperationReceived = tfOperation
+			},
+		},
 	}
 	// When
 	err = dataSourceFactory.read(resourceData, client)
@@ -360,11 +393,24 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 	assert.Equal(t, 10, len(resourceData.State().Attributes))               //this asserts that ONLY 1 element is returned when the filter is applied (2 prop of the elelemnt + 4 prop given by the filter)
 	assert.Equal(t, client.responseListPayload[0]["id"], resourceData.Id()) //resourceData.Id() is being called instead of resourceData.Get("id") because id property is a special one kept by Terraform
 	assert.Equal(t, client.responseListPayload[0]["label"], resourceData.Get("nested_object"))
+	assert.Equal(t, "data_resourceName", telemetryHandlerResourceNameReceived)
+	assert.Equal(t, TelemetryResourceOperationRead, telemetryHandlerTFOperationReceived)
+}
+
+func TestDataSourceRead_Fails_NilOpenAPIResource(t *testing.T) {
+	err := dataSourceFactory{}.read(nil, &clientOpenAPIStub{})
+	assert.EqualError(t, err, "missing openAPI resource configuration")
 }
 
 func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
-	err := dataSourceFactory{}.read(nil, &clientOpenAPIStub{})
-	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
+	err := dataSourceFactory{
+		openAPIResource: &specStubResource{
+			funcGetResourcePath: func(parentIDs []string) (s string, e error) {
+				return "", errors.New("getResourcePath() failed")
+			}},
+	}.read(nil, &clientOpenAPIStub{})
+
+	assert.EqualError(t, err, "getResourcePath() failed")
 }
 
 func TestDataSourceRead_Fails_Because_List_Operation_Returns_Err(t *testing.T) {

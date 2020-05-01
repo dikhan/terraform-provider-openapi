@@ -169,7 +169,7 @@ The following metrics will be shipped to the corresponding configured URL endpoi
   - Terraform OpenAPI version used by the user: `<prefix>.terraform.openapi_plugin_version.total_runs`. This metric is posted
   any time the plugin is executed.
   - Service used by the user: `<prefix>.terraform.provider`. This metric is posted any time the plugin is provisioning a resource
-  via any of the CRUD operations.
+  via any of the CRUD operations. This metric will be submitted upon resource provisioning as well as data source.
 
 The above will result into separate POST HTTP requests to the corresponding configured URL passing in a JSON payload 
 containing the `metric_type` with value 'IncCounter' and the `metric_name` being one of the above values. The 'IncCounter' 

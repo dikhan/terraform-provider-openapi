@@ -56,6 +56,14 @@ func (d dataSourceInstanceFactory) dataSourceInstanceSchema() *schema.Schema {
 
 func (d dataSourceInstanceFactory) read(data *schema.ResourceData, i interface{}) error {
 	openAPIClient := i.(ClientOpenAPI)
+
+	if d.openAPIResource == nil {
+		return fmt.Errorf("missing openAPI resource configuration")
+	}
+	resourceName := d.getDataSourceInstanceName()
+
+	submitTelemetryMetricDataSource(openAPIClient, TelemetryResourceOperationRead, resourceName)
+
 	parentIDs, resourcePath, err := getParentIDsAndResourcePath(d.openAPIResource, data)
 	if err != nil {
 		return err
@@ -70,7 +78,7 @@ func (d dataSourceInstanceFactory) read(data *schema.ResourceData, i interface{}
 		return err
 	}
 	if err := checkHTTPStatusCode(d.openAPIResource, resp, []int{http.StatusOK}); err != nil {
-		return fmt.Errorf("[data source instance='%s'] GET %s failed: %s", d.openAPIResource.getResourceName(), resourcePath, err)
+		return fmt.Errorf("[data source instance='%s'] GET %s failed: %s", resourceName, resourcePath, err)
 	}
 	err = setStateID(d.openAPIResource, data, responsePayload)
 	if err != nil {
