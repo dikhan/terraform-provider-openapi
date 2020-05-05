@@ -822,6 +822,30 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			expectedSkip:       true,
 			expectedError:      nil,
 		},
+		{
+			name: "required input number matches the value returned by the API",
+			property: specSchemaDefinitionProperty{
+				Name:     "number_prop",
+				Type:     typeFloat,
+				Required: true,
+			},
+			inputPropertyValue: 99.99,
+			remoteValue:        99.99,
+			expectedSkip:       true,
+			expectedError:      nil,
+		},
+		{
+			name: "required input bool matches the value returned by the API",
+			property: specSchemaDefinitionProperty{
+				Name:     "bool_prop",
+				Type:     typeBool,
+				Required: true,
+			},
+			inputPropertyValue: true,
+			remoteValue:        true,
+			expectedSkip:       true,
+			expectedError:      nil,
+		},
 	}
 
 	for _, tc := range testCases {
