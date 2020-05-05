@@ -788,3 +788,49 @@ func TestSetStateID(t *testing.T) {
 		})
 	})
 }
+
+func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
+	testCases := []struct {
+		name               string
+		property           specSchemaDefinitionProperty
+		inputPropertyValue interface{}
+		remoteValue        interface{}
+		expectedSkip       bool
+		expectedError      error
+	}{
+		{
+			name: "required input string matches the value returned by the API",
+			property: specSchemaDefinitionProperty{
+				Name:     "string_prop",
+				Type:     typeString,
+				Required: true,
+			},
+			inputPropertyValue: "inputValue",
+			remoteValue:        "inputValue",
+			expectedSkip:       true,
+			expectedError:      nil,
+		},
+		{
+			name: "required input integer matches the value returned by the API",
+			property: specSchemaDefinitionProperty{
+				Name:     "int_prop",
+				Type:     typeInt,
+				Required: true,
+			},
+			inputPropertyValue: 123,
+			remoteValue:        123,
+			expectedSkip:       true,
+			expectedError:      nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		skip, err := compareInputPropertyValueWithPayloadPropertyValue(tc.property, tc.inputPropertyValue, tc.remoteValue)
+		if tc.expectedError == nil {
+			assert.Nil(t, err, tc.name)
+			assert.Equal(t, tc.expectedSkip, skip)
+		} else {
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		}
+	}
+}

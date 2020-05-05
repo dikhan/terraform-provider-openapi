@@ -108,6 +108,18 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 	return nil
 }
 
+func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) (bool, error) {
+	if property.Required {
+		switch property.Type {
+		case typeString, typeInt:
+			if inputPropertyValue == remoteValue {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
 func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
 	if propertyValue == nil {
 		return nil, nil
