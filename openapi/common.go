@@ -116,6 +116,22 @@ func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefini
 			if inputPropertyValue == remoteValue {
 				return true, nil
 			}
+		case typeList:
+			if property.ArrayItemsType == typeString {
+				for _, inputItemValue := range inputPropertyValue.([]interface{}) {
+					foundMatch := false
+					for _, remoteItemValue := range remoteValue.([]interface{}) {
+						if inputItemValue == remoteItemValue {
+							foundMatch = true
+							break
+						}
+					}
+					if !foundMatch {
+						return false, fmt.Errorf("API returned a payload containg an array property (%s) which does not contain the expected desired items specified by the user", property.Name)
+					}
+				}
+			}
+			return true, nil
 		}
 	}
 	return false, nil

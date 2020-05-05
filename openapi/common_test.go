@@ -846,6 +846,30 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			expectedSkip:       true,
 			expectedError:      nil,
 		},
+		{
+			name: "required input list matches the value returned by the API where order of input values match",
+			property: specSchemaDefinitionProperty{
+				Name:     "list_prop",
+				Type:     typeList,
+				Required: true,
+			},
+			inputPropertyValue: []string{"inputVal1", "inputVal2", "inputVal3"},
+			remoteValue:        []string{"inputVal1", "inputVal2", "inputVal3"},
+			expectedSkip:       true,
+			expectedError:      nil,
+		},
+		{
+			name: "required input list matches the value returned by the API where order of input values doesn't match",
+			property: specSchemaDefinitionProperty{
+				Name:     "list_prop",
+				Type:     typeList,
+				Required: true,
+			},
+			inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
+			remoteValue:        []string{"inputVal2", "inputVal3", "inputVal1"},
+			expectedSkip:       true,
+			expectedError:      nil,
+		},
 	}
 
 	for _, tc := range testCases {
