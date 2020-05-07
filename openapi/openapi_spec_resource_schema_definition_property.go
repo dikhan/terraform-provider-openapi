@@ -28,7 +28,11 @@ type specSchemaDefinitionProperty struct {
 	PreferredName  string
 	Type           schemaDefinitionPropertyType
 	ArrayItemsType schemaDefinitionPropertyType
-	Required       bool
+
+	// IgnoreItemsOrder if set to true means that the array items order should be ignored
+	IgnoreItemsOrder bool
+
+	Required bool
 	// ReadOnly properties are included in responses but not in request
 	ReadOnly bool
 	// Computed properties describe properties where the value is computed by the API
