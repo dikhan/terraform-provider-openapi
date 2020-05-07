@@ -354,6 +354,60 @@ func TestIsRequired(t *testing.T) {
 	})
 }
 
+func TestShouldIgnoreArrayItemsOrder(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is a typeList and where the 'x-terraform-ignore-order' ext is set to true", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:             "array_prop",
+			Type:             typeList,
+			IgnoreItemsOrder: true,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be true", func() {
+				So(isRequired, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is a typeList and where the 'x-terraform-ignore-order' ext is set to false", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:             "array_prop",
+			Type:             typeList,
+			IgnoreItemsOrder: false,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be false", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is a typeList and where the 'x-terraform-ignore-order' ext is NOT set", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "array_prop",
+			Type: typeList,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be false", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is NOT a typeList where the 'x-terraform-ignore-order' ext is set", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:             "string_prop",
+			Type:             typeString,
+			IgnoreItemsOrder: true,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be false", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 	Convey("Given a specSchemaDefinitionProperty that is optional and readonly", t, func() {
 		s := &specSchemaDefinitionProperty{

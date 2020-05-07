@@ -130,6 +130,10 @@ func (s *specSchemaDefinitionProperty) isOptional() bool {
 	return !s.Required
 }
 
+func (s *specSchemaDefinitionProperty) shouldIgnoreArrayItemsOrder() bool {
+	return s.isArrayProperty() && s.IgnoreItemsOrder
+}
+
 // isComputed returns true if one of the following cases is met:
 //- The property is optional (marked as required=false), in which case there few use cases:
 //  - readOnly properties (marked as readOnly=true):
