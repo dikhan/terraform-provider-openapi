@@ -870,6 +870,30 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			expectedSkip:       true,
 			expectedError:      nil,
 		},
+		{
+			name: "required input list doesn't match the value returned by the API (same list length)",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				Required:       true,
+				ArrayItemsType: typeString,
+			},
+			inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
+			remoteValue:        []string{"inputVal2", "inputVal3", "inputVal4"},
+			expectedError:      errors.New("API returned a payload containing an array property (list_prop) which does not contain the expected desired items specified by the user"),
+		},
+		{
+			name: "required input list doesn't match the value returned by the API (different list length)",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				Required:       true,
+				ArrayItemsType: typeString,
+			},
+			inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
+			remoteValue:        []string{"inputVal2", "inputVal3", "inputVal4"},
+			expectedError:      errors.New("API returned a payload containing an array property (list_prop) which does not contain the expected desired items specified by the user"),
+		},
 	}
 
 	for _, tc := range testCases {
