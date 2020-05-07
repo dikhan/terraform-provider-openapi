@@ -795,114 +795,60 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		property           specSchemaDefinitionProperty
 		inputPropertyValue interface{}
 		remoteValue        interface{}
-		expectedSkip       bool
-		expectedError      error
+		expectedOutput     []interface{}
 	}{
-		{
-			name: "required input string matches the value returned by the API",
-			property: specSchemaDefinitionProperty{
-				Name:     "string_prop",
-				Type:     typeString,
-				Required: true,
-			},
-			inputPropertyValue: "inputValue",
-			remoteValue:        "inputValue",
-			expectedSkip:       true,
-			expectedError:      nil,
-		},
-		{
-			name: "required input integer matches the value returned by the API",
-			property: specSchemaDefinitionProperty{
-				Name:     "int_prop",
-				Type:     typeInt,
-				Required: true,
-			},
-			inputPropertyValue: 123,
-			remoteValue:        123,
-			expectedSkip:       true,
-			expectedError:      nil,
-		},
-		{
-			name: "required input number matches the value returned by the API",
-			property: specSchemaDefinitionProperty{
-				Name:     "number_prop",
-				Type:     typeFloat,
-				Required: true,
-			},
-			inputPropertyValue: 99.99,
-			remoteValue:        99.99,
-			expectedSkip:       true,
-			expectedError:      nil,
-		},
-		{
-			name: "required input bool matches the value returned by the API",
-			property: specSchemaDefinitionProperty{
-				Name:     "bool_prop",
-				Type:     typeBool,
-				Required: true,
-			},
-			inputPropertyValue: true,
-			remoteValue:        true,
-			expectedSkip:       true,
-			expectedError:      nil,
-		},
 		{
 			name: "required input list matches the value returned by the API where order of input values match",
 			property: specSchemaDefinitionProperty{
-				Name:     "list_prop",
-				Type:     typeList,
-				Required: true,
+				Name:           "list_prop",
+				Type:           typeList,
+				ArrayItemsType: typeString,
+				Required:       true,
 			},
 			inputPropertyValue: []string{"inputVal1", "inputVal2", "inputVal3"},
 			remoteValue:        []string{"inputVal1", "inputVal2", "inputVal3"},
-			expectedSkip:       true,
-			expectedError:      nil,
+			expectedOutput:     []interface{}{"inputVal1", "inputVal2", "inputVal3"},
 		},
 		{
 			name: "required input list matches the value returned by the API where order of input values doesn't match",
 			property: specSchemaDefinitionProperty{
-				Name:     "list_prop",
-				Type:     typeList,
-				Required: true,
+				Name:           "list_prop",
+				Type:           typeList,
+				ArrayItemsType: typeString,
+				Required:       true,
 			},
 			inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
 			remoteValue:        []string{"inputVal2", "inputVal3", "inputVal1"},
-			expectedSkip:       true,
-			expectedError:      nil,
+			expectedOutput:     []interface{}{"inputVal3", "inputVal1", "inputVal2"},
 		},
-		{
-			name: "required input list doesn't match the value returned by the API (same list length)",
-			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeString,
-			},
-			inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
-			remoteValue:        []string{"inputVal2", "inputVal3", "inputVal4"},
-			expectedError:      errors.New("API returned a payload containing an array property (list_prop) which does not contain the expected desired items specified by the user"),
-		},
-		{
-			name: "required input list doesn't match the value returned by the API (different list length)",
-			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeString,
-			},
-			inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
-			remoteValue:        []string{"inputVal2", "inputVal3", "inputVal4"},
-			expectedError:      errors.New("API returned a payload containing an array property (list_prop) which does not contain the expected desired items specified by the user"),
-		},
+		//{
+		//	name: "required input list doesn't match the value returned by the API (same list length)",
+		//	property: specSchemaDefinitionProperty{
+		//		Name:           "list_prop",
+		//		Type:           typeList,
+		//		Required:       true,
+		//		ArrayItemsType: typeString,
+		//	},
+		//	inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
+		//	remoteValue:        []string{"inputVal2", "inputVal3", "inputVal4"},
+		//	expectedError:      errors.New("API returned a payload containing an array property (list_prop) which does not contain the expected desired items specified by the user"),
+		//},
+		//{
+		//	name: "required input list doesn't match the value returned by the API (different list length)",
+		//	property: specSchemaDefinitionProperty{
+		//		Name:           "list_prop",
+		//		Type:           typeList,
+		//		Required:       true,
+		//		ArrayItemsType: typeString,
+		//	},
+		//	inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
+		//	remoteValue:        []string{"inputVal2", "inputVal3", "inputVal4"},
+		//	expectedError:      errors.New("API returned a payload containing an array property (list_prop) which does not contain the expected desired items specified by the user"),
+		//},
 	}
 
 	for _, tc := range testCases {
-		skip, err := compareInputPropertyValueWithPayloadPropertyValue(tc.property, tc.inputPropertyValue, tc.remoteValue)
-		if tc.expectedError == nil {
-			assert.Nil(t, err, tc.name)
-			assert.Equal(t, tc.expectedSkip, skip)
-		} else {
-			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
-		}
+		output := compareInputPropertyValueWithPayloadPropertyValue(tc.property, tc.inputPropertyValue, tc.remoteValue)
+		assert.Equal(t, tc.expectedOutput, output)
 	}
 }

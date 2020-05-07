@@ -109,32 +109,47 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 	return nil
 }
 
-func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) (bool, error) {
+// Use case 0: The desired state for an array property (input from user) contains items in certain order AND the remote state comes back with the same items in the same order.
+// Use case 1: The desired state for an array property (input from user) contains items in certain order BUT the remote state comes back with the same items in different order.
+// Use case 2: The desired state for an array property (input from user) contains items in certain order BUT the remote state comes back with the same items in different order PLUS new ones.
+// Use case 3: The desired state for an array property (input from user) contains items in certain order BUT the remote state comes back with a shorter list where the remaining elems match the inputs.
+// Use case 4: The desired state for an array property (input from user) contains items in certain order BUT the remote state some back with the list with the same size but some elems were updated
+func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) interface{} {
+	newPropertyValue := []interface{}{}
 	if property.Required {
 		switch property.Type {
-		case typeString, typeInt, typeFloat, typeBool:
-			if inputPropertyValue == remoteValue {
-				return true, nil
-			}
 		case typeList:
 			if property.ArrayItemsType == typeString {
 				for _, inputItemValue := range inputPropertyValue.([]string) {
-					foundMatch := false
 					for _, remoteItemValue := range remoteValue.([]string) {
 						if inputItemValue == remoteItemValue {
-							foundMatch = true
+							newPropertyValue = append(newPropertyValue, inputItemValue)
 							break
 						}
 					}
-					if !foundMatch {
-						return false, fmt.Errorf("API returned a payload containing an array property (%s) which does not contain the expected desired items specified by the user", property.Name)
+				}
+				modifiedItems := []interface{}{}
+				for _, remoteItemValue := range remoteValue.([]string) {
+					match := false
+					for _, inputItemValue := range inputPropertyValue.([]string) {
+						if inputItemValue == remoteItemValue {
+							match = true
+							break
+						}
+					}
+					if !match {
+						modifiedItems = append(modifiedItems, remoteItemValue)
 					}
 				}
+				for _, updatedItem := range modifiedItems {
+					newPropertyValue = append(newPropertyValue, updatedItem)
+				}
+
 			}
-			return true, nil
+			return newPropertyValue
 		}
 	}
-	return false, nil
+	return newPropertyValue
 }
 
 func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
