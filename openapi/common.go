@@ -119,37 +119,54 @@ func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefini
 	if property.Required {
 		switch property.Type {
 		case typeList:
-			if property.ArrayItemsType == typeString {
-				for _, inputItemValue := range inputPropertyValue.([]string) {
-					for _, remoteItemValue := range remoteValue.([]string) {
-						if inputItemValue == remoteItemValue {
-							newPropertyValue = append(newPropertyValue, inputItemValue)
-							break
-						}
+			inputValueArray := castValueToArray(property, inputPropertyValue)
+			remoteValueArray := castValueToArray(property, remoteValue)
+			for _, inputItemValue := range inputValueArray {
+				for _, remoteItemValue := range remoteValueArray {
+					if property.compareListItems(inputItemValue, remoteItemValue) {
+						newPropertyValue = append(newPropertyValue, inputItemValue)
+						break
 					}
 				}
-				modifiedItems := []interface{}{}
-				for _, remoteItemValue := range remoteValue.([]string) {
-					match := false
-					for _, inputItemValue := range inputPropertyValue.([]string) {
-						if inputItemValue == remoteItemValue {
-							match = true
-							break
-						}
-					}
-					if !match {
-						modifiedItems = append(modifiedItems, remoteItemValue)
+			}
+			modifiedItems := []interface{}{}
+			for _, remoteItemValue := range remoteValueArray {
+				match := false
+				for _, inputItemValue := range inputValueArray {
+					if property.compareListItems(inputItemValue, remoteItemValue) {
+						match = true
+						break
 					}
 				}
-				for _, updatedItem := range modifiedItems {
-					newPropertyValue = append(newPropertyValue, updatedItem)
+				if !match {
+					modifiedItems = append(modifiedItems, remoteItemValue)
 				}
-
+			}
+			for _, updatedItem := range modifiedItems {
+				newPropertyValue = append(newPropertyValue, updatedItem)
 			}
 			return newPropertyValue
 		}
 	}
 	return newPropertyValue
+}
+
+func castValueToArray(property specSchemaDefinitionProperty, value interface{}) []interface{} {
+	interfaceArray := []interface{}{}
+	if property.Type == typeList {
+		switch property.ArrayItemsType {
+		case typeString:
+			for _, item := range value.([]string) {
+				interfaceArray = append(interfaceArray, item)
+			}
+		case typeInt:
+			for _, item := range value.([]int) {
+				interfaceArray = append(interfaceArray, item)
+			}
+		}
+		return interfaceArray
+	}
+	return nil
 }
 
 func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {

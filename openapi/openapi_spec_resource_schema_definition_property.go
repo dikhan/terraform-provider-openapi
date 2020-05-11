@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -299,4 +300,35 @@ func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc 
 		}
 		return
 	}
+}
+
+func (s *specSchemaDefinitionProperty) compareListItems(item1, item2 interface{}) bool {
+	switch s.ArrayItemsType {
+	case typeString:
+		if !s.validateValueType(item1, reflect.String) && !s.validateValueType(item2, reflect.String) {
+			return false
+		}
+	case typeInt:
+		if !s.validateValueType(item1, reflect.Int) && !s.validateValueType(item2, reflect.Int) {
+			return false
+		}
+	case typeFloat:
+		if !s.validateValueType(item1, reflect.Float64) && !s.validateValueType(item2, reflect.Float64) {
+			return false
+		}
+	case typeBool:
+		if !s.validateValueType(item1, reflect.Bool) && !s.validateValueType(item2, reflect.Bool) {
+			return false
+		}
+	default:
+		return false
+	}
+	return item1 == item2
+}
+
+func (s *specSchemaDefinitionProperty) validateValueType(item interface{}, expectedKind reflect.Kind) bool {
+	if reflect.TypeOf(item).Kind() != expectedKind {
+		return false
+	}
+	return true
 }
