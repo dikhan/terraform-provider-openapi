@@ -337,7 +337,7 @@ func (s *specSchemaDefinitionProperty) compare(itemsType schemaDefinitionPropert
 			return false
 		}
 		object1 := item1.(map[string]interface{})
-		object2 := item1.(map[string]interface{})
+		object2 := item2.(map[string]interface{})
 		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
 			objectPropertyValue1 := object1[objectProperty.Name]
 			objectPropertyValue2 := object2[objectProperty.Name]
