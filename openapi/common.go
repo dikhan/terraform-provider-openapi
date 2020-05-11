@@ -123,7 +123,7 @@ func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefini
 			remoteValueArray := castValueToArray(property, remoteValue)
 			for _, inputItemValue := range inputValueArray {
 				for _, remoteItemValue := range remoteValueArray {
-					if property.compareListItems(inputItemValue, remoteItemValue) {
+					if property.compareListItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
 						newPropertyValue = append(newPropertyValue, inputItemValue)
 						break
 					}
@@ -133,7 +133,7 @@ func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefini
 			for _, remoteItemValue := range remoteValueArray {
 				match := false
 				for _, inputItemValue := range inputValueArray {
-					if property.compareListItems(inputItemValue, remoteItemValue) {
+					if property.compareListItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
 						match = true
 						break
 					}
@@ -167,7 +167,12 @@ func castValueToArray(property specSchemaDefinitionProperty, value interface{}) 
 			for _, item := range value.([]float64) {
 				interfaceArray = append(interfaceArray, item)
 			}
+		case typeObject:
+			for _, item := range value.([]interface{}) {
+				interfaceArray = append(interfaceArray, item)
+			}
 		}
+
 		return interfaceArray
 	}
 	return nil

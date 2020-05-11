@@ -302,8 +302,8 @@ func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc 
 	}
 }
 
-func (s *specSchemaDefinitionProperty) compareListItems(item1, item2 interface{}) bool {
-	switch s.ArrayItemsType {
+func (s *specSchemaDefinitionProperty) compare(arrayItemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
+	switch arrayItemsType {
 	case typeString:
 		if !s.validateValueType(item1, reflect.String) && !s.validateValueType(item2, reflect.String) {
 			return false
@@ -316,10 +316,55 @@ func (s *specSchemaDefinitionProperty) compareListItems(item1, item2 interface{}
 		if !s.validateValueType(item1, reflect.Float64) && !s.validateValueType(item2, reflect.Float64) {
 			return false
 		}
-	case typeBool:
-		if !s.validateValueType(item1, reflect.Bool) && !s.validateValueType(item2, reflect.Bool) {
+	case typeList:
+		if !s.validateValueType(item1, reflect.Slice) && !s.validateValueType(item2, reflect.Slice) {
 			return false
 		}
+		list1 := item1.([]interface{})
+		list2 := item2.([]interface{})
+		if len(list1) != len(list2) {
+			return false
+		}
+		for idx, _ := range list1 {
+			return s.compareListItems(s.ArrayItemsType, list1[idx], list2[idx])
+		}
+	case typeObject:
+		if !s.validateValueType(item1, reflect.Map) && !s.validateValueType(item2, reflect.Map) {
+			return false
+		}
+		object1 := item1.(map[string]interface{})
+		object2 := item1.(map[string]interface{})
+		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
+			objectPropertyValue1 := object1[objectProperty.Name]
+			objectPropertyValue2 := object2[objectProperty.Name]
+			if objectProperty.compare(objectProperty.Type, objectPropertyValue1, objectPropertyValue2) {
+				return true
+			}
+		}
+	default:
+		return false
+	}
+	return item1 == item2
+}
+
+func (s *specSchemaDefinitionProperty) compareListItems(arrayItemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
+	switch arrayItemsType {
+	case typeString, typeInt, typeFloat:
+		return s.compare(arrayItemsType, item1, item2)
+	case typeObject:
+		if !s.validateValueType(item1, reflect.Map) && !s.validateValueType(item2, reflect.Map) {
+			return false
+		}
+		object1 := item1.(map[string]interface{})
+		object2 := item2.(map[string]interface{})
+		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
+			objectPropertyValue1 := object1[objectProperty.Name]
+			objectPropertyValue2 := object2[objectProperty.Name]
+			if !objectProperty.compare(objectProperty.Type, objectPropertyValue1, objectPropertyValue2) {
+				return false
+			}
+		}
+		return true
 	default:
 		return false
 	}
