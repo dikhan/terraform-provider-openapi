@@ -1020,6 +1020,54 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "required input list (objects) doesn't have a value returned by the API",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				ArrayItemsType: typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+						&specSchemaDefinitionProperty{
+							Name:           "roles",
+							Type:           typeList,
+							ArrayItemsType: typeString,
+						},
+					},
+				},
+				Required: true,
+			},
+			inputPropertyValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+			},
+			remoteValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "unexpectedGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+			expectedOutput: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "unexpectedGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
