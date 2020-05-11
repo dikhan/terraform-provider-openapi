@@ -797,8 +797,9 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		remoteValue        interface{}
 		expectedOutput     []interface{}
 	}{
+		// String use cases
 		{
-			name: "required input list matches the value returned by the API where order of input values match",
+			name: "required input list (of strings) matches the value returned by the API where order of input values match",
 			property: specSchemaDefinitionProperty{
 				Name:           "list_prop",
 				Type:           typeList,
@@ -810,7 +811,7 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			expectedOutput:     []interface{}{"inputVal1", "inputVal2", "inputVal3"},
 		},
 		{
-			name: "required input list matches the value returned by the API where order of input values doesn't match",
+			name: "required input list (of strings) matches the value returned by the API where order of input values doesn't match",
 			property: specSchemaDefinitionProperty{
 				Name:           "list_prop",
 				Type:           typeList,
@@ -822,7 +823,7 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			expectedOutput:     []interface{}{"inputVal3", "inputVal1", "inputVal2"},
 		},
 		{
-			name: "required input list has a value that isn't returned by the API (input order maintained)",
+			name: "required input list (of strings) has a value that isn't returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
 				Name:           "list_prop",
 				Type:           typeList,
@@ -834,7 +835,7 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			expectedOutput:     []interface{}{"inputVal1", "inputVal2"},
 		},
 		{
-			name: "required input list is missing a value returned by the API (input order maintained)",
+			name: "required input list (of strings) is missing a value returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
 				Name:           "list_prop",
 				Type:           typeList,
@@ -844,6 +845,44 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			inputPropertyValue: []string{"inputVal1", "inputVal2"},
 			remoteValue:        []string{"inputVal3", "inputVal2", "inputVal1"},
 			expectedOutput:     []interface{}{"inputVal1", "inputVal2", "inputVal3"},
+		},
+
+		// Integer use cases
+		{
+			name: "required input list (of ints) matches the value returned by the API where order of input values doesn't match",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				ArrayItemsType: typeInt,
+				Required:       true,
+			},
+			inputPropertyValue: []int{3, 1, 2},
+			remoteValue:        []int{2, 3, 1},
+			expectedOutput:     []interface{}{3, 1, 2},
+		},
+		{
+			name: "required input list (of ints) has a value that isn't returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				Required:       true,
+				ArrayItemsType: typeInt,
+			},
+			inputPropertyValue: []int{1, 2, 3},
+			remoteValue:        []int{2, 1},
+			expectedOutput:     []interface{}{1, 2},
+		},
+		{
+			name: "required input list (of ints) is missing a value returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				Required:       true,
+				ArrayItemsType: typeInt,
+			},
+			inputPropertyValue: []int{1, 2},
+			remoteValue:        []int{3, 2, 1},
+			expectedOutput:     []interface{}{1, 2, 3},
 		},
 	}
 
