@@ -341,10 +341,11 @@ func (s *specSchemaDefinitionProperty) compare(itemsType schemaDefinitionPropert
 		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
 			objectPropertyValue1 := object1[objectProperty.Name]
 			objectPropertyValue2 := object2[objectProperty.Name]
-			if objectProperty.equal(objectPropertyValue1, objectPropertyValue2) {
-				return true
+			if !objectProperty.equal(objectPropertyValue1, objectPropertyValue2) {
+				return false
 			}
 		}
+		return true
 	default:
 		return false
 	}

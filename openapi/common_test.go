@@ -925,7 +925,7 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 
 		// List of objects use cases
 		{
-			name: "required input list (of floats) matches the value returned by the API where order of input values doesn't match",
+			name: "required input list (objects) matches the value returned by the API where order of input values doesn't match",
 			property: specSchemaDefinitionProperty{
 				Name:           "list_prop",
 				Type:           typeList,
@@ -973,6 +973,50 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 				map[string]interface{}{
 					"group": "someOtherGroup",
 					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+		},
+		{
+			name: "required input list (objects) has a value that isn't returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				ArrayItemsType: typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+						&specSchemaDefinitionProperty{
+							Name:           "roles",
+							Type:           typeList,
+							ArrayItemsType: typeString,
+						},
+					},
+				},
+				Required: true,
+			},
+			inputPropertyValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "someOtherGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+			remoteValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+			},
+			expectedOutput: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
 				},
 			},
 		},
