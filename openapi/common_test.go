@@ -884,6 +884,44 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 			remoteValue:        []int{3, 2, 1},
 			expectedOutput:     []interface{}{1, 2, 3},
 		},
+
+		// Float use cases
+		{
+			name: "required input list (of floats) matches the value returned by the API where order of input values doesn't match",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				ArrayItemsType: typeFloat,
+				Required:       true,
+			},
+			inputPropertyValue: []float64{3.0, 1.0, 2.0},
+			remoteValue:        []float64{2.0, 3.0, 1.0},
+			expectedOutput:     []interface{}{3.0, 1.0, 2.0},
+		},
+		{
+			name: "required input list (of floats) has a value that isn't returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				Required:       true,
+				ArrayItemsType: typeFloat,
+			},
+			inputPropertyValue: []float64{1.0, 2.0, 3.0},
+			remoteValue:        []float64{2.0, 1.0},
+			expectedOutput:     []interface{}{1.0, 2.0},
+		},
+		{
+			name: "required input list (of floats) is missing a value returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:           "list_prop",
+				Type:           typeList,
+				Required:       true,
+				ArrayItemsType: typeFloat,
+			},
+			inputPropertyValue: []float64{1.0, 2.0},
+			remoteValue:        []float64{3.0, 2.0, 1.0},
+			expectedOutput:     []interface{}{1.0, 2.0, 3.0},
+		},
 	}
 
 	for _, tc := range testCases {

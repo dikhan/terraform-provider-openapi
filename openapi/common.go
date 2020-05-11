@@ -163,6 +163,10 @@ func castValueToArray(property specSchemaDefinitionProperty, value interface{}) 
 			for _, item := range value.([]int) {
 				interfaceArray = append(interfaceArray, item)
 			}
+		case typeFloat:
+			for _, item := range value.([]float64) {
+				interfaceArray = append(interfaceArray, item)
+			}
 		}
 		return interfaceArray
 	}
