@@ -1211,6 +1211,14 @@ func TestCastValueToArray(t *testing.T) {
 			inputVal:       "someValue",
 			expectedOutput: nil,
 		},
+		{
+			name: "value is nil",
+			property: specSchemaDefinitionProperty{
+				Type: typeString,
+			},
+			inputVal:       nil,
+			expectedOutput: nil,
+		},
 	}
 
 	for _, tc := range testCases {
