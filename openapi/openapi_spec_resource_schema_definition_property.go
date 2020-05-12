@@ -320,6 +320,10 @@ func (s *specSchemaDefinitionProperty) compare(itemsType schemaDefinitionPropert
 		if !s.validateValueType(item1, reflect.Float64) && !s.validateValueType(item2, reflect.Float64) {
 			return false
 		}
+	case typeBool:
+		if !s.validateValueType(item1, reflect.Bool) && !s.validateValueType(item2, reflect.Bool) {
+			return false
+		}
 	case typeList:
 		if !s.validateValueType(item1, reflect.Slice) && !s.validateValueType(item2, reflect.Slice) {
 			return false

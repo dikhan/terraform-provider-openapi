@@ -1654,7 +1654,7 @@ func TestValidateFunc(t *testing.T) {
 	})
 }
 
-func TestCompare(t *testing.T) {
+func TestEqual(t *testing.T) {
 	testCases := []struct {
 		name               string
 		schemaDefProp      specSchemaDefinitionProperty
@@ -1707,6 +1707,21 @@ func TestCompare(t *testing.T) {
 			schemaDefProp:  specSchemaDefinitionProperty{Type: typeFloat},
 			inputItem:      1.0,
 			remoteItem:     2.0,
+			expectedOutput: false,
+		},
+		// Bool use cases
+		{
+			name:           "bool input value matches bool remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeBool},
+			inputItem:      true,
+			remoteItem:     true,
+			expectedOutput: true,
+		},
+		{
+			name:           "bool input value doesn't match bool remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeBool},
+			inputItem:      true,
+			remoteItem:     false,
 			expectedOutput: false,
 		},
 		// List use cases
@@ -1778,7 +1793,7 @@ func TestCompare(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		output := tc.schemaDefProp.compare(tc.schemaDefProp.Type, tc.inputItem, tc.remoteItem)
+		output := tc.schemaDefProp.equal(tc.inputItem, tc.remoteItem)
 		assert.Equal(t, tc.expectedOutput, output, tc.name)
 	}
 }
