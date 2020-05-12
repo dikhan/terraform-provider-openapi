@@ -303,10 +303,10 @@ func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc 
 }
 
 func (s *specSchemaDefinitionProperty) equal(item1, item2 interface{}) bool {
-	return s.compare(s.Type, item1, item2)
+	return s.equalItems(s.Type, item1, item2)
 }
 
-func (s *specSchemaDefinitionProperty) compare(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
+func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
 	switch itemsType {
 	case typeString:
 		if !s.validateValueType(item1, reflect.String) && !s.validateValueType(item2, reflect.String) {
@@ -334,7 +334,7 @@ func (s *specSchemaDefinitionProperty) compare(itemsType schemaDefinitionPropert
 			return false
 		}
 		for idx, _ := range list1 {
-			return s.compare(s.ArrayItemsType, list1[idx], list2[idx])
+			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
 	case typeObject:
 		if !s.validateValueType(item1, reflect.Map) && !s.validateValueType(item2, reflect.Map) {

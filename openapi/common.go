@@ -131,7 +131,7 @@ func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPro
 
 			for _, inputItemValue := range inputValueArray {
 				for _, remoteItemValue := range remoteValueArray {
-					if property.compare(property.ArrayItemsType, inputItemValue, remoteItemValue) {
+					if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
 						newPropertyValue = append(newPropertyValue, inputItemValue)
 						break
 					}
@@ -141,7 +141,7 @@ func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPro
 			for _, remoteItemValue := range remoteValueArray {
 				match := false
 				for _, inputItemValue := range inputValueArray {
-					if property.compare(property.ArrayItemsType, inputItemValue, remoteItemValue) {
+					if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
 						match = true
 						break
 					}
