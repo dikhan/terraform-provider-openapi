@@ -801,10 +801,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of strings) matches the value returned by the API where order of input values match",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				ArrayItemsType: typeString,
-				Required:       true,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []string{"inputVal1", "inputVal2", "inputVal3"},
 			remoteValue:        []string{"inputVal1", "inputVal2", "inputVal3"},
@@ -813,10 +814,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of strings) matches the value returned by the API where order of input values doesn't match",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				ArrayItemsType: typeString,
-				Required:       true,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []string{"inputVal3", "inputVal1", "inputVal2"},
 			remoteValue:        []string{"inputVal2", "inputVal3", "inputVal1"},
@@ -825,10 +827,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of strings) has a value that isn't returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeString,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []string{"inputVal1", "inputVal2", "inputVal3"},
 			remoteValue:        []string{"inputVal2", "inputVal1"},
@@ -837,10 +840,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of strings) is missing a value returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeString,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []string{"inputVal1", "inputVal2"},
 			remoteValue:        []string{"inputVal3", "inputVal2", "inputVal1"},
@@ -851,10 +855,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of ints) matches the value returned by the API where order of input values doesn't match",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				ArrayItemsType: typeInt,
-				Required:       true,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeInt,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []int{3, 1, 2},
 			remoteValue:        []int{2, 3, 1},
@@ -863,10 +868,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of ints) has a value that isn't returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeInt,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeInt,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []int{1, 2, 3},
 			remoteValue:        []int{2, 1},
@@ -875,10 +881,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of ints) is missing a value returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeInt,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeInt,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []int{1, 2},
 			remoteValue:        []int{3, 2, 1},
@@ -889,10 +896,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of floats) matches the value returned by the API where order of input values doesn't match",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				ArrayItemsType: typeFloat,
-				Required:       true,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeFloat,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []float64{3.0, 1.0, 2.0},
 			remoteValue:        []float64{2.0, 3.0, 1.0},
@@ -901,10 +909,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of floats) has a value that isn't returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeFloat,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeFloat,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []float64{1.0, 2.0, 3.0},
 			remoteValue:        []float64{2.0, 1.0},
@@ -913,10 +922,11 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (of floats) is missing a value returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				Required:       true,
-				ArrayItemsType: typeFloat,
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeFloat,
+				IgnoreItemsOrder: true,
+				Required:         true,
 			},
 			inputPropertyValue: []float64{1.0, 2.0},
 			remoteValue:        []float64{3.0, 2.0, 1.0},
@@ -927,9 +937,10 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (objects) matches the value returned by the API where order of input values doesn't match",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				ArrayItemsType: typeObject,
+				Name:             "list_prop",
+				IgnoreItemsOrder: true,
+				Type:             typeList,
+				ArrayItemsType:   typeObject,
 				SpecSchemaDefinition: &specSchemaDefinition{
 					Properties: specSchemaDefinitionProperties{
 						&specSchemaDefinitionProperty{
@@ -979,9 +990,10 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (objects) has a value that isn't returned by the API (input order maintained)",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				ArrayItemsType: typeObject,
+				Name:             "list_prop",
+				IgnoreItemsOrder: true,
+				Type:             typeList,
+				ArrayItemsType:   typeObject,
 				SpecSchemaDefinition: &specSchemaDefinition{
 					Properties: specSchemaDefinitionProperties{
 						&specSchemaDefinitionProperty{
@@ -1023,9 +1035,10 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 		{
 			name: "required input list (objects) doesn't have a value returned by the API",
 			property: specSchemaDefinitionProperty{
-				Name:           "list_prop",
-				Type:           typeList,
-				ArrayItemsType: typeObject,
+				Name:             "list_prop",
+				IgnoreItemsOrder: true,
+				Type:             typeList,
+				ArrayItemsType:   typeObject,
 				SpecSchemaDefinition: &specSchemaDefinition{
 					Properties: specSchemaDefinitionProperties{
 						&specSchemaDefinitionProperty{
@@ -1071,7 +1084,47 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		output := compareInputPropertyValueWithPayloadPropertyValue(tc.property, tc.inputPropertyValue, tc.remoteValue)
+		output := processIgnoreOrderIfEnabled(tc.property, tc.inputPropertyValue, tc.remoteValue)
 		assert.Equal(t, tc.expectedOutput, output)
 	}
+}
+
+func TestCompareInputPropertyValueWithPayloadPropertyValueIgnoreOrderDisabled(t *testing.T) {
+	Convey("Given a a list of strings property definition (with ignore order set to false) and the corresponding input/remote lists", t, func() {
+		property := specSchemaDefinitionProperty{
+			Name:             "list_prop",
+			Type:             typeList,
+			ArrayItemsType:   typeString,
+			IgnoreItemsOrder: false,
+			Required:         true,
+		}
+		inputPropertyValue := []string{"inputVal1", "inputVal2", "inputVal3"}
+		remoteValue := []string{"inputVal1", "inputVal2", "inputVal3"}
+		Convey("When processIgnoreOrderIfEnabled", func() {
+			output := processIgnoreOrderIfEnabled(property, inputPropertyValue, remoteValue)
+			Convey("Then the output should match the remote list", func() {
+				So(output, ShouldResemble, []string{"inputVal1", "inputVal2", "inputVal3"})
+			})
+		})
+	})
+}
+
+func TestCompareInputPropertyValueWithPayloadPropertyValueBools(t *testing.T) {
+	Convey("Given a a list of bools property definition and the corresponding input/remote lists", t, func() {
+		property := specSchemaDefinitionProperty{
+			Name:             "list_prop",
+			Type:             typeList,
+			ArrayItemsType:   typeBool,
+			IgnoreItemsOrder: true,
+			Required:         true,
+		}
+		inputPropertyValue := []bool{true}
+		remoteValue := []bool{false}
+		Convey("When processIgnoreOrderIfEnabled", func() {
+			output := processIgnoreOrderIfEnabled(property, inputPropertyValue, remoteValue)
+			Convey("Then the output should match the remote list", func() {
+				So(output, ShouldResemble, []bool{false})
+			})
+		})
+	})
 }

@@ -109,18 +109,26 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 	return nil
 }
 
-// Use case 0: The desired state for an array property (input from user) contains items in certain order AND the remote state comes back with the same items in the same order.
-// Use case 1: The desired state for an array property (input from user) contains items in certain order BUT the remote state comes back with the same items in different order.
-// Use case 2: The desired state for an array property (input from user) contains items in certain order BUT the remote state comes back with the same items in different order PLUS new ones.
-// Use case 3: The desired state for an array property (input from user) contains items in certain order BUT the remote state comes back with a shorter list where the remaining elems match the inputs.
-// Use case 4: The desired state for an array property (input from user) contains items in certain order BUT the remote state some back with the list with the same size but some elems were updated
-func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) interface{} {
-	newPropertyValue := []interface{}{}
-	if property.Required {
+// processIgnoreOrderIfEnabled checks whether the property has enabled the `IgnoreItemsOrder` field and if so, goes ahead
+// and returns a new list trying to match as much as possible the input order from the user (not remotes). The following use
+// cases are supported:
+// Use case 0: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order AND the remote state (remoteValue) comes back with the same items in the same order.
+// Use case 1: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with the same items in different order.
+// Use case 2: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with the same items in different order PLUS new ones.
+// Use case 3: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with a shorter list where the remaining elems match the inputs.
+// Use case 4: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) some back with the list with the same size but some elems were updated
+func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) interface{} {
+	if property.IgnoreItemsOrder && property.Required {
+		newPropertyValue := []interface{}{}
 		switch property.Type {
 		case typeList:
 			inputValueArray := castValueToArray(property, inputPropertyValue)
 			remoteValueArray := castValueToArray(property, remoteValue)
+
+			if inputValueArray == nil || remoteValueArray == nil {
+				return remoteValue
+			}
+
 			for _, inputItemValue := range inputValueArray {
 				for _, remoteItemValue := range remoteValueArray {
 					if property.compare(property.ArrayItemsType, inputItemValue, remoteItemValue) {
@@ -145,10 +153,11 @@ func compareInputPropertyValueWithPayloadPropertyValue(property specSchemaDefini
 			for _, updatedItem := range modifiedItems {
 				newPropertyValue = append(newPropertyValue, updatedItem)
 			}
+
 			return newPropertyValue
 		}
 	}
-	return newPropertyValue
+	return remoteValue
 }
 
 func castValueToArray(property specSchemaDefinitionProperty, value interface{}) []interface{} {
@@ -171,8 +180,9 @@ func castValueToArray(property specSchemaDefinitionProperty, value interface{}) 
 			for _, item := range value.([]interface{}) {
 				interfaceArray = append(interfaceArray, item)
 			}
+		default:
+			return nil
 		}
-
 		return interfaceArray
 	}
 	return nil
