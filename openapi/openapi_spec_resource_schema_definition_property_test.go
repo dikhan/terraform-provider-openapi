@@ -1654,7 +1654,7 @@ func TestValidateFunc(t *testing.T) {
 	})
 }
 
-func TestEqual(t *testing.T) {
+func TestEqualItems(t *testing.T) {
 	testCases := []struct {
 		name               string
 		schemaDefProp      specSchemaDefinitionProperty
