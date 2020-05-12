@@ -1798,6 +1798,99 @@ func TestEqual(t *testing.T) {
 	}
 }
 
+func TestValidateValueType(t *testing.T) {
+	testCases := []struct {
+		name           string
+		item           interface{}
+		itemKind       reflect.Kind
+		expectedOutput bool
+	}{
+		// String use cases
+		{
+			name:           "expect string kind and item is a string",
+			item:           "inputVal1",
+			itemKind:       reflect.String,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect string kind and item is NOT a string",
+			item:           1,
+			itemKind:       reflect.String,
+			expectedOutput: false,
+		},
+		// Int use cases
+		{
+			name:           "expect int kind and item is a int",
+			item:           1,
+			itemKind:       reflect.Int,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect int kind and item is NOT a int",
+			item:           "not an int",
+			itemKind:       reflect.Int,
+			expectedOutput: false,
+		},
+		// Float use cases
+		{
+			name:           "expect float kind and item is a float",
+			item:           1.0,
+			itemKind:       reflect.Float64,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect float kind and item is NOT a float",
+			item:           "not a float",
+			itemKind:       reflect.Float64,
+			expectedOutput: false,
+		},
+		// Bool use cases
+		{
+			name:           "expect bool kind and item is a bool",
+			item:           true,
+			itemKind:       reflect.Bool,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect bool kind and item is NOT a bool",
+			item:           "not a bool",
+			itemKind:       reflect.Bool,
+			expectedOutput: false,
+		},
+		//  List use cases
+		{
+			name:           "expect slice kind and item is a slice",
+			item:           []interface{}{"item1", "item2"},
+			itemKind:       reflect.Slice,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect slice kind and item is NOT a slice",
+			item:           "not a slice",
+			itemKind:       reflect.Slice,
+			expectedOutput: false,
+		},
+		//  Object use cases
+		{
+			name:           "expect map kind and item is a map",
+			item:           map[string]interface{}{"group": "someGroup"},
+			itemKind:       reflect.Map,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect map kind and item is NOT a map",
+			item:           "not a map",
+			itemKind:       reflect.Map,
+			expectedOutput: false,
+		},
+	}
+	for _, tc := range testCases {
+		s := specSchemaDefinitionProperty{}
+		output := s.validateValueType(tc.item, tc.itemKind)
+		assert.Equal(t, tc.expectedOutput, output, tc.name)
+	}
+}
+
 func Test_shouldUseLegacyTerraformSDKBlockApproachForComplexObjects(t *testing.T) {
 
 	Convey("shouldUseLegacyTerraformSDKBlockApproachForComplexObject", t, func() {
