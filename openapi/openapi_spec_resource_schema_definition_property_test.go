@@ -1654,6 +1654,135 @@ func TestValidateFunc(t *testing.T) {
 	})
 }
 
+func TestCompare(t *testing.T) {
+	testCases := []struct {
+		name               string
+		schemaDefProp      specSchemaDefinitionProperty
+		propertyType       schemaDefinitionPropertyType
+		arrayItemsPropType schemaDefinitionPropertyType
+		inputItem          interface{}
+		remoteItem         interface{}
+		expectedOutput     bool
+	}{
+		// String use cases
+		{
+			name:           "string input value matches string remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeString},
+			inputItem:      "inputVal1",
+			remoteItem:     "inputVal1",
+			expectedOutput: true,
+		},
+		{
+			name:           "string input value doesn't match string remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeString},
+			inputItem:      "inputVal1",
+			remoteItem:     "inputVal2",
+			expectedOutput: false,
+		},
+		// Integer use cases
+		{
+			name:           "int input value matches int remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeInt},
+			inputItem:      1,
+			remoteItem:     1,
+			expectedOutput: true,
+		},
+		{
+			name:           "int input value doesn't match int remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeInt},
+			inputItem:      1,
+			remoteItem:     2,
+			expectedOutput: false,
+		},
+		// Float use cases
+		{
+			name:           "float input value matches float remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeFloat},
+			inputItem:      1.0,
+			remoteItem:     1.0,
+			expectedOutput: true,
+		},
+		{
+			name:           "float input value doesn't match float remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeFloat},
+			inputItem:      1.0,
+			remoteItem:     2.0,
+			expectedOutput: false,
+		},
+		// List use cases
+		{
+			name: "list input value matches list remote value",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role1", "role2"},
+			expectedOutput: true,
+		},
+		{
+			name: "list input value doesn't match list remote value (same list length)",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role3", "role4"},
+			expectedOutput: false,
+		},
+		{
+			name: "list input value doesn't match list remote value (different list length)",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role1"},
+			expectedOutput: false,
+		},
+		// Object use cases
+		{
+			name: "object input value matches object remote value",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type: typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+					},
+				},
+			},
+			inputItem:      map[string]interface{}{"group": "someGroup"},
+			remoteItem:     map[string]interface{}{"group": "someGroup"},
+			expectedOutput: true,
+		},
+		{
+			name: "object input value doesn't match object remote value",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type: typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+					},
+				},
+			},
+			inputItem:      map[string]interface{}{"group": "someGroup"},
+			remoteItem:     map[string]interface{}{"group": "someOtherGroup"},
+			expectedOutput: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		output := tc.schemaDefProp.compare(tc.schemaDefProp.Type, tc.inputItem, tc.remoteItem)
+		assert.Equal(t, tc.expectedOutput, output, tc.name)
+	}
+}
+
 func Test_shouldUseLegacyTerraformSDKBlockApproachForComplexObjects(t *testing.T) {
 
 	Convey("shouldUseLegacyTerraformSDKBlockApproachForComplexObject", t, func() {
