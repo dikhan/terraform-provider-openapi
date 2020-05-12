@@ -789,7 +789,7 @@ func TestSetStateID(t *testing.T) {
 	})
 }
 
-func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
+func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 	testCases := []struct {
 		name               string
 		property           specSchemaDefinitionProperty
