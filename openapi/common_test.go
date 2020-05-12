@@ -1089,7 +1089,25 @@ func TestCompareInputPropertyValueWithPayloadPropertyValue(t *testing.T) {
 	}
 }
 
-func TestCompareInputPropertyValueWithPayloadPropertyValueIgnoreOrderDisabled(t *testing.T) {
+func TestProcessIgnoreOrderIfEnabledNonListProperty(t *testing.T) {
+	Convey("Given a non list property that is marked as required and for some reason also as IgnoreItemsOrder", t, func() {
+		property := specSchemaDefinitionProperty{
+			Name:             "list_prop",
+			Type:             typeString,
+			IgnoreItemsOrder: true,
+			Required:         true,
+		}
+		remoteValue := "someString"
+		Convey("When processIgnoreOrderIfEnabled", func() {
+			output := processIgnoreOrderIfEnabled(property, nil, remoteValue)
+			Convey("Then the output should be the string from remote", func() {
+				So(output, ShouldResemble, remoteValue)
+			})
+		})
+	})
+}
+
+func TestProcessIgnoreOrderIfEnabledIgnoreOrderDisabled(t *testing.T) {
 	Convey("Given a a list of strings property definition (with ignore order set to false) and the corresponding input/remote lists", t, func() {
 		property := specSchemaDefinitionProperty{
 			Name:             "list_prop",

@@ -118,44 +118,40 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 // Use case 3: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with a shorter list where the remaining elems match the inputs.
 // Use case 4: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) some back with the list with the same size but some elems were updated
 func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) interface{} {
-	if property.IgnoreItemsOrder && property.Required {
+	if property.IgnoreItemsOrder && property.Required && property.isArrayProperty() {
 		newPropertyValue := []interface{}{}
-		switch property.Type {
-		case typeList:
-			inputValueArray := castValueToArray(property, inputPropertyValue)
-			remoteValueArray := castValueToArray(property, remoteValue)
+		inputValueArray := castValueToArray(property, inputPropertyValue)
+		remoteValueArray := castValueToArray(property, remoteValue)
 
-			if inputValueArray == nil || remoteValueArray == nil {
-				return remoteValue
-			}
-
-			for _, inputItemValue := range inputValueArray {
-				for _, remoteItemValue := range remoteValueArray {
-					if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
-						newPropertyValue = append(newPropertyValue, inputItemValue)
-						break
-					}
-				}
-			}
-			modifiedItems := []interface{}{}
-			for _, remoteItemValue := range remoteValueArray {
-				match := false
-				for _, inputItemValue := range inputValueArray {
-					if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
-						match = true
-						break
-					}
-				}
-				if !match {
-					modifiedItems = append(modifiedItems, remoteItemValue)
-				}
-			}
-			for _, updatedItem := range modifiedItems {
-				newPropertyValue = append(newPropertyValue, updatedItem)
-			}
-
-			return newPropertyValue
+		if inputValueArray == nil || remoteValueArray == nil {
+			return remoteValue
 		}
+
+		for _, inputItemValue := range inputValueArray {
+			for _, remoteItemValue := range remoteValueArray {
+				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
+					newPropertyValue = append(newPropertyValue, inputItemValue)
+					break
+				}
+			}
+		}
+		modifiedItems := []interface{}{}
+		for _, remoteItemValue := range remoteValueArray {
+			match := false
+			for _, inputItemValue := range inputValueArray {
+				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
+					match = true
+					break
+				}
+			}
+			if !match {
+				modifiedItems = append(modifiedItems, remoteItemValue)
+			}
+		}
+		for _, updatedItem := range modifiedItems {
+			newPropertyValue = append(newPropertyValue, updatedItem)
+		}
+		return newPropertyValue
 	}
 	return remoteValue
 }
