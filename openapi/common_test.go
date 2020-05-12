@@ -1136,7 +1136,6 @@ func TestCastValueToArray(t *testing.T) {
 		inputVal       interface{}
 		expectedOutput []interface{}
 	}{
-		// String use cases
 		{
 			name: "array of strings",
 			property: specSchemaDefinitionProperty{
@@ -1146,8 +1145,55 @@ func TestCastValueToArray(t *testing.T) {
 			inputVal:       []string{"inputVal1", "inputVal2", "inputVal3"},
 			expectedOutput: []interface{}{"inputVal1", "inputVal2", "inputVal3"},
 		},
+		{
+			name: "array of ints",
+			property: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeInt,
+			},
+			inputVal:       []int{1, 2, 3},
+			expectedOutput: []interface{}{1, 2, 3},
+		},
+		{
+			name: "array of floats",
+			property: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeFloat,
+			},
+			inputVal:       []float64{1.0, 2.0, 3.0},
+			expectedOutput: []interface{}{1.0, 2.0, 3.0},
+		},
+		{
+			name: "array of objects",
+			property: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeObject,
+			},
+			inputVal: []interface{}{
+				map[string]interface{}{"group": "someGroup"},
+			},
+			expectedOutput: []interface{}{
+				map[string]interface{}{"group": "someGroup"},
+			},
+		},
+		{
+			name: "array of bools (unsupported type)",
+			property: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeBool,
+			},
+			inputVal:       []bool{true},
+			expectedOutput: nil,
+		},
+		{
+			name: "value is not an array",
+			property: specSchemaDefinitionProperty{
+				Type: typeString,
+			},
+			inputVal:       "someValue",
+			expectedOutput: nil,
+		},
 	}
-	// TODO: Add more use cases
 
 	for _, tc := range testCases {
 		output := castValueToArray(tc.property, tc.inputVal)
