@@ -1128,3 +1128,29 @@ func TestCompareInputPropertyValueWithPayloadPropertyValueBools(t *testing.T) {
 		})
 	})
 }
+
+func TestCastValueToArray(t *testing.T) {
+	testCases := []struct {
+		name           string
+		property       specSchemaDefinitionProperty
+		inputVal       interface{}
+		expectedOutput []interface{}
+	}{
+		// String use cases
+		{
+			name: "array of strings",
+			property: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputVal:       []string{"inputVal1", "inputVal2", "inputVal3"},
+			expectedOutput: []interface{}{"inputVal1", "inputVal2", "inputVal3"},
+		},
+	}
+	// TODO: Add more use cases
+
+	for _, tc := range testCases {
+		output := castValueToArray(tc.property, tc.inputVal)
+		assert.Equal(t, tc.expectedOutput, output)
+	}
+}
