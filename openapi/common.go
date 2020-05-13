@@ -79,9 +79,23 @@ func getParentIDs(openAPIResource SpecResource, data *schema.ResourceData) ([]st
 	return []string{}, nil
 }
 
-// updateStateWithPayloadData is in charge of saving the given payload into the state file. The property names are
-// converted into compliant terraform names if needed.
+// updateStateWithPayloadData is in charge of saving the given payload into the state file keeping for list properties the
+// same order as the input (if the list property has the IgnoreItemsOrder set to true). The property names are converted into compliant terraform names if needed.
+// The property names are converted into compliant terraform names if needed.
 func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
+	return updateStateWithPayloadDataAndOptions(openAPIResource, remoteData, resourceLocalData, true)
+}
+
+// dataSourceUpdateStateWithPayloadData is in charge of saving the given payload into the state file keeping for list properties the
+// same order received by the API. The property names are converted into compliant terraform names if needed.
+func dataSourceUpdateStateWithPayloadData(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
+	return updateStateWithPayloadDataAndOptions(openAPIResource, remoteData, resourceLocalData, false)
+}
+
+// updateStateWithPayloadDataAndOptions is in charge of saving the given payload into the state file AND if the ignoreListOrder is enabled
+// it will go ahead and compare the items in the list (input vs remote) for properties of type list and the flag 'IgnoreItemsOrder' set to true
+// The property names are converted into compliant terraform names if needed.
+func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData, ignoreListOrderEnabled bool) error {
 	resourceSchema, err := openAPIResource.getResourceSchema()
 	if err != nil {
 		return err
@@ -97,7 +111,7 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 		}
 
 		propValue := propertyRemoteValue
-		if property.shouldIgnoreOrder() {
+		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
 			desiredValue := resourceLocalData.Get(property.getTerraformCompliantPropertyName())
 			propValue = processIgnoreOrderIfEnabled(*property, desiredValue, propertyRemoteValue)
 		}

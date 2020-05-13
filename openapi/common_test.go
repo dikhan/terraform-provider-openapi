@@ -359,7 +359,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 		listOfStrings.IgnoreItemsOrder = true
 
 		r, resourceData := testCreateResourceFactory(t, listOfStrings, listOfObjectsProperty)
-		Convey("When  is called with a map containing all property types supported (string, int, number, bool, slice of primitives, objects, list of objects and property with nested objects)", func() {
+		Convey("When updateStateWithPayloadData is called", func() {
 			remoteData := map[string]interface{}{
 				listOfStrings.Name: []interface{}{"value2", "value1"},
 				listOfObjectsProperty.Name: []interface{}{
@@ -377,7 +377,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			Convey("Then the err returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the expectedValue should equal to the expectedValue coming from remote, and also the key expectedValue should be the preferred as defined in the property", func() {
+			Convey("And the expectedValue should maintain the order of the local input (not the order of the remote lists)", func() {
 				// keys stores in the resource data struct are always snake case
 				So(len(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
 				So(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, listOfStrings.Default.([]interface{})[0])
@@ -393,6 +393,79 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{}), ShouldContainKey, "protocol")
 				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["origin_port"], ShouldEqual, arrayObjectStateValue[1].(map[string]interface{})["origin_port"].(int))
 				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["protocol"], ShouldEqual, arrayObjectStateValue[1].(map[string]interface{})["protocol"])
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
+		Convey("When is called with a map remoteData containing more properties than then ones specified in the schema (this means the API is returning more info than the one specified in the swagger file)", func() {
+			remoteData := map[string]interface{}{
+				stringWithPreferredNameProperty.Name:                "someUpdatedStringValue",
+				"some_other_property_not_documented_in_openapi_doc": 15,
+			}
+			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the resource state data only contains the properties and values for the documented properties", func() {
+				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
+				So(resourceData.Get("some_other_property_not_documented_in_openapi_doc"), ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestDataSourceUpdateStateWithPayloadData(t *testing.T) {
+	Convey("Given a resource factory containing a schema with property lists that have the IgnoreItemsOrder set to true", t, func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		arrayObjectStateValue := []interface{}{}
+		listOfObjectsProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectStateValue, typeObject, objectSchemaDefinition)
+		listOfObjectsProperty.IgnoreItemsOrder = true
+
+		listOfStrings := newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, false, []interface{}{"value1", "value2"}, typeString, nil)
+		listOfStrings.IgnoreItemsOrder = true
+
+		r, resourceData := testCreateResourceFactory(t, listOfStrings, listOfObjectsProperty)
+		Convey("When dataSourceUpdateStateWithPayloadData is called", func() {
+			remoteData := map[string]interface{}{
+				listOfStrings.Name: []interface{}{"value2", "value1"},
+				listOfObjectsProperty.Name: []interface{}{
+					map[string]interface{}{
+						"origin_port": 443,
+						"protocol":    "https",
+					},
+					map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+			}
+			err := dataSourceUpdateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the expectedValue should equal to the expectedValue coming from remote", func() {
+				// keys stores in the resource data struct are always snake case
+				So(len(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
+				So(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, remoteData[listOfStrings.Name].([]interface{})[0])
+				So(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})[1], ShouldEqual, remoteData[listOfStrings.Name].([]interface{})[1])
+
+				So(len(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"])
+
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[1].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[1].(map[string]interface{})["protocol"])
 			})
 		})
 	})

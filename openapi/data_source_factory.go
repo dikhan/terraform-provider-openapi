@@ -125,7 +125,7 @@ func (d dataSourceFactory) read(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 
-	return updateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
+	return dataSourceUpdateStateWithPayloadData(d.openAPIResource, filteredResults[0], data)
 }
 
 func (d dataSourceFactory) filterMatch(filters filters, payloadItem map[string]interface{}) bool {

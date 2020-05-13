@@ -84,5 +84,5 @@ func (d dataSourceInstanceFactory) read(data *schema.ResourceData, i interface{}
 	if err != nil {
 		return err
 	}
-	return updateStateWithPayloadData(d.openAPIResource, responsePayload, data)
+	return dataSourceUpdateStateWithPayloadData(d.openAPIResource, responsePayload, data)
 }
