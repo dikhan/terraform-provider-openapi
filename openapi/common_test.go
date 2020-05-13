@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -489,6 +490,78 @@ func TestDataSourceUpdateStateWithPayloadData(t *testing.T) {
 	})
 }
 
+func TestUpdateStateWithPayloadDataAndOptions(t *testing.T) {
+	Convey("Given a resource factory containing a schema with property lists that have the IgnoreItemsOrder set to true", t, func() {
+		specResource := &specStubResource{
+			error: fmt.Errorf("some error"),
+		}
+		Convey("When updateStateWithPayloadDataAndOptions is called", func() {
+			err := updateStateWithPayloadDataAndOptions(specResource, nil, nil, true)
+			Convey("Then the err returned should match the expected one", func() {
+				So(err, ShouldEqual, specResource.error)
+			})
+		})
+	})
+	Convey("Given a resource factory containing just a property ID", t, func() {
+		specResource := &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{idProperty},
+			},
+		}
+		Convey("When updateStateWithPayloadDataAndOptions is called", func() {
+			remoteData := map[string]interface{}{
+				idProperty.Name: "someID",
+			}
+			var resourceLocalData *schema.ResourceData
+			err := updateStateWithPayloadDataAndOptions(specResource, remoteData, resourceLocalData, true)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resource local data should be intact since the id property is ignored when updating the resource data file behind the scenes", func() {
+				So(resourceLocalData, ShouldEqual, nil)
+			})
+		})
+	})
+	Convey("Given a resource factory containing a property with certain type", t, func() {
+		r, resourceData := testCreateResourceFactory(t, &specSchemaDefinitionProperty{
+			Name:                 "wrong_property",
+			Type:                 typeObject,
+			SpecSchemaDefinition: &specSchemaDefinition{},
+		})
+		Convey("When updateStateWithPayloadDataAndOptions is called with a remote data containing the property but the value does not match the property type", func() {
+			remoteData := map[string]interface{}{
+				"wrong_property": "someValueNotMatchingTheType",
+			}
+			err := updateStateWithPayloadDataAndOptions(r.openAPIResource, remoteData, resourceData, true)
+			Convey("Then the err returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "wrong_property: must be a map")
+			})
+		})
+	})
+	Convey("Given a resource factory containing a property with a type that the remote value does not match", t, func() {
+		r := &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name:           "not_well_configured_property",
+						Type:           typeList,
+						ArrayItemsType: schemaDefinitionPropertyType("unknown"),
+					},
+				},
+			},
+		}
+		Convey("When updateStateWithPayloadDataAndOptions", func() {
+			remoteData := map[string]interface{}{
+				"not_well_configured_property": []interface{}{"something"},
+			}
+			err := updateStateWithPayloadDataAndOptions(r, remoteData, nil, true)
+			Convey("Then the err returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "property 'not_well_configured_property' is supposed to be an array objects")
+			})
+		})
+	})
+}
+
 func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 
 	Convey("Given a resource factory", t, func() {
@@ -930,7 +1003,7 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 		property           specSchemaDefinitionProperty
 		inputPropertyValue interface{}
 		remoteValue        interface{}
-		expectedOutput     []interface{}
+		expectedOutput     interface{}
 	}{
 		// String use cases
 		{
@@ -1203,66 +1276,59 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "inputPropertyValue is nil",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: nil,
+			remoteValue:        []interface{}{},
+			expectedOutput:     []interface{}{},
+		},
+		{
+			name: "remoteValue is nil",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{},
+			remoteValue:        nil,
+			expectedOutput:     nil,
+		},
+		{
+			name: "IgnoreItemsOrder is set to false",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: false,
+			},
+			inputPropertyValue: []interface{}{"inputVal1"},
+			remoteValue:        []interface{}{"inputVal1", "inputVal2"},
+			expectedOutput:     []interface{}{"inputVal1", "inputVal2"},
+		},
+		{
+			name: "list of bools property definition and the corresponding input/remote lists",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeBool,
+				IgnoreItemsOrder: true,
+				Required:         true,
+			},
+			inputPropertyValue: []interface{}{true},
+			remoteValue:        []interface{}{false},
+			expectedOutput:     []interface{}{false},
+		},
 	}
 
 	for _, tc := range testCases {
 		output := processIgnoreOrderIfEnabled(tc.property, tc.inputPropertyValue, tc.remoteValue)
-		assert.Equal(t, tc.expectedOutput, output)
+		assert.Equal(t, tc.expectedOutput, output, tc.name)
 	}
-}
-
-func TestProcessIgnoreOrderIfEnabledNonListProperty(t *testing.T) {
-	Convey("Given a non list property that is marked as required and for some reason also as IgnoreItemsOrder", t, func() {
-		property := specSchemaDefinitionProperty{
-			Name:             "list_prop",
-			Type:             typeString,
-			IgnoreItemsOrder: true,
-		}
-		remoteValue := "someString"
-		Convey("When processIgnoreOrderIfEnabled", func() {
-			output := processIgnoreOrderIfEnabled(property, nil, remoteValue)
-			Convey("Then the output should be the string from remote", func() {
-				So(output, ShouldResemble, remoteValue)
-			})
-		})
-	})
-}
-
-func TestProcessIgnoreOrderIfEnabledIgnoreOrderDisabled(t *testing.T) {
-	Convey("Given a a list of strings property definition (with ignore order set to false) and the corresponding input/remote lists", t, func() {
-		property := specSchemaDefinitionProperty{
-			Name:             "list_prop",
-			Type:             typeList,
-			ArrayItemsType:   typeString,
-			IgnoreItemsOrder: false,
-		}
-		inputPropertyValue := []interface{}{"inputVal1", "inputVal2", "inputVal3"}
-		remoteValue := []interface{}{"inputVal1", "inputVal2", "inputVal3"}
-		Convey("When processIgnoreOrderIfEnabled", func() {
-			output := processIgnoreOrderIfEnabled(property, inputPropertyValue, remoteValue)
-			Convey("Then the output should match the remote list", func() {
-				So(output, ShouldResemble, []interface{}{"inputVal1", "inputVal2", "inputVal3"})
-			})
-		})
-	})
-}
-
-func TestCompareInputPropertyValueWithPayloadPropertyValueBools(t *testing.T) {
-	Convey("Given a a list of bools property definition and the corresponding input/remote lists", t, func() {
-		property := specSchemaDefinitionProperty{
-			Name:             "list_prop",
-			Type:             typeList,
-			ArrayItemsType:   typeBool,
-			IgnoreItemsOrder: true,
-			Required:         true,
-		}
-		inputPropertyValue := []interface{}{true}
-		remoteValue := []interface{}{false}
-		Convey("When processIgnoreOrderIfEnabled", func() {
-			output := processIgnoreOrderIfEnabled(property, inputPropertyValue, remoteValue)
-			Convey("Then the output should match the remote list", func() {
-				So(output, ShouldResemble, []interface{}{false})
-			})
-		})
-	})
 }
