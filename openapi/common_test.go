@@ -867,7 +867,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeString,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{"inputVal1", "inputVal2", "inputVal3"},
 			remoteValue:        []interface{}{"inputVal1", "inputVal2", "inputVal3"},
@@ -880,7 +879,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeString,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{"inputVal3", "inputVal1", "inputVal2"},
 			remoteValue:        []interface{}{"inputVal2", "inputVal3", "inputVal1"},
@@ -893,7 +891,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeString,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{"inputVal1", "inputVal2", "inputVal3"},
 			remoteValue:        []interface{}{"inputVal2", "inputVal1"},
@@ -906,7 +903,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeString,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{"inputVal1", "inputVal2"},
 			remoteValue:        []interface{}{"inputVal3", "inputVal2", "inputVal1"},
@@ -921,7 +917,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeInt,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{3, 1, 2},
 			remoteValue:        []interface{}{2, 3, 1},
@@ -934,7 +929,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeInt,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{1, 2, 3},
 			remoteValue:        []interface{}{2, 1},
@@ -947,7 +941,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeInt,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{1, 2},
 			remoteValue:        []interface{}{3, 2, 1},
@@ -962,7 +955,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeFloat,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{3.0, 1.0, 2.0},
 			remoteValue:        []interface{}{2.0, 3.0, 1.0},
@@ -975,7 +967,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeFloat,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{1.0, 2.0, 3.0},
 			remoteValue:        []interface{}{2.0, 1.0},
@@ -988,7 +979,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 				Type:             typeList,
 				ArrayItemsType:   typeFloat,
 				IgnoreItemsOrder: true,
-				Required:         true,
 			},
 			inputPropertyValue: []interface{}{1.0, 2.0},
 			remoteValue:        []interface{}{3.0, 2.0, 1.0},
@@ -1016,7 +1006,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 						},
 					},
 				},
-				Required: true,
 			},
 			inputPropertyValue: []interface{}{
 				map[string]interface{}{
@@ -1069,7 +1058,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 						},
 					},
 				},
-				Required: true,
 			},
 			inputPropertyValue: []interface{}{
 				map[string]interface{}{
@@ -1114,7 +1102,6 @@ func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
 						},
 					},
 				},
-				Required: true,
 			},
 			inputPropertyValue: []interface{}{
 				map[string]interface{}{
@@ -1157,7 +1144,6 @@ func TestProcessIgnoreOrderIfEnabledNonListProperty(t *testing.T) {
 			Name:             "list_prop",
 			Type:             typeString,
 			IgnoreItemsOrder: true,
-			Required:         true,
 		}
 		remoteValue := "someString"
 		Convey("When processIgnoreOrderIfEnabled", func() {
@@ -1176,14 +1162,13 @@ func TestProcessIgnoreOrderIfEnabledIgnoreOrderDisabled(t *testing.T) {
 			Type:             typeList,
 			ArrayItemsType:   typeString,
 			IgnoreItemsOrder: false,
-			Required:         true,
 		}
-		inputPropertyValue := []string{"inputVal1", "inputVal2", "inputVal3"}
-		remoteValue := []string{"inputVal1", "inputVal2", "inputVal3"}
+		inputPropertyValue := []interface{}{"inputVal1", "inputVal2", "inputVal3"}
+		remoteValue := []interface{}{"inputVal1", "inputVal2", "inputVal3"}
 		Convey("When processIgnoreOrderIfEnabled", func() {
 			output := processIgnoreOrderIfEnabled(property, inputPropertyValue, remoteValue)
 			Convey("Then the output should match the remote list", func() {
-				So(output, ShouldResemble, []string{"inputVal1", "inputVal2", "inputVal3"})
+				So(output, ShouldResemble, []interface{}{"inputVal1", "inputVal2", "inputVal3"})
 			})
 		})
 	})
@@ -1198,12 +1183,12 @@ func TestCompareInputPropertyValueWithPayloadPropertyValueBools(t *testing.T) {
 			IgnoreItemsOrder: true,
 			Required:         true,
 		}
-		inputPropertyValue := []bool{true}
-		remoteValue := []bool{false}
+		inputPropertyValue := []interface{}{true}
+		remoteValue := []interface{}{false}
 		Convey("When processIgnoreOrderIfEnabled", func() {
 			output := processIgnoreOrderIfEnabled(property, inputPropertyValue, remoteValue)
 			Convey("Then the output should match the remote list", func() {
-				So(output, ShouldResemble, []bool{false})
+				So(output, ShouldResemble, []interface{}{false})
 			})
 		})
 	})

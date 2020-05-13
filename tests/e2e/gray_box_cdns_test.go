@@ -508,6 +508,7 @@ definitions:
         type: "string"
       list_prop:
         type: "array"
+        x-terraform-ignore-order: true
         items:
           type: "string"`
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

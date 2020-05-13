@@ -127,7 +127,7 @@ func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPro
 	if inputPropertyValue == nil { // treat remote as the final state if input value does not exists
 		return remoteValue
 	}
-	if property.shouldIgnoreOrder() && property.Required {
+	if property.shouldIgnoreOrder() {
 		newPropertyValue := []interface{}{}
 
 		inputValueArray := inputPropertyValue.([]interface{})
