@@ -1891,6 +1891,44 @@ func TestValidateValueType(t *testing.T) {
 	}
 }
 
+func Test_shouldIgnoreOrder(t *testing.T) {
+	Convey("Given a scjema definition property that is a list and configured with ignore order", t, func() {
+		p := &specSchemaDefinitionProperty{
+			Type:             typeList,
+			IgnoreItemsOrder: true,
+		}
+		Convey("When shouldIgnoreOrder is called", func() {
+			shouldIgnoreOrder := p.shouldIgnoreOrder()
+			Convey("Then the err returned should be true", func() {
+				So(shouldIgnoreOrder, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a scjema definition property that is NOT a list", t, func() {
+		p := &specSchemaDefinitionProperty{
+			Type: typeString,
+		}
+		Convey("When shouldIgnoreOrder is called", func() {
+			shouldIgnoreOrder := p.shouldIgnoreOrder()
+			Convey("Then the err returned should be false", func() {
+				So(shouldIgnoreOrder, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a scjema definition property that is a list but the ignore order is set to false", t, func() {
+		p := &specSchemaDefinitionProperty{
+			Type:             typeList,
+			IgnoreItemsOrder: false,
+		}
+		Convey("When shouldIgnoreOrder is called", func() {
+			shouldIgnoreOrder := p.shouldIgnoreOrder()
+			Convey("Then the err returned should be false", func() {
+				So(shouldIgnoreOrder, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func Test_shouldUseLegacyTerraformSDKBlockApproachForComplexObjects(t *testing.T) {
 
 	Convey("shouldUseLegacyTerraformSDKBlockApproachForComplexObject", t, func() {

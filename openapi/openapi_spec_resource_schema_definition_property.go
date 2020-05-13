@@ -115,6 +115,10 @@ func (s *specSchemaDefinitionProperty) isArrayProperty() bool {
 	return s.Type == typeList
 }
 
+func (s *specSchemaDefinitionProperty) shouldIgnoreOrder() bool {
+	return s.Type == typeList && s.IgnoreItemsOrder
+}
+
 func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
 	return s.Type == typeList && s.ArrayItemsType == typeObject
 }

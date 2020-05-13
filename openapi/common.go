@@ -86,7 +86,7 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 	if err != nil {
 		return err
 	}
-	for propertyName, propertyValue := range remoteData {
+	for propertyName, propertyRemoteValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
 			log.Printf("[WARN] The API returned a property that is not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
@@ -96,7 +96,13 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 			continue
 		}
 
-		value, err := convertPayloadToLocalStateDataValue(property, propertyValue, false)
+		propValue := propertyRemoteValue
+		if property.shouldIgnoreOrder() {
+			desiredValue := resourceLocalData.Get(property.getTerraformCompliantPropertyName())
+			propValue = processIgnoreOrderIfEnabled(*property, desiredValue, propertyRemoteValue)
+		}
+
+		value, err := convertPayloadToLocalStateDataValue(property, propValue, false)
 		if err != nil {
 			return err
 		}
@@ -118,10 +124,14 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 // Use case 3: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with a shorter list where the remaining elems match the inputs.
 // Use case 4: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) some back with the list with the same size but some elems were updated
 func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) interface{} {
-	if property.IgnoreItemsOrder && property.Required && property.isArrayProperty() {
+	if inputPropertyValue == nil { // treat remote as the final state if input value does not exists
+		return remoteValue
+	}
+	if property.shouldIgnoreOrder() && property.Required {
 		newPropertyValue := []interface{}{}
-		inputValueArray := castValueToArray(property, inputPropertyValue)
-		remoteValueArray := castValueToArray(property, remoteValue)
+
+		inputValueArray := inputPropertyValue.([]interface{})
+		remoteValueArray := remoteValue.([]interface{})
 
 		if inputValueArray == nil || remoteValueArray == nil {
 			return remoteValue
@@ -154,34 +164,6 @@ func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPro
 		return newPropertyValue
 	}
 	return remoteValue
-}
-
-func castValueToArray(property specSchemaDefinitionProperty, value interface{}) []interface{} {
-	interfaceArray := []interface{}{}
-	if property.Type == typeList {
-		switch property.ArrayItemsType {
-		case typeString:
-			for _, item := range value.([]string) {
-				interfaceArray = append(interfaceArray, item)
-			}
-		case typeInt:
-			for _, item := range value.([]int) {
-				interfaceArray = append(interfaceArray, item)
-			}
-		case typeFloat:
-			for _, item := range value.([]float64) {
-				interfaceArray = append(interfaceArray, item)
-			}
-		case typeObject:
-			for _, item := range value.([]interface{}) {
-				interfaceArray = append(interfaceArray, item)
-			}
-		default:
-			return nil
-		}
-		return interfaceArray
-	}
-	return nil
 }
 
 func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
