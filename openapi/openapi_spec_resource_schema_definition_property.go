@@ -337,7 +337,7 @@ func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 		if len(list1) != len(list2) {
 			return false
 		}
-		for idx, _ := range list1 {
+		for idx := range list1 {
 			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
 	case typeObject:
