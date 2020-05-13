@@ -138,19 +138,13 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 // Use case 3: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with a shorter list where the remaining elems match the inputs.
 // Use case 4: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) some back with the list with the same size but some elems were updated
 func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) interface{} {
-	if inputPropertyValue == nil { // treat remote as the final state if input value does not exists
+	if inputPropertyValue == nil || remoteValue == nil { // treat remote as the final state if input value does not exists
 		return remoteValue
 	}
 	if property.shouldIgnoreOrder() {
 		newPropertyValue := []interface{}{}
-
 		inputValueArray := inputPropertyValue.([]interface{})
 		remoteValueArray := remoteValue.([]interface{})
-
-		if inputValueArray == nil || remoteValueArray == nil {
-			return remoteValue
-		}
-
 		for _, inputItemValue := range inputValueArray {
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
