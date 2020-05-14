@@ -1033,8 +1033,35 @@ x-terraform-sensitive | boolean | If this meta attribute is present in a definit
 x-terraform-id | boolean | If this meta attribute is present in an object definition property, the value will be used as the resource identifier when performing the read, update and delete API operations. The value will also be stored in the ID field of the local state file.
 x-terraform-field-name | string | This enables service providers to override the schema definition property name with a different one which will be the property name used in the terraform configuration file. This is mostly used to expose the internal property to a more user friendly name. If the extension is not present and the property name is not terraform compliant (following snake_case), an automatic conversion will be performed by the OpenAPI Terraform provider to make the name compliant (following Terraform's field name convention to be snake_case) 
 x-terraform-field-status | boolean | If this meta attribute is present in a definition property, the value will be used as the status identifier when executing the polling mechanism on eligible async operations such as POST/PUT/DELETE.
+[x-terraform-ignore-order](#xTerraformIgnoreOrder) | boolean | If this meta attribute is present in a definition property of type list, when the plugin is updating the state for the property it will inspect the items of the list received from remote and compare with the local values and if the lists are the same but unordered the state will keep the users input. Please go to the `x-terraform-ignore-order` section to learn more about the different behaviours supported.
 [x-terraform-complex-object-legacy-config](#xTerraformComplexObjectLegacyConfig) | boolean | If this meta attribute is present in an definition property of type object with value set to true, the OpenAPI terraform plugin will configure the corresponding property schema in Terraform following [Hashi maintainers recommendation](https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851) using as Schema Type schema.TypeList and limiting the max items in the list to 1 (MaxItems = 1). 
 
+###### <a name="xTerraformIgnoreOrder">x-terraform-ignore-order</a>
+
+This extension enables the service providers to setup the 'ignore order' behaviour for a property of type list defined in
+the object definition. For instance, the API may be returning the array items in lexical order but that behaviour might
+not be the desired one for the terraform plugin since it would cause DIFFs for users that provided the values of the array
+property in a different order. Hence, ensuring as much as possible that the order for the elements in the input list 
+provided by the user is maintained.
+
+Given the following terraform snippet where the members values are in certain desired order and assuming that the members 
+property is of type 'list' AND has the `x-terraform-ignore-order` extension set to true in the OpenAPI document for the `group_v1` 
+resource definition:
+
+````
+resource "openapi_group_v1" "my_iam_group_v1" {
+  members = ["user1", "user2", "user3"]
+}
+````
+
+The following behaviour is applied depending on the different scenarios when processing the response received by the API
+and saving the state of the property.
+
+- Use case 0: If the remote value for the property `members` contained the same items in the same order (eg: `{"members":["user1", "user2", "user3"]}`) as the tf input then the state saved for the property would match the input values. That is: ``members = ["user1", "user2", "user3"]``
+- Use case 1: If the remote value for the property `members` contained the same items as the tf input BUT the order of the elements is different (eg: `{"members":["user3", "user2", "user1"]}`) then state saved for the property would match the input values. That is: ``members = ["user1", "user2", "user3"]``
+- Use case 2: If the remote value for the property `members` contained the same items as the tf input in different order PLUS new ones (eg: `{"members":["user2", "user1", "user3", "user4"]}`) then state saved for the property would match the input values and also add to the end of the list the new elements received from the API. That is: ``members = ["user1", "user2", "user3", "user4"]``
+- Use case 3: If the remote value for the property `members` contained a shorter list than items in the tf input (eg: `{"members":["user3", "user1"}`) then state saved for the property would contain only the matching elements between the input and remote. That is: ``members = ["user1", "user3"]``
+- Use case 4: If the remote value for the property `members` contained the same list size as the items in the tf input but some elements inside where updated (eg: `{"members":["user1", "user5", "user9"]}`) then state saved for the property would contain the matching elements  between the input and output and also keep the remote values. That is: ``members = ["user1", "user5", "user9"]``
 
 ###### <a name="xTerraformComplexObjectLegacyConfig">x-terraform-complex-object-legacy-config</a>
 

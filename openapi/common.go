@@ -79,14 +79,28 @@ func getParentIDs(openAPIResource SpecResource, data *schema.ResourceData) ([]st
 	return []string{}, nil
 }
 
-// updateStateWithPayloadData is in charge of saving the given payload into the state file. The property names are
-// converted into compliant terraform names if needed.
+// updateStateWithPayloadData is in charge of saving the given payload into the state file keeping for list properties the
+// same order as the input (if the list property has the IgnoreItemsOrder set to true). The property names are converted into compliant terraform names if needed.
+// The property names are converted into compliant terraform names if needed.
 func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
+	return updateStateWithPayloadDataAndOptions(openAPIResource, remoteData, resourceLocalData, true)
+}
+
+// dataSourceUpdateStateWithPayloadData is in charge of saving the given payload into the state file keeping for list properties the
+// same order received by the API. The property names are converted into compliant terraform names if needed.
+func dataSourceUpdateStateWithPayloadData(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData) error {
+	return updateStateWithPayloadDataAndOptions(openAPIResource, remoteData, resourceLocalData, false)
+}
+
+// updateStateWithPayloadDataAndOptions is in charge of saving the given payload into the state file AND if the ignoreListOrder is enabled
+// it will go ahead and compare the items in the list (input vs remote) for properties of type list and the flag 'IgnoreItemsOrder' set to true
+// The property names are converted into compliant terraform names if needed.
+func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData, ignoreListOrderEnabled bool) error {
 	resourceSchema, err := openAPIResource.getResourceSchema()
 	if err != nil {
 		return err
 	}
-	for propertyName, propertyValue := range remoteData {
+	for propertyName, propertyRemoteValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
 			log.Printf("[WARN] The API returned a property that is not specified in the resource's schema definition in the OpenAPI document - error = %s", err)
@@ -95,7 +109,14 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 		if property.isPropertyNamedID() {
 			continue
 		}
-		value, err := convertPayloadToLocalStateDataValue(property, propertyValue, false)
+
+		propValue := propertyRemoteValue
+		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
+			desiredValue := resourceLocalData.Get(property.getTerraformCompliantPropertyName())
+			propValue = processIgnoreOrderIfEnabled(*property, desiredValue, propertyRemoteValue)
+		}
+
+		value, err := convertPayloadToLocalStateDataValue(property, propValue, false)
 		if err != nil {
 			return err
 		}
@@ -106,6 +127,51 @@ func updateStateWithPayloadData(openAPIResource SpecResource, remoteData map[str
 		}
 	}
 	return nil
+}
+
+// processIgnoreOrderIfEnabled checks whether the property has enabled the `IgnoreItemsOrder` field and if so, goes ahead
+// and returns a new list trying to match as much as possible the input order from the user (not remotes). The following use
+// cases are supported:
+// Use case 0: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order AND the remote state (remoteValue) comes back with the same items in the same order.
+// Use case 1: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with the same items in different order.
+// Use case 2: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with the same items in different order PLUS new ones.
+// Use case 3: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) comes back with a shorter list where the remaining elems match the inputs.
+// Use case 4: The desired state for an array property (input from user, inputPropertyValue) contains items in certain order BUT the remote state (remoteValue) some back with the list with the same size but some elems were updated
+func processIgnoreOrderIfEnabled(property specSchemaDefinitionProperty, inputPropertyValue, remoteValue interface{}) interface{} {
+	if inputPropertyValue == nil || remoteValue == nil { // treat remote as the final state if input value does not exists
+		return remoteValue
+	}
+	if property.shouldIgnoreOrder() {
+		newPropertyValue := []interface{}{}
+		inputValueArray := inputPropertyValue.([]interface{})
+		remoteValueArray := remoteValue.([]interface{})
+		for _, inputItemValue := range inputValueArray {
+			for _, remoteItemValue := range remoteValueArray {
+				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
+					newPropertyValue = append(newPropertyValue, inputItemValue)
+					break
+				}
+			}
+		}
+		modifiedItems := []interface{}{}
+		for _, remoteItemValue := range remoteValueArray {
+			match := false
+			for _, inputItemValue := range inputValueArray {
+				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
+					match = true
+					break
+				}
+			}
+			if !match {
+				modifiedItems = append(modifiedItems, remoteItemValue)
+			}
+		}
+		for _, updatedItem := range modifiedItems {
+			newPropertyValue = append(newPropertyValue, updatedItem)
+		}
+		return newPropertyValue
+	}
+	return remoteValue
 }
 
 func convertPayloadToLocalStateDataValue(property *specSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {

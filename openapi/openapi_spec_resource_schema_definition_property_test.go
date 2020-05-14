@@ -354,6 +354,60 @@ func TestIsRequired(t *testing.T) {
 	})
 }
 
+func TestShouldIgnoreArrayItemsOrder(t *testing.T) {
+	Convey("Given a specSchemaDefinitionProperty that is a typeList and where the 'x-terraform-ignore-order' ext is set to true", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:             "array_prop",
+			Type:             typeList,
+			IgnoreItemsOrder: true,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be true", func() {
+				So(isRequired, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is a typeList and where the 'x-terraform-ignore-order' ext is set to false", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:             "array_prop",
+			Type:             typeList,
+			IgnoreItemsOrder: false,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be false", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is a typeList and where the 'x-terraform-ignore-order' ext is NOT set", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name: "array_prop",
+			Type: typeList,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be false", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a specSchemaDefinitionProperty that is NOT a typeList where the 'x-terraform-ignore-order' ext is set", t, func() {
+		s := &specSchemaDefinitionProperty{
+			Name:             "string_prop",
+			Type:             typeString,
+			IgnoreItemsOrder: true,
+		}
+		Convey("When shouldIgnoreArrayItemsOrder method is called", func() {
+			isRequired := s.shouldIgnoreArrayItemsOrder()
+			Convey("Then the resulted bool should be false", func() {
+				So(isRequired, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestSchemaDefinitionPropertyIsComputed(t *testing.T) {
 	Convey("Given a specSchemaDefinitionProperty that is optional and readonly", t, func() {
 		s := &specSchemaDefinitionProperty{
@@ -1595,6 +1649,281 @@ func TestValidateFunc(t *testing.T) {
 				So(err, ShouldNotBeNil)
 				So(err, ShouldNotBeEmpty)
 				So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as required and can not be configured as computed too")
+			})
+		})
+	})
+}
+
+func TestEqualItems(t *testing.T) {
+	testCases := []struct {
+		name               string
+		schemaDefProp      specSchemaDefinitionProperty
+		propertyType       schemaDefinitionPropertyType
+		arrayItemsPropType schemaDefinitionPropertyType
+		inputItem          interface{}
+		remoteItem         interface{}
+		expectedOutput     bool
+	}{
+		// String use cases
+		{
+			name:           "string input value matches string remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeString},
+			inputItem:      "inputVal1",
+			remoteItem:     "inputVal1",
+			expectedOutput: true,
+		},
+		{
+			name:           "string input value doesn't match string remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeString},
+			inputItem:      "inputVal1",
+			remoteItem:     "inputVal2",
+			expectedOutput: false,
+		},
+		// Integer use cases
+		{
+			name:           "int input value matches int remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeInt},
+			inputItem:      1,
+			remoteItem:     1,
+			expectedOutput: true,
+		},
+		{
+			name:           "int input value doesn't match int remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeInt},
+			inputItem:      1,
+			remoteItem:     2,
+			expectedOutput: false,
+		},
+		// Float use cases
+		{
+			name:           "float input value matches float remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeFloat},
+			inputItem:      1.0,
+			remoteItem:     1.0,
+			expectedOutput: true,
+		},
+		{
+			name:           "float input value doesn't match float remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeFloat},
+			inputItem:      1.0,
+			remoteItem:     2.0,
+			expectedOutput: false,
+		},
+		// Bool use cases
+		{
+			name:           "bool input value matches bool remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeBool},
+			inputItem:      true,
+			remoteItem:     true,
+			expectedOutput: true,
+		},
+		{
+			name:           "bool input value doesn't match bool remote value",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeBool},
+			inputItem:      true,
+			remoteItem:     false,
+			expectedOutput: false,
+		},
+		// List use cases
+		{
+			name: "list input value matches list remote value",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role1", "role2"},
+			expectedOutput: true,
+		},
+		{
+			name: "list input value doesn't match list remote value (same list length)",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role3", "role4"},
+			expectedOutput: false,
+		},
+		{
+			name: "list input value doesn't match list remote value (different list length)",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role1"},
+			expectedOutput: false,
+		},
+		// Object use cases
+		{
+			name: "object input value matches object remote value",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type: typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+					},
+				},
+			},
+			inputItem:      map[string]interface{}{"group": "someGroup"},
+			remoteItem:     map[string]interface{}{"group": "someGroup"},
+			expectedOutput: true,
+		},
+		{
+			name: "object input value doesn't match object remote value",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type: typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+					},
+				},
+			},
+			inputItem:      map[string]interface{}{"group": "someGroup"},
+			remoteItem:     map[string]interface{}{"group": "someOtherGroup"},
+			expectedOutput: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		output := tc.schemaDefProp.equal(tc.inputItem, tc.remoteItem)
+		assert.Equal(t, tc.expectedOutput, output, tc.name)
+	}
+}
+
+func TestValidateValueType(t *testing.T) {
+	testCases := []struct {
+		name           string
+		item           interface{}
+		itemKind       reflect.Kind
+		expectedOutput bool
+	}{
+		// String use cases
+		{
+			name:           "expect string kind and item is a string",
+			item:           "inputVal1",
+			itemKind:       reflect.String,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect string kind and item is NOT a string",
+			item:           1,
+			itemKind:       reflect.String,
+			expectedOutput: false,
+		},
+		// Int use cases
+		{
+			name:           "expect int kind and item is a int",
+			item:           1,
+			itemKind:       reflect.Int,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect int kind and item is NOT a int",
+			item:           "not an int",
+			itemKind:       reflect.Int,
+			expectedOutput: false,
+		},
+		// Float use cases
+		{
+			name:           "expect float kind and item is a float",
+			item:           1.0,
+			itemKind:       reflect.Float64,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect float kind and item is NOT a float",
+			item:           "not a float",
+			itemKind:       reflect.Float64,
+			expectedOutput: false,
+		},
+		// Bool use cases
+		{
+			name:           "expect bool kind and item is a bool",
+			item:           true,
+			itemKind:       reflect.Bool,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect bool kind and item is NOT a bool",
+			item:           "not a bool",
+			itemKind:       reflect.Bool,
+			expectedOutput: false,
+		},
+		//  List use cases
+		{
+			name:           "expect slice kind and item is a slice",
+			item:           []interface{}{"item1", "item2"},
+			itemKind:       reflect.Slice,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect slice kind and item is NOT a slice",
+			item:           "not a slice",
+			itemKind:       reflect.Slice,
+			expectedOutput: false,
+		},
+		//  Object use cases
+		{
+			name:           "expect map kind and item is a map",
+			item:           map[string]interface{}{"group": "someGroup"},
+			itemKind:       reflect.Map,
+			expectedOutput: true,
+		},
+		{
+			name:           "expect map kind and item is NOT a map",
+			item:           "not a map",
+			itemKind:       reflect.Map,
+			expectedOutput: false,
+		},
+	}
+	for _, tc := range testCases {
+		s := specSchemaDefinitionProperty{}
+		output := s.validateValueType(tc.item, tc.itemKind)
+		assert.Equal(t, tc.expectedOutput, output, tc.name)
+	}
+}
+
+func Test_shouldIgnoreOrder(t *testing.T) {
+	Convey("Given a scjema definition property that is a list and configured with ignore order", t, func() {
+		p := &specSchemaDefinitionProperty{
+			Type:             typeList,
+			IgnoreItemsOrder: true,
+		}
+		Convey("When shouldIgnoreOrder is called", func() {
+			shouldIgnoreOrder := p.shouldIgnoreOrder()
+			Convey("Then the err returned should be true", func() {
+				So(shouldIgnoreOrder, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a scjema definition property that is NOT a list", t, func() {
+		p := &specSchemaDefinitionProperty{
+			Type: typeString,
+		}
+		Convey("When shouldIgnoreOrder is called", func() {
+			shouldIgnoreOrder := p.shouldIgnoreOrder()
+			Convey("Then the err returned should be false", func() {
+				So(shouldIgnoreOrder, ShouldBeFalse)
+			})
+		})
+	})
+	Convey("Given a scjema definition property that is a list but the ignore order is set to false", t, func() {
+		p := &specSchemaDefinitionProperty{
+			Type:             typeList,
+			IgnoreItemsOrder: false,
+		}
+		Convey("When shouldIgnoreOrder is called", func() {
+			shouldIgnoreOrder := p.shouldIgnoreOrder()
+			Convey("Then the err returned should be false", func() {
+				So(shouldIgnoreOrder, ShouldBeFalse)
 			})
 		})
 	})

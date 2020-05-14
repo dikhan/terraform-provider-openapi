@@ -438,6 +438,131 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 	}
 }
 
+//TODO: Check that test passes after implementing fix to ignore order of array props
+func TestAccCDN_CreateResourceWithIgnoreListOrderExtension(t *testing.T) {
+	swagger := `swagger: "2.0"
+host: %s 
+schemes:
+- "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    x-terraform-resource-name: "cdn"
+    post:
+      summary: "Create cdn"
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/cdns/{cdn_id}:
+    get:
+      summary: "Get cdn by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    delete:
+      summary: "Delete cdn"
+      operationId: "ContentDeliveryNetworkDeleteV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn that needs to be deleted"
+        required: true
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+      list_prop:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "string"`
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		body := `{"id": "someid", "label":"some label", "list_prop": ["value1", "value2", "value3"]}`
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(body))
+	}))
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	tfFileContents := `# URI /v1/cdns/
+resource "openapi_cdn_v1" "my_cdn" {
+  label = "some label"
+  list_prop = ["value3", "value1", "value2"]
+}`
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Providers:  testAccProviders,
+		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		Steps: []resource.TestStep{
+			{
+				ExpectNonEmptyPlan: false,
+				Config:             tfFileContents,
+				Check: resource.ComposeTestCheckFunc(
+					// check resource
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", "some label"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.#", "3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.0", "value3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.1", "value1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.2", "value2"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 	tfFileContents := createTerraformFile(expectedCDNLabel, expectedCDNFirewallLabel)

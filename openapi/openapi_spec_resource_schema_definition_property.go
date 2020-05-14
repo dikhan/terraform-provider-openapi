@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -28,7 +29,11 @@ type specSchemaDefinitionProperty struct {
 	PreferredName  string
 	Type           schemaDefinitionPropertyType
 	ArrayItemsType schemaDefinitionPropertyType
-	Required       bool
+
+	// IgnoreItemsOrder if set to true means that the array items order should be ignored
+	IgnoreItemsOrder bool
+
+	Required bool
 	// ReadOnly properties are included in responses but not in request
 	ReadOnly bool
 	// Computed properties describe properties where the value is computed by the API
@@ -110,6 +115,10 @@ func (s *specSchemaDefinitionProperty) isArrayProperty() bool {
 	return s.Type == typeList
 }
 
+func (s *specSchemaDefinitionProperty) shouldIgnoreOrder() bool {
+	return s.Type == typeList && s.IgnoreItemsOrder
+}
+
 func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
 	return s.Type == typeList && s.ArrayItemsType == typeObject
 }
@@ -124,6 +133,10 @@ func (s *specSchemaDefinitionProperty) isRequired() bool {
 
 func (s *specSchemaDefinitionProperty) isOptional() bool {
 	return !s.Required
+}
+
+func (s *specSchemaDefinitionProperty) shouldIgnoreArrayItemsOrder() bool {
+	return s.isArrayProperty() && s.IgnoreItemsOrder
 }
 
 // isComputed returns true if one of the following cases is met:
@@ -291,4 +304,65 @@ func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc 
 		}
 		return
 	}
+}
+
+func (s *specSchemaDefinitionProperty) equal(item1, item2 interface{}) bool {
+	return s.equalItems(s.Type, item1, item2)
+}
+
+func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
+	switch itemsType {
+	case typeString:
+		if !s.validateValueType(item1, reflect.String) && !s.validateValueType(item2, reflect.String) {
+			return false
+		}
+	case typeInt:
+		if !s.validateValueType(item1, reflect.Int) && !s.validateValueType(item2, reflect.Int) {
+			return false
+		}
+	case typeFloat:
+		if !s.validateValueType(item1, reflect.Float64) && !s.validateValueType(item2, reflect.Float64) {
+			return false
+		}
+	case typeBool:
+		if !s.validateValueType(item1, reflect.Bool) && !s.validateValueType(item2, reflect.Bool) {
+			return false
+		}
+	case typeList:
+		if !s.validateValueType(item1, reflect.Slice) && !s.validateValueType(item2, reflect.Slice) {
+			return false
+		}
+		list1 := item1.([]interface{})
+		list2 := item2.([]interface{})
+		if len(list1) != len(list2) {
+			return false
+		}
+		for idx := range list1 {
+			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
+		}
+	case typeObject:
+		if !s.validateValueType(item1, reflect.Map) && !s.validateValueType(item2, reflect.Map) {
+			return false
+		}
+		object1 := item1.(map[string]interface{})
+		object2 := item2.(map[string]interface{})
+		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
+			objectPropertyValue1 := object1[objectProperty.Name]
+			objectPropertyValue2 := object2[objectProperty.Name]
+			if !objectProperty.equal(objectPropertyValue1, objectPropertyValue2) {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
+	}
+	return item1 == item2
+}
+
+func (s *specSchemaDefinitionProperty) validateValueType(item interface{}, expectedKind reflect.Kind) bool {
+	if reflect.TypeOf(item).Kind() != expectedKind {
+		return false
+	}
+	return true
 }

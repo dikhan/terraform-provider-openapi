@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -335,6 +336,68 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 		})
 	})
 
+	Convey("Given a resource factory containing a schema with property lists that have the IgnoreItemsOrder set to true", t, func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		arrayObjectStateValue := []interface{}{
+			map[string]interface{}{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
+			map[string]interface{}{
+				"origin_port": 443,
+				"protocol":    "https",
+			},
+		}
+		listOfObjectsProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectStateValue, typeObject, objectSchemaDefinition)
+		listOfObjectsProperty.IgnoreItemsOrder = true
+
+		listOfStrings := newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, false, []interface{}{"value1", "value2"}, typeString, nil)
+		listOfStrings.IgnoreItemsOrder = true
+
+		r, resourceData := testCreateResourceFactory(t, listOfStrings, listOfObjectsProperty)
+		Convey("When updateStateWithPayloadData is called", func() {
+			remoteData := map[string]interface{}{
+				listOfStrings.Name: []interface{}{"value2", "value1"},
+				listOfObjectsProperty.Name: []interface{}{
+					map[string]interface{}{
+						"origin_port": 443,
+						"protocol":    "https",
+					},
+					map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+			}
+			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the expectedValue should maintain the order of the local input (not the order of the remote lists)", func() {
+				// keys stores in the resource data struct are always snake case
+				So(len(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
+				So(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, listOfStrings.Default.([]interface{})[0])
+				So(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})[1], ShouldEqual, listOfStrings.Default.([]interface{})[1])
+
+				So(len(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, arrayObjectStateValue[0].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, arrayObjectStateValue[0].(map[string]interface{})["protocol"])
+
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["origin_port"], ShouldEqual, arrayObjectStateValue[1].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["protocol"], ShouldEqual, arrayObjectStateValue[1].(map[string]interface{})["protocol"])
+			})
+		})
+	})
+
 	Convey("Given a resource factory", t, func() {
 		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
 		Convey("When is called with a map remoteData containing more properties than then ones specified in the schema (this means the API is returning more info than the one specified in the swagger file)", func() {
@@ -349,6 +412,151 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 			Convey("Then the resource state data only contains the properties and values for the documented properties", func() {
 				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
 				So(resourceData.Get("some_other_property_not_documented_in_openapi_doc"), ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestDataSourceUpdateStateWithPayloadData(t *testing.T) {
+	Convey("Given a resource factory containing a schema with property lists that have the IgnoreItemsOrder set to true", t, func() {
+		objectSchemaDefinition := &specSchemaDefinition{
+			Properties: specSchemaDefinitionProperties{
+				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
+				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+			},
+		}
+		arrayObjectStateValue := []interface{}{}
+		listOfObjectsProperty := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, arrayObjectStateValue, typeObject, objectSchemaDefinition)
+		listOfObjectsProperty.IgnoreItemsOrder = true
+
+		listOfStrings := newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, false, []interface{}{"value1", "value2"}, typeString, nil)
+		listOfStrings.IgnoreItemsOrder = true
+
+		r, resourceData := testCreateResourceFactory(t, listOfStrings, listOfObjectsProperty)
+		Convey("When dataSourceUpdateStateWithPayloadData is called", func() {
+			remoteData := map[string]interface{}{
+				listOfStrings.Name: []interface{}{"value2", "value1"},
+				listOfObjectsProperty.Name: []interface{}{
+					map[string]interface{}{
+						"origin_port": 443,
+						"protocol":    "https",
+					},
+					map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+					},
+				},
+			}
+			err := dataSourceUpdateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the expectedValue should equal to the expectedValue coming from remote", func() {
+				// keys stores in the resource data struct are always snake case
+				So(len(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
+				So(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, remoteData[listOfStrings.Name].([]interface{})[0])
+				So(resourceData.Get(listOfStrings.getTerraformCompliantPropertyName()).([]interface{})[1], ShouldEqual, remoteData[listOfStrings.Name].([]interface{})[1])
+
+				So(len(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[0].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[0].(map[string]interface{})["protocol"])
+
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{}), ShouldContainKey, "origin_port")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{}), ShouldContainKey, "protocol")
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["origin_port"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[1].(map[string]interface{})["origin_port"].(int))
+				So(resourceData.Get(listOfObjectsProperty.getTerraformCompliantPropertyName()).([]interface{})[1].(map[string]interface{})["protocol"], ShouldEqual, remoteData[listOfObjectsProperty.Name].([]interface{})[1].(map[string]interface{})["protocol"])
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty)
+		Convey("When is called with a map remoteData containing more properties than then ones specified in the schema (this means the API is returning more info than the one specified in the swagger file)", func() {
+			remoteData := map[string]interface{}{
+				stringWithPreferredNameProperty.Name:                "someUpdatedStringValue",
+				"some_other_property_not_documented_in_openapi_doc": 15,
+			}
+			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("Then the resource state data only contains the properties and values for the documented properties", func() {
+				So(resourceData.Get(stringWithPreferredNameProperty.getTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
+				So(resourceData.Get("some_other_property_not_documented_in_openapi_doc"), ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestUpdateStateWithPayloadDataAndOptions(t *testing.T) {
+	Convey("Given a resource factory containing a schema with property lists that have the IgnoreItemsOrder set to true", t, func() {
+		specResource := &specStubResource{
+			error: fmt.Errorf("some error"),
+		}
+		Convey("When updateStateWithPayloadDataAndOptions is called", func() {
+			err := updateStateWithPayloadDataAndOptions(specResource, nil, nil, true)
+			Convey("Then the err returned should match the expected one", func() {
+				So(err, ShouldEqual, specResource.error)
+			})
+		})
+	})
+	Convey("Given a resource factory containing just a property ID", t, func() {
+		specResource := &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{idProperty},
+			},
+		}
+		Convey("When updateStateWithPayloadDataAndOptions is called", func() {
+			remoteData := map[string]interface{}{
+				idProperty.Name: "someID",
+			}
+			var resourceLocalData *schema.ResourceData
+			err := updateStateWithPayloadDataAndOptions(specResource, remoteData, resourceLocalData, true)
+			Convey("Then the err returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the resource local data should be intact since the id property is ignored when updating the resource data file behind the scenes", func() {
+				So(resourceLocalData, ShouldEqual, nil)
+			})
+		})
+	})
+	Convey("Given a resource factory containing a property with certain type", t, func() {
+		r, resourceData := testCreateResourceFactory(t, &specSchemaDefinitionProperty{
+			Name:                 "wrong_property",
+			Type:                 typeObject,
+			SpecSchemaDefinition: &specSchemaDefinition{},
+		})
+		Convey("When updateStateWithPayloadDataAndOptions is called with a remote data containing the property but the value does not match the property type", func() {
+			remoteData := map[string]interface{}{
+				"wrong_property": "someValueNotMatchingTheType",
+			}
+			err := updateStateWithPayloadDataAndOptions(r.openAPIResource, remoteData, resourceData, true)
+			Convey("Then the err returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "wrong_property: must be a map")
+			})
+		})
+	})
+	Convey("Given a resource factory containing a property with a type that the remote value does not match", t, func() {
+		r := &specStubResource{
+			schemaDefinition: &specSchemaDefinition{
+				Properties: specSchemaDefinitionProperties{
+					&specSchemaDefinitionProperty{
+						Name:           "not_well_configured_property",
+						Type:           typeList,
+						ArrayItemsType: schemaDefinitionPropertyType("unknown"),
+					},
+				},
+			},
+		}
+		Convey("When updateStateWithPayloadDataAndOptions", func() {
+			remoteData := map[string]interface{}{
+				"not_well_configured_property": []interface{}{"something"},
+			}
+			err := updateStateWithPayloadDataAndOptions(r, remoteData, nil, true)
+			Convey("Then the err returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "property 'not_well_configured_property' is supposed to be an array objects")
 			})
 		})
 	})
@@ -787,4 +995,340 @@ func TestSetStateID(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestProcessIgnoreOrderIfEnabled(t *testing.T) {
+	testCases := []struct {
+		name               string
+		property           specSchemaDefinitionProperty
+		inputPropertyValue interface{}
+		remoteValue        interface{}
+		expectedOutput     interface{}
+	}{
+		// String use cases
+		{
+			name: "required input list (of strings) matches the value returned by the API where order of input values match",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{"inputVal1", "inputVal2", "inputVal3"},
+			remoteValue:        []interface{}{"inputVal1", "inputVal2", "inputVal3"},
+			expectedOutput:     []interface{}{"inputVal1", "inputVal2", "inputVal3"},
+		},
+		{
+			name: "required input list (of strings) matches the value returned by the API where order of input values doesn't match",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{"inputVal3", "inputVal1", "inputVal2"},
+			remoteValue:        []interface{}{"inputVal2", "inputVal3", "inputVal1"},
+			expectedOutput:     []interface{}{"inputVal3", "inputVal1", "inputVal2"},
+		},
+		{
+			name: "required input list (of strings) has a value that isn't returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{"inputVal1", "inputVal2", "inputVal3"},
+			remoteValue:        []interface{}{"inputVal2", "inputVal1"},
+			expectedOutput:     []interface{}{"inputVal1", "inputVal2"},
+		},
+		{
+			name: "required input list (of strings) is missing a value returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{"inputVal1", "inputVal2"},
+			remoteValue:        []interface{}{"inputVal3", "inputVal2", "inputVal1"},
+			expectedOutput:     []interface{}{"inputVal1", "inputVal2", "inputVal3"},
+		},
+
+		// Integer use cases
+		{
+			name: "required input list (of ints) matches the value returned by the API where order of input values doesn't match",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeInt,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{3, 1, 2},
+			remoteValue:        []interface{}{2, 3, 1},
+			expectedOutput:     []interface{}{3, 1, 2},
+		},
+		{
+			name: "required input list (of ints) has a value that isn't returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeInt,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{1, 2, 3},
+			remoteValue:        []interface{}{2, 1},
+			expectedOutput:     []interface{}{1, 2},
+		},
+		{
+			name: "required input list (of ints) is missing a value returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeInt,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{1, 2},
+			remoteValue:        []interface{}{3, 2, 1},
+			expectedOutput:     []interface{}{1, 2, 3},
+		},
+
+		// Float use cases
+		{
+			name: "required input list (of floats) matches the value returned by the API where order of input values doesn't match",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeFloat,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{3.0, 1.0, 2.0},
+			remoteValue:        []interface{}{2.0, 3.0, 1.0},
+			expectedOutput:     []interface{}{3.0, 1.0, 2.0},
+		},
+		{
+			name: "required input list (of floats) has a value that isn't returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeFloat,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{1.0, 2.0, 3.0},
+			remoteValue:        []interface{}{2.0, 1.0},
+			expectedOutput:     []interface{}{1.0, 2.0},
+		},
+		{
+			name: "required input list (of floats) is missing a value returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeFloat,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{1.0, 2.0},
+			remoteValue:        []interface{}{3.0, 2.0, 1.0},
+			expectedOutput:     []interface{}{1.0, 2.0, 3.0},
+		},
+
+		// List of objects use cases
+		{
+			name: "required input list (objects) matches the value returned by the API where order of input values doesn't match",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				IgnoreItemsOrder: true,
+				Type:             typeList,
+				ArrayItemsType:   typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+						&specSchemaDefinitionProperty{
+							Name:           "roles",
+							Type:           typeList,
+							ArrayItemsType: typeString,
+						},
+					},
+				},
+			},
+			inputPropertyValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "someOtherGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+			remoteValue: []interface{}{
+				map[string]interface{}{
+					"group": "someOtherGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+			},
+			expectedOutput: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "someOtherGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+		},
+		{
+			name: "required input list (objects) has a value that isn't returned by the API (input order maintained)",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				IgnoreItemsOrder: true,
+				Type:             typeList,
+				ArrayItemsType:   typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+						&specSchemaDefinitionProperty{
+							Name:           "roles",
+							Type:           typeList,
+							ArrayItemsType: typeString,
+						},
+					},
+				},
+			},
+			inputPropertyValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "someOtherGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+			remoteValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+			},
+			expectedOutput: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+			},
+		},
+		{
+			name: "required input list (objects) doesn't have a value returned by the API",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				IgnoreItemsOrder: true,
+				Type:             typeList,
+				ArrayItemsType:   typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+						&specSchemaDefinitionProperty{
+							Name:           "roles",
+							Type:           typeList,
+							ArrayItemsType: typeString,
+						},
+					},
+				},
+			},
+			inputPropertyValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+			},
+			remoteValue: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "unexpectedGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+			expectedOutput: []interface{}{
+				map[string]interface{}{
+					"group": "someGroup",
+					"roles": []interface{}{"role1", "role2"},
+				},
+				map[string]interface{}{
+					"group": "unexpectedGroup",
+					"roles": []interface{}{"role3", "role4"},
+				},
+			},
+		},
+		{
+			name: "inputPropertyValue is nil",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: nil,
+			remoteValue:        []interface{}{},
+			expectedOutput:     []interface{}{},
+		},
+		{
+			name: "remoteValue is nil",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputPropertyValue: []interface{}{},
+			remoteValue:        nil,
+			expectedOutput:     nil,
+		},
+		{
+			name: "IgnoreItemsOrder is set to false",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: false,
+			},
+			inputPropertyValue: []interface{}{"inputVal1"},
+			remoteValue:        []interface{}{"inputVal1", "inputVal2"},
+			expectedOutput:     []interface{}{"inputVal1", "inputVal2"},
+		},
+		{
+			name: "list of bools property definition and the corresponding input/remote lists",
+			property: specSchemaDefinitionProperty{
+				Name:             "list_prop",
+				Type:             typeList,
+				ArrayItemsType:   typeBool,
+				IgnoreItemsOrder: true,
+				Required:         true,
+			},
+			inputPropertyValue: []interface{}{true},
+			remoteValue:        []interface{}{false},
+			expectedOutput:     []interface{}{false},
+		},
+	}
+
+	for _, tc := range testCases {
+		output := processIgnoreOrderIfEnabled(tc.property, tc.inputPropertyValue, tc.remoteValue)
+		assert.Equal(t, tc.expectedOutput, output, tc.name)
+	}
 }
