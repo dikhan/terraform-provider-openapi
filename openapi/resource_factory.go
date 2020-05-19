@@ -317,7 +317,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 			}
 			// If the resources is NOT a sub-resource and just a top level resource then the array passed in will just contain
 			// 	the data object we get from terraform core without any updates.
-			err := r.read(data, i)
+			err := r.readWithOptions(data, i, true)
 			return results, err
 		},
 	}

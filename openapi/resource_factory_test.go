@@ -770,6 +770,30 @@ func TestImporter(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory", t, func() {
+		importedIDProperty := idProperty
+		r, resourceData := testCreateResourceFactoryWithID(t, importedIDProperty, stringProperty)
+		Convey("When importer is called but the API returns 404", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+				returnHTTPCode: http.StatusNotFound,
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				_, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should mention that the resource does not exists", func() {
+					So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/id failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: ")
+				})
+			})
+		})
+	})
+
 	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value provided by the user with the correct format)", t, func() {
 		expectedParentID := "32"
 		expectedResourceInstanceID := "159"
