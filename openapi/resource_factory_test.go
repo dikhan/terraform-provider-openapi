@@ -805,9 +805,12 @@ func TestImporter(t *testing.T) {
 				So(resourceImporter, ShouldNotBeNil)
 			})
 			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
-				_, err := resourceImporter.State(resourceData, client)
+				data, err := resourceImporter.State(resourceData, client)
 				Convey("Then the err returned should mention that the resource does not exists", func() {
 					So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/id failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: ")
+				})
+				Convey("Then the data should be nil", func() {
+					So(data, ShouldBeNil)
 				})
 			})
 		})
@@ -990,7 +993,7 @@ func TestImporter(t *testing.T) {
 					data, err := resourceImporter.State(resourceData, &clientOpenAPIStub{})
 					Convey("Then the error returned should be the expected one and data should be nil", func() {
 						So(err.Error(), ShouldEqual, "getResourcePath() failed")
-						So(data[0], ShouldResemble, resourceData)
+						So(data, ShouldBeNil)
 					})
 				})
 			})
