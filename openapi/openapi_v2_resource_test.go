@@ -2496,6 +2496,34 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
+		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-ignore-order' extension", func() {
+			expectedIgnoreOrder := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"array"},
+					Items: &spec.SchemaOrArray{
+						Schema: &spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extIgnoreOrder: expectedIgnoreOrder,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the schema definition property should have the IgnoreItemsOrder field enabled", func() {
+				So(schemaDefinitionProperty.IgnoreItemsOrder, ShouldEqual, expectedIgnoreOrder)
+			})
+		})
+
 		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-field-status' extension", func() {
 			expectedIsStatusFieldValue := true
 			propertySchema := spec.Schema{

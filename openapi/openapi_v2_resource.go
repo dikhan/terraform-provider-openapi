@@ -58,6 +58,7 @@ const extTfID = "x-terraform-id"
 const extTfComputed = "x-terraform-computed"
 const extTfComplexObjectType = "x-terraform-complex-object-legacy-config"
 const extTfIgnoreOrder = "x-terraform-ignore-order"
+const extIgnoreOrder = "x-ignore-order"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"
@@ -392,7 +393,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.ArrayItemsType = itemsType
 		schemaDefinitionProperty.SpecSchemaDefinition = itemsSchema // only diff than nil if type is object
 
-		if o.isBoolExtensionEnabled(property.Extensions, extTfIgnoreOrder) {
+		if o.isBoolExtensionEnabled(property.Extensions, extTfIgnoreOrder) || o.isBoolExtensionEnabled(property.Extensions, extIgnoreOrder) {
 			schemaDefinitionProperty.IgnoreItemsOrder = true
 		}
 
