@@ -993,7 +993,7 @@ func TestImporter(t *testing.T) {
 					data, err := resourceImporter.State(resourceData, &clientOpenAPIStub{})
 					Convey("Then the error returned should be the expected one and data should be nil", func() {
 						So(err.Error(), ShouldEqual, "getResourcePath() failed")
-						So(data[0], ShouldResemble, resourceData)
+						So(data, ShouldBeNil)
 					})
 				})
 			})
