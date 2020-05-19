@@ -334,6 +334,25 @@ func TestReadWithOptions(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory with a clientOpenAPI where GET returns an error (that isn't NotFound)", t, func() {
+		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
+		c := &clientOpenAPIStub{
+			error: errors.New("some generic error"),
+		}
+		Convey("When readWithOptions is called with handleNotFound set to true", func() {
+			err := r.readWithOptions(resourceData, c, true)
+			Convey("Then the error returned should be the expected one", func() {
+				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
+			})
+		})
+		Convey("When readWithOptions is called with handleNotFound set to false", func() {
+			err := r.readWithOptions(resourceData, c, false)
+			Convey("Then the error returned should be nil", func() {
+				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
+			})
+		})
+	})
 }
 
 func TestReadRemote(t *testing.T) {
