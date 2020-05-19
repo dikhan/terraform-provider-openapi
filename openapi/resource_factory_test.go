@@ -3,6 +3,8 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/go-openapi/spec"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
@@ -10,8 +12,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/go-openapi/spec"
 
 	"encoding/json"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -227,46 +227,39 @@ func TestCreate(t *testing.T) {
 	})
 }
 
-func TestRead(t *testing.T) {
-	Convey("Given a resource factory", t, func() {
+func TestReadWithOptions(t *testing.T) {
+	Convey("Given a resource factory and an OpenAPI client that returns a responsePayload", t, func() {
 		var telemetryHandlerResourceNameReceived string
 		var telemetryHandlerTFOperationReceived TelemetryResourceOperation
 		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
-		Convey("When readRemote is called with resource data and a client that returns ", func() {
-			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					stringProperty.Name: "someOtherStringValue",
+		client := &clientOpenAPIStub{
+			responsePayload: map[string]interface{}{
+				stringProperty.Name: "someOtherStringValue",
+			},
+			telemetryHandler: &telemetryHandlerStub{
+				submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+					telemetryHandlerResourceNameReceived = resourceName
+					telemetryHandlerTFOperationReceived = tfOperation
 				},
-				telemetryHandler: &telemetryHandlerStub{
-					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
-						telemetryHandlerResourceNameReceived = resourceName
-						telemetryHandlerTFOperationReceived = tfOperation
-					},
-				},
-			}
-			err := r.read(resourceData, client)
-			Convey("Then the error returned should be nil", func() {
+			},
+		}
+		Convey("When readWithOptions is called with handleNotFound set to false", func() {
+			err := r.readWithOptions(resourceData, client, false)
+			Convey("Then resourceData should equal the responsePayload and the expected telemetry provider should be called ", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
-			})
-			Convey("And the expected telemetry provider should have been called", func() {
 				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
 				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationRead)
 			})
 		})
 	})
 
-	Convey("Given a resource factory configured with a resource that is a subresource", t, func() {
-
+	Convey("Given a resource factory configured with a subresource and an OpenAPI client that returns a responsePayload", t, func() {
 		someOtherProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
 		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
-
 		// Pretending the data has already been populated with the parent property
 		testSchema := newTestSchema(idProperty, someOtherProperty, parentProperty)
 		resourceData := testSchema.getResourceData(t)
-
 		r := newResourceFactory(&SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewall",
 			SchemaDefinition: spec.Schema{
@@ -281,27 +274,25 @@ func TestRead(t *testing.T) {
 				},
 			},
 		})
-		Convey("When readRemote is called with resource data (containing the expected state property values) and a provider client configured to return some response payload", func() {
-			client := &clientOpenAPIStub{
-				responsePayload: map[string]interface{}{
-					someOtherProperty.Name: "someOtherStringValue",
-				},
-			}
-			err := r.read(resourceData, client)
-			Convey("Then the error returned should be nil", func() {
+		client := &clientOpenAPIStub{
+			responsePayload: map[string]interface{}{
+				someOtherProperty.Name: "someOtherStringValue",
+			},
+		}
+		Convey("When readWithOptions is called with handleNotFound set to false", func() {
+			err := r.readWithOptions(resourceData, client, false)
+			Convey("Then resourceData should equal the responsePayload", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 			})
 		})
 	})
 
-	Convey("Given a resource factory with an empty OpenAPI resource", t, func() {
+	Convey("Given a resource factory with an empty OpenAPI resource and an empty OpenAPI client", t, func() {
 		r := resourceFactory{}
-		Convey("When create is called with empty data and a empty client", func() {
-			client := &clientOpenAPIStub{}
-			err := r.read(nil, client)
+		client := &clientOpenAPIStub{}
+		Convey("When readWithOptions is called with nil data, an empty clientOpenAPI, and handleNotFound set to false", func() {
+			err := r.readWithOptions(nil, client, false)
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "missing openAPI resource configuration")
 			})
@@ -315,10 +306,50 @@ func TestRead(t *testing.T) {
 					return "", errors.New("getResourcePath() failed")
 				}},
 		}
-		Convey("When read is called with resource data and an empty clientOpenAPI", func() {
-			err := r.read(nil, &clientOpenAPIStub{})
+		Convey("When readWithOptions is called with nil data, an empty clientOpenAPI, and handleNotFound set to false", func() {
+			err := r.readWithOptions(nil, &clientOpenAPIStub{}, false)
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
+			})
+		})
+	})
+
+	Convey("Given a resource factory with a clientOpenAPI where GET returns an NotFound error", t, func() {
+		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
+		c := &clientOpenAPIStub{
+			error: &openapierr.NotFoundError{
+				OriginalError: errors.New(openapierr.NotFound),
+			},
+		}
+		Convey("When readWithOptions is called with handleNotFound set to true", func() {
+			err := r.readWithOptions(resourceData, c, true)
+			Convey("Then the error returned should be the expected one", func() {
+				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: NotFound")
+			})
+		})
+		Convey("When readWithOptions is called with handleNotFound set to false", func() {
+			err := r.readWithOptions(resourceData, c, false)
+			Convey("Then the error returned should be nil", func() {
+				assert.Nil(t, err)
+			})
+		})
+	})
+
+	Convey("Given a resource factory with a clientOpenAPI where GET returns an error (that isn't NotFound)", t, func() {
+		r, resourceData := testCreateResourceFactory(t, idProperty, stringProperty)
+		c := &clientOpenAPIStub{
+			error: errors.New("some generic error"),
+		}
+		Convey("When readWithOptions is called with handleNotFound set to true", func() {
+			err := r.readWithOptions(resourceData, c, true)
+			Convey("Then the error returned should be the expected one", func() {
+				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
+			})
+		})
+		Convey("When readWithOptions is called with handleNotFound set to false", func() {
+			err := r.readWithOptions(resourceData, c, false)
+			Convey("Then the error returned should be nil", func() {
+				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
 			})
 		})
 	})
@@ -758,6 +789,30 @@ func TestImporter(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory", t, func() {
+		importedIDProperty := idProperty
+		r, resourceData := testCreateResourceFactoryWithID(t, importedIDProperty, stringProperty)
+		Convey("When importer is called but the API returns 404", func() {
+			client := &clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					stringProperty.Name: "someOtherStringValue",
+				},
+				returnHTTPCode: http.StatusNotFound,
+			}
+			resourceImporter := r.importer()
+			Convey("Then the resource importer returned should Not be nil", func() {
+				So(resourceImporter, ShouldNotBeNil)
+			})
+			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
+				_, err := resourceImporter.State(resourceData, client)
+				Convey("Then the err returned should mention that the resource does not exists", func() {
+					So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/id failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: ")
+				})
+			})
+		})
+	})
+
 	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value provided by the user with the correct format)", t, func() {
 		expectedParentID := "32"
 		expectedResourceInstanceID := "159"

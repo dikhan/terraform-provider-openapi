@@ -128,7 +128,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	return updateStateWithPayloadData(r.openAPIResource, responsePayload, data)
 }
 
-func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
+func (r resourceFactory) readWithOptions(data *schema.ResourceData, i interface{}, handleNotFoundErr bool) error {
 	openAPIClient := i.(ClientOpenAPI)
 
 	if r.openAPIResource == nil {
@@ -147,7 +147,7 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 
 	if err != nil {
 		if openapiErr, ok := err.(openapierr.Error); ok {
-			if openapierr.NotFound == openapiErr.Code() {
+			if openapierr.NotFound == openapiErr.Code() && !handleNotFoundErr {
 				return nil
 			}
 		}
@@ -155,6 +155,10 @@ func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
 	}
 
 	return updateStateWithPayloadData(r.openAPIResource, remoteData, data)
+}
+
+func (r resourceFactory) read(data *schema.ResourceData, i interface{}) error {
+	return r.readWithOptions(data, i, false)
 }
 
 func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, parentIDs ...string) (map[string]interface{}, error) {
@@ -313,7 +317,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 			}
 			// If the resources is NOT a sub-resource and just a top level resource then the array passed in will just contain
 			// 	the data object we get from terraform core without any updates.
-			err := r.read(data, i)
+			err := r.readWithOptions(data, i, true)
 			return results, err
 		},
 	}
