@@ -351,10 +351,9 @@ func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 				}
 			}
 			return true
-		} else {
-			for idx := range list1 {
-				return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
-			}
+		}
+		for idx := range list1 {
+			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
 	case typeObject:
 		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
