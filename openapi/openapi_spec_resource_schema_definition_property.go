@@ -313,23 +313,23 @@ func (s *specSchemaDefinitionProperty) equal(item1, item2 interface{}) bool {
 func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
 	switch itemsType {
 	case typeString:
-		if !s.validateValueType(item1, reflect.String) && !s.validateValueType(item2, reflect.String) {
+		if !s.validateValueType(item1, reflect.String) || !s.validateValueType(item2, reflect.String) {
 			return false
 		}
 	case typeInt:
-		if !s.validateValueType(item1, reflect.Int) && !s.validateValueType(item2, reflect.Int) {
+		if !s.validateValueType(item1, reflect.Int) || !s.validateValueType(item2, reflect.Int) {
 			return false
 		}
 	case typeFloat:
-		if !s.validateValueType(item1, reflect.Float64) && !s.validateValueType(item2, reflect.Float64) {
+		if !s.validateValueType(item1, reflect.Float64) || !s.validateValueType(item2, reflect.Float64) {
 			return false
 		}
 	case typeBool:
-		if !s.validateValueType(item1, reflect.Bool) && !s.validateValueType(item2, reflect.Bool) {
+		if !s.validateValueType(item1, reflect.Bool) || !s.validateValueType(item2, reflect.Bool) {
 			return false
 		}
 	case typeList:
-		if !s.validateValueType(item1, reflect.Slice) && !s.validateValueType(item2, reflect.Slice) {
+		if !s.validateValueType(item1, reflect.Slice) || !s.validateValueType(item2, reflect.Slice) {
 			return false
 		}
 		list1 := item1.([]interface{})
@@ -337,11 +337,26 @@ func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 		if len(list1) != len(list2) {
 			return false
 		}
+		if s.shouldIgnoreOrder() {
+			for idx := range list1 {
+				match := false
+				for idx2 := range list2 {
+					if s.equalItems(s.ArrayItemsType, list1[idx], list2[idx2]) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					return false
+				}
+			}
+			return true
+		}
 		for idx := range list1 {
 			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
 	case typeObject:
-		if !s.validateValueType(item1, reflect.Map) && !s.validateValueType(item2, reflect.Map) {
+		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
 			return false
 		}
 		object1 := item1.(map[string]interface{})

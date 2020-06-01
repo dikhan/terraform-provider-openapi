@@ -1746,6 +1746,28 @@ func TestEqualItems(t *testing.T) {
 			expectedOutput: false,
 		},
 		{
+			name: "list input value doesn't match list remote value (same list length band same items but unordered) but property is marked as ignore order",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role2", "role1"},
+			expectedOutput: true,
+		},
+		{
+			name: "list input value doesn't match list remote value (same list length band) but property is marked as ignore order",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:             typeList,
+				ArrayItemsType:   typeString,
+				IgnoreItemsOrder: true,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     []interface{}{"role3", "role1"},
+			expectedOutput: false,
+		},
+		{
 			name: "list input value doesn't match list remote value (different list length)",
 			schemaDefProp: specSchemaDefinitionProperty{
 				Type:           typeList,
@@ -1788,6 +1810,62 @@ func TestEqualItems(t *testing.T) {
 			},
 			inputItem:      map[string]interface{}{"group": "someGroup"},
 			remoteItem:     map[string]interface{}{"group": "someOtherGroup"},
+			expectedOutput: false,
+		},
+		// Negative cases
+		{
+			name:           "string input value is not a string",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeString},
+			inputItem:      1,
+			remoteItem:     "inputVal1",
+			expectedOutput: false,
+		},
+		{
+			name:           "int input value is not an int",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeInt},
+			inputItem:      "not_an_int",
+			remoteItem:     1,
+			expectedOutput: false,
+		},
+		{
+			name:           "float input value is not a float",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeFloat},
+			inputItem:      1.0,
+			remoteItem:     "not_an_float",
+			expectedOutput: false,
+		},
+		{
+			name:           "bool input value is nto a bool",
+			schemaDefProp:  specSchemaDefinitionProperty{Type: typeBool},
+			inputItem:      true,
+			remoteItem:     "not_a_bool",
+			expectedOutput: false,
+		},
+		{
+			name: "list input value is not a list",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type:           typeList,
+				ArrayItemsType: typeString,
+			},
+			inputItem:      []interface{}{"role1", "role2"},
+			remoteItem:     "not a list",
+			expectedOutput: false,
+		},
+		{
+			name: "object input value is not an object",
+			schemaDefProp: specSchemaDefinitionProperty{
+				Type: typeObject,
+				SpecSchemaDefinition: &specSchemaDefinition{
+					Properties: specSchemaDefinitionProperties{
+						&specSchemaDefinitionProperty{
+							Name: "group",
+							Type: typeString,
+						},
+					},
+				},
+			},
+			inputItem:      "not_an_object",
+			remoteItem:     map[string]interface{}{"group": "someGroup"},
 			expectedOutput: false,
 		},
 	}
