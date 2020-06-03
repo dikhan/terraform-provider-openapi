@@ -173,7 +173,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 		return nil, err
 	}
 
-	log.Printf("[DEBUG] GET '%s' response payload: %#v", r.openAPIResource.getResourceName(), responsePayload)
+	log.Printf("[DEBUG] GET '%s' response received", r.openAPIResource.getResourceName())
 	return responsePayload, nil
 }
 
