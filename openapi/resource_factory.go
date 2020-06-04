@@ -173,7 +173,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 		return nil, err
 	}
 
-	log.Printf("[DEBUG] GET '%s' response payload: %#v", r.openAPIResource.getResourceName(), responsePayload)
+	log.Printf("[DEBUG] GET '%s' response received", r.openAPIResource.getResourceName())
 	return responsePayload, nil
 }
 
@@ -516,7 +516,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
 		}
 	}
-	log.Printf("[DEBUG] [resource='%s'] buildPayloadFromLocalStateDataForPostOperation: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
+	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
 	return input
 }
 
