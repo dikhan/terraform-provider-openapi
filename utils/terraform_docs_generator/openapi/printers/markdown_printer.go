@@ -121,12 +121,12 @@ func (p MarkdownPrinter) PrintAttributes(computed openapi.SpecSchemaDefinitionPr
 func (p MarkdownPrinter) printProperty(property *openapi.SpecSchemaDefinitionProperty) {
 	propertyName := property.GetTerraformCompliantPropertyName()
 	if property.IsRequired() {
-		fmt.Printf("- %s [%s] (required): %s\n", propertyName, property.Type, property.Description)
+		fmt.Printf("- %s [%s] (required): \n", propertyName, property.Type) //property.Description
 	} else {
 		if property.IsOptionalComputed() {
-			fmt.Printf("- %s [%s] (optional): %s\n", propertyName, property.Type, property.Description)
+			fmt.Printf("- %s [%s] (optional): \n", propertyName, property.Type) //, property.Description
 		} else {
-			fmt.Printf("- %s [%s]: %s\n", propertyName, property.Type, property.Description)
+			fmt.Printf("- %s [%s]: \n", propertyName, property.Type) // , property.Description
 		}
 	}
 }

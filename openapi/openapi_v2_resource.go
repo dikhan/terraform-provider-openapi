@@ -144,14 +144,14 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 	return resource, nil
 }
 
-func (o *SpecV2Resource) getResourceName() string {
+func (o *SpecV2Resource) GetResourceName() string {
 	if o.Region != "" {
 		return fmt.Sprintf("%s_%s", o.Name, o.Region)
 	}
 	return o.Name
 }
 
-// getResourceName returns the name of the resource (including the version if applicable). The name is build from the resource
+// GetResourceName returns the name of the resource (including the version if applicable). The name is build from the resource
 // root path /resource/{id} or if specified the value set in the x-terraform-resource-name extension is used instead along
 // with the version (if applicable)
 func (o *SpecV2Resource) buildResourceName() (string, error) {
@@ -264,10 +264,10 @@ func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
 	}
 }
 
-// shouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
+// ShouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
 // defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provider; otherwise it will
 // be exposed and users will be able to manage such resource via terraform.
-func (o *SpecV2Resource) shouldIgnoreResource() bool {
+func (o *SpecV2Resource) ShouldIgnoreResource() bool {
 	postOperation := o.RootPathItem.Post
 	if postOperation != nil {
 		if postOperation.Extensions != nil {
@@ -331,23 +331,23 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 	return nil
 }
 
-func (o *SpecV2Resource) getResourceSchema() (*specSchemaDefinition, error) {
+func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	return o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
 }
 
-func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*specSchemaDefinition, error) {
+func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*SpecSchemaDefinition, error) {
 	return o.getSchemaDefinitionWithOptions(schema, false)
 }
 
-func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, addParentProps bool) (*specSchemaDefinition, error) {
+func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, addParentProps bool) (*SpecSchemaDefinition, error) {
 	if schema == nil {
 		return nil, fmt.Errorf("schema argument must not be nil")
 	}
-	schemaDefinition := &specSchemaDefinition{}
-	schemaDefinition.Properties = specSchemaDefinitionProperties{}
+	schemaDefinition := &SpecSchemaDefinition{}
+	schemaDefinition.Properties = SpecSchemaDefinitionProperties{}
 
 	// This map ensures no duplicates will happen if the schema happens to have a parent id property. if so, it will be overridden with the expected parent property configuration (e,g: making the prop required)
-	schemaProps := map[string]*specSchemaDefinitionProperty{}
+	schemaProps := map[string]*SpecSchemaDefinitionProperty{}
 	for propertyName, property := range schema.Properties {
 		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property, schema.Required)
 		if err != nil {
@@ -373,8 +373,8 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*specSchemaDefinitionProperty, error) {
-	schemaDefinitionProperty := &specSchemaDefinitionProperty{}
+func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*SpecSchemaDefinitionProperty, error) {
+	schemaDefinitionProperty := &SpecSchemaDefinitionProperty{}
 
 	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject || err != nil {
 		if err != nil {
@@ -530,7 +530,7 @@ func (o *SpecV2Resource) isOptionalComputedWithDefault(propertyName string, prop
 	return false, nil
 }
 
-// isOptionalComputed returns true if the property is marked with the extension 'x-terraform-computed'
+// IsOptionalComputed returns true if the property is marked with the extension 'x-terraform-computed'
 // This covers the use case where a property is not marked as readOnly but still is optional value that can come from the user or if not provided will be computed by the API. Example
 //
 // optional_computed: # optional property that the default value is NOT known at runtime
@@ -550,7 +550,7 @@ func (o *SpecV2Resource) isOptionalComputed(propertyName string, property spec.S
 }
 
 func (o *SpecV2Resource) isArrayItemPrimitiveType(propertyType schemaDefinitionPropertyType) bool {
-	return propertyType == typeString || propertyType == typeInt || propertyType == typeFloat || propertyType == typeBool
+	return propertyType == TypeString || propertyType == TypeInt || propertyType == TypeFloat || propertyType == TypeBool
 }
 
 func (o *SpecV2Resource) validateArrayItems(property spec.Schema) (schemaDefinitionPropertyType, error) {
@@ -564,7 +564,7 @@ func (o *SpecV2Resource) validateArrayItems(property spec.Schema) (schemaDefinit
 	if err != nil {
 		return "", err
 	}
-	if !o.isArrayItemPrimitiveType(itemsType) && !(itemsType == typeObject) {
+	if !o.isArrayItemPrimitiveType(itemsType) && !(itemsType == TypeObject) {
 		return "", fmt.Errorf("array item type '%s' not supported", itemsType)
 	}
 	return itemsType, nil
@@ -572,17 +572,17 @@ func (o *SpecV2Resource) validateArrayItems(property spec.Schema) (schemaDefinit
 
 func (o *SpecV2Resource) getPropertyType(property spec.Schema) (schemaDefinitionPropertyType, error) {
 	if o.isArrayTypeProperty(property) {
-		return typeList, nil
+		return TypeList, nil
 	} else if isObject, _, err := o.isObjectProperty(property); isObject || err != nil {
-		return typeObject, err
+		return TypeObject, err
 	} else if property.Type.Contains("string") {
-		return typeString, nil
+		return TypeString, nil
 	} else if property.Type.Contains("integer") {
-		return typeInt, nil
+		return TypeInt, nil
 	} else if property.Type.Contains("number") {
-		return typeFloat, nil
+		return TypeFloat, nil
 	} else if property.Type.Contains("boolean") {
-		return typeBool, nil
+		return TypeBool, nil
 	}
 	return "", fmt.Errorf("non supported '%+v' type", property.Type)
 }
@@ -606,7 +606,7 @@ func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Sch
 	return false, nil, nil
 }
 
-func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefinitionPropertyType, *specSchemaDefinition, error) {
+func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefinitionPropertyType, *SpecSchemaDefinition, error) {
 	if o.isArrayTypeProperty(property) {
 		itemsType, err := o.validateArrayItems(property)
 		if err != nil {

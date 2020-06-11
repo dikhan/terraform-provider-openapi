@@ -14,29 +14,29 @@ func TestCreateDataSourceSchema(t *testing.T) {
 
 	testCases := []struct {
 		name           string
-		specSchemaDef  specSchemaDefinition
+		specSchemaDef  SpecSchemaDefinition
 		expectedResult map[string]*schema.Schema
 		expectedError  error
 	}{
 		{
 			name: "happy path -- data source schema contains all schema properties configured as computed",
-			specSchemaDef: specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			specSchemaDef: SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name:     "id",
-						Type:     typeString,
+						Type:     TypeString,
 						ReadOnly: false,
 						Required: true,
 					},
-					&specSchemaDefinitionProperty{
+					&SpecSchemaDefinitionProperty{
 						Name:     "string_prop",
-						Type:     typeString,
+						Type:     TypeString,
 						ReadOnly: false,
 						Required: true,
 					},
-					&specSchemaDefinitionProperty{
+					&SpecSchemaDefinitionProperty{
 						Name:     "int_prop",
-						Type:     typeInt,
+						Type:     TypeInt,
 						ReadOnly: false,
 						Required: true,
 					},
@@ -59,8 +59,8 @@ func TestCreateDataSourceSchema(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name:           "sad path -- a terraform schema cannot be created from a specSchemaDefinition ",
-			specSchemaDef:  specSchemaDefinition{Properties: specSchemaDefinitionProperties{&specSchemaDefinitionProperty{}}},
+			name:           "sad path -- a terraform schema cannot be created from a SpecSchemaDefinition ",
+			specSchemaDef:  SpecSchemaDefinition{Properties: SpecSchemaDefinitionProperties{&SpecSchemaDefinitionProperty{}}},
 			expectedResult: nil,
 			expectedError:  errors.New("non supported type "),
 		},
@@ -83,17 +83,17 @@ func TestCreateDataSourceSchema(t *testing.T) {
 func TestCreateDataSourceSchema_Subresources(t *testing.T) {
 	t.Run("happy path -- data source schema dor sub-resoruce contains all schema properties configured as computed but parent properties", func(t *testing.T) {
 
-		specSchemaDef := specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		specSchemaDef := SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:             "parent_id",
-					Type:             typeString,
+					Type:             TypeString,
 					ReadOnly:         false,
 					Required:         true,
 					IsParentProperty: true,
@@ -117,8 +117,8 @@ func TestCreateDataSourceSchema_Subresources(t *testing.T) {
 func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 	t.Run("happy path -- a data soruce can be derived from a nested object keeping all the properies attributes as expected", func(t *testing.T) {
 		// set up the schema for the nested object
-		nestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		nestedObjectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
@@ -128,8 +128,8 @@ func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 			"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
 		}
 		nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
-		propertyWithNestedObjectSchemaDefinition := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				idProperty,
 				nestedObject,
 			},
@@ -139,8 +139,8 @@ func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 			"nested_object": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
 		}
 		dataSourceSchema := newObjectSchemaDefinitionPropertyWithDefaults("nested-oobj", "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
-		specSchemaNested := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{dataSourceSchema},
+		specSchemaNested := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{dataSourceSchema},
 		}
 
 		// get the Terraform schema which represents a Data Source
@@ -169,17 +169,17 @@ func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 
 func TestCreateResourceSchema(t *testing.T) {
 	Convey("Given a swagger schema definition that has few properties including the id all with terraform compliant names", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:     "string_prop",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
@@ -200,17 +200,17 @@ func TestCreateResourceSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has few properties including the id all with NON terraform compliant names", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "ID",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:     "stringProp",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
@@ -231,35 +231,35 @@ func TestCreateResourceSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has few properties including an object property with internal ID field", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:     "string_prop",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
-					Type:     typeObject,
+					Type:     TypeObject,
 					ReadOnly: true,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
-							&specSchemaDefinitionProperty{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
+							&SpecSchemaDefinitionProperty{
 								Name:               "id",
-								Type:               typeString,
+								Type:               TypeString,
 								ReadOnly:           true,
 								IsStatusIdentifier: true,
 							},
-							&specSchemaDefinitionProperty{
+							&SpecSchemaDefinitionProperty{
 								Name:               "name",
-								Type:               typeString,
+								Type:               TypeString,
 								ReadOnly:           true,
 								IsStatusIdentifier: true,
 							},
@@ -294,18 +294,18 @@ func TestCreateResourceSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has few properties including an array of string primitives", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:           "listeners",
-					Type:           typeList,
-					ArrayItemsType: typeString,
+					Type:           TypeList,
+					ArrayItemsType: TypeString,
 				},
 			},
 		}
@@ -328,23 +328,23 @@ func TestCreateResourceSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has few properties including an array of objects", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 					Required: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:           "listeners",
-					Type:           typeList,
-					ArrayItemsType: typeObject,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
-							&specSchemaDefinitionProperty{
+					Type:           TypeList,
+					ArrayItemsType: TypeObject,
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
+							&SpecSchemaDefinitionProperty{
 								Name: "protocol",
-								Type: typeString,
+								Type: TypeString,
 							},
 						},
 					},
@@ -371,8 +371,8 @@ func TestCreateResourceSchema(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that has a combination of properties supported", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
 				idProperty,
 				stringProperty,
 				intProperty,
@@ -420,17 +420,17 @@ func TestCreateResourceSchema(t *testing.T) {
 
 func TestGetImmutableProperties(t *testing.T) {
 	Convey("Given resource info is configured with schemaDefinition that contains a property 'immutable_property' that is immutable", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:      "id",
-					Type:      typeString,
+					Type:      TypeString,
 					ReadOnly:  false,
 					Immutable: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:      "immutable_property",
-					Type:      typeString,
+					Type:      TypeString,
 					ReadOnly:  false,
 					Immutable: true,
 				},
@@ -448,16 +448,16 @@ func TestGetImmutableProperties(t *testing.T) {
 	})
 
 	Convey("Given resource info is configured with schemaDefinition that DOES NOT contain immutable properties", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:      "mutable_property",
-					Type:      typeString,
+					Type:      TypeString,
 					ReadOnly:  false,
 					Immutable: false,
 				},
@@ -474,12 +474,12 @@ func TestGetImmutableProperties(t *testing.T) {
 }
 
 func TestGetResourceIdentifier(t *testing.T) {
-	Convey("Given a specSchemaDefinition containing a field named id", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinition containing a field named id", t, func() {
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 				},
 			},
@@ -489,18 +489,18 @@ func TestGetResourceIdentifier(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("Then the id returned should be the same as the one in the specSchemaDefinition", func() {
+			Convey("Then the id returned should be the same as the one in the SpecSchemaDefinition", func() {
 				So(id, ShouldEqual, s.Properties[0].Name)
 			})
 		})
 	})
 
-	Convey("Given a specSchemaDefinition that does not contain a field named id but has a property tagged as IsIdentifier", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinition that does not contain a field named id but has a property tagged as IsIdentifier", t, func() {
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:         "someOtherID",
-					Type:         typeString,
+					Type:         TypeString,
 					ReadOnly:     true,
 					IsIdentifier: true,
 				},
@@ -511,18 +511,18 @@ func TestGetResourceIdentifier(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("Then the id returned should be the same as the one in the specSchemaDefinition", func() {
+			Convey("Then the id returned should be the same as the one in the SpecSchemaDefinition", func() {
 				So(id, ShouldEqual, s.Properties[0].Name)
 			})
 		})
 	})
 
-	Convey("Given a specSchemaDefinition not containing a field named id nor tagged as identifier", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+	Convey("Given a SpecSchemaDefinition not containing a field named id nor tagged as identifier", t, func() {
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "someOtherField",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 				},
 			},
@@ -541,11 +541,11 @@ func TestGetResourceIdentifier(t *testing.T) {
 
 func TestGetStatusId(t *testing.T) {
 	Convey("Given a SpecSchemaDefinition that has an status property that is not an object", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: true,
 				},
 			},
@@ -567,11 +567,11 @@ func TestGetStatusId(t *testing.T) {
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with IsStatusIdentifier set to TRUE", t, func() {
 		expectedStatusProperty := "some-other-property-holding-status"
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:               expectedStatusProperty,
-					Type:               typeString,
+					Type:               TypeString,
 					ReadOnly:           true,
 					IsStatusIdentifier: true,
 				},
@@ -593,16 +593,16 @@ func TestGetStatusId(t *testing.T) {
 
 	Convey("Given a swagger schema definition that HAS BOTH an 'status' property AND ALSO a property configured with 'x-terraform-field-status' set to true", t, func() {
 		expectedStatusProperty := "some-other-property-holding-status"
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:               expectedStatusProperty,
-					Type:               typeString,
+					Type:               TypeString,
 					ReadOnly:           true,
 					IsStatusIdentifier: true,
 				},
@@ -624,22 +624,22 @@ func TestGetStatusId(t *testing.T) {
 
 	Convey("Given a swagger schema definition that HAS an status field which is an object containing a status field", t, func() {
 		expectedStatusProperty := "actualStatus"
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     "id",
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: true,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
-					Type:     typeObject,
+					Type:     TypeObject,
 					ReadOnly: true,
-					SpecSchemaDefinition: &specSchemaDefinition{
-						Properties: specSchemaDefinitionProperties{
-							&specSchemaDefinitionProperty{
+					SpecSchemaDefinition: &SpecSchemaDefinition{
+						Properties: SpecSchemaDefinitionProperties{
+							&SpecSchemaDefinitionProperty{
 								Name:               expectedStatusProperty,
-								Type:               typeString,
+								Type:               TypeString,
 								ReadOnly:           true,
 								IsStatusIdentifier: true,
 							},
@@ -665,11 +665,11 @@ func TestGetStatusId(t *testing.T) {
 
 	Convey("Given a swagger schema definition that DOES NOT have an 'status' property but has a property configured with 'x-terraform-field-status' set to FALSE", t, func() {
 		expectedStatusProperty := "some-other-property-holding-status"
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:               expectedStatusProperty,
-					Type:               typeString,
+					Type:               TypeString,
 					ReadOnly:           true,
 					IsStatusIdentifier: false,
 				},
@@ -684,17 +684,17 @@ func TestGetStatusId(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition that NEITHER HAS an 'status' property NOR a property configured with 'x-terraform-field-status' set to true", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:               "prop-that-is-not-status",
-					Type:               typeString,
+					Type:               TypeString,
 					ReadOnly:           true,
 					IsStatusIdentifier: false,
 				},
-				&specSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
 					Name:               "prop-that-is-not-status-and-does-not-have-status-metadata-either",
-					Type:               typeString,
+					Type:               TypeString,
 					ReadOnly:           true,
 					IsStatusIdentifier: false,
 				},
@@ -709,11 +709,11 @@ func TestGetStatusId(t *testing.T) {
 	})
 
 	Convey("Given a swagger schema definition with a status property that is not readonly", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     statusDefaultPropertyName,
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 				},
 			},
@@ -730,11 +730,11 @@ func TestGetStatusId(t *testing.T) {
 
 func TestGetStatusIdentifierFor(t *testing.T) {
 	Convey("Given a swagger schema definition with a property configured with 'x-terraform-field-status' set to true and it is not readonly", t, func() {
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:               statusDefaultPropertyName,
-					Type:               typeString,
+					Type:               TypeString,
 					ReadOnly:           false,
 					IsStatusIdentifier: true,
 				},
@@ -753,13 +753,13 @@ func TestGetStatusIdentifierFor(t *testing.T) {
 }
 
 func TestGetProperty(t *testing.T) {
-	Convey("Given a specSchemaDefinition", t, func() {
+	Convey("Given a SpecSchemaDefinition", t, func() {
 		existingPropertyName := "existingPropertyName"
-		s := &specSchemaDefinition{
-			Properties: specSchemaDefinitionProperties{
-				&specSchemaDefinitionProperty{
+		s := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{
+				&SpecSchemaDefinitionProperty{
 					Name:     existingPropertyName,
-					Type:     typeString,
+					Type:     TypeString,
 					ReadOnly: false,
 				},
 			},
@@ -769,7 +769,7 @@ func TestGetProperty(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("Then the property returned should be the same as the one in the specSchemaDefinition", func() {
+			Convey("Then the property returned should be the same as the one in the SpecSchemaDefinition", func() {
 				So(property, ShouldEqual, s.Properties[0])
 			})
 		})
@@ -778,7 +778,7 @@ func TestGetProperty(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
-			Convey("Then the property returned should be the same as the one in the specSchemaDefinition", func() {
+			Convey("Then the property returned should be the same as the one in the SpecSchemaDefinition", func() {
 				So(err.Error(), ShouldEqual, "property with name 'nonExistingPropertyName' not existing in resource schema definition")
 			})
 		})
@@ -787,11 +787,11 @@ func TestGetProperty(t *testing.T) {
 
 func TestGetPropertyBasedOnTerraformName(t *testing.T) {
 	existingPropertyName := "existingPropertyName"
-	s := &specSchemaDefinition{
-		Properties: specSchemaDefinitionProperties{
-			&specSchemaDefinitionProperty{
+	s := &SpecSchemaDefinition{
+		Properties: SpecSchemaDefinitionProperties{
+			&SpecSchemaDefinitionProperty{
 				Name:     existingPropertyName,
-				Type:     typeString,
+				Type:     TypeString,
 				ReadOnly: false,
 			},
 		},

@@ -2459,7 +2459,7 @@ definitions:
 
 func getExpectedResource(terraformCompliantResources []SpecResource, expectedResourceName string) SpecResource {
 	for _, r := range terraformCompliantResources {
-		if r.getResourceName() == expectedResourceName {
+		if r.GetResourceName() == expectedResourceName {
 			return r
 		}
 	}
@@ -2626,7 +2626,7 @@ definitions:
 			})
 			Convey("And the list resources return should only contain a resource called cdns_v1_rst1", func() {
 				So(len(multiRegionResources), ShouldEqual, 1)
-				So(multiRegionResources[0].getResourceName(), ShouldEqual, "cdns_v1_rst1")
+				So(multiRegionResources[0].GetResourceName(), ShouldEqual, "cdns_v1_rst1")
 			})
 			cdnMultiRegionResource := multiRegionResources[0]
 			Convey("And the host is correctly configured according to the swagger", func() {
@@ -2765,7 +2765,7 @@ definitions:
 		dataSources := a.GetTerraformCompliantDataSources()
 		assert.Equal(t, len(dataSources), len(tc.expectedDataSources), tc.name)
 		if len(dataSources) > 0 {
-			assert.Equal(t, dataSources[0].getResourceName(), tc.expectedDataSources[0].getResourceName(), tc.name)
+			assert.Equal(t, dataSources[0].GetResourceName(), tc.expectedDataSources[0].GetResourceName(), tc.name)
 		}
 
 	}
@@ -3082,7 +3082,7 @@ definitions:
 			})
 
 			Convey("And the firewall resource schema contains 3 properties, 2 taken from the model and one added on the fly for the parent resource id", func() {
-				actualResourceSchema, err := firewallV1Resource.getResourceSchema()
+				actualResourceSchema, err := firewallV1Resource.GetResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 3)
 
@@ -3140,7 +3140,7 @@ definitions:
 			})
 			Convey("And the resources info map should only contain a resource called cdns_v1_sea1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 1)
-				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1_sea1")
+				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1_sea1")
 			})
 			cndV1Resource := terraformCompliantResources[0]
 			Convey("And the cndV1Resource should not be considered a subresource", func() {
@@ -3170,7 +3170,7 @@ definitions:
 			})
 
 			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
-				actualResourceSchema, err := cndV1Resource.getResourceSchema()
+				actualResourceSchema, err := cndV1Resource.GetResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
 				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
@@ -3270,7 +3270,7 @@ definitions:
 			})
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 1)
-				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
 			})
 			cndV1Resource := terraformCompliantResources[0]
 			Convey("And the cndV1Resource should not be considered a subresource", func() {
@@ -3300,7 +3300,7 @@ definitions:
 			})
 
 			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
-				actualResourceSchema, err := cndV1Resource.getResourceSchema()
+				actualResourceSchema, err := cndV1Resource.GetResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
 				So(actualResourceSchema.Properties[0].Name, ShouldEqual, "id")
@@ -3353,10 +3353,10 @@ definitions:
 			})
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 1)
-				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
 			})
 			Convey("And the resources schema should contain the right configuration", func() {
-				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
+				resourceSchema, err := terraformCompliantResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
 				Convey("And the resources schema should contain the id property", func() {
 					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
@@ -3365,8 +3365,8 @@ definitions:
 				Convey("And the resources schema should contain the listeners property", func() {
 					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
 					So(exists, ShouldBeTrue)
-					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
-					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeString)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeString)
 				})
 			})
 
@@ -3425,10 +3425,10 @@ definitions:
 			})
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 1)
-				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
 			})
 			Convey("And the resources schema should contain the right configuration", func() {
-				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
+				resourceSchema, err := terraformCompliantResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
 				Convey("And the resources schema should contain the id property", func() {
 					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
@@ -3437,10 +3437,10 @@ definitions:
 				Convey("And the resources schema should contain the listeners property", func() {
 					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
 					So(exists, ShouldBeTrue)
-					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
-					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeObject)
 					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
-					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
 				})
 			})
 		})
@@ -3494,11 +3494,11 @@ definitions:
 			})
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(specResources), ShouldEqual, 1)
-				So(specResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+				So(specResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
 			})
 
 			Convey("And the resources schema should contain the right configuration", func() {
-				resourceSchema, err := specResources[0].getResourceSchema()
+				resourceSchema, err := specResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
 				Convey("And the resources schema should contain the id property", func() {
 					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
@@ -3562,10 +3562,10 @@ definitions:
 			})
 			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(terraformCompliantResources), ShouldEqual, 1)
-				So(terraformCompliantResources[0].getResourceName(), ShouldEqual, "cdns_v1")
+				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
 			})
 			Convey("And the resources schema should contain the right configuration", func() {
-				resourceSchema, err := terraformCompliantResources[0].getResourceSchema()
+				resourceSchema, err := terraformCompliantResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
 				Convey("And the resources schema should contain the id property", func() {
 					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
@@ -3574,10 +3574,10 @@ definitions:
 				Convey("And the resources schema should contain the listeners property", func() {
 					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
 					So(exists, ShouldBeTrue)
-					So(resourceSchema.Properties[idx].Type, ShouldEqual, typeList)
-					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, typeObject)
+					So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
+					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeObject)
 					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
-					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
 				})
 			})
 		})
@@ -3673,7 +3673,7 @@ definitions:
 				So(err, ShouldBeNil)
 			})
 			Convey("And the terraformCompliantResources map should contain one resource with ignore flag set to true", func() {
-				So(terraformCompliantResources[0].shouldIgnoreResource(), ShouldBeTrue)
+				So(terraformCompliantResources[0].ShouldIgnoreResource(), ShouldBeTrue)
 			})
 		})
 	})
@@ -3873,7 +3873,7 @@ definitions:
 	})
 }
 
-func assertPropertyExists(properties specSchemaDefinitionProperties, name string) (bool, int) {
+func assertPropertyExists(properties SpecSchemaDefinitionProperties, name string) (bool, int) {
 	for idx, prop := range properties {
 		if prop.Name == name {
 			return true, idx

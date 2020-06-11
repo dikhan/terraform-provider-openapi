@@ -12,19 +12,19 @@ import (
 type schemaDefinitionPropertyType string
 
 const (
-	typeString schemaDefinitionPropertyType = "string"
-	typeInt    schemaDefinitionPropertyType = "integer"
-	typeFloat  schemaDefinitionPropertyType = "number"
-	typeBool   schemaDefinitionPropertyType = "boolean"
-	typeList   schemaDefinitionPropertyType = "list"
-	typeObject schemaDefinitionPropertyType = "object"
+	TypeString schemaDefinitionPropertyType = "string"
+	TypeInt    schemaDefinitionPropertyType = "integer"
+	TypeFloat  schemaDefinitionPropertyType = "number"
+	TypeBool   schemaDefinitionPropertyType = "boolean"
+	TypeList   schemaDefinitionPropertyType = "list"
+	TypeObject schemaDefinitionPropertyType = "object"
 )
 
 const idDefaultPropertyName = "id"
 const statusDefaultPropertyName = "status"
 
-// specSchemaDefinitionProperty defines the attributes for a schema property
-type specSchemaDefinitionProperty struct {
+// SpecSchemaDefinitionProperty defines the attributes for a schema property
+type SpecSchemaDefinitionProperty struct {
 	Name           string
 	PreferredName  string
 	Type           schemaDefinitionPropertyType
@@ -46,7 +46,7 @@ type specSchemaDefinitionProperty struct {
 	Immutable          bool
 	IsIdentifier       bool
 	IsStatusIdentifier bool
-	// EnableLegacyComplexObjectBlockConfiguration defines whether this specSchemaDefinitionProperty should be handled with special treatment following
+	// EnableLegacyComplexObjectBlockConfiguration defines whether this SpecSchemaDefinitionProperty should be handled with special treatment following
 	// the recommendation from hashi maintainers (https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851)
 	// to support complex object types with the legacy SDK (objects that contain properties with different types and configurations
 	// like computed properties).
@@ -55,17 +55,17 @@ type specSchemaDefinitionProperty struct {
 	// As per the openapi spec default attributes, the value is expected to be computed by the API
 	Default interface{}
 	// only for object type properties or arrays type properties with array items of type object
-	SpecSchemaDefinition *specSchemaDefinition
+	SpecSchemaDefinition *SpecSchemaDefinition
 }
 
-func (s *specSchemaDefinitionProperty) isPrimitiveProperty() bool {
-	if s.Type == typeString || s.Type == typeInt || s.Type == typeFloat || s.Type == typeBool {
+func (s *SpecSchemaDefinitionProperty) isPrimitiveProperty() bool {
+	if s.Type == TypeString || s.Type == TypeInt || s.Type == TypeFloat || s.Type == TypeBool {
 		return true
 	}
 	return false
 }
 
-func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() string {
+func (s *SpecSchemaDefinitionProperty) GetTerraformCompliantPropertyName() string {
 	if s.PreferredName != "" {
 		return s.PreferredName
 	}
@@ -77,7 +77,7 @@ func (s *specSchemaDefinitionProperty) getTerraformCompliantPropertyName() strin
 // The object properties that have EnableLegacyComplexObjectBlockConfiguration set to true will be represented in Terraform schema
 // as TypeList with MaxItems limited to 1. This will solve the current limitation in Terraform SDK 0.12 where blocks can only be
 // translated to lists and sets, maps can not be used to represent complex objects at the moment as it will result into undefined behavior.
-func (s *specSchemaDefinitionProperty) isLegacyComplexObjectExtensionEnabled() bool {
+func (s *SpecSchemaDefinitionProperty) isLegacyComplexObjectExtensionEnabled() bool {
 	if !s.isObjectProperty() {
 		return false
 	}
@@ -87,7 +87,7 @@ func (s *specSchemaDefinitionProperty) isLegacyComplexObjectExtensionEnabled() b
 	return false
 }
 
-func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
+func (s *SpecSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
 	if !s.isObjectProperty() || s.SpecSchemaDefinition == nil {
 		return false
 	}
@@ -99,43 +99,43 @@ func (s *specSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
 	return false
 }
 
-func (s *specSchemaDefinitionProperty) isPropertyNamedID() bool {
-	return s.getTerraformCompliantPropertyName() == idDefaultPropertyName
+func (s *SpecSchemaDefinitionProperty) isPropertyNamedID() bool {
+	return s.GetTerraformCompliantPropertyName() == idDefaultPropertyName
 }
 
-func (s *specSchemaDefinitionProperty) isPropertyNamedStatus() bool {
-	return s.getTerraformCompliantPropertyName() == statusDefaultPropertyName
+func (s *SpecSchemaDefinitionProperty) isPropertyNamedStatus() bool {
+	return s.GetTerraformCompliantPropertyName() == statusDefaultPropertyName
 }
 
-func (s *specSchemaDefinitionProperty) isObjectProperty() bool {
-	return s.Type == typeObject
+func (s *SpecSchemaDefinitionProperty) isObjectProperty() bool {
+	return s.Type == TypeObject
 }
 
-func (s *specSchemaDefinitionProperty) isArrayProperty() bool {
-	return s.Type == typeList
+func (s *SpecSchemaDefinitionProperty) isArrayProperty() bool {
+	return s.Type == TypeList
 }
 
-func (s *specSchemaDefinitionProperty) shouldIgnoreOrder() bool {
-	return s.Type == typeList && s.IgnoreItemsOrder
+func (s *SpecSchemaDefinitionProperty) shouldIgnoreOrder() bool {
+	return s.Type == TypeList && s.IgnoreItemsOrder
 }
 
-func (s *specSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
-	return s.Type == typeList && s.ArrayItemsType == typeObject
+func (s *SpecSchemaDefinitionProperty) isArrayOfObjectsProperty() bool {
+	return s.Type == TypeList && s.ArrayItemsType == TypeObject
 }
 
-func (s *specSchemaDefinitionProperty) isReadOnly() bool {
+func (s *SpecSchemaDefinitionProperty) isReadOnly() bool {
 	return s.ReadOnly
 }
 
-func (s *specSchemaDefinitionProperty) isRequired() bool {
+func (s *SpecSchemaDefinitionProperty) IsRequired() bool {
 	return s.Required
 }
 
-func (s *specSchemaDefinitionProperty) isOptional() bool {
+func (s *SpecSchemaDefinitionProperty) isOptional() bool {
 	return !s.Required
 }
 
-func (s *specSchemaDefinitionProperty) shouldIgnoreArrayItemsOrder() bool {
+func (s *SpecSchemaDefinitionProperty) shouldIgnoreArrayItemsOrder() bool {
 	return s.isArrayProperty() && s.IgnoreItemsOrder
 }
 
@@ -144,54 +144,54 @@ func (s *specSchemaDefinitionProperty) shouldIgnoreArrayItemsOrder() bool {
 //  - readOnly properties (marked as readOnly=true):
 //  - optional-computed (marked as readOnly=false, computed=true):
 //    - with no default (default=nil)
-func (s *specSchemaDefinitionProperty) isComputed() bool {
-	return s.isOptional() && (s.isReadOnly() || s.isOptionalComputed())
+func (s *SpecSchemaDefinitionProperty) isComputed() bool {
+	return s.isOptional() && (s.isReadOnly() || s.IsOptionalComputed())
 }
 
-// isOptionalComputed returns true for properties that are optional and a value (not known at plan time) is computed by the API
+// IsOptionalComputed returns true for properties that are optional and a value (not known at plan time) is computed by the API
 // if the client does not provide a value. In order for a property to be considered optional computed it must meet:
 // - The property must be optional, not readOnly, computed and must not have a default value populated
 // Note: optional-computed properties (marked as readOnly=false, computed=true, default={some value}) are not considered
 // as optional computed since the way they will be treated as far as the terraform schema will differ. The terraform schema property
 // for this properties will contain the default value and the property will not be computed
-func (s *specSchemaDefinitionProperty) isOptionalComputed() bool {
+func (s *SpecSchemaDefinitionProperty) IsOptionalComputed() bool {
 	return s.isOptional() && !s.isReadOnly() && s.Computed && s.Default == nil
 }
 
-func (s *specSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
+func (s *SpecSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
 	switch s.Type {
-	case typeObject:
+	case TypeObject:
 		return schema.TypeMap, nil
-	case typeString:
+	case TypeString:
 		return schema.TypeString, nil
-	case typeInt:
+	case TypeInt:
 		return schema.TypeInt, nil
-	case typeFloat:
+	case TypeFloat:
 		return schema.TypeFloat, nil
-	case typeBool:
+	case TypeBool:
 		return schema.TypeBool, nil
-	case typeList:
+	case TypeList:
 		return schema.TypeList, nil
 	}
 	return schema.TypeInvalid, fmt.Errorf("non supported type %s", s.Type)
 }
 
-func (s *specSchemaDefinitionProperty) isTerraformListOfSimpleValues() (bool, *schema.Schema) {
+func (s *SpecSchemaDefinitionProperty) isTerraformListOfSimpleValues() (bool, *schema.Schema) {
 	switch s.ArrayItemsType {
-	case typeString:
+	case TypeString:
 		return true, &schema.Schema{Type: schema.TypeString}
-	case typeInt:
+	case TypeInt:
 		return true, &schema.Schema{Type: schema.TypeInt}
-	case typeFloat:
+	case TypeFloat:
 		return true, &schema.Schema{Type: schema.TypeFloat}
-	case typeBool:
+	case TypeBool:
 		return true, &schema.Schema{Type: schema.TypeBool}
 	}
 	return false, nil
 }
 
-func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource, error) {
-	if s.Type == typeObject || (s.Type == typeList && s.ArrayItemsType == typeObject) {
+func (s *SpecSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource, error) {
+	if s.Type == TypeObject || (s.Type == TypeList && s.ArrayItemsType == TypeObject) {
 		if s.SpecSchemaDefinition == nil {
 			return nil, fmt.Errorf("missing spec schema definition for property '%s' of type '%s'", s.Name, s.Type)
 		}
@@ -204,18 +204,18 @@ func (s *specSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource
 		}
 		return elem, nil
 	}
-	return nil, fmt.Errorf("object schema can only be formed for types %s or types %s with elems of type %s: found type='%s' elemType='%s' instead", typeObject, typeList, typeObject, s.Type, s.ArrayItemsType)
+	return nil, fmt.Errorf("object schema can only be formed for types %s or types %s with elems of type %s: found type='%s' elemType='%s' instead", TypeObject, TypeList, TypeObject, s.Type, s.ArrayItemsType)
 }
 
 // shouldUseLegacyTerraformSDKBlockApproachForComplexObjects returns true if one of the following scenarios match:
-// - the specSchemaDefinitionProperty is of type object and in turn contains at least one nested property that is an object.
-// - the specSchemaDefinitionProperty is of type object and also has the EnableLegacyComplexObjectBlockConfiguration set to true
+// - the SpecSchemaDefinitionProperty is of type object and in turn contains at least one nested property that is an object.
+// - the SpecSchemaDefinitionProperty is of type object and also has the EnableLegacyComplexObjectBlockConfiguration set to true
 // In both cases, in order to represent complex objects with the current version of the Terraform SDK (<= v0.12.2), the workaround
 // suggested by hashi maintainers is to use TypeList limiting the MaxItems to 1.
 // References to the issues opened:
 // - https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737
 // - https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851
-func (s *specSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() bool {
+func (s *SpecSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() bool {
 	// is of type object and in turn contains at least one nested property that is an object.
 	if s.isPropertyWithNestedObjects() {
 		return true
@@ -224,8 +224,8 @@ func (s *specSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachF
 	return s.isLegacyComplexObjectExtensionEnabled()
 }
 
-// terraformSchema returns the terraform schema for a the given specSchemaDefinitionProperty
-func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error) {
+// terraformSchema returns the terraform schema for a the given SpecSchemaDefinitionProperty
+func (s *SpecSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error) {
 	var terraformSchema = &schema.Schema{}
 
 	schemaType, err := s.terraformType()
@@ -236,7 +236,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 
 	// complex data structures
 	switch s.Type {
-	case typeObject:
+	case TypeObject:
 		if s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
 			terraformSchema.Type = schema.TypeList
 			terraformSchema.MaxItems = 1
@@ -247,7 +247,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		}
 		terraformSchema.Elem = objectSchema
 
-	case typeList:
+	case TypeList:
 		if isListOfPrimitives, elemSchema := s.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			terraformSchema.Elem = elemSchema
 		} else {
@@ -294,7 +294,7 @@ func (s *specSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	return terraformSchema, nil
 }
 
-func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc {
+func (s *SpecSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
 		if s.ForceNew && s.Immutable {
 			errors = append(errors, fmt.Errorf("property '%s' is configured as immutable and can not be configured with forceNew too", s.Name))
@@ -306,29 +306,29 @@ func (s *specSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc 
 	}
 }
 
-func (s *specSchemaDefinitionProperty) equal(item1, item2 interface{}) bool {
+func (s *SpecSchemaDefinitionProperty) equal(item1, item2 interface{}) bool {
 	return s.equalItems(s.Type, item1, item2)
 }
 
-func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
+func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
 	switch itemsType {
-	case typeString:
+	case TypeString:
 		if !s.validateValueType(item1, reflect.String) || !s.validateValueType(item2, reflect.String) {
 			return false
 		}
-	case typeInt:
+	case TypeInt:
 		if !s.validateValueType(item1, reflect.Int) || !s.validateValueType(item2, reflect.Int) {
 			return false
 		}
-	case typeFloat:
+	case TypeFloat:
 		if !s.validateValueType(item1, reflect.Float64) || !s.validateValueType(item2, reflect.Float64) {
 			return false
 		}
-	case typeBool:
+	case TypeBool:
 		if !s.validateValueType(item1, reflect.Bool) || !s.validateValueType(item2, reflect.Bool) {
 			return false
 		}
-	case typeList:
+	case TypeList:
 		if !s.validateValueType(item1, reflect.Slice) || !s.validateValueType(item2, reflect.Slice) {
 			return false
 		}
@@ -355,7 +355,7 @@ func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 		for idx := range list1 {
 			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
-	case typeObject:
+	case TypeObject:
 		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
 			return false
 		}
@@ -375,7 +375,7 @@ func (s *specSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 	return item1 == item2
 }
 
-func (s *specSchemaDefinitionProperty) validateValueType(item interface{}, expectedKind reflect.Kind) bool {
+func (s *SpecSchemaDefinitionProperty) validateValueType(item interface{}, expectedKind reflect.Kind) bool {
 	if reflect.TypeOf(item).Kind() != expectedKind {
 		return false
 	}

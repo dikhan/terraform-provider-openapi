@@ -6,7 +6,7 @@ type specStubResource struct {
 	host                    string
 	path                    string
 	shouldIgnore            bool
-	schemaDefinition        *specSchemaDefinition
+	schemaDefinition        *SpecSchemaDefinition
 	resourceGetOperation    *specResourceOperation
 	resourcePostOperation   *specResourceOperation
 	resourceListOperation   *specResourceOperation
@@ -19,15 +19,15 @@ type specStubResource struct {
 	fullParentResourceName string
 
 	funcGetResourcePath   func(parentIDs []string) (string, error)
-	funcGetResourceSchema func() (*specSchemaDefinition, error)
+	funcGetResourceSchema func() (*SpecSchemaDefinition, error)
 	error                 error
 }
 
-func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition) *specStubResource {
+func newSpecStubResource(name, path string, shouldIgnore bool, schemaDefinition *SpecSchemaDefinition) *specStubResource {
 	return newSpecStubResourceWithOperations(name, path, shouldIgnore, schemaDefinition, nil, nil, nil, nil)
 }
 
-func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, schemaDefinition *specSchemaDefinition, resourcePostOperation, resourcePutOperation, resourceGetOperation, resourceDeleteOperation *specResourceOperation) *specStubResource {
+func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, schemaDefinition *SpecSchemaDefinition, resourcePostOperation, resourcePutOperation, resourceGetOperation, resourceDeleteOperation *specResourceOperation) *specStubResource {
 	return &specStubResource{
 		name:                    name,
 		path:                    path,
@@ -41,7 +41,7 @@ func newSpecStubResourceWithOperations(name, path string, shouldIgnore bool, sch
 	}
 }
 
-func (s *specStubResource) getResourceName() string { return s.name }
+func (s *specStubResource) GetResourceName() string { return s.name }
 
 func (s *specStubResource) getResourcePath(parentIDs []string) (string, error) {
 	if s.funcGetResourcePath != nil {
@@ -50,7 +50,7 @@ func (s *specStubResource) getResourcePath(parentIDs []string) (string, error) {
 	return s.path, nil
 }
 
-func (s *specStubResource) getResourceSchema() (*specSchemaDefinition, error) {
+func (s *specStubResource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	if s.funcGetResourceSchema != nil {
 		return s.funcGetResourceSchema()
 	}
@@ -60,7 +60,7 @@ func (s *specStubResource) getResourceSchema() (*specSchemaDefinition, error) {
 	return s.schemaDefinition, nil
 }
 
-func (s *specStubResource) shouldIgnoreResource() bool { return s.shouldIgnore }
+func (s *specStubResource) ShouldIgnoreResource() bool { return s.shouldIgnore }
 
 func (s *specStubResource) getResourceOperations() specResourceOperations {
 	return specResourceOperations{

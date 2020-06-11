@@ -43,8 +43,8 @@ func TestCreateTerraformInstanceDataSource(t *testing.T) {
 	for _, tc := range testCases {
 		dataSourceFactory := dataSourceInstanceFactory{
 			openAPIResource: &specStubResource{
-				schemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+				schemaDefinition: &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 						newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
 					},
@@ -77,8 +77,8 @@ func TestCreateTerraformDataSourceInstance(t *testing.T) {
 		{
 			name: "happy path - data source schema is configured as expected",
 			openAPIResource: &specStubResource{
-				schemaDefinition: &specSchemaDefinition{
-					Properties: specSchemaDefinitionProperties{
+				schemaDefinition: &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
 						newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 						newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
 					},
@@ -121,11 +121,11 @@ func TestDataSourceInstanceRead(t *testing.T) {
 
 	dataSourceFactory := dataSourceInstanceFactory{
 		openAPIResource: &specStubResource{
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, false, nil),
-					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, typeString, nil),
+					newListSchemaDefinitionPropertyWithDefaults("owners", "", true, false, false, []string{"value1"}, TypeString, nil),
 				},
 			},
 			name: "resourceName",
@@ -239,9 +239,9 @@ func TestDataSourceInstanceRead(t *testing.T) {
 func TestDataSourceInstanceRead_Fails_Because_Schema_is_not_valid(t *testing.T) {
 	dataSourceFactory := dataSourceInstanceFactory{
 		openAPIResource: &specStubResource{
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
-					&specSchemaDefinitionProperty{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					&SpecSchemaDefinitionProperty{
 						Name: "label",
 						Type: "unknown",
 					},
@@ -273,8 +273,8 @@ func TestDataSourceInstanceRead_Subresource(t *testing.T) {
 	dataSourceFactory := dataSourceInstanceFactory{
 		openAPIResource: &specStubResource{
 			path: "/v1/cdns/{id}/firewall",
-			schemaDefinition: &specSchemaDefinition{
-				Properties: specSchemaDefinitionProperties{
+			schemaDefinition: &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
 					newStringSchemaDefinitionPropertyWithDefaults("id", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("label", "", false, true, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", false, true, nil), // This simulates an openAPIResource that is subresource and the schema has already been populated with the parent property

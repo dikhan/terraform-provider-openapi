@@ -21,7 +21,7 @@ func createSecuritySchemes(securitySchemes []map[string][]string) SpecSecuritySc
 
 func (s SpecSecuritySchemes) securitySchemeExists(secDef SpecSecurityDefinition) bool {
 	for _, securityScheme := range s {
-		if securityScheme.getTerraformConfigurationName() == secDef.getTerraformConfigurationName() {
+		if securityScheme.GetTerraformConfigurationName() == secDef.getTerraformConfigurationName() {
 			return true
 		}
 	}
@@ -34,6 +34,6 @@ type SpecSecurityScheme struct {
 	Name string
 }
 
-func (o *SpecSecurityScheme) getTerraformConfigurationName() string {
+func (o *SpecSecurityScheme) GetTerraformConfigurationName() string {
 	return terraformutils.ConvertToTerraformCompliantName(o.Name)
 }

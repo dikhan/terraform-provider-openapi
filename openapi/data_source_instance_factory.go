@@ -20,7 +20,7 @@ func newDataSourceInstanceFactory(openAPIResource SpecResource) dataSourceInstan
 }
 
 func (d dataSourceInstanceFactory) getDataSourceInstanceName() string {
-	return fmt.Sprintf("%s_instance", d.openAPIResource.getResourceName())
+	return fmt.Sprintf("%s_instance", d.openAPIResource.GetResourceName())
 }
 
 func (d dataSourceInstanceFactory) createTerraformInstanceDataSource() (*schema.Resource, error) {
@@ -35,7 +35,7 @@ func (d dataSourceInstanceFactory) createTerraformInstanceDataSource() (*schema.
 }
 
 func (d dataSourceInstanceFactory) createTerraformDataSourceInstanceSchema() (map[string]*schema.Schema, error) {
-	specSchema, err := d.openAPIResource.getResourceSchema()
+	specSchema, err := d.openAPIResource.GetResourceSchema()
 	if err != nil {
 		return nil, err
 	}

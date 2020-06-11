@@ -46,7 +46,7 @@ func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	//log.Printf("[DEBUG] '%s' terraform schema: %+v", r.openAPIResource.getResourceName(), s)
+	//log.Printf("[DEBUG] '%s' terraform schema: %+v", r.openAPIResource.GetResourceName(), s)
 	//spew.Dump(s)
 	timeouts, err := r.createSchemaResourceTimeout()
 	if err != nil {
@@ -79,11 +79,11 @@ func (r resourceFactory) createSchemaResourceTimeout() (*schema.ResourceTimeout,
 }
 
 func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Schema, error) {
-	schemaDefinition, err := r.openAPIResource.getResourceSchema()
+	schemaDefinition, err := r.openAPIResource.GetResourceSchema()
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[DEBUG] resource '%s' schemaDefinition: %s", r.openAPIResource.getResourceName(), sPrettyPrint(schemaDefinition))
+	log.Printf("[DEBUG] resource '%s' schemaDefinition: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(schemaDefinition))
 	return schemaDefinition.createResourceSchema()
 }
 
@@ -93,7 +93,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 	if r.openAPIResource == nil {
 		return fmt.Errorf("missing openAPI resource configuration")
 	}
-	resourceName := r.openAPIResource.getResourceName()
+	resourceName := r.openAPIResource.GetResourceName()
 
 	submitTelemetryMetric(providerClient, TelemetryResourceOperationCreate, resourceName, "")
 
@@ -111,7 +111,7 @@ func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.getResourceName(), resourcePath, err)
+		return fmt.Errorf("[resource='%s'] POST %s failed: %s", r.openAPIResource.GetResourceName(), resourcePath, err)
 	}
 
 	err = setStateID(r.openAPIResource, data, responsePayload)
@@ -134,7 +134,7 @@ func (r resourceFactory) readWithOptions(data *schema.ResourceData, i interface{
 	if r.openAPIResource == nil {
 		return fmt.Errorf("missing openAPI resource configuration")
 	}
-	resourceName := r.openAPIResource.getResourceName()
+	resourceName := r.openAPIResource.GetResourceName()
 
 	submitTelemetryMetric(openAPIClient, TelemetryResourceOperationRead, resourceName, "")
 
@@ -151,7 +151,7 @@ func (r resourceFactory) readWithOptions(data *schema.ResourceData, i interface{
 				return nil
 			}
 		}
-		return fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
+		return fmt.Errorf("[resource='%s'] GET %s/%s failed: %s", r.openAPIResource.GetResourceName(), resourcePath, data.Id(), err)
 	}
 
 	return updateStateWithPayloadData(r.openAPIResource, remoteData, data)
@@ -173,7 +173,7 @@ func (r resourceFactory) readRemote(id string, providerClient ClientOpenAPI, par
 		return nil, err
 	}
 
-	log.Printf("[DEBUG] GET '%s' response received", r.openAPIResource.getResourceName())
+	log.Printf("[DEBUG] GET '%s' response received", r.openAPIResource.GetResourceName())
 	return responsePayload, nil
 }
 
@@ -206,7 +206,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if r.openAPIResource == nil {
 		return fmt.Errorf("missing openAPI resource configuration")
 	}
-	resourceName := r.openAPIResource.getResourceName()
+	resourceName := r.openAPIResource.GetResourceName()
 
 	submitTelemetryMetric(providerClient, TelemetryResourceOperationUpdate, resourceName, "")
 
@@ -217,7 +217,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 
 	operation := r.openAPIResource.getResourceOperations().Put
 	if operation == nil {
-		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
+		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.GetResourceName(), resourcePath)
 	}
 	requestPayload := r.createPayloadFromLocalStateData(data)
 	responsePayload := map[string]interface{}{}
@@ -229,7 +229,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return err
 	}
 	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
-		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
+		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.GetResourceName(), resourcePath, data.Id(), err)
 	}
 
 	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutUpdate)
@@ -246,7 +246,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 	if r.openAPIResource == nil {
 		return fmt.Errorf("missing openAPI resource configuration")
 	}
-	resourceName := r.openAPIResource.getResourceName()
+	resourceName := r.openAPIResource.GetResourceName()
 
 	submitTelemetryMetric(providerClient, TelemetryResourceOperationDelete, resourceName, "")
 
@@ -257,7 +257,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 
 	operation := r.openAPIResource.getResourceOperations().Delete
 	if operation == nil {
-		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.getResourceName(), resourcePath)
+		return fmt.Errorf("[resource='%s'] resource does not support DELETE operation, check the swagger file exposed on '%s'", r.openAPIResource.GetResourceName(), resourcePath)
 	}
 	res, err := providerClient.Delete(r.openAPIResource, data.Id(), parentsIDs...)
 	if err != nil {
@@ -269,7 +269,7 @@ func (r resourceFactory) delete(data *schema.ResourceData, i interface{}) error 
 				return nil
 			}
 		}
-		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.getResourceName(), resourcePath, data.Id(), err)
+		return fmt.Errorf("[resource='%s'] DELETE %s/%s failed: %s", r.openAPIResource.GetResourceName(), resourcePath, data.Id(), err)
 	}
 
 	err = r.handlePollingIfConfigured(nil, data, providerClient, operation, res.StatusCode, schema.TimeoutDelete)
@@ -288,7 +288,7 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 			if r.openAPIResource == nil {
 				return nil, fmt.Errorf("missing openAPI resource configuration")
 			}
-			resourceName := r.openAPIResource.getResourceName()
+			resourceName := r.openAPIResource.GetResourceName()
 
 			submitTelemetryMetric(providerClient, TelemetryResourceOperationImport, resourceName, "")
 
@@ -350,7 +350,7 @@ func (r resourceFactory) handlePollingIfConfigured(responsePayload *map[string]i
 	}
 
 	log.Printf("[DEBUG] target statuses (%s); pending statuses (%s)", targetStatuses, pendingStatuses)
-	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.openAPIResource.getResourceName(), targetStatuses)
+	log.Printf("[INFO] Waiting for resource '%s' to reach a completion status (%s)", r.openAPIResource.GetResourceName(), targetStatuses)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:      pendingStatuses,
@@ -388,15 +388,15 @@ func (r resourceFactory) resourceStateRefreshFunc(resourceLocalData *schema.Reso
 					return 0, defaultDestroyStatus, nil
 				}
 			}
-			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error on retrieving resource '%s' (%s) when waiting: %s", r.openAPIResource.GetResourceName(), resourceLocalData.Id(), err)
 		}
 
 		newStatus, err := r.getStatusValueFromPayload(remoteData)
 		if err != nil {
-			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), err)
+			return nil, "", fmt.Errorf("error occurred while retrieving status identifier value from payload for resource '%s' (%s): %s", r.openAPIResource.GetResourceName(), resourceLocalData.Id(), err)
 		}
 
-		log.Printf("[DEBUG] resource status '%s' (%s): %s", r.openAPIResource.getResourceName(), resourceLocalData.Id(), newStatus)
+		log.Printf("[DEBUG] resource status '%s' (%s): %s", r.openAPIResource.GetResourceName(), resourceLocalData.Id(), newStatus)
 		return remoteData, newStatus, nil
 	}
 }
@@ -407,7 +407,7 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 		return err
 	}
 	localData := r.createPayloadFromLocalStateData(updatedResourceLocalData)
-	s, _ := r.openAPIResource.getResourceSchema()
+	s, _ := r.openAPIResource.GetResourceSchema()
 	for _, p := range s.Properties {
 		err := r.validateImmutableProperty(p, remoteData[p.Name], localData[p.Name], false)
 		if err != nil {
@@ -423,12 +423,12 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 	return nil
 }
 
-func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitionProperty, remoteData interface{}, localData interface{}, checkObjectPropertiesUpdates bool) error {
+func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitionProperty, remoteData interface{}, localData interface{}, checkObjectPropertiesUpdates bool) error {
 	if property.ReadOnly || property.IsParentProperty {
 		return nil
 	}
 	switch property.Type {
-	case typeList:
+	case TypeList:
 		if property.Immutable {
 			localList := localData.([]interface{})
 			remoteList := remoteData.([]interface{})
@@ -456,7 +456,7 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 				}
 			}
 		}
-	case typeObject:
+	case TypeObject:
 		localObject := localData.(map[string]interface{})
 		remoteObject := remoteData.(map[string]interface{})
 		for _, objProp := range property.SpecSchemaDefinition.Properties {
@@ -469,12 +469,12 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 		if property.Immutable || checkObjectPropertiesUpdates { // checkObjectPropertiesUpdates covers the recursive call from objects that are immutable which also make all its properties immutable
 			switch remoteData.(type) {
 			case float64: // this is due to the json marshalling always mapping ints to float64d
-				if property.Type == typeFloat {
+				if property.Type == TypeFloat {
 					if localData != remoteData {
 						return fmt.Errorf("user attempted to update an immutable float property ('%s'): [user input: %s; actual: %s]", property.Name, localData, remoteData)
 					}
 				} else {
-					if property.Type == typeInt {
+					if property.Type == TypeInt {
 						if localData != int(remoteData.(float64)) {
 							return fmt.Errorf("user attempted to update an immutable integer property ('%s'): [user input: %d; actual: %d]", property.Name, localData, int(remoteData.(float64)))
 						}
@@ -499,7 +499,7 @@ func (r resourceFactory) validateImmutableProperty(property *specSchemaDefinitio
 // as the input is concerned.
 func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *schema.ResourceData) map[string]interface{} {
 	input := map[string]interface{}{}
-	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	resourceSchema, _ := r.openAPIResource.GetResourceSchema()
 	for _, property := range resourceSchema.Properties {
 		propertyName := property.Name
 		// ReadOnly properties are not considered for the payload data (including the id if it's computed)
@@ -510,17 +510,17 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
 				err := r.populatePayload(input, property, dataValue)
 				if err != nil {
-					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.getResourceName(), propertyName, err)
+					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.GetResourceName(), propertyName, err)
 				}
 			}
-			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.getResourceName(), propertyName, input[propertyName])
+			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.GetResourceName(), propertyName, input[propertyName])
 		}
 	}
-	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.getResourceName(), sPrettyPrint(input))
+	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(input))
 	return input
 }
 
-func (r resourceFactory) populatePayload(input map[string]interface{}, property *specSchemaDefinitionProperty, dataValue interface{}) error {
+func (r resourceFactory) populatePayload(input map[string]interface{}, property *SpecSchemaDefinitionProperty, dataValue interface{}) error {
 	if property.isReadOnly() {
 		return nil
 	}
@@ -577,25 +577,25 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 		// This is so when object fields are processed, map values, they come as string so need to do the proper translation base
 		// on the origin type of the property
 		switch property.Type {
-		case typeInt:
+		case TypeInt:
 			v, err := strconv.ParseInt(dataValue.(string), 0, 0)
 			if err != nil {
 				return err
 			}
 			input[property.Name] = v
-		case typeFloat:
+		case TypeFloat:
 			v, err := strconv.ParseFloat(dataValue.(string), 64)
 			if err != nil {
 				return err
 			}
 			input[property.Name] = v
-		case typeBool:
+		case TypeBool:
 			v, err := strconv.ParseBool(dataValue.(string))
 			if err != nil {
 				return err
 			}
 			input[property.Name] = v
-		case typeString:
+		case TypeString:
 			input[property.Name] = dataValue.(string)
 		default:
 			return fmt.Errorf("property '%s' type not supported for reflect value string", property.Type)
@@ -613,7 +613,7 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 }
 
 func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{}) (string, error) {
-	resourceSchema, err := r.openAPIResource.getResourceSchema()
+	resourceSchema, err := r.openAPIResource.GetResourceSchema()
 	if err != nil {
 		return "", err
 	}
@@ -641,10 +641,10 @@ func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{
 
 // getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
-	resourceSchema, _ := r.openAPIResource.getResourceSchema()
+	resourceSchema, _ := r.openAPIResource.GetResourceSchema()
 	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
 	if err != nil {
 		return nil, false
 	}
-	return resourceLocalData.GetOkExists(schemaDefinitionProperty.getTerraformCompliantPropertyName())
+	return resourceLocalData.GetOkExists(schemaDefinitionProperty.GetTerraformCompliantPropertyName())
 }

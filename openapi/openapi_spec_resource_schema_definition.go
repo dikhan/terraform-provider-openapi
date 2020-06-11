@@ -6,19 +6,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-// specSchemaDefinitionProperties defines a collection of schema definition properties
-type specSchemaDefinitionProperties []*specSchemaDefinitionProperty
+// SpecSchemaDefinitionProperties defines a collection of schema definition properties
+type SpecSchemaDefinitionProperties []*SpecSchemaDefinitionProperty
 
 // SpecSchemaDefinition defines a struct for a schema definition
-type specSchemaDefinition struct {
-	Properties specSchemaDefinitionProperties
+type SpecSchemaDefinition struct {
+	Properties SpecSchemaDefinitionProperties
 }
 
-func (s *specSchemaDefinition) createResourceSchema() (map[string]*schema.Schema, error) {
+func (s *SpecSchemaDefinition) createResourceSchema() (map[string]*schema.Schema, error) {
 	return s.createResourceSchemaIgnoreID(true)
 }
 
-func (s *specSchemaDefinition) createDataSourceSchema() (map[string]*schema.Schema, error) {
+func (s *SpecSchemaDefinition) createDataSourceSchema() (map[string]*schema.Schema, error) {
 	terraformSchema, err := s.createResourceSchemaIgnoreID(true)
 	if err != nil {
 		return nil, err
@@ -61,11 +61,11 @@ func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputPropert
 	return outputProperty
 }
 
-func (s *specSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {
+func (s *SpecSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {
 	return s.createResourceSchemaIgnoreID(false)
 }
 
-func (s *specSchemaDefinition) createResourceSchemaIgnoreID(ignoreID bool) (map[string]*schema.Schema, error) {
+func (s *SpecSchemaDefinition) createResourceSchemaIgnoreID(ignoreID bool) (map[string]*schema.Schema, error) {
 	terraformSchema := map[string]*schema.Schema{}
 	for _, property := range s.Properties {
 		// Terraform already has a field ID reserved, hence the schema does not need to include an explicit ID property
@@ -76,12 +76,12 @@ func (s *specSchemaDefinition) createResourceSchemaIgnoreID(ignoreID bool) (map[
 		if err != nil {
 			return nil, err
 		}
-		terraformSchema[property.getTerraformCompliantPropertyName()] = tfSchema
+		terraformSchema[property.GetTerraformCompliantPropertyName()] = tfSchema
 	}
 	return terraformSchema, nil
 }
 
-func (s *specSchemaDefinition) getImmutableProperties() []string {
+func (s *SpecSchemaDefinition) getImmutableProperties() []string {
 	var immutableProperties []string
 	for _, property := range s.Properties {
 		if property.isPropertyNamedID() {
@@ -102,7 +102,7 @@ func (s *specSchemaDefinition) getImmutableProperties() []string {
 //// 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
 //// will have a property named 'id'
 //// 3. If none of the above requirements is met, an error will be returned
-func (s *specSchemaDefinition) getResourceIdentifier() (string, error) {
+func (s *SpecSchemaDefinition) getResourceIdentifier() (string, error) {
 	identifierProperty := ""
 	for _, property := range s.Properties {
 		if property.isPropertyNamedID() {
@@ -128,12 +128,12 @@ func (s *specSchemaDefinition) getResourceIdentifier() (string, error) {
 // 2. If none of the properties of the given schema definition contain such metadata, it is expected that the payload
 // will have a property named 'status'
 // 3. If none of the above requirements is met, an error will be returned
-func (s *specSchemaDefinition) getStatusIdentifier() ([]string, error) {
+func (s *SpecSchemaDefinition) getStatusIdentifier() ([]string, error) {
 	return s.getStatusIdentifierFor(s, true, true)
 }
 
-func (s *specSchemaDefinition) getStatusIdentifierFor(schemaDefinition *specSchemaDefinition, shouldIgnoreID, shouldEnforceReadOnly bool) ([]string, error) {
-	var statusProperty *specSchemaDefinitionProperty
+func (s *SpecSchemaDefinition) getStatusIdentifierFor(schemaDefinition *SpecSchemaDefinition, shouldIgnoreID, shouldEnforceReadOnly bool) ([]string, error) {
+	var statusProperty *SpecSchemaDefinitionProperty
 	var statusHierarchy []string
 	for _, property := range schemaDefinition.Properties {
 		if property.isPropertyNamedID() && shouldIgnoreID {
@@ -170,7 +170,7 @@ func (s *specSchemaDefinition) getStatusIdentifierFor(schemaDefinition *specSche
 	return statusHierarchy, nil
 }
 
-func (s *specSchemaDefinition) getProperty(name string) (*specSchemaDefinitionProperty, error) {
+func (s *SpecSchemaDefinition) getProperty(name string) (*SpecSchemaDefinitionProperty, error) {
 	for _, property := range s.Properties {
 		if property.Name == name {
 			return property, nil
@@ -179,9 +179,9 @@ func (s *specSchemaDefinition) getProperty(name string) (*specSchemaDefinitionPr
 	return nil, fmt.Errorf("property with name '%s' not existing in resource schema definition", name)
 }
 
-func (s *specSchemaDefinition) getPropertyBasedOnTerraformName(terraformName string) (*specSchemaDefinitionProperty, error) {
+func (s *SpecSchemaDefinition) getPropertyBasedOnTerraformName(terraformName string) (*SpecSchemaDefinitionProperty, error) {
 	for _, property := range s.Properties {
-		if property.getTerraformCompliantPropertyName() == terraformName {
+		if property.GetTerraformCompliantPropertyName() == terraformName {
 			return property, nil
 		}
 	}

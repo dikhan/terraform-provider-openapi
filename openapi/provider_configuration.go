@@ -72,7 +72,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 }
 
 func (p *providerConfiguration) getAuthenticatorFor(s SpecSecurityScheme) specAPIKeyAuthenticator {
-	securitySchemeConfigName := s.getTerraformConfigurationName()
+	securitySchemeConfigName := s.GetTerraformConfigurationName()
 	return p.SecuritySchemaDefinitions[securitySchemeConfigName]
 }
 

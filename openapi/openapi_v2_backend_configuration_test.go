@@ -220,9 +220,9 @@ func TestGetDefaultRegion(t *testing.T) {
 		spec := &spec.Swagger{SwaggerProps: spec.SwaggerProps{Swagger: "2.0"}}
 		openAPIDocumentURL := "www.domain.com"
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When getDefaultRegion() method is called with an array of regions", func() {
+		Convey("When GetDefaultRegion() method is called with an array of regions", func() {
 			regions := []string{"rst1", "dub1"}
-			region, err := specV2BackendConfiguration.getDefaultRegion(regions)
+			region, err := specV2BackendConfiguration.GetDefaultRegion(regions)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -230,9 +230,9 @@ func TestGetDefaultRegion(t *testing.T) {
 				So(region, ShouldEqual, "rst1")
 			})
 		})
-		Convey("When getDefaultRegion() method is called with an empty array", func() {
+		Convey("When GetDefaultRegion() method is called with an empty array", func() {
 			regions := []string{}
-			_, err := specV2BackendConfiguration.getDefaultRegion(regions)
+			_, err := specV2BackendConfiguration.GetDefaultRegion(regions)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -240,8 +240,8 @@ func TestGetDefaultRegion(t *testing.T) {
 				So(err.Error(), ShouldEqual, "empty regions provided")
 			})
 		})
-		Convey("When getDefaultRegion() method is called with a nil array", func() {
-			_, err := specV2BackendConfiguration.getDefaultRegion(nil)
+		Convey("When GetDefaultRegion() method is called with a nil array", func() {
+			_, err := specV2BackendConfiguration.GetDefaultRegion(nil)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -267,8 +267,8 @@ func TestIsMultiRegion(t *testing.T) {
 		}
 		openAPIDocumentURL := "www.domain.com"
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When isMultiRegion() method is called", func() {
-			isMultiRegion, host, regions, err := specV2BackendConfiguration.isMultiRegion()
+		Convey("When IsMultiRegion() method is called", func() {
+			isMultiRegion, host, regions, err := specV2BackendConfiguration.IsMultiRegion()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -299,8 +299,8 @@ func TestIsMultiRegion(t *testing.T) {
 		}
 		openAPIDocumentURL := "www.domain.com"
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When isMultiRegion() method is called", func() {
-			isMultiRegion, _, _, err := specV2BackendConfiguration.isMultiRegion()
+		Convey("When IsMultiRegion() method is called", func() {
+			isMultiRegion, _, _, err := specV2BackendConfiguration.IsMultiRegion()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -323,8 +323,8 @@ func TestIsMultiRegion(t *testing.T) {
 		}
 		openAPIDocumentURL := "www.domain.com"
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When isMultiRegion() method is called", func() {
-			isMultiRegion, _, _, err := specV2BackendConfiguration.isMultiRegion()
+		Convey("When IsMultiRegion() method is called", func() {
+			isMultiRegion, _, _, err := specV2BackendConfiguration.IsMultiRegion()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -351,8 +351,8 @@ func TestIsMultiRegion(t *testing.T) {
 		}
 		openAPIDocumentURL := "www.domain.com"
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-		Convey("When isMultiRegion() method is called", func() {
-			isMultiRegion, _, _, err := specV2BackendConfiguration.isMultiRegion()
+		Convey("When IsMultiRegion() method is called", func() {
+			isMultiRegion, _, _, err := specV2BackendConfiguration.IsMultiRegion()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
