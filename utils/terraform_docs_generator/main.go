@@ -102,6 +102,9 @@ func main() {
 			Other:        "You can then start running the Terraform provider:",
 			OtherCommand: "$ export OTF_VAR_openapi_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>",
 		},
+		ProviderConfiguration: openapi.ProviderConfiguration{
+			Regions: []string{"sea", "rst"},
+		},
 	}
 	tmpl, err := template.New("TerraformProviderDocumentation").Parse(string(b))
 	if err != nil {
