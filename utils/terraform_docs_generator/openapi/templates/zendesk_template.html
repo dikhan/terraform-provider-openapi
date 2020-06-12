@@ -55,24 +55,28 @@
 {{if .ProviderResources.Resources}}
     <h2 id="provider_resources">Provider Resources</h2>
     {{range .ProviderResources.Resources}}
+        {{ $resource := . }}
         <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
         <p>{{.Description}}</p>
         <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
         {{if .ExampleUsage}}
             {{range .ExampleUsage}}
                 <pre>{{.Example}}</pre>
-
-                <pre><span>provider </span><span>"{{.ProviderName}}" </span>{<br>  <span>alias  </span>= <span>"{{index .ProviderConfiguration.Regions 1}}"<br></span><span>  </span><span>region </span>= <span>"{{index .ProviderConfiguration.Regions 1}}"<br></span>}<br><br>resource<span>"{{.ProviderName}}_resource" "my_resource" {<br>  provider = "{{.ProviderName}}.{{index .ProviderConfiguration.Regions 1}}"<br>  ...<br>}</span></pre>
-
                 <pre>
-                    <span>resource </span><span>"{{.ProviderName}}_{{.Name}}" "my_{{.Name}}"</span>{<br>
-                    {{if .ProviderConfiguration.Regions }}
-                        <span>provider  </span>= <span>"{{.ProviderName}}.{{index .ProviderConfiguration.Regions 1}}"</span><br>
-                    {{end}}
-                    {{range .ArgumentsReference.Properties}}
-                        {{if .Required}}
-                            <span>{{.Name}}  </span>= <span>"string value"</span><br>
-                        {{end}}
+                    <span>provider </span><span>"{{$.ProviderName}}" </span>{<br>
+                        <span>alias  </span>= <span>"{{index $.ProviderConfiguration.Regions 1}}"<br>
+                        </span><span>  </span><span>region </span>= <span>"{{index $.ProviderConfiguration.Regions 1}}"<br>
+                    </span>}<br><br>
+                    resource<span>"{{$.ProviderName}}_resource" "my_resource" {<br>
+                        provider = "{{$.ProviderName}}.{{index $.ProviderConfiguration.Regions 1}}"<br>
+                        ...<br>
+                    }</span>
+                </pre>
+                <pre>
+                    <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{<br>
+                    {{if $.ProviderConfiguration.Regions }}<span>provider  </span>= <span>"{{$.ProviderName}}.{{index $.ProviderConfiguration.Regions 1}}"</span><br>{{end}}
+                    {{range $resource.ArgumentsReference.Properties}}
+                        {{if .Required}}<span>{{$resource.Name}}  </span>= <span>"string value"</span><br>{{end}}
                     {{end}}
                 </pre>
             {{end}}
@@ -83,9 +87,9 @@
             <ul dir="ltr">
                 {{range .ArgumentsReference.Properties}}
                     {{if .Required}}
-                    <li>{{.Name}} [{{.Type}}] - (Required) {{.Description}}</li>
+                        <li>{{.Name}} [{{.Type}}] - (Required) {{.Description}}</li>
                     {{else}}
-                    <li>{{.Name}} [{{.Type}}] - (Optional) {{.Description}}</li>
+                        <li>{{.Name}} [{{.Type}}] - (Optional) {{.Description}}</li>
                     {{end}}
                 {{end}}
             </ul>

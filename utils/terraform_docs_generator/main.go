@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -109,7 +110,7 @@ func main() {
 			Resources: []openapi.Resource{
 				openapi.Resource{
 					Name:         "openapi_resource1",
-					Description:  "Allows management of openapi_resource1",
+					Description:  "Allows management of resource1",
 					ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
 					ArgumentsReference: openapi.ArgumentsReference{
 						Properties: []openapi.Property{
@@ -126,7 +127,7 @@ func main() {
 				},
 				openapi.Resource{
 					Name:         "openapi_resource2",
-					Description:  "Allows management of openapi_resource2",
+					Description:  "Allows management of resource2",
 					ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
 					ArgumentsReference: openapi.ArgumentsReference{
 						Properties: []openapi.Property{
@@ -148,7 +149,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = tmpl.Execute(os.Stdout, terraformProviderDocumentation)
+	f, err := os.Create("./utils/terraform_docs_generator/openapi/templates/zendesk_output.html")
+	if err != nil {
+		log.Println("create file: ", err)
+		return
+	}
+	err = tmpl.Execute(f, terraformProviderDocumentation)
 	if err != nil {
 		panic(err)
 	}
