@@ -88,7 +88,7 @@ func main() {
 	//	//	log.Fatal(err)
 	//	//}
 
-	absPath, _ := filepath.Abs("./utils/terraform_docs_generator/openapi/templates/html.tpl")
+	absPath, _ := filepath.Abs("./utils/terraform_docs_generator/openapi/templates/zendesk_template.html")
 	b, _ := ioutil.ReadFile(absPath)
 
 	terraformProviderDocumentation := openapi.TerraformProviderDocumentation{
@@ -104,6 +104,44 @@ func main() {
 		},
 		ProviderConfiguration: openapi.ProviderConfiguration{
 			Regions: []string{"sea", "rst"},
+		},
+		ProviderResources: openapi.ProviderResources{
+			Resources: []openapi.Resource{
+				openapi.Resource{
+					Name:         "openapi_resource1",
+					Description:  "Allows management of openapi_resource1",
+					ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
+					ArgumentsReference: openapi.ArgumentsReference{
+						Properties: []openapi.Property{
+							openapi.Property{
+								Name:        "prop1",
+								Type:        "string",
+								Required:    false,
+								Description: "prop1 description",
+							},
+						},
+					},
+					//AttributesReference: openapi.AttributesReference{},
+					//Import:              openapi.Import{},
+				},
+				openapi.Resource{
+					Name:         "openapi_resource2",
+					Description:  "Allows management of openapi_resource2",
+					ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
+					ArgumentsReference: openapi.ArgumentsReference{
+						Properties: []openapi.Property{
+							openapi.Property{
+								Name:        "prop2",
+								Type:        "string",
+								Required:    true,
+								Description: "prop2 description",
+							},
+						},
+					},
+					//AttributesReference: openapi.AttributesReference{},
+					//Import:              openapi.Import{},
+				},
+			},
 		},
 	}
 	tmpl, err := template.New("TerraformProviderDocumentation").Parse(string(b))

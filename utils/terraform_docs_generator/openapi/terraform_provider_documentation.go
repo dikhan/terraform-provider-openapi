@@ -45,14 +45,12 @@ type Resource struct {
 }
 
 type ExampleUsage struct {
-	Description string
-	Example     string
+	Example string
 }
 
 type ArgumentsReference struct {
-	Description string
-	Properties  []Property
-	Notes       []string
+	Properties []Property
+	Notes      []string
 }
 
 type AttributesReference struct {

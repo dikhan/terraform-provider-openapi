@@ -52,3 +52,29 @@
       </li>
     </ul>
 {{end}}
+{{if .ProviderResources.Resources}}
+    <h2 id="provider_resources">Provider Resources</h2>
+    {{range .ProviderResources.Resources}}
+        <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
+        <p>{{.Description}}</p>
+        <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
+        {{if .ExampleUsage}}
+            {{range .ExampleUsage}}
+                <pre>{{.Example}}</pre>
+            {{end}}
+        {{end}}
+        {{if .ArgumentsReference}}
+            <h4 id="resource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
+            <p dir="ltr">The following arguments are supported:</p>
+            <ul dir="ltr">
+                {{range .ArgumentsReference.Properties}}
+                    {{if .Required}}
+                    <li>{{.Name}} [{{.Type}}] - (Required) {{.Description}}</li>
+                    {{else}}
+                    <li>{{.Name}} [{{.Type}}] - (Optional) {{.Description}}</li>
+                    {{end}}
+                {{end}}
+            </ul>
+        {{end}}
+    {{end}}
+{{end}}
