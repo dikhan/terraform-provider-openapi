@@ -109,33 +109,84 @@ func main() {
 		ProviderResources: openapi.ProviderResources{
 			Resources: []openapi.Resource{
 				openapi.Resource{
-					Name:         "openapi_resource1",
-					Description:  "Allows management of resource1",
-					ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
+					Name:        "openapi_resource1",
+					Description: "Allows management of resource1",
+					//ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
 					ArgumentsReference: openapi.ArgumentsReference{
 						Properties: []openapi.Property{
 							openapi.Property{
-								Name:        "prop1",
-								Type:        "string",
-								Required:    false,
-								Description: "prop1 description",
-							},
-						},
-					},
-					//AttributesReference: openapi.AttributesReference{},
-					//Import:              openapi.Import{},
-				},
-				openapi.Resource{
-					Name:         "openapi_resource2",
-					Description:  "Allows management of resource2",
-					ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
-					ArgumentsReference: openapi.ArgumentsReference{
-						Properties: []openapi.Property{
-							openapi.Property{
-								Name:        "prop2",
+								Name:        "prop_string",
 								Type:        "string",
 								Required:    true,
-								Description: "prop2 description",
+								Description: "prop1 description",
+							},
+							openapi.Property{
+								Name:        "prop_int",
+								Type:        "integer",
+								Required:    true,
+								Description: "prop_int description",
+							},
+							openapi.Property{
+								Name:        "prop_bool",
+								Type:        "boolean",
+								Required:    true,
+								Description: "prop_bool description",
+							},
+							openapi.Property{
+								Name:        "prop_float",
+								Type:        "float",
+								Required:    true,
+								Description: "prop_float description",
+							},
+							openapi.Property{
+								Name:           "prop_array_string",
+								Type:           "array",
+								ArrayItemsType: "string",
+								Required:       true,
+								Description:    "prop_float description",
+							},
+							openapi.Property{
+								Name:           "prop_array_object",
+								Type:           "array",
+								ArrayItemsType: "object",
+								Required:       true,
+								Description:    "prop_array_object description",
+								Schema: []openapi.Property{
+									openapi.Property{
+										Name:        "obj_prop_string",
+										Type:        "string",
+										Required:    false,
+										Description: "obj_prop_string description",
+									},
+									openapi.Property{
+										Name:           "obj_prop_array_string",
+										Type:           "array",
+										ArrayItemsType: "string",
+										Required:       false,
+										Description:    "obj_prop_array_string description",
+									},
+								},
+							},
+							openapi.Property{
+								Name:        "prop_object",
+								Type:        "object",
+								Required:    true,
+								Description: "prop_object description",
+								Schema: []openapi.Property{
+									openapi.Property{
+										Name:        "obj_prop_string",
+										Type:        "string",
+										Required:    false,
+										Description: "obj_prop_string description",
+									},
+									openapi.Property{
+										Name:           "obj_prop_array_string",
+										Type:           "array",
+										ArrayItemsType: "string",
+										Required:       false,
+										Description:    "obj_prop_array_string description",
+									},
+								},
 							},
 						},
 					},

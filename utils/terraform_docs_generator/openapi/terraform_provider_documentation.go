@@ -36,9 +36,9 @@ type DataSource struct {
 }
 
 type Resource struct {
-	Name                string
-	Description         string
-	ExampleUsage        []ExampleUsage
+	Name        string
+	Description string
+	//ExampleUsage        []ExampleUsage
 	ArgumentsReference  ArgumentsReference
 	AttributesReference AttributesReference
 	Import              Import
@@ -66,11 +66,12 @@ type Import struct {
 }
 
 type Property struct {
-	Name        string
-	Type        string
-	Required    bool
-	Description string
-	Schema      []Property // This is used to describe the schema for array of objects or object properties
+	Name           string
+	Type           string
+	ArrayItemsType string
+	Required       bool
+	Description    string
+	Schema         []Property // This is used to describe the schema for array of objects or object properties
 }
 
 func (t TerraformProviderDocumentation) renderMarkup() {
