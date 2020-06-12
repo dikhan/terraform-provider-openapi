@@ -61,6 +61,20 @@
         {{if .ExampleUsage}}
             {{range .ExampleUsage}}
                 <pre>{{.Example}}</pre>
+
+                <pre><span>provider </span><span>"{{.ProviderName}}" </span>{<br>  <span>alias  </span>= <span>"{{index .ProviderConfiguration.Regions 1}}"<br></span><span>  </span><span>region </span>= <span>"{{index .ProviderConfiguration.Regions 1}}"<br></span>}<br><br>resource<span>"{{.ProviderName}}_resource" "my_resource" {<br>  provider = "{{.ProviderName}}.{{index .ProviderConfiguration.Regions 1}}"<br>  ...<br>}</span></pre>
+
+                <pre>
+                    <span>resource </span><span>"{{.ProviderName}}_{{.Name}}" "my_{{.Name}}"</span>{<br>
+                    {{if .ProviderConfiguration.Regions }}
+                        <span>provider  </span>= <span>"{{.ProviderName}}.{{index .ProviderConfiguration.Regions 1}}"</span><br>
+                    {{end}}
+                    {{range .ArgumentsReference.Properties}}
+                        {{if .Required}}
+                            <span>{{.Name}}  </span>= <span>"string value"</span><br>
+                        {{end}}
+                    {{end}}
+                </pre>
             {{end}}
         {{end}}
         {{if .ArgumentsReference}}
