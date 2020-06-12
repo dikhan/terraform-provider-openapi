@@ -9,9 +9,9 @@ type TerraformProviderDocumentation struct {
 }
 
 type ProviderInstallation struct {
-	Description string
-	Example     string
-	Other       string
+	Example      string
+	Other        string
+	OtherCommand string
 }
 
 type ProviderConfiguration struct {

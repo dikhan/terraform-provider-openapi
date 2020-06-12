@@ -91,7 +91,18 @@ func main() {
 	absPath, _ := filepath.Abs("./utils/terraform_docs_generator/openapi/templates/html.tpl")
 	b, _ := ioutil.ReadFile(absPath)
 
-	terraformProviderDocumentation := openapi.TerraformProviderDocumentation{ProviderName: "openapi"}
+	terraformProviderDocumentation := openapi.TerraformProviderDocumentation{
+		ProviderName: "openapi",
+		ProviderInstallation: openapi.ProviderInstallation{
+			Example: "$ export PROVIDER_NAME=openapi && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>" +
+				"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>" +
+				"[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>" +
+				"[INFO] Cleaning up tmp dir created for installation purposes: /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh<br>" +
+				"[INFO] Terraform provider 'terraform-provider-openapi_v0.29.4' successfully installed at: '/Users/lilchan/.terraform.d/plugins'!",
+			Other:        "You can then start running the Terraform provider:",
+			OtherCommand: "$ export OTF_VAR_openapi_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>",
+		},
+	}
 	tmpl, err := template.New("TerraformProviderDocumentation").Parse(string(b))
 	if err != nil {
 		panic(err)
