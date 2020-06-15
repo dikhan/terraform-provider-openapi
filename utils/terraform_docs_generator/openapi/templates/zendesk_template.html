@@ -26,8 +26,29 @@
     {{- end -}}
 {{end}}
 
-{{define "resource_argument_reference"}}
-{{end}}
+{{- define "resource_argument_reference" -}}
+    {{- $required := "Optional" -}}
+    {{- if .Required -}}
+        {{- $required = "Required" -}}
+    {{end}}
+    <li>{{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}.
+        {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
+        <ul dir="ltr">
+            {{- range .Schema}}
+                <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.
+                {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
+                <ul dir="ltr">
+                    {{- range .Schema}}
+                        <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.</li>
+                    {{- end}}
+                </ul>
+                </li>
+                {{- end}}
+            {{- end}}
+        </ul>
+        {{ end -}}
+    </li>
+{{- end -}}
 
 <p dir="ltr">
   This guide lists the configuration for '{{.ProviderName}}' Terraform provider
@@ -100,34 +121,14 @@
 {{- end}}
 <span>}</span>
 </pre>
-        {{if .ArgumentsReference -}}
-            <h4 id="resource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
-            <p dir="ltr">The following arguments are supported:</p>
-            <ul dir="ltr">
-                {{range .ArgumentsReference.Properties -}}
-                    {{ $required := "Optional" }}
-                    {{- if .Required -}}
-                        {{ $required = "Required" }}
-                    {{- end}}
-                    <li>{{.Name}} [{{.Type}} {{- if eq .Type "array"}} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}.
-                        {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
-                        <ul dir="ltr">
-                            {{- range .Schema}}
-                                <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.
-                                    {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
-                                    <ul dir="ltr">
-                                        {{- range .Schema}}
-                                            <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.</li>
-                                        {{- end}}
-                                    </ul>
-                                </li>
-                                {{- end}}
-                            {{- end}}
-                        </ul>
-                        {{- end}}
-                    </li>
-                {{- end}}
-            </ul>
+{{if .ArgumentsReference -}}
+    <h4 id="resource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        {{- range .ArgumentsReference.Properties -}}
+            {{- template "resource_argument_reference" . -}}
         {{- end}}
+    </ul>
+{{- end}}
     {{- end}}
 {{end}}
