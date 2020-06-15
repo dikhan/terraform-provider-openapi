@@ -1,3 +1,41 @@
+{{define "resource_example"}}
+    {{- if eq .Type "string" -}}
+        <span>{{.Name}}  </span>= <span>"This is a string value"</span>
+    {{- else }}{{- if eq .Type "integer" -}}
+        <span>{{.Name}}  </span>= <span>1234</span>
+    {{- else}}{{- if eq .Type "boolean" -}}
+        <span>{{.Name}}  </span>= <span>true</span>
+    {{- else }}{{- if eq .Type "float" -}}
+        <span>{{.Name}}  </span>= <span>12.95</span>
+    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "string") -}}
+        <span>{{.Name}}  </span>= <span>["string1", "string2"]</span>
+    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "integer") -}}
+        <span>{{.Name}}  </span>= <span>[1234, 4567]</span>
+    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "boolean") -}}
+        <span>{{.Name}}  </span>= <span>[true, false]</span>
+    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "float") -}}
+        <span>{{.Name}}  </span>= <span>[12.36, 99.45]</span>
+    {{- else -}}
+        {{- if and (eq .Type "object") -}}
+        <span>{{.Name}}  </span><span>{</span>
+            {{range .Schema}}
+                {{- template "resource_example" .}}
+            {{end}}
+            <span>}</span>
+        {{- end -}}
+    {{- end -}}
+    {{- end -}}
+    {{- end -}}
+    {{- end -}}
+    {{- end -}}
+    {{- end -}}
+    {{- end -}}
+    {{- end -}}
+{{end}}
+
+{{define "resource_argument_reference"}}
+{{end}}
+
 <p dir="ltr">
   This guide lists the configuration for '{{.ProviderName}}' Terraform provider
   resources that can be managed using
@@ -60,33 +98,11 @@
         <p>{{.Description}}</p>
         <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 <pre>
+
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
 {{- range $resource.ArgumentsReference.Properties -}}
-{{if .Required}}
-    {{- if eq .Type "string"}}
-    <span>{{.Name}}  </span>= <span>"This is a string value"</span>
-    {{else }}{{- if eq .Type "integer" -}}
-    <span>{{.Name}}  </span>= <span>1234</span>
-    {{else }}{{- if eq .Type "boolean" -}}
-    <span>{{.Name}}  </span>= <span>true</span>
-    {{else }}{{- if eq .Type "float" -}}
-        <span>{{.Name}}  </span>= <span>12.95</span>
-    {{else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "string") -}}
-        <span>{{.Name}}  </span>= <span>["string1", "string2"]</span>
-    {{else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "integer") -}}
-        <span>{{.Name}}  </span>= <span>[1234, 4567]</span>
-    {{else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "boolean") -}}
-        <span>{{.Name}}  </span>= <span>[true, false]</span>
-    {{else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "float") -}}
-        <span>{{.Name}}  </span>= <span>[12.36, 99.45]</span>
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
+{{- if .Required}}
+    {{template "resource_example" .}}
 {{- end}}
 {{- end}}
 <span>}</span>
