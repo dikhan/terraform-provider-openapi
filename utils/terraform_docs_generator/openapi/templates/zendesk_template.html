@@ -1,19 +1,19 @@
 {{define "resource_example"}}
     {{- if eq .Type "string" -}}
         <span>{{.Name}}  </span>= <span>"This is a string value"</span>
-    {{- else }}{{- if eq .Type "integer" -}}
+    {{- else if eq .Type "integer" -}}
         <span>{{.Name}}  </span>= <span>1234</span>
-    {{- else}}{{- if eq .Type "boolean" -}}
+    {{- else if eq .Type "boolean" -}}
         <span>{{.Name}}  </span>= <span>true</span>
-    {{- else }}{{- if eq .Type "float" -}}
+    {{- else if eq .Type "float" -}}
         <span>{{.Name}}  </span>= <span>12.95</span>
-    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "string") -}}
+    {{- else if and (eq .Type "array") (eq .ArrayItemsType "string") -}}
         <span>{{.Name}}  </span>= <span>["string1", "string2"]</span>
-    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "integer") -}}
+    {{- else if and (eq .Type "array") (eq .ArrayItemsType "integer") -}}
         <span>{{.Name}}  </span>= <span>[1234, 4567]</span>
-    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "boolean") -}}
+    {{- else if and (eq .Type "array") (eq .ArrayItemsType "boolean") -}}
         <span>{{.Name}}  </span>= <span>[true, false]</span>
-    {{- else }}{{- if and (eq .Type "array") (eq .ArrayItemsType "float") -}}
+    {{- else if and (eq .Type "array") (eq .ArrayItemsType "float") -}}
         <span>{{.Name}}  </span>= <span>[12.36, 99.45]</span>
     {{- else -}}
         {{- if and (eq .Type "object") -}}
@@ -23,13 +23,6 @@
             {{end}}
             <span>}</span>
         {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
-    {{- end -}}
     {{- end -}}
 {{end}}
 
