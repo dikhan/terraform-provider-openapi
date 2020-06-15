@@ -38,10 +38,8 @@ type DataSource struct {
 type Resource struct {
 	Name        string
 	Description string
-	//ExampleUsage        []ExampleUsage
-	ArgumentsReference  ArgumentsReference
-	AttributesReference AttributesReference
-	Import              Import
+	Properties  []Property
+	Import      Import
 }
 
 type ExampleUsage struct {
@@ -70,6 +68,7 @@ type Property struct {
 	Type           string
 	ArrayItemsType string
 	Required       bool
+	Computed       bool
 	Description    string
 	Schema         []Property // This is used to describe the schema for array of objects or object properties
 }

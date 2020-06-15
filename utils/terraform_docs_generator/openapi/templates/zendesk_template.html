@@ -50,6 +50,29 @@
     </li>
 {{- end -}}
 
+{{- define "resource_attribute_reference" -}}
+    {{- if .Computed -}}
+        <li>{{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}.
+            {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
+            <ul dir="ltr">
+                {{- range .Schema}}
+                    <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.
+                    {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
+                    <ul dir="ltr">
+                        {{- range .Schema}}
+                            <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.</li>
+                        {{- end}}
+                    </ul>
+                    </li>
+                    {{- end}}
+                {{- end}}
+            </ul>
+            {{ end -}}
+        </li>
+    {{end}}
+{{- end -}}
+
+
 <p dir="ltr">
   This guide lists the configuration for '{{.ProviderName}}' Terraform provider
   resources that can be managed using
@@ -112,23 +135,34 @@
         <p>{{.Description}}</p>
         <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 <pre>
-
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
-{{- range $resource.ArgumentsReference.Properties -}}
+{{- range $resource.Properties -}}
 {{- if .Required}}
     {{template "resource_example" .}}
 {{- end}}
 {{- end}}
 <span>}</span>
 </pre>
-{{if .ArgumentsReference -}}
+
+{{if $resource.Properties -}}
     <h4 id="resource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
     <p dir="ltr">The following arguments are supported:</p>
     <ul dir="ltr">
-        {{- range .ArgumentsReference.Properties -}}
+        {{- range $resource.Properties -}}
             {{- template "resource_argument_reference" . -}}
         {{- end}}
     </ul>
 {{- end}}
-    {{- end}}
-{{end}}
+
+{{if $resource.Properties -}}
+    <h4 id="resource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr">
+        {{- range $resource.Properties -}}
+            {{- template "resource_attribute_reference" . -}}
+        {{- end}}
+    </ul>
+{{- end}}
+
+    {{- end}}  {{/* END if .ProviderResources.Resources*/}}
+{{end}} {{/* END range .ProviderResources.Resources */}}
