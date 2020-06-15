@@ -176,7 +176,7 @@ func main() {
 									openapi.Property{
 										Name:        "obj_prop_string",
 										Type:        "string",
-										Required:    false,
+										Required:    true,
 										Description: "obj_prop_string description",
 									},
 									openapi.Property{
@@ -185,6 +185,20 @@ func main() {
 										ArrayItemsType: "string",
 										Required:       false,
 										Description:    "obj_prop_array_string description",
+									},
+									openapi.Property{
+										Name:        "obj_prop_object",
+										Type:        "object",
+										Required:    true,
+										Description: "obj_prop_object description",
+										Schema: []openapi.Property{
+											openapi.Property{
+												Name:        "obj_obj_prop_string",
+												Type:        "string",
+												Required:    true,
+												Description: "obj_obj_prop_string description",
+											},
+										},
 									},
 								},
 							},
