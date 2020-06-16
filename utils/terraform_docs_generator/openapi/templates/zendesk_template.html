@@ -95,6 +95,14 @@
       </ul>
     </li>
   {{end}}
+    <li>
+        <a href="#provider_resources" target="_self">Provider Resources</a>
+        <ul>
+            {{range .ProviderResources.Resources -}}
+                <li><a href="#{{.Name}}" target="_self">{{.Name}}</a></li>
+            {{- end}}
+        </ul>
+    </li>
 </ul>
 <h2 id="provider_installation">Provider Installation</h2>
 <p>
