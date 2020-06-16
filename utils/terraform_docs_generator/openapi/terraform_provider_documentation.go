@@ -25,14 +25,14 @@ type ProviderResources struct {
 }
 
 type DataSources struct {
-	DataSources []DataSource
+	DataSources         []DataSource
+	DataSourceInstances []DataSource
 }
 
 type DataSource struct {
-	Name               string
-	Description        string
-	ExampleUsage       []ExampleUsage
-	ArgumentsReference ArgumentsReference
+	Name        string
+	Description string
+	Properties  []Property
 }
 
 type Resource struct {

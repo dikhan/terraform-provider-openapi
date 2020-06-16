@@ -214,6 +214,23 @@ func main() {
 				},
 			},
 		},
+		DataSources: openapi.DataSources{
+			DataSources: nil,
+			DataSourceInstances: []openapi.DataSource{
+				openapi.DataSource{
+					Name:        "openapi_resource1_instance",
+					Description: "The resource1 instance data source allows you to retrieve an already existing resource1",
+					Properties: []openapi.Property{
+						openapi.Property{
+							Name:        "prop_string",
+							Type:        "string",
+							Required:    true,
+							Description: "prop1 description",
+						},
+					},
+				},
+			},
+		},
 	}
 	tmpl, err := template.New("TerraformProviderDocumentation").Parse(string(b))
 	if err != nil {
