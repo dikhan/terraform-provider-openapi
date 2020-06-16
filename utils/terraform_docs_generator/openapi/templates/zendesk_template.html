@@ -152,12 +152,12 @@
     </ul>
 {{end}}
 <h2 id="provider_resources">Provider Resources</h2>
-{{if .ProviderResources.Resources}}
-    {{range .ProviderResources.Resources -}}
-        {{ $resource := . }}
-        <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
-        <p>{{.Description}}</p>
-        <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
+
+{{range .ProviderResources.Resources -}}
+    {{ $resource := . }}
+    <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
+    <p>{{.Description}}</p>
+    <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 <pre>
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
 {{- range $resource.Properties -}}
@@ -188,7 +188,6 @@
     </ul>
 {{- end}}
 
-    {{- end}}  {{/* END if .ProviderResources.Resources*/}}
 {{end}} {{/* END range .ProviderResources.Resources */}}
 
 <h2 id="provider_datasources">Data Sources (using resource id)</h2>
