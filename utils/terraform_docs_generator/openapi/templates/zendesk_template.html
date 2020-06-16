@@ -188,8 +188,15 @@
     </ul>
 {{- end}}
 
-
-
+<h4 id="resource_{{.Name}}_import" dir="ltr">Import</h4>
+<p dir="ltr">
+    {{.Name}} resources can be imported using the&nbsp;<code>id</code>, e.g:
+</p>
+<pre dir="ltr">$ terraform import {{.Name}}.my_{{.Name}} id</pre>
+<p dir="ltr">
+    <strong>Note</strong>: In order for the import to work, the '{{$.ProviderName}}' terraform
+    provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
+</p>
 
 {{end}} {{/* END range .ProviderResources.Resources */}}
 

@@ -58,9 +58,7 @@ type AttributesReference struct {
 }
 
 type Import struct {
-	Description string
-	Example     string
-	Notes       []string
+	Notes []string
 }
 
 type Property struct {
