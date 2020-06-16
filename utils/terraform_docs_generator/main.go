@@ -112,6 +112,9 @@ func main() {
 					Name:        "openapi_resource1",
 					Description: "Allows management of resource1",
 					//ExampleUsage: []openapi.ExampleUsage{openapi.ExampleUsage{"example usage"}},
+					ArgumentsReference: openapi.ArgumentsReference{Notes: []string{`This is internally represented as an array of one elem due to 
+<a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_self">Terraform SDK's limitation for supporting complex object types</a>. 
+Please index on the first elem of the array to&nbsp;reference&nbsp;the object values&nbsp; (eg: openapi_resource1<span>.my_resource1.<strong>prop_object[0]</strong>.<strong>obj_prop_object[0]</strong>.prop_id</span>)`}},
 					Properties: []openapi.Property{
 						openapi.Property{
 							Name:        "prop_string",
