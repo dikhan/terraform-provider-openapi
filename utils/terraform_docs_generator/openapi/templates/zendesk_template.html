@@ -168,9 +168,9 @@
 <span>}</span>
 </pre>
 
+<h4 id="resource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
+<p dir="ltr">The following arguments are supported:</p>
 {{if $resource.Properties -}}
-    <h4 id="resource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
-    <p dir="ltr">The following arguments are supported:</p>
     <ul dir="ltr">
         {{- range $resource.Properties -}}
             {{- template "resource_argument_reference" . -}}
@@ -178,15 +178,18 @@
     </ul>
 {{- end}}
 
+<h4 id="resource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
+<p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
 {{if $resource.Properties -}}
-    <h4 id="resource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
-    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
     <ul dir="ltr">
         {{- range $resource.Properties -}}
             {{- template "resource_attribute_reference" . -}}
         {{- end}}
     </ul>
 {{- end}}
+
+
+
 
 {{end}} {{/* END range .ProviderResources.Resources */}}
 
