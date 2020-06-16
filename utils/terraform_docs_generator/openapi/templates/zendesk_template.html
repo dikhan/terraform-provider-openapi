@@ -103,6 +103,22 @@
             {{- end}}
         </ul>
     </li>
+    <li>
+        <a href="#provider_datasources" target="_self">Data Sources (using resource id)</a>
+        <ul>
+            {{range .DataSources.DataSourceInstances -}}
+                <li><a href="#{{.Name}}" target="_self">{{.Name}}</a></li>
+            {{- end}}
+        </ul>
+    </li>
+    <li>
+        <a href="#provider_datasources_filters" target="_self">Data Sources (using filters)</a>
+        <ul>
+            {{range .DataSources.DataSources -}}
+                <li><a href="#{{.Name}}_datasource" target="_self">{{.Name}}</a></li>
+            {{- end}}
+        </ul>
+    </li>
 </ul>
 <h2 id="provider_installation">Provider Installation</h2>
 <p>
@@ -175,7 +191,7 @@
     {{- end}}  {{/* END if .ProviderResources.Resources*/}}
 {{end}} {{/* END range .ProviderResources.Resources */}}
 
-<h2 id="provider_resources">Data Sources</h2>
+<h2 id="provider_datasources">Data Sources (using resource id)</h2>
 
 {{range .DataSources.DataSourceInstances -}}
     {{ $datasource := . }}
@@ -213,10 +229,10 @@
     {{- end}}
 {{end}} {{/* END range .DataSources.DataSourceInstances */}}
 
-
+<h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
 {{range .DataSources.DataSources -}}
     {{ $datasource := . }}
-    <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
+    <h3 id="{{.Name}}_datasource" dir="ltr">{{.Name}} (filters)</h3>
     <p>{{.Description}}</p>
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
     <pre>
@@ -224,19 +240,25 @@
     {{- range $datasource.Properties}}
         {{if .Required -}}
             {{template "resource_example" .}}
-        {{- end}}
-    {{- end}}
+        {{- end }}
+    {{- end -}}
 <span>}</span>
     </pre>
     <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
     <p dir="ltr">The following arguments are supported:</p>
     {{if $datasource.Properties -}}
         <ul dir="ltr">
-            {{- range $datasource.Properties -}}
-                {{if .Required -}}
-                    {{template "resource_argument_reference" .}}
-                {{- end}}
-            {{- end}}
+            <li>filter - (Required) Object containing two properties.</li>
+            <ul>
+                <li>name:  the value should match one of the properties to filter by. Only values allowed for now are:
+                {{range $datasource.Properties}}
+                    {{if or (eq .Type "string") (eq .Type "integer") (eq .Type "float") (eq .Type "boolean")}}
+                        <span>{{.Name}}, </span>
+                    {{end}}
+                {{end}}
+                </li>
+                <li>values: array of values, for primitive properties the array should contain only one item containing the value to filter by.</li>
+            </ul>
         </ul>
     {{- end}}
     <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
