@@ -195,9 +195,9 @@
         {{if $datasource.Properties -}}
             <ul dir="ltr">
                 {{- range $datasource.Properties -}}
-                    {{if .Required}}
+                    {{if .Required -}}
                         {{template "resource_argument_reference" .}}
-                    {{end}}
+                    {{- end}}
                 {{- end}}
             </ul>
         {{- end}}

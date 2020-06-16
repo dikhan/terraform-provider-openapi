@@ -239,6 +239,13 @@ func main() {
 							Required:    false,
 							Description: "optional prop description",
 						},
+						openapi.Property{
+							Name:        "computed_string",
+							Type:        "string",
+							Required:    false,
+							Computed:    true,
+							Description: "computed prop description",
+						},
 					},
 				},
 			},
