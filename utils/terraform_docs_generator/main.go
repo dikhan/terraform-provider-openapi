@@ -222,10 +222,22 @@ func main() {
 					Description: "The resource1 instance data source allows you to retrieve an already existing resource1",
 					Properties: []openapi.Property{
 						openapi.Property{
-							Name:        "prop_string",
+							Name:        "id",
 							Type:        "string",
 							Required:    true,
 							Description: "prop1 description",
+						},
+						openapi.Property{
+							Name:        "parent_id",
+							Type:        "string",
+							Required:    true,
+							Description: "prop1 description",
+						},
+						openapi.Property{
+							Name:        "optional_string",
+							Type:        "string",
+							Required:    false,
+							Description: "optional prop description",
 						},
 					},
 				},

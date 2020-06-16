@@ -182,13 +182,17 @@
         <p>{{.Description}}</p>
         <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
         <pre>
-<span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}_instance" "my_{{$datasource.Name}}"</span>{
-<span>id = </span>"my_{{$datasource.Name}}_id"
+<span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
+        {{- range $datasource.Properties}}
+            {{if .Required -}}
+                {{template "resource_example" .}}
+            {{- end}}
+        {{- end}}
 <span>}</span>
         </pre>
+        <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
+        <p dir="ltr">The following arguments are supported:</p>
         {{if $datasource.Properties -}}
-            <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
-            <p dir="ltr">The following arguments are supported:</p>
             <ul dir="ltr">
                 {{- range $datasource.Properties -}}
                     {{if .Required}}
@@ -197,16 +201,14 @@
                 {{- end}}
             </ul>
         {{- end}}
-
+        <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
+        <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
         {{if $datasource.Properties -}}
-            <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
-            <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
             <ul dir="ltr">
                 {{- range $datasource.Properties -}}
                     {{- template "resource_attribute_reference" . -}}
                 {{- end}}
             </ul>
         {{- end}}
-
     {{- end}}  {{/* END if .DataSources.DataSourceInstances */}}
 {{end}} {{/* END range .DataSources.DataSourceInstances */}}
