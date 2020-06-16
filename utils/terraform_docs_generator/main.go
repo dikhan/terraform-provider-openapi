@@ -215,7 +215,42 @@ func main() {
 			},
 		},
 		DataSources: openapi.DataSources{
-			DataSources: nil,
+			DataSources: []openapi.DataSource{
+				openapi.DataSource{
+					Name:        "openapi_resource1",
+					Description: "The resource1 instance data source allows you to retrieve an already existing resource1 using filters",
+					Properties: []openapi.Property{
+						openapi.Property{
+							Name:        "filter",
+							Type:        "object",
+							Required:    true,
+							Description: "The filter object property enables users to specify the criteria to filter the results",
+							Schema: []openapi.Property{
+								openapi.Property{
+									Name:        "name",
+									Type:        "string",
+									Required:    true,
+									Description: "The value should match one of the properties to filter by. Only value allowed for now is 'name'",
+								},
+								openapi.Property{
+									Name:           "values",
+									Type:           "array",
+									ArrayItemsType: "string",
+									Required:       true,
+									Description:    "Values to filter out the results. For primitive properties the array should contain only one item containing the value to filter by.",
+								},
+							},
+						},
+						openapi.Property{
+							Name:        "computed_string",
+							Type:        "string",
+							Required:    false,
+							Computed:    true,
+							Description: "computed prop description",
+						},
+					},
+				},
+			},
 			DataSourceInstances: []openapi.DataSource{
 				openapi.DataSource{
 					Name:        "openapi_resource1_instance",

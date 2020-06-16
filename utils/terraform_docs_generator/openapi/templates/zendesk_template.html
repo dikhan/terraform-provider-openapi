@@ -174,41 +174,80 @@
 
     {{- end}}  {{/* END if .ProviderResources.Resources*/}}
 {{end}} {{/* END range .ProviderResources.Resources */}}
+
 <h2 id="provider_resources">Data Sources</h2>
-{{if .DataSources.DataSourceInstances}}
-    {{range .DataSources.DataSourceInstances -}}
-        {{ $datasource := . }}
-        <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
-        <p>{{.Description}}</p>
-        <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
-        <pre>
+
+{{range .DataSources.DataSourceInstances -}}
+    {{ $datasource := . }}
+    <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
+    <p>{{.Description}}</p>
+    <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
+    <pre>
 <span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
-        {{- range $datasource.Properties}}
-            {{if .Required -}}
-                {{template "resource_example" .}}
-            {{- end}}
+    {{- range $datasource.Properties}}
+        {{if .Required -}}
+            {{template "resource_example" .}}
         {{- end}}
+    {{- end}}
 <span>}</span>
-        </pre>
-        <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
-        <p dir="ltr">The following arguments are supported:</p>
-        {{if $datasource.Properties -}}
-            <ul dir="ltr">
-                {{- range $datasource.Properties -}}
-                    {{if .Required -}}
-                        {{template "resource_argument_reference" .}}
-                    {{- end}}
+    </pre>
+    <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    {{if $datasource.Properties -}}
+        <ul dir="ltr">
+            {{- range $datasource.Properties -}}
+                {{if .Required -}}
+                    {{template "resource_argument_reference" .}}
                 {{- end}}
-            </ul>
+            {{- end}}
+        </ul>
+    {{- end}}
+    <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    {{if $datasource.Properties -}}
+        <ul dir="ltr">
+            {{- range $datasource.Properties -}}
+                {{- template "resource_attribute_reference" . -}}
+            {{- end}}
+        </ul>
+    {{- end}}
+{{end}} {{/* END range .DataSources.DataSourceInstances */}}
+
+
+{{range .DataSources.DataSources -}}
+    {{ $datasource := . }}
+    <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
+    <p>{{.Description}}</p>
+    <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
+    <pre>
+<span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
+    {{- range $datasource.Properties}}
+        {{if .Required -}}
+            {{template "resource_example" .}}
         {{- end}}
-        <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
-        <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
-        {{if $datasource.Properties -}}
-            <ul dir="ltr">
-                {{- range $datasource.Properties -}}
+    {{- end}}
+<span>}</span>
+    </pre>
+    <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    {{if $datasource.Properties -}}
+        <ul dir="ltr">
+            {{- range $datasource.Properties -}}
+                {{if .Required -}}
+                    {{template "resource_argument_reference" .}}
+                {{- end}}
+            {{- end}}
+        </ul>
+    {{- end}}
+    <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    {{if $datasource.Properties -}}
+        <ul dir="ltr">
+            {{- range $datasource.Properties -}}
+                {{if .Computed -}}
                     {{- template "resource_attribute_reference" . -}}
                 {{- end}}
-            </ul>
-        {{- end}}
-    {{- end}}  {{/* END if .DataSources.DataSourceInstances */}}
-{{end}} {{/* END range .DataSources.DataSourceInstances */}}
+            {{- end}}
+        </ul>
+    {{- end}}
+{{end}} {{/* END range .DataSources.DataSources */}}
