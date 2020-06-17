@@ -23,6 +23,7 @@ type ProviderInstallation struct {
 
 type ProviderConfiguration struct {
 	Regions            []string
+	ConfigProperties   []string
 	ExampleUsage       []ExampleUsage
 	ArgumentsReference ArgumentsReference
 }

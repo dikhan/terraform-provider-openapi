@@ -18,12 +18,16 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, err
 	}
 
-	multiRegionConfiguration, _, _, err := t.getRequiredProviderConfigurationProperties(analyser) // multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, err
+	multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, err := t.getRequiredProviderConfigurationProperties(analyser)
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
+	configProperties := []string{}
+	configProperties = append(configProperties, requiredSecuritySchemes...)
+	configProperties = append(configProperties, requiredHeaders...)
 	providerConfiguration := ProviderConfiguration{
-		Regions: multiRegionConfiguration,
+		Regions:          multiRegionConfiguration,
+		ConfigProperties: configProperties,
 	}
 
 	return TerraformProviderDocumentation{
