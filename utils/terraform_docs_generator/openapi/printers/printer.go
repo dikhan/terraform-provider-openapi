@@ -10,9 +10,9 @@ type Printer interface {
 	//  - region (if multi-region is configured for the provider)
 	//  - global security definitions (if provider has global definitions they are considered required)
 	//  - headers (some resource operations require header)
-	PrintProviderConfigurationExample(providerName string, multiRegionConfiguration *MultiRegionConfiguration, requiredSecuritySchemes, requiredHeaders []string)
+	PrintProviderConfigurationExample(providerName string, multiRegionConfiguration []string, requiredSecuritySchemes, requiredHeaders []string)
 	// printing for now only the required properties in the configuration
-	PrintProviderConfiguration(multiRegionConfiguration *MultiRegionConfiguration, requiredSecuritySchemes, requiredHeaders []string)
+	PrintProviderConfiguration(multiRegionConfiguration []string, requiredSecuritySchemes, requiredHeaders []string)
 	PrintResourceHeader()
 	PrintResourceInfo(providerName, resourceName string)
 	PrintResourceExample(providerName, resourceName string, required openapi.SpecSchemaDefinitionProperties)

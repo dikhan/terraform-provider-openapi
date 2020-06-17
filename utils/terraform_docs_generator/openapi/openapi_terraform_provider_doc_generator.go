@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/printers"
 )
@@ -11,14 +12,43 @@ type TerraformProviderDocGenerator struct {
 	Printer       printers.Printer
 }
 
-func (t TerraformProviderDocGenerator) GenerateDocumentation() error {
+func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProviderDocumentation, error) {
+	analyser, err := openapi.CreateSpecAnalyser("v2", t.OpenAPIDocURL)
+	if err != nil {
+		return TerraformProviderDocumentation{}, err
+	}
+
+	multiRegionConfiguration, _, _, err := t.getRequiredProviderConfigurationProperties(analyser) // multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, err
+	if err != nil {
+		return TerraformProviderDocumentation{}, err
+	}
+	providerConfiguration := ProviderConfiguration{
+		Regions: multiRegionConfiguration,
+	}
+
+	return TerraformProviderDocumentation{
+		ProviderName: t.ProviderName,
+		ProviderInstallation: ProviderInstallation{
+			Example: fmt.Sprintf("$ export PROVIDER_NAME=%s && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>"+
+				"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>"+
+				"[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>"+
+				"[INFO] Cleaning up tmp dir created for installation purposes: /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh<br>"+
+				"[INFO] Terraform provider 'terraform-provider-%s' successfully installed at: '~/.terraform.d/plugins'!", t.ProviderName, t.ProviderName),
+			Other:        "You can then start running the Terraform provider:",
+			OtherCommand: fmt.Sprintf("$ export OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>", t.ProviderName),
+		},
+		ProviderConfiguration: providerConfiguration,
+	}, err
+}
+
+func (t TerraformProviderDocGenerator) PrintDocumentation() error {
 	analyser, err := openapi.CreateSpecAnalyser("v2", t.OpenAPIDocURL)
 	if err != nil {
 		return err
 	}
 	t.printProviderConfiguration(analyser)
 	t.printProviderResources(analyser)
-	return nil
+	return err
 }
 
 func (t TerraformProviderDocGenerator) printProviderConfiguration(analyser openapi.SpecAnalyser) error {
@@ -33,27 +63,16 @@ func (t TerraformProviderDocGenerator) printProviderConfiguration(analyser opena
 	return nil
 }
 
-func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) (*printers.MultiRegionConfiguration, []string, []string, error) {
-	var multiRegionConfiguration *printers.MultiRegionConfiguration
+func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) ([]string, []string, []string, error) {
 	var requiredSecuritySchemes []string
 	var requiredHeaders []string
 	backendConfig, err := analyser.GetAPIBackendConfiguration()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	isMultiRegion, _, regions, err := backendConfig.IsMultiRegion()
+	_, _, regions, err := backendConfig.IsMultiRegion()
 	if err != nil {
 		return nil, nil, nil, err
-	}
-	if isMultiRegion {
-		defaultRegion, err := backendConfig.GetDefaultRegion(regions)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		multiRegionConfiguration = &printers.MultiRegionConfiguration{
-			Regions:       regions,
-			DefaultRegion: defaultRegion,
-		}
 	}
 	globalSecuritySchemes, err := analyser.GetSecurity().GetGlobalSecuritySchemes()
 	if err != nil {
@@ -68,7 +87,7 @@ func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationPropertie
 			requiredHeaders = append(requiredHeaders, header.GetHeaderTerraformConfigurationName())
 		}
 	}
-	return multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, nil
+	return regions, requiredSecuritySchemes, requiredHeaders, nil
 }
 
 func (t TerraformProviderDocGenerator) printProviderResources(analyser openapi.SpecAnalyser) error {
