@@ -44,10 +44,11 @@ type DataSource struct {
 }
 
 type Resource struct {
-	Name        string
-	Description string
-	Properties  []Property
-	Import      Import
+	Name               string
+	Description        string
+	Properties         []Property
+	Import             Import
+	ArgumentsReference ArgumentsReference
 }
 
 type ExampleUsage struct {
@@ -55,8 +56,7 @@ type ExampleUsage struct {
 }
 
 type ArgumentsReference struct {
-	Properties []Property
-	Notes      []string
+	Notes []string
 }
 
 type AttributesReference struct {
