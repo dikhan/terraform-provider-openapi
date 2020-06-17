@@ -1,5 +1,12 @@
 package openapi
 
+import (
+	"io"
+	"io/ioutil"
+	"path/filepath"
+	"text/template"
+)
+
 type TerraformProviderDocumentation struct {
 	ProviderName          string
 	ProviderInstallation  ProviderInstallation
@@ -71,6 +78,17 @@ type Property struct {
 	Schema         []Property // This is used to describe the schema for array of objects or object properties
 }
 
-func (t TerraformProviderDocumentation) renderMarkup() {
+func (t TerraformProviderDocumentation) RenderZendeskHTML(w io.Writer) error {
+	absPath, _ := filepath.Abs("./utils/terraform_docs_generator/openapi/templates/zendesk_template.html")
+	b, _ := ioutil.ReadFile(absPath)
 
+	tmpl, err := template.New("TerraformProviderDocumentation").Parse(string(b))
+	if err != nil {
+		return err
+	}
+	err = tmpl.Execute(w, t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
