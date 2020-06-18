@@ -30,7 +30,7 @@ func (s specAPIKeyQuerySecurityDefinition) getAPIKey() specAPIKey {
 	return s.apiKey
 }
 
-func (s specAPIKeyQuerySecurityDefinition) getTerraformConfigurationName() string {
+func (s specAPIKeyQuerySecurityDefinition) GetTerraformConfigurationName() string {
 	return terraformutils.ConvertToTerraformCompliantName(s.name)
 }
 

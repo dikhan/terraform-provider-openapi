@@ -27,7 +27,7 @@ func (s specAPIKeyQueryBearerSecurityDefinition) getAPIKey() specAPIKey {
 	return newAPIKeyQuery("access_token")
 }
 
-func (s specAPIKeyQueryBearerSecurityDefinition) getTerraformConfigurationName() string {
+func (s specAPIKeyQueryBearerSecurityDefinition) GetTerraformConfigurationName() string {
 	return terraformutils.ConvertToTerraformCompliantName(s.Name)
 }
 

@@ -36,7 +36,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 	}
 	if securitySchemaDefinitions != nil {
 		for _, secDef := range *securitySchemaDefinitions {
-			secDefTerraformCompliantName := secDef.getTerraformConfigurationName()
+			secDefTerraformCompliantName := secDef.GetTerraformConfigurationName()
 			if value, exists := data.GetOkExists(secDefTerraformCompliantName); exists {
 				providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = createAPIKeyAuthenticator(secDef, value.(string))
 			} else {

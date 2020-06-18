@@ -110,7 +110,7 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 		return nil, err
 	}
 	for _, securityDefinition := range *securityDefinitions {
-		secDefName := securityDefinition.getTerraformConfigurationName()
+		secDefName := securityDefinition.GetTerraformConfigurationName()
 		required := false
 		if globalSecuritySchemes.securitySchemeExists(securityDefinition) {
 			required = true

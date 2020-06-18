@@ -21,7 +21,7 @@ func createSecuritySchemes(securitySchemes []map[string][]string) SpecSecuritySc
 
 func (s SpecSecuritySchemes) securitySchemeExists(secDef SpecSecurityDefinition) bool {
 	for _, securityScheme := range s {
-		if securityScheme.GetTerraformConfigurationName() == secDef.getTerraformConfigurationName() {
+		if securityScheme.GetTerraformConfigurationName() == secDef.GetTerraformConfigurationName() {
 			return true
 		}
 	}

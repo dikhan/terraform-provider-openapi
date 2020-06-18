@@ -12,11 +12,11 @@ func createAPIKeyAuthenticator(secDef SpecSecurityDefinition, value string) spec
 	switch secDef.getAPIKey().In {
 	case inHeader:
 		if secDef.getType() == securityDefinitionAPIKeyRefreshToken {
-			return newAPIRefreshTokenAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value), secDef.getAPIKey().Metadata[refreshTokenURLKey].(string), secDef.getTerraformConfigurationName())
+			return newAPIRefreshTokenAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value), secDef.getAPIKey().Metadata[refreshTokenURLKey].(string), secDef.GetTerraformConfigurationName())
 		}
-		return newAPIKeyHeaderAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value), secDef.getTerraformConfigurationName())
+		return newAPIKeyHeaderAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value), secDef.GetTerraformConfigurationName())
 	case inQuery:
-		return newAPIKeyQueryAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value), secDef.getTerraformConfigurationName())
+		return newAPIKeyQueryAuthenticator(secDef.getAPIKey().Name, secDef.buildValue(value), secDef.GetTerraformConfigurationName())
 	}
 	return nil
 }

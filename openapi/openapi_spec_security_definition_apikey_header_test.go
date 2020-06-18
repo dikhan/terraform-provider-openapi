@@ -48,7 +48,7 @@ func TestAPIKeyHeaderSecurityDefinitionGetTerraformConfigurationName(t *testing.
 	Convey("Given an APIKeyHeaderSecurityDefinition with a compliant name", t, func() {
 		apiKeyHeaderSecurityDefinition := newAPIKeyHeaderSecurityDefinition("apikey_name", authorizationHeader)
 		Convey("When GetTerraformConfigurationName method is called", func() {
-			secDefTfName := apiKeyHeaderSecurityDefinition.getTerraformConfigurationName()
+			secDefTfName := apiKeyHeaderSecurityDefinition.GetTerraformConfigurationName()
 			Convey("Then the result should be securityDefinitionAPIKey", func() {
 				So(secDefTfName, ShouldEqual, "apikey_name")
 			})
@@ -58,7 +58,7 @@ func TestAPIKeyHeaderSecurityDefinitionGetTerraformConfigurationName(t *testing.
 	Convey("Given an APIKeyHeaderSecurityDefinition with a NON compliant name", t, func() {
 		apiKeyHeaderSecurityDefinition := newAPIKeyHeaderSecurityDefinition("nonCompliantName", authorizationHeader)
 		Convey("When GetTerraformConfigurationName method is called", func() {
-			secDefTfName := apiKeyHeaderSecurityDefinition.getTerraformConfigurationName()
+			secDefTfName := apiKeyHeaderSecurityDefinition.GetTerraformConfigurationName()
 			Convey("Then the result should be securityDefinitionAPIKey", func() {
 				So(secDefTfName, ShouldEqual, "non_compliant_name")
 			})

@@ -28,7 +28,7 @@ type SpecSecurityDefinition interface {
 	// getType returns the security definition type, e,g: apiKey
 	getType() securityDefinitionType
 	// GetTerraformConfigurationName returns the name converted terraform compliant name (snake_case) if needed
-	getTerraformConfigurationName() string
+	GetTerraformConfigurationName() string
 	// getAPIKey returns the actual apiKey info containing the location of the key (e,g: header/query param) and the
 	// name of the parameter used, in the case of a header the header name and in the case of a query parameter the query
 	// parameter name
