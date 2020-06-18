@@ -137,26 +137,25 @@
 {{if .ProviderConfiguration.ConfigProperties}}
     <pre>
 <span>provider </span><span>"{{.ProviderName}}" </span>{
-{{- range .ProviderConfiguration.ConfigProperties -}}
+{{- range .ProviderConfiguration.ConfigProperties}}
 <span>  {{.Name}}  </span>= <span>"..."</span>
-{{- end -}}
+{{- end}}
 <span>}</span>
-    </pre>
-{{end}}
+</pre>
+{{- end}}
 {{if .ProviderConfiguration.Regions }}
     <p>Using the default region ({{index .ProviderConfiguration.Regions 0}}):</p>
     <pre>
 <span>provider </span><span>"{{.ProviderName}}" </span>{
-<span>  # Resources using this default provider will be created in the '{{index .ProviderConfiguration.Regions 0}}' region<br></span>}
-<br>resource<span>"{{.ProviderName}}_resource" "my_resource" {<br>  ...<br>}</span>
+<span>  # Resources using this default provider will be created in the '{{index .ProviderConfiguration.Regions 0}}' region<br>  ...<br></span>}
     </pre>
     {{ if gt (len .ProviderConfiguration.Regions) 1 -}}
         <p>Using a specific region ({{index .ProviderConfiguration.Regions 1}}):</p>
     <pre>
 <span>provider </span><span>"{{.ProviderName}}" </span>{
 <span>  alias  </span>= <span>"{{index .ProviderConfiguration.Regions 1}}"</span>
-<span>  region </span>= <span>"{{index .ProviderConfiguration.Regions 1}}"<br></span>}
-<br>resource<span>"{{.ProviderName}}_resource" "my_resource" {</span>{
+<span>  region </span>= <span>"{{index .ProviderConfiguration.Regions 1}}"<br>  ...<br></span>}
+<br>resource<span>"{{.ProviderName}}_resource" "my_resource" {</span>
 <span>  provider = "{{.ProviderName}}.{{index .ProviderConfiguration.Regions 1}}"<br>  ...<br>}</span>
     </pre>
     {{- end }}

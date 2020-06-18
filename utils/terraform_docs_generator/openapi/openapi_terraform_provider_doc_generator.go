@@ -41,8 +41,6 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 }
 
 func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) ([]string, []Property, error) {
-	var requiredSecuritySchemes []string
-	var requiredHeaders []string
 	var configProps []Property
 	backendConfig, err := analyser.GetAPIBackendConfiguration()
 	if err != nil {
@@ -56,14 +54,38 @@ func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationPropertie
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, securityScheme := range globalSecuritySchemes {
-		requiredSecuritySchemes = append(requiredSecuritySchemes, securityScheme.GetTerraformConfigurationName())
+	securityDefinitions, err := analyser.GetSecurity().GetAPIKeySecurityDefinitions()
+	if err != nil {
+		return nil, nil, err
 	}
+	for _, securityDefinition := range *securityDefinitions {
+		secDefName := securityDefinition.GetTerraformConfigurationName()
+		configProps = append(configProps, Property{
+			Name:        secDefName,
+			Type:        "string",
+			Required:    false,
+			Description: "",
+		})
+	}
+	// Mark as required the properties that are set in the security schemes (they are mandatory)
+	for _, securityScheme := range globalSecuritySchemes {
+		for _, configProp := range configProps {
+			c := &configProp
+			if c.Name == securityScheme.GetTerraformConfigurationName() {
+				c.Required = true
+				break
+			}
+		}
+	}
+
 	headers, err := analyser.GetAllHeaderParameters()
 	for _, header := range headers {
-		if header.IsRequired {
-			requiredHeaders = append(requiredHeaders, header.GetHeaderTerraformConfigurationName())
-		}
+		configProps = append(configProps, Property{
+			Name:        header.GetHeaderTerraformConfigurationName(),
+			Type:        "string",
+			Required:    header.IsRequired,
+			Description: "",
+		})
 	}
 	return regions, configProps, nil
 }
