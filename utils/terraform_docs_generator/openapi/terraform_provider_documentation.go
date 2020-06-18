@@ -47,7 +47,6 @@ type Resource struct {
 	Name               string
 	Description        string
 	Properties         []Property
-	Import             Import
 	ArgumentsReference ArgumentsReference
 }
 

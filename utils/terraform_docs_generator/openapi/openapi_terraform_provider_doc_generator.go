@@ -21,10 +21,12 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
-	providerConfiguration := ProviderConfiguration{
-		Regions:          regions,
-		ConfigProperties: configProperties,
+
+	resources, err := t.getProviderResources(analyser)
+	if err != nil {
+		return TerraformProviderDocumentation{}, err
 	}
+
 	return TerraformProviderDocumentation{
 		ProviderName: t.ProviderName,
 		ProviderInstallation: ProviderInstallation{
@@ -36,8 +38,65 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 			Other:        "You can then start running the Terraform provider:",
 			OtherCommand: fmt.Sprintf("$ export OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>", t.ProviderName),
 		},
-		ProviderConfiguration: providerConfiguration,
+		ProviderConfiguration: ProviderConfiguration{
+			Regions:          regions,
+			ConfigProperties: configProperties,
+		},
+		ProviderResources: ProviderResources{
+			Resources: resources,
+		},
 	}, err
+}
+
+func (t TerraformProviderDocGenerator) getProviderResources(analyser openapi.SpecAnalyser) ([]Resource, error) {
+	r := []Resource{}
+	resources, err := analyser.GetTerraformCompliantResources()
+	if err != nil {
+		return nil, err
+	}
+	for _, resource := range resources {
+		if resource.ShouldIgnoreResource() {
+			continue
+		}
+		resourceSchema, err := resource.GetResourceSchema()
+		if err != nil {
+			return nil, err
+		}
+		props := []Property{}
+		for _, p := range resourceSchema.Properties {
+			props = append(props, t.resourceSchemaToProperty(*p))
+		}
+
+		r = append(r, Resource{
+			Name:        resource.GetResourceName(),
+			Description: "",
+			Properties:  props,
+			ArgumentsReference: ArgumentsReference{
+				Notes: []string{},
+			},
+		})
+	}
+	return r, nil
+}
+
+func (t TerraformProviderDocGenerator) resourceSchemaToProperty(specSchemaDefinitionProperty openapi.SpecSchemaDefinitionProperty) Property {
+	var schema []Property
+	if specSchemaDefinitionProperty.Type == openapi.TypeObject || specSchemaDefinitionProperty.ArrayItemsType == openapi.TypeObject {
+		if specSchemaDefinitionProperty.SpecSchemaDefinition != nil {
+			for _, p := range specSchemaDefinitionProperty.SpecSchemaDefinition.Properties {
+				schema = append(schema, t.resourceSchemaToProperty(*p))
+			}
+		}
+	}
+	return Property{
+		Name:           specSchemaDefinitionProperty.GetTerraformCompliantPropertyName(),
+		Type:           string(specSchemaDefinitionProperty.Type),
+		ArrayItemsType: string(specSchemaDefinitionProperty.ArrayItemsType),
+		Required:       specSchemaDefinitionProperty.IsRequired(),
+		Computed:       specSchemaDefinitionProperty.Computed,
+		Description:    "",
+		Schema:         schema,
+	}
 }
 
 func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) ([]string, []Property, error) {
