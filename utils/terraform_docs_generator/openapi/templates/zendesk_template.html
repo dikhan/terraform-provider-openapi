@@ -132,10 +132,18 @@
 </p>
 <pre dir="ltr">{{.ProviderInstallation.OtherCommand}}$ terraform init &amp;&amp; terraform plan</pre>
 
+<h2 id="provider_configuration">Provider Configuration</h2>
+<h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
+{{if .ProviderConfiguration.ConfigProperties}}
+    <pre>
+<span>provider </span><span>"{{.ProviderName}}" </span>{
+{{- range .ProviderConfiguration.ConfigProperties -}}
+<span>  {{.}}  </span>= <span>"..."</span>
+{{- end -}}
+<span>}</span>
+    </pre>
+{{end}}
 {{if .ProviderConfiguration.Regions }}
-    <h2 id="provider_configuration">Provider Configuration</h2>
-    <h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
-
     <p>Using the default region ({{index .ProviderConfiguration.Regions 0}}):</p>
     <pre>
 <span>provider </span><span>"{{.ProviderName}}" </span>{
