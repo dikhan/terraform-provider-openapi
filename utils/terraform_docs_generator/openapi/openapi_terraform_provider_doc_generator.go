@@ -17,19 +17,14 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
-
-	multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders, err := t.getRequiredProviderConfigurationProperties(analyser)
+	regions, configProperties, err := t.getRequiredProviderConfigurationProperties(analyser)
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
-	configProperties := []string{}
-	configProperties = append(configProperties, requiredSecuritySchemes...)
-	configProperties = append(configProperties, requiredHeaders...)
 	providerConfiguration := ProviderConfiguration{
-		Regions:          multiRegionConfiguration,
+		Regions:          regions,
 		ConfigProperties: configProperties,
 	}
-
 	return TerraformProviderDocumentation{
 		ProviderName: t.ProviderName,
 		ProviderInstallation: ProviderInstallation{
@@ -45,52 +40,21 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	}, err
 }
 
-func (t TerraformProviderDocGenerator) PrintDocumentation() error {
-	analyser, err := openapi.CreateSpecAnalyser("v2", t.OpenAPIDocURL)
-	if err != nil {
-		return err
-	}
-	t.printProviderConfiguration(analyser)
-	t.printProviderResources(analyser)
-	return err
-}
-
-func (t TerraformProviderDocGenerator) printProviderConfiguration(analyser openapi.SpecAnalyser) error {
-	t.Printer.PrintProviderConfigurationHeader(t.ProviderName)
-	configProps, err := t.getRequiredProviderConfigurationProperties(analyser)
-	if err != nil {
-		return err
-	}
-	t.Printer.PrintProviderConfigurationExample(t.ProviderName, multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders)
-	t.Printer.PrintProviderConfiguration(multiRegionConfiguration, requiredSecuritySchemes, requiredHeaders)
-
-	return nil
-}
-
-func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) ([]Property, error) {
+func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) ([]string, []Property, error) {
 	var requiredSecuritySchemes []string
 	var requiredHeaders []string
 	var configProps []Property
 	backendConfig, err := analyser.GetAPIBackendConfiguration()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	_, _, regions, err := backendConfig.IsMultiRegion()
 	if err != nil {
-		return nil, err
-	}
-	if regions != nil {
-		configProps = append(configProps, Property{
-			Name:           "region",
-			Type:           "array",
-			ArrayItemsType: "string",
-			Required:       true,
-			Description:    fmt.Sprintf("The region location to be used&nbsp;(%s). If region isn't specified, the default is '%s'", regions, regions[0]),
-		})
+		return nil, nil, err
 	}
 	globalSecuritySchemes, err := analyser.GetSecurity().GetGlobalSecuritySchemes()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, securityScheme := range globalSecuritySchemes {
 		requiredSecuritySchemes = append(requiredSecuritySchemes, securityScheme.GetTerraformConfigurationName())
@@ -101,7 +65,7 @@ func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationPropertie
 			requiredHeaders = append(requiredHeaders, header.GetHeaderTerraformConfigurationName())
 		}
 	}
-	return configProps, nil
+	return regions, configProps, nil
 }
 
 func (t TerraformProviderDocGenerator) printProviderResources(analyser openapi.SpecAnalyser) error {

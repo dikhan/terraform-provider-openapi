@@ -138,7 +138,7 @@
     <pre>
 <span>provider </span><span>"{{.ProviderName}}" </span>{
 {{- range .ProviderConfiguration.ConfigProperties -}}
-<span>  {{.}}  </span>= <span>"..."</span>
+<span>  {{.Name}}  </span>= <span>"..."</span>
 {{- end -}}
 <span>}</span>
     </pre>
@@ -164,9 +164,18 @@
     <h4 id="provider_configuration_arguments_reference" dir="ltr">Arguments Reference</h4>
     <p dir="ltr">The following arguments are supported:</p>
     <ul dir="ltr">
+        {{- range .ProviderConfiguration.ConfigProperties -}}
+        {{- $required := "Optional" -}}
+        {{- if .Required -}}
+            {{- $required = "Required" -}}
+        {{end}}
+        <li><span>{{.Name}} [{{.Type}}] - ({{$required}}) {{.Description}}.</span></li></li>
+        {{- end -}}
+    {{if .ProviderConfiguration.Regions }}
       <li>
-        region - (Optional) {{.Description}}".
+          region [string] - (Optional) The region location to be used&nbsp;({{.ProviderConfiguration.Regions}}). If region isn't specified, the default is "{{index .ProviderConfiguration.Regions 0}}".
       </li>
+    {{end}}
     </ul>
 {{end}}
 <h2 id="provider_resources">Provider Resources</h2>
