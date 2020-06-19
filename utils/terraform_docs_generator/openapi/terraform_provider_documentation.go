@@ -38,9 +38,10 @@ type DataSources struct {
 }
 
 type DataSource struct {
-	Name        string
-	Description string
-	Properties  []Property
+	Name         string
+	Description  string
+	OtherExample string
+	Properties   []Property
 }
 
 type Resource struct {
