@@ -29,6 +29,7 @@ type SpecSchemaDefinitionProperty struct {
 	PreferredName  string
 	Type           schemaDefinitionPropertyType
 	ArrayItemsType schemaDefinitionPropertyType
+	Description    string
 
 	// IgnoreItemsOrder if set to true means that the array items order should be ignored
 	IgnoreItemsOrder bool

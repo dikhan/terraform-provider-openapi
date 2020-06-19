@@ -106,7 +106,7 @@ func (t TerraformProviderDocGenerator) resourceSchemaToProperty(specSchemaDefini
 		ArrayItemsType: string(specSchemaDefinitionProperty.ArrayItemsType),
 		Required:       specSchemaDefinitionProperty.IsRequired(),
 		Computed:       specSchemaDefinitionProperty.Computed,
-		Description:    "",
+		Description:    specSchemaDefinitionProperty.Description,
 		Schema:         schema,
 	}
 }

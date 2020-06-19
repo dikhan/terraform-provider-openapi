@@ -412,6 +412,8 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
 	}
 
+	schemaDefinitionProperty.Description = property.Description
+
 	// Set the property as required (if not required the property will be considered optional)
 	required := o.isRequired(propertyName, requiredProperties)
 	if required {
