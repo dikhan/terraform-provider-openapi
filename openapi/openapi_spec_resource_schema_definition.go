@@ -14,6 +14,43 @@ type SpecSchemaDefinition struct {
 	Properties SpecSchemaDefinitionProperties
 }
 
+// ConvertToDataSourceSpecSchemaDefinition transforms the current SpecSchemaDefinition into a data source SpecSchemaDefinition. This
+// means that all the properties that form the schema will be made optional, computed and they won't have default values.
+func (s *SpecSchemaDefinition) ConvertToDataSourceSpecSchemaDefinition() (*SpecSchemaDefinition, error) {
+	specSchemaDefinition := &SpecSchemaDefinition{
+		Properties: SpecSchemaDefinitionProperties{},
+	}
+	for _, p := range s.Properties {
+		dataSourceSpecSchemaDefinitionProperty, err := s.convertToDataSourceSpecSchemaDefinitionProperty(p)
+		if err != nil {
+			return nil, err
+		}
+		specSchemaDefinition.Properties = append(specSchemaDefinition.Properties, dataSourceSpecSchemaDefinitionProperty)
+	}
+	return specSchemaDefinition, nil
+}
+
+func (s *SpecSchemaDefinition) convertToDataSourceSpecSchemaDefinitionProperty(p *SpecSchemaDefinitionProperty) (*SpecSchemaDefinitionProperty, error) {
+	specSchemaDefinitionProperty := p
+	specSchemaDefinitionProperty.Required = false
+	specSchemaDefinitionProperty.Computed = true
+	specSchemaDefinitionProperty.Default = nil
+	if specSchemaDefinitionProperty.SpecSchemaDefinition != nil {
+		dataSourceObjectSpecSchemaDefinition := &SpecSchemaDefinition{
+			Properties: SpecSchemaDefinitionProperties{},
+		}
+		for _, objectProperty := range specSchemaDefinitionProperty.SpecSchemaDefinition.Properties {
+			dataSourceObjectProperty, err := s.convertToDataSourceSpecSchemaDefinitionProperty(objectProperty)
+			if err != nil {
+				return nil, err
+			}
+			dataSourceObjectSpecSchemaDefinition.Properties = append(dataSourceObjectSpecSchemaDefinition.Properties, dataSourceObjectProperty)
+		}
+		specSchemaDefinitionProperty.SpecSchemaDefinition = dataSourceObjectSpecSchemaDefinition
+	}
+	return specSchemaDefinitionProperty, nil
+}
+
 func (s *SpecSchemaDefinition) createResourceSchema() (map[string]*schema.Schema, error) {
 	return s.createResourceSchemaIgnoreID(true)
 }

@@ -29,6 +29,11 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, err
 	}
 
+	dataSourceInstances, err := t.getDataSourceInstances(analyser)
+	if err != nil {
+		return TerraformProviderDocumentation{}, err
+	}
+
 	return TerraformProviderDocumentation{
 		ProviderName: t.ProviderName,
 		ProviderInstallation: ProviderInstallation{
@@ -47,7 +52,39 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		ProviderResources: ProviderResources{
 			Resources: resources,
 		},
+		DataSources: DataSources{
+			DataSources:         nil,
+			DataSourceInstances: dataSourceInstances,
+		},
 	}, err
+}
+
+func (t TerraformProviderDocGenerator) getDataSourceInstances(analyser openapi.SpecAnalyser) ([]DataSource, error) {
+	dataSourcesInstance := []DataSource{}
+	resources, err := analyser.GetTerraformCompliantResources()
+	if err != nil {
+		return nil, err
+	}
+	for _, dataSource := range resources {
+		s, err := dataSource.GetResourceSchema()
+		if err != nil {
+			return nil, err
+		}
+		dataSourceSchemaDefinition, err := s.ConvertToDataSourceSpecSchemaDefinition()
+		if err != nil {
+			return nil, err
+		}
+		props := []Property{}
+		for _, p := range dataSourceSchemaDefinition.Properties {
+			prop := t.resourceSchemaToProperty(*p)
+			props = append(props, prop)
+		}
+		dataSourcesInstance = append(dataSourcesInstance, DataSource{
+			Name:       fmt.Sprintf("%s_instance", dataSource.GetResourceName()),
+			Properties: props,
+		})
+	}
+	return dataSourcesInstance, nil
 }
 
 func (t TerraformProviderDocGenerator) getProviderResources(analyser openapi.SpecAnalyser) ([]Resource, error) {
