@@ -249,15 +249,9 @@
     </pre>
     <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
     <p dir="ltr">The following arguments are supported:</p>
-    {{if $datasource.Properties -}}
-        <ul dir="ltr">
-            {{- range $datasource.Properties -}}
-                {{if .Required -}}
-                    {{template "resource_argument_reference" .}}
-                {{- end}}
-            {{- end}}
-        </ul>
-    {{- end}}
+    <ul dir="ltr">
+        <li>id - (Required) ID of the existing resource to retrieve</li>
+    </ul>
     <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
     <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
     {{if $datasource.Properties -}}
