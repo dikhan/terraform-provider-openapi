@@ -65,15 +65,19 @@ func (t TerraformProviderDocGenerator) getProviderResources(analyser openapi.Spe
 			return nil, err
 		}
 		props := []Property{}
+		requiredProps := []Property{}
+		optionalProps := []Property{}
 		for _, p := range resourceSchema.Properties {
-			props = append(props, t.resourceSchemaToProperty(*p))
+			prop := t.resourceSchemaToProperty(*p)
+			if prop.Required {
+				requiredProps = append(requiredProps, prop)
+			}
+			if !prop.Required {
+				optionalProps = append(optionalProps, prop)
+			}
 		}
-
-		sort.Slice(props, func(i, j int) bool {
-			hash1, _ := hashstructure.Hash(props[i], nil)
-			hash2, _ := hashstructure.Hash(props[j], nil)
-			return hash1 > hash2
-		})
+		props = append(props, orderProps(requiredProps)...)
+		props = append(props, orderProps(optionalProps)...)
 
 		r = append(r, Resource{
 			Name:        resource.GetResourceName(),
@@ -200,4 +204,13 @@ func (t TerraformProviderDocGenerator) createRequiredOptionalComputedMaps(resour
 		}
 	}
 	return required, optional, computed
+}
+
+func orderProps(props []Property) []Property {
+	sort.Slice(props, func(i, j int) bool {
+		hash1, _ := hashstructure.Hash(props[i], nil)
+		hash2, _ := hashstructure.Hash(props[j], nil)
+		return hash1 > hash2
+	})
+	return props
 }
