@@ -10,6 +10,47 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func TestConvertToDataSourceSpecSchemaDefinitionProperty(t *testing.T) {
+	p := SpecSchemaDefinitionProperty{
+		Type:     TypeString,
+		Required: true,
+		Computed: false,
+		Default:  "defaultValue",
+	}
+	s := SpecSchemaDefinition{}
+	specSchemaDefProp := s.convertToDataSourceSpecSchemaDefinitionProperty(p)
+	assert.False(t, specSchemaDefProp.Required)
+	assert.True(t, specSchemaDefProp.Computed)
+	assert.Nil(t, specSchemaDefProp.Default)
+}
+
+func TestConvertToDataSourceSpecSchemaDefinitionProperty_ObjectProp(t *testing.T) {
+	p := SpecSchemaDefinitionProperty{
+		Type:     TypeObject,
+		Required: true,
+		Computed: false,
+		Default:  "defaultValue",
+		SpecSchemaDefinition: &SpecSchemaDefinition{
+			Properties: []*SpecSchemaDefinitionProperty{
+				&SpecSchemaDefinitionProperty{
+					Type:     TypeString,
+					Required: true,
+					Computed: false,
+					Default:  "defaultValue",
+				},
+			},
+		},
+	}
+	s := SpecSchemaDefinition{}
+	specSchemaDefProp := s.convertToDataSourceSpecSchemaDefinitionProperty(p)
+	assert.False(t, specSchemaDefProp.Required)
+	assert.True(t, specSchemaDefProp.Computed)
+	assert.Nil(t, specSchemaDefProp.Default)
+	assert.False(t, specSchemaDefProp.SpecSchemaDefinition.Properties[0].Required)
+	assert.True(t, specSchemaDefProp.SpecSchemaDefinition.Properties[0].Computed)
+	assert.Nil(t, specSchemaDefProp.SpecSchemaDefinition.Properties[0].Default)
+}
+
 func TestCreateDataSourceSchema(t *testing.T) {
 
 	testCases := []struct {
