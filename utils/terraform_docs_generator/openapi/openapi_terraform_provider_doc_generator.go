@@ -70,7 +70,7 @@ func (t TerraformProviderDocGenerator) getDataSourceInstances(analyser openapi.S
 		if err != nil {
 			return nil, err
 		}
-		dataSourceSchemaDefinition, err := s.ConvertToDataSourceSpecSchemaDefinition()
+		dataSourceSchemaDefinition := s.ConvertToDataSourceSpecSchemaDefinition()
 		if err != nil {
 			return nil, err
 		}

@@ -16,21 +16,21 @@ type SpecSchemaDefinition struct {
 
 // ConvertToDataSourceSpecSchemaDefinition transforms the current SpecSchemaDefinition into a data source SpecSchemaDefinition. This
 // means that all the properties that form the schema will be made optional, computed and they won't have default values.
-func (s *SpecSchemaDefinition) ConvertToDataSourceSpecSchemaDefinition() (*SpecSchemaDefinition, error) {
+func (s *SpecSchemaDefinition) ConvertToDataSourceSpecSchemaDefinition() *SpecSchemaDefinition {
 	specSchemaDefinition := &SpecSchemaDefinition{
 		Properties: SpecSchemaDefinitionProperties{},
 	}
 	for _, p := range s.Properties {
-		dataSourceSpecSchemaDefinitionProperty, err := s.convertToDataSourceSpecSchemaDefinitionProperty(p)
-		if err != nil {
-			return nil, err
-		}
+		dataSourceSpecSchemaDefinitionProperty := s.convertToDataSourceSpecSchemaDefinitionProperty(*p)
 		specSchemaDefinition.Properties = append(specSchemaDefinition.Properties, dataSourceSpecSchemaDefinitionProperty)
 	}
-	return specSchemaDefinition, nil
+	return specSchemaDefinition
 }
 
-func (s *SpecSchemaDefinition) convertToDataSourceSpecSchemaDefinitionProperty(p *SpecSchemaDefinitionProperty) (*SpecSchemaDefinitionProperty, error) {
+func (s *SpecSchemaDefinition) convertToDataSourceSpecSchemaDefinitionProperty(p SpecSchemaDefinitionProperty) *SpecSchemaDefinitionProperty {
+	if p.IsParentProperty {
+		return &p
+	}
 	specSchemaDefinitionProperty := p
 	specSchemaDefinitionProperty.Required = false
 	specSchemaDefinitionProperty.Computed = true
@@ -40,15 +40,12 @@ func (s *SpecSchemaDefinition) convertToDataSourceSpecSchemaDefinitionProperty(p
 			Properties: SpecSchemaDefinitionProperties{},
 		}
 		for _, objectProperty := range specSchemaDefinitionProperty.SpecSchemaDefinition.Properties {
-			dataSourceObjectProperty, err := s.convertToDataSourceSpecSchemaDefinitionProperty(objectProperty)
-			if err != nil {
-				return nil, err
-			}
+			dataSourceObjectProperty := s.convertToDataSourceSpecSchemaDefinitionProperty(*objectProperty)
 			dataSourceObjectSpecSchemaDefinition.Properties = append(dataSourceObjectSpecSchemaDefinition.Properties, dataSourceObjectProperty)
 		}
 		specSchemaDefinitionProperty.SpecSchemaDefinition = dataSourceObjectSpecSchemaDefinition
 	}
-	return specSchemaDefinitionProperty, nil
+	return &specSchemaDefinitionProperty
 }
 
 func (s *SpecSchemaDefinition) createResourceSchema() (map[string]*schema.Schema, error) {
@@ -56,19 +53,24 @@ func (s *SpecSchemaDefinition) createResourceSchema() (map[string]*schema.Schema
 }
 
 func (s *SpecSchemaDefinition) createDataSourceSchema() (map[string]*schema.Schema, error) {
-	terraformSchema, err := s.createResourceSchemaIgnoreID(true)
+	dataSourceSpecSchemaDefinition := s.ConvertToDataSourceSpecSchemaDefinition()
+	terraformSchema, err := dataSourceSpecSchemaDefinition.createResourceSchemaIgnoreID(true)
 	if err != nil {
 		return nil, err
 	}
-	for propertyName := range terraformSchema {
-		p, err := s.getPropertyBasedOnTerraformName(propertyName)
-		if err != nil {
-			return nil, err
-		}
-		if !p.IsParentProperty {
-			terraformSchema[propertyName] = setPropertyForDataSourceSchema(terraformSchema[propertyName])
-		}
-	}
+	//terraformSchema, err := s.createResourceSchemaIgnoreID(true)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//for propertyName := range terraformSchema {
+	//	p, err := s.getPropertyBasedOnTerraformName(propertyName)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	if !p.IsParentProperty {
+	//		terraformSchema[propertyName] = setPropertyForDataSourceSchema(terraformSchema[propertyName])
+	//	}
+	//}
 	return terraformSchema, nil
 }
 
