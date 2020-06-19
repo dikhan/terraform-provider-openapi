@@ -33,6 +33,7 @@ require (
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
 	github.com/manveru/gobdd v0.0.0-20131210092515-f1a17fdd710b // indirect
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/mitchellh/hashstructure v1.0.0
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/satori/go.uuid v1.2.0 // indirect

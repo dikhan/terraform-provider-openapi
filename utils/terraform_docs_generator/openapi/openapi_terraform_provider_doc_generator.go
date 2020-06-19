@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/printers"
+	"github.com/mitchellh/hashstructure"
+	"sort"
 )
 
 type TerraformProviderDocGenerator struct {
@@ -66,6 +68,12 @@ func (t TerraformProviderDocGenerator) getProviderResources(analyser openapi.Spe
 		for _, p := range resourceSchema.Properties {
 			props = append(props, t.resourceSchemaToProperty(*p))
 		}
+
+		sort.Slice(props, func(i, j int) bool {
+			hash1, _ := hashstructure.Hash(props[i], nil)
+			hash2, _ := hashstructure.Hash(props[j], nil)
+			return hash1 > hash2
+		})
 
 		r = append(r, Resource{
 			Name:        resource.GetResourceName(),
