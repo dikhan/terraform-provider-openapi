@@ -1,6 +1,6 @@
 {{define "resource_example"}}
     {{- if eq .Type "string" -}}
-        <span>{{.Name}}  </span>= <span>"This is a string value"</span>
+        <span>{{.Name}}  </span>= <span>"{{.Name}}"</span>
     {{- else if eq .Type "integer" -}}
         <span>{{.Name}}  </span>= <span>1234</span>
     {{- else if eq .Type "boolean" -}}
