@@ -182,7 +182,9 @@
 {{range .ProviderResources.Resources -}}
     {{ $resource := . }}
     <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
-    <p>{{.Description}}</p>
+    {{- if ne .Description "" -}}
+        <p>{{.Description}}</p>
+    {{- end}}
     <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 <pre>
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
