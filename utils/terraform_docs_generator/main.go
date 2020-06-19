@@ -17,6 +17,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	d, _ := terraformProviderDocGenerator.GenerateDocumentation()
+	d, err := terraformProviderDocGenerator.GenerateDocumentation()
+	if err != nil {
+		log.Fatal(err)
+	}
 	d.RenderZendeskHTML(f)
 }
