@@ -31,16 +31,16 @@
     {{- if .Required -}}
         {{- $required = "Required" -}}
     {{end}}
-    <li>{{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}.
+    <li>{{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}
         {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema
         {{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}}
         :<ul dir="ltr">
             {{- range .Schema}}
-                <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.
+                <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}
                 {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
                 <ul dir="ltr">
                     {{- range .Schema}}
-                        <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}.</li>
+                        <li>{{.Name}} [{{.Type}}] - ({{- if .Required -}}Required{{else}}Optional{{- end -}}) {{.Description}}</li>
                     {{- end}}
                 </ul>
                 </li>
@@ -53,15 +53,15 @@
 
 {{- define "resource_attribute_reference" -}}
     {{- if .Computed -}}
-        <li>{{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}.
+        <li>{{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
             {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
             <ul dir="ltr">
                 {{- range .Schema}}
-                    <li>{{.Name}} [{{.Type}}] - {{.Description}}.
+                    <li>{{.Name}} [{{.Type}}] - {{.Description}}
                     {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
                     <ul dir="ltr">
                         {{- range .Schema}}
-                            <li>{{.Name}} [{{.Type}}] - {{.Description}}.</li>
+                            <li>{{.Name}} [{{.Type}}] - {{.Description}}</li>
                         {{- end}}
                     </ul>
                     </li>
@@ -236,17 +236,11 @@
 {{range .DataSources.DataSourceInstances -}}
     {{ $datasource := . }}
     <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
-    <p>{{.Description}}</p>
+    <p>Retrieve an existing resource using it's ID</p>
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
-    <pre>
-<span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
-    {{- range $datasource.Properties}}
-        {{if .Required -}}
-            {{template "resource_example" .}}
-        {{- end}}
-    {{- end}}
-<span>}</span>
-    </pre>
+<pre><span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
+    id = existing_resource_id
+<span>}</span></pre>
     <h4 id="datasource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
     <p dir="ltr">The following arguments are supported:</p>
     <ul dir="ltr">
