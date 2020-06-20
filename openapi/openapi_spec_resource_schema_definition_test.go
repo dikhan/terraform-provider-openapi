@@ -11,44 +11,84 @@ import (
 )
 
 func TestConvertToDataSourceSpecSchemaDefinitionProperty(t *testing.T) {
-	p := SpecSchemaDefinitionProperty{
-		Type:     TypeString,
-		Required: true,
-		Computed: false,
-		Default:  "defaultValue",
+	s := SpecSchemaDefinition{
+		Properties: []*SpecSchemaDefinitionProperty{
+			&SpecSchemaDefinitionProperty{
+				Type:     TypeString,
+				Required: true,
+				Computed: false,
+				Default:  "defaultValue",
+			},
+		},
 	}
-	s := SpecSchemaDefinition{}
-	specSchemaDefProp := s.convertToDataSourceSpecSchemaDefinitionProperty(p)
-	assert.False(t, specSchemaDefProp.Required)
-	assert.True(t, specSchemaDefProp.Computed)
-	assert.Nil(t, specSchemaDefProp.Default)
+	dataSourceSpecSchemaDef := s.ConvertToDataSourceSpecSchemaDefinition()
+	prop := dataSourceSpecSchemaDef.Properties[0]
+	assert.False(t, prop.Required)
+	assert.True(t, prop.Computed)
+	assert.Nil(t, prop.Default)
+}
+
+func TestConvertToDataSourceSpecSchemaDefinition_WithParentProp(t *testing.T) {
+	s := SpecSchemaDefinition{
+		Properties: []*SpecSchemaDefinitionProperty{
+			&SpecSchemaDefinitionProperty{
+				Name:             "someParentProp",
+				Type:             TypeString,
+				Required:         true,
+				Computed:         false,
+				Default:          "defaultParentPropValue",
+				IsParentProperty: true,
+			},
+			&SpecSchemaDefinitionProperty{
+				Name:     "someProp",
+				Type:     TypeObject,
+				Required: true,
+				Computed: false,
+				Default:  "defaultPropValue",
+			},
+		},
+	}
+	dataSourceSpecSchemaDef := s.ConvertToDataSourceSpecSchemaDefinition()
+	parentProp := dataSourceSpecSchemaDef.Properties[0]
+	assert.True(t, parentProp.Required)
+	assert.False(t, parentProp.Computed)
+	assert.Equal(t, "defaultParentPropValue", parentProp.Default)
+	prop := dataSourceSpecSchemaDef.Properties[1]
+	assert.False(t, prop.Required)
+	assert.True(t, prop.Computed)
+	assert.Nil(t, prop.Default)
 }
 
 func TestConvertToDataSourceSpecSchemaDefinitionProperty_ObjectProp(t *testing.T) {
-	p := SpecSchemaDefinitionProperty{
-		Type:     TypeObject,
-		Required: true,
-		Computed: false,
-		Default:  "defaultValue",
-		SpecSchemaDefinition: &SpecSchemaDefinition{
-			Properties: []*SpecSchemaDefinitionProperty{
-				&SpecSchemaDefinitionProperty{
-					Type:     TypeString,
-					Required: true,
-					Computed: false,
-					Default:  "defaultValue",
+	s := SpecSchemaDefinition{
+		Properties: []*SpecSchemaDefinitionProperty{
+			&SpecSchemaDefinitionProperty{
+				Type:     TypeObject,
+				Required: true,
+				Computed: false,
+				Default:  "defaultValue",
+				SpecSchemaDefinition: &SpecSchemaDefinition{
+					Properties: []*SpecSchemaDefinitionProperty{
+						&SpecSchemaDefinitionProperty{
+							Type:     TypeString,
+							Required: true,
+							Computed: false,
+							Default:  "defaultValue",
+						},
+					},
 				},
 			},
 		},
 	}
-	s := SpecSchemaDefinition{}
-	specSchemaDefProp := s.convertToDataSourceSpecSchemaDefinitionProperty(p)
-	assert.False(t, specSchemaDefProp.Required)
-	assert.True(t, specSchemaDefProp.Computed)
-	assert.Nil(t, specSchemaDefProp.Default)
-	assert.False(t, specSchemaDefProp.SpecSchemaDefinition.Properties[0].Required)
-	assert.True(t, specSchemaDefProp.SpecSchemaDefinition.Properties[0].Computed)
-	assert.Nil(t, specSchemaDefProp.SpecSchemaDefinition.Properties[0].Default)
+	dataSourceSpecSchemaDef := s.ConvertToDataSourceSpecSchemaDefinition()
+	prop := dataSourceSpecSchemaDef.Properties[0]
+	assert.False(t, prop.Required)
+	assert.True(t, prop.Computed)
+	assert.Nil(t, prop.Default)
+	objProp := prop.SpecSchemaDefinition.Properties[0]
+	assert.False(t, objProp.Required)
+	assert.True(t, objProp.Computed)
+	assert.Nil(t, objProp.Default)
 }
 
 func TestCreateDataSourceSchema(t *testing.T) {
