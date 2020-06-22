@@ -12,11 +12,17 @@ import (
 type schemaDefinitionPropertyType string
 
 const (
+	// TypeString defines a schema definition property of type int
 	TypeString schemaDefinitionPropertyType = "string"
-	TypeInt    schemaDefinitionPropertyType = "integer"
-	TypeFloat  schemaDefinitionPropertyType = "number"
-	TypeBool   schemaDefinitionPropertyType = "boolean"
-	TypeList   schemaDefinitionPropertyType = "list"
+	// TypeInt defines a schema definition property of type int
+	TypeInt schemaDefinitionPropertyType = "integer"
+	// TypeFloat defines a schema definition property of type float
+	TypeFloat schemaDefinitionPropertyType = "number"
+	// TypeBool defines a schema definition property of type bool
+	TypeBool schemaDefinitionPropertyType = "boolean"
+	// TypeList defines a schema definition property of type list
+	TypeList schemaDefinitionPropertyType = "list"
+	// TypeObject defines a schema definition property of type object
 	TypeObject schemaDefinitionPropertyType = "object"
 )
 
@@ -66,6 +72,7 @@ func (s *SpecSchemaDefinitionProperty) isPrimitiveProperty() bool {
 	return false
 }
 
+// GetTerraformCompliantPropertyName returns the property name converted to a terraform compliant name if needed following the snake_case naming convention
 func (s *SpecSchemaDefinitionProperty) GetTerraformCompliantPropertyName() string {
 	if s.PreferredName != "" {
 		return s.PreferredName
@@ -128,6 +135,7 @@ func (s *SpecSchemaDefinitionProperty) isReadOnly() bool {
 	return s.ReadOnly
 }
 
+// IsRequired exposes whether a property is required
 func (s *SpecSchemaDefinitionProperty) IsRequired() bool {
 	return s.Required
 }

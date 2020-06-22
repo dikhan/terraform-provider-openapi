@@ -3,17 +3,20 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/printers"
 	"github.com/mitchellh/hashstructure"
 	"sort"
 )
 
+// TerraformProviderDocGenerator defines the struct that holds the configuration needed to be able to generate the documentation
 type TerraformProviderDocGenerator struct {
-	ProviderName  string
+	// ProviderName defines the provider name
+	ProviderName string
+	// OpenAPIDocURL defines the URL where the service provider OpenAPI documentation lives and it will be used to fetch from
+	// to create the corresponding TerraformProviderDocumentation
 	OpenAPIDocURL string
-	Printer       printers.Printer
 }
 
+// GenerateDocumentation creates a TerraformProviderDocumentation object populated based on the OpenAPIDocURL documentation
 func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProviderDocumentation, error) {
 	analyser, err := openapi.CreateSpecAnalyser("v2", t.OpenAPIDocURL)
 	if err != nil {
@@ -196,51 +199,6 @@ func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationPropertie
 		})
 	}
 	return regions, configProps, nil
-}
-
-func (t TerraformProviderDocGenerator) printProviderResources(analyser openapi.SpecAnalyser) error {
-	resources, err := analyser.GetTerraformCompliantResources()
-	if err != nil {
-		return err
-	}
-	for _, resource := range resources {
-		if resource.ShouldIgnoreResource() {
-			continue
-		}
-		resourceSchema, err := resource.GetResourceSchema()
-		if err != nil {
-			return err
-		}
-		t.printResourceDoc(resource.GetResourceName(), resourceSchema)
-	}
-	return nil
-}
-
-func (t TerraformProviderDocGenerator) printResourceDoc(resourceName string, resourceSchema *openapi.SpecSchemaDefinition) {
-	required, optional, computed := t.createRequiredOptionalComputedMaps(resourceSchema)
-	t.Printer.PrintResourceHeader()
-	t.Printer.PrintResourceInfo(t.ProviderName, resourceName)
-	t.Printer.PrintResourceExample(t.ProviderName, resourceName, required)
-	t.Printer.PrintArguments(required, optional)
-	t.Printer.PrintAttributes(computed)
-}
-
-func (t TerraformProviderDocGenerator) createRequiredOptionalComputedMaps(resourceSchema *openapi.SpecSchemaDefinition) (openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties, openapi.SpecSchemaDefinitionProperties) {
-	required := openapi.SpecSchemaDefinitionProperties{}
-	optional := openapi.SpecSchemaDefinitionProperties{}
-	computed := openapi.SpecSchemaDefinitionProperties{}
-	for _, property := range resourceSchema.Properties {
-		if property.Required {
-			required = append(required, property)
-		} else {
-			if property.Computed {
-				computed = append(computed, property)
-			} else {
-				optional = append(optional, property)
-			}
-		}
-	}
-	return required, optional, computed
 }
 
 func orderProps(props []Property) []Property {

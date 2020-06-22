@@ -144,6 +144,7 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 	return resource, nil
 }
 
+// GetResourceName returns the resource name including the region at the end of the resource name if applicable
 func (o *SpecV2Resource) GetResourceName() string {
 	if o.Region != "" {
 		return fmt.Sprintf("%s_%s", o.Name, o.Region)
@@ -331,6 +332,7 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 	return nil
 }
 
+// GetResourceSchema returns the resource schema
 func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	return o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
 }

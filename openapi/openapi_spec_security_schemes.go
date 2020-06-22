@@ -34,6 +34,7 @@ type SpecSecurityScheme struct {
 	Name string
 }
 
+// GetTerraformConfigurationName returns the scheme name converted to a terraform compliant name if needed following the snake_case naming convention
 func (o *SpecSecurityScheme) GetTerraformConfigurationName() string {
 	return terraformutils.ConvertToTerraformCompliantName(o.Name)
 }

@@ -13,7 +13,7 @@ import (
 func TestConvertToDataSourceSpecSchemaDefinitionProperty(t *testing.T) {
 	s := SpecSchemaDefinition{
 		Properties: []*SpecSchemaDefinitionProperty{
-			&SpecSchemaDefinitionProperty{
+			{
 				Type:     TypeString,
 				Required: true,
 				Computed: false,
@@ -31,7 +31,7 @@ func TestConvertToDataSourceSpecSchemaDefinitionProperty(t *testing.T) {
 func TestConvertToDataSourceSpecSchemaDefinition_WithParentProp(t *testing.T) {
 	s := SpecSchemaDefinition{
 		Properties: []*SpecSchemaDefinitionProperty{
-			&SpecSchemaDefinitionProperty{
+			{
 				Name:             "someParentProp",
 				Type:             TypeString,
 				Required:         true,
@@ -39,7 +39,7 @@ func TestConvertToDataSourceSpecSchemaDefinition_WithParentProp(t *testing.T) {
 				Default:          "defaultParentPropValue",
 				IsParentProperty: true,
 			},
-			&SpecSchemaDefinitionProperty{
+			{
 				Name:     "someProp",
 				Type:     TypeObject,
 				Required: true,
@@ -62,14 +62,14 @@ func TestConvertToDataSourceSpecSchemaDefinition_WithParentProp(t *testing.T) {
 func TestConvertToDataSourceSpecSchemaDefinitionProperty_ObjectProp(t *testing.T) {
 	s := SpecSchemaDefinition{
 		Properties: []*SpecSchemaDefinitionProperty{
-			&SpecSchemaDefinitionProperty{
+			{
 				Type:     TypeObject,
 				Required: true,
 				Computed: false,
 				Default:  "defaultValue",
 				SpecSchemaDefinition: &SpecSchemaDefinition{
 					Properties: []*SpecSchemaDefinitionProperty{
-						&SpecSchemaDefinitionProperty{
+						{
 							Type:     TypeString,
 							Required: true,
 							Computed: false,
