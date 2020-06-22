@@ -48,7 +48,6 @@ type DataSources struct {
 // DataSource defines the attributes to generate documentation for a Terraform provider data source
 type DataSource struct {
 	Name         string
-	Description  string
 	OtherExample string
 	Properties   []Property
 }
@@ -76,11 +75,6 @@ type AttributesReference struct {
 	Description string
 	Properties  []Property
 	Notes       []string
-}
-
-// Import defines any notes that need to be appended to a resource's import section
-type Import struct {
-	Notes []string
 }
 
 // Property defines the attributes for describing a given property for a resource

@@ -261,7 +261,7 @@
 {{range .DataSources.DataSources -}}
     {{ $datasource := . }}
     <h3 id="{{.Name}}_datasource" dir="ltr">{{.Name}} (filters)</h3>
-    <p>{{.Description}}</p>
+    <p>The {{.Name}} data source allows you to retrieve an already existing {{.Name}} resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
     <pre>
 <span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
@@ -277,18 +277,18 @@
         <ul dir="ltr">
             <li>filter - (Required) Object containing two properties.</li>
             <ul>
-                <li>name: the name should match one of the properties to filter by. The following property names are allowed:
+                <li>name [string]: the name should match one of the properties to filter by. The following property names are supported:
                 {{range $datasource.Properties}}
                     {{if or (eq .Type "string") (eq .Type "integer") (eq .Type "float") (eq .Type "boolean")}}
                         <span>{{.Name}}, </span>
                     {{end}}
                 {{end}}
                 </li>
-                <li>values: the array should contain only one item containing the value to filter by.</li>
+                <li>values [array of string]: Values to filter by (only one value is supported at the moment).</li>
             </ul>
         </ul>
     {{- end}}
-    <p dir="ltr"><b>NOTE: </b>If more or less than a single match is returned by the search, Terraform will fail. Ensure that your search is specific enough to return a single result only.</p>
+    <p dir="ltr"><b>Note: </b>If more or less than a single match is returned by the search, Terraform will fail. Ensure that your search is specific enough to return a single result only.</p>
     <h4 id="datasource_{{.Name}}_attributes_reference" dir="ltr">Attributes Reference</h4>
     <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
     {{if $datasource.Properties -}}
