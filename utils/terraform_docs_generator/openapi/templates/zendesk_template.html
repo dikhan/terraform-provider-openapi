@@ -196,6 +196,15 @@
         {{- end}}
     </ul>
 {{- end}}
+{{ $object_property_name := "" }}
+{{- range $resource.Properties -}}
+    {{- if (eq .Type "object")}}
+        {{ $object_property_name = .Name }}
+    {{end}}
+{{- end}}
+{{- if ne $object_property_name ""}}
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: {{$.ProviderName}}_{{.Name}}.my_{{.Name}}.<b>{{$object_property_name}}[0]</b>.object_property)</p>
+{{end}}
 {{range .ArgumentsReference.Notes}}
     <p><span class="wysiwyg-color-red">*Note: {{.}}</span></p>
 {{end}}
