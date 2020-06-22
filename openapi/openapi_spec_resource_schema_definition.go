@@ -27,11 +27,10 @@ func (s *SpecSchemaDefinition) ConvertToDataSourceSpecSchemaDefinition() *SpecSc
 	return specSchemaDefinition
 }
 
-func (s *SpecSchemaDefinition) convertToDataSourceSpecSchemaDefinitionProperty(p SpecSchemaDefinitionProperty) *SpecSchemaDefinitionProperty {
-	if p.IsParentProperty {
-		return &p
+func (s *SpecSchemaDefinition) convertToDataSourceSpecSchemaDefinitionProperty(specSchemaDefinitionProperty SpecSchemaDefinitionProperty) *SpecSchemaDefinitionProperty {
+	if specSchemaDefinitionProperty.IsParentProperty {
+		return &specSchemaDefinitionProperty
 	}
-	specSchemaDefinitionProperty := p
 	specSchemaDefinitionProperty.Required = false
 	specSchemaDefinitionProperty.Computed = true
 	specSchemaDefinitionProperty.Default = nil
@@ -58,46 +57,7 @@ func (s *SpecSchemaDefinition) createDataSourceSchema() (map[string]*schema.Sche
 	if err != nil {
 		return nil, err
 	}
-	//terraformSchema, err := s.createResourceSchemaIgnoreID(true)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for propertyName := range terraformSchema {
-	//	p, err := s.getPropertyBasedOnTerraformName(propertyName)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	if !p.IsParentProperty {
-	//		terraformSchema[propertyName] = setPropertyForDataSourceSchema(terraformSchema[propertyName])
-	//	}
-	//}
 	return terraformSchema, nil
-}
-
-func setPropertyForDataSourceSchema(inputProperty *schema.Schema) (outputProperty *schema.Schema) {
-
-	outputProperty = inputProperty // the output is a clone of the input, do changes on the output var
-	outputProperty.Required = false
-	outputProperty.Optional = true
-	outputProperty.Computed = true
-	outputProperty.Default = nil
-
-	isResource := false
-	switch inputProperty.Elem.(type) {
-	case *schema.Resource:
-		isResource = true
-	}
-	// only apply the recursive call if Elem is a Resource (hence a complex item)
-	if isResource {
-		hasChildResources := inputProperty.Elem != nil && len(inputProperty.Elem.(*schema.Resource).Schema) > 0
-		if hasChildResources {
-			childResources := outputProperty.Elem.(*schema.Resource).Schema
-			for childName, childR := range childResources {
-				childResources[childName] = setPropertyForDataSourceSchema(childR)
-			}
-		}
-	}
-	return outputProperty
 }
 
 func (s *SpecSchemaDefinition) createResourceSchemaKeepID() (map[string]*schema.Schema, error) {
