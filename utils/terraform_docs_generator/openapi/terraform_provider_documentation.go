@@ -1,9 +1,8 @@
 package openapi
 
 import (
+	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/templates"
 	"io"
-	"io/ioutil"
-	"path/filepath"
 	"text/template"
 )
 
@@ -88,12 +87,9 @@ type Property struct {
 	Schema         []Property // This is used to describe the schema for array of objects or object properties
 }
 
-// RenderZendeskHTML renders the documentation in HTML using the Zendesk template (./utils/terraform_docs_generator/openapi/templates/zendesk_template.html)
+// RenderZendeskHTML renders the documentation in HTML using the Zendesk template templates.ZendeskTmpl
 func (t TerraformProviderDocumentation) RenderZendeskHTML(w io.Writer) error {
-	absPath, _ := filepath.Abs("./utils/terraform_docs_generator/openapi/templates/zendesk_template.html")
-	b, _ := ioutil.ReadFile(absPath)
-
-	tmpl, err := template.New("TerraformProviderDocumentation").Parse(string(b))
+	tmpl, err := template.New("TerraformProviderDocumentation").Parse(templates.ZendeskTmpl)
 	if err != nil {
 		return err
 	}

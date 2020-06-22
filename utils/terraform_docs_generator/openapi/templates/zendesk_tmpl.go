@@ -1,4 +1,7 @@
-{{define "resource_example"}}
+package templates
+
+// ZendeskTmpl contains the template used to render the TerraformProviderDocumentation struct as HTML formatted for Zendesk
+var ZendeskTmpl = `{{define "resource_example"}}
     {{- if eq .Type "string" -}}
         <span>{{.Name}}  </span>= <span>"{{.Name}}"</span>
     {{- else if eq .Type "integer" -}}
@@ -300,4 +303,4 @@
             {{- end}}
         </ul>
     {{- end}}
-{{end}} {{/* END range .DataSources.DataSources */}}
+{{end}} {{/* END range .DataSources.DataSources */}}`
