@@ -37,6 +37,11 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, err
 	}
 
+	dataSourceFilters, err := t.getDataSourceFilters(analyser)
+	if err != nil {
+		return TerraformProviderDocumentation{}, err
+	}
+
 	return TerraformProviderDocumentation{
 		ProviderName: t.ProviderName,
 		ProviderInstallation: ProviderInstallation{
@@ -56,10 +61,35 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 			Resources: resources,
 		},
 		DataSources: DataSources{
-			DataSources:         nil,
+			DataSources:         dataSourceFilters,
 			DataSourceInstances: dataSourceInstances,
 		},
 	}, err
+}
+
+func (t TerraformProviderDocGenerator) getDataSourceFilters(analyser openapi.SpecAnalyser) ([]DataSource, error) {
+	dataSources := []DataSource{}
+	dataSourcesFilter := analyser.GetTerraformCompliantDataSources()
+	for _, dataSource := range dataSourcesFilter {
+		s, err := dataSource.GetResourceSchema()
+		if err != nil {
+			return nil, err
+		}
+		dataSourceSchemaDefinition := s.ConvertToDataSourceSpecSchemaDefinition()
+		if err != nil {
+			return nil, err
+		}
+		props := []Property{}
+		for _, p := range dataSourceSchemaDefinition.Properties {
+			prop := t.resourceSchemaToProperty(*p)
+			props = append(props, prop)
+		}
+		dataSources = append(dataSources, DataSource{
+			Name:       dataSource.GetResourceName(),
+			Properties: props,
+		})
+	}
+	return dataSources, nil
 }
 
 func (t TerraformProviderDocGenerator) getDataSourceInstances(analyser openapi.SpecAnalyser) ([]DataSource, error) {
