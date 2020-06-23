@@ -9,11 +9,19 @@ import (
 )
 
 const testSwagger = `swagger: "2.0"
+host: service.api.hostname.com 
+schemes:
+- "https"
 x-terraform-provider-multiregion-fqdn: "service.api.${region}.hostname.com"
 x-terraform-provider-regions: "region1, region2, region3"
-host: api.my-service.com 
-schemes:
-- "http"
+security:
+  - authToken: []
+securityDefinitions:
+  authToken:
+    in: header
+    name: auth
+    type: apiKey
+    x-terraform-authentication-scheme-bearer: true
 
 paths:
   ######################
@@ -85,7 +93,6 @@ definitions:
           label:
             type: "string"`
 
-// resources, data source, list endpoint so we get data source filters
 func TestGenerateDocumentation(t *testing.T) {
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write([]byte(testSwagger))
@@ -114,9 +121,10 @@ func TestGenerateDocumentation(t *testing.T) {
 
 	// ProviderConfiguration assertions
 	assert.Equal(t, []string{"region1", "region2", "region3"}, d.ProviderConfiguration.Regions)
-	//assert.Equal(t, []Property{}, d.ProviderConfiguration.ConfigProperties)
-	//assert.Equal(t, []ExampleUsage{}, d.ProviderConfiguration.ExampleUsage)
-	//assert.Equal(t, ArgumentsReference{Notes: nil}, d.ProviderConfiguration.ArgumentsReference)
+	//TODO: required security def not being marked as required - need to fix
+	//assert.Equal(t, []Property{{Name: "auth_token", Type: "string", ArrayItemsType: "", Required: true, Computed: false, Description: "", Schema: nil}}, d.ProviderConfiguration.ConfigProperties)
+	assert.Nil(t, d.ProviderConfiguration.ExampleUsage)
+	assert.Equal(t, ArgumentsReference{Notes: nil}, d.ProviderConfiguration.ArgumentsReference)
 
 	// ProviderResources assertions
 	assert.Len(t, d.ProviderResources.Resources, 1)
