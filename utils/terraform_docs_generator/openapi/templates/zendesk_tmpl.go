@@ -94,7 +94,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
         <a href="#provider_resources" target="_self">Provider Resources</a>
         <ul>
             {{range .ProviderResources.Resources -}}
-                <li><a href="#{{.Name}}" target="_self">{{.Name}}</a></li>
+                <li><a href="#{{.Name}}" target="_self">{{$.ProviderName}}_{{.Name}}</a></li>
             {{- end}}
         </ul>
     </li>
@@ -102,7 +102,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
         <a href="#provider_datasources" target="_self">Data Sources (using resource id)</a>
         <ul>
             {{range .DataSources.DataSourceInstances -}}
-                <li><a href="#{{.Name}}" target="_self">{{.Name}}</a></li>
+                <li><a href="#{{.Name}}" target="_self">{{$.ProviderName}}_{{.Name}}</a></li>
             {{- end}}
         </ul>
     </li>
@@ -110,7 +110,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
         <a href="#provider_datasources_filters" target="_self">Data Sources (using filters)</a>
         <ul>
             {{range .DataSources.DataSources -}}
-                <li><a href="#{{.Name}}_datasource" target="_self">{{.Name}}</a></li>
+                <li><a href="#{{.Name}}_datasource" target="_self">{{$.ProviderName}}_{{.Name}}</a></li>
             {{- end}}
         </ul>
     </li>
@@ -175,7 +175,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
 
 {{range .ProviderResources.Resources -}}
     {{ $resource := . }}
-    <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
+    <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
     {{- if ne .Description "" -}}
         <p>{{.Description}}</p>
     {{- end}}
@@ -238,7 +238,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
 
 {{range .DataSources.DataSourceInstances -}}
     {{ $datasource := . }}
-    <h3 id="{{.Name}}" dir="ltr">{{.Name}}</h3>
+    <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
     <p>Retrieve an existing resource using it's ID</p>
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 <pre><span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
@@ -263,7 +263,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
 <h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
 {{range .DataSources.DataSources -}}
     {{ $datasource := . }}
-    <h3 id="{{.Name}}_datasource" dir="ltr">{{.Name}} (filters)</h3>
+    <h3 id="{{.Name}}_datasource" dir="ltr">{{$.ProviderName}}_{{.Name}} (filters)</h3>
     <p>The {{.Name}} data source allows you to retrieve an already existing {{.Name}} resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
     <pre>
