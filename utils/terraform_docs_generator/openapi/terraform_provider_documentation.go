@@ -79,13 +79,23 @@ type AttributesReference struct {
 
 // Property defines the attributes for describing a given property for a resource
 type Property struct {
-	Name           string
-	Type           string
-	ArrayItemsType string
-	Required       bool
-	Computed       bool
-	Description    string
-	Schema         []Property // This is used to describe the schema for array of objects or object properties
+	Name               string
+	Type               string
+	ArrayItemsType     string
+	Required           bool
+	Computed           bool
+	IsOptionalComputed bool
+	Description        string
+	Schema             []Property // This is used to describe the schema for array of objects or object properties
+}
+
+func (p Property) ContainsComputedSubProperties() bool {
+	for _, s := range p.Schema {
+		if s.Computed || s.IsOptionalComputed || s.ContainsComputedSubProperties() {
+			return true
+		}
+	}
+	return false
 }
 
 // RenderZendeskHTML renders the documentation in HTML using the Zendesk template templates.ZendeskTmpl
