@@ -56,6 +56,7 @@ type Resource struct {
 	Name               string
 	Description        string
 	Properties         []Property
+	ExampleUsage       []ExampleUsage
 	ArgumentsReference ArgumentsReference
 }
 

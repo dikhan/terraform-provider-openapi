@@ -180,6 +180,13 @@ var ZendeskTmpl = `{{define "resource_example"}}
         <p>{{.Description}}</p>
     {{- end}}
     <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
+{{- if .ExampleUsage}}
+	{{- range .ExampleUsage.Example -}}
+		<pre>
+{{.}}
+		</pre>
+	{{- end}}
+{{else}}
 <pre>
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
 {{- range $resource.Properties -}}
@@ -189,7 +196,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
 {{- end}}
 <span>}</span>
 </pre>
-
+{{- end}}
 <h4 id="resource_{{.Name}}_arguments_reference" dir="ltr">Arguments Reference</h4>
 <p dir="ltr">The following arguments are supported:</p>
 {{if $resource.Properties -}}
