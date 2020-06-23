@@ -181,9 +181,9 @@ var ZendeskTmpl = `{{define "resource_example"}}
     {{- end}}
     <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 {{- if .ExampleUsage}}
-	{{- range .ExampleUsage.Example -}}
+	{{- range .ExampleUsage -}}
 		<pre>
-{{.}}
+{{.Example}}
 		</pre>
 	{{- end}}
 {{else}}
