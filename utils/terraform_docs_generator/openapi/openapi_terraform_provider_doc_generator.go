@@ -86,7 +86,7 @@ func (t TerraformProviderDocGenerator) getDataSourceFilters(analyser openapi.Spe
 		}
 		dataSources = append(dataSources, DataSource{
 			Name:       dataSource.GetResourceName(),
-			Properties: props,
+			Properties: orderProps(props),
 		})
 	}
 	return dataSources, nil
@@ -114,7 +114,7 @@ func (t TerraformProviderDocGenerator) getDataSourceInstances(analyser openapi.S
 		}
 		dataSourcesInstance = append(dataSourcesInstance, DataSource{
 			Name:       fmt.Sprintf("%s_instance", dataSource.GetResourceName()),
-			Properties: props,
+			Properties: orderProps(props),
 		})
 	}
 	return dataSourcesInstance, nil
