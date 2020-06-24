@@ -215,7 +215,7 @@ func (t TerraformProviderDocGenerator) resourceSchemaToProperty(specSchemaDefini
 		Computed:           specSchemaDefinitionProperty.Computed,
 		IsOptionalComputed: specSchemaDefinitionProperty.IsOptionalComputed(),
 		Description:        specSchemaDefinitionProperty.Description,
-		Schema:             schema,
+		Schema:             orderProps(schema),
 	}
 }
 
