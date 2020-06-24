@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -121,8 +122,7 @@ func TestGenerateDocumentation(t *testing.T) {
 
 	// ProviderConfiguration assertions
 	assert.Equal(t, []string{"region1", "region2", "region3"}, d.ProviderConfiguration.Regions)
-	//TODO: required security def not being marked as required - need to fix
-	//assert.Equal(t, []Property{{Name: "auth_token", Type: "string", ArrayItemsType: "", Required: true, Computed: false, Description: "", Schema: nil}}, d.ProviderConfiguration.ConfigProperties)
+	assert.Equal(t, []Property{{Name: "auth_token", Type: "string", ArrayItemsType: "", Required: true, Computed: false, Description: "", Schema: nil}}, d.ProviderConfiguration.ConfigProperties)
 	assert.Nil(t, d.ProviderConfiguration.ExampleUsage)
 	assert.Equal(t, ArgumentsReference{Notes: nil}, d.ProviderConfiguration.ArgumentsReference)
 
@@ -182,6 +182,109 @@ func assertProperty(t *testing.T, actualProp Property, expectedName, expectedTyp
 		for i, expectedProp := range expectedSchema {
 			assertProperty(t, actualProp.Schema[i], expectedProp.Name, expectedProp.Type, expectedProp.ArrayItemsType, expectedProp.Description, expectedProp.Required, expectedProp.Computed, expectedProp.Schema)
 		}
+	}
+}
+
+func TestGetRequiredProviderConfigurationProperties(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		regions               []string
+		globalSecuritySchemes openapi.SpecSecuritySchemes
+		securityDefinitions   *openapi.SpecSecurityDefinitions
+		headers               openapi.SpecHeaderParameters
+		expectedRegions       []string
+		expectedConfigProps   []Property
+		expectedErr           error
+	}{
+		{
+			name: "happy path - required security scheme property",
+			securityDefinitions: &openapi.SpecSecurityDefinitions{
+				specStubSecurityDefinition{name: "required_token"},
+			},
+			globalSecuritySchemes: []openapi.SpecSecurityScheme{
+				{Name: "required_token"},
+			},
+			expectedConfigProps: []Property{
+				{
+					Name:           "required_token",
+					Type:           "string",
+					ArrayItemsType: "",
+					Required:       true,
+					Computed:       false,
+					Description:    "",
+					Schema:         nil,
+				},
+			},
+		},
+		{
+			name: "happy path - optional security scheme property",
+			securityDefinitions: &openapi.SpecSecurityDefinitions{
+				specStubSecurityDefinition{name: "optional_token"},
+			},
+			expectedConfigProps: []Property{
+				{
+					Name:           "optional_token",
+					Type:           "string",
+					ArrayItemsType: "",
+					Required:       false,
+					Computed:       false,
+					Description:    "",
+					Schema:         nil,
+				},
+			},
+		},
+		{
+			name:            "happy path - multi region",
+			regions:         []string{"region1", "region2", "region3"},
+			expectedRegions: []string{"region1", "region2", "region3"},
+		},
+		{
+			name: "happy path - with optional header",
+			headers: openapi.SpecHeaderParameters{
+				{
+					Name:       "optional_header",
+					IsRequired: false,
+				},
+			},
+			expectedConfigProps: []Property{
+				{
+					Name:           "optional_header",
+					Type:           "string",
+					ArrayItemsType: "",
+					Required:       false,
+					Computed:       false,
+					Description:    "",
+					Schema:         nil,
+				},
+			},
+		},
+		{
+			name: "happy path - with required header",
+			headers: openapi.SpecHeaderParameters{
+				{
+					Name:       "required_header",
+					IsRequired: true,
+				},
+			},
+			expectedConfigProps: []Property{
+				{
+					Name:           "required_header",
+					Type:           "string",
+					ArrayItemsType: "",
+					Required:       true,
+					Computed:       false,
+					Description:    "",
+					Schema:         nil,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		dg := TerraformProviderDocGenerator{}
+		regions, configProps := dg.getRequiredProviderConfigurationProperties(tc.regions, tc.globalSecuritySchemes, tc.securityDefinitions, tc.headers)
+		assert.Equal(t, tc.expectedRegions, regions, tc.name)
+		assert.Equal(t, tc.expectedConfigProps, configProps, tc.name)
 	}
 }
 
