@@ -121,9 +121,6 @@ func (t TerraformProviderDocGenerator) getDataSourceFilters(dataSourcesFilter []
 			return nil, err
 		}
 		dataSourceSchemaDefinition := s.ConvertToDataSourceSpecSchemaDefinition()
-		if err != nil {
-			return nil, err
-		}
 		props := []Property{}
 		for _, p := range dataSourceSchemaDefinition.Properties {
 			prop := t.resourceSchemaToProperty(*p)
