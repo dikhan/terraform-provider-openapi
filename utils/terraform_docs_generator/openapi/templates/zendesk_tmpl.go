@@ -2,7 +2,8 @@ package templates
 
 // ZendeskTmpl contains the template used to render the TerraformProviderDocumentation struct as HTML formatted for Zendesk
 var ZendeskTmpl = `{{define "resource_example"}}
-    {{- if eq .Type "string" -}}
+{{- if .Required}}
+    {{if eq .Type "string" -}}
         <span>{{.Name}}  </span>= <span>"{{.Name}}"</span>
     {{- else if eq .Type "integer" -}}
         <span>{{.Name}}  </span>= <span>1234</span>
@@ -21,12 +22,13 @@ var ZendeskTmpl = `{{define "resource_example"}}
     {{- else -}}
         {{- if and (eq .Type "object") -}}
         <span>{{.Name}}  </span><span>{</span>
-            {{range .Schema}}
-                {{- template "resource_example" .}}
-            {{end}}
+            {{- range .Schema}}
+                {{template "resource_example" .}}
+            {{- end}}
             <span>}</span>
         {{- end -}}
     {{- end -}}
+{{- end -}}
 {{end}}
 
 {{- define "resource_argument_reference" -}}
@@ -49,6 +51,8 @@ var ZendeskTmpl = `{{define "resource_example"}}
 
 {{- define "resource_attribute_reference" -}}
     {{- if or .Computed .ContainsComputedSubProperties -}}
+		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{/* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */}}
+		{{else}}
         <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
             {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
             <ul dir="ltr">
@@ -58,6 +62,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
             </ul>
             {{ end -}}
         </li>
+		{{end}}
     {{end}}
 {{- end -}}
 
@@ -184,9 +189,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
 <pre>
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
 {{- range $resource.Properties -}}
-{{- if .Required}}
     {{template "resource_example" .}}
-{{- end}}
 {{- end}}
 <span>}</span>
 </pre>

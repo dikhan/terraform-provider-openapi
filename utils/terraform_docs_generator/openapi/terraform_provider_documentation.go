@@ -91,7 +91,7 @@ type Property struct {
 
 func (p Property) ContainsComputedSubProperties() bool {
 	for _, s := range p.Schema {
-		if s.Computed || s.IsOptionalComputed || s.ContainsComputedSubProperties() {
+		if s.Computed || s.ContainsComputedSubProperties() {
 			return true
 		}
 	}
