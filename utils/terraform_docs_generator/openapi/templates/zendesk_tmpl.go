@@ -9,15 +9,15 @@ var ZendeskTmpl = `{{define "resource_example"}}
         <span>{{.Name}}  </span>= <span>1234</span>
     {{- else if eq .Type "boolean" -}}
         <span>{{.Name}}  </span>= <span>true</span>
-    {{- else if eq .Type "float" -}}
+    {{- else if eq .Type "number" -}}
         <span>{{.Name}}  </span>= <span>12.95</span>
-    {{- else if and (eq .Type "array") (eq .ArrayItemsType "string") -}}
-        <span>{{.Name}}  </span>= <span>["string1", "string2"]</span>
-    {{- else if and (eq .Type "array") (eq .ArrayItemsType "integer") -}}
+    {{- else if and (eq .Type "list") (eq .ArrayItemsType "string") -}}
+        <span>{{.Name}}  </span>= <span>["{{.Name}}1", "{{.Name}}2"]</span>
+    {{- else if and (eq .Type "list") (eq .ArrayItemsType "integer") -}}
         <span>{{.Name}}  </span>= <span>[1234, 4567]</span>
-    {{- else if and (eq .Type "array") (eq .ArrayItemsType "boolean") -}}
+    {{- else if and (eq .Type "list") (eq .ArrayItemsType "boolean") -}}
         <span>{{.Name}}  </span>= <span>[true, false]</span>
-    {{- else if and (eq .Type "array") (eq .ArrayItemsType "float") -}}
+    {{- else if and (eq .Type "list") (eq .ArrayItemsType "number") -}}
         <span>{{.Name}}  </span>= <span>[12.36, 99.45]</span>
     {{- else -}}
         {{- if and (eq .Type "object") -}}
@@ -37,7 +37,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
         {{- $required = "Required" -}}
     {{end}}
 	{{- if or .Required (and (not .Required) (not .Computed)) .IsOptionalComputed -}}
-    <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}
+    <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}
         {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}}. The following properties compose the object schema
         :<ul dir="ltr">
             {{- range .Schema}}
@@ -53,7 +53,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
     {{- if or .Computed .ContainsComputedSubProperties -}}
 		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{- /* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */ -}}
 		{{- else -}}
-        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
+        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
             {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
             <ul dir="ltr">
                 {{- range .Schema}}
@@ -242,9 +242,9 @@ var ZendeskTmpl = `{{define "resource_example"}}
 
 <h4 id="resource_{{.Name}}_import" dir="ltr">Import</h4>
 <p dir="ltr">
-    {{.Name}} resources can be imported using the&nbsp;<code>id</code>, e.g:
+    {{.Name}} resources can be imported using the&nbsp;<code>id</code> {{if ne $resource.BuildImportIDsExample "id"}}. This is a sub-resource so the parent resource IDs (<code>{{$resource.ParentProperties}}</code>) are required to be able to retrieve an instance of this resource{{end}}, e.g:
 </p>
-<pre dir="ltr">$ terraform import {{.Name}}.my_{{.Name}} id</pre>
+<pre dir="ltr">$ terraform import {{.Name}}.my_{{.Name}} {{$resource.BuildImportIDsExample}}</pre>
 <p dir="ltr">
     <strong>Note</strong>: In order for the import to work, the '{{$.ProviderName}}' terraform
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
@@ -300,7 +300,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
             <ul>
                 <li>name [string]: the name should match one of the properties to filter by. The following property names are supported:
                 {{range $datasource.Properties}}
-                    {{if or (eq .Type "string") (eq .Type "integer") (eq .Type "float") (eq .Type "boolean")}}
+                    {{if or (eq .Type "string") (eq .Type "integer") (eq .Type "number") (eq .Type "boolean")}}
                         <span>{{.Name}}, </span>
                     {{end}}
                 {{end}}

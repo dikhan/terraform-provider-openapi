@@ -56,8 +56,24 @@ type Resource struct {
 	Name               string
 	Description        string
 	Properties         []Property
+	ParentProperties   []string
 	ExampleUsage       []ExampleUsage
 	ArgumentsReference ArgumentsReference
+}
+
+func (r Resource) BuildImportIDsExample() string {
+	if r.ParentProperties == nil {
+		return "id"
+	}
+	idExamples := ""
+	for _, prop := range r.ParentProperties {
+		idExamples += prop + "/"
+	}
+	// Append the actual resource instance id
+	if idExamples != "" {
+		idExamples += r.Name + "_id"
+	}
+	return idExamples
 }
 
 // ExampleUsage defines a block of code/commands to include in the docs
