@@ -693,9 +693,9 @@ func TestParentResourceInfo(t *testing.T) {
 			Path:  "/cdns",
 			Paths: map[string]spec.PathItem{},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned should be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned should be nil", func() {
 				So(parentResourceInfo, ShouldBeNil)
 			})
 		})
@@ -705,9 +705,9 @@ func TestParentResourceInfo(t *testing.T) {
 			Path:  "/v1/cdns",
 			Paths: map[string]spec.PathItem{},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned should be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned should be nil", func() {
 				So(parentResourceInfo, ShouldBeNil)
 			})
 		})
@@ -723,9 +723,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -763,9 +763,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -797,9 +797,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -836,9 +836,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -878,9 +878,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -915,9 +915,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -948,9 +948,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -987,9 +987,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -1028,9 +1028,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -1064,8 +1064,8 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
@@ -1113,8 +1113,8 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
@@ -1158,8 +1158,8 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")

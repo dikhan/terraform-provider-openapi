@@ -13,9 +13,9 @@ type SpecResource interface {
 	ShouldIgnoreResource() bool
 	getResourceOperations() specResourceOperations
 	getTimeouts() (*specTimeouts, error)
-	// getParentResourceInfo returns a struct populated with relevant parentResourceInfo if the resource is considered
+	// GetParentResourceInfo returns a struct populated with relevant ParentResourceInfo if the resource is considered
 	// a subresource; nil otherwise.
-	getParentResourceInfo() *parentResourceInfo
+	GetParentResourceInfo() *ParentResourceInfo
 }
 
 type specTimeouts struct {

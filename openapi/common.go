@@ -61,9 +61,9 @@ func getParentIDs(openAPIResource SpecResource, data *schema.ResourceData) ([]st
 		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
 	}
 
-	parentResourceInfo := openAPIResource.getParentResourceInfo()
+	parentResourceInfo := openAPIResource.GetParentResourceInfo()
 	if parentResourceInfo != nil {
-		parentResourceNames := parentResourceInfo.getParentPropertiesNames()
+		parentResourceNames := parentResourceInfo.GetParentPropertiesNames()
 
 		parentIDs := []string{}
 		for _, parentResourceName := range parentResourceNames {

@@ -164,7 +164,7 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	parentResourceInfo := o.getParentResourceInfo()
+	parentResourceInfo := o.GetParentResourceInfo()
 	if parentResourceInfo != nil {
 		fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
 	}
@@ -280,7 +280,8 @@ func (o *SpecV2Resource) ShouldIgnoreResource() bool {
 	return false
 }
 
-func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
+// GetParentResourceInfo returns the information about the parent resources
+func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
@@ -321,7 +322,7 @@ func (o *SpecV2Resource) getParentResourceInfo() *parentResourceInfo {
 		}
 		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
 
-		sub := &parentResourceInfo{
+		sub := &ParentResourceInfo{
 			parentResourceNames:    parentResourceNames,
 			fullParentResourceName: fullParentResourceName,
 			parentURIs:             parentURIs,
@@ -358,9 +359,9 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 		schemaProps[propertyName] = schemaDefinitionProperty
 	}
 	if addParentProps {
-		parentResourceInfo := o.getParentResourceInfo()
+		parentResourceInfo := o.GetParentResourceInfo()
 		if parentResourceInfo != nil {
-			parentPropertyNames := parentResourceInfo.getParentPropertiesNames()
+			parentPropertyNames := parentResourceInfo.GetParentPropertiesNames()
 			for _, parentPropertyName := range parentPropertyNames {
 				pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
 				pr.IsParentProperty = true
