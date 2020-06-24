@@ -51,8 +51,8 @@ var ZendeskTmpl = `{{define "resource_example"}}
 
 {{- define "resource_attribute_reference" -}}
     {{- if or .Computed .ContainsComputedSubProperties -}}
-		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{/* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */}}
-		{{else}}
+		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{- /* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */ -}}
+		{{- else -}}
         <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
             {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
             <ul dir="ltr">
@@ -63,7 +63,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
             {{ end -}}
         </li>
 		{{end}}
-    {{end}}
+    {{- end}}
 {{- end -}}
 
 
