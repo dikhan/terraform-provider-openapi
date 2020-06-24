@@ -123,7 +123,12 @@ var ZendeskTmpl = `{{define "resource_example"}}
 <p>
   <span>{{.ProviderInstallation.Other}}</span>
 </p>
-<pre dir="ltr">{{.ProviderInstallation.OtherCommand}}$ terraform init &amp;&amp; terraform plan</pre>
+<pre dir="ltr">
+{{- if .ProviderInstallation.OtherCommand -}}
+	{{- .ProviderInstallation.OtherCommand -}}
+{{- end}}
+$ terraform init &amp;&amp; terraform plan
+</pre>
 
 <h2 id="provider_configuration">Provider Configuration</h2>
 <h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
