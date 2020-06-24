@@ -51,29 +51,24 @@ import (
 //	return nil, nil
 //}
 
-// specStubResource is a stub implementation of SpecResource interface which is used for testing purposes
-//type specStubResource struct {
-//	openapi.SpecResource
-//	name                    string
-//	host                    string
-//	path                    string
-//	shouldIgnore            bool
-//	schemaDefinition        *SpecSchemaDefinition
-//	resourceGetOperation    *specResourceOperation
-//	resourcePostOperation   *specResourceOperation
-//	resourceListOperation   *specResourceOperation
-//	resourcePutOperation    *specResourceOperation
-//	resourceDeleteOperation *specResourceOperation
-//	timeouts                *specTimeouts
-//
-//	parentResourceNames    []string
-//	parentPropertyNames    []string
-//	fullParentResourceName string
-//
-//	funcGetResourcePath   func(parentIDs []string) (string, error)
-//	funcGetResourceSchema func() (*SpecSchemaDefinition, error)
-//	error                 error
-//}
+type specStubResource struct {
+	openapi.SpecResource
+	name             string
+	shouldIgnore     bool
+	schemaDefinition *openapi.SpecSchemaDefinition
+	error            error
+}
+
+func (s *specStubResource) ShouldIgnoreResource() bool { return s.shouldIgnore }
+
+func (s *specStubResource) GetResourceSchema() (*openapi.SpecSchemaDefinition, error) {
+	if s.error != nil {
+		return nil, s.error
+	}
+	return s.schemaDefinition, nil
+}
+
+func (s *specStubResource) GetResourceName() string { return s.name }
 
 // specSecurityStub
 //type specSecurityStub struct {

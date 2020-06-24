@@ -185,6 +185,102 @@ func assertProperty(t *testing.T, actualProp Property, expectedName, expectedTyp
 	}
 }
 
+func TestGetProviderResources(t *testing.T) {
+	testCases := []struct {
+		name          string
+		openapiProps  openapi.SpecSchemaDefinitionProperties
+		expectedProps []Property
+	}{
+		{
+			name: "happy path - string prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "string_prop",
+					Type: openapi.TypeString,
+				},
+			},
+			expectedProps: []Property{{Name: "string_prop", Type: "string", ArrayItemsType: "", Required: false, Computed: false, Description: ""}},
+		},
+		{
+			name: "happy path - int prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "int_prop",
+					Type: openapi.TypeInt,
+				},
+			},
+			expectedProps: []Property{{Name: "int_prop", Type: "integer", ArrayItemsType: "", Required: false, Computed: false, Description: ""}},
+		},
+		{
+			name: "happy path - float prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "float_prop",
+					Type: openapi.TypeFloat,
+				},
+			},
+			expectedProps: []Property{{Name: "float_prop", Type: "number", ArrayItemsType: "", Required: false, Computed: false, Description: ""}},
+		},
+		{
+			name: "happy path - required props should be listed before optional props",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name:     "optional_prop",
+					Type:     openapi.TypeString,
+					Required: false,
+				},
+				&openapi.SpecSchemaDefinitionProperty{
+					Name:     "required_prop",
+					Type:     openapi.TypeString,
+					Required: true,
+				},
+			},
+			expectedProps: []Property{
+				{Name: "required_prop", Type: "string", ArrayItemsType: "", Required: true, Computed: false, Description: ""},
+				{Name: "optional_prop", Type: "string", ArrayItemsType: "", Required: false, Computed: false, Description: ""},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		openapiResources := []openapi.SpecResource{
+			&specStubResource{
+				name: "test_resource",
+				schemaDefinition: &openapi.SpecSchemaDefinition{
+					Properties: tc.openapiProps,
+				},
+			},
+		}
+		dg := TerraformProviderDocGenerator{}
+		actualResources, err := dg.getProviderResources(openapiResources)
+
+		expectedResources := []Resource{
+			{
+				Name:               "test_resource",
+				Description:        "",
+				Properties:         tc.expectedProps,
+				ExampleUsage:       nil,
+				ArgumentsReference: ArgumentsReference{Notes: []string{}},
+			},
+		}
+		assert.Nil(t, err)
+		assert.Equal(t, expectedResources, actualResources)
+	}
+}
+
+func TestGetProviderResources_IgnoreResource(t *testing.T) {
+	openapiResources := []openapi.SpecResource{
+		&specStubResource{
+			name:         "ignore_resource",
+			shouldIgnore: true,
+		},
+	}
+	dg := TerraformProviderDocGenerator{}
+	actualResources, err := dg.getProviderResources(openapiResources)
+
+	assert.Nil(t, err)
+	assert.Len(t, actualResources, 0)
+}
+
 func TestGetRequiredProviderConfigurationProperties(t *testing.T) {
 	testCases := []struct {
 		name                  string
