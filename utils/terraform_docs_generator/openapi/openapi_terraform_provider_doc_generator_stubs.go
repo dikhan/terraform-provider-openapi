@@ -6,16 +6,16 @@ import (
 )
 
 // specAnalyserStub is a stubbed spec analyser used for testing purposes that implements the SpecAnalyser interface
-//type specAnalyserStub struct {
-//	openapi.SpecAnalyser
-//	resources            []openapi.SpecResource
-//	dataSources          []openapi.SpecResource
-//	security             *specSecurityStub
-//	headers              openapi.SpecHeaderParameters
-//	backendConfiguration openapi.SpecBackendConfiguration
-//	error                error
-//}
-//
+type specAnalyserStub struct {
+	openapi.SpecAnalyser
+	//resources            []openapi.SpecResource
+	//dataSources          []openapi.SpecResource
+	security *specSecurityStub
+	//headers              openapi.SpecHeaderParameters
+	//backendConfiguration openapi.SpecBackendConfiguration
+	//error                error
+}
+
 //func (s *specAnalyserStub) GetTerraformCompliantResources() ([]openapi.SpecResource, error) {
 //	if s.error != nil {
 //		return nil, s.error
@@ -26,14 +26,14 @@ import (
 //func (s *specAnalyserStub) GetTerraformCompliantDataSources() []openapi.SpecResource {
 //	return s.dataSources
 //}
-//
-//func (s *specAnalyserStub) GetSecurity() openapi.SpecSecurity {
-//	if s.security != nil {
-//		return s.security
-//	}
-//	return nil
-//}
-//
+
+func (s *specAnalyserStub) GetSecurity() openapi.SpecSecurity {
+	if s.security != nil {
+		return s.security
+	}
+	return nil
+}
+
 //func (s *specAnalyserStub) GetAllHeaderParameters() (openapi.SpecHeaderParameters, error) {
 //	if s.headers != nil {
 //		return s.headers, nil
@@ -50,6 +50,28 @@ import (
 //	}
 //	return nil, nil
 //}
+
+// specSecurityStub
+type specSecurityStub struct {
+	openapi.SpecSecurity
+	securityDefinitions   *openapi.SpecSecurityDefinitions
+	globalSecuritySchemes openapi.SpecSecuritySchemes
+	error                 error
+}
+
+func (s *specSecurityStub) GetAPIKeySecurityDefinitions() (*openapi.SpecSecurityDefinitions, error) {
+	if s.error != nil {
+		return nil, s.error
+	}
+	return s.securityDefinitions, nil
+}
+
+func (s *specSecurityStub) GetGlobalSecuritySchemes() (openapi.SpecSecuritySchemes, error) {
+	if s.error != nil {
+		return nil, s.error
+	}
+	return s.globalSecuritySchemes, nil
+}
 
 type specStubResource struct {
 	openapi.SpecResource
@@ -69,28 +91,6 @@ func (s *specStubResource) GetResourceSchema() (*openapi.SpecSchemaDefinition, e
 }
 
 func (s *specStubResource) GetResourceName() string { return s.name }
-
-// specSecurityStub
-//type specSecurityStub struct {
-//	openapi.SpecSecurity
-//	securityDefinitions   *openapi.SpecSecurityDefinitions
-//	globalSecuritySchemes openapi.SpecSecuritySchemes
-//	error                 error
-//}
-//
-//func (s *specSecurityStub) GetAPIKeySecurityDefinitions() (*openapi.SpecSecurityDefinitions, error) {
-//	if s.error != nil {
-//		return nil, s.error
-//	}
-//	return s.securityDefinitions, nil
-//}
-//
-//func (s *specSecurityStub) GetGlobalSecuritySchemes() (openapi.SpecSecuritySchemes, error) {
-//	if s.error != nil {
-//		return nil, s.error
-//	}
-//	return s.globalSecuritySchemes, nil
-//}
 
 //specStubSecurityDefinition
 type specStubSecurityDefinition struct {

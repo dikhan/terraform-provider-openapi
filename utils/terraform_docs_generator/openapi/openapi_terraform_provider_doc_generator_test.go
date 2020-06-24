@@ -183,6 +183,35 @@ import (
 //	}
 //}
 
+func TestGetSecurity(t *testing.T) {
+	sa := specAnalyserStub{
+		security: &specSecurityStub{
+			globalSecuritySchemes: openapi.SpecSecuritySchemes{{Name: "required_token"}},
+			securityDefinitions:   &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}},
+		},
+	}
+	securitySchemes, securityDefinitions, err := getSecurity(&sa)
+	assert.Nil(t, err)
+	assert.Equal(t, sa.security.globalSecuritySchemes, securitySchemes)
+	assert.Equal(t, sa.security.securityDefinitions, securityDefinitions)
+}
+
+func TestGetSecurity_NoSpecSecurity(t *testing.T) {
+	sa := specAnalyserStub{}
+	securitySchemes, securityDefinitions, err := getSecurity(&sa)
+	assert.Nil(t, err)
+	assert.Nil(t, securitySchemes)
+	assert.Nil(t, securityDefinitions)
+}
+
+func TestGetSecurity_Error(t *testing.T) {
+	sa := specAnalyserStub{security: &specSecurityStub{error: errors.New("specSecurityStub error")}}
+	securitySchemes, securityDefinitions, err := getSecurity(&sa)
+	assert.Nil(t, securitySchemes)
+	assert.Nil(t, securityDefinitions)
+	assert.EqualError(t, err, "specSecurityStub error")
+}
+
 func TestGetDataSourceFilters(t *testing.T) {
 	testCases := []struct {
 		name          string
