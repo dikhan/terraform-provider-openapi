@@ -22,10 +22,23 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
-	regions, configProperties, err := t.getRequiredProviderConfigurationProperties(analyser)
+
+	regions, err := getRegions(analyser)
 	if err != nil {
-		return TerraformProviderDocumentation{}, err
+		return TerraformProviderDocumentation{}, nil
 	}
+
+	globalSecuritySchemes, securityDefinitions, err := getSecurity(analyser)
+	if err != nil {
+		return TerraformProviderDocumentation{}, nil
+	}
+
+	headers, err := analyser.GetAllHeaderParameters()
+	if err != nil {
+		return TerraformProviderDocumentation{}, nil
+	}
+
+	configRegions, configProperties := t.getRequiredProviderConfigurationProperties(regions, globalSecuritySchemes, securityDefinitions, headers)
 
 	resources, err := t.getProviderResources(analyser)
 	if err != nil {
@@ -54,7 +67,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 			OtherCommand: fmt.Sprintf("$ export OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>", t.ProviderName),
 		},
 		ProviderConfiguration: ProviderConfiguration{
-			Regions:          regions,
+			Regions:          configRegions,
 			ConfigProperties: configProperties,
 		},
 		ProviderResources: ProviderResources{
@@ -65,6 +78,37 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 			DataSourceInstances: dataSourceInstances,
 		},
 	}, err
+}
+
+func getRegions(s openapi.SpecAnalyser) ([]string, error) {
+	backendConfig, err := s.GetAPIBackendConfiguration()
+	if err != nil {
+		return nil, err
+	}
+	if backendConfig != nil {
+		_, _, regions, err := backendConfig.IsMultiRegion()
+		if err != nil {
+			return nil, err
+		}
+		return regions, nil
+	}
+	return nil, nil
+}
+
+func getSecurity(s openapi.SpecAnalyser) (openapi.SpecSecuritySchemes, *openapi.SpecSecurityDefinitions, error) {
+	security := s.GetSecurity()
+	if security != nil {
+		globalSecuritySchemes, err := security.GetGlobalSecuritySchemes()
+		if err != nil {
+			return nil, nil, err
+		}
+		securityDefinitions, err := security.GetAPIKeySecurityDefinitions()
+		if err != nil {
+			return nil, nil, err
+		}
+		return globalSecuritySchemes, securityDefinitions, nil
+	}
+	return nil, nil, nil
 }
 
 func (t TerraformProviderDocGenerator) getDataSourceFilters(analyser openapi.SpecAnalyser) ([]DataSource, error) {
@@ -181,54 +225,42 @@ func (t TerraformProviderDocGenerator) resourceSchemaToProperty(specSchemaDefini
 	}
 }
 
-func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(analyser openapi.SpecAnalyser) ([]string, []Property, error) {
+func (t TerraformProviderDocGenerator) getRequiredProviderConfigurationProperties(regions []string, globalSecuritySchemes openapi.SpecSecuritySchemes, securityDefinitions *openapi.SpecSecurityDefinitions, headers openapi.SpecHeaderParameters) ([]string, []Property) {
 	var configProps []Property
-	backendConfig, err := analyser.GetAPIBackendConfiguration()
-	if err != nil {
-		return nil, nil, err
-	}
-	_, _, regions, err := backendConfig.IsMultiRegion()
-	if err != nil {
-		return nil, nil, err
-	}
-	globalSecuritySchemes, err := analyser.GetSecurity().GetGlobalSecuritySchemes()
-	if err != nil {
-		return nil, nil, err
-	}
-	securityDefinitions, err := analyser.GetSecurity().GetAPIKeySecurityDefinitions()
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, securityDefinition := range *securityDefinitions {
-		secDefName := securityDefinition.GetTerraformConfigurationName()
-		configProps = append(configProps, Property{
-			Name:        secDefName,
-			Type:        "string",
-			Required:    false,
-			Description: "",
-		})
+	if securityDefinitions != nil {
+		for _, securityDefinition := range *securityDefinitions {
+			secDefName := securityDefinition.GetTerraformConfigurationName()
+			configProps = append(configProps, Property{
+				Name:        secDefName,
+				Type:        "string",
+				Required:    false,
+				Description: "",
+			})
+		}
 	}
 	// Mark as required the properties that are set in the security schemes (they are mandatory)
-	for _, securityScheme := range globalSecuritySchemes {
-		for _, configProp := range configProps {
-			c := &configProp
-			if c.Name == securityScheme.GetTerraformConfigurationName() {
-				c.Required = true
-				break
+	if globalSecuritySchemes != nil {
+		for _, securityScheme := range globalSecuritySchemes {
+			for idx, configProp := range configProps {
+				if configProp.Name == securityScheme.GetTerraformConfigurationName() {
+					configProps[idx].Required = true
+					break
+				}
 			}
 		}
 	}
 
-	headers, err := analyser.GetAllHeaderParameters()
-	for _, header := range headers {
-		configProps = append(configProps, Property{
-			Name:        header.GetHeaderTerraformConfigurationName(),
-			Type:        "string",
-			Required:    header.IsRequired,
-			Description: "",
-		})
+	if headers != nil {
+		for _, header := range headers {
+			configProps = append(configProps, Property{
+				Name:        header.GetHeaderTerraformConfigurationName(),
+				Type:        "string",
+				Required:    header.IsRequired,
+				Description: "",
+			})
+		}
 	}
-	return regions, configProps, nil
+	return regions, configProps
 }
 
 func orderProps(props []Property) []Property {
