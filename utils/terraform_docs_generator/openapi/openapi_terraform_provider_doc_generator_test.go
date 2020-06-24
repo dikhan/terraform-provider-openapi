@@ -183,6 +183,29 @@ func assertProperty(t *testing.T, actualProp Property, expectedName, expectedTyp
 			assertProperty(t, actualProp.Schema[i], expectedProp.Name, expectedProp.Type, expectedProp.ArrayItemsType, expectedProp.Description, expectedProp.Required, expectedProp.Computed, expectedProp.Schema)
 		}
 	}
+
+	for _, tc := range testCases {
+		openapiResources := []openapi.SpecResource{
+			&specStubResource{
+				name: "test_resource",
+				schemaDefinition: &openapi.SpecSchemaDefinition{
+					Properties: tc.openapiProps,
+				},
+			},
+		}
+		dg := TerraformProviderDocGenerator{}
+		dataSourceInstances, err := dg.getDataSourceInstances(openapiResources)
+
+		expectedDataSourceInstances := []DataSource{
+			{
+				Name:         "test_resource_instance",
+				Properties:   tc.expectedProps,
+				OtherExample: "",
+			},
+		}
+		assert.Nil(t, err)
+		assert.Equal(t, expectedDataSourceInstances, dataSourceInstances)
+	}
 }
 
 func TestGetProviderResources(t *testing.T) {
@@ -199,7 +222,7 @@ func TestGetProviderResources(t *testing.T) {
 					Type: openapi.TypeString,
 				},
 			},
-			expectedProps: []Property{{Name: "string_prop", Type: "string", ArrayItemsType: "", Required: false, Computed: false, Description: ""}},
+			expectedProps: []Property{{Name: "string_prop", Type: "string", Required: false, Computed: false}},
 		},
 		{
 			name: "happy path - int prop",
@@ -209,7 +232,7 @@ func TestGetProviderResources(t *testing.T) {
 					Type: openapi.TypeInt,
 				},
 			},
-			expectedProps: []Property{{Name: "int_prop", Type: "integer", ArrayItemsType: "", Required: false, Computed: false, Description: ""}},
+			expectedProps: []Property{{Name: "int_prop", Type: "integer", Required: false, Computed: false}},
 		},
 		{
 			name: "happy path - float prop",
@@ -219,7 +242,43 @@ func TestGetProviderResources(t *testing.T) {
 					Type: openapi.TypeFloat,
 				},
 			},
-			expectedProps: []Property{{Name: "float_prop", Type: "number", ArrayItemsType: "", Required: false, Computed: false, Description: ""}},
+			expectedProps: []Property{{Name: "float_prop", Type: "number", Required: false, Computed: false}},
+		},
+		{
+			name: "happy path - list prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name:           "list_prop",
+					Type:           openapi.TypeList,
+					ArrayItemsType: openapi.TypeString,
+				},
+			},
+			expectedProps: []Property{{Name: "list_prop", Type: "list", ArrayItemsType: "string", Required: false, Computed: false}},
+		},
+		{
+			name: "happy path - obj prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "obj_prop",
+					Type: openapi.TypeObject,
+					SpecSchemaDefinition: &openapi.SpecSchemaDefinition{
+						Properties: openapi.SpecSchemaDefinitionProperties{
+							{Name: "string_prop", Type: openapi.TypeString},
+						},
+					},
+				},
+			},
+			expectedProps: []Property{
+				{
+					Name:     "obj_prop",
+					Type:     "object",
+					Required: false,
+					Computed: false,
+					Schema: []Property{
+						{Name: "string_prop", Type: "string", Required: false, Computed: false},
+					},
+				},
+			},
 		},
 		{
 			name: "happy path - required props should be listed before optional props",
@@ -236,8 +295,8 @@ func TestGetProviderResources(t *testing.T) {
 				},
 			},
 			expectedProps: []Property{
-				{Name: "required_prop", Type: "string", ArrayItemsType: "", Required: true, Computed: false, Description: ""},
-				{Name: "optional_prop", Type: "string", ArrayItemsType: "", Required: false, Computed: false, Description: ""},
+				{Name: "required_prop", Type: "string", Required: true, Computed: false},
+				{Name: "optional_prop", Type: "string", Required: false, Computed: false},
 			},
 		},
 	}
@@ -392,8 +451,8 @@ func TestOrderProps(t *testing.T) {
 	}
 	orderedProps := orderProps(inputProps)
 	expectedProps := []Property{
-		{Name: "prop2"},
 		{Name: "prop1"},
+		{Name: "prop2"},
 		{Name: "prop3"},
 	}
 	assert.Equal(t, expectedProps, orderedProps)
