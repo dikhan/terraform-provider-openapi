@@ -379,6 +379,20 @@ func TestGetDataSourceInstances(t *testing.T) {
 	}
 }
 
+func TestGetDataSourceInstances_Error(t *testing.T) {
+	openapiResources := []openapi.SpecResource{
+		&specStubResource{
+			name:  "test_resource",
+			error: errors.New("specStubResource error"),
+		},
+	}
+	dg := TerraformProviderDocGenerator{}
+	dataSourceInstances, err := dg.getDataSourceInstances(openapiResources)
+
+	assert.Nil(t, dataSourceInstances)
+	assert.EqualError(t, err, "specStubResource error")
+}
+
 func TestGetProviderResources(t *testing.T) {
 	testCases := []struct {
 		name          string
