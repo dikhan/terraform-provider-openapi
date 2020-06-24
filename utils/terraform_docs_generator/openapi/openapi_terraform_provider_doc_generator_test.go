@@ -183,6 +183,68 @@ import (
 //	}
 //}
 
+func TestGetRegions(t *testing.T) {
+	sa := specAnalyserStub{
+		backendConfiguration: &specStubBackendConfiguration{
+			host:    "service.api.${region}.hostname.com",
+			regions: []string{"region1", "region2"},
+		},
+	}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, err)
+	assert.Equal(t, sa.backendConfiguration.regions, regions)
+}
+
+func TestGetRegions_NotMultiRegion(t *testing.T) {
+	sa := specAnalyserStub{}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, regions)
+	assert.Nil(t, err)
+}
+
+func TestGetRegions_BackendConfigError(t *testing.T) {
+	sa := specAnalyserStub{backendConfiguration: &specStubBackendConfiguration{err: errors.New("specStubBackendConfiguration error")}}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, regions)
+	assert.EqualError(t, err, "specStubBackendConfiguration error")
+}
+
+func TestGetRegions_SpecAnalyserError(t *testing.T) {
+	sa := specAnalyserStub{error: errors.New("specAnalyser error")}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, regions)
+	assert.EqualError(t, err, "specAnalyser error")
+}
+
+func TestGetSecurity(t *testing.T) {
+	sa := specAnalyserStub{
+		security: &specSecurityStub{
+			globalSecuritySchemes: openapi.SpecSecuritySchemes{{Name: "required_token"}},
+			securityDefinitions:   &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}},
+		},
+	}
+	securitySchemes, securityDefinitions, err := getSecurity(&sa)
+	assert.Nil(t, err)
+	assert.Equal(t, sa.security.globalSecuritySchemes, securitySchemes)
+	assert.Equal(t, sa.security.securityDefinitions, securityDefinitions)
+}
+
+func TestGetSecurity_NoSpecSecurity(t *testing.T) {
+	sa := specAnalyserStub{}
+	securitySchemes, securityDefinitions, err := getSecurity(&sa)
+	assert.Nil(t, err)
+	assert.Nil(t, securitySchemes)
+	assert.Nil(t, securityDefinitions)
+}
+
+func TestGetSecurity_Error(t *testing.T) {
+	sa := specAnalyserStub{security: &specSecurityStub{error: errors.New("specSecurityStub error")}}
+	securitySchemes, securityDefinitions, err := getSecurity(&sa)
+	assert.Nil(t, securitySchemes)
+	assert.Nil(t, securityDefinitions)
+	assert.EqualError(t, err, "specSecurityStub error")
+}
+
 func TestGetDataSourceFilters(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -281,6 +343,20 @@ func TestGetDataSourceFilters(t *testing.T) {
 	}
 }
 
+func TestGetDataSourceFilters_Error(t *testing.T) {
+	openapiDataSources := []openapi.SpecResource{
+		&specStubResource{
+			name:  "test_resource",
+			error: errors.New("specStubResource error"),
+		},
+	}
+	dg := TerraformProviderDocGenerator{}
+	dataSourceFilters, err := dg.getDataSourceFilters(openapiDataSources)
+
+	assert.Nil(t, dataSourceFilters)
+	assert.EqualError(t, err, "specStubResource error")
+}
+
 func TestGetDataSourceInstances(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -377,6 +453,20 @@ func TestGetDataSourceInstances(t *testing.T) {
 		assert.Nil(t, err, tc.name)
 		assert.Equal(t, expectedDataSourceInstances, dataSourceInstances, tc.name)
 	}
+}
+
+func TestGetDataSourceInstances_Error(t *testing.T) {
+	openapiResources := []openapi.SpecResource{
+		&specStubResource{
+			name:  "test_resource",
+			error: errors.New("specStubResource error"),
+		},
+	}
+	dg := TerraformProviderDocGenerator{}
+	dataSourceInstances, err := dg.getDataSourceInstances(openapiResources)
+
+	assert.Nil(t, dataSourceInstances)
+	assert.EqualError(t, err, "specStubResource error")
 }
 
 func TestGetProviderResources(t *testing.T) {
