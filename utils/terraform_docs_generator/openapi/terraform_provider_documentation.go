@@ -89,6 +89,7 @@ type Property struct {
 	Schema             []Property // This is used to describe the schema for array of objects or object properties
 }
 
+// ContainsComputedSubProperties checks if a schema contains properties that are computed recursively
 func (p Property) ContainsComputedSubProperties() bool {
 	for _, s := range p.Schema {
 		if s.Computed || s.ContainsComputedSubProperties() {
