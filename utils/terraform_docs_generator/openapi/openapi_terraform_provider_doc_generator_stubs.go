@@ -54,23 +54,17 @@ func (s *specAnalyserStub) GetAPIBackendConfiguration() (openapi.SpecBackendConf
 // specSecurityStub
 type specSecurityStub struct {
 	openapi.SpecSecurity
-	securityDefinitions   *openapi.SpecSecurityDefinitions
-	globalSecuritySchemes openapi.SpecSecuritySchemes
+	securityDefinitions   func() (*openapi.SpecSecurityDefinitions, error)
+	globalSecuritySchemes func() (openapi.SpecSecuritySchemes, error)
 	error                 error
 }
 
 func (s *specSecurityStub) GetAPIKeySecurityDefinitions() (*openapi.SpecSecurityDefinitions, error) {
-	if s.error != nil {
-		return nil, s.error
-	}
-	return s.securityDefinitions, nil
+	return s.securityDefinitions()
 }
 
 func (s *specSecurityStub) GetGlobalSecuritySchemes() (openapi.SpecSecuritySchemes, error) {
-	if s.error != nil {
-		return nil, s.error
-	}
-	return s.globalSecuritySchemes, nil
+	return s.globalSecuritySchemes()
 }
 
 //specStubBackendConfiguration

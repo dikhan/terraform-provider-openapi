@@ -217,16 +217,18 @@ func TestGetRegions_SpecAnalyserError(t *testing.T) {
 }
 
 func TestGetSecurity(t *testing.T) {
+	expectedSecuritySchemes := openapi.SpecSecuritySchemes{{Name: "required_token"}}
+	expectedSecurityDefinitions := &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}}
 	sa := specAnalyserStub{
 		security: &specSecurityStub{
-			globalSecuritySchemes: openapi.SpecSecuritySchemes{{Name: "required_token"}},
-			securityDefinitions:   &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}},
+			globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return expectedSecuritySchemes, nil },
+			securityDefinitions:   func() (*openapi.SpecSecurityDefinitions, error) { return expectedSecurityDefinitions, nil },
 		},
 	}
 	securitySchemes, securityDefinitions, err := getSecurity(&sa)
 	assert.Nil(t, err)
-	assert.Equal(t, sa.security.globalSecuritySchemes, securitySchemes)
-	assert.Equal(t, sa.security.securityDefinitions, securityDefinitions)
+	assert.Equal(t, expectedSecuritySchemes, securitySchemes)
+	assert.Equal(t, expectedSecurityDefinitions, securityDefinitions)
 }
 
 func TestGetSecurity_NoSpecSecurity(t *testing.T) {
@@ -237,12 +239,34 @@ func TestGetSecurity_NoSpecSecurity(t *testing.T) {
 	assert.Nil(t, securityDefinitions)
 }
 
-func TestGetSecurity_Error(t *testing.T) {
-	sa := specAnalyserStub{security: &specSecurityStub{error: errors.New("specSecurityStub error")}}
+func TestGetSecurity_SecuritySchemesError(t *testing.T) {
+	sa := specAnalyserStub{
+		security: &specSecurityStub{
+			globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return nil, errors.New("globalSecuritySchemes error") },
+			securityDefinitions: func() (*openapi.SpecSecurityDefinitions, error) {
+				return &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}}, nil
+			},
+		},
+	}
 	securitySchemes, securityDefinitions, err := getSecurity(&sa)
 	assert.Nil(t, securitySchemes)
 	assert.Nil(t, securityDefinitions)
-	assert.EqualError(t, err, "specSecurityStub error")
+	assert.EqualError(t, err, "globalSecuritySchemes error")
+}
+
+func TestGetSecurity_SecurityDefinitionsError(t *testing.T) {
+	sa := specAnalyserStub{
+		security: &specSecurityStub{
+			globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) {
+				return openapi.SpecSecuritySchemes{{Name: "required_token"}}, nil
+			},
+			securityDefinitions: func() (*openapi.SpecSecurityDefinitions, error) { return nil, errors.New("securityDefinitions error") },
+		},
+	}
+	securitySchemes, securityDefinitions, err := getSecurity(&sa)
+	assert.Nil(t, securitySchemes)
+	assert.Nil(t, securityDefinitions)
+	assert.EqualError(t, err, "securityDefinitions error")
 }
 
 func TestGetDataSourceFilters(t *testing.T) {
