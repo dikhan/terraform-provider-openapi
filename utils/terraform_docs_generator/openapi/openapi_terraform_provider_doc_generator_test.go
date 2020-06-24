@@ -317,14 +317,16 @@ func TestGetDataSourceFilters(t *testing.T) {
 			expectedProps: []Property{{Name: "list_prop", Type: "list", ArrayItemsType: "string", Required: false, Computed: true, IsOptionalComputed: true}},
 		},
 		{
-			name: "happy path - obj prop",
+			name: "happy path - obj prop with multiple child props (child props should be ordered by their hash)",
 			openapiProps: openapi.SpecSchemaDefinitionProperties{
 				&openapi.SpecSchemaDefinitionProperty{
 					Name: "obj_prop",
 					Type: openapi.TypeObject,
 					SpecSchemaDefinition: &openapi.SpecSchemaDefinition{
 						Properties: openapi.SpecSchemaDefinitionProperties{
-							{Name: "string_prop", Type: openapi.TypeString},
+							{Name: "string_prop2", Type: openapi.TypeString},
+							{Name: "string_prop3", Type: openapi.TypeString},
+							{Name: "string_prop1", Type: openapi.TypeString},
 						},
 					},
 				},
@@ -337,7 +339,9 @@ func TestGetDataSourceFilters(t *testing.T) {
 					Computed:           true,
 					IsOptionalComputed: true,
 					Schema: []Property{
-						{Name: "string_prop", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 					},
 				},
 			},
@@ -429,14 +433,16 @@ func TestGetDataSourceInstances(t *testing.T) {
 			expectedProps: []Property{{Name: "list_prop", Type: "list", ArrayItemsType: "string", Required: false, Computed: true, IsOptionalComputed: true}},
 		},
 		{
-			name: "happy path - obj prop",
+			name: "happy path - obj prop with multiple child props (child props should be ordered according to their hash)",
 			openapiProps: openapi.SpecSchemaDefinitionProperties{
 				&openapi.SpecSchemaDefinitionProperty{
 					Name: "obj_prop",
 					Type: openapi.TypeObject,
 					SpecSchemaDefinition: &openapi.SpecSchemaDefinition{
 						Properties: openapi.SpecSchemaDefinitionProperties{
-							{Name: "string_prop", Type: openapi.TypeString},
+							{Name: "string_prop3", Type: openapi.TypeString},
+							{Name: "string_prop1", Type: openapi.TypeString},
+							{Name: "string_prop2", Type: openapi.TypeString},
 						},
 					},
 				},
@@ -449,7 +455,9 @@ func TestGetDataSourceInstances(t *testing.T) {
 					Computed:           true,
 					IsOptionalComputed: true,
 					Schema: []Property{
-						{Name: "string_prop", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 					},
 				},
 			},
@@ -541,14 +549,16 @@ func TestGetProviderResources(t *testing.T) {
 			expectedProps: []Property{{Name: "list_prop", Type: "list", ArrayItemsType: "string", Required: false, Computed: false}},
 		},
 		{
-			name: "happy path - obj prop",
+			name: "happy path - obj prop with multiple child props (child props should be ordered according to their hash)",
 			openapiProps: openapi.SpecSchemaDefinitionProperties{
 				&openapi.SpecSchemaDefinitionProperty{
 					Name: "obj_prop",
 					Type: openapi.TypeObject,
 					SpecSchemaDefinition: &openapi.SpecSchemaDefinition{
 						Properties: openapi.SpecSchemaDefinitionProperties{
-							{Name: "string_prop", Type: openapi.TypeString},
+							{Name: "string_prop3", Type: openapi.TypeString},
+							{Name: "string_prop1", Type: openapi.TypeString},
+							{Name: "string_prop2", Type: openapi.TypeString},
 						},
 					},
 				},
@@ -560,7 +570,9 @@ func TestGetProviderResources(t *testing.T) {
 					Required: false,
 					Computed: false,
 					Schema: []Property{
-						{Name: "string_prop", Type: "string", Required: false, Computed: false},
+						{Name: "string_prop2", Type: "string", Required: false, Computed: false},
+						{Name: "string_prop1", Type: "string", Required: false, Computed: false},
+						{Name: "string_prop3", Type: "string", Required: false, Computed: false},
 					},
 				},
 			},
