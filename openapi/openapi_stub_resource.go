@@ -80,8 +80,8 @@ func (s *specStubResource) getHost() (string, error) {
 	return s.host, nil
 }
 
-func (s *specStubResource) getParentResourceInfo() *parentResourceInfo {
-	subRes := parentResourceInfo{}
+func (s *specStubResource) GetParentResourceInfo() *ParentResourceInfo {
+	subRes := ParentResourceInfo{}
 	if len(s.parentResourceNames) > 0 && s.fullParentResourceName != "" {
 		subRes.parentResourceNames = s.parentResourceNames
 		subRes.fullParentResourceName = s.fullParentResourceName
