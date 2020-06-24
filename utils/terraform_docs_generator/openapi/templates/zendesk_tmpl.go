@@ -76,7 +76,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
   <li>
     <a href="#provider_installation" target="_self">Provider Installation</a>
   </li>
-  {{if .ProviderConfiguration.Regions }}
+  {{if or .ProviderConfiguration.Regions .ProviderConfiguration.ConfigProperties }}
     <li>
       <a href="#provider_configuration" target="_self">Provider Configuration</a>
       <ul>
@@ -130,9 +130,9 @@ var ZendeskTmpl = `{{define "resource_example"}}
 ➜ ~ terraform init &amp;&amp; terraform plan
 </pre>
 
+{{if or .ProviderConfiguration.Regions .ProviderConfiguration.ConfigProperties}}
 <h2 id="provider_configuration">Provider Configuration</h2>
 <h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
-{{if .ProviderConfiguration.ConfigProperties}}
     <pre>
 <span>provider </span><span>"{{.ProviderName}}" </span>{
 {{- range .ProviderConfiguration.ConfigProperties}}
