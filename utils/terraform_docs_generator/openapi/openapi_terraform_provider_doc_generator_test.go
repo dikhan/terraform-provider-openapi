@@ -182,6 +182,104 @@ import (
 //	}
 //}
 
+func TestGetDataSourceFilters(t *testing.T) {
+	testCases := []struct {
+		name          string
+		openapiProps  openapi.SpecSchemaDefinitionProperties
+		expectedProps []Property
+	}{
+		{
+			name: "happy path - string prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "string_prop",
+					Type: openapi.TypeString,
+				},
+			},
+			expectedProps: []Property{{Name: "string_prop", Type: "string", Required: false, Computed: true, IsOptionalComputed: true}},
+		},
+		{
+			name: "happy path - int prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "int_prop",
+					Type: openapi.TypeInt,
+				},
+			},
+			expectedProps: []Property{{Name: "int_prop", Type: "integer", Required: false, Computed: true, IsOptionalComputed: true}},
+		},
+		{
+			name: "happy path - float prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "float_prop",
+					Type: openapi.TypeFloat,
+				},
+			},
+			expectedProps: []Property{{Name: "float_prop", Type: "number", Required: false, Computed: true, IsOptionalComputed: true}},
+		},
+		{
+			name: "happy path - list prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name:           "list_prop",
+					Type:           openapi.TypeList,
+					ArrayItemsType: openapi.TypeString,
+				},
+			},
+			expectedProps: []Property{{Name: "list_prop", Type: "list", ArrayItemsType: "string", Required: false, Computed: true, IsOptionalComputed: true}},
+		},
+		{
+			name: "happy path - obj prop",
+			openapiProps: openapi.SpecSchemaDefinitionProperties{
+				&openapi.SpecSchemaDefinitionProperty{
+					Name: "obj_prop",
+					Type: openapi.TypeObject,
+					SpecSchemaDefinition: &openapi.SpecSchemaDefinition{
+						Properties: openapi.SpecSchemaDefinitionProperties{
+							{Name: "string_prop", Type: openapi.TypeString},
+						},
+					},
+				},
+			},
+			expectedProps: []Property{
+				{
+					Name:               "obj_prop",
+					Type:               "object",
+					Required:           false,
+					Computed:           true,
+					IsOptionalComputed: true,
+					Schema: []Property{
+						{Name: "string_prop", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		openapiDataSources := []openapi.SpecResource{
+			&specStubResource{
+				name: "test_resource",
+				schemaDefinition: &openapi.SpecSchemaDefinition{
+					Properties: tc.openapiProps,
+				},
+			},
+		}
+		dg := TerraformProviderDocGenerator{}
+		actualDataSources, err := dg.getDataSourceFilters(openapiDataSources)
+
+		expectedDataSources := []DataSource{
+			{
+				Name:         "test_resource",
+				Properties:   tc.expectedProps,
+				OtherExample: "",
+			},
+		}
+		assert.Nil(t, err)
+		assert.Equal(t, expectedDataSources, actualDataSources)
+	}
+}
+
 func TestGetDataSourceInstances(t *testing.T) {
 	testCases := []struct {
 		name          string

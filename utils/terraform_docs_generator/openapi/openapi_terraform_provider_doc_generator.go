@@ -51,7 +51,8 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, err
 	}
 
-	dataSourceFilters, err := t.getDataSourceFilters(analyser)
+	compliantDataSources := analyser.GetTerraformCompliantDataSources()
+	dataSourceFilters, err := t.getDataSourceFilters(compliantDataSources)
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
@@ -112,9 +113,8 @@ func getSecurity(s openapi.SpecAnalyser) (openapi.SpecSecuritySchemes, *openapi.
 	return nil, nil, nil
 }
 
-func (t TerraformProviderDocGenerator) getDataSourceFilters(analyser openapi.SpecAnalyser) ([]DataSource, error) {
+func (t TerraformProviderDocGenerator) getDataSourceFilters(dataSourcesFilter []openapi.SpecResource) ([]DataSource, error) {
 	dataSources := []DataSource{}
-	dataSourcesFilter := analyser.GetTerraformCompliantDataSources()
 	for _, dataSource := range dataSourcesFilter {
 		s, err := dataSource.GetResourceSchema()
 		if err != nil {
