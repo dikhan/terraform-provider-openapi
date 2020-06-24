@@ -2,7 +2,8 @@ package templates
 
 // ZendeskTmpl contains the template used to render the TerraformProviderDocumentation struct as HTML formatted for Zendesk
 var ZendeskTmpl = `{{define "resource_example"}}
-    {{- if eq .Type "string" -}}
+{{- if .Required}}
+    {{if eq .Type "string" -}}
         <span>{{.Name}}  </span>= <span>"{{.Name}}"</span>
     {{- else if eq .Type "integer" -}}
         <span>{{.Name}}  </span>= <span>1234</span>
@@ -21,12 +22,13 @@ var ZendeskTmpl = `{{define "resource_example"}}
     {{- else -}}
         {{- if and (eq .Type "object") -}}
         <span>{{.Name}}  </span><span>{</span>
-            {{range .Schema}}
-                {{- template "resource_example" .}}
-            {{end}}
+            {{- range .Schema}}
+                {{template "resource_example" .}}
+            {{- end}}
             <span>}</span>
         {{- end -}}
     {{- end -}}
+{{- end -}}
 {{end}}
 
 {{- define "resource_argument_reference" -}}
@@ -34,6 +36,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
     {{- if .Required -}}
         {{- $required = "Required" -}}
     {{end}}
+	{{- if or .Required (and (not .Required) (not .Computed)) .IsOptionalComputed -}}
     <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}
         {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}}. The following properties compose the object schema
         :<ul dir="ltr">
@@ -43,28 +46,24 @@ var ZendeskTmpl = `{{define "resource_example"}}
         </ul>
         {{ end -}}
     </li>
+	{{end}}
 {{- end -}}
 
 {{- define "resource_attribute_reference" -}}
-    {{- if .Computed -}}
-        <li>{{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
+    {{- if or .Computed .ContainsComputedSubProperties -}}
+		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{- /* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */ -}}
+		{{- else -}}
+        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "array" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
             {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
             <ul dir="ltr">
                 {{- range .Schema}}
-                    <li>{{.Name}} [{{.Type}}] - {{.Description}}
-                    {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
-                    <ul dir="ltr">
-                        {{- range .Schema}}
-                            <li>{{.Name}} [{{.Type}}] - {{.Description}}</li>
-                        {{- end}}
-                    </ul>
-                    </li>
-                    {{- end}}
+					{{- template "resource_attribute_reference" .}}
                 {{- end}}
             </ul>
             {{ end -}}
         </li>
-    {{end}}
+		{{end}}
+    {{- end}}
 {{- end -}}
 
 
@@ -190,9 +189,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
 <pre>
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
 {{- range $resource.Properties -}}
-{{- if .Required}}
     {{template "resource_example" .}}
-{{- end}}
 {{- end}}
 <span>}</span>
 </pre>
@@ -228,6 +225,15 @@ var ZendeskTmpl = `{{define "resource_example"}}
         {{- end}}
     </ul>
 {{- end}}
+{{ $object_property_name := "" }}
+{{- range $resource.Properties -}}
+    {{- if (eq .Type "object")}}
+        {{ $object_property_name = .Name }}
+    {{end}}
+{{- end}}
+{{- if ne $object_property_name ""}}
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: {{$.ProviderName}}_{{.Name}}.my_{{.Name}}.<b>{{$object_property_name}}[0]</b>.object_property)</p>
+{{end}}
 
 <h4 id="resource_{{.Name}}_import" dir="ltr">Import</h4>
 <p dir="ltr">

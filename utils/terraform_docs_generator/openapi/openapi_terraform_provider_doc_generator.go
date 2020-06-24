@@ -212,13 +212,14 @@ func (t TerraformProviderDocGenerator) resourceSchemaToProperty(specSchemaDefini
 		}
 	}
 	return Property{
-		Name:           specSchemaDefinitionProperty.GetTerraformCompliantPropertyName(),
-		Type:           string(specSchemaDefinitionProperty.Type),
-		ArrayItemsType: string(specSchemaDefinitionProperty.ArrayItemsType),
-		Required:       specSchemaDefinitionProperty.IsRequired(),
-		Computed:       specSchemaDefinitionProperty.Computed,
-		Description:    specSchemaDefinitionProperty.Description,
-		Schema:         schema,
+		Name:               specSchemaDefinitionProperty.GetTerraformCompliantPropertyName(),
+		Type:               string(specSchemaDefinitionProperty.Type),
+		ArrayItemsType:     string(specSchemaDefinitionProperty.ArrayItemsType),
+		Required:           specSchemaDefinitionProperty.IsRequired(),
+		Computed:           specSchemaDefinitionProperty.Computed,
+		IsOptionalComputed: specSchemaDefinitionProperty.IsOptionalComputed(),
+		Description:        specSchemaDefinitionProperty.Description,
+		Schema:             schema,
 	}
 }
 
