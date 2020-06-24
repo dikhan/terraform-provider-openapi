@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -275,8 +276,8 @@ func TestGetDataSourceFilters(t *testing.T) {
 				OtherExample: "",
 			},
 		}
-		assert.Nil(t, err)
-		assert.Equal(t, expectedDataSources, actualDataSources)
+		assert.Nil(t, err, tc.name)
+		assert.Equal(t, expectedDataSources, actualDataSources, tc.name)
 	}
 }
 
@@ -373,8 +374,8 @@ func TestGetDataSourceInstances(t *testing.T) {
 				OtherExample: "",
 			},
 		}
-		assert.Nil(t, err)
-		assert.Equal(t, expectedDataSourceInstances, dataSourceInstances)
+		assert.Nil(t, err, tc.name)
+		assert.Equal(t, expectedDataSourceInstances, dataSourceInstances, tc.name)
 	}
 }
 
@@ -491,8 +492,8 @@ func TestGetProviderResources(t *testing.T) {
 				ArgumentsReference: ArgumentsReference{Notes: []string{}},
 			},
 		}
-		assert.Nil(t, err)
-		assert.Equal(t, expectedResources, actualResources)
+		assert.Nil(t, err, tc.name)
+		assert.Equal(t, expectedResources, actualResources, tc.name)
 	}
 }
 
@@ -508,6 +509,19 @@ func TestGetProviderResources_IgnoreResource(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Len(t, actualResources, 0)
+}
+
+func TestGetProviderResources_Error(t *testing.T) {
+	openapiResources := []openapi.SpecResource{
+		&specStubResource{
+			name:  "test_resource",
+			error: errors.New("specStubResource error"),
+		},
+	}
+	dg := TerraformProviderDocGenerator{}
+	actualResources, err := dg.getProviderResources(openapiResources)
+	assert.Nil(t, actualResources)
+	assert.EqualError(t, err, "specStubResource error")
 }
 
 func TestGetRequiredProviderConfigurationProperties(t *testing.T) {
