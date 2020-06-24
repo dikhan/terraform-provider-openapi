@@ -27,20 +27,21 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	if err != nil {
 		return TerraformProviderDocumentation{}, nil
 	}
-
 	globalSecuritySchemes, securityDefinitions, err := getSecurity(analyser)
 	if err != nil {
 		return TerraformProviderDocumentation{}, nil
 	}
-
 	headers, err := analyser.GetAllHeaderParameters()
 	if err != nil {
 		return TerraformProviderDocumentation{}, nil
 	}
-
 	configRegions, configProperties := t.getRequiredProviderConfigurationProperties(regions, globalSecuritySchemes, securityDefinitions, headers)
 
-	resources, err := t.getProviderResources(analyser)
+	r, err := analyser.GetTerraformCompliantResources()
+	if err != nil {
+		return TerraformProviderDocumentation{}, nil
+	}
+	resources, err := t.getProviderResources(r)
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
@@ -164,12 +165,8 @@ func (t TerraformProviderDocGenerator) getDataSourceInstances(analyser openapi.S
 	return dataSourcesInstance, nil
 }
 
-func (t TerraformProviderDocGenerator) getProviderResources(analyser openapi.SpecAnalyser) ([]Resource, error) {
+func (t TerraformProviderDocGenerator) getProviderResources(resources []openapi.SpecResource) ([]Resource, error) {
 	r := []Resource{}
-	resources, err := analyser.GetTerraformCompliantResources()
-	if err != nil {
-		return nil, err
-	}
 	for _, resource := range resources {
 		if resource.ShouldIgnoreResource() {
 			continue
