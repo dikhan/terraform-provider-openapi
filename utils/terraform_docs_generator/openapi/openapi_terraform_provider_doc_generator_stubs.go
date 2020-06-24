@@ -12,8 +12,8 @@ type specAnalyserStub struct {
 	//dataSources          []openapi.SpecResource
 	security *specSecurityStub
 	//headers              openapi.SpecHeaderParameters
-	//backendConfiguration openapi.SpecBackendConfiguration
-	//error                error
+	backendConfiguration *specStubBackendConfiguration
+	error                error
 }
 
 //func (s *specAnalyserStub) GetTerraformCompliantResources() ([]openapi.SpecResource, error) {
@@ -41,15 +41,15 @@ func (s *specAnalyserStub) GetSecurity() openapi.SpecSecurity {
 //	return nil, nil
 //}
 //
-//func (s *specAnalyserStub) GetAPIBackendConfiguration() (openapi.SpecBackendConfiguration, error) {
-//	if s.error != nil {
-//		return nil, s.error
-//	}
-//	if s.backendConfiguration != nil {
-//		return s.backendConfiguration, nil
-//	}
-//	return nil, nil
-//}
+func (s *specAnalyserStub) GetAPIBackendConfiguration() (openapi.SpecBackendConfiguration, error) {
+	if s.error != nil {
+		return nil, s.error
+	}
+	if s.backendConfiguration != nil {
+		return s.backendConfiguration, nil
+	}
+	return nil, nil
+}
 
 // specSecurityStub
 type specSecurityStub struct {
@@ -71,6 +71,24 @@ func (s *specSecurityStub) GetGlobalSecuritySchemes() (openapi.SpecSecuritySchem
 		return nil, s.error
 	}
 	return s.globalSecuritySchemes, nil
+}
+
+//specStubBackendConfiguration
+type specStubBackendConfiguration struct {
+	openapi.SpecBackendConfiguration
+	host    string
+	regions []string
+	err     error
+}
+
+func (s *specStubBackendConfiguration) IsMultiRegion() (bool, string, []string, error) {
+	if s.err != nil {
+		return false, "", nil, s.err
+	}
+	if len(s.regions) > 0 {
+		return true, s.host, s.regions, nil
+	}
+	return false, "", nil, nil
 }
 
 type specStubResource struct {
@@ -101,21 +119,3 @@ type specStubSecurityDefinition struct {
 func (s specStubSecurityDefinition) GetTerraformConfigurationName() string {
 	return terraformutils.ConvertToTerraformCompliantName(s.name)
 }
-
-//specStubBackendConfiguration
-//type specStubBackendConfiguration struct {
-//	openapi.SpecBackendConfiguration
-//	host             string
-//	regions          []string
-//	err              error
-//}
-//
-//func (s *specStubBackendConfiguration) IsMultiRegion() (bool, string, []string, error) {
-//	if s.err != nil {
-//		return false, "", nil, s.err
-//	}
-//	if len(s.regions) > 0 {
-//		return true, s.host, s.regions, nil
-//	}
-//	return false, "", nil, nil
-//}

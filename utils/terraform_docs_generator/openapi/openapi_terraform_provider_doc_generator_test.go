@@ -183,6 +183,39 @@ import (
 //	}
 //}
 
+func TestGetRegions(t *testing.T) {
+	sa := specAnalyserStub{
+		backendConfiguration: &specStubBackendConfiguration{
+			host:    "service.api.${region}.hostname.com",
+			regions: []string{"region1", "region2"},
+		},
+	}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, err)
+	assert.Equal(t, sa.backendConfiguration.regions, regions)
+}
+
+func TestGetRegions_NotMultiRegion(t *testing.T) {
+	sa := specAnalyserStub{}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, regions)
+	assert.Nil(t, err)
+}
+
+func TestGetRegions_BackendConfigError(t *testing.T) {
+	sa := specAnalyserStub{backendConfiguration: &specStubBackendConfiguration{err: errors.New("specStubBackendConfiguration error")}}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, regions)
+	assert.EqualError(t, err, "specStubBackendConfiguration error")
+}
+
+func TestGetRegions_SpecAnalyserError(t *testing.T) {
+	sa := specAnalyserStub{error: errors.New("specAnalyser error")}
+	regions, err := getRegions(&sa)
+	assert.Nil(t, regions)
+	assert.EqualError(t, err, "specAnalyser error")
+}
+
 func TestGetSecurity(t *testing.T) {
 	sa := specAnalyserStub{
 		security: &specSecurityStub{
