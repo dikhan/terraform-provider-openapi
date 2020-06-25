@@ -8,24 +8,24 @@ import (
 // specAnalyserStub is a stubbed spec analyser used for testing purposes that implements the SpecAnalyser interface
 type specAnalyserStub struct {
 	openapi.SpecAnalyser
-	//resources            []openapi.SpecResource
-	//dataSources          []openapi.SpecResource
-	security *specSecurityStub
-	//headers              openapi.SpecHeaderParameters
+	resources            []openapi.SpecResource
+	dataSources          []openapi.SpecResource
+	security             *specSecurityStub
+	headers              openapi.SpecHeaderParameters
 	backendConfiguration *specStubBackendConfiguration
 	error                error
 }
 
-//func (s *specAnalyserStub) GetTerraformCompliantResources() ([]openapi.SpecResource, error) {
-//	if s.error != nil {
-//		return nil, s.error
-//	}
-//	return s.resources, nil
-//}
-//
-//func (s *specAnalyserStub) GetTerraformCompliantDataSources() []openapi.SpecResource {
-//	return s.dataSources
-//}
+func (s *specAnalyserStub) GetTerraformCompliantResources() ([]openapi.SpecResource, error) {
+	if s.error != nil {
+		return nil, s.error
+	}
+	return s.resources, nil
+}
+
+func (s *specAnalyserStub) GetTerraformCompliantDataSources() []openapi.SpecResource {
+	return s.dataSources
+}
 
 func (s *specAnalyserStub) GetSecurity() openapi.SpecSecurity {
 	if s.security != nil {
@@ -34,13 +34,13 @@ func (s *specAnalyserStub) GetSecurity() openapi.SpecSecurity {
 	return nil
 }
 
-//func (s *specAnalyserStub) GetAllHeaderParameters() (openapi.SpecHeaderParameters, error) {
-//	if s.headers != nil {
-//		return s.headers, nil
-//	}
-//	return nil, nil
-//}
-//
+func (s *specAnalyserStub) GetAllHeaderParameters() (openapi.SpecHeaderParameters, error) {
+	if s.headers != nil {
+		return s.headers, nil
+	}
+	return nil, nil
+}
+
 func (s *specAnalyserStub) GetAPIBackendConfiguration() (openapi.SpecBackendConfiguration, error) {
 	if s.error != nil {
 		return nil, s.error
@@ -87,10 +87,12 @@ func (s *specStubBackendConfiguration) IsMultiRegion() (bool, string, []string, 
 
 type specStubResource struct {
 	openapi.SpecResource
-	name             string
-	shouldIgnore     bool
-	schemaDefinition *openapi.SpecSchemaDefinition
-	error            error
+	name                   string
+	shouldIgnore           bool
+	schemaDefinition       *openapi.SpecSchemaDefinition
+	parentResourceNames    []string
+	fullParentResourceName string
+	error                  error
 }
 
 func (s *specStubResource) ShouldIgnoreResource() bool { return s.shouldIgnore }
@@ -103,6 +105,17 @@ func (s *specStubResource) GetResourceSchema() (*openapi.SpecSchemaDefinition, e
 }
 
 func (s *specStubResource) GetResourceName() string { return s.name }
+
+// TODO: fix implementation and add test case for resource with parent - ParentResourceInfo props are private
+func (s *specStubResource) GetParentResourceInfo() *openapi.ParentResourceInfo {
+	subRes := openapi.ParentResourceInfo{}
+	if len(s.parentResourceNames) > 0 && s.fullParentResourceName != "" {
+		//subRes.parentResourceNames = s.parentResourceNames
+		//subRes.fullParentResourceName = s.fullParentResourceName
+		return &subRes
+	}
+	return nil
+}
 
 //specStubSecurityDefinition
 type specStubSecurityDefinition struct {
