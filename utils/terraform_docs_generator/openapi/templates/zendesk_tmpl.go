@@ -20,7 +20,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
     {{- else if and (eq .Type "list") (eq .ArrayItemsType "number") -}}
         <span>{{.Name}}  </span>= <span>[12.36, 99.45]</span>
     {{- else -}}
-        {{- if and (eq .Type "object") -}}
+        {{- if or (eq .Type "object") (and (eq .Type "list") (eq .ArrayItemsType "object")) -}}
         <span>{{.Name}}  </span><span>{</span>
             {{- range .Schema}}
                 {{template "resource_example" .}}
@@ -65,7 +65,6 @@ var ZendeskTmpl = `{{define "resource_example"}}
 		{{end}}
     {{- end}}
 {{- end -}}
-
 
 <p dir="ltr">
   This guide lists the configuration for '{{.ProviderName}}' Terraform provider
@@ -221,15 +220,15 @@ var ZendeskTmpl = `{{define "resource_example"}}
         {{- end}}
     </ul>
 {{- end}}
-{{ $object_property_name := "" }}
+{{- $object_property_name := "" -}}
 {{- range $resource.Properties -}}
     {{- if (eq .Type "object")}}
         {{ $object_property_name = .Name }}
     {{end}}
-{{- end}}
-{{- if ne $object_property_name ""}}
+{{- end -}}
+{{- if ne $object_property_name "" -}}
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: {{$.ProviderName}}_{{.Name}}.my_{{.Name}}.<b>{{$object_property_name}}[0]</b>.object_property)</p>
-{{end}}
+{{- end -}}
 {{range .ArgumentsReference.Notes}}
     <p><span class="wysiwyg-color-red">*Note: {{.}}</span></p>
 {{end}}
@@ -242,16 +241,16 @@ var ZendeskTmpl = `{{define "resource_example"}}
             {{- template "resource_attribute_reference" . -}}
         {{- end}}
     </ul>
-{{- end}}
-{{ $object_property_name := "" }}
+{{- end -}}
+{{- $object_property_name := "" -}}
 {{- range $resource.Properties -}}
     {{- if (eq .Type "object")}}
         {{ $object_property_name = .Name }}
     {{end}}
-{{- end}}
-{{- if ne $object_property_name ""}}
+{{- end -}}
+{{- if ne $object_property_name "" -}}
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: {{$.ProviderName}}_{{.Name}}.my_{{.Name}}.<b>{{$object_property_name}}[0]</b>.object_property)</p>
-{{end}}
+{{- end -}}
 
 <h4 id="resource_{{.Name}}_import" dir="ltr">Import</h4>
 <p dir="ltr">
@@ -289,6 +288,15 @@ var ZendeskTmpl = `{{define "resource_example"}}
             {{- end}}
         </ul>
     {{- end}}
+{{- $object_property_name := "" -}}
+{{- range $datasource.Properties -}}
+    {{- if (eq .Type "object")}}
+        {{ $object_property_name = .Name }}
+    {{end}}
+{{- end -}}
+{{- if ne $object_property_name "" -}}
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: {{$.ProviderName}}_{{.Name}}.my_{{.Name}}.<b>{{$object_property_name}}[0]</b>.object_property)</p>
+{{- end -}}
 {{end}} {{/* END range .DataSources.DataSourceInstances */}}
 
 <h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
@@ -334,6 +342,16 @@ var ZendeskTmpl = `{{define "resource_example"}}
             {{- end}}
         </ul>
     {{- end}}
+adsds
+{{- $object_property_name := "" -}}
+{{- range $datasource.Properties -}}
+    {{- if (eq .Type "object")}}
+        {{ $object_property_name = .Name }}
+    {{end}}
+{{- end -}}
+{{- if ne $object_property_name ""}}
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: {{$.ProviderName}}_{{.Name}}.my_{{.Name}}.<b>{{$object_property_name}}[0]</b>.object_property)</p>
+{{- end -}}
 {{end}} {{/* END range .DataSources.DataSources */}}
 
 {{ if .ShowSpecialTermsDefinitions }}
