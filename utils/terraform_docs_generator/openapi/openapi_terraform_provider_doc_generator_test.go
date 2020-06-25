@@ -13,7 +13,7 @@ import (
 func newSwaggerServer(t *testing.T, swagger string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write([]byte(swagger))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}))
 }
 
@@ -26,7 +26,7 @@ func TestNewTerraformProviderDocGenerator(t *testing.T) {
 	dg, err := NewTerraformProviderDocGenerator(providerName, swaggerServer.URL)
 	assert.Equal(t, providerName, dg.ProviderName)
 	assert.NotNil(t, dg.SpecAnalyser)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestNewTerraformProviderDocGenerator_ErrorLoadingSpecAnalyser(t *testing.T) {
@@ -74,7 +74,7 @@ func TestGenerateDocumentation(t *testing.T) {
 		},
 	}
 	d, err := dg.GenerateDocumentation()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, providerName, d.ProviderName)
 
 	// ProviderInstallation assertions
@@ -193,7 +193,7 @@ func TestGetRegions(t *testing.T) {
 			expectedErr:     nil,
 		},
 		{
-			name:            "crappy path - not multi region",
+			name:            "happy path - not multi region",
 			specAnalyser:    &specAnalyserStub{},
 			expectedRegions: nil,
 			expectedErr:     nil,
@@ -216,65 +216,86 @@ func TestGetRegions(t *testing.T) {
 		regions, err := getRegions(tc.specAnalyser)
 		if tc.expectedErr != nil {
 			assert.Nil(t, regions, tc.name)
-			assert.EqualError(t, err, tc.expectedErr.Error())
+			assert.EqualError(t, err, tc.expectedErr.Error(), tc.name)
 		} else {
-			assert.Nil(t, err, tc.name)
+			assert.NoError(t, err, tc.name)
 			assert.Equal(t, tc.expectedRegions, regions, tc.name)
 		}
 	}
 }
 
 func TestGetSecurity(t *testing.T) {
-	expectedSecuritySchemes := openapi.SpecSecuritySchemes{{Name: "required_token"}}
-	expectedSecurityDefinitions := &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}}
-	sa := specAnalyserStub{
-		security: &specSecurityStub{
-			globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return expectedSecuritySchemes, nil },
-			securityDefinitions:   func() (*openapi.SpecSecurityDefinitions, error) { return expectedSecurityDefinitions, nil },
-		},
-	}
-	securitySchemes, securityDefinitions, err := getSecurity(&sa)
-	assert.Nil(t, err)
-	assert.Equal(t, expectedSecuritySchemes, securitySchemes)
-	assert.Equal(t, expectedSecurityDefinitions, securityDefinitions)
-}
-
-func TestGetSecurity_NoSpecSecurity(t *testing.T) {
-	sa := specAnalyserStub{}
-	securitySchemes, securityDefinitions, err := getSecurity(&sa)
-	assert.Nil(t, err)
-	assert.Nil(t, securitySchemes)
-	assert.Nil(t, securityDefinitions)
-}
-
-func TestGetSecurity_SecuritySchemesError(t *testing.T) {
-	sa := specAnalyserStub{
-		security: &specSecurityStub{
-			globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return nil, errors.New("globalSecuritySchemes error") },
-			securityDefinitions: func() (*openapi.SpecSecurityDefinitions, error) {
-				return &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}}, nil
+	testCases := []struct {
+		name                        string
+		specAnalyser                *specAnalyserStub
+		expectedSecuritySchemes     openapi.SpecSecuritySchemes
+		expectedSecurityDefinitions *openapi.SpecSecurityDefinitions
+		expectedErr                 error
+	}{
+		{
+			name: "happy path",
+			specAnalyser: &specAnalyserStub{
+				security: &specSecurityStub{
+					globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) {
+						return openapi.SpecSecuritySchemes{{Name: "required_token"}}, nil
+					},
+					securityDefinitions: func() (*openapi.SpecSecurityDefinitions, error) {
+						return &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}}, nil
+					},
+				},
 			},
+			expectedSecuritySchemes:     openapi.SpecSecuritySchemes{{Name: "required_token"}},
+			expectedSecurityDefinitions: &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}},
+			expectedErr:                 nil,
 		},
-	}
-	securitySchemes, securityDefinitions, err := getSecurity(&sa)
-	assert.Nil(t, securitySchemes)
-	assert.Nil(t, securityDefinitions)
-	assert.EqualError(t, err, "globalSecuritySchemes error")
-}
-
-func TestGetSecurity_SecurityDefinitionsError(t *testing.T) {
-	sa := specAnalyserStub{
-		security: &specSecurityStub{
-			globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) {
-				return openapi.SpecSecuritySchemes{{Name: "required_token"}}, nil
+		{
+			name:                        "happy path - no spec security",
+			specAnalyser:                &specAnalyserStub{},
+			expectedSecuritySchemes:     nil,
+			expectedSecurityDefinitions: nil,
+			expectedErr:                 nil,
+		},
+		{
+			name: "crappy path - security schemes error",
+			specAnalyser: &specAnalyserStub{
+				security: &specSecurityStub{
+					globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return nil, errors.New("globalSecuritySchemes error") },
+					securityDefinitions: func() (*openapi.SpecSecurityDefinitions, error) {
+						return &openapi.SpecSecurityDefinitions{specStubSecurityDefinition{name: "required_token"}}, nil
+					},
+				},
 			},
-			securityDefinitions: func() (*openapi.SpecSecurityDefinitions, error) { return nil, errors.New("securityDefinitions error") },
+			expectedSecuritySchemes:     nil,
+			expectedSecurityDefinitions: nil,
+			expectedErr:                 errors.New("globalSecuritySchemes error"),
+		},
+		{
+			name: "crappy path - security definitions error",
+			specAnalyser: &specAnalyserStub{
+				security: &specSecurityStub{
+					globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) {
+						return openapi.SpecSecuritySchemes{{Name: "required_token"}}, nil
+					},
+					securityDefinitions: func() (*openapi.SpecSecurityDefinitions, error) { return nil, errors.New("securityDefinitions error") }},
+			},
+			expectedSecuritySchemes:     nil,
+			expectedSecurityDefinitions: nil,
+			expectedErr:                 errors.New("securityDefinitions error"),
 		},
 	}
-	securitySchemes, securityDefinitions, err := getSecurity(&sa)
-	assert.Nil(t, securitySchemes)
-	assert.Nil(t, securityDefinitions)
-	assert.EqualError(t, err, "securityDefinitions error")
+
+	for _, tc := range testCases {
+		securitySchemes, securityDefinitions, err := getSecurity(tc.specAnalyser)
+		if tc.expectedErr != nil {
+			assert.Nil(t, securitySchemes, tc.name)
+			assert.Nil(t, securityDefinitions, tc.name)
+			assert.EqualError(t, err, tc.expectedErr.Error(), tc.name)
+		} else {
+			assert.NoError(t, err, tc.name)
+			assert.Equal(t, tc.expectedSecuritySchemes, securitySchemes, tc.name)
+			assert.Equal(t, tc.expectedSecurityDefinitions, securityDefinitions, tc.name)
+		}
+	}
 }
 
 func TestGetDataSourceFilters(t *testing.T) {
@@ -374,7 +395,7 @@ func TestGetDataSourceFilters(t *testing.T) {
 				OtherExample: "",
 			},
 		}
-		assert.Nil(t, err, tc.name)
+		assert.NoError(t, err, tc.name)
 		assert.Equal(t, expectedDataSources, actualDataSources, tc.name)
 	}
 }
@@ -490,7 +511,7 @@ func TestGetDataSourceInstances(t *testing.T) {
 				OtherExample: "",
 			},
 		}
-		assert.Nil(t, err, tc.name)
+		assert.NoError(t, err, tc.name)
 		assert.Equal(t, expectedDataSourceInstances, dataSourceInstances, tc.name)
 	}
 }
@@ -627,7 +648,7 @@ func TestGetProviderResources(t *testing.T) {
 				ArgumentsReference: ArgumentsReference{Notes: []string{}},
 			},
 		}
-		assert.Nil(t, err, tc.name)
+		assert.NoError(t, err, tc.name)
 		assert.Equal(t, expectedResources, actualResources, tc.name)
 	}
 }
@@ -642,7 +663,7 @@ func TestGetProviderResources_IgnoreResource(t *testing.T) {
 	dg := TerraformProviderDocGenerator{}
 	actualResources, err := dg.getProviderResources(openapiResources)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Len(t, actualResources, 0)
 }
 
