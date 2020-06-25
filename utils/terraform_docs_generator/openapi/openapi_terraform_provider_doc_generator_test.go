@@ -140,6 +140,40 @@ func assertProperty(t *testing.T, actualProp Property, expectedName, expectedTyp
 	}
 }
 
+func TestGenerateDocumentation_ErrorCases(t *testing.T) {
+	testCases := []struct {
+		name         string
+		specAnalyser *specAnalyserStub
+		expectedErr  error
+	}{
+		{
+			name: "backend config error",
+			specAnalyser: &specAnalyserStub{
+				backendConfiguration: &specStubBackendConfiguration{
+					err: errors.New("backend configuration error"),
+				},
+			},
+			expectedErr: errors.New("backend configuration error"),
+		},
+		{
+			name: "security error",
+			specAnalyser: &specAnalyserStub{
+				security: &specSecurityStub{
+					globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return nil, errors.New("globalSecuritySchemes error") },
+				},
+			},
+			expectedErr: errors.New("globalSecuritySchemes error"),
+		},
+	}
+
+	for _, tc := range testCases {
+		dg := TerraformProviderDocGenerator{SpecAnalyser: tc.specAnalyser}
+		d, err := dg.GenerateDocumentation()
+		assert.Empty(t, d, tc.name)
+		assert.EqualError(t, err, tc.expectedErr.Error(), tc.name)
+	}
+}
+
 func TestGetRegions(t *testing.T) {
 	sa := specAnalyserStub{
 		backendConfiguration: &specStubBackendConfiguration{
