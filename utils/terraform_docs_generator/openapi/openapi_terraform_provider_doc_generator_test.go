@@ -175,36 +175,53 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 }
 
 func TestGetRegions(t *testing.T) {
-	sa := specAnalyserStub{
-		backendConfiguration: &specStubBackendConfiguration{
-			host:    "service.api.${region}.hostname.com",
-			regions: []string{"region1", "region2"},
+	testCases := []struct {
+		name            string
+		specAnalyser    *specAnalyserStub
+		expectedRegions []string
+		expectedErr     error
+	}{
+		{
+			name: "happy path",
+			specAnalyser: &specAnalyserStub{
+				backendConfiguration: &specStubBackendConfiguration{
+					host:    "service.api.${region}.hostname.com",
+					regions: []string{"region1", "region2"},
+				},
+			},
+			expectedRegions: []string{"region1", "region2"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "crappy path - not multi region",
+			specAnalyser:    &specAnalyserStub{},
+			expectedRegions: nil,
+			expectedErr:     nil,
+		},
+		{
+			name:            "crappy path - backend config error",
+			specAnalyser:    &specAnalyserStub{backendConfiguration: &specStubBackendConfiguration{err: errors.New("backend config error")}},
+			expectedRegions: nil,
+			expectedErr:     errors.New("backend config error"),
+		},
+		{
+			name:            "crappy path - spec analyser error",
+			specAnalyser:    &specAnalyserStub{error: errors.New("spec analyser error")},
+			expectedRegions: nil,
+			expectedErr:     errors.New("spec analyser error"),
 		},
 	}
-	regions, err := getRegions(&sa)
-	assert.Nil(t, err)
-	assert.Equal(t, sa.backendConfiguration.regions, regions)
-}
 
-func TestGetRegions_NotMultiRegion(t *testing.T) {
-	sa := specAnalyserStub{}
-	regions, err := getRegions(&sa)
-	assert.Nil(t, regions)
-	assert.Nil(t, err)
-}
-
-func TestGetRegions_BackendConfigError(t *testing.T) {
-	sa := specAnalyserStub{backendConfiguration: &specStubBackendConfiguration{err: errors.New("specStubBackendConfiguration error")}}
-	regions, err := getRegions(&sa)
-	assert.Nil(t, regions)
-	assert.EqualError(t, err, "specStubBackendConfiguration error")
-}
-
-func TestGetRegions_SpecAnalyserError(t *testing.T) {
-	sa := specAnalyserStub{error: errors.New("specAnalyser error")}
-	regions, err := getRegions(&sa)
-	assert.Nil(t, regions)
-	assert.EqualError(t, err, "specAnalyser error")
+	for _, tc := range testCases {
+		regions, err := getRegions(tc.specAnalyser)
+		if tc.expectedErr != nil {
+			assert.Nil(t, regions, tc.name)
+			assert.EqualError(t, err, tc.expectedErr.Error())
+		} else {
+			assert.Nil(t, err, tc.name)
+			assert.Equal(t, tc.expectedRegions, regions, tc.name)
+		}
+	}
 }
 
 func TestGetSecurity(t *testing.T) {
