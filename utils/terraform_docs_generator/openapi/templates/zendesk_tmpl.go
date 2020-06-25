@@ -37,7 +37,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
         {{- $required = "Required" -}}
     {{end}}
 	{{- if or .Required (and (not .Required) (not .Computed)) .IsOptionalComputed -}}
-    <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] - ({{$required}}) {{.Description}}
+    <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] {{ if .IsSensitive }}(<a href="#special_terms_definitions_sensitive_property" target="_self">sensitive</a>){{end}} - ({{$required}}) {{.Description}}
         {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}}. The following properties compose the object schema
         :<ul dir="ltr">
             {{- range .Schema}}
@@ -53,7 +53,7 @@ var ZendeskTmpl = `{{define "resource_example"}}
     {{- if or .Computed .ContainsComputedSubProperties -}}
 		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{- /* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */ -}}
 		{{- else -}}
-        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] - {{.Description}}
+        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] {{ if .IsSensitive }}(<a href="#special_terms_definitions_sensitive_property" target="_self">sensitive</a>){{end}} - {{.Description}}
             {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
             <ul dir="ltr">
                 {{- range .Schema}}
@@ -113,6 +113,18 @@ var ZendeskTmpl = `{{define "resource_example"}}
             {{- end}}
         </ul>
     </li>
+  <li>
+{{ if .ShowSpecialTermsDefinitions }}
+    <a href="#special_terms_definitions" target="_self">Special Terms Definitions</a>
+    <ul>
+{{ if .ProviderResources.ContainsResourcesWithSecretProperties }}
+      <li>
+        <a href="#special_terms_definitions_sensitive_property" target="_self">Sensitive Property</a>
+      </li>
+{{end}}
+{{end}}
+    </ul>
+  </li>
 </ul>
 <h2 id="provider_installation">Provider Installation</h2>
 <p>
@@ -321,4 +333,24 @@ var ZendeskTmpl = `{{define "resource_example"}}
             {{- end}}
         </ul>
     {{- end}}
-{{end}} {{/* END range .DataSources.DataSources */}}`
+{{end}} {{/* END range .DataSources.DataSources */}}
+
+{{ if .ShowSpecialTermsDefinitions }}
+<h2 id="special_terms_definitions">Special Terms Definitions</h2>
+<p>
+  This section describes specific terms used throughout this document to clarify their meaning in the context of Terraform.
+</p>
+{{ if .ProviderResources.ContainsResourcesWithSecretProperties }}
+<h3 id="special_terms_definitions_sensitive_property">
+  <span style="font-weight:400">Sensitive Property</span>
+</h3>
+<p>
+  <span style="font-weight:400">The ‘{{.ProviderName}}’ Terraform plugin treats secret properties as ‘sensitive’. As per </span><a href="https://github.com/hashicorp/terraform-plugin-sdk/blob/9f0df37a8fdb2627ae32db6ceaf7f036d89b6768/helper/schema/schema.go#L245" target="_self">Terraform documentation</a><span style="font-weight:400">, this means the following:</span>
+</p>
+<pre><span style="font-weight:400">// Sensitive ensures that the attribute's value does not get displayed <br>// in logs or regular output. It should be used for passwords or other <br>// secret fields. Future versions of Terraform may encrypt these values.</span></pre>
+<p>
+  <span style="font-weight:400">Please note that even though the secret values don’t get displayed in the logs or regular output, the state file will still store the secrets. </span><span style="font-weight:400">As per <a href="https://www.terraform.io/docs/state/sensitive-data.html">Terraform’s official recommendations</a> on how to treat Sensitive Data in State, if your state file may contain sensitive information always treat the State itself as sensitive data.</span>
+</p>
+<p>&nbsp;</p>
+{{end}}
+{{end}}`

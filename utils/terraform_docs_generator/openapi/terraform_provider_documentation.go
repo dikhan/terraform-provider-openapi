@@ -8,11 +8,12 @@ import (
 
 // TerraformProviderDocumentation defines the attributes needed to generate Terraform provider documentation
 type TerraformProviderDocumentation struct {
-	ProviderName          string
-	ProviderInstallation  ProviderInstallation
-	ProviderConfiguration ProviderConfiguration
-	ProviderResources     ProviderResources
-	DataSources           DataSources
+	ProviderName                string
+	ProviderInstallation        ProviderInstallation
+	ProviderConfiguration       ProviderConfiguration
+	ProviderResources           ProviderResources
+	DataSources                 DataSources
+	ShowSpecialTermsDefinitions bool
 }
 
 // ProviderInstallation includes details needed to install the Terraform provider plugin
@@ -36,6 +37,17 @@ type ProviderConfiguration struct {
 // ProviderResources defines the resources exposed by the Terraform provider
 type ProviderResources struct {
 	Resources []Resource
+}
+
+func (r ProviderResources) ContainsResourcesWithSecretProperties() bool {
+	for _, resource := range r.Resources {
+		for _, prop := range resource.Properties {
+			if prop.IsSensitive {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // DataSources defines the data sources and data source instances exposed by the Terraform provider
@@ -101,6 +113,7 @@ type Property struct {
 	Required           bool
 	Computed           bool
 	IsOptionalComputed bool
+	IsSensitive        bool
 	Description        string
 	Schema             []Property // This is used to describe the schema for array of objects or object properties
 }
