@@ -28,21 +28,21 @@ func NewTerraformProviderDocGenerator(providerName, openAPIDocURL string) (Terra
 func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProviderDocumentation, error) {
 	regions, err := getRegions(t.SpecAnalyser)
 	if err != nil {
-		return TerraformProviderDocumentation{}, nil
+		return TerraformProviderDocumentation{}, err
 	}
 	globalSecuritySchemes, securityDefinitions, err := getSecurity(t.SpecAnalyser)
 	if err != nil {
-		return TerraformProviderDocumentation{}, nil
+		return TerraformProviderDocumentation{}, err
 	}
 	headers, err := t.SpecAnalyser.GetAllHeaderParameters()
 	if err != nil {
-		return TerraformProviderDocumentation{}, nil
+		return TerraformProviderDocumentation{}, err
 	}
 	configRegions, configProperties := t.getRequiredProviderConfigurationProperties(regions, globalSecuritySchemes, securityDefinitions, headers)
 
 	r, err := t.SpecAnalyser.GetTerraformCompliantResources()
 	if err != nil {
-		return TerraformProviderDocumentation{}, nil
+		return TerraformProviderDocumentation{}, err
 	}
 	resources, err := t.getProviderResources(r)
 	if err != nil {
