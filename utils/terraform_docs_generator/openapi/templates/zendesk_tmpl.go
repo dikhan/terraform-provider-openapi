@@ -113,8 +113,9 @@ var ZendeskTmpl = `{{define "resource_example"}}
             {{- end}}
         </ul>
     </li>
-  <li>
+
 {{ if .ShowSpecialTermsDefinitions }}
+  <li>
     <a href="#special_terms_definitions" target="_self">Special Terms Definitions</a>
     <ul>
 {{ if .ProviderResources.ContainsResourcesWithSecretProperties }}
@@ -122,9 +123,9 @@ var ZendeskTmpl = `{{define "resource_example"}}
         <a href="#special_terms_definitions_sensitive_property" target="_self">Sensitive Property</a>
       </li>
 {{end}}
-{{end}}
     </ul>
   </li>
+{{end}}
 </ul>
 <h2 id="provider_installation">Provider Installation</h2>
 <p>
