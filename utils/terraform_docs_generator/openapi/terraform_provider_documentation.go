@@ -8,11 +8,12 @@ import (
 
 // TerraformProviderDocumentation defines the attributes needed to generate Terraform provider documentation
 type TerraformProviderDocumentation struct {
-	ProviderName          string
-	ProviderInstallation  ProviderInstallation
-	ProviderConfiguration ProviderConfiguration
-	ProviderResources     ProviderResources
-	DataSources           DataSources
+	ProviderName                string
+	ProviderInstallation        ProviderInstallation
+	ProviderConfiguration       ProviderConfiguration
+	ProviderResources           ProviderResources
+	DataSources                 DataSources
+	ShowSpecialTermsDefinitions bool
 }
 
 // ProviderInstallation includes details needed to install the Terraform provider plugin
@@ -38,6 +39,17 @@ type ProviderResources struct {
 	Resources []Resource
 }
 
+func (r ProviderResources) ContainsResourcesWithSecretProperties() bool {
+	for _, resource := range r.Resources {
+		for _, prop := range resource.Properties {
+			if prop.IsSensitive {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // DataSources defines the data sources and data source instances exposed by the Terraform provider
 type DataSources struct {
 	DataSources         []DataSource
@@ -56,8 +68,24 @@ type Resource struct {
 	Name               string
 	Description        string
 	Properties         []Property
+	ParentProperties   []string
 	ExampleUsage       []ExampleUsage
 	ArgumentsReference ArgumentsReference
+}
+
+func (r Resource) BuildImportIDsExample() string {
+	if r.ParentProperties == nil {
+		return "id"
+	}
+	idExamples := ""
+	for _, prop := range r.ParentProperties {
+		idExamples += prop + "/"
+	}
+	// Append the actual resource instance id
+	if idExamples != "" {
+		idExamples += r.Name + "_id"
+	}
+	return idExamples
 }
 
 // ExampleUsage defines a block of code/commands to include in the docs
@@ -85,6 +113,7 @@ type Property struct {
 	Required           bool
 	Computed           bool
 	IsOptionalComputed bool
+	IsSensitive        bool
 	Description        string
 	Schema             []Property // This is used to describe the schema for array of objects or object properties
 }

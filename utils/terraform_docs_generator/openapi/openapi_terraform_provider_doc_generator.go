@@ -183,10 +183,17 @@ func (t TerraformProviderDocGenerator) getProviderResources(resources []openapi.
 		props = append(props, orderProps(requiredProps)...)
 		props = append(props, orderProps(optionalProps)...)
 
+		parentInfo := resource.GetParentResourceInfo()
+		var parentProperties []string
+		if parentInfo != nil {
+			parentProperties = parentInfo.GetParentPropertiesNames()
+		}
+
 		r = append(r, Resource{
-			Name:        resource.GetResourceName(),
-			Description: "",
-			Properties:  props,
+			Name:             resource.GetResourceName(),
+			Description:      "",
+			Properties:       props,
+			ParentProperties: parentProperties,
 			ArgumentsReference: ArgumentsReference{
 				Notes: []string{},
 			},
@@ -211,6 +218,7 @@ func (t TerraformProviderDocGenerator) resourceSchemaToProperty(specSchemaDefini
 		Required:           specSchemaDefinitionProperty.IsRequired(),
 		Computed:           specSchemaDefinitionProperty.Computed,
 		IsOptionalComputed: specSchemaDefinitionProperty.IsOptionalComputed(),
+		IsSensitive:        specSchemaDefinitionProperty.Sensitive,
 		Description:        specSchemaDefinitionProperty.Description,
 		Schema:             orderProps(schema),
 	}
