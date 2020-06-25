@@ -11,33 +11,36 @@ import (
 type TerraformProviderDocGenerator struct {
 	// ProviderName defines the provider name
 	ProviderName string
-	// OpenAPIDocURL defines the URL where the service provider OpenAPI documentation lives and it will be used to fetch from
-	// to create the corresponding TerraformProviderDocumentation
-	OpenAPIDocURL string
+	// SpecAnalyser analyses the swagger doc and provides helper methods to retrieve all the end points that can
+	// be used as terraform resources.
+	SpecAnalyser openapi.SpecAnalyser
+}
+
+func NewTerraformProviderDocGenerator(providerName, openAPIDocURL string) (TerraformProviderDocGenerator, error) {
+	analyser, err := openapi.CreateSpecAnalyser("v2", openAPIDocURL)
+	if err != nil {
+		return TerraformProviderDocGenerator{}, err
+	}
+	return TerraformProviderDocGenerator{ProviderName: providerName, SpecAnalyser: analyser}, nil
 }
 
 // GenerateDocumentation creates a TerraformProviderDocumentation object populated based on the OpenAPIDocURL documentation
 func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProviderDocumentation, error) {
-	analyser, err := openapi.CreateSpecAnalyser("v2", t.OpenAPIDocURL)
-	if err != nil {
-		return TerraformProviderDocumentation{}, err
-	}
-
-	regions, err := getRegions(analyser)
+	regions, err := getRegions(t.SpecAnalyser)
 	if err != nil {
 		return TerraformProviderDocumentation{}, nil
 	}
-	globalSecuritySchemes, securityDefinitions, err := getSecurity(analyser)
+	globalSecuritySchemes, securityDefinitions, err := getSecurity(t.SpecAnalyser)
 	if err != nil {
 		return TerraformProviderDocumentation{}, nil
 	}
-	headers, err := analyser.GetAllHeaderParameters()
+	headers, err := t.SpecAnalyser.GetAllHeaderParameters()
 	if err != nil {
 		return TerraformProviderDocumentation{}, nil
 	}
 	configRegions, configProperties := t.getRequiredProviderConfigurationProperties(regions, globalSecuritySchemes, securityDefinitions, headers)
 
-	r, err := analyser.GetTerraformCompliantResources()
+	r, err := t.SpecAnalyser.GetTerraformCompliantResources()
 	if err != nil {
 		return TerraformProviderDocumentation{}, nil
 	}
@@ -51,7 +54,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, err
 	}
 
-	compliantDataSources := analyser.GetTerraformCompliantDataSources()
+	compliantDataSources := t.SpecAnalyser.GetTerraformCompliantDataSources()
 	dataSourceFilters, err := t.getDataSourceFilters(compliantDataSources)
 	if err != nil {
 		return TerraformProviderDocumentation{}, err

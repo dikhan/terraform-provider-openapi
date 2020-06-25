@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	terraformProviderDocGenerator := openapi.TerraformProviderDocGenerator{
-		ProviderName:  "openapi",
-		OpenAPIDocURL: "", // add openapi doc url when running
+	terraformProviderDocGenerator, err := openapi.NewTerraformProviderDocGenerator("openapi", "")
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	f, err := os.Create("./utils/terraform_docs_generator/openapi/templates/zendesk_output.html")
@@ -21,5 +21,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	d.RenderZendeskHTML(f)
+	err = d.RenderZendeskHTML(f)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
