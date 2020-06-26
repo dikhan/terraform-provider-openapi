@@ -50,10 +50,8 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, err
 	}
 
-	dataSourceInstances, err := t.getDataSourceInstances(r)
-	if err != nil {
-		return TerraformProviderDocumentation{}, err
-	}
+	// ignoring error from getDataSourceInstances bc resource errors will be caught when looping through resources in getProviderResources
+	dataSourceInstances, _ := t.getDataSourceInstances(r)
 
 	compliantDataSources := t.SpecAnalyser.GetTerraformCompliantDataSources()
 	dataSourceFilters, err := t.getDataSourceFilters(compliantDataSources)
