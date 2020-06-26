@@ -56,8 +56,8 @@ func TestGenerateDocumentation(t *testing.T) {
 	dg := TerraformProviderDocGenerator{
 		ProviderName: providerName,
 		SpecAnalyser: &specAnalyserStub{
-			resources:   resources,
-			dataSources: resources,
+			resources:   func() ([]openapi.SpecResource, error) { return resources, nil },
+			dataSources: func() []openapi.SpecResource { return resources },
 			security: &specSecurityStub{
 				globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) {
 					return openapi.SpecSecuritySchemes{{Name: "required_token"}}, nil
@@ -67,9 +67,11 @@ func TestGenerateDocumentation(t *testing.T) {
 				},
 			},
 			headers: openapi.SpecHeaderParameters{},
-			backendConfiguration: &specStubBackendConfiguration{
-				host:    "service.api.${region}.hostname.com",
-				regions: []string{"region1", "region2", "region3"},
+			backendConfiguration: func() (*specStubBackendConfiguration, error) {
+				return &specStubBackendConfiguration{
+					host:    "service.api.${region}.hostname.com",
+					regions: []string{"region1", "region2", "region3"},
+				}, nil
 			},
 		},
 	}
@@ -147,22 +149,45 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 		expectedErr  error
 	}{
 		{
-			name: "backend config error",
+			name: "getRegions error",
 			specAnalyser: &specAnalyserStub{
-				backendConfiguration: &specStubBackendConfiguration{
-					err: errors.New("backend configuration error"),
+				backendConfiguration: func() (*specStubBackendConfiguration, error) {
+					return nil, errors.New("getRegions error")
 				},
 			},
-			expectedErr: errors.New("backend configuration error"),
+			expectedErr: errors.New("getRegions error"),
 		},
 		{
-			name: "security error",
+			name: "getSecurity error",
 			specAnalyser: &specAnalyserStub{
 				security: &specSecurityStub{
-					globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return nil, errors.New("globalSecuritySchemes error") },
+					globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return nil, errors.New("getSecurity error") },
 				},
 			},
-			expectedErr: errors.New("globalSecuritySchemes error"),
+			expectedErr: errors.New("getSecurity error"),
+		},
+		{
+			name: "GetTerraformCompliantResources error",
+			specAnalyser: &specAnalyserStub{
+				resources: func() ([]openapi.SpecResource, error) {
+					return nil, errors.New("GetTerraformCompliantResources error")
+				},
+			},
+			expectedErr: errors.New("GetTerraformCompliantResources error"),
+		},
+		{
+			name: "getProviderResources error",
+			specAnalyser: &specAnalyserStub{
+				resources: func() ([]openapi.SpecResource, error) {
+					return []openapi.SpecResource{
+						&specStubResource{
+							name:  "test_resource",
+							error: errors.New("getProviderResources error"),
+						},
+					}, nil
+				},
+			},
+			expectedErr: errors.New("getProviderResources error"),
 		},
 	}
 
@@ -184,9 +209,11 @@ func TestGetRegions(t *testing.T) {
 		{
 			name: "happy path",
 			specAnalyser: &specAnalyserStub{
-				backendConfiguration: &specStubBackendConfiguration{
-					host:    "service.api.${region}.hostname.com",
-					regions: []string{"region1", "region2"},
+				backendConfiguration: func() (*specStubBackendConfiguration, error) {
+					return &specStubBackendConfiguration{
+						host:    "service.api.${region}.hostname.com",
+						regions: []string{"region1", "region2"},
+					}, nil
 				},
 			},
 			expectedRegions: []string{"region1", "region2"},
@@ -199,16 +226,26 @@ func TestGetRegions(t *testing.T) {
 			expectedErr:     nil,
 		},
 		{
-			name:            "crappy path - backend config error",
-			specAnalyser:    &specAnalyserStub{backendConfiguration: &specStubBackendConfiguration{err: errors.New("backend config error")}},
+			name: "crappy path - IsMultiRegion error",
+			specAnalyser: &specAnalyserStub{
+				backendConfiguration: func() (*specStubBackendConfiguration, error) {
+					return &specStubBackendConfiguration{
+						err: errors.New("IsMultiRegion error"),
+					}, nil
+				},
+			},
 			expectedRegions: nil,
-			expectedErr:     errors.New("backend config error"),
+			expectedErr:     errors.New("IsMultiRegion error"),
 		},
 		{
-			name:            "crappy path - spec analyser error",
-			specAnalyser:    &specAnalyserStub{error: errors.New("spec analyser error")},
+			name: "crappy path - GetAPIBackendConfiguration error",
+			specAnalyser: &specAnalyserStub{
+				backendConfiguration: func() (*specStubBackendConfiguration, error) {
+					return nil, errors.New("GetAPIBackendConfiguration error")
+				},
+			},
 			expectedRegions: nil,
-			expectedErr:     errors.New("spec analyser error"),
+			expectedErr:     errors.New("GetAPIBackendConfiguration error"),
 		},
 	}
 

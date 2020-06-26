@@ -8,23 +8,26 @@ import (
 // specAnalyserStub is a stubbed spec analyser used for testing purposes that implements the SpecAnalyser interface
 type specAnalyserStub struct {
 	openapi.SpecAnalyser
-	resources            []openapi.SpecResource
-	dataSources          []openapi.SpecResource
+	resources            func() ([]openapi.SpecResource, error)
+	dataSources          func() []openapi.SpecResource
 	security             *specSecurityStub
 	headers              openapi.SpecHeaderParameters
-	backendConfiguration *specStubBackendConfiguration
+	backendConfiguration func() (*specStubBackendConfiguration, error)
 	error                error
 }
 
 func (s *specAnalyserStub) GetTerraformCompliantResources() ([]openapi.SpecResource, error) {
-	if s.error != nil {
-		return nil, s.error
+	if s.resources != nil {
+		return s.resources()
 	}
-	return s.resources, nil
+	return nil, nil
 }
 
 func (s *specAnalyserStub) GetTerraformCompliantDataSources() []openapi.SpecResource {
-	return s.dataSources
+	if s.dataSources != nil {
+		return s.dataSources()
+	}
+	return nil
 }
 
 func (s *specAnalyserStub) GetSecurity() openapi.SpecSecurity {
@@ -42,11 +45,8 @@ func (s *specAnalyserStub) GetAllHeaderParameters() (openapi.SpecHeaderParameter
 }
 
 func (s *specAnalyserStub) GetAPIBackendConfiguration() (openapi.SpecBackendConfiguration, error) {
-	if s.error != nil {
-		return nil, s.error
-	}
 	if s.backendConfiguration != nil {
-		return s.backendConfiguration, nil
+		return s.backendConfiguration()
 	}
 	return nil, nil
 }
@@ -85,6 +85,7 @@ func (s *specStubBackendConfiguration) IsMultiRegion() (bool, string, []string, 
 	return false, "", nil, nil
 }
 
+// specStubResource
 type specStubResource struct {
 	openapi.SpecResource
 	name                   string
