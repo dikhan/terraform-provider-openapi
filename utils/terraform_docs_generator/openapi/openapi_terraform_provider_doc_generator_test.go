@@ -189,6 +189,20 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 			},
 			expectedErr: errors.New("getProviderResources error"),
 		},
+		{
+			name: "getDataSourceFilters error",
+			specAnalyser: &specAnalyserStub{
+				dataSources: func() []openapi.SpecResource {
+					return []openapi.SpecResource{
+						&specStubResource{
+							name:  "test_datasource",
+							error: errors.New("getDataSourceFilters error"),
+						},
+					}
+				},
+			},
+			expectedErr: errors.New("getDataSourceFilters error"),
+		},
 	}
 
 	for _, tc := range testCases {
