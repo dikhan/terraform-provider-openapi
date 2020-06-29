@@ -930,10 +930,7 @@ func TestSpecV2AnalyserGetAllHeaderParameters(t *testing.T) {
 }`
 		r := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetAllHeaderParameters method is called", func() {
-			specHeaderParameters, err := r.GetAllHeaderParameters()
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			specHeaderParameters := r.GetAllHeaderParameters()
 			Convey("Then the specHeaderParameters size should be one", func() {
 				So(len(specHeaderParameters), ShouldEqual, 1)
 			})
@@ -1032,10 +1029,7 @@ func TestSpecV2AnalyserGetAllHeaderParameters(t *testing.T) {
 }`
 		r := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetAllHeaderParameters method is called", func() {
-			specHeaderParameters, err := r.GetAllHeaderParameters()
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			specHeaderParameters := r.GetAllHeaderParameters()
 			Convey("Then the specHeaderParameters should have size one since the same header is present in multiple resources", func() {
 				So(len(specHeaderParameters), ShouldEqual, 1)
 			})

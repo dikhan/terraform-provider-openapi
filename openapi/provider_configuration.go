@@ -46,10 +46,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 		}
 	}
 
-	headers, err := specAnalyser.GetAllHeaderParameters()
-	if err != nil {
-		return nil, err
-	}
+	headers := specAnalyser.GetAllHeaderParameters()
 	if headers != nil {
 		for _, headerParam := range headers {
 			headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()

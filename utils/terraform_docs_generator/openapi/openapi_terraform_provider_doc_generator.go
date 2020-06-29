@@ -34,11 +34,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
 	}
-	// TODO: GetAllHeaderParameters doesn't look like it will ever return an error?
-	headers, err := t.SpecAnalyser.GetAllHeaderParameters()
-	if err != nil {
-		return TerraformProviderDocumentation{}, err
-	}
+	headers := t.SpecAnalyser.GetAllHeaderParameters()
 	configRegions, configProperties := t.getRequiredProviderConfigurationProperties(regions, globalSecuritySchemes, securityDefinitions, headers)
 
 	r, err := t.SpecAnalyser.GetTerraformCompliantResources()

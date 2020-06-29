@@ -118,11 +118,8 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 		p.configureProviderPropertyFromPluginConfig(s, secDefName, required)
 	}
 
-	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	headers := p.specAnalyser.GetAllHeaderParameters()
 	log.Printf("[DEBUG] all header parameters: %+v", headers)
-	if err != nil {
-		return nil, err
-	}
 	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
 		p.configureProviderPropertyFromPluginConfig(s, headerTerraformCompliantName, false)

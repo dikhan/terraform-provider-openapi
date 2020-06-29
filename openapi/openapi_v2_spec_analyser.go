@@ -215,8 +215,8 @@ func (specAnalyser *specV2Analyser) GetSecurity() SpecSecurity {
 // - root level parameters (not supported)
 // - path level parameters (not supported)
 // - operation level parameters (supported)
-func (specAnalyser *specV2Analyser) GetAllHeaderParameters() (SpecHeaderParameters, error) {
-	return getAllHeaderParameters(specAnalyser.d.Spec().Paths.Paths), nil
+func (specAnalyser *specV2Analyser) GetAllHeaderParameters() SpecHeaderParameters {
+	return getAllHeaderParameters(specAnalyser.d.Spec().Paths.Paths)
 }
 
 func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {

@@ -37,11 +37,11 @@ func (s *specAnalyserStub) GetSecurity() openapi.SpecSecurity {
 	return nil
 }
 
-func (s *specAnalyserStub) GetAllHeaderParameters() (openapi.SpecHeaderParameters, error) {
+func (s *specAnalyserStub) GetAllHeaderParameters() openapi.SpecHeaderParameters {
 	if s.headers != nil {
-		return s.headers, nil
+		return s.headers
 	}
-	return nil, nil
+	return nil
 }
 
 func (s *specAnalyserStub) GetAPIBackendConfiguration() (openapi.SpecBackendConfiguration, error) {

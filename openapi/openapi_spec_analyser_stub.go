@@ -25,8 +25,8 @@ func (s *specAnalyserStub) GetSecurity() SpecSecurity {
 	return s.security
 }
 
-func (s *specAnalyserStub) GetAllHeaderParameters() (SpecHeaderParameters, error) {
-	return s.headers, nil
+func (s *specAnalyserStub) GetAllHeaderParameters() SpecHeaderParameters {
+	return s.headers
 }
 
 func (s *specAnalyserStub) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {
