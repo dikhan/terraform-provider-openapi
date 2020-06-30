@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
+	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/templates/zendesk"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -80,6 +81,7 @@ func TestGenerateDocumentation(t *testing.T) {
 	assert.Equal(t, providerName, d.ProviderName)
 
 	// ProviderInstallation assertions
+	assert.Equal(t, providerName, d.ProviderInstallation.ProviderName)
 	expectedProviderInstallExample := fmt.Sprintf("$ export PROVIDER_NAME=%s && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>"+
 		"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>"+
 		"[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>"+
@@ -88,14 +90,18 @@ func TestGenerateDocumentation(t *testing.T) {
 	assert.Equal(t, expectedProviderInstallExample, d.ProviderInstallation.Example)
 	assert.Equal(t, "You can then start running the Terraform provider:", d.ProviderInstallation.Other)
 	assert.Equal(t, fmt.Sprintf("$ export OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>", providerName), d.ProviderInstallation.OtherCommand)
+	assert.Equal(t, zendesk.ProviderInstallationTmpl, d.ProviderInstallation.Template)
 
 	// ProviderConfiguration assertions
+	assert.Equal(t, providerName, d.ProviderConfiguration.ProviderName)
 	assert.Equal(t, []string{"region1", "region2", "region3"}, d.ProviderConfiguration.Regions)
 	assert.Equal(t, []Property{{Name: "required_token", Type: "string", ArrayItemsType: "", Required: true, Computed: false, Description: "", Schema: nil}}, d.ProviderConfiguration.ConfigProperties)
 	assert.Nil(t, d.ProviderConfiguration.ExampleUsage)
 	assert.Equal(t, ArgumentsReference{Notes: nil}, d.ProviderConfiguration.ArgumentsReference)
+	assert.Equal(t, zendesk.ProviderConfigurationTmpl, d.ProviderConfiguration.Template)
 
 	// ProviderResources assertions
+	assert.Equal(t, providerName, d.ProviderResources.ProviderName)
 	assert.Len(t, d.ProviderResources.Resources, 1)
 	cdnResource := d.ProviderResources.Resources[0]
 	assert.Equal(t, "cdn_v1", cdnResource.Name)
@@ -104,6 +110,11 @@ func TestGenerateDocumentation(t *testing.T) {
 	cdnResourceProps := cdnResource.Properties
 	assert.Len(t, cdnResourceProps, 1)
 	assertProperty(t, cdnResourceProps[0], "id", "string", "", "", false, true, nil)
+	assert.Equal(t, zendesk.ProviderResourcesTmpl, d.ProviderResources.Template)
+
+	// DataSources assertions
+	assert.Equal(t, providerName, d.DataSources.ProviderName)
+	assert.Equal(t, zendesk.DataSourcesTmpl, d.DataSources.Template)
 
 	// DataSource assertions
 	assert.Len(t, d.DataSources.DataSources, 1)

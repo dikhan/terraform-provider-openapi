@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
+	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/templates/zendesk"
 	"github.com/mitchellh/hashstructure"
 	"sort"
 )
@@ -58,6 +59,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	return TerraformProviderDocumentation{
 		ProviderName: t.ProviderName,
 		ProviderInstallation: ProviderInstallation{
+			ProviderName: t.ProviderName,
 			Example: fmt.Sprintf("$ export PROVIDER_NAME=%s && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>"+
 				"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>"+
 				"[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>"+
@@ -65,18 +67,27 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 				"[INFO] Terraform provider 'terraform-provider-%s' successfully installed at: '~/.terraform.d/plugins'!", t.ProviderName, t.ProviderName),
 			Other:        "You can then start running the Terraform provider:",
 			OtherCommand: fmt.Sprintf("$ export OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>", t.ProviderName),
+			Template:     zendesk.ProviderInstallationTmpl,
 		},
 		ProviderConfiguration: ProviderConfiguration{
+			ProviderName:     t.ProviderName,
 			Regions:          configRegions,
 			ConfigProperties: configProperties,
+			Template:         zendesk.ProviderConfigurationTmpl,
 		},
 		ProviderResources: ProviderResources{
-			Resources: resources,
+			ProviderName: t.ProviderName,
+			Resources:    resources,
+			Template:     zendesk.ProviderResourcesTmpl,
 		},
 		DataSources: DataSources{
+			ProviderName:        t.ProviderName,
 			DataSources:         dataSourceFilters,
 			DataSourceInstances: dataSourceInstances,
+			Template:            zendesk.DataSourcesTmpl,
 		},
+		TableOfContentsTemplate:         zendesk.TableOfContentsTmpl,
+		SpecialTermsDefinitionsTemplate: zendesk.SpecialTermsTmpl,
 	}, err
 }
 

@@ -1,18 +1,19 @@
 package openapi
 
 import (
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/templates/zendesk"
 	"io"
 )
 
 // TerraformProviderDocumentation defines the attributes needed to generate Terraform provider documentation
 type TerraformProviderDocumentation struct {
-	ProviderName                string
-	ProviderInstallation        ProviderInstallation
-	ProviderConfiguration       ProviderConfiguration
-	ProviderResources           ProviderResources
-	DataSources                 DataSources
-	ShowSpecialTermsDefinitions bool
+	ProviderName                    string
+	ProviderInstallation            ProviderInstallation
+	ProviderConfiguration           ProviderConfiguration
+	ProviderResources               ProviderResources
+	DataSources                     DataSources
+	ShowSpecialTermsDefinitions     bool
+	TableOfContentsTemplate         string
+	SpecialTermsDefinitionsTemplate string
 }
 
 // ProviderInstallation includes details needed to install the Terraform provider plugin
@@ -25,11 +26,13 @@ type ProviderInstallation struct {
 	Other string
 	// Other code/commands needed to install/run the provider
 	OtherCommand string
+	// Template used to render HTML
+	Template string
 }
 
 // RenderZendesk renders into the input writer the ProviderInstallation documentation formatted in HTML
 func (t ProviderInstallation) RenderZendesk(w io.Writer) error {
-	return Render(w, "ProviderInstallation", zendesk.ProviderInstallationTmpl, t)
+	return Render(w, "ProviderInstallation", t.Template, t)
 }
 
 // ProviderConfiguration defines the details needed to properly configure the Terraform provider
@@ -40,11 +43,12 @@ type ProviderConfiguration struct {
 	ConfigProperties   []Property
 	ExampleUsage       []ExampleUsage
 	ArgumentsReference ArgumentsReference
+	Template           string
 }
 
 // RenderZendesk renders into the input writer the ProviderInstallation documentation formatted in HTML
 func (t ProviderConfiguration) RenderZendesk(w io.Writer) error {
-	return Render(w, "ProviderConfiguration", zendesk.ProviderConfigurationTmpl, t)
+	return Render(w, "ProviderConfiguration", t.Template, t)
 }
 
 // ProviderResources defines the resources exposed by the Terraform provider
@@ -52,11 +56,12 @@ type ProviderResources struct {
 	// ProviderName is the name of the provider
 	ProviderName string
 	Resources    []Resource
+	Template     string
 }
 
 // RenderZendesk renders into the input writer the ProviderResources documentation formatted in HTML
 func (t ProviderResources) RenderZendesk(w io.Writer) error {
-	return Render(w, "ProviderResources", zendesk.ProviderResourcesTmpl, t)
+	return Render(w, "ProviderResources", t.Template, t)
 }
 
 func (r ProviderResources) ContainsResourcesWithSecretProperties() bool {
@@ -76,11 +81,12 @@ type DataSources struct {
 	ProviderName        string
 	DataSources         []DataSource
 	DataSourceInstances []DataSource
+	Template            string
 }
 
 // RenderZendesk renders into the input writer the DataSources documentation formatted in HTML
 func (t DataSources) RenderZendesk(w io.Writer) error {
-	return Render(w, "DataSources", zendesk.DataSourcesTmpl, t)
+	return Render(w, "DataSources", t.Template, t)
 }
 
 // DataSource defines the attributes to generate documentation for a Terraform provider data source
@@ -157,31 +163,27 @@ func (p Property) ContainsComputedSubProperties() bool {
 
 // RenderZendeskHTML renders the documentation in HTML
 func (t TerraformProviderDocumentation) RenderZendeskHTML(w io.Writer) error {
-	err := Render(w, "TerraformProviderDocTableOfContents", zendesk.TableOfContentsTmpl, t)
+	err := Render(w, "TerraformProviderDocTableOfContents", t.TableOfContentsTemplate, t)
 	if err != nil {
 		return err
 	}
-	t.ProviderInstallation.ProviderName = t.ProviderName
 	err = t.ProviderInstallation.RenderZendesk(w)
 	if err != nil {
 		return err
 	}
-	t.ProviderConfiguration.ProviderName = t.ProviderName
 	err = t.ProviderConfiguration.RenderZendesk(w)
 	if err != nil {
 		return err
 	}
-	t.ProviderResources.ProviderName = t.ProviderName
 	err = t.ProviderResources.RenderZendesk(w)
 	if err != nil {
 		return err
 	}
-	t.DataSources.ProviderName = t.ProviderName
 	err = t.DataSources.RenderZendesk(w)
 	if err != nil {
 		return err
 	}
-	err = Render(w, "TerraformProviderDocSpecialTermsDefinitions", zendesk.SpecialTermsTmpl, t)
+	err = Render(w, "TerraformProviderDocSpecialTermsDefinitions", t.SpecialTermsDefinitionsTemplate, t)
 	if err != nil {
 		return err
 	}

@@ -2,9 +2,12 @@ package openapi
 
 import (
 	"bytes"
+	"errors"
+	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/templates/zendesk"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+	"text/template"
 )
 
 func TestProviderResources_RenderZendesk(t *testing.T) {
@@ -47,6 +50,7 @@ func TestProviderResources_RenderZendesk(t *testing.T) {
 				},
 			},
 		},
+		Template: zendesk.ProviderResourcesTmpl,
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
@@ -200,6 +204,7 @@ func TestDataSources_RenderZendesk(t *testing.T) {
 				},
 			},
 		},
+		Template: zendesk.DataSourcesTmpl,
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_datasources">Data Sources (using resource id)</h2>
@@ -336,6 +341,7 @@ func TestProviderInstallation_RenderZendesk(t *testing.T) {
 		Example:      "➜ ~ This is an example",
 		Other:        "Some more info about the installation",
 		OtherCommand: "➜ ~ init_command do_something",
+		Template:     zendesk.ProviderInstallationTmpl,
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_installation">Provider Installation</h2>
@@ -370,6 +376,7 @@ func TestProviderConfiguration_RenderZendesk(t *testing.T) {
 		ArgumentsReference: ArgumentsReference{
 			Notes: []string{"Note: some special notes..."},
 		},
+		Template: zendesk.ProviderConfigurationTmpl,
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_configuration">Provider Configuration</h2>
@@ -476,18 +483,31 @@ func TestProperty_ContainsComputedSubProperties(t *testing.T) {
 }
 
 func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
+	providerName := "openapi"
 	terraformProviderDocumentation := TerraformProviderDocumentation{
-		ProviderName:                "openapi",
-		ProviderInstallation:        ProviderInstallation{},
-		ProviderConfiguration:       ProviderConfiguration{},
+		ProviderName: providerName,
+		ProviderInstallation: ProviderInstallation{
+			ProviderName: providerName,
+			Template:     zendesk.ProviderInstallationTmpl,
+		},
+		ProviderConfiguration: ProviderConfiguration{
+			ProviderName: providerName,
+			Template:     zendesk.ProviderConfigurationTmpl,
+		},
 		ShowSpecialTermsDefinitions: true,
 		ProviderResources: ProviderResources{
-			Resources: []Resource{},
+			ProviderName: providerName,
+			Resources:    []Resource{},
+			Template:     zendesk.ProviderResourcesTmpl,
 		},
 		DataSources: DataSources{
+			ProviderName:        providerName,
 			DataSourceInstances: []DataSource{},
 			DataSources:         []DataSource{},
+			Template:            zendesk.DataSourcesTmpl,
 		},
+		TableOfContentsTemplate:         zendesk.TableOfContentsTmpl,
+		SpecialTermsDefinitionsTemplate: zendesk.SpecialTermsTmpl,
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<p dir="ltr">
@@ -554,6 +574,64 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 	err := terraformProviderDocumentation.RenderZendeskHTML(&buf)
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 	assert.Nil(t, err)
+}
+
+func TestTerraformProviderDocumentation_RenderZendeskHTML_Errors(t *testing.T) {
+	testCases := []struct {
+		name                           string
+		terraformProviderDocumentation TerraformProviderDocumentation
+		expectedErr                    error
+	}{
+		{
+			name: "provider installation template error",
+			terraformProviderDocumentation: TerraformProviderDocumentation{
+				ProviderInstallation: ProviderInstallation{Template: `{{.nonExistentVariable}}`},
+			},
+			expectedErr: errors.New("template: ProviderInstallation:1:2: executing \"ProviderInstallation\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.ProviderInstallation"),
+		},
+		{
+			name: "provider configuration template error",
+			terraformProviderDocumentation: TerraformProviderDocumentation{
+				ProviderConfiguration: ProviderConfiguration{Template: `{{.nonExistentVariable}}`},
+			},
+			expectedErr: errors.New("template: ProviderConfiguration:1:2: executing \"ProviderConfiguration\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.ProviderConfiguration"),
+		},
+		{
+			name: "provider resources template error",
+			terraformProviderDocumentation: TerraformProviderDocumentation{
+				ProviderResources: ProviderResources{Template: `{{.nonExistentVariable}}`},
+			},
+			expectedErr: errors.New("template: ProviderResources:1:2: executing \"ProviderResources\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.ProviderResources"),
+		},
+		{
+			name: "data sources template error",
+			terraformProviderDocumentation: TerraformProviderDocumentation{
+				DataSources: DataSources{Template: `{{.nonExistentVariable}}`},
+			},
+			expectedErr: errors.New("template: DataSources:1:2: executing \"DataSources\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.DataSources"),
+		},
+		{
+			name: "table of contents template error",
+			terraformProviderDocumentation: TerraformProviderDocumentation{
+				TableOfContentsTemplate: `{{.nonExistentVariable}}`,
+			},
+			expectedErr: errors.New("template: TerraformProviderDocTableOfContents:1:2: executing \"TerraformProviderDocTableOfContents\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.TerraformProviderDocumentation"),
+		},
+		{
+			name: "special terms definitions template error",
+			terraformProviderDocumentation: TerraformProviderDocumentation{
+				SpecialTermsDefinitionsTemplate: `{{.nonExistentVariable}}`,
+			},
+			expectedErr: errors.New("template: TerraformProviderDocSpecialTermsDefinitions:1:2: executing \"TerraformProviderDocSpecialTermsDefinitions\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.TerraformProviderDocumentation"),
+		},
+	}
+
+	for _, tc := range testCases {
+		var buf bytes.Buffer
+		err := tc.terraformProviderDocumentation.RenderZendeskHTML(&buf)
+		templateErr := err.(template.ExecError)
+		assert.EqualError(t, templateErr.Err, tc.expectedErr.Error())
+	}
 }
 
 func createProperty(name, properType, description string, required, computed bool) Property {
