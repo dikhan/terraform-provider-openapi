@@ -88,12 +88,11 @@ func (s *specStubBackendConfiguration) IsMultiRegion() (bool, string, []string, 
 // specStubResource
 type specStubResource struct {
 	openapi.SpecResource
-	name                   string
-	shouldIgnore           bool
-	schemaDefinition       *openapi.SpecSchemaDefinition
-	parentResourceNames    []string
-	fullParentResourceName string
-	error                  error
+	name                string
+	shouldIgnore        bool
+	schemaDefinition    *openapi.SpecSchemaDefinition
+	parentResourceNames []string
+	error               error
 }
 
 func (s *specStubResource) ShouldIgnoreResource() bool { return s.shouldIgnore }
@@ -107,12 +106,10 @@ func (s *specStubResource) GetResourceSchema() (*openapi.SpecSchemaDefinition, e
 
 func (s *specStubResource) GetResourceName() string { return s.name }
 
-// TODO: fix implementation and add test case for resource with parent - ParentResourceInfo props are private
 func (s *specStubResource) GetParentResourceInfo() *openapi.ParentResourceInfo {
-	subRes := openapi.ParentResourceInfo{}
-	if len(s.parentResourceNames) > 0 && s.fullParentResourceName != "" {
-		//subRes.parentResourceNames = s.parentResourceNames
-		//subRes.fullParentResourceName = s.fullParentResourceName
+	if len(s.parentResourceNames) > 0 {
+		subRes := openapi.ParentResourceInfo{}
+		subRes.SetParentResourceNames(s.parentResourceNames)
 		return &subRes
 	}
 	return nil

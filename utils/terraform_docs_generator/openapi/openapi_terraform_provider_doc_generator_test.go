@@ -710,6 +710,21 @@ func TestGetProviderResources(t *testing.T) {
 	}
 }
 
+func TestGetProviderResources_HasParentProps(t *testing.T) {
+	openapiResources := []openapi.SpecResource{
+		&specStubResource{
+			//name: "test_resource",
+			schemaDefinition:    &openapi.SpecSchemaDefinition{},
+			parentResourceNames: []string{"parentResourceName"},
+		},
+	}
+	dg := TerraformProviderDocGenerator{}
+	actualResources, err := dg.getProviderResources(openapiResources)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "parentResourceName_id", actualResources[0].ParentProperties[0])
+}
+
 func TestGetProviderResources_IgnoreResource(t *testing.T) {
 	openapiResources := []openapi.SpecResource{
 		&specStubResource{

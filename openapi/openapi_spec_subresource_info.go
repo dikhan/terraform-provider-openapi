@@ -20,3 +20,7 @@ func (info *ParentResourceInfo) GetParentPropertiesNames() []string {
 	}
 	return parentPropertyNames
 }
+
+func (info *ParentResourceInfo) SetParentResourceNames(parentResourceNames []string) {
+	info.parentResourceNames = parentResourceNames
+}
