@@ -12,7 +12,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create("./utils/terraform_docs_generator/openapi/templates/zendesk_output.html")
+	f, err := os.Create("./utils/terraform_docs_generator/openapi/provider_documentation.html")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = d.RenderZendeskHTML(f)
+	err = d.RenderHTML(f)
 	if err != nil {
 		log.Fatal(err)
 	}
