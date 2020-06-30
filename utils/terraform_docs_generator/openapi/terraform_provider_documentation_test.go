@@ -10,6 +10,79 @@ import (
 	"text/template"
 )
 
+func TestProviderInstallation_RenderZendesk(t *testing.T) {
+	pi := ProviderInstallation{
+		ProviderName: "openapi",
+		Example:      "➜ ~ This is an example",
+		Other:        "Some more info about the installation",
+		OtherCommand: "➜ ~ init_command do_something",
+		Template:     zendesk.ProviderInstallationTmpl,
+	}
+	var buf bytes.Buffer
+	expectedHTML := `<h2 id="provider_installation">Provider Installation</h2>
+<p>
+  In order to provision 'openapi' Terraform resources, you need to first install the 'openapi'
+  Terraform plugin by running&nbsp;the following command (you must be running Terraform &gt;= 0.12):
+</p>
+<pre>➜ ~ This is an example</pre>
+<p>
+  <span>Some more info about the installation</span>
+</p>
+<pre dir="ltr">➜ ~ init_command do_something
+➜ ~ terraform init &amp;&amp; terraform plan
+</pre>`
+	err := pi.RenderZendesk(&buf)
+	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
+	assert.Nil(t, err)
+}
+
+func TestProviderConfiguration_RenderZendesk(t *testing.T) {
+	pc := ProviderConfiguration{
+		ProviderName: "openapi",
+		Regions:      []string{"rst1"},
+		ConfigProperties: []Property{
+			{
+				Name:     "token",
+				Required: true,
+				Type:     "string",
+			},
+		},
+		ExampleUsage: nil,
+		ArgumentsReference: ArgumentsReference{
+			Notes: []string{"Note: some special notes..."},
+		},
+		Template: zendesk.ProviderConfigurationTmpl,
+	}
+	var buf bytes.Buffer
+	expectedHTML := `<h2 id="provider_configuration">Provider Configuration</h2>
+<h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
+    <pre>
+<span>provider </span><span>"openapi" </span>{
+<span>  token  </span>= <span>"..."</span>
+<span>}</span>
+</pre>
+
+    <p>Using the default region (rst1):</p>
+    <pre>
+<span>provider </span><span>"openapi" </span>{
+<span>  # Resources using this default provider will be created in the 'rst1' region<br>  ...<br></span>}
+    </pre>
+    
+
+    <h4 id="provider_configuration_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li><span>token [string] - (Required) .</span></li></li>
+      <li>
+          region [string] - (Optional) The region location to be used&nbsp;([rst1]). If region isn't specified, the default is "rst1".
+      </li>
+    
+    </ul>`
+	err := pc.RenderZendesk(&buf)
+	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
+	assert.Nil(t, err)
+}
+
 func TestProviderResources_RenderZendesk(t *testing.T) {
 	r := ProviderResources{
 		ProviderName: "openapi",
@@ -161,6 +234,38 @@ func TestProviderResources_RenderZendesk(t *testing.T) {
 	err := r.RenderZendesk(&buf)
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 	assert.Nil(t, err)
+}
+
+func TestContainsResourcesWithSecretProperties(t *testing.T) {
+	testCases := []struct {
+		name                    string
+		providerResources       ProviderResources
+		expectedContainsSecrets bool
+	}{
+		{
+			name: "no resources with sensitive props",
+			providerResources: ProviderResources{
+				Resources: []Resource{
+					{Properties: []Property{{IsSensitive: false}}},
+				},
+			},
+			expectedContainsSecrets: false,
+		},
+		{
+			name: "resource has sensitive prop",
+			providerResources: ProviderResources{
+				Resources: []Resource{
+					{Properties: []Property{{IsSensitive: true}}},
+				},
+			},
+			expectedContainsSecrets: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		actualContainsSecrets := tc.providerResources.ContainsResourcesWithSecretProperties()
+		assert.Equal(t, tc.expectedContainsSecrets, actualContainsSecrets, tc.name)
+	}
 }
 
 func TestDataSources_RenderZendesk(t *testing.T) {
@@ -331,79 +436,6 @@ func TestDataSources_RenderZendesk(t *testing.T) {
     
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p> `
 	err := d.RenderZendesk(&buf)
-	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
-	assert.Nil(t, err)
-}
-
-func TestProviderInstallation_RenderZendesk(t *testing.T) {
-	pi := ProviderInstallation{
-		ProviderName: "openapi",
-		Example:      "➜ ~ This is an example",
-		Other:        "Some more info about the installation",
-		OtherCommand: "➜ ~ init_command do_something",
-		Template:     zendesk.ProviderInstallationTmpl,
-	}
-	var buf bytes.Buffer
-	expectedHTML := `<h2 id="provider_installation">Provider Installation</h2>
-<p>
-  In order to provision 'openapi' Terraform resources, you need to first install the 'openapi'
-  Terraform plugin by running&nbsp;the following command (you must be running Terraform &gt;= 0.12):
-</p>
-<pre>➜ ~ This is an example</pre>
-<p>
-  <span>Some more info about the installation</span>
-</p>
-<pre dir="ltr">➜ ~ init_command do_something
-➜ ~ terraform init &amp;&amp; terraform plan
-</pre>`
-	err := pi.RenderZendesk(&buf)
-	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
-	assert.Nil(t, err)
-}
-
-func TestProviderConfiguration_RenderZendesk(t *testing.T) {
-	pc := ProviderConfiguration{
-		ProviderName: "openapi",
-		Regions:      []string{"rst1"},
-		ConfigProperties: []Property{
-			{
-				Name:     "token",
-				Required: true,
-				Type:     "string",
-			},
-		},
-		ExampleUsage: nil,
-		ArgumentsReference: ArgumentsReference{
-			Notes: []string{"Note: some special notes..."},
-		},
-		Template: zendesk.ProviderConfigurationTmpl,
-	}
-	var buf bytes.Buffer
-	expectedHTML := `<h2 id="provider_configuration">Provider Configuration</h2>
-<h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
-    <pre>
-<span>provider </span><span>"openapi" </span>{
-<span>  token  </span>= <span>"..."</span>
-<span>}</span>
-</pre>
-
-    <p>Using the default region (rst1):</p>
-    <pre>
-<span>provider </span><span>"openapi" </span>{
-<span>  # Resources using this default provider will be created in the 'rst1' region<br>  ...<br></span>}
-    </pre>
-    
-
-    <h4 id="provider_configuration_arguments_reference" dir="ltr">Arguments Reference</h4>
-    <p dir="ltr">The following arguments are supported:</p>
-    <ul dir="ltr">
-        <li><span>token [string] - (Required) .</span></li></li>
-      <li>
-          region [string] - (Optional) The region location to be used&nbsp;([rst1]). If region isn't specified, the default is "rst1".
-      </li>
-    
-    </ul>`
-	err := pc.RenderZendesk(&buf)
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 	assert.Nil(t, err)
 }
