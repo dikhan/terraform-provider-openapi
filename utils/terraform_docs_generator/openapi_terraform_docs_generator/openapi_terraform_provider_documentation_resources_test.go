@@ -1,8 +1,8 @@
-package openapi
+package openapi_terraform_docs_generator
 
 import (
 	"bytes"
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/templates/zendesk"
+	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi_terraform_docs_generator/templates/zendesk"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"

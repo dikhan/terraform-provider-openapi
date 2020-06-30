@@ -1,4 +1,4 @@
-package openapi
+package openapi_terraform_docs_generator
 
 import (
 	"github.com/dikhan/terraform-provider-openapi/openapi"
