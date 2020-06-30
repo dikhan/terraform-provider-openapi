@@ -217,24 +217,3 @@ func TestResource_BuildImportIDsExample(t *testing.T) {
 		assert.Equal(t, tc.expectedImportIDs, result)
 	}
 }
-
-func createProperty(name, properType, description string, required, computed bool) Property {
-	return Property{
-		Name:        name,
-		Required:    required,
-		Computed:    computed,
-		Type:        properType,
-		Description: description,
-	}
-}
-
-func createArrayProperty(name, properType, propItemsType, description string, required, computed bool) Property {
-	return Property{
-		Name:           name,
-		Required:       required,
-		Computed:       computed,
-		Type:           properType,
-		ArrayItemsType: propItemsType,
-		Description:    description,
-	}
-}
