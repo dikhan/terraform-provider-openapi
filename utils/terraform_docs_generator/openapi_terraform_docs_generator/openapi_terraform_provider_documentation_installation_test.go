@@ -2,7 +2,6 @@ package openapi_terraform_docs_generator
 
 import (
 	"bytes"
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi_terraform_docs_generator/templates/zendesk"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -28,7 +27,7 @@ func TestProviderInstallation_RenderZendesk(t *testing.T) {
 <pre dir="ltr">➜ ~ init_command do_something
 ➜ ~ terraform init &amp;&amp; terraform plan
 </pre>`
-	err := pi.Render(&buf, zendesk.ProviderInstallationTmpl)
+	err := pi.Render(&buf, ProviderInstallationTmpl)
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 	assert.Nil(t, err)
 }

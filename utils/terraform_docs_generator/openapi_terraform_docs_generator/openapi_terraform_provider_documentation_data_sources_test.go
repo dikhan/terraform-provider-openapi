@@ -2,7 +2,6 @@ package openapi_terraform_docs_generator
 
 import (
 	"bytes"
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi_terraform_docs_generator/templates/zendesk"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -174,7 +173,7 @@ func TestDataSources_RenderZendesk(t *testing.T) {
         
     
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p> `
-	err := d.Render(&buf, zendesk.DataSourcesTmpl)
+	err := d.Render(&buf, DataSourcesTmpl)
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 	assert.Nil(t, err)
 }

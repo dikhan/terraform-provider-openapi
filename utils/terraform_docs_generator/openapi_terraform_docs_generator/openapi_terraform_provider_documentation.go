@@ -1,7 +1,6 @@
 package openapi_terraform_docs_generator
 
 import (
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi_terraform_docs_generator/templates/zendesk"
 	"io"
 )
 
@@ -16,7 +15,7 @@ type TerraformProviderDocumentation struct {
 }
 
 func (t TerraformProviderDocumentation) RenderHTML(w io.Writer) error {
-	return t.renderZendeskHTML(w, zendesk.TableOfContentsTmpl, zendesk.ProviderInstallationTmpl, zendesk.ProviderConfigurationTmpl, zendesk.ProviderResourcesTmpl, zendesk.DataSourcesTmpl, zendesk.SpecialTermsTmpl)
+	return t.renderZendeskHTML(w, TableOfContentsTmpl, ProviderInstallationTmpl, ProviderConfigurationTmpl, ProviderResourcesTmpl, DataSourcesTmpl, SpecialTermsTmpl)
 }
 
 // RenderZendeskHTML renders the documentation in HTML

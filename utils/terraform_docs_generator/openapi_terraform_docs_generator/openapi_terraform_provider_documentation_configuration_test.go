@@ -2,7 +2,6 @@ package openapi_terraform_docs_generator
 
 import (
 	"bytes"
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi_terraform_docs_generator/templates/zendesk"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -49,7 +48,7 @@ func TestProviderConfiguration_RenderZendesk(t *testing.T) {
       </li>
     
     </ul>`
-	err := pc.Render(&buf, zendesk.ProviderConfigurationTmpl)
+	err := pc.Render(&buf, ProviderConfigurationTmpl)
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 	assert.Nil(t, err)
 }
