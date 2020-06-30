@@ -161,22 +161,7 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 
 %s
 
-{{- define "resource_attribute_reference" -}}
-    {{- if or .Computed .ContainsComputedSubProperties -}}
-		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{- /* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */ -}}
-		{{- else -}}
-        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] {{ if .IsSensitive }}(<a href="#special_terms_definitions_sensitive_property" target="_self">sensitive</a>){{end}} - {{.Description}}
-            {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
-            <ul dir="ltr">
-                {{- range .Schema}}
-					{{- template "resource_attribute_reference" .}}
-                {{- end}}
-            </ul>
-            {{ end -}}
-        </li>
-		{{end}}
-    {{- end}}
-{{- end -}}
+%s
 
 <h2 id="provider_resources">Provider Resources</h2>
 
@@ -253,7 +238,7 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
 </p>
 
-{{end}} {{/* END range .Resources */}}`, ArgumentReferenceTmpl)
+{{end}} {{/* END range .Resources */}}`, ArgumentReferenceTmpl, AttributeReferenceTmpl)
 
 // ArgumentReferenceTmpl contains the definition used in resources to render the arguments
 var ArgumentReferenceTmpl = `{{- define "resource_argument_reference" -}}
@@ -274,8 +259,8 @@ var ArgumentReferenceTmpl = `{{- define "resource_argument_reference" -}}
 	{{end}}
 {{- end -}}`
 
-// DataSourcesTmpl contains the template used to render the TerraformProviderDocumentation.DataSources struct as HTML formatted for Zendesk
-var DataSourcesTmpl = `{{- define "resource_attribute_reference" -}}
+// AttributeReferenceTmpl contains the definition used in resources to render the attributes
+var AttributeReferenceTmpl = `{{- define "resource_attribute_reference" -}}
     {{- if or .Computed .ContainsComputedSubProperties -}}
 		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{- /* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */ -}}
 		{{- else -}}
@@ -290,7 +275,10 @@ var DataSourcesTmpl = `{{- define "resource_attribute_reference" -}}
         </li>
 		{{end}}
     {{- end}}
-{{- end -}}
+{{- end -}}`
+
+// DataSourcesTmpl contains the template used to render the TerraformProviderDocumentation.DataSources struct as HTML formatted for Zendesk
+var DataSourcesTmpl = fmt.Sprintf(`%s
 
 <h2 id="provider_datasources">Data Sources (using resource id)</h2>
 
@@ -379,7 +367,7 @@ var DataSourcesTmpl = `{{- define "resource_attribute_reference" -}}
 {{- if ne $object_property_name ""}}
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: {{$.ProviderName}}_{{.Name}}.my_{{.Name}}.<b>{{$object_property_name}}[0]</b>.object_property)</p>
 {{- end -}}
-{{end}} {{/* END range .DataSources */}}`
+{{end}} {{/* END range .DataSources */}}`, AttributeReferenceTmpl)
 
 // SpecialTermsTmpl contains the template used to render the special terms definitions section as HTML formatted for Zendesk
 var SpecialTermsTmpl = `{{ if .ShowSpecialTermsDefinitions }}
