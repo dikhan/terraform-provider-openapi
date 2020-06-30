@@ -1,19 +1,18 @@
 package openapi
 
 import (
+	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi/templates/zendesk"
 	"io"
 )
 
 // TerraformProviderDocumentation defines the attributes needed to generate Terraform provider documentation
 type TerraformProviderDocumentation struct {
-	ProviderName                    string
-	ProviderInstallation            ProviderInstallation
-	ProviderConfiguration           ProviderConfiguration
-	ProviderResources               ProviderResources
-	DataSources                     DataSources
-	ShowSpecialTermsDefinitions     bool
-	TableOfContentsTemplate         string
-	SpecialTermsDefinitionsTemplate string
+	ProviderName                string
+	ProviderInstallation        ProviderInstallation
+	ProviderConfiguration       ProviderConfiguration
+	ProviderResources           ProviderResources
+	DataSources                 DataSources
+	ShowSpecialTermsDefinitions bool
 }
 
 // ProviderInstallation includes details needed to install the Terraform provider plugin
@@ -26,13 +25,11 @@ type ProviderInstallation struct {
 	Other string
 	// Other code/commands needed to install/run the provider
 	OtherCommand string
-	// Template used to render HTML
-	Template string
 }
 
-// RenderZendesk renders into the input writer the ProviderInstallation documentation formatted in HTML
-func (t ProviderInstallation) RenderZendesk(w io.Writer) error {
-	return Render(w, "ProviderInstallation", t.Template, t)
+// Render renders into the input writer the ProviderInstallation documentation formatted in HTML
+func (t ProviderInstallation) Render(w io.Writer, template string) error {
+	return Render(w, "ProviderInstallation", template, t)
 }
 
 // ProviderConfiguration defines the details needed to properly configure the Terraform provider
@@ -43,12 +40,11 @@ type ProviderConfiguration struct {
 	ConfigProperties   []Property
 	ExampleUsage       []ExampleUsage
 	ArgumentsReference ArgumentsReference
-	Template           string
 }
 
-// RenderZendesk renders into the input writer the ProviderInstallation documentation formatted in HTML
-func (t ProviderConfiguration) RenderZendesk(w io.Writer) error {
-	return Render(w, "ProviderConfiguration", t.Template, t)
+// Render renders into the input writer the ProviderInstallation documentation formatted in HTML
+func (t ProviderConfiguration) Render(w io.Writer, template string) error {
+	return Render(w, "ProviderConfiguration", template, t)
 }
 
 // ProviderResources defines the resources exposed by the Terraform provider
@@ -56,12 +52,11 @@ type ProviderResources struct {
 	// ProviderName is the name of the provider
 	ProviderName string
 	Resources    []Resource
-	Template     string
 }
 
-// RenderZendesk renders into the input writer the ProviderResources documentation formatted in HTML
-func (t ProviderResources) RenderZendesk(w io.Writer) error {
-	return Render(w, "ProviderResources", t.Template, t)
+// Render renders into the input writer the ProviderResources documentation formatted in HTML
+func (t ProviderResources) Render(w io.Writer, template string) error {
+	return Render(w, "ProviderResources", template, t)
 }
 
 func (r ProviderResources) ContainsResourcesWithSecretProperties() bool {
@@ -81,12 +76,11 @@ type DataSources struct {
 	ProviderName        string
 	DataSources         []DataSource
 	DataSourceInstances []DataSource
-	Template            string
 }
 
-// RenderZendesk renders into the input writer the DataSources documentation formatted in HTML
-func (t DataSources) RenderZendesk(w io.Writer) error {
-	return Render(w, "DataSources", t.Template, t)
+// Render renders into the input writer the DataSources documentation formatted in HTML
+func (t DataSources) Render(w io.Writer, template string) error {
+	return Render(w, "DataSources", template, t)
 }
 
 // DataSource defines the attributes to generate documentation for a Terraform provider data source
@@ -161,29 +155,33 @@ func (p Property) ContainsComputedSubProperties() bool {
 	return false
 }
 
+func (t TerraformProviderDocumentation) RenderHTML(w io.Writer) error {
+	return t.renderZendeskHTML(w, zendesk.TableOfContentsTmpl, zendesk.ProviderInstallationTmpl, zendesk.ProviderConfigurationTmpl, zendesk.ProviderResourcesTmpl, zendesk.DataSourcesTmpl, zendesk.SpecialTermsTmpl)
+}
+
 // RenderZendeskHTML renders the documentation in HTML
-func (t TerraformProviderDocumentation) RenderZendeskHTML(w io.Writer) error {
-	err := Render(w, "TerraformProviderDocTableOfContents", t.TableOfContentsTemplate, t)
+func (t TerraformProviderDocumentation) renderZendeskHTML(w io.Writer, tableOfContentsTemplate, providerInstallationTemplate, providerConfigurationTemplate, providerResourcesConfiguration, providerDatSourcesTemplate, specialTermsDefinitionsTemplate string) error {
+	err := Render(w, "TerraformProviderDocTableOfContents", tableOfContentsTemplate, t)
 	if err != nil {
 		return err
 	}
-	err = t.ProviderInstallation.RenderZendesk(w)
+	err = t.ProviderInstallation.Render(w, providerInstallationTemplate)
 	if err != nil {
 		return err
 	}
-	err = t.ProviderConfiguration.RenderZendesk(w)
+	err = t.ProviderConfiguration.Render(w, providerConfigurationTemplate)
 	if err != nil {
 		return err
 	}
-	err = t.ProviderResources.RenderZendesk(w)
+	err = t.ProviderResources.Render(w, providerResourcesConfiguration)
 	if err != nil {
 		return err
 	}
-	err = t.DataSources.RenderZendesk(w)
+	err = t.DataSources.Render(w, providerDatSourcesTemplate)
 	if err != nil {
 		return err
 	}
-	err = Render(w, "TerraformProviderDocSpecialTermsDefinitions", t.SpecialTermsDefinitionsTemplate, t)
+	err = Render(w, "TerraformProviderDocSpecialTermsDefinitions", specialTermsDefinitionsTemplate, t)
 	if err != nil {
 		return err
 	}
