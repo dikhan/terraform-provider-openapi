@@ -97,8 +97,6 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-//tableOfContentsTemplate, providerInstallationTemplate, providerConfigurationTemplate, providerResourcesConfiguration, providerDatSourcesTemplate, specialTermsDefinitionsTemplate
-
 func TestTerraformProviderDocumentation_RenderZendeskHTML_Errors(t *testing.T) {
 	testCases := []struct {
 		name                            string
