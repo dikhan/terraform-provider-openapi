@@ -282,8 +282,8 @@ func TestProviderResourcesTmpl(t *testing.T) {
 </pre>
 <h4 id="resource_cdn_arguments_reference" dir="ltr">Arguments Reference</h4>
 <p dir="ltr">The following arguments are supported:</p>
-<ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> object_prop [object]  - (Required) this is an object property. The following properties compose the object schema
-        :<ul dir="ltr"><li> objectPropertyRequired [string]  - (Required) </li>
+<ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> object_prop [object] - (Required) this is an object property. The following properties compose the object schema
+        :<ul dir="ltr"><li> objectPropertyRequired [string] - (Required) </li>
 	
         </ul>
         </li>
@@ -298,13 +298,13 @@ func TestProviderResourcesTmpl(t *testing.T) {
 
 <h4 id="resource_cdn_attributes_reference" dir="ltr">Attributes Reference</h4>
 <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
-<ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> object_prop [object]  - this is an object property The following properties compose the object schema:
-            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
+<ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> object_prop [object] - this is an object property The following properties compose the object schema:
+            <ul dir="ltr"><li> objectPropertyComputed [string] </li>
 		
             </ul>
             </li>
-		<li><span class="wysiwyg-color-red">*</span> computed_object_prop [object]  - this is an object property The following properties compose the object schema:
-            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
+		<li><span class="wysiwyg-color-red">*</span> computed_object_prop [object] - this is an object property The following properties compose the object schema:
+            <ul dir="ltr"><li> objectPropertyComputed [string] </li>
 		
             </ul>
             </li>
@@ -367,8 +367,8 @@ func TestDataSourcesTmpl(t *testing.T) {
     </ul>
     <h4 id="datasource_cdn_instance_attributes_reference" dir="ltr">Attributes Reference</h4>
     <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
-    <ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> computed_object_prop [object]  - this is an object property The following properties compose the object schema:
-            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
+    <ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> computed_object_prop [object] - this is an object property The following properties compose the object schema:
+            <ul dir="ltr"><li> objectPropertyComputed [string] </li>
 		
             </ul>
             </li>
@@ -406,8 +406,8 @@ func TestDataSourcesTmpl(t *testing.T) {
     <p dir="ltr"><b>Note: </b>If more or less than a single match is returned by the search, Terraform will fail. Ensure that your search is specific enough to return a single result only.</p>
     <h4 id="datasource_cdn_attributes_reference" dir="ltr">Attributes Reference</h4>
     <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
-    <ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> computed_object_prop [object]  - this is an object property The following properties compose the object schema:
-            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
+    <ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> computed_object_prop [object] - this is an object property The following properties compose the object schema:
+            <ul dir="ltr"><li> objectPropertyComputed [string] </li>
 		
             </ul>
             </li>
