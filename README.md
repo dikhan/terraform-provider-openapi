@@ -65,10 +65,13 @@ to learn more about it.
 
 ### OpenAPI Terraform provider in action
 
-After having provisioned your environment with the OpenAPI Terraform provider
-you can now write Terraform configuration files using resources provided
-by the OpenAPI service. Refer to [Using the OpenAPI Terraform Provider doc](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md)
-for more details.
+After having provisioned your environment with the OpenAPI Terraform provider you can now write Terraform configuration files using resources provided
+by the OpenAPI service. Refer to [Using the OpenAPI Terraform Provider doc](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md) for more details.
+
+### Terraform provider documentation
+
+You can generate the Terraform documentation automatically given an already Terraform compatible OpenAPI document using the The [OpenAPI Terraform Documentation Renderer](https://github.com/dikhan/terraform-provider-openapi/tree/master/pkg/terraformdocsgenerator) 
+library. The OpenAPI document is the source of truth for both the OpenAPI Terraform provider as well as the user facing documentation.
 
 ## References
 
