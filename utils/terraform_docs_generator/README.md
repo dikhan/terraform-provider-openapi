@@ -2,59 +2,24 @@
 
 This library generates the Terraform documentation automatically given an already Terraform compatible OpenAPI document. 
 
-## How to use this library?
+## How to use this library
 
-The main.go show cases how the openapi.TerraformProviderDocGenerator can be configured so it's able to render the markdown
-given a swagger file.
+The library's [main.go](https://github.com/dikhan/terraform-provider-openapi/utils/terraform_doc_generator/main.go) show cases how to generate Terraform documentation given a swagger file. Currently, the generator supports rendering documentation in HTML.
 
-## How to run the example?
+## How to run the example
 
-The main.go file is configured with a sample swagger file. The demo can be executed simply by running the following command:
+The main.go file is configured with a [sample swagger file]("https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/examples/swaggercodegen/api/resources/swagger.yaml"). The example can be executed simply by running the following command:
 
 ````
 $ go run main.go
 ````
 
-The program will spit out the Terraform documentation for the sample swagger file in the standard output
+The program will generate the Terraform documentation (in html format) for the sample swagger file and save the output locally. An example of the output: []().
 
-````
-## Provider Configuration
-The provider (cloudflare) provider is used to interact with the many resources supported by cloudflare's API. The provider may need to be configured with the proper credentials before it can be used. Refer to the provider confgiguration's arguments to learn more about the required configuration properties.
+## Customizing the output documentation
+You can customize sections of the documentation by overriding the default content used by `GenerateDocumentation()` before calling `RenderHTML()`.
 
-#### Example usage
-
-provider "cloudflare" {
-    region = "sea"
-    api_auth = "value"
-    required_header_example = "value"
-}
-
-
-#### Arguments Reference
-The following arguments are supported:
-
-- region [string] (required): The core data center location to be used ([sea dub rst fra]). If region isn't specified, the default is 'sea'.
-- api_auth [string] (required): 
-- required_header_example [string] (required): 
-
-## Provider Resources
-
-### cloudflare_cdn
-
-#### Example usage
-
-resource "cloudflare_cdn" "my_cdn" {
-    label = "string value"
-}
-
-
-#### Arguments Reference (input)
-The following arguments are supported:
-
-- label [string] (required): Label to use for the CDN
-
-#### Attributes Reference (output)
-In addition to all arguments above, the following attributes are exported:
-
-- id [string]: System generated identifier for the CDN
-````
+For example, in [main.go](https://github.com/dikhan/terraform-provider-openapi/utils/terraform_doc_generator/main.go) we are adding a custom provider installation instruction for the user to login first with the following:
+```
+d.ProviderInstallation.Other = fmt.Sprintf("You will need to be logged in before running Terraform commands that use the '%s' Streamline Terraform provider:", d.ProviderName)
+```

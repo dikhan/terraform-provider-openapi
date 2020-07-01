@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/utils/terraformdocsgenerator/openapiterraformdocsgenerator"
 	"log"
 	"os"
@@ -21,6 +22,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	d.ProviderInstallation.Other = fmt.Sprintf("You will need to be logged in before running Terraform commands that use the '%s' Streamline Terraform provider:", d.ProviderName)
+
 	err = d.RenderHTML(f)
 	if err != nil {
 		log.Fatal(err)
