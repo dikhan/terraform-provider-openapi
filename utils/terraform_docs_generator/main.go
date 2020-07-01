@@ -12,7 +12,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create("./utils/terraform_docs_generator/openapi/provider_documentation.html")
+	f, err := os.Create("./utils/terraform_docs_generator/provider_documentation.html")
 	if err != nil {
 		log.Fatal(err)
 	}
