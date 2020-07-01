@@ -1,19 +1,10 @@
 package openapi_terraform_docs_generator
 
-import (
-	"io"
-)
-
 // ProviderResources defines the resources exposed by the Terraform provider
 type ProviderResources struct {
 	// ProviderName is the name of the provider
 	ProviderName string
 	Resources    []Resource
-}
-
-// Render renders into the input writer the ProviderResources documentation formatted in HTML
-func (t ProviderResources) Render(w io.Writer, template string) error {
-	return Render(w, "ProviderResources", template, t)
 }
 
 func (r ProviderResources) ContainsResourcesWithSecretProperties() bool {

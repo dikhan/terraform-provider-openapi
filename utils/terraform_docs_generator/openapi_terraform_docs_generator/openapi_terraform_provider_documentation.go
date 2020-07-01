@@ -24,19 +24,19 @@ func (t TerraformProviderDocumentation) renderZendeskHTML(w io.Writer, tableOfCo
 	if err != nil {
 		return err
 	}
-	err = t.ProviderInstallation.Render(w, providerInstallationTemplate)
+	err = Render(w, "ProviderInstallation", providerInstallationTemplate, t.ProviderInstallation)
 	if err != nil {
 		return err
 	}
-	err = t.ProviderConfiguration.Render(w, providerConfigurationTemplate)
+	err = Render(w, "ProviderConfiguration", providerConfigurationTemplate, t.ProviderConfiguration)
 	if err != nil {
 		return err
 	}
-	err = t.ProviderResources.Render(w, providerResourcesConfiguration)
+	err = Render(w, "ProviderResources", providerResourcesConfiguration, t.ProviderResources)
 	if err != nil {
 		return err
 	}
-	err = t.DataSources.Render(w, providerDatSourcesTemplate)
+	err = Render(w, "DataSources", providerDatSourcesTemplate, t.DataSources)
 	if err != nil {
 		return err
 	}
