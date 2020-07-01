@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/utils/terraformdocsgenerator/openapiterraformdocsgenerator"
+	"github.com/dikhan/terraform-provider-openapi/pkg/terraformdocsgenerator/openapiterraformdocsgenerator"
 	"log"
 	"os"
 )
@@ -13,7 +13,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create("./utils/terraform_docs_generator/provider_documentation.html")
+	f, err := os.Create("./provider_documentation.html")
 	if err != nil {
 		log.Fatal(err)
 	}
