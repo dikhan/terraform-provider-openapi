@@ -16,6 +16,8 @@ type TerraformProviderDocGenerator struct {
 	SpecAnalyser openapi.SpecAnalyser
 }
 
+// NewTerraformProviderDocGenerator returns a TerraformProviderDocGenerator populated with the provider documentation which
+// exposes methods to render the documentation in different formats (only html supported at the moment)
 func NewTerraformProviderDocGenerator(providerName, openAPIDocURL string) (TerraformProviderDocGenerator, error) {
 	analyser, err := openapi.CreateSpecAnalyser("v2", openAPIDocURL)
 	if err != nil {
