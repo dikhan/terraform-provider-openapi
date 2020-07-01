@@ -186,9 +186,8 @@ func TestProviderInstallationTmpl(t *testing.T) {
 <pre dir="ltr">➜ ~ init_command do_something
 ➜ ~ terraform init &amp;&amp; terraform plan
 </pre>`
-	err := pi.Render(&buf, ProviderInstallationTmpl)
+	renderTest(t, &buf, "ProviderInstallation", ProviderInstallationTmpl, pi, "ProviderInstallationTmpl")
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
-	assert.Nil(t, err)
 }
 
 func TestProviderConfigurationTmpl(t *testing.T) {
@@ -232,9 +231,8 @@ func TestProviderConfigurationTmpl(t *testing.T) {
       </li>
     
     </ul>`
-	err := pc.Render(&buf, ProviderConfigurationTmpl)
+	renderTest(t, &buf, "TestProviderConfiguration", ProviderConfigurationTmpl, pc, "TestProviderConfigurationTmpl")
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
-	assert.Nil(t, err)
 }
 
 func TestProviderResourcesTmpl(t *testing.T) {
@@ -316,12 +314,9 @@ func TestProviderResourcesTmpl(t *testing.T) {
 </p>
 
  `
-	err := r.Render(&buf, ProviderResourcesTmpl)
-
+	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
 	fmt.Println(buf.String())
-
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
-	assert.Nil(t, err)
 }
 
 func TestDataSourcesTmpl(t *testing.T) {
