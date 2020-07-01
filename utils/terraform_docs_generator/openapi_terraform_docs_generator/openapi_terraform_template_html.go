@@ -264,7 +264,7 @@ var AttributeReferenceTmpl = `{{- define "resource_attribute_reference" -}}
     {{- if or .Computed .ContainsComputedSubProperties -}}
 		{{- if and .Schema (not .ContainsComputedSubProperties) -}}{{- /* objects or arrays of objects that DO NOT have computed props are ignored since they will be documented in the arguments section */ -}}
 		{{- else -}}
-        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] {{ if .IsSensitive }}(<a href="#special_terms_definitions_sensitive_property" target="_self">sensitive</a>){{end}} {{if .Description }}: {{.Description}} {{end}}
+        <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] {{ if .IsSensitive }}(<a href="#special_terms_definitions_sensitive_property" target="_self">sensitive</a>) {{end -}}{{- if .Description }}- {{.Description}} {{- end -}}
             {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}} The following properties compose the object schema:
             <ul dir="ltr">
                 {{- range .Schema}}

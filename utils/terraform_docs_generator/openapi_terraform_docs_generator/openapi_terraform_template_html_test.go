@@ -102,22 +102,22 @@ func TestAttributeReferenceTmpl(t *testing.T) {
 		{
 			name:           "computed string property",
 			property:       createProperty("computed_string_prop", "string", "string property description", false, true),
-			expectedOutput: "<li> computed_string_prop [string]  - string property description</li>\n\t\t",
+			expectedOutput: "<li> computed_string_prop [string] - string property description</li>\n\t\t",
 		},
 		{
 			name:           "computed integer property",
 			property:       createProperty("computed_integer_prop", "integer", "integer property description", false, true),
-			expectedOutput: "<li> computed_integer_prop [integer]  - integer property description</li>\n\t\t",
+			expectedOutput: "<li> computed_integer_prop [integer] - integer property description</li>\n\t\t",
 		},
 		{
 			name:           "computed float property",
 			property:       createProperty("computed_float_prop", "number", "float property description", false, true),
-			expectedOutput: "<li> computed_float_prop [number]  - float property description</li>\n\t\t",
+			expectedOutput: "<li> computed_float_prop [number] - float property description</li>\n\t\t",
 		},
 		{
 			name:           "computed boolean property",
 			property:       createProperty("computed_bool_prop", "boolean", "boolean property description", false, true),
-			expectedOutput: "<li> computed_bool_prop [boolean]  - boolean property description</li>\n\t\t",
+			expectedOutput: "<li> computed_bool_prop [boolean] - boolean property description</li>\n\t\t",
 		},
 		{
 			name:           "computed sensitive property",
@@ -126,38 +126,43 @@ func TestAttributeReferenceTmpl(t *testing.T) {
 		},
 		{
 			name:           "computed list string property",
-			property:       createArrayProperty("computed_list_string_prop", "", "string", "list_string_prop property description", false, true),
-			expectedOutput: "<li> computed_list_string_prop []  - list_string_prop property description</li>\n\t\t",
+			property:       createArrayProperty("computed_list_string_prop", "list", "string", "list_string_prop property description", false, true),
+			expectedOutput: "<li> computed_list_string_prop [list of strings] - list_string_prop property description</li>\n\t\t",
 		},
 		{
 			name:           "computed list integer property",
 			property:       createArrayProperty("computed_list_integer_prop", "list", "integer", "list_integer_prop property description", false, true),
-			expectedOutput: "<li> computed_list_integer_prop [list of integers]  - list_integer_prop property description</li>\n\t\t",
+			expectedOutput: "<li> computed_list_integer_prop [list of integers] - list_integer_prop property description</li>\n\t\t",
 		},
 		{
 			name:           "computed list boolean property",
 			property:       createArrayProperty("computed_list_boolean_prop", "list", "boolean", "list_boolean_prop property description", false, true),
-			expectedOutput: "<li> computed_list_boolean_prop [list of booleans]  - list_boolean_prop property description</li>\n\t\t",
+			expectedOutput: "<li> computed_list_boolean_prop [list of booleans] - list_boolean_prop property description</li>\n\t\t",
 		},
 		{
 			name:           "computed list float property",
 			property:       createArrayProperty("computed_list_float_prop", "list", "number", "list_float_prop property description", false, true),
-			expectedOutput: "<li> computed_list_float_prop [list of numbers]  - list_float_prop property description</li>\n\t\t",
+			expectedOutput: "<li> computed_list_float_prop [list of numbers] - list_float_prop property description</li>\n\t\t",
 		},
 		{
 			name:           "computed object property",
 			property:       Property{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
-			expectedOutput: "<li><span class=\"wysiwyg-color-red\">*</span> computed_object_prop [object]  - this is an object property The following properties compose the object schema:\n            <ul dir=\"ltr\"><li> objectPropertyComputed [string]  - </li>\n\t\t\n            </ul>\n            </li>\n\t\t",
+			expectedOutput: "<li><span class=\"wysiwyg-color-red\">*</span> computed_object_prop [object] - this is an object property The following properties compose the object schema:\n            <ul dir=\"ltr\"><li> objectPropertyComputed [string] </li>\n\t\t\n            </ul>\n            </li>\n\t\t",
 		},
 		{
 			name:           "computed object array property",
 			property:       Property{Name: "computed_list_object_prop", Type: "list", ArrayItemsType: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
-			expectedOutput: "<li> computed_list_object_prop [list of objects]  - this is an object property The following properties compose the object schema:\n            <ul dir=\"ltr\"><li> objectPropertyComputed [string]  - </li>\n\t\t\n            </ul>\n            </li>\n\t\t",
+			expectedOutput: "<li> computed_list_object_prop [list of objects] - this is an object property The following properties compose the object schema:\n            <ul dir=\"ltr\"><li> objectPropertyComputed [string] </li>\n\t\t\n            </ul>\n            </li>\n\t\t",
 		},
 		{
 			name:           "required property",
 			property:       Property{Name: "optional_computed_prop", Type: "string", Description: "this is a required property", Required: true},
 			expectedOutput: "",
+		},
+		{
+			name:           "computed string property without description",
+			property:       createProperty("computed_string_prop", "string", "", false, true),
+			expectedOutput: "<li> computed_string_prop [string] </li>\n\t\t",
 		},
 	}
 
