@@ -1,99 +1,9 @@
 package openapi_terraform_docs_generator
 
 import (
-	"bytes"
-	"fmt"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 )
-
-func TestProviderResources_RenderZendesk(t *testing.T) {
-	r := ProviderResources{
-		ProviderName: "openapi",
-		Resources: []Resource{
-			{
-				Name:        "cdn",
-				Description: "The 'cdn' allows you to manage 'cdn' resources using Terraform",
-				Properties: []Property{
-					// Arguments
-					Property{Name: "object_prop", Type: "object", Description: "this is an object property", Required: true, Schema: []Property{{Name: "objectPropertyRequired", Type: "string", Required: true}, {Name: "objectPropertyComputed", Type: "string", Computed: true}}},
-					// Attributes
-					Property{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
-				},
-				ParentProperties: []string{"parent_id"},
-				ArgumentsReference: ArgumentsReference{
-					Notes: []string{"Sample note"},
-				},
-			},
-		},
-	}
-	var buf bytes.Buffer
-	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
-
-
-    <h3 id="cdn" dir="ltr">openapi_cdn</h3><p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform.</p>
-    <h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
-<pre>
-<span>resource </span><span>"openapi_cdn" "my_cdn"</span>{
-    <span>object_prop  </span><span>{</span>
-                
-    <span>objectPropertyRequired  </span>= <span>"objectPropertyRequired"</span>
-                
-            <span>}</span>
-<span>}</span>
-</pre>
-<h4 id="resource_cdn_arguments_reference" dir="ltr">Arguments Reference</h4>
-<p dir="ltr">The following arguments are supported:</p>
-<ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> object_prop [object]  - (Required) this is an object property. The following properties compose the object schema
-        :<ul dir="ltr"><li> objectPropertyRequired [string]  - (Required) </li>
-	
-        </ul>
-        </li>
-	
-    </ul>
-        
-    
-        
-    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p>
-    <p><span class="wysiwyg-color-red">*Note: Sample note</span></p>
-
-
-<h4 id="resource_cdn_attributes_reference" dir="ltr">Attributes Reference</h4>
-<p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
-<ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> object_prop [object]  - this is an object property The following properties compose the object schema:
-            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
-		
-            </ul>
-            </li>
-		<li><span class="wysiwyg-color-red">*</span> computed_object_prop [object]  - this is an object property The following properties compose the object schema:
-            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
-		
-            </ul>
-            </li>
-		
-    </ul>
-        
-    
-        
-    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p><h4 id="resource_cdn_import" dir="ltr">Import</h4>
-<p dir="ltr">
-    cdn resources can be imported using the&nbsp;<code>id</code> . This is a sub-resource so the parent resource IDs (<code>[parent_id]</code>) are required to be able to retrieve an instance of this resource, e.g:
-</p>
-<pre dir="ltr">$ terraform import cdn.my_cdn parent_id/cdn_id</pre>
-<p dir="ltr">
-    <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
-    provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
-</p>
-
- `
-	err := r.Render(&buf, ProviderResourcesTmpl)
-
-	fmt.Println(buf.String())
-
-	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
-	assert.Nil(t, err)
-}
 
 func TestContainsResourcesWithSecretProperties(t *testing.T) {
 	testCases := []struct {
