@@ -100,7 +100,7 @@ var ProviderConfigurationTmpl = `{{if or .Regions .ConfigProperties}}
 <span>  # Resources using this default provider will be created in the '{{index .Regions 0}}' region<br>  ...<br></span>}
     </pre>
     {{ if gt (len .Regions) 1 -}}
-        <p>Using a specific region ({{index .ProviderConfiguration.Regions 1}}):</p>
+        <p>Using a specific region ({{index .Regions 1}}):</p>
     <pre>
 <span>provider </span><span>"{{.ProviderName}}" </span>{
 <span>  alias  </span>= <span>"{{index .Regions 1}}"</span>
@@ -164,7 +164,9 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 %s
 
 <h2 id="provider_resources">Provider Resources</h2>
-
+{{if not .Resources}}
+No resources are supported at the moment.
+{{- end -}}
 {{range .Resources -}}
     {{ $resource := . }}
     <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
@@ -281,7 +283,9 @@ var AttributeReferenceTmpl = `{{- define "resource_attribute_reference" -}}
 var DataSourcesTmpl = fmt.Sprintf(`%s
 
 <h2 id="provider_datasources">Data Sources (using resource id)</h2>
-
+{{if not .DataSourceInstances}}
+No data sources using resource id are supported at the moment.
+{{- end -}}
 {{range .DataSourceInstances -}}
     {{ $datasource := . }}
     <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
@@ -316,6 +320,9 @@ var DataSourcesTmpl = fmt.Sprintf(`%s
 {{end}} {{/* END range .DataSourceInstances */}}
 
 <h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
+{{if not .DataSources}}
+No data sources using filters are supported at the moment.
+{{- end -}}
 {{range .DataSources -}}
     {{ $datasource := . }}
     <h3 id="{{.Name}}_datasource" dir="ltr">{{$.ProviderName}}_{{.Name}} (filters)</h3>

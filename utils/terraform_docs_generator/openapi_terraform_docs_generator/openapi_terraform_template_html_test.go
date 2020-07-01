@@ -268,7 +268,6 @@ func TestProviderResourcesTmpl(t *testing.T) {
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
 
-
     <h3 id="cdn" dir="ltr">openapi_cdn</h3><p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform</p>
     <h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
 <pre>
@@ -329,6 +328,20 @@ func TestProviderResourcesTmpl(t *testing.T) {
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 
+func TestProviderResourcesTmpl_NoResources(t *testing.T) {
+	r := ProviderResources{
+		ProviderName: "openapi",
+		Resources:    []Resource{},
+	}
+	var buf bytes.Buffer
+	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
+
+No resources are supported at the moment. `
+	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
+	fmt.Println(buf.String())
+	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
+}
+
 func TestDataSourcesTmpl(t *testing.T) {
 	dataSource := DataSources{
 		ProviderName: "openapi",
@@ -352,7 +365,6 @@ func TestDataSourcesTmpl(t *testing.T) {
 		},
 	}
 	expectedHTML := `<h2 id="provider_datasources">Data Sources (using resource id)</h2>
-
 
     <h3 id="cdn_instance" dir="ltr">openapi_cdn_instance</h3>
     <p>Retrieve an existing resource using it's ID</p>
@@ -416,6 +428,24 @@ func TestDataSourcesTmpl(t *testing.T) {
         
     
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p> `
+	var output bytes.Buffer
+	renderTest(t, &output, DataSourcesTmpl, DataSourcesTmpl, dataSource, "TestDataSourcesTmpl")
+	fmt.Println(strings.Trim(output.String(), "\n"))
+	assert.Equal(t, expectedHTML, strings.Trim(output.String(), "\n"))
+}
+
+func TestDataSourcesTmpl_NoDataSources(t *testing.T) {
+	dataSource := DataSources{
+		ProviderName:        "openapi",
+		DataSourceInstances: []DataSource{},
+	}
+	expectedHTML := `<h2 id="provider_datasources">Data Sources (using resource id)</h2>
+
+No data sources using resource id are supported at the moment. 
+
+<h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
+
+No data sources using filters are supported at the moment. `
 	var output bytes.Buffer
 	renderTest(t, &output, DataSourcesTmpl, DataSourcesTmpl, dataSource, "TestDataSourcesTmpl")
 	fmt.Println(strings.Trim(output.String(), "\n"))

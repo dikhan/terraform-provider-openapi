@@ -3,6 +3,7 @@ package openapi_terraform_docs_generator
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -82,17 +83,19 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 </pre>
 <h2 id="provider_resources">Provider Resources</h2>
 
- <h2 id="provider_datasources">Data Sources (using resource id)</h2>
+No resources are supported at the moment. <h2 id="provider_datasources">Data Sources (using resource id)</h2>
 
- 
+No data sources using resource id are supported at the moment. 
 
 <h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
- 
+
+No data sources using filters are supported at the moment. 
 <h2 id="special_terms_definitions">Special Terms Definitions</h2>
 <p>
   This section describes specific terms used throughout this document to clarify their meaning in the context of Terraform.
 </p>`
 	err := terraformProviderDocumentation.RenderHTML(&buf)
+	fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 	assert.Nil(t, err)
 }
