@@ -51,7 +51,7 @@ func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string,
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a resource with region: %s", err)
 		}
-		log.Printf("[INFO] multi region resource name = %s, region = '%s'", r.getResourceName(), regionName)
+		log.Printf("[INFO] multi region resource name = %s, region = '%s'", r.GetResourceName(), regionName)
 		resources = append(resources, r)
 	}
 	return resources, nil
@@ -74,7 +74,7 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantDataSources() []SpecRes
 			continue
 		}
 
-		log.Printf("[INFO] found terraform compliant data source [name='%s', rootPath='%s']", d.getResourceName(), resourcePath)
+		log.Printf("[INFO] found terraform compliant data source [name='%s', rootPath='%s']", d.GetResourceName(), resourcePath)
 		dataSources = append(dataSources, d)
 	}
 	return dataSources
@@ -116,11 +116,11 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 
 		err = specAnalyser.validateSubResourceTerraformCompliance(*r)
 		if err != nil {
-			log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.getResourceName(), resourceRootPath, err)
+			log.Printf("[WARN] ignoring subresource name='%s' with rootPath='%s' due to not meeting validation requirements: %s", r.GetResourceName(), resourceRootPath, err)
 			continue
 		}
 
-		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.getResourceName(), resourceRootPath, resourcePath)
+		log.Printf("[INFO] found terraform compliant resource [name='%s', rootPath='%s', instancePath='%s']", r.GetResourceName(), resourceRootPath, resourcePath)
 		resources = append(resources, r)
 	}
 	log.Printf("[INFO] found %d terraform compliant resources (time: %s)", len(resources), time.Since(start))
@@ -128,7 +128,7 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 }
 
 func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r SpecV2Resource) error {
-	parentResourceInfo := r.getParentResourceInfo()
+	parentResourceInfo := r.GetParentResourceInfo()
 	if parentResourceInfo != nil {
 		resourcePath := r.Path
 		for _, parentInstanceURIs := range parentResourceInfo.parentInstanceURIs {
@@ -142,7 +142,7 @@ func (specAnalyser *specV2Analyser) validateSubResourceTerraformCompliance(r Spe
 				return fmt.Errorf("subresource with path '%s' is missing parent root path definition '%s'", resourcePath, parentURI)
 			}
 			parentResource := SpecV2Resource{RootPathItem: parentPathItem}
-			if parentResource.shouldIgnoreResource() {
+			if parentResource.ShouldIgnoreResource() {
 				return fmt.Errorf("subresource with path '%s' contains a parent %s that is marked as ignored, therefore ignoring the subresource too", resourcePath, parentURI)
 			}
 		}
@@ -215,8 +215,8 @@ func (specAnalyser *specV2Analyser) GetSecurity() SpecSecurity {
 // - root level parameters (not supported)
 // - path level parameters (not supported)
 // - operation level parameters (supported)
-func (specAnalyser *specV2Analyser) GetAllHeaderParameters() (SpecHeaderParameters, error) {
-	return getAllHeaderParameters(specAnalyser.d.Spec().Paths.Paths), nil
+func (specAnalyser *specV2Analyser) GetAllHeaderParameters() SpecHeaderParameters {
+	return getAllHeaderParameters(specAnalyser.d.Spec().Paths.Paths)
 }
 
 func (specAnalyser *specV2Analyser) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {

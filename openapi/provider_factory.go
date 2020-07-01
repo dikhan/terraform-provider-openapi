@@ -87,7 +87,7 @@ func (p providerFactory) createProvider() (*schema.Provider, error) {
 func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfiguration SpecBackendConfiguration, providerConfigurationEndPoints *providerConfigurationEndPoints) (map[string]*schema.Schema, error) {
 	s := map[string]*schema.Schema{}
 
-	isMultiRegion, host, regions, err := openAPIBackendConfiguration.isMultiRegion()
+	isMultiRegion, host, regions, err := openAPIBackendConfiguration.IsMultiRegion()
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 		return nil, err
 	}
 	for _, securityDefinition := range *securityDefinitions {
-		secDefName := securityDefinition.getTerraformConfigurationName()
+		secDefName := securityDefinition.GetTerraformConfigurationName()
 		required := false
 		if globalSecuritySchemes.securitySchemeExists(securityDefinition) {
 			required = true
@@ -118,11 +118,8 @@ func (p providerFactory) createTerraformProviderSchema(openAPIBackendConfigurati
 		p.configureProviderPropertyFromPluginConfig(s, secDefName, required)
 	}
 
-	headers, err := p.specAnalyser.GetAllHeaderParameters()
+	headers := p.specAnalyser.GetAllHeaderParameters()
 	log.Printf("[DEBUG] all header parameters: %+v", headers)
-	if err != nil {
-		return nil, err
-	}
 	for _, headerParam := range headers {
 		headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
 		p.configureProviderPropertyFromPluginConfig(s, headerTerraformCompliantName, false)
@@ -193,7 +190,7 @@ func (p providerFactory) createTerraformProviderDataSourceMap() (map[string]*sch
 	dataSourceMap := map[string]*schema.Resource{}
 	openAPIDataResources := p.specAnalyser.GetTerraformCompliantDataSources()
 	for _, openAPIDataSource := range openAPIDataResources {
-		dataSourceName, err := p.getProviderResourceName(openAPIDataSource.getResourceName())
+		dataSourceName, err := p.getProviderResourceName(openAPIDataSource.GetResourceName())
 		if err != nil {
 			return nil, err
 		}
@@ -223,13 +220,13 @@ func (p providerFactory) createTerraformProviderResourceMapAndDataSourceInstance
 	for _, openAPIResource := range openAPIResources {
 		start := time.Now()
 
-		resourceName, err := p.getProviderResourceName(openAPIResource.getResourceName())
+		resourceName, err := p.getProviderResourceName(openAPIResource.GetResourceName())
 		if err != nil {
 			return nil, nil, err
 		}
 
-		if openAPIResource.shouldIgnoreResource() {
-			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.getResourceName())
+		if openAPIResource.ShouldIgnoreResource() {
+			log.Printf("[WARN] '%s' is marked to be ignored and therefore skipping resource registration into the provider", openAPIResource.GetResourceName())
 			continue
 		}
 
@@ -238,7 +235,7 @@ func (p providerFactory) createTerraformProviderResourceMapAndDataSourceInstance
 		fullDataSourceInstanceName, _ := p.getProviderResourceName(d.getDataSourceInstanceName())
 
 		if _, alreadyThere := resourceMap[resourceName]; alreadyThere {
-			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.getResourceName())
+			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.GetResourceName())
 			delete(resourceMap, resourceName)
 			delete(dataSourceInstanceMap, fullDataSourceInstanceName)
 			continue

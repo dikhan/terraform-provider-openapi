@@ -163,7 +163,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 	var host string
 	var err error
 
-	isMultiRegion, _, regions, err := o.openAPIBackendConfiguration.isMultiRegion()
+	isMultiRegion, _, regions, err := o.openAPIBackendConfiguration.IsMultiRegion()
 	if err != nil {
 		return "", err
 	}
@@ -172,7 +172,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 		region := o.providerConfiguration.getRegion()
 		// otherwise, if not provided falling back to the default value specified in the service provider swagger file
 		if region == "" {
-			region, err = o.openAPIBackendConfiguration.getDefaultRegion(regions)
+			region, err = o.openAPIBackendConfiguration.GetDefaultRegion(regions)
 			if err != nil {
 				return "", err
 			}
@@ -204,7 +204,7 @@ func (o ProviderClient) getResourceURL(resource SpecResource, parentIDs []string
 		host = hostOverride
 	}
 
-	if endPointHost := o.providerConfiguration.getEndPoint(resource.getResourceName()); endPointHost != "" {
+	if endPointHost := o.providerConfiguration.getEndPoint(resource.GetResourceName()); endPointHost != "" {
 		log.Printf("[INFO] resource '%s' is configured with endpoint override, API calls will be made against '%s' instead of '%s'", resourceRelativePath, endPointHost, host)
 		host = endPointHost
 	}

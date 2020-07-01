@@ -62,7 +62,7 @@ func (s *specStubBackendConfiguration) getHostByRegion(region string) (string, e
 	return fmt.Sprintf(s.host, region), nil
 }
 
-func (s *specStubBackendConfiguration) getDefaultRegion(regions []string) (string, error) {
+func (s *specStubBackendConfiguration) GetDefaultRegion(regions []string) (string, error) {
 	if s.defaultRegionErr != nil {
 		return "", s.defaultRegionErr
 	}
@@ -72,7 +72,7 @@ func (s *specStubBackendConfiguration) getDefaultRegion(regions []string) (strin
 	return s.regions[0], nil
 }
 
-func (s *specStubBackendConfiguration) isMultiRegion() (bool, string, []string, error) {
+func (s *specStubBackendConfiguration) IsMultiRegion() (bool, string, []string, error) {
 	if s.err != nil {
 		return false, "", nil, s.err
 	}

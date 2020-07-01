@@ -12,13 +12,13 @@ func TestNewProviderConfiguration(t *testing.T) {
 		specAnalyser := &specAnalyserStub{
 			headers: SpecHeaderParameters{
 				SpecHeaderParam{
-					Name: headerProperty.getTerraformCompliantPropertyName(),
+					Name: headerProperty.GetTerraformCompliantPropertyName(),
 				},
 			},
 			security: &specSecurityStub{
 				securityDefinitions: &SpecSecurityDefinitions{
-					newAPIKeyHeaderSecurityDefinition(stringProperty.getTerraformCompliantPropertyName(), "someHeaderSecDefName"),
-					newAPIKeyQuerySecurityDefinition(stringWithPreferredNameProperty.getTerraformCompliantPropertyName(), "someQuerySecDefName"),
+					newAPIKeyHeaderSecurityDefinition(stringProperty.GetTerraformCompliantPropertyName(), "someHeaderSecDefName"),
+					newAPIKeyQuerySecurityDefinition(stringWithPreferredNameProperty.GetTerraformCompliantPropertyName(), "someQuerySecDefName"),
 				},
 				globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
 			},
@@ -33,16 +33,16 @@ func TestNewProviderConfiguration(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Then the providerConfiguration headers should contain the configured header with the right value", func() {
-				So(providerConfiguration.Headers, ShouldContainKey, headerProperty.getTerraformCompliantPropertyName())
-				So(providerConfiguration.Headers[headerProperty.getTerraformCompliantPropertyName()], ShouldEqual, headerProperty.Default)
+				So(providerConfiguration.Headers, ShouldContainKey, headerProperty.GetTerraformCompliantPropertyName())
+				So(providerConfiguration.Headers[headerProperty.GetTerraformCompliantPropertyName()], ShouldEqual, headerProperty.Default)
 			})
 			Convey("And the providerConfiguration securitySchemaDefinitions should contain the configured stringProperty security definitions with the right value", func() {
 				So(providerConfiguration.SecuritySchemaDefinitions, ShouldContainKey, stringProperty.Name)
 				So(providerConfiguration.SecuritySchemaDefinitions[stringProperty.Name].getContext().(apiKey).value, ShouldEqual, stringProperty.Default)
 			})
 			Convey("And the providerConfiguration securitySchemaDefinitions should contain the configured stringWithPreferredNameProperty security definitions with the right value", func() {
-				So(providerConfiguration.SecuritySchemaDefinitions, ShouldContainKey, stringWithPreferredNameProperty.getTerraformCompliantPropertyName())
-				So(providerConfiguration.SecuritySchemaDefinitions[stringWithPreferredNameProperty.getTerraformCompliantPropertyName()].getContext().(apiKey).value, ShouldEqual, stringWithPreferredNameProperty.Default)
+				So(providerConfiguration.SecuritySchemaDefinitions, ShouldContainKey, stringWithPreferredNameProperty.GetTerraformCompliantPropertyName())
+				So(providerConfiguration.SecuritySchemaDefinitions[stringWithPreferredNameProperty.GetTerraformCompliantPropertyName()].getContext().(apiKey).value, ShouldEqual, stringWithPreferredNameProperty.Default)
 			})
 		})
 	})

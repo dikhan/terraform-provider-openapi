@@ -36,7 +36,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 	}
 	if securitySchemaDefinitions != nil {
 		for _, secDef := range *securitySchemaDefinitions {
-			secDefTerraformCompliantName := secDef.getTerraformConfigurationName()
+			secDefTerraformCompliantName := secDef.GetTerraformConfigurationName()
 			if value, exists := data.GetOkExists(secDefTerraformCompliantName); exists {
 				providerConfiguration.SecuritySchemaDefinitions[secDefTerraformCompliantName] = createAPIKeyAuthenticator(secDef, value.(string))
 			} else {
@@ -46,10 +46,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 		}
 	}
 
-	headers, err := specAnalyser.GetAllHeaderParameters()
-	if err != nil {
-		return nil, err
-	}
+	headers := specAnalyser.GetAllHeaderParameters()
 	if headers != nil {
 		for _, headerParam := range headers {
 			headerTerraformCompliantName := headerParam.GetHeaderTerraformConfigurationName()
@@ -72,7 +69,7 @@ func newProviderConfiguration(specAnalyser SpecAnalyser, data *schema.ResourceDa
 }
 
 func (p *providerConfiguration) getAuthenticatorFor(s SpecSecurityScheme) specAPIKeyAuthenticator {
-	securitySchemeConfigName := s.getTerraformConfigurationName()
+	securitySchemeConfigName := s.GetTerraformConfigurationName()
 	return p.SecuritySchemaDefinitions[securitySchemeConfigName]
 }
 

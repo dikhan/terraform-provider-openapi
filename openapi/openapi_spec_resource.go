@@ -6,16 +6,16 @@ import (
 
 // SpecResource defines the behaviour related to terraform compliant OpenAPI Resources.
 type SpecResource interface {
-	getResourceName() string
+	GetResourceName() string
 	getHost() (string, error)
 	getResourcePath(parentIDs []string) (string, error)
-	getResourceSchema() (*specSchemaDefinition, error)
-	shouldIgnoreResource() bool
+	GetResourceSchema() (*SpecSchemaDefinition, error)
+	ShouldIgnoreResource() bool
 	getResourceOperations() specResourceOperations
 	getTimeouts() (*specTimeouts, error)
-	// getParentResourceInfo returns a struct populated with relevant parentResourceInfo if the resource is considered
+	// GetParentResourceInfo returns a struct populated with relevant ParentResourceInfo if the resource is considered
 	// a subresource; nil otherwise.
-	getParentResourceInfo() *parentResourceInfo
+	GetParentResourceInfo() *ParentResourceInfo
 }
 
 type specTimeouts struct {

@@ -26,7 +26,7 @@ func (s specAPIKeyHeaderBearerSecurityDefinition) getType() securityDefinitionTy
 	return securityDefinitionAPIKey
 }
 
-func (s specAPIKeyHeaderBearerSecurityDefinition) getTerraformConfigurationName() string {
+func (s specAPIKeyHeaderBearerSecurityDefinition) GetTerraformConfigurationName() string {
 	return terraformutils.ConvertToTerraformCompliantName(s.name)
 }
 

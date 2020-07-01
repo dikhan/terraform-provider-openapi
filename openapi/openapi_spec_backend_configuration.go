@@ -6,6 +6,6 @@ type SpecBackendConfiguration interface {
 	getBasePath() string
 	getHTTPScheme() (string, error)
 	getHostByRegion(region string) (string, error)
-	isMultiRegion() (bool, string, []string, error)
-	getDefaultRegion([]string) (string, error)
+	IsMultiRegion() (bool, string, []string, error)
+	GetDefaultRegion([]string) (string, error)
 }

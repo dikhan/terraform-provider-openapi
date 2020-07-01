@@ -1,0 +1,429 @@
+<p dir="ltr">
+  This guide lists the configuration for 'openapi' Terraform provider
+  resources that can be managed using
+  <a href="https://www.hashicorp.com/blog/announcing-terraform-0-12/" target="_self">Terraform v0.12</a>.&nbsp;
+</p>
+<ul>
+  <li>
+    <a href="#provider_installation" target="_self">Provider Installation</a>
+  </li>
+  
+    <li>
+      <a href="#provider_configuration" target="_self">Provider Configuration</a>
+      <ul>
+        <li>
+          <a href="#provider_configuration_example_usage" target="_self">Example Usage</a>
+        </li>
+        <li>
+          <a href="#provider_configuration_arguments_reference" target="_self">Arguments Reference</a>
+        </li>
+      </ul>
+    </li>
+  
+    <li>
+        <a href="#provider_resources" target="_self">Provider Resources</a>
+        <ul>
+            <li><a href="#cdn_v1" target="_self">openapi_cdn_v1</a></li><li><a href="#multiregionmonitors_v1" target="_self">openapi_multiregionmonitors_v1</a></li><li><a href="#lbs_v1" target="_self">openapi_lbs_v1</a></li><li><a href="#monitors_v1_rst1" target="_self">openapi_monitors_v1_rst1</a></li><li><a href="#monitors_v1_dub1" target="_self">openapi_monitors_v1_dub1</a></li>
+        </ul>
+    </li>
+    <li>
+        <a href="#provider_datasources" target="_self">Data Sources (using resource id)</a>
+        <ul>
+            <li><a href="#cdn_v1_instance" target="_self">openapi_cdn_v1_instance</a></li><li><a href="#multiregionmonitors_v1_instance" target="_self">openapi_multiregionmonitors_v1_instance</a></li><li><a href="#lbs_v1_instance" target="_self">openapi_lbs_v1_instance</a></li><li><a href="#monitors_v1_rst1_instance" target="_self">openapi_monitors_v1_rst1_instance</a></li><li><a href="#monitors_v1_dub1_instance" target="_self">openapi_monitors_v1_dub1_instance</a></li>
+        </ul>
+    </li>
+    <li>
+        <a href="#provider_datasources_filters" target="_self">Data Sources (using filters)</a>
+        <ul>
+            
+        </ul>
+    </li>
+
+
+</ul><h2 id="provider_installation">Provider Installation</h2>
+<p>
+  In order to provision 'openapi' Terraform resources, you need to first install the 'openapi'
+  Terraform plugin by running&nbsp;the following command (you must be running Terraform &gt;= 0.12):
+</p>
+<pre>$ export PROVIDER_NAME=openapi &amp;&amp; curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME&lt;br&gt;[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...&lt;br&gt;[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...&lt;br&gt;[INFO] Cleaning up tmp dir created for installation purposes: /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh&lt;br&gt;[INFO] Terraform provider &#39;terraform-provider-openapi&#39; successfully installed at: &#39;~/.terraform.d/plugins&#39;!</pre>
+<p>
+  <span>You can then start running the Terraform provider:</span>
+</p>
+<pre dir="ltr">$ export OTF_VAR_openapi_PLUGIN_CONFIGURATION_FILE=&#34;https://api.service.com/openapi.yaml&#34;&lt;br&gt;
+➜ ~ terraform init &amp;&amp; terraform plan
+</pre>
+<h2 id="provider_configuration">Provider Configuration</h2>
+<h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
+    <pre>
+<span>provider </span><span>"openapi" </span>{
+<span>  apikey_auth  </span>= <span>"..."</span>
+<span>  x_request_id  </span>= <span>"..."</span>
+<span>}</span>
+</pre>
+
+    <p>Using the default region (rst1):</p>
+    <pre>
+<span>provider </span><span>"openapi" </span>{
+<span>  # Resources using this default provider will be created in the 'rst1' region<br>  ...<br></span>}
+    </pre>
+    <p>Using a specific region (dub1):</p>
+    <pre>
+<span>provider </span><span>"openapi" </span>{
+<span>  alias  </span>= <span>"dub1"</span>
+<span>  region </span>= <span>"dub1"<br>  ...<br></span>}
+<br>resource<span>"openapi_resource" "my_resource" {</span>
+<span>  provider = "openapi.dub1"<br>  ...<br>}</span>
+    </pre>
+
+    <h4 id="provider_configuration_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li><span>apikey_auth [string] - (Required) .</span></li></li>
+        <li><span>x_request_id [string] - (Required) .</span></li></li>
+      <li>
+          region [string] - (Optional) The region location to be used&nbsp;([rst1 dub1]). If region isn't specified, the default is "rst1".
+      </li>
+    
+    </ul>
+<h2 id="provider_resources">Provider Resources</h2>
+
+    <h3 id="cdn_v1" dir="ltr">openapi_cdn_v1</h3>
+    <h4 id="resource_cdn_v1_example_usage" dir="ltr">Example usage</h4>
+<pre>
+<span>resource </span><span>"openapi_cdn_v1" "my_cdn_v1"</span>{
+    <span>ips  </span>= <span>["ips1", "ips2"]</span>
+    <span>label  </span>= <span>"label"</span>
+    <span>hostnames  </span>= <span>["hostnames1", "hostnames2"]</span>
+<span>}</span>
+</pre>
+<h4 id="resource_cdn_v1_arguments_reference" dir="ltr">Arguments Reference</h4>
+<p dir="ltr">The following arguments are supported:</p>
+<ul dir="ltr"><li> ips [list of strings] - (Required) </li>
+	<li> label [string] - (Required) </li>
+	<li> hostnames [list of strings] - (Required) </li>
+	<li><span class="wysiwyg-color-red">*</span> object_property [object] - (Optional) . The following properties compose the object schema
+        :<ul dir="ltr"><li> example_boolean [boolean] - (Required) </li>
+	<li> message [string] - (Required) </li>
+	<li> example_int [integer] - (Required) </li>
+	<li> example_number [number] - (Required) </li>
+	<li> detailed_message [string] - (Required) </li>
+	
+        </ul>
+        </li>
+	<li> example_int [integer] - (Optional) </li>
+	<li><span class="wysiwyg-color-red">*</span> object_nested_scheme_property [object] - (Optional) . The following properties compose the object schema
+        :<ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> object_property [object] - (Optional) . The following properties compose the object schema
+        :<ul dir="ltr"><li> account [string] - (Optional) </li>
+	
+        </ul>
+        </li>
+	
+        </ul>
+        </li>
+	<li> better_example_number_field_name [number] - (Optional) </li>
+	<li> array_of_objects_example [list of objects] - (Optional) . The following properties compose the object schema
+        :<ul dir="ltr"><li> origin_port [integer] - (Optional) </li>
+	<li> protocol [string] - (Optional) </li>
+	
+        </ul>
+        </li>
+	<li> optional_computed [string] - (Optional) </li>
+	<li> optional_property [string] - (Optional) </li>
+	<li> example_boolean [boolean] - (Optional) </li>
+	
+    </ul>
+        
+    
+        
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn_v1.my_cdn_v1.<b>object_nested_scheme_property[0]</b>.object_property)</p>
+
+<h4 id="resource_cdn_v1_attributes_reference" dir="ltr">Attributes Reference</h4>
+<p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+<ul dir="ltr"><li> computed [string] </li>
+		<li><span class="wysiwyg-color-red">*</span> object_nested_scheme_property [object]  The following properties compose the object schema:
+            <ul dir="ltr"><li> name [string] </li>
+		
+            </ul>
+            </li>
+		<li> computed_with_default [string] </li>
+		<li> id [string] </li>
+		<li> optional_computed [string] </li>
+		<li> optional_computed_with_default [string] </li>
+		
+    </ul>
+        
+    
+        
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn_v1.my_cdn_v1.<b>object_nested_scheme_property[0]</b>.object_property)</p><h4 id="resource_cdn_v1_import" dir="ltr">Import</h4>
+<p dir="ltr">
+    cdn_v1 resources can be imported using the&nbsp;<code>id</code> , e.g:
+</p>
+<pre dir="ltr">$ terraform import cdn_v1.my_cdn_v1 id</pre>
+<p dir="ltr">
+    <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
+    provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
+</p>
+
+
+    <h3 id="multiregionmonitors_v1" dir="ltr">openapi_multiregionmonitors_v1</h3>
+    <h4 id="resource_multiregionmonitors_v1_example_usage" dir="ltr">Example usage</h4>
+<pre>
+<span>resource </span><span>"openapi_multiregionmonitors_v1" "my_multiregionmonitors_v1"</span>{
+    <span>name  </span>= <span>"name"</span>
+<span>}</span>
+</pre>
+<h4 id="resource_multiregionmonitors_v1_arguments_reference" dir="ltr">Arguments Reference</h4>
+<p dir="ltr">The following arguments are supported:</p>
+<ul dir="ltr"><li> name [string] - (Required) </li>
+	
+    </ul>
+
+<h4 id="resource_multiregionmonitors_v1_attributes_reference" dir="ltr">Attributes Reference</h4>
+<p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+<ul dir="ltr"><li> id [string] </li>
+		
+    </ul><h4 id="resource_multiregionmonitors_v1_import" dir="ltr">Import</h4>
+<p dir="ltr">
+    multiregionmonitors_v1 resources can be imported using the&nbsp;<code>id</code> , e.g:
+</p>
+<pre dir="ltr">$ terraform import multiregionmonitors_v1.my_multiregionmonitors_v1 id</pre>
+<p dir="ltr">
+    <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
+    provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
+</p>
+
+
+    <h3 id="lbs_v1" dir="ltr">openapi_lbs_v1</h3>
+    <h4 id="resource_lbs_v1_example_usage" dir="ltr">Example usage</h4>
+<pre>
+<span>resource </span><span>"openapi_lbs_v1" "my_lbs_v1"</span>{
+    <span>backends  </span>= <span>["backends1", "backends2"]</span>
+    <span>name  </span>= <span>"name"</span>
+<span>}</span>
+</pre>
+<h4 id="resource_lbs_v1_arguments_reference" dir="ltr">Arguments Reference</h4>
+<p dir="ltr">The following arguments are supported:</p>
+<ul dir="ltr"><li> backends [list of strings] - (Required) </li>
+	<li> name [string] - (Required) </li>
+	<li> simulate_failure [boolean] - (Optional) </li>
+	
+    </ul>
+        
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_lbs_v1.my_lbs_v1.<b>new_status[0]</b>.object_property)</p>
+
+<h4 id="resource_lbs_v1_attributes_reference" dir="ltr">Attributes Reference</h4>
+<p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+<ul dir="ltr"><li> time_to_process [integer] </li>
+		<li> id [string] </li>
+		<li> status [string] - lb resource status</li>
+		
+    </ul>
+        
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_lbs_v1.my_lbs_v1.<b>new_status[0]</b>.object_property)</p><h4 id="resource_lbs_v1_import" dir="ltr">Import</h4>
+<p dir="ltr">
+    lbs_v1 resources can be imported using the&nbsp;<code>id</code> , e.g:
+</p>
+<pre dir="ltr">$ terraform import lbs_v1.my_lbs_v1 id</pre>
+<p dir="ltr">
+    <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
+    provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
+</p>
+
+
+    <h3 id="monitors_v1_rst1" dir="ltr">openapi_monitors_v1_rst1</h3>
+    <h4 id="resource_monitors_v1_rst1_example_usage" dir="ltr">Example usage</h4>
+<pre>
+<span>resource </span><span>"openapi_monitors_v1_rst1" "my_monitors_v1_rst1"</span>{
+    <span>name  </span>= <span>"name"</span>
+<span>}</span>
+</pre>
+<h4 id="resource_monitors_v1_rst1_arguments_reference" dir="ltr">Arguments Reference</h4>
+<p dir="ltr">The following arguments are supported:</p>
+<ul dir="ltr"><li> name [string] - (Required) </li>
+	
+    </ul>
+
+<h4 id="resource_monitors_v1_rst1_attributes_reference" dir="ltr">Attributes Reference</h4>
+<p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+<ul dir="ltr"><li> id [string] </li>
+		
+    </ul><h4 id="resource_monitors_v1_rst1_import" dir="ltr">Import</h4>
+<p dir="ltr">
+    monitors_v1_rst1 resources can be imported using the&nbsp;<code>id</code> , e.g:
+</p>
+<pre dir="ltr">$ terraform import monitors_v1_rst1.my_monitors_v1_rst1 id</pre>
+<p dir="ltr">
+    <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
+    provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
+</p>
+
+
+    <h3 id="monitors_v1_dub1" dir="ltr">openapi_monitors_v1_dub1</h3>
+    <h4 id="resource_monitors_v1_dub1_example_usage" dir="ltr">Example usage</h4>
+<pre>
+<span>resource </span><span>"openapi_monitors_v1_dub1" "my_monitors_v1_dub1"</span>{
+    <span>name  </span>= <span>"name"</span>
+<span>}</span>
+</pre>
+<h4 id="resource_monitors_v1_dub1_arguments_reference" dir="ltr">Arguments Reference</h4>
+<p dir="ltr">The following arguments are supported:</p>
+<ul dir="ltr"><li> name [string] - (Required) </li>
+	
+    </ul>
+
+<h4 id="resource_monitors_v1_dub1_attributes_reference" dir="ltr">Attributes Reference</h4>
+<p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+<ul dir="ltr"><li> id [string] </li>
+		
+    </ul><h4 id="resource_monitors_v1_dub1_import" dir="ltr">Import</h4>
+<p dir="ltr">
+    monitors_v1_dub1 resources can be imported using the&nbsp;<code>id</code> , e.g:
+</p>
+<pre dir="ltr">$ terraform import monitors_v1_dub1.my_monitors_v1_dub1 id</pre>
+<p dir="ltr">
+    <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
+    provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
+</p>
+
+ <h2 id="provider_datasources">Data Sources (using resource id)</h2>
+
+    <h3 id="cdn_v1_instance" dir="ltr">openapi_cdn_v1_instance</h3>
+    <p>Retrieve an existing resource using it's ID</p>
+    <h4 id="datasource_cdn_v1_instance_example_usage" dir="ltr">Example usage</h4>
+<pre><span>data </span><span>"openapi_cdn_v1_instance" "my_cdn_v1_instance"</span>{
+    id = "existing_resource_id"
+<span>}</span></pre>
+    <h4 id="datasource_cdn_v1_instance_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li>id - (Required) ID of the existing resource to retrieve</li>
+    </ul>
+    <h4 id="datasource_cdn_v1_instance_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr"><li> hostnames [list of strings] </li>
+		<li> optional_computed_with_default [string] </li>
+		<li> computed [string] </li>
+		<li> label [string] </li>
+		<li> example_int [integer] </li>
+		<li> better_example_number_field_name [number] </li>
+		<li> computed_with_default [string] </li>
+		<li> id [string] </li>
+		<li> example_boolean [boolean] </li>
+		<li> optional_computed [string] </li>
+		<li> optional_property [string] </li>
+		<li><span class="wysiwyg-color-red">*</span> object_nested_scheme_property [object]  The following properties compose the object schema:
+            <ul dir="ltr"><li> name [string] </li>
+		<li><span class="wysiwyg-color-red">*</span> object_property [object]  The following properties compose the object schema:
+            <ul dir="ltr"><li> account [string] </li>
+		
+            </ul>
+            </li>
+		
+            </ul>
+            </li>
+		<li> array_of_objects_example [list of objects]  The following properties compose the object schema:
+            <ul dir="ltr"><li> origin_port [integer] </li>
+		<li> protocol [string] </li>
+		
+            </ul>
+            </li>
+		<li><span class="wysiwyg-color-red">*</span> object_property [object]  The following properties compose the object schema:
+            <ul dir="ltr"><li> example_number [number] </li>
+		<li> detailed_message [string] </li>
+		<li> example_int [integer] </li>
+		<li> example_boolean [boolean] </li>
+		<li> message [string] </li>
+		
+            </ul>
+            </li>
+		<li> ips [list of strings] </li>
+		
+        </ul>
+        
+    
+        
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn_v1_instance.my_cdn_v1_instance.<b>object_property[0]</b>.object_property)</p>
+    <h3 id="multiregionmonitors_v1_instance" dir="ltr">openapi_multiregionmonitors_v1_instance</h3>
+    <p>Retrieve an existing resource using it's ID</p>
+    <h4 id="datasource_multiregionmonitors_v1_instance_example_usage" dir="ltr">Example usage</h4>
+<pre><span>data </span><span>"openapi_multiregionmonitors_v1_instance" "my_multiregionmonitors_v1_instance"</span>{
+    id = "existing_resource_id"
+<span>}</span></pre>
+    <h4 id="datasource_multiregionmonitors_v1_instance_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li>id - (Required) ID of the existing resource to retrieve</li>
+    </ul>
+    <h4 id="datasource_multiregionmonitors_v1_instance_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr"><li> name [string] </li>
+		<li> id [string] </li>
+		
+        </ul>
+    <h3 id="lbs_v1_instance" dir="ltr">openapi_lbs_v1_instance</h3>
+    <p>Retrieve an existing resource using it's ID</p>
+    <h4 id="datasource_lbs_v1_instance_example_usage" dir="ltr">Example usage</h4>
+<pre><span>data </span><span>"openapi_lbs_v1_instance" "my_lbs_v1_instance"</span>{
+    id = "existing_resource_id"
+<span>}</span></pre>
+    <h4 id="datasource_lbs_v1_instance_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li>id - (Required) ID of the existing resource to retrieve</li>
+    </ul>
+    <h4 id="datasource_lbs_v1_instance_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> new_status [object]  The following properties compose the object schema:
+            <ul dir="ltr"><li> message [string] </li>
+		<li> status [string] </li>
+		
+            </ul>
+            </li>
+		<li> name [string] </li>
+		<li> id [string] </li>
+		<li> status [string] - lb resource status</li>
+		<li> time_to_process [integer] </li>
+		<li> backends [list of strings] </li>
+		<li> simulate_failure [boolean] </li>
+		
+        </ul>
+        
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_lbs_v1_instance.my_lbs_v1_instance.<b>new_status[0]</b>.object_property)</p>
+    <h3 id="monitors_v1_rst1_instance" dir="ltr">openapi_monitors_v1_rst1_instance</h3>
+    <p>Retrieve an existing resource using it's ID</p>
+    <h4 id="datasource_monitors_v1_rst1_instance_example_usage" dir="ltr">Example usage</h4>
+<pre><span>data </span><span>"openapi_monitors_v1_rst1_instance" "my_monitors_v1_rst1_instance"</span>{
+    id = "existing_resource_id"
+<span>}</span></pre>
+    <h4 id="datasource_monitors_v1_rst1_instance_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li>id - (Required) ID of the existing resource to retrieve</li>
+    </ul>
+    <h4 id="datasource_monitors_v1_rst1_instance_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr"><li> name [string] </li>
+		<li> id [string] </li>
+		
+        </ul>
+    <h3 id="monitors_v1_dub1_instance" dir="ltr">openapi_monitors_v1_dub1_instance</h3>
+    <p>Retrieve an existing resource using it's ID</p>
+    <h4 id="datasource_monitors_v1_dub1_instance_example_usage" dir="ltr">Example usage</h4>
+<pre><span>data </span><span>"openapi_monitors_v1_dub1_instance" "my_monitors_v1_dub1_instance"</span>{
+    id = "existing_resource_id"
+<span>}</span></pre>
+    <h4 id="datasource_monitors_v1_dub1_instance_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li>id - (Required) ID of the existing resource to retrieve</li>
+    </ul>
+    <h4 id="datasource_monitors_v1_dub1_instance_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr"><li> name [string] </li>
+		<li> id [string] </li>
+		
+        </ul> 
+
+<h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
+
+No data sources using filters are supported at the moment. 

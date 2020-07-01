@@ -438,7 +438,6 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 	}
 }
 
-//TODO: Check that test passes after implementing fix to ignore order of array props
 func TestAccCDN_CreateResourceWithIgnoreListOrderExtension(t *testing.T) {
 	swagger := `swagger: "2.0"
 host: %s 

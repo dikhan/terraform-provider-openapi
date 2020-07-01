@@ -29,7 +29,7 @@ func TestNewSpecV2Resource(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users'", func() {
-				So(r.getResourceName(), ShouldEqual, "users")
+				So(r.GetResourceName(), ShouldEqual, "users")
 			})
 		})
 	})
@@ -50,7 +50,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users'", func() {
-				So(r.getResourceName(), ShouldEqual, "users")
+				So(r.GetResourceName(), ShouldEqual, "users")
 			})
 		})
 	})
@@ -68,7 +68,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users'", func() {
-				So(r.getResourceName(), ShouldEqual, "users")
+				So(r.GetResourceName(), ShouldEqual, "users")
 			})
 		})
 	})
@@ -87,7 +87,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be the resource name plus the region appended at the end", func() {
-				So(r.getResourceName(), ShouldEqual, "users_rst1")
+				So(r.GetResourceName(), ShouldEqual, "users_rst1")
 			})
 		})
 	})
@@ -105,7 +105,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users_v1'", func() {
-				So(r.getResourceName(), ShouldEqual, "users_v1")
+				So(r.GetResourceName(), ShouldEqual, "users_v1")
 			})
 		})
 	})
@@ -123,7 +123,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be 'users_v1'", func() {
-				So(r.getResourceName(), ShouldEqual, "users_v12")
+				So(r.GetResourceName(), ShouldEqual, "users_v12")
 			})
 		})
 	})
@@ -141,7 +141,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should still be 'users'", func() {
-				So(r.getResourceName(), ShouldEqual, "users")
+				So(r.GetResourceName(), ShouldEqual, "users")
 			})
 		})
 	})
@@ -166,7 +166,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should still be 'nodes_v1_proxy'", func() {
-				So(r.getResourceName(), ShouldEqual, "nodes_v1_proxy")
+				So(r.GetResourceName(), ShouldEqual, "nodes_v1_proxy")
 			})
 		})
 	})
@@ -190,7 +190,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			resourceName := r.getResourceName()
+			resourceName := r.GetResourceName()
 			expectedTerraformName := fmt.Sprintf("%s_v1", expectedResourceName)
 			Convey(fmt.Sprintf("And the value returned should still be '%s'", expectedTerraformName), func() {
 				So(resourceName, ShouldEqual, expectedTerraformName)
@@ -273,7 +273,7 @@ func TestNewSpecV2ResourceWithRegion(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the value returned should be the resource name plus the region appended at the end", func() {
-				So(r.getResourceName(), ShouldEqual, "users_rst1")
+				So(r.GetResourceName(), ShouldEqual, "users_rst1")
 			})
 		})
 	})
@@ -288,8 +288,8 @@ func TestShouldIgnoreResource(t *testing.T) {
 				},
 			},
 		}
-		Convey("When shouldIgnoreResource is called", func() {
-			shouldIgnoreResource := r.shouldIgnoreResource()
+		Convey("When ShouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.ShouldIgnoreResource()
 			Convey("Then the result should be false", func() {
 				So(shouldIgnoreResource, ShouldBeFalse)
 			})
@@ -303,8 +303,8 @@ func TestShouldIgnoreResource(t *testing.T) {
 				},
 			},
 		}
-		Convey("When shouldIgnoreResource is called", func() {
-			shouldIgnoreResource := r.shouldIgnoreResource()
+		Convey("When ShouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.ShouldIgnoreResource()
 			Convey("Then the result should be false", func() {
 				So(shouldIgnoreResource, ShouldBeFalse)
 			})
@@ -324,8 +324,8 @@ func TestShouldIgnoreResource(t *testing.T) {
 				},
 			},
 		}
-		Convey("When shouldIgnoreResource is called", func() {
-			shouldIgnoreResource := r.shouldIgnoreResource()
+		Convey("When ShouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.ShouldIgnoreResource()
 			Convey("Then the result should be true", func() {
 				So(shouldIgnoreResource, ShouldBeTrue)
 			})
@@ -345,8 +345,8 @@ func TestShouldIgnoreResource(t *testing.T) {
 				},
 			},
 		}
-		Convey("When shouldIgnoreResource is called", func() {
-			shouldIgnoreResource := r.shouldIgnoreResource()
+		Convey("When ShouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.ShouldIgnoreResource()
 			Convey("Then the result should be false", func() {
 				So(shouldIgnoreResource, ShouldBeFalse)
 			})
@@ -365,8 +365,8 @@ func TestShouldIgnoreResource(t *testing.T) {
 				},
 			},
 		}
-		Convey("When shouldIgnoreResource is called", func() {
-			shouldIgnoreResource := r.shouldIgnoreResource()
+		Convey("When ShouldIgnoreResource is called", func() {
+			shouldIgnoreResource := r.ShouldIgnoreResource()
 			Convey("Then the result should be false", func() {
 				So(shouldIgnoreResource, ShouldBeFalse)
 			})
@@ -693,9 +693,9 @@ func TestParentResourceInfo(t *testing.T) {
 			Path:  "/cdns",
 			Paths: map[string]spec.PathItem{},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned should be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned should be nil", func() {
 				So(parentResourceInfo, ShouldBeNil)
 			})
 		})
@@ -705,9 +705,9 @@ func TestParentResourceInfo(t *testing.T) {
 			Path:  "/v1/cdns",
 			Paths: map[string]spec.PathItem{},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned should be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned should be nil", func() {
 				So(parentResourceInfo, ShouldBeNil)
 			})
 		})
@@ -723,9 +723,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -763,9 +763,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -797,9 +797,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -836,9 +836,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -878,9 +878,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -915,9 +915,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -948,9 +948,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -987,9 +987,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -1028,9 +1028,9 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
-			Convey("Then the parentResourceInfo struct returned shouldn't be nil", func() {
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
+			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 			})
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
@@ -1064,8 +1064,8 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("Then the resource should be considered a subresource and the output should match the expected output values", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
@@ -1113,8 +1113,8 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
@@ -1158,8 +1158,8 @@ func TestParentResourceInfo(t *testing.T) {
 				},
 			},
 		}
-		Convey("When parentResourceInfo is called", func() {
-			parentResourceInfo := r.getParentResourceInfo()
+		Convey("When ParentResourceInfo is called", func() {
+			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
@@ -1183,7 +1183,7 @@ func TestParentResourceInfo(t *testing.T) {
 
 }
 
-func assertSchemaProperty(actualSpecSchemaDefinition *specSchemaDefinition, expectedName string, expectedType schemaDefinitionPropertyType, expectedRequired, expectedReadOnly, expectedComputed bool) {
+func assertSchemaProperty(actualSpecSchemaDefinition *SpecSchemaDefinition, expectedName string, expectedType schemaDefinitionPropertyType, expectedRequired, expectedReadOnly, expectedComputed bool) {
 	prop, err := actualSpecSchemaDefinition.getProperty(expectedName)
 	So(err, ShouldBeNil)
 	fmt.Printf(">>> Validating '%s' property settings\n", prop.Name)
@@ -1193,8 +1193,8 @@ func assertSchemaProperty(actualSpecSchemaDefinition *specSchemaDefinition, expe
 	So(prop.Computed, ShouldEqual, expectedComputed)
 }
 
-func assertSchemaParentProperty(actualSpecSchemaDefinition *specSchemaDefinition, expectedName string) {
-	assertSchemaProperty(actualSpecSchemaDefinition, expectedName, typeString, true, false, false)
+func assertSchemaParentProperty(actualSpecSchemaDefinition *SpecSchemaDefinition, expectedName string) {
+	assertSchemaProperty(actualSpecSchemaDefinition, expectedName, TypeString, true, false, false)
 }
 
 func TestGetResourceSchema(t *testing.T) {
@@ -1237,17 +1237,17 @@ func TestGetResourceSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceSchema is called", func() {
-			specSchemaDefinition, err := r.getResourceSchema()
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, len(r.SchemaDefinition.SchemaProps.Properties))
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
-				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
-				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", TypeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", TypeBool, false, false, false)
 			})
 		})
 	})
@@ -1271,18 +1271,18 @@ func TestGetResourceSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceSchema is called", func() {
-			specSchemaDefinition, err := r.getResourceSchema()
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required", func() {
 				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 			})
 		})
@@ -1307,18 +1307,18 @@ func TestGetResourceSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceSchema is called", func() {
-			specSchemaDefinition, err := r.getResourceSchema()
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
 				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 			})
 		})
@@ -1343,17 +1343,17 @@ func TestGetResourceSchema(t *testing.T) {
 			},
 		}
 		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
-			specSchemaDefinition, err := r.getResourceSchema()
+			specSchemaDefinition, err := r.GetResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent one)", func() {
+			Convey("And the SpecSchemaDefinition returned should contain the expected number of properties (including the parent one)", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 			})
-			Convey("And the specSchemaDefinition returned should also include the parent property", func() {
+			Convey("And the SpecSchemaDefinition returned should also include the parent property", func() {
 				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
 			})
 		})
@@ -1377,18 +1377,18 @@ func TestGetResourceSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceSchema is called", func() {
-			specSchemaDefinition, err := r.getResourceSchema()
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should contain the expected number of properties (including the parent ones)", func() {
+			Convey("And the SpecSchemaDefinition returned should contain the expected number of properties (including the parent ones)", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 			})
-			Convey("And the specSchemaDefinition returned should also include the parents properties", func() {
+			Convey("And the SpecSchemaDefinition returned should also include the parents properties", func() {
 				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
 				assertSchemaParentProperty(specSchemaDefinition, "subparent_id")
 			})
@@ -1427,18 +1427,18 @@ func TestGetResourceSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceSchema is called", func() {
-			specSchemaDefinition, err := r.getResourceSchema()
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
 				assertSchemaParentProperty(specSchemaDefinition, "cdn_v1_id")
 			})
 		})
@@ -1484,21 +1484,21 @@ func TestGetResourceSchema(t *testing.T) {
 				},
 			},
 		}
-		Convey("When getResourceSchema is called", func() {
-			specSchemaDefinition, err := r.getResourceSchema()
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id ones", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id ones", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 6)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
-				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
-				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", TypeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", TypeBool, false, false, false)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property too", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property too", func() {
 				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 				assertSchemaParentProperty(specSchemaDefinition, "firewalls_v2_id")
 			})
@@ -1552,12 +1552,12 @@ func TestGetSchemaDefinition(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties))
-				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", typeString, false, true, true)
-				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", typeInt, false, false, true)
-				assertSchemaProperty(specSchemaDefinition, "number_required_prop", typeFloat, true, false, false)
-				assertSchemaProperty(specSchemaDefinition, "bool_prop", typeBool, false, false, false)
+				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
+				assertSchemaProperty(specSchemaDefinition, "number_required_prop", TypeFloat, true, false, false)
+				assertSchemaProperty(specSchemaDefinition, "bool_prop", TypeBool, false, false, false)
 			})
 		})
 	})
@@ -1585,9 +1585,9 @@ func TestGetSchemaDefinition(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be 1 and no parent id should be in the schema. Only getResourceSchema() allows parent ids to be injects", func() {
+			Convey("And the SpecSchemaDefinition returned should be 1 and no parent id should be in the schema. Only GetResourceSchema() allows parent ids to be injects", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 1)
-				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "id", TypeString, false, true, true)
 			})
 		})
 	})
@@ -1664,13 +1664,13 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the id and the zone_id properties (and no extra parent property 'zone_id' will be added since it's already there)", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the id and the zone_id properties (and no extra parent property 'zone_id' will be added since it's already there)", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "id", TypeString, false, true, true)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
 				// Note due to the model already containing a parent id property (zone_id) it will be reconfigured to be required. This ensures the resource tf configuration requires the parent id property to be populated.
 				assertSchemaParentProperty(specSchemaDefinition, "zone_id")
 			})
@@ -1720,19 +1720,19 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
 			})
-			Convey("And the specSchemaDefinition returned should be configured as expected", func() {
-				assertSchemaProperty(specSchemaDefinition, "id", typeString, false, true, true)
-				assertSchemaProperty(specSchemaDefinition, "record", typeList, false, false, false)
+			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				assertSchemaProperty(specSchemaDefinition, "id", TypeString, false, true, true)
+				assertSchemaProperty(specSchemaDefinition, "record", TypeList, false, false, false)
 			})
-			Convey("And the specSchemaDefinition for the array property should not contain any parent id", func() {
+			Convey("And the SpecSchemaDefinition for the array property should not contain any parent id", func() {
 				recordProp, _ := specSchemaDefinition.getProperty("record")
 				So(len(recordProp.SpecSchemaDefinition.Properties), ShouldEqual, 1)
 				So(recordProp.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "content")
 			})
-			Convey("And the specSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
 				assertSchemaParentProperty(specSchemaDefinition, "zone_id")
 			})
 		})
@@ -1844,7 +1844,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name and type", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeString)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeString)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -1853,7 +1853,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type integer that is not required", func() {
@@ -1870,7 +1870,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name and type", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeInt)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeInt)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -1879,7 +1879,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type number that is not required", func() {
@@ -1896,7 +1896,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name and type", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeFloat)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeFloat)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -1905,7 +1905,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 		Convey("When createSchemaDefinitionProperty is called with a propertyName, propertySchema of type boolean that is not required", func() {
@@ -1922,7 +1922,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name and type", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeBool)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeBool)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -1931,7 +1931,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 
@@ -1973,7 +1973,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name and type", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeObject)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeObject)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -1982,7 +1982,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 
@@ -2024,8 +2024,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name and type", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeList)
-				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeString)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeList)
+				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, TypeString)
 				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldBeNil)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
@@ -2035,7 +2035,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 
@@ -2071,8 +2071,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name, list type amd items type object", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeList)
-				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeObject)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeList)
+				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, TypeObject)
 			})
 			Convey("And schema definition should contain the schema of the array items", func() {
 				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldNotBeNil)
@@ -2089,7 +2089,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 
@@ -2129,14 +2129,14 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 			Convey("And the schema definition property should be configured with the right name, list type amd items type object", func() {
 				So(schemaDefinitionProperty.Name, ShouldEqual, propertyName)
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeList)
-				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, typeObject)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeList)
+				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, TypeObject)
 			})
 			Convey("And schema definition should contain the schema of the array items", func() {
 				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldNotBeNil)
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties, ShouldNotBeEmpty)
 				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
-				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -2145,7 +2145,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 		})
 
@@ -2211,7 +2211,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeTrue)
@@ -2239,7 +2239,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property should not be required", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeTrue)
@@ -2279,17 +2279,17 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property type should be an object", func() {
-				So(schemaDefinitionProperty.Type, ShouldEqual, typeObject)
+				So(schemaDefinitionProperty.Type, ShouldEqual, TypeObject)
 			})
 
 			Convey("And the schema definition property specs should contain only 1 item of type object", func() {
 				So(len(schemaDefinitionProperty.SpecSchemaDefinition.Properties), ShouldEqual, 1)
-				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeObject)
+				So(schemaDefinitionProperty.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeObject)
 			})
 
 			Convey("And the nested object's property is a string", func() {
 				nestedSpecSchema := *(schemaDefinitionProperty.SpecSchemaDefinition.Properties)[0]
-				So(nestedSpecSchema.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, typeString)
+				So(nestedSpecSchema.SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
 			})
 
 		})
@@ -2307,7 +2307,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property should be optional", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -2567,7 +2567,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the schema definition property should be optional", func() {
-				So(schemaDefinitionProperty.isRequired(), ShouldBeFalse)
+				So(schemaDefinitionProperty.IsRequired(), ShouldBeFalse)
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
@@ -2696,7 +2696,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				So(isOptionalComputedProperty, ShouldBeTrue)
 			})
 		})
-		Convey(fmt.Sprintf("When isOptionalComputedProperty method is called with a property that is optional, and matches the isOptionalComputed requirements (no computed and has the %s extension)", extTfComputed), func() {
+		Convey(fmt.Sprintf("When isOptionalComputedProperty method is called with a property that is optional, and matches the IsOptionalComputed requirements (no computed and has the %s extension)", extTfComputed), func() {
 			property := spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: false,
@@ -2715,7 +2715,7 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 				So(isOptionalComputedProperty, ShouldBeTrue)
 			})
 		})
-		Convey(fmt.Sprintf("When isOptionalComputedProperty method is called with a property that is optional, and DOES NOT pass the validation as far as isOptionalComputed requirements is concerned (properties with %s extension cannot be readOnly)", extTfComputed), func() {
+		Convey(fmt.Sprintf("When isOptionalComputedProperty method is called with a property that is optional, and DOES NOT pass the validation as far as IsOptionalComputed requirements is concerned (properties with %s extension cannot be readOnly)", extTfComputed), func() {
 			property := spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: true,
@@ -2856,7 +2856,7 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 func TestIsOptionalComputed(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
-		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that is NOT computed (readOnly) and has the extension %s with value true", extTfComputed), func() {
+		Convey(fmt.Sprintf("When IsOptionalComputed method is called with a property that is NOT computed (readOnly) and has the extension %s with value true", extTfComputed), func() {
 			property := spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: false,
@@ -2875,7 +2875,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(isOptionalComputed, ShouldBeTrue)
 			})
 		})
-		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that is NOT computed (readOnly) and has the extension %s with value false", extTfComputed), func() {
+		Convey(fmt.Sprintf("When IsOptionalComputed method is called with a property that is NOT computed (readOnly) and has the extension %s with value false", extTfComputed), func() {
 			property := spec.Schema{
 				VendorExtensible: spec.VendorExtensible{
 					Extensions: spec.Extensions{
@@ -2891,7 +2891,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
-		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that is computed (readOnly) and has the extension %s with value true", extTfComputed), func() {
+		Convey(fmt.Sprintf("When IsOptionalComputed method is called with a property that is computed (readOnly) and has the extension %s with value true", extTfComputed), func() {
 			property := spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: true, // this specifies that the property is computed
@@ -2913,7 +2913,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
-		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that is optional, and DOES NOT pass the validation as far as isOptionalComputed requirements is concerned (properties with %s extension cannot have default value populated)", extTfComputed), func() {
+		Convey(fmt.Sprintf("When IsOptionalComputed method is called with a property that is optional, and DOES NOT pass the validation as far as IsOptionalComputed requirements is concerned (properties with %s extension cannot have default value populated)", extTfComputed), func() {
 			property := spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: false,
@@ -2938,7 +2938,7 @@ func TestIsOptionalComputed(t *testing.T) {
 				So(isOptionalComputedProperty, ShouldBeFalse)
 			})
 		})
-		Convey(fmt.Sprintf("When isOptionalComputed method is called with a property that DOES NOT have the extension %s present", extTfComputed), func() {
+		Convey(fmt.Sprintf("When IsOptionalComputed method is called with a property that DOES NOT have the extension %s present", extTfComputed), func() {
 			property := spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{},
 			}
@@ -2956,38 +2956,38 @@ func TestIsOptionalComputed(t *testing.T) {
 func TestIsArrayItemPrimitiveType(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeString", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeString)
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type TypeString", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(TypeString)
 			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeInt", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeInt)
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type TypeInt", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(TypeInt)
 			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeFloat", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeFloat)
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type TypeFloat", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(TypeFloat)
 			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
-		Convey("When isArrayItemPrimitiveType method is called with a primitive type typeBool", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeBool)
+		Convey("When isArrayItemPrimitiveType method is called with a primitive type TypeBool", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(TypeBool)
 			Convey("Then the result returned should be true", func() {
 				So(isPrimitive, ShouldBeTrue)
 			})
 		})
-		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeList", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeList)
+		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type TypeList", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(TypeList)
 			Convey("Then the result returned should be false", func() {
 				So(isPrimitive, ShouldBeFalse)
 			})
 		})
-		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type typeObject", func() {
-			isPrimitive := r.isArrayItemPrimitiveType(typeObject)
+		Convey("When isArrayItemPrimitiveType method is called with a NON primitive type TypeObject", func() {
+			isPrimitive := r.isArrayItemPrimitiveType(TypeObject)
 			Convey("Then the result returned should be false", func() {
 				So(isPrimitive, ShouldBeFalse)
 			})
@@ -3081,7 +3081,7 @@ func TestValidateArrayItems(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected string", func() {
-				So(itemsPropType, ShouldEqual, typeString)
+				So(itemsPropType, ShouldEqual, TypeString)
 			})
 		})
 		Convey("When validateArrayItems method is called with a valid array property that has items of type object", func() {
@@ -3104,7 +3104,7 @@ func TestValidateArrayItems(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected object", func() {
-				So(itemsPropType, ShouldEqual, typeObject)
+				So(itemsPropType, ShouldEqual, TypeObject)
 			})
 		})
 	})
@@ -3124,7 +3124,7 @@ func TestGetPropertyType(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected array", func() {
-				So(itemsPropType, ShouldEqual, typeList)
+				So(itemsPropType, ShouldEqual, TypeList)
 			})
 		})
 
@@ -3142,7 +3142,7 @@ func TestGetPropertyType(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected object", func() {
-				So(itemsPropType, ShouldEqual, typeObject)
+				So(itemsPropType, ShouldEqual, TypeObject)
 			})
 		})
 
@@ -3157,7 +3157,7 @@ func TestGetPropertyType(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected string", func() {
-				So(itemsPropType, ShouldEqual, typeString)
+				So(itemsPropType, ShouldEqual, TypeString)
 			})
 		})
 
@@ -3172,7 +3172,7 @@ func TestGetPropertyType(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected integer", func() {
-				So(itemsPropType, ShouldEqual, typeInt)
+				So(itemsPropType, ShouldEqual, TypeInt)
 			})
 		})
 
@@ -3187,7 +3187,7 @@ func TestGetPropertyType(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected float", func() {
-				So(itemsPropType, ShouldEqual, typeFloat)
+				So(itemsPropType, ShouldEqual, TypeFloat)
 			})
 		})
 
@@ -3202,7 +3202,7 @@ func TestGetPropertyType(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("And the type of the items should match the expected bool", func() {
-				So(itemsPropType, ShouldEqual, typeBool)
+				So(itemsPropType, ShouldEqual, TypeBool)
 			})
 		})
 
@@ -3414,7 +3414,7 @@ func TestResourceIsArrayProperty(t *testing.T) {
 				So(isArray, ShouldBeTrue)
 			})
 			Convey("And the array items should be of type object", func() {
-				So(arrayItemType, ShouldEqual, typeObject)
+				So(arrayItemType, ShouldEqual, TypeObject)
 			})
 			Convey("And the object schema should not be nil", func() {
 				So(objectItemSchema, ShouldNotBeNil)
@@ -3445,7 +3445,7 @@ func TestResourceIsArrayProperty(t *testing.T) {
 				So(isArray, ShouldBeTrue)
 			})
 			Convey("And the array items should be of type string", func() {
-				So(arrayItemType, ShouldEqual, typeString)
+				So(arrayItemType, ShouldEqual, TypeString)
 			})
 			Convey("And the object schema should be nil", func() {
 				So(objectItemSchema, ShouldBeNil)
@@ -3488,7 +3488,7 @@ func TestResourceIsArrayProperty(t *testing.T) {
 				So(isArray, ShouldBeTrue)
 			})
 			Convey("And the array items should be of type object", func() {
-				So(arrayItemType, ShouldEqual, typeObject)
+				So(arrayItemType, ShouldEqual, TypeObject)
 			})
 			Convey("And the object schema should not be nil", func() {
 				So(objectItemSchema, ShouldNotBeNil)
@@ -3603,7 +3603,7 @@ func TestIsOfType(t *testing.T) {
 func TestSwaggerPropIsRequired(t *testing.T) {
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
-		Convey("When isRequired is called with a required prop", func() {
+		Convey("When IsRequired is called with a required prop", func() {
 			requiredProp := "requiredProp"
 			requiredProps := []string{requiredProp}
 			isRequired := r.isRequired(requiredProp, requiredProps)
@@ -3611,7 +3611,7 @@ func TestSwaggerPropIsRequired(t *testing.T) {
 				So(isRequired, ShouldBeTrue)
 			})
 		})
-		Convey("When isRequired is called with a NON required prop", func() {
+		Convey("When IsRequired is called with a NON required prop", func() {
 			requiredProps := []string{"requiredProp"}
 			isRequired := r.isRequired("nonRequired", requiredProps)
 			Convey("Then the result returned should be true", func() {
