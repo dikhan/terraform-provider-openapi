@@ -319,6 +319,99 @@ func TestProviderResourcesTmpl(t *testing.T) {
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 
+func TestDataSourcesTmpl(t *testing.T) {
+	dataSource := DataSources{
+		ProviderName: "openapi",
+		DataSourceInstances: []DataSource{
+			{
+				Name:         "cdn_instance",
+				OtherExample: "",
+				Properties: []Property{
+					Property{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
+				},
+			},
+		},
+		DataSources: []DataSource{
+			{
+				Name:         "cdn",
+				OtherExample: "",
+				Properties: []Property{
+					Property{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
+				},
+			},
+		},
+	}
+	expectedHTML := `<h2 id="provider_datasources">Data Sources (using resource id)</h2>
+
+
+    <h3 id="cdn_instance" dir="ltr">openapi_cdn_instance</h3>
+    <p>Retrieve an existing resource using it's ID</p>
+    <h4 id="datasource_cdn_instance_example_usage" dir="ltr">Example usage</h4>
+<pre><span>data </span><span>"openapi_cdn_instance" "my_cdn_instance"</span>{
+    id = "existing_resource_id"
+<span>}</span></pre>
+    <h4 id="datasource_cdn_instance_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+        <li>id - (Required) ID of the existing resource to retrieve</li>
+    </ul>
+    <h4 id="datasource_cdn_instance_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> computed_object_prop [object]  - this is an object property The following properties compose the object schema:
+            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
+		
+            </ul>
+            </li>
+		
+        </ul>
+        
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn_instance.my_cdn_instance.<b>computed_object_prop[0]</b>.object_property)</p> 
+
+<h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
+
+    <h3 id="cdn_datasource" dir="ltr">openapi_cdn (filters)</h3>
+    <p>The cdn data source allows you to retrieve an already existing cdn resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
+    <h4 id="datasource_cdn_example_usage" dir="ltr">Example usage</h4>
+    <pre>
+<span>data </span><span>"openapi_cdn" "my_cdn"</span>{
+    <span>filter  </span><span>{</span>
+        <span>name  </span>= <span>"property name to filter by, see docs below for more info about available filter name options"</span>
+        <span>values  </span>= <span>["filter value"]</span>
+    <span>}</span>
+<span>}</span></pre>
+
+    <h4 id="datasource_cdn_arguments_reference" dir="ltr">Arguments Reference</h4>
+    <p dir="ltr">The following arguments are supported:</p>
+    <ul dir="ltr">
+            <li>filter - (Required) Object containing two properties.</li>
+            <ul>
+                <li>name [string]: the name should match one of the properties to filter by. The following property names are supported:
+                
+                    
+                
+                </li>
+                <li>values [array of string]: Values to filter by (only one value is supported at the moment).</li>
+            </ul>
+        </ul>
+    <p dir="ltr"><b>Note: </b>If more or less than a single match is returned by the search, Terraform will fail. Ensure that your search is specific enough to return a single result only.</p>
+    <h4 id="datasource_cdn_attributes_reference" dir="ltr">Attributes Reference</h4>
+    <p dir="ltr">In addition to all arguments above, the following attributes are exported:</p>
+    <ul dir="ltr"><li><span class="wysiwyg-color-red">*</span> computed_object_prop [object]  - this is an object property The following properties compose the object schema:
+            <ul dir="ltr"><li> objectPropertyComputed [string]  - </li>
+		
+            </ul>
+            </li>
+		
+        </ul>
+        
+    
+    <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p> `
+	var output bytes.Buffer
+	renderTest(t, &output, DataSourcesTmpl, DataSourcesTmpl, dataSource, "TestDataSourcesTmpl")
+	fmt.Println(strings.Trim(output.String(), "\n"))
+	assert.Equal(t, expectedHTML, strings.Trim(output.String(), "\n"))
+}
+
 func renderTest(t *testing.T, w io.Writer, templateName string, templateContent string, data interface{}, testName string) {
 	tmpl, err := template.New(templateName).Parse(templateContent)
 	assert.Nil(t, err, testName)
