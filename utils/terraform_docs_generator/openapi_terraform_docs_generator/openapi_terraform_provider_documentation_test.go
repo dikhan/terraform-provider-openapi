@@ -113,32 +113,32 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML_Errors(t *testing.T) {
 		{
 			name:                    "provider installation template error",
 			providerInstallTemplate: `{{.nonExistentVariable}}`,
-			expectedErr:             errors.New("template: ProviderInstallation:1:2: executing \"ProviderInstallation\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.ProviderInstallation"),
+			expectedErr:             errors.New("template: ProviderInstallation:1:2: executing \"ProviderInstallation\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi_terraform_docs_generator.ProviderInstallation"),
 		},
 		{
 			name:                   "provider configuration template error",
 			providerConfigTemplate: `{{.nonExistentVariable}}`,
-			expectedErr:            errors.New("template: ProviderConfiguration:1:2: executing \"ProviderConfiguration\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.ProviderConfiguration"),
+			expectedErr:            errors.New("template: ProviderConfiguration:1:2: executing \"ProviderConfiguration\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi_terraform_docs_generator.ProviderConfiguration"),
 		},
 		{
 			name:                      "provider resources template error",
 			providerResourcesTemplate: `{{.nonExistentVariable}}`,
-			expectedErr:               errors.New("template: ProviderResources:1:2: executing \"ProviderResources\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.ProviderResources"),
+			expectedErr:               errors.New("template: ProviderResources:1:2: executing \"ProviderResources\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi_terraform_docs_generator.ProviderResources"),
 		},
 		{
 			name:                        "data sources template error",
 			providerDataSourcesTemplate: `{{.nonExistentVariable}}`,
-			expectedErr:                 errors.New("template: DataSources:1:2: executing \"DataSources\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.DataSources"),
+			expectedErr:                 errors.New("template: DataSources:1:2: executing \"DataSources\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi_terraform_docs_generator.DataSources"),
 		},
 		{
 			name:                    "table of contents template error",
 			tableOfContentsTemplate: `{{.nonExistentVariable}}`,
-			expectedErr:             errors.New("template: TerraformProviderDocTableOfContents:1:2: executing \"TerraformProviderDocTableOfContents\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.TerraformProviderDocumentation"),
+			expectedErr:             errors.New("template: TerraformProviderDocTableOfContents:1:2: executing \"TerraformProviderDocTableOfContents\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi_terraform_docs_generator.TerraformProviderDocumentation"),
 		},
 		{
 			name:                            "special terms definitions template error",
 			specialTermsDefinitionsTemplate: `{{.nonExistentVariable}}`,
-			expectedErr:                     errors.New("template: TerraformProviderDocSpecialTermsDefinitions:1:2: executing \"TerraformProviderDocSpecialTermsDefinitions\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi.TerraformProviderDocumentation"),
+			expectedErr:                     errors.New("template: TerraformProviderDocSpecialTermsDefinitions:1:2: executing \"TerraformProviderDocSpecialTermsDefinitions\" at <.nonExistentVariable>: can't evaluate field nonExistentVariable in type openapi_terraform_docs_generator.TerraformProviderDocumentation"),
 		},
 	}
 
