@@ -1,4 +1,4 @@
-package openapi_terraform_docs_generator
+package openapiterraformdocsgenerator
 
 // ProviderInstallation includes details needed to install the Terraform provider plugin
 type ProviderInstallation struct {

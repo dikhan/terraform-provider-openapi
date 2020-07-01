@@ -1,11 +1,11 @@
-package openapi_terraform_docs_generator
+package openapiterraformdocsgenerator
 
 import (
 	"html/template"
 	"io"
 )
 
-func Render(w io.Writer, templateName string, templateContent string, data interface{}) error {
+func render(w io.Writer, templateName string, templateContent string, data interface{}) error {
 	tmpl, err := template.New(templateName).Parse(templateContent)
 	if err != nil {
 		return err

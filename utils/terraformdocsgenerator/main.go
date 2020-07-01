@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/dikhan/terraform-provider-openapi/utils/terraform_docs_generator/openapi_terraform_docs_generator"
+	"github.com/dikhan/terraform-provider-openapi/utils/terraformdocsgenerator/openapiterraformdocsgenerator"
 	"log"
 	"os"
 )
 
 func main() {
-	terraformProviderDocGenerator, err := openapi_terraform_docs_generator.NewTerraformProviderDocGenerator("openapi", "https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/examples/swaggercodegen/api/resources/swagger.yaml")
+	terraformProviderDocGenerator, err := openapiterraformdocsgenerator.NewTerraformProviderDocGenerator("openapi", "https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/examples/swaggercodegen/api/resources/swagger.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}

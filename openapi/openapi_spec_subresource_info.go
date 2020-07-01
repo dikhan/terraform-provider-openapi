@@ -21,6 +21,7 @@ func (info *ParentResourceInfo) GetParentPropertiesNames() []string {
 	return parentPropertyNames
 }
 
+// SetParentResourceNames sets the resource parent names
 func (info *ParentResourceInfo) SetParentResourceNames(parentResourceNames []string) {
 	info.parentResourceNames = parentResourceNames
 }

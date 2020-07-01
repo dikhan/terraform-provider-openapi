@@ -1,4 +1,4 @@
-package openapi_terraform_docs_generator
+package openapiterraformdocsgenerator
 
 // ProviderResources defines the resources exposed by the Terraform provider
 type ProviderResources struct {
@@ -7,6 +7,7 @@ type ProviderResources struct {
 	Resources    []Resource
 }
 
+// ContainsResourcesWithSecretProperties checks if the provider exposes resources containing secret properties
 func (r ProviderResources) ContainsResourcesWithSecretProperties() bool {
 	for _, resource := range r.Resources {
 		for _, prop := range resource.Properties {
@@ -28,6 +29,7 @@ type Resource struct {
 	ArgumentsReference ArgumentsReference
 }
 
+// BuildImportIDsExample creates a string containing the import id hierarchy in case the resource is a sub-resource
 func (r Resource) BuildImportIDsExample() string {
 	if r.ParentProperties == nil {
 		return "id"

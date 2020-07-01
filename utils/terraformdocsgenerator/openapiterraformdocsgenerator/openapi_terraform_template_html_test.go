@@ -1,4 +1,4 @@
-package openapi_terraform_docs_generator
+package openapiterraformdocsgenerator
 
 import (
 	"bytes"
@@ -254,9 +254,9 @@ func TestProviderResourcesTmpl(t *testing.T) {
 				Description: "The 'cdn' allows you to manage 'cdn' resources using Terraform",
 				Properties: []Property{
 					// Arguments
-					Property{Name: "object_prop", Type: "object", Description: "this is an object property", Required: true, Schema: []Property{{Name: "objectPropertyRequired", Type: "string", Required: true}, {Name: "objectPropertyComputed", Type: "string", Computed: true}}},
+					{Name: "object_prop", Type: "object", Description: "this is an object property", Required: true, Schema: []Property{{Name: "objectPropertyRequired", Type: "string", Required: true}, {Name: "objectPropertyComputed", Type: "string", Computed: true}}},
 					// Attributes
-					Property{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
+					{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
 				},
 				ParentProperties: []string{"parent_id"},
 				ArgumentsReference: ArgumentsReference{
@@ -324,7 +324,7 @@ func TestProviderResourcesTmpl(t *testing.T) {
 
  `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
-	fmt.Println(buf.String())
+	//fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 
@@ -338,7 +338,7 @@ func TestProviderResourcesTmpl_NoResources(t *testing.T) {
 
 No resources are supported at the moment. `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
-	fmt.Println(buf.String())
+	//fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 
@@ -350,7 +350,7 @@ func TestDataSourcesTmpl(t *testing.T) {
 				Name:         "cdn_instance",
 				OtherExample: "",
 				Properties: []Property{
-					Property{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
+					{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
 				},
 			},
 		},
@@ -359,7 +359,7 @@ func TestDataSourcesTmpl(t *testing.T) {
 				Name:         "cdn",
 				OtherExample: "",
 				Properties: []Property{
-					Property{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
+					{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
 				},
 			},
 		},
@@ -430,7 +430,7 @@ func TestDataSourcesTmpl(t *testing.T) {
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p> `
 	var output bytes.Buffer
 	renderTest(t, &output, DataSourcesTmpl, DataSourcesTmpl, dataSource, "TestDataSourcesTmpl")
-	fmt.Println(strings.Trim(output.String(), "\n"))
+	//fmt.Println(strings.Trim(output.String(), "\n"))
 	assert.Equal(t, expectedHTML, strings.Trim(output.String(), "\n"))
 }
 
@@ -448,7 +448,7 @@ No data sources using resource id are supported at the moment.
 No data sources using filters are supported at the moment. `
 	var output bytes.Buffer
 	renderTest(t, &output, DataSourcesTmpl, DataSourcesTmpl, dataSource, "TestDataSourcesTmpl")
-	fmt.Println(strings.Trim(output.String(), "\n"))
+	//fmt.Println(strings.Trim(output.String(), "\n"))
 	assert.Equal(t, expectedHTML, strings.Trim(output.String(), "\n"))
 }
 

@@ -1,4 +1,4 @@
-package openapi_terraform_docs_generator
+package openapiterraformdocsgenerator
 
 // DataSources defines the data sources and data source instances exposed by the Terraform provider
 type DataSources struct {

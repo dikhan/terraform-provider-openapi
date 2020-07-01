@@ -1,4 +1,4 @@
-package openapi_terraform_docs_generator
+package openapiterraformdocsgenerator
 
 // ProviderConfiguration defines the details needed to properly configure the Terraform provider
 type ProviderConfiguration struct {

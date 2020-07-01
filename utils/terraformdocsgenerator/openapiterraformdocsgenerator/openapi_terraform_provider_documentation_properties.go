@@ -1,4 +1,4 @@
-package openapi_terraform_docs_generator
+package openapiterraformdocsgenerator
 
 // Property defines the attributes for describing a given property for a resource
 type Property struct {
