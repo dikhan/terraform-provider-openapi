@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	terraformProviderDocGenerator, err := openapi_terraform_docs_generator.NewTerraformProviderDocGenerator("openapi", "")
+	terraformProviderDocGenerator, err := openapi_terraform_docs_generator.NewTerraformProviderDocGenerator("openapi", "https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/examples/swaggercodegen/api/resources/swagger.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
