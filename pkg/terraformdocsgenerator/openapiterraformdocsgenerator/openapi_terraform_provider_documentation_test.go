@@ -85,8 +85,8 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 ➜ ~ terraform init &amp;&amp; terraform plan
 </pre>
 <h2 id="provider_resources">Provider Resources</h2>
-
-No resources are supported at the moment. <h2 id="provider_datasources">Data Sources (using resource id)</h2>
+	
+<p>No resources are supported at the moment.</p> <h2 id="provider_datasources">Data Sources (using resource id)</h2>
 
 No data sources using resource id are supported at the moment. 
 
