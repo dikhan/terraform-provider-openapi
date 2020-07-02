@@ -13,7 +13,8 @@ import (
 func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 	providerName := "openapi"
 	terraformProviderDocumentation := TerraformProviderDocumentation{
-		ProviderName: providerName,
+		ProviderName:  providerName,
+		ProviderNotes: []string{"provider custom note 1", "provider custom note 2"},
 		ProviderInstallation: ProviderInstallation{
 			ProviderName: providerName,
 		},
@@ -37,6 +38,8 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
   resources that can be managed using
   <a href="https://www.hashicorp.com/blog/announcing-terraform-0-12/" target="_self">Terraform v0.12</a>.&nbsp;
 </p>
+<p><span class="wysiwyg-color-red">*Note: provider custom note 1</span></p>
+<p><span class="wysiwyg-color-red">*Note: provider custom note 2</span></p>
 <ul>
   <li>
     <a href="#provider_installation" target="_self">Provider Installation</a>

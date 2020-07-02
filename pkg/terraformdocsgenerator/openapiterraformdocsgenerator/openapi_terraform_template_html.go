@@ -8,6 +8,11 @@ var TableOfContentsTmpl = `<p dir="ltr">
   resources that can be managed using
   <a href="https://www.hashicorp.com/blog/announcing-terraform-0-12/" target="_self">Terraform v0.12</a>.&nbsp;
 </p>
+{{- if .ProviderNotes}}
+{{range .ProviderNotes -}}
+	<p><span class="wysiwyg-color-red">*Note: {{.}}</span></p>
+{{end}}
+{{- end -}}
 <ul>
   <li>
     <a href="#provider_installation" target="_self">Provider Installation</a>
