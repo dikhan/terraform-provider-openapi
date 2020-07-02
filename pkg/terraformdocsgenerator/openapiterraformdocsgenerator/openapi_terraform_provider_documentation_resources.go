@@ -47,6 +47,7 @@ func (r Resource) BuildImportIDsExample() string {
 
 // ExampleUsage defines a block of code/commands to include in the docs
 type ExampleUsage struct {
+	Title   string
 	Example string
 }
 

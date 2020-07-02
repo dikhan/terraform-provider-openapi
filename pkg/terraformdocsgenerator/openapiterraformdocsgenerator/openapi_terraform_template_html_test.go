@@ -246,12 +246,30 @@ func TestProviderConfigurationTmpl(t *testing.T) {
 }
 
 func TestProviderResourcesTmpl(t *testing.T) {
+	example1 := `
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
+}`
+	example2 := `
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
+}`
 	r := ProviderResources{
 		ProviderName: "openapi",
 		Resources: []Resource{
 			{
 				Name:        "cdn",
 				Description: "The 'cdn' allows you to manage 'cdn' resources using Terraform",
+				ExampleUsage: []ExampleUsage{
+					{
+						Title:   "example title 1:",
+						Example: example1,
+					},
+					{
+						Title:   "example title 2",
+						Example: example2,
+					},
+				},
 				Properties: []Property{
 					// Arguments
 					{Name: "object_prop", Type: "object", Description: "this is an object property", Required: true, Schema: []Property{{Name: "objectPropertyRequired", Type: "string", Required: true}, {Name: "objectPropertyComputed", Type: "string", Computed: true}}},
@@ -267,17 +285,20 @@ func TestProviderResourcesTmpl(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
-
-    <h3 id="cdn" dir="ltr">openapi_cdn</h3><p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform</p>
-    <h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
+	
+<h3 id="cdn" dir="ltr">openapi_cdn</h3><p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform</p>
+<h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
+<p>example title 1:</p>
 <pre>
-<span>resource </span><span>"openapi_cdn" "my_cdn"</span>{
-    <span>object_prop  </span><span>{</span>
-                
-    <span>objectPropertyRequired  </span>= <span>"objectPropertyRequired"</span>
-                
-            <span>}</span>
-<span>}</span>
+resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
+  label    = &#34;some label&#34;
+}
+</pre>
+<p>example title 2</p>
+<pre>
+resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
+  label    = &#34;some label&#34;
+}
 </pre>
 <h4 id="resource_cdn_arguments_reference" dir="ltr">Arguments Reference</h4>
 <p dir="ltr">The following arguments are supported:</p>
@@ -324,7 +345,7 @@ func TestProviderResourcesTmpl(t *testing.T) {
 
  `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
-	//fmt.Println(buf.String())
+	fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 

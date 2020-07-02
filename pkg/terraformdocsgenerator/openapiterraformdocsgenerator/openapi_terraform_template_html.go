@@ -169,23 +169,24 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 %s
 
 <h2 id="provider_resources">Provider Resources</h2>
-{{if not .Resources}}
-No resources are supported at the moment.
-{{- end -}}
+	{{if not .Resources}}
+<p>No resources are supported at the moment.</p>
+	{{- end -}}
 {{range .Resources -}}
-    {{ $resource := . }}
-    <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
-    {{- if ne .Description "" -}}
-        <p>{{.Description}}</p>
-    {{- end}}
-    <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
-{{- if .ExampleUsage}}
-	{{- range .ExampleUsage -}}
-		<pre>
-{{.Example}}
-		</pre>
+	{{ $resource := . }}
+<h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
+	{{- if ne .Description "" -}}
+<p>{{.Description}}</p>
 	{{- end}}
-{{else}}
+<h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
+	{{- if .ExampleUsage}}
+		{{- range .ExampleUsage}}
+<p>{{.Title}}</p>
+<pre>
+{{- .Example}}
+</pre>
+		{{- end}}
+	{{- else}}
 <pre>
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
 {{- range $resource.Properties -}}
