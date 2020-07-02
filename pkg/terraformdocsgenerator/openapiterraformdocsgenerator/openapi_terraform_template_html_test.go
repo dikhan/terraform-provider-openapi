@@ -280,13 +280,33 @@ resource "openapi_cdn" "my_cdn" {
 				ArgumentsReference: ArgumentsReference{
 					Notes: []string{"Sample note"},
 				},
+				KnownIssues: []KnownIssue{
+					{
+						Title:       "Known Issue 1",
+						Description: "Description of known issue 1.",
+						Examples: []ExampleUsage{
+							{Title: "Example of fix for known issue 1:", Example: "known issue 1 example code"},
+							{Title: "Another example of fix for known issue 1:", Example: "known 1 issue example code"},
+						},
+					},
+					{
+						Title:       "Known Issue 2",
+						Description: "Description of known issue 2.",
+						Examples: []ExampleUsage{
+							{Title: "Example of fix for known issue 2:", Example: "known issue 2 example code"},
+							{Title: "Another example of fix for known issue 2:", Example: "known issue 2 example code"},
+						},
+					},
+				},
 			},
 		},
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
 	
-<h3 id="cdn" dir="ltr">openapi_cdn</h3><p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform</p>
+<h3 id="cdn" dir="ltr">openapi_cdn</h3>
+<p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform</p>
+<p>If you experience any issues using this resource, please check the <a href="#resource_cdn_known_issues" target="_self">Known Issues</a> section to see if there is a fix/workaround.</p>
 <h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
 <p>example title 1:</p>
 <pre>
@@ -342,7 +362,23 @@ resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
     <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
 </p>
-
+	
+<h4 id="resource_cdn_known_issues" dir="ltr">Known Issues</h4>
+		
+<p><i>Known Issue 1</i></p>
+<p>Description of known issue 1.</p>
+<p>Example of fix for known issue 1:</p>
+<pre>known issue 1 example code</pre>
+<p>Another example of fix for known issue 1:</p>
+<pre>known 1 issue example code</pre>
+		
+<p><i>Known Issue 2</i></p>
+<p>Description of known issue 2.</p>
+<p>Example of fix for known issue 2:</p>
+<pre>known issue 2 example code</pre>
+<p>Another example of fix for known issue 2:</p>
+<pre>known issue 2 example code</pre>
+		
  `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
 	fmt.Println(buf.String())

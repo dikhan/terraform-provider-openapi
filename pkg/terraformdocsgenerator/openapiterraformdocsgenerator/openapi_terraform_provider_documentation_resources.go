@@ -27,6 +27,7 @@ type Resource struct {
 	ParentProperties   []string
 	ExampleUsage       []ExampleUsage
 	ArgumentsReference ArgumentsReference
+	KnownIssues        []KnownIssue
 }
 
 // BuildImportIDsExample creates a string containing the import id hierarchy in case the resource is a sub-resource
@@ -61,4 +62,11 @@ type AttributesReference struct {
 	Description string
 	Properties  []Property
 	Notes       []string
+}
+
+// KnownIssue defines any known issues associated with a resource
+type KnownIssue struct {
+	Title       string
+	Description string
+	Examples    []ExampleUsage
 }

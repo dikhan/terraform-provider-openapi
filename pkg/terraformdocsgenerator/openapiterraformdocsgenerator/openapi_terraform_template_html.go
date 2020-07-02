@@ -175,9 +175,12 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 {{range .Resources -}}
 	{{ $resource := . }}
 <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
-	{{- if ne .Description "" -}}
+{{if ne .Description "" -}}
 <p>{{.Description}}</p>
-	{{- end}}
+{{- end}}
+{{- if .KnownIssues}}
+<p>If you experience any issues using this resource, please check the <a href="#resource_{{.Name}}_known_issues" target="_self">Known Issues</a> section to see if there is a fix/workaround.</p>
+{{end -}}
 <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 	{{- if .ExampleUsage}}
 		{{- range .ExampleUsage}}
@@ -245,7 +248,17 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
     <strong>Note</strong>: In order for the import to work, the '{{$.ProviderName}}' terraform
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
 </p>
-
+	{{if .KnownIssues}}
+<h4 id="resource_{{.Name}}_known_issues" dir="ltr">Known Issues</h4>
+		{{range .KnownIssues}}
+<p><i>{{.Title}}</i></p>
+<p>{{.Description}}</p>
+			{{- range .Examples}}
+<p>{{.Title}}</p>
+<pre>{{.Example}}</pre>
+			{{- end}}
+		{{end}}
+	{{- end}}
 {{end}} {{/* END range .Resources */}}`, ArgumentReferenceTmpl, AttributeReferenceTmpl)
 
 // ArgumentReferenceTmpl contains the definition used in resources to render the arguments
