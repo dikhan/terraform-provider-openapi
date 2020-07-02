@@ -14,7 +14,7 @@ The main.go file is configured with a [sample swagger file]("https://raw.githubu
 $ go run main.go
 ````
 
-The program will generate the Terraform documentation (in html format) for the sample swagger file and save the output locally. An example of the output: [](https://github.com/dikhan/terraform-provider-openapi/pkg/terraformdocsgenerator/example_provider_documentation_output.html).
+The program will generate the Terraform documentation (in html format) for the sample swagger file and save the output locally. An example of the output: [example_provider_documentation_output.html](https://github.com/dikhan/terraform-provider-openapi/blob/master/pkg/terraformdocsgenerator/example_provider_documentation_output.html).
 
 ## Customizing the output documentation
 You can customize sections of the documentation by overriding the default content used by `GenerateDocumentation()` before calling `RenderHTML()`.
