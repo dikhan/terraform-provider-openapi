@@ -380,7 +380,7 @@ resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
 		
  `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
-	fmt.Println(buf.String())
+	//fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 
