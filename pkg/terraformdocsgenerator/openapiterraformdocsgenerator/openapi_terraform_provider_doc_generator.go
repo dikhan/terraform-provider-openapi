@@ -67,7 +67,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 				"[INFO] Cleaning up tmp dir created for installation purposes: /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh<br>"+
 				"[INFO] Terraform provider 'terraform-provider-%s' successfully installed at: '~/.terraform.d/plugins'!", t.ProviderName, t.ProviderName),
 			Other:        "You can then start running the Terraform provider:",
-			OtherCommand: fmt.Sprintf("$ export OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE=\"https://api.service.com/openapi.yaml\"<br>", t.ProviderName),
+			OtherCommand: fmt.Sprintf(`$ export OTF_VAR_%s_PLUGIN_CONFIGURATION_FILE="https://api.service.com/openapi.yaml"<br>`, t.ProviderName),
 		},
 		ProviderConfiguration: ProviderConfiguration{
 			ProviderName:     t.ProviderName,

@@ -357,7 +357,7 @@ resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
 <p dir="ltr">
     cdn resources can be imported using the&nbsp;<code>id</code> . This is a sub-resource so the parent resource IDs (<code>[parent_id]</code>) are required to be able to retrieve an instance of this resource, e.g:
 </p>
-<pre dir="ltr">$ terraform import cdn.my_cdn parent_id/cdn_id</pre>
+<pre dir="ltr">$ terraform import openapi_cdn.my_cdn parent_id/cdn_id</pre>
 <p dir="ltr">
     <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.

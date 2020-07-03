@@ -243,7 +243,7 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 <p dir="ltr">
     {{.Name}} resources can be imported using the&nbsp;<code>id</code> {{if ne $resource.BuildImportIDsExample "id"}}. This is a sub-resource so the parent resource IDs (<code>{{$resource.ParentProperties}}</code>) are required to be able to retrieve an instance of this resource{{end}}, e.g:
 </p>
-<pre dir="ltr">$ terraform import {{.Name}}.my_{{.Name}} {{$resource.BuildImportIDsExample}}</pre>
+<pre dir="ltr">$ terraform import {{$.ProviderName}}_{{.Name}}.my_{{.Name}} {{$resource.BuildImportIDsExample}}</pre>
 <p dir="ltr">
     <strong>Note</strong>: In order for the import to work, the '{{$.ProviderName}}' terraform
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
