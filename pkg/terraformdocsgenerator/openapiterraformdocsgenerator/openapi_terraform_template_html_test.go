@@ -266,7 +266,7 @@ resource "openapi_cdn" "my_cdn" {
 						Example: example1,
 					},
 					{
-						Title:   "example title 2",
+						//Title:   "", (example with no title)
 						Example: example2,
 					},
 				},
@@ -314,7 +314,6 @@ resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
   label    = &#34;some label&#34;
 }
 </pre>
-<p>example title 2</p>
 <pre>
 resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
   label    = &#34;some label&#34;
@@ -381,7 +380,7 @@ resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
 		
  `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
-	//fmt.Println(buf.String())
+	fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 

@@ -184,7 +184,9 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 	{{- if .ExampleUsage}}
 		{{- range .ExampleUsage}}
+			{{- if .Title}}
 <p>{{.Title}}</p>
+			{{- end}}
 <pre>
 {{- .Example}}
 </pre>
@@ -254,7 +256,9 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 <p><i>{{.Title}}</i></p>
 <p>{{.Description}}</p>
 			{{- range .Examples}}
+				{{- if .Title}}
 <p>{{.Title}}</p>
+				{{- end}}
 <pre>{{.Example}}</pre>
 			{{- end}}
 		{{end}}
