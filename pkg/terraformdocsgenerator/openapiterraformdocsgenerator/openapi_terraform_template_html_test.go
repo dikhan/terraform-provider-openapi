@@ -381,7 +381,7 @@ resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
 		
  `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
-	fmt.Println(buf.String())
+	//fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }
 
@@ -392,8 +392,8 @@ func TestProviderResourcesTmpl_NoResources(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
-
-No resources are supported at the moment. `
+	
+<p>No resources are supported at the moment.</p> `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
 	//fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
@@ -491,7 +491,7 @@ func TestDataSourcesTmpl(t *testing.T) {
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p> `
 	var output bytes.Buffer
 	renderTest(t, &output, DataSourcesTmpl, DataSourcesTmpl, dataSource, "TestDataSourcesTmpl")
-	fmt.Println(strings.Trim(output.String(), "\n"))
+	//fmt.Println(strings.Trim(output.String(), "\n"))
 	assert.Equal(t, expectedHTML, strings.Trim(output.String(), "\n"))
 }
 
