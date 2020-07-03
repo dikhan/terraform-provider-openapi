@@ -405,6 +405,7 @@ func TestDataSourcesTmpl(t *testing.T) {
 		DataSourceInstances: []DataSource{
 			{
 				Name:         "cdn_instance",
+				Description:  "Custom description for the cdn_instance data source.",
 				OtherExample: "",
 				Properties: []Property{
 					{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
@@ -414,6 +415,7 @@ func TestDataSourcesTmpl(t *testing.T) {
 		DataSources: []DataSource{
 			{
 				Name:         "cdn",
+				Description:  "", // Use the default description in the template
 				OtherExample: "",
 				Properties: []Property{
 					{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
@@ -424,7 +426,8 @@ func TestDataSourcesTmpl(t *testing.T) {
 	expectedHTML := `<h2 id="provider_datasources">Data Sources (using resource id)</h2>
 
     <h3 id="cdn_instance" dir="ltr">openapi_cdn_instance</h3>
-    <p>Retrieve an existing resource using it's ID</p>
+	<p>Custom description for the cdn_instance data source.</p>
+	
     <h4 id="datasource_cdn_instance_example_usage" dir="ltr">Example usage</h4>
 <pre><span>data </span><span>"openapi_cdn_instance" "my_cdn_instance"</span>{
     id = "existing_resource_id"
@@ -448,8 +451,9 @@ func TestDataSourcesTmpl(t *testing.T) {
 
 <h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
 
-    <h3 id="cdn_datasource" dir="ltr">openapi_cdn (filters)</h3>
-    <p>The cdn data source allows you to retrieve an already existing cdn resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
+	<h3 id="cdn_datasource" dir="ltr">openapi_cdn (filters)</h3>
+	
+	<p>The cdn data source allows you to retrieve an already existing cdn resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
     <h4 id="datasource_cdn_example_usage" dir="ltr">Example usage</h4>
     <pre>
 <span>data </span><span>"openapi_cdn" "my_cdn"</span>{
@@ -487,7 +491,7 @@ func TestDataSourcesTmpl(t *testing.T) {
     <p><span class="wysiwyg-color-red">* </span>Note: Object type properties are internally represented (in the state file) as a list of one elem due to <a href="https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737" target="_blank">Terraform SDK's limitation for supporting complex object types</a>. Please index on the first elem of the array to reference the object values (eg: openapi_cdn.my_cdn.<b>computed_object_prop[0]</b>.object_property)</p> `
 	var output bytes.Buffer
 	renderTest(t, &output, DataSourcesTmpl, DataSourcesTmpl, dataSource, "TestDataSourcesTmpl")
-	//fmt.Println(strings.Trim(output.String(), "\n"))
+	fmt.Println(strings.Trim(output.String(), "\n"))
 	assert.Equal(t, expectedHTML, strings.Trim(output.String(), "\n"))
 }
 

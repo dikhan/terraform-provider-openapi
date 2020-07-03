@@ -308,7 +308,11 @@ No data sources using resource id are supported at the moment.
 {{range .DataSourceInstances -}}
     {{ $datasource := . }}
     <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
-    <p>Retrieve an existing resource using it's ID</p>
+	{{if ne .Description "" -}}
+	<p>{{.Description}}</p>
+	{{else}}
+	<p>Retrieve an existing resource using it's ID</p>
+	{{- end}}
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 <pre><span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
     id = "existing_resource_id"
@@ -344,8 +348,12 @@ No data sources using filters are supported at the moment.
 {{- end -}}
 {{range .DataSources -}}
     {{ $datasource := . }}
-    <h3 id="{{.Name}}_datasource" dir="ltr">{{$.ProviderName}}_{{.Name}} (filters)</h3>
-    <p>The {{.Name}} data source allows you to retrieve an already existing {{.Name}} resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
+	<h3 id="{{.Name}}_datasource" dir="ltr">{{$.ProviderName}}_{{.Name}} (filters)</h3>
+	{{if ne .Description "" -}}
+	<p>{{.Description}}</p>
+	{{else}}
+	<p>The {{.Name}} data source allows you to retrieve an already existing {{.Name}} resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
+	{{- end}}
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
     <pre>
 <span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{

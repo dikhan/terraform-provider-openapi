@@ -11,6 +11,7 @@ type DataSources struct {
 // DataSource defines the attributes to generate documentation for a Terraform provider data source
 type DataSource struct {
 	Name         string
+	Description  string
 	OtherExample string
 	Properties   []Property
 }
