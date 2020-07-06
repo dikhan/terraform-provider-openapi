@@ -22,7 +22,7 @@ func TestRender(t *testing.T) {
 		{
 			name:          "forcing error when executing template",
 			template:      `{{template "not_existing" .}}`,
-			expectedError: "no such template",
+			expectedError: `template "not_existing" not defined`,
 		},
 		{
 			name:          "forcing error when parsing template",
