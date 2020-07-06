@@ -1,6 +1,6 @@
 ## What problem does this Pull Request solve?
 
-Please link to the issue number here: # 
+Please link to the issue number here (issue will be closed when PR is merged): Closes # 
                                                               
 *If you don't have an issue created, please create the issue first describing the problem and then open the PR*
 
