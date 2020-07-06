@@ -1,8 +1,8 @@
 package openapiterraformdocsgenerator
 
 import (
-	"html/template"
 	"io"
+	"text/template"
 )
 
 func render(w io.Writer, templateName string, templateContent string, data interface{}) error {

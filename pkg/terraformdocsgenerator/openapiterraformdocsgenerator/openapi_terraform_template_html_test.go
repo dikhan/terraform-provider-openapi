@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"html/template"
 	"io"
 	"strings"
 	"testing"
+	"text/template"
 )
 
 func TestArgumentReferenceTmpl(t *testing.T) {
@@ -246,12 +246,30 @@ func TestProviderConfigurationTmpl(t *testing.T) {
 }
 
 func TestProviderResourcesTmpl(t *testing.T) {
+	example1 := `
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
+}`
+	example2 := `
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
+}`
 	r := ProviderResources{
 		ProviderName: "openapi",
 		Resources: []Resource{
 			{
 				Name:        "cdn",
 				Description: "The 'cdn' allows you to manage 'cdn' resources using Terraform",
+				ExampleUsage: []ExampleUsage{
+					{
+						Title:   "example title 1:",
+						Example: example1,
+					},
+					{
+						//Title:   "", (example with no title)
+						Example: example2,
+					},
+				},
 				Properties: []Property{
 					// Arguments
 					{Name: "object_prop", Type: "object", Description: "this is an object property", Required: true, Schema: []Property{{Name: "objectPropertyRequired", Type: "string", Required: true}, {Name: "objectPropertyComputed", Type: "string", Computed: true}}},
@@ -262,22 +280,44 @@ func TestProviderResourcesTmpl(t *testing.T) {
 				ArgumentsReference: ArgumentsReference{
 					Notes: []string{"Sample note"},
 				},
+				KnownIssues: []KnownIssue{
+					{
+						Title:       "Known Issue 1",
+						Description: "Description of known issue 1.",
+						Examples: []ExampleUsage{
+							{Title: "Example of fix for known issue 1:", Example: "known issue 1 example code"},
+							{Title: "Another example of fix for known issue 1:", Example: "known 1 issue example code"},
+						},
+					},
+					{
+						Title:       "Known Issue 2",
+						Description: "Description of known issue 2.",
+						Examples: []ExampleUsage{
+							{Title: "Example of fix for known issue 2:", Example: "known issue 2 example code"},
+							{Title: "Another example of fix for known issue 2:", Example: "known issue 2 example code"},
+						},
+					},
+				},
 			},
 		},
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
-
-    <h3 id="cdn" dir="ltr">openapi_cdn</h3><p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform</p>
-    <h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
+	
+<h3 id="cdn" dir="ltr">openapi_cdn</h3>
+<p>The 'cdn' allows you to manage 'cdn' resources using Terraform</p>
+<p>If you experience any issues using this resource, please check the <a href="#resource_cdn_known_issues" target="_self">Known Issues</a> section to see if there is a fix/workaround.</p>
+<h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
+<p>example title 1:</p>
 <pre>
-<span>resource </span><span>"openapi_cdn" "my_cdn"</span>{
-    <span>object_prop  </span><span>{</span>
-                
-    <span>objectPropertyRequired  </span>= <span>"objectPropertyRequired"</span>
-                
-            <span>}</span>
-<span>}</span>
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
+}
+</pre>
+<pre>
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
+}
 </pre>
 <h4 id="resource_cdn_arguments_reference" dir="ltr">Arguments Reference</h4>
 <p dir="ltr">The following arguments are supported:</p>
@@ -316,12 +356,28 @@ func TestProviderResourcesTmpl(t *testing.T) {
 <p dir="ltr">
     cdn resources can be imported using the&nbsp;<code>id</code> . This is a sub-resource so the parent resource IDs (<code>[parent_id]</code>) are required to be able to retrieve an instance of this resource, e.g:
 </p>
-<pre dir="ltr">$ terraform import cdn.my_cdn parent_id/cdn_id</pre>
+<pre dir="ltr">$ terraform import openapi_cdn.my_cdn parent_id/cdn_id</pre>
 <p dir="ltr">
     <strong>Note</strong>: In order for the import to work, the 'openapi' terraform
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
 </p>
-
+	
+<h4 id="resource_cdn_known_issues" dir="ltr">Known Issues</h4>
+		
+<p><i>Known Issue 1</i></p>
+<p>Description of known issue 1.</p>
+<p>Example of fix for known issue 1:</p>
+<pre>known issue 1 example code</pre>
+<p>Another example of fix for known issue 1:</p>
+<pre>known 1 issue example code</pre>
+		
+<p><i>Known Issue 2</i></p>
+<p>Description of known issue 2.</p>
+<p>Example of fix for known issue 2:</p>
+<pre>known issue 2 example code</pre>
+<p>Another example of fix for known issue 2:</p>
+<pre>known issue 2 example code</pre>
+		
  `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
 	//fmt.Println(buf.String())
@@ -335,8 +391,8 @@ func TestProviderResourcesTmpl_NoResources(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
-
-No resources are supported at the moment. `
+	
+<p>No resources are supported at the moment.</p> `
 	renderTest(t, &buf, "ProviderResources", ProviderResourcesTmpl, r, "TestProviderResourcesTmpl")
 	//fmt.Println(buf.String())
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
@@ -348,6 +404,7 @@ func TestDataSourcesTmpl(t *testing.T) {
 		DataSourceInstances: []DataSource{
 			{
 				Name:         "cdn_instance",
+				Description:  "Custom description for the cdn_instance data source.",
 				OtherExample: "",
 				Properties: []Property{
 					{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
@@ -357,6 +414,7 @@ func TestDataSourcesTmpl(t *testing.T) {
 		DataSources: []DataSource{
 			{
 				Name:         "cdn",
+				Description:  "", // Use the default description in the template
 				OtherExample: "",
 				Properties: []Property{
 					{Name: "computed_object_prop", Type: "object", Description: "this is an object property", Computed: true, Schema: []Property{{Name: "objectPropertyComputed", Type: "string", Computed: true}}},
@@ -367,7 +425,8 @@ func TestDataSourcesTmpl(t *testing.T) {
 	expectedHTML := `<h2 id="provider_datasources">Data Sources (using resource id)</h2>
 
     <h3 id="cdn_instance" dir="ltr">openapi_cdn_instance</h3>
-    <p>Retrieve an existing resource using it's ID</p>
+	<p>Custom description for the cdn_instance data source.</p>
+	
     <h4 id="datasource_cdn_instance_example_usage" dir="ltr">Example usage</h4>
 <pre><span>data </span><span>"openapi_cdn_instance" "my_cdn_instance"</span>{
     id = "existing_resource_id"
@@ -391,8 +450,9 @@ func TestDataSourcesTmpl(t *testing.T) {
 
 <h2 id="provider_datasources_filters">Data Sources (using filters)</h2>
 
-    <h3 id="cdn_datasource" dir="ltr">openapi_cdn (filters)</h3>
-    <p>The cdn data source allows you to retrieve an already existing cdn resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
+	<h3 id="cdn_datasource" dir="ltr">openapi_cdn (filters)</h3>
+	
+	<p>The cdn data source allows you to retrieve an already existing cdn resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
     <h4 id="datasource_cdn_example_usage" dir="ltr">Example usage</h4>
     <pre>
 <span>data </span><span>"openapi_cdn" "my_cdn"</span>{

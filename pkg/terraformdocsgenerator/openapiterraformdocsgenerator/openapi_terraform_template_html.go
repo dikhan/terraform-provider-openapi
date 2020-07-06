@@ -8,6 +8,11 @@ var TableOfContentsTmpl = `<p dir="ltr">
   resources that can be managed using
   <a href="https://www.hashicorp.com/blog/announcing-terraform-0-12/" target="_self">Terraform v0.12</a>.&nbsp;
 </p>
+{{- if .ProviderNotes}}
+{{range .ProviderNotes -}}
+	<p><span class="wysiwyg-color-red">*Note: {{.}}</span></p>
+{{end}}
+{{- end -}}
 <ul>
   <li>
     <a href="#provider_installation" target="_self">Provider Installation</a>
@@ -164,23 +169,29 @@ var ProviderResourcesTmpl = fmt.Sprintf(`{{define "resource_example"}}
 %s
 
 <h2 id="provider_resources">Provider Resources</h2>
-{{if not .Resources}}
-No resources are supported at the moment.
-{{- end -}}
+	{{if not .Resources}}
+<p>No resources are supported at the moment.</p>
+	{{- end -}}
 {{range .Resources -}}
-    {{ $resource := . }}
-    <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
-    {{- if ne .Description "" -}}
-        <p>{{.Description}}</p>
-    {{- end}}
-    <h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
-{{- if .ExampleUsage}}
-	{{- range .ExampleUsage -}}
-		<pre>
-{{.Example}}
-		</pre>
-	{{- end}}
-{{else}}
+	{{ $resource := . }}
+<h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
+{{if ne .Description "" -}}
+<p>{{.Description}}</p>
+{{- end}}
+{{- if .KnownIssues}}
+<p>If you experience any issues using this resource, please check the <a href="#resource_{{.Name}}_known_issues" target="_self">Known Issues</a> section to see if there is a fix/workaround.</p>
+{{end -}}
+<h4 id="resource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
+	{{- if .ExampleUsage}}
+		{{- range .ExampleUsage}}
+			{{- if .Title}}
+<p>{{.Title}}</p>
+			{{- end}}
+<pre>
+{{- .Example}}
+</pre>
+		{{- end}}
+	{{- else}}
 <pre>
 <span>resource </span><span>"{{$.ProviderName}}_{{$resource.Name}}" "my_{{$resource.Name}}"</span>{
 {{- range $resource.Properties -}}
@@ -234,12 +245,24 @@ No resources are supported at the moment.
 <p dir="ltr">
     {{.Name}} resources can be imported using the&nbsp;<code>id</code> {{if ne $resource.BuildImportIDsExample "id"}}. This is a sub-resource so the parent resource IDs (<code>{{$resource.ParentProperties}}</code>) are required to be able to retrieve an instance of this resource{{end}}, e.g:
 </p>
-<pre dir="ltr">$ terraform import {{.Name}}.my_{{.Name}} {{$resource.BuildImportIDsExample}}</pre>
+<pre dir="ltr">$ terraform import {{$.ProviderName}}_{{.Name}}.my_{{.Name}} {{$resource.BuildImportIDsExample}}</pre>
 <p dir="ltr">
     <strong>Note</strong>: In order for the import to work, the '{{$.ProviderName}}' terraform
     provider must be&nbsp;<a href="#provider_installation" target="_self">properly installed</a>. Read more about Terraform import usage&nbsp;<a href="https://www.terraform.io/docs/import/usage.html" target="_blank" rel="noopener noreferrer">here</a>.
 </p>
-
+	{{if .KnownIssues}}
+<h4 id="resource_{{.Name}}_known_issues" dir="ltr">Known Issues</h4>
+		{{range .KnownIssues}}
+<p><i>{{.Title}}</i></p>
+<p>{{.Description}}</p>
+			{{- range .Examples}}
+				{{- if .Title}}
+<p>{{.Title}}</p>
+				{{- end}}
+<pre>{{.Example}}</pre>
+			{{- end}}
+		{{end}}
+	{{- end}}
 {{end}} {{/* END range .Resources */}}`, ArgumentReferenceTmpl, AttributeReferenceTmpl)
 
 // ArgumentReferenceTmpl contains the definition used in resources to render the arguments
@@ -289,7 +312,11 @@ No data sources using resource id are supported at the moment.
 {{range .DataSourceInstances -}}
     {{ $datasource := . }}
     <h3 id="{{.Name}}" dir="ltr">{{$.ProviderName}}_{{.Name}}</h3>
-    <p>Retrieve an existing resource using it's ID</p>
+	{{if ne .Description "" -}}
+	<p>{{.Description}}</p>
+	{{else}}
+	<p>Retrieve an existing resource using it's ID</p>
+	{{- end}}
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
 <pre><span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{
     id = "existing_resource_id"
@@ -325,8 +352,12 @@ No data sources using filters are supported at the moment.
 {{- end -}}
 {{range .DataSources -}}
     {{ $datasource := . }}
-    <h3 id="{{.Name}}_datasource" dir="ltr">{{$.ProviderName}}_{{.Name}} (filters)</h3>
-    <p>The {{.Name}} data source allows you to retrieve an already existing {{.Name}} resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
+	<h3 id="{{.Name}}_datasource" dir="ltr">{{$.ProviderName}}_{{.Name}} (filters)</h3>
+	{{if ne .Description "" -}}
+	<p>{{.Description}}</p>
+	{{else}}
+	<p>The {{.Name}} data source allows you to retrieve an already existing {{.Name}} resource using filters. Refer to the arguments section to learn more about how to configure the filters.</p>
+	{{- end}}
     <h4 id="datasource_{{.Name}}_example_usage" dir="ltr">Example usage</h4>
     <pre>
 <span>data </span><span>"{{$.ProviderName}}_{{$datasource.Name}}" "my_{{$datasource.Name}}"</span>{

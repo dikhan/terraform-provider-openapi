@@ -13,7 +13,8 @@ import (
 func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 	providerName := "openapi"
 	terraformProviderDocumentation := TerraformProviderDocumentation{
-		ProviderName: providerName,
+		ProviderName:  providerName,
+		ProviderNotes: []string{"provider custom note 1", "provider custom note 2"},
 		ProviderInstallation: ProviderInstallation{
 			ProviderName: providerName,
 		},
@@ -37,6 +38,8 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
   resources that can be managed using
   <a href="https://www.hashicorp.com/blog/announcing-terraform-0-12/" target="_self">Terraform v0.12</a>.&nbsp;
 </p>
+<p><span class="wysiwyg-color-red">*Note: provider custom note 1</span></p>
+<p><span class="wysiwyg-color-red">*Note: provider custom note 2</span></p>
 <ul>
   <li>
     <a href="#provider_installation" target="_self">Provider Installation</a>
@@ -82,8 +85,8 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 ➜ ~ terraform init &amp;&amp; terraform plan
 </pre>
 <h2 id="provider_resources">Provider Resources</h2>
-
-No resources are supported at the moment. <h2 id="provider_datasources">Data Sources (using resource id)</h2>
+	
+<p>No resources are supported at the moment.</p> <h2 id="provider_datasources">Data Sources (using resource id)</h2>
 
 No data sources using resource id are supported at the moment. 
 

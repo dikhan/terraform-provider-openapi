@@ -7,6 +7,7 @@ import (
 // TerraformProviderDocumentation defines the attributes needed to generate Terraform provider documentation
 type TerraformProviderDocumentation struct {
 	ProviderName                string
+	ProviderNotes               []string
 	ProviderInstallation        ProviderInstallation
 	ProviderConfiguration       ProviderConfiguration
 	ProviderResources           ProviderResources
