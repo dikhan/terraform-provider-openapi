@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"html/template"
 	"io"
 	"strings"
 	"testing"
+	"text/template"
 )
 
 func TestArgumentReferenceTmpl(t *testing.T) {
@@ -305,18 +305,18 @@ resource "openapi_cdn" "my_cdn" {
 	expectedHTML := `<h2 id="provider_resources">Provider Resources</h2>
 	
 <h3 id="cdn" dir="ltr">openapi_cdn</h3>
-<p>The &#39;cdn&#39; allows you to manage &#39;cdn&#39; resources using Terraform</p>
+<p>The 'cdn' allows you to manage 'cdn' resources using Terraform</p>
 <p>If you experience any issues using this resource, please check the <a href="#resource_cdn_known_issues" target="_self">Known Issues</a> section to see if there is a fix/workaround.</p>
 <h4 id="resource_cdn_example_usage" dir="ltr">Example usage</h4>
 <p>example title 1:</p>
 <pre>
-resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
-  label    = &#34;some label&#34;
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
 }
 </pre>
 <pre>
-resource &#34;openapi_cdn&#34; &#34;my_cdn&#34; {
-  label    = &#34;some label&#34;
+resource "openapi_cdn" "my_cdn" {
+  label    = "some label"
 }
 </pre>
 <h4 id="resource_cdn_arguments_reference" dir="ltr">Arguments Reference</h4>
