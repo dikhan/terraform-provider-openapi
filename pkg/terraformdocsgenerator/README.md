@@ -6,6 +6,8 @@ This library generates the Terraform documentation automatically given an alread
 
 The library's [main.go](https://github.com/dikhan/terraform-provider-openapi/pkg/terraformdocsgenerator/main.go) show cases how to generate Terraform documentation given a swagger file. Currently, the generator supports rendering documentation in HTML.
 
+Please note that this library uses Go's `text/template` package, which doesn't secure against HTML injection. It's the user's responsibility to ensure that data injected into the `TerraformProviderDocumentation` struct is safe against injection.
+
 ## How to run the example
 
 The main.go file is configured with a [sample swagger file]("https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/examples/swaggercodegen/api/resources/swagger.yaml"). The example can be executed simply by running the following command:
