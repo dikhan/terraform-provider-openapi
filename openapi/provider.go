@@ -72,7 +72,7 @@ func getServiceConfiguration(providerName string) (ServiceConfiguration, error) 
 	if serviceConfiguration.IsInsecureSkipVerifyEnabled() {
 		tr := http.DefaultTransport.(*http.Transport)
 		tr.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // #nosec G402
 		}
 		log.Printf("[WARN] Provider '%s' is using insecure skip verify. Please make sure you trust the aforementioned server hosting the swagger file. Otherwise, it's highly recommended avoiding the use of OTF_INSECURE_SKIP_VERIFY env variable when executing this provider", providerName)
 	}

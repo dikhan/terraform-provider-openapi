@@ -45,7 +45,7 @@ func NewPluginConfiguration(providerName string) (*PluginConfiguration, error) {
 		log.Printf("[INFO] open api plugin configuration not present at %s", configurationFilePath)
 	} else {
 		log.Printf("[INFO] found open api plugin configuration at %s", configurationFilePath)
-		file, err := os.Open(configurationFilePath)
+		file, err := os.Open(configurationFilePath) // #nosec G304
 		if err != nil {
 			return nil, err
 		}
