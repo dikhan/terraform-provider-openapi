@@ -160,7 +160,10 @@ type parserJSON struct {
 
 func (p parserJSON) getValue() (string, error) {
 	var jsonData interface{}
-	json.Unmarshal([]byte(p.jsonContent), &jsonData)
+	err := json.Unmarshal([]byte(p.jsonContent), &jsonData)
+	if err != nil {
+		return "", err
+	}
 	res, err := jsonpath.JsonPathLookup(jsonData, p.keyName)
 	if err != nil {
 		return "", err
