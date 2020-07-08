@@ -97,7 +97,7 @@ func (s ServiceSchemaPropertyConfigurationV1) exec(doneChan chan error) {
 		defer cancel() // The cancel should be deferred so resources are cleaned up
 
 		// Create the command with our context
-		cmd := exec.CommandContext(ctx, s.Command[0], s.Command[1:]...)
+		cmd := exec.CommandContext(ctx, s.Command[0], s.Command[1:]...) // #nosec G204 TODO: Ignoring warning for now; however this functionality is intended to be removed in the future
 
 		// Capture stdout and stderr
 		var stdout, stderr bytes.Buffer
