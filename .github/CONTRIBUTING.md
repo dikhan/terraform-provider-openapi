@@ -78,20 +78,26 @@ it by reading the commit message - then write the commit message.
 
 ### Coding Standards
 
-The terraform provider OpenAPI uses the following coding standards to make sure the code is maintained clean and organised.
+The terraform provider OpenAPI uses the following coding standards to make sure the code is maintained clean, secure and organised.
 
-- Go format [gofmt](https://golang.org/cmd/gofmt/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile)
+- [gofmt](https://golang.org/cmd/gofmt/) formats the source code. The following target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) runs go format.
 ```
 $ make fmt
 ```
-- Go vet, simplified dead code detector [govet](https://golang.org/cmd/vet/), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile)
+- [govet](https://golang.org/cmd/vet/) is a simplified dead code detector. The following target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) runs go vet.
 ```
 $ make vet
 ```
-- Go lint, detects style mistakes [golint](https://github.com/golang/lint), available as a target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile)
+- [golint](https://github.com/golang/lint) detects style mistakes. The following target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) runs go lint.
  ```
  $ make lint
  ```
+
+- Gosec, inspects source code for security problems [golint](https://github.com/securego/gosec). The following target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) runs go sec.
+ ```
+ $ make gosec
+ ```
+
 - Follow the go coding standards as outlined in [Effective go](https://golang.org/doc/effective_go.html)
 
 ## Documentation
