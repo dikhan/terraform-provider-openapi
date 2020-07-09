@@ -935,11 +935,11 @@ func TestImporter(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains the right IDs but the resource for some reason is not configured correctly and does not have configured the parent id property)", t, func() {
-		expectedParentPropertyName := "cdns_v1_id"
+	Convey("Given a resource factory configured with a sub-resource missing the parent resource property in the schema", t, func() {
+		missingParentPropertyIDs := []string{}
 		importedIDValue := "1234/5678"
 		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
-		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, missingParentPropertyIDs, "cdns_v1", importedIDProperty, stringProperty)
 
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
@@ -954,7 +954,7 @@ func TestImporter(t *testing.T) {
 			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
 				_, err := resourceImporter.State(resourceData, client)
 				Convey("Then the err returned should be the expected one", func() {
-					So(err.Error(), ShouldEqual, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
+					So(err.Error(), ShouldEqual, `Invalid address to set: []string{"cdns_v1_id"}`)
 				})
 			})
 		})
@@ -2443,6 +2443,10 @@ func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*Spec
 
 func testCreateSubResourceFactory(t *testing.T, path string, parentResourceNames, parentPropertyNames []string, fullParentResourceName string, idSchemaDefinitionProperty *SpecSchemaDefinitionProperty, schemaDefinitionProperties ...*SpecSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	testSchema := newTestSchema(schemaDefinitionProperties...)
+	for _, p := range parentPropertyNames {
+		s := &SpecSchemaDefinitionProperty{Name: p, Required: true, Type: TypeString}
+		*testSchema = append(*testSchema, s)
+	}
 	resourceData := testSchema.getResourceData(t)
 	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
 	specResource := newSpecStubResourceWithOperations("subResourceName", path, false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})

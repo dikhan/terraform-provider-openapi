@@ -311,7 +311,10 @@ func (r resourceFactory) importer() *schema.ResourceImporter {
 					return results, fmt.Errorf("can not import a subresource without all the parent ids, expected %d and got %d parent IDs", len(parentPropertyNames), parentIDsLen)
 				}
 				for idx, parentPropertyName := range parentPropertyNames {
-					data.Set(parentPropertyName, ids[idx])
+					err := data.Set(parentPropertyName, ids[idx])
+					if err != nil {
+						return nil, err
+					}
 				}
 				data.SetId(ids[len(ids)-1])
 			}
