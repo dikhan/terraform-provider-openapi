@@ -55,7 +55,7 @@ gosec:
 	@gosec tests/...
 
 # make test
-test: fmt vet lint
+test: fmt vet lint gosec
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES) -coverprofile=coverage.txt -covermode=atomic
 
