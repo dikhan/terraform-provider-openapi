@@ -48,6 +48,12 @@ lint:
 	@go get -u golang.org/x/lint/golint
 	@golint -set_exit_status $(TEST_PACKAGES)
 
+# make gosec
+gosec:
+	@echo "[INFO] Running gosec"
+	@gosec openapi/...
+	@gosec tests/...
+
 # make test
 test: fmt vet lint
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
