@@ -355,6 +355,45 @@ func TestReadWithOptions(t *testing.T) {
 	})
 }
 
+func TestGetParentID(t *testing.T) {
+	expectedParentID := "32"
+	expectedParentPropertyName := "cdns_v1_id"
+	expectedResourceInstanceID := "159"
+	IDValue := fmt.Sprintf("%s/%s", expectedParentID, expectedResourceInstanceID)
+	IDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, IDValue)
+	expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, expectedParentID)
+	r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", IDProperty, expectedParentProperty)
+	parentIDs, err := r.getParentIDs(resourceData)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedParentID, parentIDs[0])
+}
+
+func TestGetParentID_MissingOpenAPIResource(t *testing.T) {
+	d := &schema.ResourceData{}
+	r := resourceFactory{openAPIResource: nil}
+	parentIDs, err := r.getParentIDs(d)
+	assert.Empty(t, parentIDs)
+	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
+}
+
+func TestGetParentID_MissingParentPropID(t *testing.T) {
+	d := &schema.ResourceData{}
+	expectedParentProperty := &SpecSchemaDefinitionProperty{Name: "cdns_v1_id", Required: true, Type: TypeString, Default: "32"}
+	testSchema := &testSchemaDefinition{expectedParentProperty}
+	specResource := &specStubResource{
+		name:                   "firewall",
+		path:                   "/v1/cdns/{id}/firewall",
+		schemaDefinition:       testSchema.getSchemaDefinition(),
+		parentResourceNames:    []string{"cdns_v1"},
+		parentPropertyNames:    []string{"cdns_v1_id"},
+		fullParentResourceName: "cdns_v1",
+	}
+	r := newResourceFactory(specResource)
+	parentIDs, err := r.getParentIDs(d)
+	assert.Empty(t, parentIDs)
+	assert.EqualError(t, err, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
+}
+
 func TestReadRemote(t *testing.T) {
 
 	Convey("Given a resource factory", t, func() {
@@ -2443,10 +2482,6 @@ func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*Spec
 
 func testCreateSubResourceFactory(t *testing.T, path string, parentResourceNames, parentPropertyNames []string, fullParentResourceName string, idSchemaDefinitionProperty *SpecSchemaDefinitionProperty, schemaDefinitionProperties ...*SpecSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	testSchema := newTestSchema(schemaDefinitionProperties...)
-	for _, p := range parentPropertyNames {
-		s := &SpecSchemaDefinitionProperty{Name: p, Required: true, Type: TypeString}
-		*testSchema = append(*testSchema, s)
-	}
 	resourceData := testSchema.getResourceData(t)
 	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
 	specResource := newSpecStubResourceWithOperations("subResourceName", path, false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
