@@ -282,7 +282,6 @@ func TestDataSourceInstanceRead_Subresource(t *testing.T) {
 			},
 			fullParentResourceName: "cdns_v1",
 			parentResourceNames:    []string{"cdns_v1"},
-			parentPropertyNames:    []string{"cdns_v1_id"},
 		},
 	}
 
