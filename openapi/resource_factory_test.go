@@ -219,7 +219,7 @@ func TestCreate(t *testing.T) {
 				}},
 		}
 		Convey("When create is called with resource data and an empty clientOpenAPI", func() {
-			err := r.create(nil, &clientOpenAPIStub{})
+			err := r.create(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
@@ -307,7 +307,7 @@ func TestReadWithOptions(t *testing.T) {
 				}},
 		}
 		Convey("When readWithOptions is called with nil data, an empty clientOpenAPI, and handleNotFound set to false", func() {
-			err := r.readWithOptions(nil, &clientOpenAPIStub{}, false)
+			err := r.readWithOptions(&schema.ResourceData{}, &clientOpenAPIStub{}, false)
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
@@ -576,7 +576,7 @@ func TestUpdate(t *testing.T) {
 		r := newResourceFactory(specResource)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
-			err := r.update(nil, client)
+			err := r.update(&schema.ResourceData{}, client)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -634,7 +634,7 @@ func TestUpdate(t *testing.T) {
 				}},
 		}
 		Convey("When update is called with resource data and an empty clientOpenAPI", func() {
-			err := r.update(nil, &clientOpenAPIStub{})
+			err := r.update(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
@@ -719,7 +719,7 @@ func TestDelete(t *testing.T) {
 		r := newResourceFactory(specResource)
 		Convey("When delete is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
-			err := r.delete(nil, client)
+			err := r.delete(&schema.ResourceData{}, client)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -772,7 +772,7 @@ func TestDelete(t *testing.T) {
 				}},
 		}
 		Convey("When delete is called with resource data and an empty clientOpenAPI", func() {
-			err := r.delete(nil, &clientOpenAPIStub{})
+			err := r.delete(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
