@@ -63,10 +63,13 @@ gosec: install-deps
 	@gosec openapi/...
 	@gosec tests/...
 
-# make test
-test: fmt vet lint gosec
+# make unittest
+unittest:
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES) -coverprofile=coverage.txt -covermode=atomic
+
+# make test
+test: fmt vet lint gosec unittest
 
 # make integration-test
 integration-test: local-env-down local-env
