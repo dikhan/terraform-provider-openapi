@@ -71,6 +71,7 @@ func getServiceConfiguration(providerName string) (ServiceConfiguration, error) 
 
 	if serviceConfiguration.IsInsecureSkipVerifyEnabled() {
 		tr := http.DefaultTransport.(*http.Transport)
+		// #nosec G402
 		tr.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}

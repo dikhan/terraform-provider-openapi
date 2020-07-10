@@ -219,7 +219,7 @@ func TestCreate(t *testing.T) {
 				}},
 		}
 		Convey("When create is called with resource data and an empty clientOpenAPI", func() {
-			err := r.create(nil, &clientOpenAPIStub{})
+			err := r.create(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
@@ -307,7 +307,7 @@ func TestReadWithOptions(t *testing.T) {
 				}},
 		}
 		Convey("When readWithOptions is called with nil data, an empty clientOpenAPI, and handleNotFound set to false", func() {
-			err := r.readWithOptions(nil, &clientOpenAPIStub{}, false)
+			err := r.readWithOptions(&schema.ResourceData{}, &clientOpenAPIStub{}, false)
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
@@ -353,6 +353,45 @@ func TestReadWithOptions(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestGetParentID(t *testing.T) {
+	expectedParentID := "32"
+	resourceParentName := "cdns_v1"
+	expectedParentPropertyName := fmt.Sprintf("%s_id", resourceParentName)
+	expectedResourceInstanceID := "159"
+	IDValue := fmt.Sprintf("%s/%s", expectedParentID, expectedResourceInstanceID)
+	IDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, IDValue)
+	expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, expectedParentID)
+	r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{resourceParentName}, "cdns_v1", IDProperty, expectedParentProperty)
+	parentIDs, err := r.getParentIDs(resourceData)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedParentID, parentIDs[0])
+}
+
+func TestGetParentID_MissingOpenAPIResource(t *testing.T) {
+	d := &schema.ResourceData{}
+	r := resourceFactory{openAPIResource: nil}
+	parentIDs, err := r.getParentIDs(d)
+	assert.Empty(t, parentIDs)
+	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
+}
+
+func TestGetParentID_MissingParentPropID(t *testing.T) {
+	d := &schema.ResourceData{}
+	expectedParentProperty := &SpecSchemaDefinitionProperty{Name: "cdns_v1_id", Required: true, Type: TypeString, Default: "32"}
+	testSchema := &testSchemaDefinition{expectedParentProperty}
+	specResource := &specStubResource{
+		name:                   "firewall",
+		path:                   "/v1/cdns/{id}/firewall",
+		schemaDefinition:       testSchema.getSchemaDefinition(),
+		parentResourceNames:    []string{"cdns_v1"},
+		fullParentResourceName: "cdns_v1",
+	}
+	r := newResourceFactory(specResource)
+	parentIDs, err := r.getParentIDs(d)
+	assert.Empty(t, parentIDs)
+	assert.EqualError(t, err, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
 }
 
 func TestReadRemote(t *testing.T) {
@@ -537,7 +576,7 @@ func TestUpdate(t *testing.T) {
 		r := newResourceFactory(specResource)
 		Convey("When update is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
-			err := r.update(nil, client)
+			err := r.update(&schema.ResourceData{}, client)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -595,7 +634,7 @@ func TestUpdate(t *testing.T) {
 				}},
 		}
 		Convey("When update is called with resource data and an empty clientOpenAPI", func() {
-			err := r.update(nil, &clientOpenAPIStub{})
+			err := r.update(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
@@ -680,7 +719,7 @@ func TestDelete(t *testing.T) {
 		r := newResourceFactory(specResource)
 		Convey("When delete is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
-			err := r.delete(nil, client)
+			err := r.delete(&schema.ResourceData{}, client)
 			Convey("Then the expectedValue returned should be true", func() {
 				So(err, ShouldNotBeNil)
 			})
@@ -733,7 +772,7 @@ func TestDelete(t *testing.T) {
 				}},
 		}
 		Convey("When delete is called with resource data and an empty clientOpenAPI", func() {
-			err := r.delete(nil, &clientOpenAPIStub{})
+			err := r.delete(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
 				assert.EqualError(t, err, "getResourcePath() failed")
 			})
@@ -819,12 +858,13 @@ func TestImporter(t *testing.T) {
 	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value provided by the user with the correct format)", t, func() {
 		expectedParentID := "32"
 		expectedResourceInstanceID := "159"
-		expectedParentPropertyName := "cdns_v1_id"
+		resourceParentName := "cdns_v1"
+		expectedParentPropertyName := fmt.Sprintf("%s_id", resourceParentName)
 
 		importedIDValue := fmt.Sprintf("%s/%s", expectedParentID, expectedResourceInstanceID)
 		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
 		expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, "")
-		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{resourceParentName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
 
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
@@ -858,12 +898,13 @@ func TestImporter(t *testing.T) {
 	})
 
 	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value provided by the user with incorrect format)", t, func() {
-		expectedParentPropertyName := "cdns_v1_id"
+		resourceParentName := "cdns_v1"
+		expectedParentPropertyName := fmt.Sprintf("%s_id", resourceParentName)
 
 		importedIDValue := "someStringThatDoesNotMatchTheExpectedSubResourceIDFormat"
 		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
 		expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, "")
-		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{resourceParentName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
 
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
@@ -885,11 +926,13 @@ func TestImporter(t *testing.T) {
 	})
 
 	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains more IDs than the resource number of parent properties)", t, func() {
-		expectedParentPropertyName := "cdns_v1_id"
+		resourceParentName := "cdns_v1"
+		expectedParentPropertyName := fmt.Sprintf("%s_id", resourceParentName)
+
 		importedIDValue := "/extraID/1234/23564"
 		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
 		expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, "")
-		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{resourceParentName}, "cdns_v1", importedIDProperty, stringProperty, expectedParentProperty)
 
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
@@ -911,10 +954,12 @@ func TestImporter(t *testing.T) {
 	})
 
 	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains less IDs than the resource number of parent properties)", t, func() {
+		resourceParentParentName := "cdns_v1"
+		resourceParentName := "cdns_v1_firewalls_v1"
 		importedIDValue := "1234/5647" // missing one of the parent ids
 		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
 		expectedParentProperty := newStringSchemaDefinitionProperty("cdns_v1_firewalls_v1", "", true, true, false, false, false, true, false, false, "")
-		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewalls/{id}/rules", []string{"cdns_v1", "cdns_v1_firewalls_v1"}, []string{"cdns_v1_id", "cdns_v1_firewalls_v1_id"}, "cdns_v1_firewalls_v1", importedIDProperty, stringProperty, expectedParentProperty)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewalls/{id}/rules", []string{resourceParentParentName, resourceParentName}, "cdns_v1_firewalls_v1", importedIDProperty, stringProperty, expectedParentProperty)
 
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
@@ -935,11 +980,10 @@ func TestImporter(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource factory configured with a sub-resource (and the already populated id property value contains the right IDs but the resource for some reason is not configured correctly and does not have configured the parent id property)", t, func() {
-		expectedParentPropertyName := "cdns_v1_id"
+	Convey("Given a resource factory configured with a sub-resource missing the parent resource property in the schema", t, func() {
 		importedIDValue := "1234/5678"
 		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
-		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, []string{expectedParentPropertyName}, "cdns_v1", importedIDProperty, stringProperty)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, "cdns_v1", importedIDProperty, stringProperty)
 
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
@@ -954,7 +998,7 @@ func TestImporter(t *testing.T) {
 			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
 				_, err := resourceImporter.State(resourceData, client)
 				Convey("Then the err returned should be the expected one", func() {
-					So(err.Error(), ShouldEqual, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
+					So(err.Error(), ShouldEqual, `Invalid address to set: []string{"cdns_v1_id"}`)
 				})
 			})
 		})
@@ -2441,13 +2485,12 @@ func testCreateResourceFactory(t *testing.T, schemaDefinitionProperties ...*Spec
 	return newResourceFactory(specResource), resourceData
 }
 
-func testCreateSubResourceFactory(t *testing.T, path string, parentResourceNames, parentPropertyNames []string, fullParentResourceName string, idSchemaDefinitionProperty *SpecSchemaDefinitionProperty, schemaDefinitionProperties ...*SpecSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
+func testCreateSubResourceFactory(t *testing.T, path string, parentResourceNames []string, fullParentResourceName string, idSchemaDefinitionProperty *SpecSchemaDefinitionProperty, schemaDefinitionProperties ...*SpecSchemaDefinitionProperty) (resourceFactory, *schema.ResourceData) {
 	testSchema := newTestSchema(schemaDefinitionProperties...)
 	resourceData := testSchema.getResourceData(t)
 	resourceData.SetId(idSchemaDefinitionProperty.Default.(string))
 	specResource := newSpecStubResourceWithOperations("subResourceName", path, false, testSchema.getSchemaDefinition(), &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{}, &specResourceOperation{})
 	specResource.parentResourceNames = parentResourceNames
-	specResource.parentPropertyNames = parentPropertyNames
 	specResource.fullParentResourceName = fullParentResourceName
 	return newResourceFactory(specResource), resourceData
 }

@@ -265,7 +265,6 @@ func TestDataSourceRead_Subresource(t *testing.T) {
 			},
 			fullParentResourceName: "cdns_v1",
 			parentResourceNames:    []string{"cdns_v1"},
-			parentPropertyNames:    []string{"cdns_v1_id"},
 		},
 	}
 
@@ -398,7 +397,7 @@ func TestDataSourceRead_ForNestedObjects(t *testing.T) {
 }
 
 func TestDataSourceRead_Fails_NilOpenAPIResource(t *testing.T) {
-	err := dataSourceFactory{}.read(nil, &clientOpenAPIStub{})
+	err := dataSourceFactory{}.read(&schema.ResourceData{}, &clientOpenAPIStub{})
 	assert.EqualError(t, err, "missing openAPI resource configuration")
 }
 
@@ -408,7 +407,7 @@ func TestDataSourceRead_Fails_Because_Cannot_extract_ParentsID(t *testing.T) {
 			funcGetResourcePath: func(parentIDs []string) (s string, e error) {
 				return "", errors.New("getResourcePath() failed")
 			}},
-	}.read(nil, &clientOpenAPIStub{})
+	}.read(&schema.ResourceData{}, &clientOpenAPIStub{})
 
 	assert.EqualError(t, err, "getResourcePath() failed")
 }

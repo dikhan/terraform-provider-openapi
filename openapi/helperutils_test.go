@@ -151,12 +151,6 @@ func (s *testSchemaDefinition) getResourceData(t *testing.T) *schema.ResourceDat
 	return resourceLocalData
 }
 
-func createTmpFile(data string) (*os.File, error) {
-	f, err := ioutil.TempFile("", "")
-	f.Write([]byte(data))
-	return f, err
-}
-
 func initAPISpecFile(swaggerContent string) *os.File {
 	file, err := ioutil.TempFile("", "testSpec")
 	if err != nil {

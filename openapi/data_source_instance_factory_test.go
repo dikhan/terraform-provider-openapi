@@ -254,7 +254,7 @@ func TestDataSourceInstanceRead_Fails_Because_Schema_is_not_valid(t *testing.T) 
 }
 
 func TestDataSourceInstanceRead_Fails_NilOpenAPIResource(t *testing.T) {
-	err := dataSourceInstanceFactory{}.read(nil, &clientOpenAPIStub{})
+	err := dataSourceInstanceFactory{}.read(&schema.ResourceData{}, &clientOpenAPIStub{})
 	assert.EqualError(t, err, "missing openAPI resource configuration")
 }
 
@@ -264,7 +264,7 @@ func TestDataSourceInstanceRead_Fails_Because_Cannot_extract_ParentsID(t *testin
 			funcGetResourcePath: func(parentIDs []string) (s string, e error) {
 				return "", errors.New("getResourcePath() failed")
 			}},
-	}.read(nil, &clientOpenAPIStub{})
+	}.read(&schema.ResourceData{}, &clientOpenAPIStub{})
 	assert.EqualError(t, err, "getResourcePath() failed")
 }
 
@@ -282,7 +282,6 @@ func TestDataSourceInstanceRead_Subresource(t *testing.T) {
 			},
 			fullParentResourceName: "cdns_v1",
 			parentResourceNames:    []string{"cdns_v1"},
-			parentPropertyNames:    []string{"cdns_v1_id"},
 		},
 	}
 

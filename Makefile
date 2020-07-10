@@ -27,6 +27,15 @@ default: build
 
 all: test build
 
+install-deps:
+	@echo "[INFO] Checking required dependencies..."
+ ifeq (, $(shell which gosec))
+	@echo "[INFO] Required dependency gosec is not installed, attempting to install it..."
+	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(GOPATH)/bin v2.3.0
+ else
+	@echo "[INFO] gosec already installed"
+ endif
+
 # make build
 build:
 	@echo "[INFO] Building $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) binary"
@@ -48,8 +57,14 @@ lint:
 	@go get -u golang.org/x/lint/golint
 	@golint -set_exit_status $(TEST_PACKAGES)
 
+# make gosec
+gosec: install-deps
+	@echo "[INFO] Running gosec"
+	@gosec openapi/...
+	@gosec tests/...
+
 # make test
-test: fmt vet lint
+test: fmt vet lint gosec
 	@echo "[INFO] Testing $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@go test -v -cover $(TEST_PACKAGES) -coverprofile=coverage.txt -covermode=atomic
 

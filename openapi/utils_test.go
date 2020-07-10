@@ -5,6 +5,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -41,7 +42,10 @@ func TestExpandPath(t *testing.T) {
 func TestGetFileContent(t *testing.T) {
 	Convey("Given a file", t, func() {
 		expectedContent := "some content"
-		f, err := createTmpFile(expectedContent)
+		f, err := ioutil.TempFile("", "")
+		So(err, ShouldBeNil)
+		_, err = f.Write([]byte(expectedContent))
+		So(err, ShouldBeNil)
 		defer os.Remove(f.Name())
 		So(err, ShouldBeNil)
 		Convey("When getFileContent is called", func() {

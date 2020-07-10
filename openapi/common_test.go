@@ -94,7 +94,7 @@ func TestGetParentIDsAndResourcePath(t *testing.T) {
 		Convey("When getParentIDsAndResourcePath is called", func() {
 			parentIDs, resourcePath, err := getParentIDsAndResourcePath(nil, nil)
 			Convey("Then the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+				So(err.Error(), ShouldEqual, "can't get parent ids from an empty SpecResource")
 			})
 			Convey("And the parentIDs should be empty", func() {
 				So(parentIDs, ShouldBeEmpty)
@@ -130,7 +130,7 @@ func TestGetParentIDsAndResourcePath(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resource configured with a subreousrce", t, func() {
+	Convey("Given a resource configured with a subresource", t, func() {
 		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
 		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
 
@@ -171,13 +171,11 @@ func TestGetParentIDsAndResourcePath(t *testing.T) {
 }
 
 func Test_getParentIDs(t *testing.T) {
-
-	Convey("Given a resourceFactory with no openAPIResource", t, func() {
-		rf := resourceFactory{}
-		Convey("When getParentIDs is called", func() {
-			ss, e := rf.getParentIDs(nil)
+	Convey("Given a nil openAPIResource", t, func() {
+		Convey("When getParentIDs is called with a nil SpecResource", func() {
+			ss, e := getParentIDs(nil, nil)
 			Convey("Then an error is raised", func() {
-				So(e.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+				So(e.Error(), ShouldEqual, "can't get parent ids from an empty SpecResource")
 			})
 			Convey("And the slice of string returned is empty", func() {
 				So(ss, ShouldBeEmpty)
@@ -185,19 +183,10 @@ func Test_getParentIDs(t *testing.T) {
 		})
 	})
 
-	Convey("Given a resourceFactory with a pointer to a blank SpecV2Resource", t, func() {
-		rf := resourceFactory{openAPIResource: &SpecV2Resource{}}
-		Convey("When getParentIDs is called with a nil arg", func() {
-			ss, err := rf.getParentIDs(nil)
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the slice of string returned is empty", func() {
-				So(ss, ShouldBeEmpty)
-			})
-		})
+	Convey("Given a SpecResource (with no parent info)", t, func() {
+		s := &SpecV2Resource{}
 		Convey("When getParentIDs is called with an empty ResourceData", func() {
-			ss, err := rf.getParentIDs(&schema.ResourceData{})
+			ss, err := getParentIDs(s, &schema.ResourceData{})
 			Convey("Then the err returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -205,9 +194,37 @@ func Test_getParentIDs(t *testing.T) {
 				So(ss, ShouldBeEmpty)
 			})
 		})
+		Convey("When getParentIDs is called with a nil ResourceData", func() {
+			ss, err := getParentIDs(s, nil)
+			Convey("Then an error is raised", func() {
+				So(err.Error(), ShouldEqual, "can't get parent ids from a nil ResourceData")
+			})
+			Convey("And the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
+			})
+		})
 	})
 
-	Convey("Given a resourceFactory with a some schema", t, func() {
+	Convey("Given a spec resource with parent info", t, func() {
+		s := &specStubResource{
+			name:                   "firewall",
+			path:                   "/v1/cdns/{id}/firewall",
+			schemaDefinition:       &SpecSchemaDefinition{},
+			parentResourceNames:    []string{"cdns_v1"},
+			fullParentResourceName: "cdns_v1",
+		}
+		Convey("When getParentIDs is called with an empty ResourceData", func() {
+			ss, err := getParentIDs(s, &schema.ResourceData{})
+			Convey("Then an error is raised", func() {
+				So(err.Error(), ShouldEqual, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
+			})
+			Convey("And the slice of string returned is empty", func() {
+				So(ss, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a spec resource with a some schema including the parent properties", t, func() {
 		someFirewallProperty := newStringSchemaDefinitionPropertyWithDefaults("some_string_prop", "", true, false, "some value")
 		parentProperty := newStringSchemaDefinitionPropertyWithDefaults("cdns_v1_id", "", true, false, "parentPropertyID")
 
@@ -215,7 +232,7 @@ func Test_getParentIDs(t *testing.T) {
 		testSchema := newTestSchema(someFirewallProperty, parentProperty)
 		resourceData := testSchema.getResourceData(t)
 
-		rf := newResourceFactory(&SpecV2Resource{
+		s := &SpecV2Resource{
 			Path: "/v1/cdns/{id}/firewall",
 			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -229,10 +246,9 @@ func Test_getParentIDs(t *testing.T) {
 					},
 				},
 			},
-		})
-
+		}
 		Convey("When getParentIDs is called with non-empty ResourceData", func() {
-			parentIDs, err := rf.getParentIDs(resourceData)
+			parentIDs, err := getParentIDs(s, resourceData)
 			Convey("Then the err returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})

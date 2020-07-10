@@ -58,13 +58,14 @@ func getParentIDsAndResourcePath(openAPIResource SpecResource, data *schema.Reso
 
 func getParentIDs(openAPIResource SpecResource, data *schema.ResourceData) ([]string, error) {
 	if openAPIResource == nil {
-		return []string{}, errors.New("can't get parent ids from a resourceFactory with no openAPIResource")
+		return []string{}, errors.New("can't get parent ids from an empty SpecResource")
 	}
-
+	if data == nil {
+		return []string{}, errors.New("can't get parent ids from a nil ResourceData")
+	}
 	parentResourceInfo := openAPIResource.GetParentResourceInfo()
 	if parentResourceInfo != nil {
 		parentResourceNames := parentResourceInfo.GetParentPropertiesNames()
-
 		parentIDs := []string{}
 		for _, parentResourceName := range parentResourceNames {
 			parentResourceID := data.Get(parentResourceName)
@@ -75,7 +76,6 @@ func getParentIDs(openAPIResource SpecResource, data *schema.ResourceData) ([]st
 		}
 		return parentIDs, nil
 	}
-
 	return []string{}, nil
 }
 

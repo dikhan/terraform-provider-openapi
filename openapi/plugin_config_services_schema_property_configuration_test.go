@@ -428,4 +428,19 @@ func TestSchemaFileParserJsonGetValue(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a wrong json", t, func() {
+		jsonContent := `{`
+		keyName := "$.someNonExistingKey"
+		parserJSON := parserJSON{
+			jsonContent: jsonContent,
+			keyName:     keyName,
+		}
+		Convey("When getValue method is called", func() {
+			_, err := parserJSON.getValue()
+			Convey("Then the error returned should tell that the input is not json", func() {
+				So(err.Error(), ShouldEqual, "unexpected end of JSON input")
+			})
+		})
+	})
 }

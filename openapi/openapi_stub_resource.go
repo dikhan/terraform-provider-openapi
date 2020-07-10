@@ -15,7 +15,6 @@ type specStubResource struct {
 	timeouts                *specTimeouts
 
 	parentResourceNames    []string
-	parentPropertyNames    []string
 	fullParentResourceName string
 
 	funcGetResourcePath   func(parentIDs []string) (string, error)
