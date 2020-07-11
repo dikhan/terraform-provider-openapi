@@ -2760,78 +2760,67 @@ func TestIsOptionalComputedProperty(t *testing.T) {
 }
 
 func TestIsOptionalComputedWithDefault(t *testing.T) {
-	Convey("Given a SpecV2Resource", t, func() {
-		r := &SpecV2Resource{}
-		Convey("When isOptionalComputedWithDefault method is called with a property that is NOT readOnly and has a default attribute", func() {
-			property := spec.Schema{
+	testCases := []struct {
+		name           string
+		inputProperty  spec.Schema
+		expectedResult bool
+		expectedError  error
+	}{
+		{
+			name: "property that is NOT readOnly and has a default attribute",
+			inputProperty: spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: false,
 				},
 				SchemaProps: spec.SchemaProps{
 					Default: "some_defaul_value",
 				},
-			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the result returned should be true since the property matches the requirements to be an optional computed property", func() {
-				So(isOptionalComputedWithDefault, ShouldBeTrue)
-			})
-		})
-		Convey("When isOptionalComputedWithDefault method is called with a property that is readOnly and has a default attribute", func() {
-			property := spec.Schema{
+			},
+			expectedResult: true,
+			expectedError:  nil,
+		},
+		{
+			name: "property that is readOnly and has a default attribute",
+			inputProperty: spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: true,
 				},
 				SchemaProps: spec.SchemaProps{
 					Default: "some_defaul_value",
 				},
-			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
-				So(isOptionalComputedWithDefault, ShouldBeFalse)
-			})
-		})
-		Convey("When isOptionalComputedWithDefault method is called with a property that is NOT readOnly and has NO default attribute", func() {
-			property := spec.Schema{
+			},
+			expectedResult: false,
+			expectedError:  nil,
+		},
+		{
+			name: "property that is NOT readOnly and has NO default attribute",
+			inputProperty: spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: false,
 				},
 				SchemaProps: spec.SchemaProps{
 					Default: nil,
 				},
-			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
-				So(isOptionalComputedWithDefault, ShouldBeFalse)
-			})
-		})
-		Convey("When isOptionalComputedWithDefault method is called with a property that is just readOnly", func() {
-			property := spec.Schema{
+			},
+			expectedResult: false,
+			expectedError:  nil,
+		},
+		{
+			name: "property that is just readOnly",
+			inputProperty: spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: true,
 				},
 				SchemaProps: spec.SchemaProps{
 					Default: nil,
 				},
-			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
-				So(isOptionalComputedWithDefault, ShouldBeFalse)
-			})
-		})
-		Convey("When isOptionalComputedWithDefault method is called with a property that does not pass the validation phase since it has a default value AND the extension, this is wrong documentation", func() {
-			property := spec.Schema{
+			},
+			expectedResult: false,
+			expectedError:  nil,
+		},
+		{
+			name: "property that does not pass the validation phase since it has a default value AND the extension, this is wrong documentation",
+			inputProperty: spec.Schema{
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{
 					ReadOnly: false,
 				},
@@ -2843,18 +2832,22 @@ func TestIsOptionalComputedWithDefault(t *testing.T) {
 						extTfComputed: true,
 					},
 				},
-			}
-			isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", property)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldNotBeNil)
+			},
+			expectedResult: false,
+			expectedError:  errors.New("optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-computed' extension too"),
+		},
+	}
+	Convey("Given a SpecV2Resource", t, func() {
+		r := &SpecV2Resource{}
+		for _, tc := range testCases {
+			Convey(fmt.Sprintf("When isOptionalComputedWithDefault method is called: %s", tc.name), func() {
+				isOptionalComputedWithDefault, err := r.isOptionalComputedWithDefault("propertyName", tc.inputProperty)
+				Convey("Then the result returned should be the expected one", func() {
+					So(err, ShouldResemble, tc.expectedError)
+					So(isOptionalComputedWithDefault, ShouldEqual, tc.expectedResult)
+				})
 			})
-			Convey("Then the error message returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties with default attributes should not have 'x-terraform-computed' extension too")
-			})
-			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
-				So(isOptionalComputedWithDefault, ShouldBeFalse)
-			})
-		})
+		}
 	})
 }
 
