@@ -16,76 +16,79 @@ import (
 )
 
 func TestCheckHTTPStatusCode(t *testing.T) {
-
 	testCases := []struct {
-		name                string
-		response            *http.Response
-		expectedStatusCodes []int
-		expectedError       error
+		name             string
+		inputResponse    *http.Response
+		inputStatusCodes []int
+		expectedError    error
 	}{
 		{
 			name: "response containing a status codes that matches one of the expected response status codes",
-			response: &http.Response{
+			inputResponse: &http.Response{
 				StatusCode: http.StatusOK,
 			},
-			expectedStatusCodes: []int{http.StatusOK},
-			expectedError:       nil,
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    nil,
 		},
 		{
 			name: "response that IS NOT expected",
-			response: &http.Response{
+			inputResponse: &http.Response{
 				Body:       ioutil.NopCloser(strings.NewReader("some backend error")),
 				StatusCode: http.StatusInternalServerError,
 			},
-			expectedStatusCodes: []int{http.StatusOK},
-			expectedError:       errors.New("[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] (some backend error)"),
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    errors.New("[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] (some backend error)"),
 		},
 		{
 			name: "response known with code 401 Unauthorized",
-			response: &http.Response{
+			inputResponse: &http.Response{
 				Body:       ioutil.NopCloser(strings.NewReader("unauthorized")),
 				StatusCode: http.StatusUnauthorized,
 			},
-			expectedStatusCodes: []int{http.StatusOK},
-			expectedError:       errors.New("[resource='resourceName'] HTTP Response Status Code 401 - Unauthorized: API access is denied due to invalid credentials (unauthorized)"),
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    errors.New("[resource='resourceName'] HTTP Response Status Code 401 - Unauthorized: API access is denied due to invalid credentials (unauthorized)"),
 		},
 	}
-
-	for _, tc := range testCases {
+	Convey("Given a specStubResource", t, func() {
 		openAPIResource := &specStubResource{name: "resourceName"}
-		err := checkHTTPStatusCode(openAPIResource, tc.response, tc.expectedStatusCodes)
-		if tc.expectedError == nil {
-			assert.Nil(t, err, tc.name)
-		} else {
-			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		for _, tc := range testCases {
+			Convey(fmt.Sprintf("When checkHTTPStatusCode is called: %s", tc.name), func() {
+				err := checkHTTPStatusCode(openAPIResource, tc.inputResponse, tc.inputStatusCodes)
+				Convey("Then the error returned should be the expected one", func() {
+					So(err, ShouldResemble, tc.expectedError)
+				})
+			})
 		}
-	}
+	})
 }
 
 func TestResponseContainsExpectedStatus(t *testing.T) {
 	testCases := []struct {
-		name                        string
-		expectedResponseStatusCodes []int
-		responseCode                int
-		expectedResult              bool
+		name                     string
+		inputResponseStatusCodes []int
+		inputResponseCode        int
+		expectedResult           bool
 	}{
 		{
-			name:                        "response code that exists in the given list of expected status codes",
-			expectedResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
-			responseCode:                http.StatusCreated,
-			expectedResult:              true,
+			name:                     "response code that exists in the given list of input status codes",
+			inputResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
+			inputResponseCode:        http.StatusCreated,
+			expectedResult:           true,
 		},
 		{
-			name:                        "response code that DOES NOT exists in 'expectedResponseStatusCodes'",
-			expectedResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
-			responseCode:                http.StatusUnauthorized,
-			expectedResult:              false,
+			name:                     "response code that DOES NOT exists in the given list of input status codes",
+			inputResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
+			inputResponseCode:        http.StatusUnauthorized,
+			expectedResult:           false,
 		},
 	}
-
 	for _, tc := range testCases {
-		exists := responseContainsExpectedStatus(tc.expectedResponseStatusCodes, tc.responseCode)
-		assert.Equal(t, tc.expectedResult, exists, tc.name)
+		Convey(fmt.Sprintf("When responseContainsExpectedStatus is called: %s", tc.name), t, func() {
+			exists := responseContainsExpectedStatus(tc.inputResponseStatusCodes, tc.inputResponseCode)
+			Convey("Then the result returned should be the expected one", t, func() {
+				So(exists, ShouldEqual, tc.expectedResult)
+			})
+		})
 	}
 }
 
