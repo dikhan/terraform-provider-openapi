@@ -2012,7 +2012,8 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 					Items: &spec.SchemaOrArray{
 						Schema: &spec.Schema{
 							SchemaProps: spec.SchemaProps{
-								Type: spec.StringOrArray{"string"},
+								Type:        spec.StringOrArray{"string"},
+								Description: "items description",
 							},
 						},
 					},
@@ -2027,6 +2028,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 				So(schemaDefinitionProperty.Type, ShouldEqual, TypeList)
 				So(schemaDefinitionProperty.ArrayItemsType, ShouldEqual, TypeString)
 				So(schemaDefinitionProperty.SpecSchemaDefinition, ShouldBeNil)
+				So(schemaDefinitionProperty.Description, ShouldEqual, "items description")
 			})
 			Convey("And the schema definition property should not be readOnly", func() {
 				So(schemaDefinitionProperty.isReadOnly(), ShouldBeFalse)
