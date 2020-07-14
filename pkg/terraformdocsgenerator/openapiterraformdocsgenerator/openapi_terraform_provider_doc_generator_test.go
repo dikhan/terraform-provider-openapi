@@ -425,9 +425,9 @@ func TestGetDataSourceFilters(t *testing.T) {
 					Computed:           true,
 					IsOptionalComputed: true,
 					Schema: []Property{
-						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
-						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 					},
 				},
 			},
@@ -541,9 +541,9 @@ func TestGetDataSourceInstances(t *testing.T) {
 					Computed:           true,
 					IsOptionalComputed: true,
 					Schema: []Property{
-						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
-						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 					},
 				},
 			},
@@ -587,7 +587,6 @@ func TestGetDataSourceInstances_Error(t *testing.T) {
 	assert.EqualError(t, err, "specStubResource error")
 }
 
-// TODO: add test case for resource with parent props - need implement stub method for GetParentPropertiesNames
 func TestGetProviderResources(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -657,9 +656,9 @@ func TestGetProviderResources(t *testing.T) {
 					Required: false,
 					Computed: false,
 					Schema: []Property{
-						{Name: "string_prop2", Type: "string", Required: false, Computed: false},
-						{Name: "string_prop1", Type: "string", Required: false, Computed: false},
 						{Name: "string_prop3", Type: "string", Required: false, Computed: false},
+						{Name: "string_prop1", Type: "string", Required: false, Computed: false},
+						{Name: "string_prop2", Type: "string", Required: false, Computed: false},
 					},
 				},
 			},
@@ -863,8 +862,8 @@ func TestOrderProps(t *testing.T) {
 	}
 	orderedProps := orderProps(inputProps)
 	expectedProps := []Property{
-		{Name: "prop1"},
 		{Name: "prop2"},
+		{Name: "prop1"},
 		{Name: "prop3"},
 	}
 	assert.Equal(t, expectedProps, orderedProps)
