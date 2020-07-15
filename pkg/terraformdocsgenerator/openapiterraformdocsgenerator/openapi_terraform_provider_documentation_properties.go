@@ -9,6 +9,7 @@ type Property struct {
 	Computed           bool
 	IsOptionalComputed bool
 	IsSensitive        bool
+	IsParent           bool
 	Description        string
 	Schema             []Property // This is used to describe the schema for array of objects or object properties
 }
