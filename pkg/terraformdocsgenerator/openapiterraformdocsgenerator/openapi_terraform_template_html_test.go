@@ -81,6 +81,11 @@ func TestArgumentReferenceTmpl(t *testing.T) {
 			property:       Property{Name: "optional_prop", Type: "string", Description: "", Required: false},
 			expectedOutput: "<li> optional_prop [string] - (Optional) </li>\n\t",
 		},
+		{
+			name:           "required parent property",
+			property:       Property{Name: "required_parent_prop", Type: "string", Description: "", Required: true, IsParent: true},
+			expectedOutput: "<li> required_parent_prop [string] - (Required) The required_parent_prop that this resource belongs to</li>\n\t",
+		},
 	}
 
 	for _, tc := range testCases {

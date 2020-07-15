@@ -379,6 +379,8 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*SpecSchemaDefinitionProperty, error) {
 	schemaDefinitionProperty := &SpecSchemaDefinitionProperty{}
 
+	schemaDefinitionProperty.Description = property.Description
+
 	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject || err != nil {
 		if err != nil {
 			return nil, fmt.Errorf("failed to process object type property '%s': %s", propertyName, err)
@@ -393,6 +395,19 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		if err != nil {
 			return nil, fmt.Errorf("failed to process array type property '%s': %s", propertyName, err)
 		}
+
+		// Edge case where the description of the property is set under the items property instead of the root level
+		//       array_property:
+		//        items:
+		//          description: Groups allowed to manage this identity
+		//          type: string
+		//        type: array
+		if schemaDefinitionProperty.Description == "" {
+			if property.Items != nil && property.Items.Schema != nil {
+				schemaDefinitionProperty.Description = property.Items.Schema.Description
+			}
+		}
+
 		schemaDefinitionProperty.ArrayItemsType = itemsType
 		schemaDefinitionProperty.SpecSchemaDefinition = itemsSchema // only diff than nil if type is object
 
@@ -414,8 +429,6 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	if preferredPropertyName, exists := property.Extensions.GetString(extTfFieldName); exists {
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
 	}
-
-	schemaDefinitionProperty.Description = property.Description
 
 	// Set the property as required (if not required the property will be considered optional)
 	required := o.isRequired(propertyName, requiredProperties)
