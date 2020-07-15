@@ -52,18 +52,6 @@ in the Makefile will run gofmt, govet, golint and then it will run the unit and 
 - Push to the branch: `git push origin <branch-name>`
 - Submit a pull request following the [Pull request guidelines](#pull-request-submissio)
 
-## Licensing
-
-Code on the Terraform Provider API GitHub repository is licensed under the terms of the Apache 2.0 license: https://www.apache.org/licenses/LICENSE-2.0 and https://github.com/dikhan/terraform-provider-api/blob/master/LICENSE. This license ensures a balance between openness and allowing you to use the code with minimal requirements.
-
-## Licensing Code Contributions
-
-All code that you write yourself and contribute to the Terraform Provider API GitHub repository must be licensed under the Apache 2.0 license. If you wrote the code as part of work for someone else (like a company), you must ensure that you have the proper rights and permissions to contribute the code under the terms of the Apache 2.0 license.
-
-If you want to contribute any code that you did not write yourself (like pre-existing open source code), either alone or in combination with code that you did write, that code must be available under the Apache 2.0, BSD, or MIT license.
-
-If you want to contribute code to the Terraform Provider API GitHub repository that is under any different license terms than specified above, please contact [dkhanram@cisco.com] to request a review.
-
 ### Committing Code
 
 Commits are very important to understand the history of the repo changes and also if done well greatly help the reviewing 
@@ -100,9 +88,21 @@ $ make vet
 
 - Follow the go coding standards as outlined in [Effective go](https://golang.org/doc/effective_go.html)
 
-## Documentation
+### Documentation
 
 This repository aims to translate the latest Swagger OpenApi spec with the corresponding configuration in latest
 versions of Terraform. These two products are constantly evolving and adding support for new features and therefore
 keeping the docs updated is paramount. Any contributor should keep in mind this and update the [How to](../docs/how_to.md) 
 accordingly based on new features added or updated.
+
+## Licensing
+
+Code on the Terraform Provider API GitHub repository is licensed under the terms of the Apache 2.0 license: https://www.apache.org/licenses/LICENSE-2.0 and https://github.com/dikhan/terraform-provider-api/blob/master/LICENSE. This license ensures a balance between openness and allowing you to use the code with minimal requirements.
+
+## Licensing Code Contributions
+
+All code that you write yourself and contribute to the Terraform Provider API GitHub repository must be licensed under the Apache 2.0 license. If you wrote the code as part of work for someone else (like a company), you must ensure that you have the proper rights and permissions to contribute the code under the terms of the Apache 2.0 license.
+
+If you want to contribute any code that you did not write yourself (like pre-existing open source code), either alone or in combination with code that you did write, that code must be available under the Apache 2.0, BSD, or MIT license.
+
+If you want to contribute code to the Terraform Provider API GitHub repository that is under any different license terms than specified above, please contact [dkhanram@cisco.com] to request a review.
