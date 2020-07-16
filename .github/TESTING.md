@@ -16,7 +16,8 @@ The following make targets can be used to run all tests in this in project:
 - `make test-all` will run `make test` in addition to all integration tests
 
 ## General guidelines
-- Inputs and expected outputs should be identifiable by their names
+- Test name should be `Test` plus the method name tested (eg: `TestIsBoolExtensionEnabled`) 
+- Inputs parameters and expected outputs should be identifiable by their names
   - Inputs should have names beginning with `input` (eg: `inputStatusCode`)
   - Expected outputs should have names beginning with `expected` (eg: `expectedResult`)
 - Organize tests using `Given`, `When`, and `Then` [Convey](https://github.com/smartystreets/goconvey/wiki#your-first-goconvey-test) statements to make the intention of the test clear:
@@ -60,6 +61,7 @@ func TestIsBoolExtensionEnabled(t *testing.T) {
 		inputExtensions     spec.Extensions
 		inputExtension      string
 		expectedResult bool
+		expectedError error
 	}{
 		{name: "nil extensions", inputExtensions: nil, inputExtension: "", expectedResult: false},
 		{name: "empty extensions", inputExtensions: spec.Extensions{}, inputExtension: "", expectedResult: false},
@@ -72,8 +74,9 @@ func TestIsBoolExtensionEnabled(t *testing.T) {
 		r := &SpecV2Resource{}
 		for _, tc := range testCases {
 			Convey(fmt.Sprintf("When isBoolExtensionEnabled method is called: %s", tc.name), func() {
-				isEnabled := r.isBoolExtensionEnabled(tc.inputExtensions, tc.inputExtension)
+				isEnabled, err := r.testMethod(tc.inputExtensions, tc.inputExtension)
 				Convey("Then the result returned should be the expected one", func() {
+					So(err, ShouldResemble, tc.expectedError)
 					So(isEnabled, ShouldEqual, tc.expectedResult)
 				})
 			})
@@ -81,3 +84,33 @@ func TestIsBoolExtensionEnabled(t *testing.T) {
 	})
 }
 ```
+
+### Methods that don't require setup (Given)
+
+In some cases, the method under tests may not need any special set up. The following example can be used as an example on
+how to write such tests:
+
+````
+func TestExpandPath(t *testing.T) {
+
+	testCases := []struct {
+		name           string
+		inputPath     string
+		expectedResult string
+		expectedError error
+	}{
+		{name: "input example 1", inputPath: "input1", expectedResult: "result1", expectedError: nil,},
+		{name: "input example 2", inputPath: "input2",  expectedResult: "result2", expectedError: nil,},
+	}
+
+	for _, tc := range testCases {
+		Convey(fmt.Sprintf("When testMethod method is called: %s", tc.name), t, func() {
+			returnedPath, err := testMethod(tc.inputPath)
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldResemble, tc.expectedError)
+				So(returnedPath, ShouldEqual, tc.expectedResult)
+			})
+		})
+	}
+}
+````
