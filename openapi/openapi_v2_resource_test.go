@@ -15,21 +15,19 @@ import (
 )
 
 func TestNewSpecV2Resource(t *testing.T) {
-	Convey("Given a root path /users and a root path item", t, func() {
-		path := "/users"
-		rootPathItem := spec.PathItem{
+	Convey("Given a root path /users, a root path item, schema definitions", t, func() {
+		inputPath := "/users"
+		inputRootPathItem := spec.PathItem{
 			PathItemProps: spec.PathItemProps{
 				Post: &spec.Operation{},
 			},
 		}
-		Convey("When newSpecV2Resource method is called", func() {
-			schemaDefinitions := map[string]spec.Schema{}
-			r, err := newSpecV2Resource(path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be 'users'", func() {
+		inputSchemaDefinitions := map[string]spec.Schema{}
+		Convey("When the newSpecV2Resource method is called", func() {
+			r, err := newSpecV2Resource(inputPath, spec.Schema{}, inputRootPathItem, spec.PathItem{}, inputSchemaDefinitions, map[string]spec.PathItem{})
+			Convey("Then the resource returned should have name `users` and there should be no error", func() {
 				So(r.GetResourceName(), ShouldEqual, "users")
+				So(err, ShouldBeNil)
 			})
 		})
 	})
@@ -2478,23 +2476,23 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 
 func TestIsBoolExtensionEnabled(t *testing.T) {
 	testCases := []struct {
-		name           string
-		extensions     spec.Extensions
-		extension      string
-		expectedResult bool
+		name            string
+		inputExtensions spec.Extensions
+		inputExtension  string
+		expectedResult  bool
 	}{
-		{name: "nil extensions", extensions: nil, extension: "", expectedResult: false},
-		{name: "empty extensions", extensions: spec.Extensions{}, extension: "", expectedResult: false},
-		{name: "populated extensions but empty extension", extensions: spec.Extensions{"some-extension": true}, extension: "", expectedResult: false},
-		{name: "populated extensions and matching bool extension with value true", extensions: spec.Extensions{"some-extension": true}, extension: "some-extension", expectedResult: true},
-		{name: "populated extensions and matching bool extension with value false", extensions: spec.Extensions{"some-extension": false}, extension: "some-extension", expectedResult: false},
-		{name: "populated extensions and matching non bool extension", extensions: spec.Extensions{"some-extension": "some value"}, extension: "some-extension", expectedResult: false},
+		{name: "nil extensions", inputExtensions: nil, inputExtension: "", expectedResult: false},
+		{name: "empty extensions", inputExtensions: spec.Extensions{}, inputExtension: "", expectedResult: false},
+		{name: "populated extensions but empty extension", inputExtensions: spec.Extensions{"some-extension": true}, inputExtension: "", expectedResult: false},
+		{name: "populated extensions and matching bool extension with value true", inputExtensions: spec.Extensions{"some-extension": true}, inputExtension: "some-extension", expectedResult: true},
+		{name: "populated extensions and matching bool extension with value false", inputExtensions: spec.Extensions{"some-extension": false}, inputExtension: "some-extension", expectedResult: false},
+		{name: "populated extensions and matching non bool extension", inputExtensions: spec.Extensions{"some-extension": "some value"}, inputExtension: "some-extension", expectedResult: false},
 	}
 	Convey("Given a SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
 		for _, tc := range testCases {
 			Convey(fmt.Sprintf("When isBoolExtensionEnabled method is called: %s", tc.name), func() {
-				isEnabled := r.isBoolExtensionEnabled(tc.extensions, tc.extension)
+				isEnabled := r.isBoolExtensionEnabled(tc.inputExtensions, tc.inputExtension)
 				Convey("Then the result returned should be the expected one", func() {
 					So(isEnabled, ShouldEqual, tc.expectedResult)
 				})

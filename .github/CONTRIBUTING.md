@@ -64,6 +64,11 @@ roll back the changes if needed.
 - Write good commit messages: What is good? Imagine you did not know anything about the change and had to learn more about 
 it by reading the commit message - then write the commit message.
 
+### Testing
+Changes should be accompanied by relevant tests that prove the bug fix is effective or that a feature works.
+
+Tests should follow the format detailed in the [Testing](TESTING.md) doc.
+
 ### Coding Standards
 
 The terraform provider OpenAPI uses the following coding standards to make sure the code is maintained clean, secure and organised.
