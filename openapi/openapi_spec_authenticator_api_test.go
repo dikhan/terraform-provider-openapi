@@ -36,10 +36,8 @@ func TestAuthRequired(t *testing.T) {
 		}
 		Convey("When authRequired method is called", func() {
 			authRequired, operationSecurityPolicies := oa.authRequired(url, operationSecuritySchemes)
-			Convey("Then the value returned should be true", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(authRequired, ShouldBeTrue)
-			})
-			Convey("And the name of the security policy 'apikey_header_auth'", func() {
 				So(operationSecurityPolicies[0].Name, ShouldEqual, securityPolicyName)
 			})
 		})
@@ -79,10 +77,8 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 		oa := apiAuth{}
 		Convey("When fetchRequiredAuthenticators method with a security policy which is also defined in the security definitions", func() {
 			authenticators, err := oa.fetchRequiredAuthenticators(operationSecuritySchemes, providerConfig)
-			Convey("Then the err returned should be nil", func() {
+			Convey("The the err should be nil and the list of authenticators returned should contain the required auths", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the list of authenticators returned should contain the required auths", func() {
 				So(authenticators, ShouldNotBeEmpty)
 				So(authenticators[0].getContext().(apiKey).name, ShouldEqual, expectedAPIKey.name)
 				So(authenticators[0].getContext().(apiKey).value, ShouldEqual, expectedAPIKey.value)
@@ -107,10 +103,8 @@ func TestFetchRequiredAuthenticators(t *testing.T) {
 		oa := apiAuth{}
 		Convey("When fetchRequiredAuthenticators method with a security policy which is NOT defined in the security definitions", func() {
 			authenticators, err := oa.fetchRequiredAuthenticators(operationSecuritySchemes, providerConfig)
-			Convey("Then the err returned should not be nil", func() {
+			Convey("Then the err should be nil and the authenticators returned should be empty", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the authenticators returned should be empty", func() {
 				So(authenticators, ShouldBeEmpty)
 			})
 		})
