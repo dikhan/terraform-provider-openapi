@@ -85,7 +85,7 @@ func TestResponseContainsExpectedStatus(t *testing.T) {
 	for _, tc := range testCases {
 		Convey(fmt.Sprintf("When responseContainsExpectedStatus is called: %s", tc.name), t, func() {
 			exists := responseContainsExpectedStatus(tc.inputResponseStatusCodes, tc.inputResponseCode)
-			Convey("Then the result returned should be the expected one", t, func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(exists, ShouldEqual, tc.expectedResult)
 			})
 		})
