@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
@@ -13,63 +14,74 @@ import (
 
 func TestTelemetryProviderHttpEndpoint_Validate(t *testing.T) {
 	testCases := []struct {
-		testName    string
+		name        string
 		url         string
 		expectedErr error
 	}{
 		{
-			testName:    "happy path - host and port populated",
+			name:        "happy path - host and port populated",
 			url:         "http://telemetry.myhost.com/v1/metrics",
 			expectedErr: nil,
 		},
 		{
-			testName:    "url is empty",
+			name:        "url is empty",
 			url:         "",
 			expectedErr: errors.New("http endpoint telemetry configuration is missing a value for the 'url property'"),
 		},
 		{
-			testName:    "url is wrongly formatter",
+			name:        "url is wrongly formatter",
 			url:         "htop://something-wrong.com",
 			expectedErr: errors.New("http endpoint telemetry configuration does not have a valid URL 'htop://something-wrong.com'"),
 		},
 	}
 
-	for _, tc := range testCases {
-		tpg := TelemetryProviderHTTPEndpoint{
-			URL: tc.url,
+	Convey("Given a TelemetryProviderHTTPEndpoint", t, func() {
+		for _, tc := range testCases {
+			tpg := TelemetryProviderHTTPEndpoint{
+				URL: tc.url,
+			}
+			Convey(fmt.Sprintf("When Validate method is called: %s", tc.name), func() {
+				err := tpg.Validate()
+				Convey("Then the result returned should be the expected one", func() {
+					So(err, ShouldResemble, tc.expectedErr)
+				})
+			})
 		}
-		err := tpg.Validate()
-		assert.Equal(t, tc.expectedErr, err, tc.testName)
-	}
+	})
 }
 
 func TestCreateNewCounterMetric(t *testing.T) {
 	testCases := []struct {
-		testName       string
+		name           string
 		prefix         string
 		expectedMetric telemetryMetric
 	}{
 		{
-			testName:       "prefix is not empty",
+			name:           "prefix is not empty",
 			prefix:         "prefix",
 			expectedMetric: telemetryMetric{metricTypeCounter, "prefix.metric_name", []string{"tag_name:tag_value"}},
 		},
 		{
-			testName:       "prefix is empty",
+			name:           "prefix is empty",
 			prefix:         "",
 			expectedMetric: telemetryMetric{metricTypeCounter, "metric_name", []string{"tag_name:tag_value"}},
 		},
 	}
 
 	for _, tc := range testCases {
-		telemetryMetric := createNewCounterMetric(tc.prefix, "metric_name", []string{"tag_name:tag_value"})
-		assert.Equal(t, tc.expectedMetric, telemetryMetric, tc.testName)
+		Convey(fmt.Sprintf("When createNewCounterMetric method is called: %s", tc.name), t, func() {
+			telemetryMetric := createNewCounterMetric(tc.prefix, "metric_name", []string{"tag_name:tag_value"})
+			Convey("Then the result returned should be the expected one", func() {
+				So(telemetryMetric, ShouldResemble, tc.expectedMetric)
+			})
+		})
 	}
+
 }
 
 func TestCreateNewRequest(t *testing.T) {
 	testCases := []struct {
-		testName                       string
+		name                           string
 		url                            string
 		expectedCounterMetric          telemetryMetric
 		expectedHeaders                map[string]string
@@ -77,7 +89,7 @@ func TestCreateNewRequest(t *testing.T) {
 		expectedErr                    error
 	}{
 		{
-			testName: "happy path - request is created with the expected Header and telemetryMetric",
+			name: "happy path - request is created with the expected Header and telemetryMetric",
 			expectedCounterMetric: telemetryMetric{
 				MetricType: metricTypeCounter,
 				MetricName: "prefix.terraform.openapi_plugin_version.total_runs",
@@ -92,34 +104,39 @@ func TestCreateNewRequest(t *testing.T) {
 			expectedErr:     nil,
 		},
 		{
-			testName:    "crappy path - bad url",
+			name:        "crappy path - bad url",
 			url:         "&^%",
 			expectedErr: errors.New("parse &^%: invalid URL escape \"%\""),
 		},
 	}
 
-	for _, tc := range testCases {
-		var err error
-		var request *http.Request
-		var reqBody []byte
-		telemetryMetric := telemetryMetric{}
-		tph := TelemetryProviderHTTPEndpoint{
-			URL: tc.url,
-		}
+	Convey("Given a TelemetryProviderHTTPEndpoint", t, func() {
+		for _, tc := range testCases {
+			var err error
+			var request *http.Request
+			var reqBody []byte
 
-		request, err = tph.createNewRequest(tc.expectedCounterMetric, tc.telemetryProviderConfiguration)
-		if tc.expectedErr == nil {
-			reqBody, err = ioutil.ReadAll(request.Body)
-			err = json.Unmarshal(reqBody, &telemetryMetric)
-			assert.NoError(t, err, tc.testName)
-			for expectedHeaderName, expectedHeaderValue := range tc.expectedHeaders {
-				assert.Contains(t, request.Header.Get(expectedHeaderName), expectedHeaderValue, tc.testName)
+			tph := TelemetryProviderHTTPEndpoint{
+				URL: tc.url,
 			}
-			assert.Equal(t, tc.expectedCounterMetric, telemetryMetric, tc.testName)
-		} else {
-			assert.EqualError(t, err, tc.expectedErr.Error(), tc.testName)
+			Convey(fmt.Sprintf("When createNewRequest method is called: %s", tc.name), func() {
+				request, err = tph.createNewRequest(tc.expectedCounterMetric, tc.telemetryProviderConfiguration)
+				Convey("Then the result returned should be the expected one", func() {
+					if tc.expectedErr != nil {
+						So(err.Error(), ShouldResemble, tc.expectedErr.Error())
+					} else {
+						for expectedHeaderName, expectedHeaderValue := range tc.expectedHeaders {
+							So(request.Header.Get(expectedHeaderName), ShouldContainSubstring, expectedHeaderValue)
+						}
+						reqBody, err = ioutil.ReadAll(request.Body)
+						telemetryMetric := telemetryMetric{}
+						err = json.Unmarshal(reqBody, &telemetryMetric)
+						So(telemetryMetric, ShouldResemble, tc.expectedCounterMetric)
+					}
+				})
+			})
 		}
-	}
+	})
 }
 
 func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
@@ -166,11 +183,6 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 			returnedResponseCode: http.StatusNotFound,
 			expectedErr:          errors.New("/v1/metrics' returned a non expected status code 404"),
 		},
-		{
-			testName:             "api server returns non 2xx code",
-			returnedResponseCode: http.StatusNotFound,
-			expectedErr:          errors.New("/v1/metrics' returned a non expected status code 404"),
-		},
 	}
 
 	for _, tc := range testCases {
@@ -211,6 +223,7 @@ func TestTelemetryProviderHttpEndpointSubmitMetric(t *testing.T) {
 			assert.Contains(t, err.Error(), tc.expectedErr.Error(), tc.testName)
 		}
 	}
+
 }
 
 func TestTelemetryProviderHttpEndpointSubmitMetricFailureScenarios(t *testing.T) {
