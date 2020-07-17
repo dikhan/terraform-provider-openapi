@@ -3,9 +3,9 @@ package openapi
 import (
 	"bytes"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -20,22 +20,13 @@ func TestEndpointsSchema(t *testing.T) {
 		Convey("When endpointsSchema is called", func() {
 			resourceName := "resource_name_v1"
 			s := p.endpointsSchema()
-			Convey("Then the schema returned should NOT be nil", func() {
+			Convey("Then the schema returned should be configured as expected", func() {
 				So(s, ShouldNotBeNil)
-			})
-			Convey("And the schema type should be a set", func() {
 				So(s.Type, ShouldEqual, schema.TypeSet)
-			})
-			Convey("And the schema should be optional", func() {
 				So(s.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema element should be of type schema resource", func() {
 				So(s.Elem, ShouldHaveSameTypeAs, &schema.Resource{})
-			})
-			Convey("And the schema element resource schema should contain the expected resource", func() {
 				So(s.Elem.(*schema.Resource).Schema, ShouldContainKey, resourceName)
-			})
-			Convey("And the schema Set should not be nil (this defines the unique ID )", func() {
+				// the schema Set should not be nil (this defines the unique ID )
 				So(s.Set, ShouldNotBeNil)
 			})
 		})
@@ -61,10 +52,8 @@ func TestEndpointsToHash(t *testing.T) {
 		Convey("When endpointsSchema is called with a list of resources", func() {
 			resourceName := "resource_name_v1"
 			schemaSetFunction := p.endpointsToHash([]string{resourceName})
-			Convey("Then the schema set function returned should NOT be nil", func() {
+			Convey("Then the schema set function returned should NOT be nil and the return int from calling the schemaSetFunction() should be the expected one", func() {
 				So(schemaSetFunction, ShouldNotBeNil)
-			})
-			Convey("And the return int from calling the schemaSetFunction() should be the expected one", func() {
 				m := map[string]interface{}{}
 				m[resourceName] = "something to get the string representation from"
 				var buf bytes.Buffer
@@ -80,41 +69,31 @@ func TestEndpointsValidateFunc(t *testing.T) {
 		p := providerConfigurationEndPoints{}
 		Convey("When endpointsValidateFunc is invoked with a valid domain host", func() {
 			warns, errs := p.endpointsValidateFunc()("www.valid-domain.com", "something")
-			Convey("Then the warns should be nil", func() {
+			Convey("Then the warns should be nil and the errs should be nil", func() {
 				So(warns, ShouldBeNil)
-			})
-			Convey("Then the errs should be nil", func() {
 				So(errs, ShouldBeNil)
 			})
 		})
 		Convey("When endpointsValidateFunc is invoked with a valid IP host", func() {
 			warns, errs := p.endpointsValidateFunc()("127.0.0.1", "something")
-			Convey("Then the warns should be nil", func() {
+			Convey("Then the warns should be nil and the errs should be nil", func() {
 				So(warns, ShouldBeNil)
-			})
-			Convey("Then the errs should be nil", func() {
 				So(errs, ShouldBeNil)
 			})
 		})
 		Convey("When endpointsValidateFunc is invoked with a valid host using custom ports", func() {
 			warns, errs := p.endpointsValidateFunc()("192.168.1.1:8080", "something")
-			Convey("Then the warns should be nil", func() {
+			Convey("Then the warns should be nil and the errs should be nil", func() {
 				So(warns, ShouldBeNil)
-			})
-			Convey("Then the errs should be nil", func() {
 				So(errs, ShouldBeNil)
 			})
 		})
 		Convey("When endpointsValidateFunc is invoked with a whole URL (only hostnames are valid)", func() {
 			warns, errs := p.endpointsValidateFunc()("http://www.valid-domain.com", "something")
-			Convey("Then the warns should be nil", func() {
+			Convey("Then the warns should be nil and the errs should be the expected one", func() {
 				So(warns, ShouldBeNil)
-			})
-			Convey("Then the errs should be nil", func() {
-				So(errs, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected one", func() {
 				So(errs[0].Error(), ShouldEqual, "property 'something' value 'http://www.valid-domain.com' is not valid, please make sure the value is a valid FQDN or well formed IP (the host may contain non standard ports too followed by a colon - e,g: www.api.com:8080). The protocol used when performing the API call will be populated based on the swagger specification")
+
 			})
 		})
 	})
