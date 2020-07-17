@@ -749,6 +749,23 @@ definitions:
 
 }
 
+func TestGetServiceConfiguration(t *testing.T) {
+	Convey("Given a swagger url configured with environment variable and skip verify being false", t, func() {
+		providerName := "providerName"
+		expectedSwaggerURL := "http://www.domain.com/swagger.yaml"
+		os.Setenv(fmt.Sprintf(otfVarSwaggerURL, providerName), expectedSwaggerURL)
+		os.Setenv(otfVarInsecureSkipVerify, "false")
+		Convey("When getServiceConfiguration method is called", func() {
+			serviceConfiguration, err := getServiceConfiguration(providerName)
+			Convey("Then the service configuration swagger URL should be the expected one, the service configuration should be false and error returned should be nil", func() {
+				So(err, ShouldBeNil)
+				So(serviceConfiguration.GetSwaggerURL(), ShouldEqual, expectedSwaggerURL)
+				So(serviceConfiguration.IsInsecureSkipVerifyEnabled(), ShouldBeFalse)
+			})
+		})
+	})
+}
+
 type logWriter struct {
 	written string
 }
@@ -760,25 +777,4 @@ func newTestWriter() *logWriter {
 func (w *logWriter) Write(p []byte) (n int, err error) {
 	w.written = w.written + string(p)
 	return 0, nil
-}
-
-func TestGetServiceConfiguration(t *testing.T) {
-	Convey("Given a swagger url configured with environment variable and skip verify being false", t, func() {
-		providerName := "providerName"
-		expectedSwaggerURL := "http://www.domain.com/swagger.yaml"
-		os.Setenv(fmt.Sprintf(otfVarSwaggerURL, providerName), expectedSwaggerURL)
-		os.Setenv(otfVarInsecureSkipVerify, "false")
-		Convey("When getServiceConfiguration method is called", func() {
-			serviceConfiguration, err := getServiceConfiguration(providerName)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the service configuration swagger URL should be the expected one", func() {
-				So(serviceConfiguration.GetSwaggerURL(), ShouldEqual, expectedSwaggerURL)
-			})
-			Convey("And the service configuration should be false", func() {
-				So(serviceConfiguration.IsInsecureSkipVerifyEnabled(), ShouldBeFalse)
-			})
-		})
-	})
 }
