@@ -110,8 +110,6 @@ func TestAPIKeyHeaderSecurityDefinitionValidate(t *testing.T) {
 			err := apiKeyHeaderSecurityDefinition.validate()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should match the expected", func() {
 				So(err.Error(), ShouldEqual, "specAPIKeyHeaderSecurityDefinition missing mandatory security definition name")
 			})
 		})
@@ -122,8 +120,6 @@ func TestAPIKeyHeaderSecurityDefinitionValidate(t *testing.T) {
 			err := apiKeyHeaderSecurityDefinition.validate()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should match the expected", func() {
 				So(err.Error(), ShouldEqual, "specAPIKeyHeaderSecurityDefinition missing mandatory apiKey name")
 			})
 		})

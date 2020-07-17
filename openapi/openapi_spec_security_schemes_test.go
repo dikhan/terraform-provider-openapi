@@ -74,8 +74,6 @@ func TestCreateSecuritySchemes(t *testing.T) {
 			specSecuritySchemes := createSecuritySchemes(securitySchemes)
 			Convey("Then the specSecuritySchemes should not be empty", func() {
 				So(specSecuritySchemes, ShouldNotBeEmpty)
-			})
-			Convey("Then the specSecuritySchemes name contain the expected items", func() {
 				So(specSecuritySchemes, ShouldContain, SpecSecurityScheme{Name: "secDef1"})
 				So(specSecuritySchemes, ShouldContain, SpecSecurityScheme{Name: "secDef2"})
 			})
@@ -96,12 +94,10 @@ func TestCreateSecuritySchemes(t *testing.T) {
 			specSecuritySchemes := createSecuritySchemes(securitySchemes)
 			Convey("Then the specSecuritySchemes should not be empty", func() {
 				So(specSecuritySchemes, ShouldNotBeEmpty)
-			})
-			Convey("Then the specSecuritySchemes name contain the expected items which are the first one in the array (by design these take preference)", func() {
+				// the specSecuritySchemes name contain the expected items which are the first one in the array (by design these take preference)
 				So(specSecuritySchemes, ShouldContain, SpecSecurityScheme{Name: "secDef1"})
 				So(specSecuritySchemes, ShouldContain, SpecSecurityScheme{Name: "secDef2"})
-			})
-			Convey("Then the specSecuritySchemes should not contain anything else", func() {
+				// the specSecuritySchemes should not contain anything else
 				So(specSecuritySchemes, ShouldNotContain, SpecSecurityScheme{Name: "secDef3"})
 			})
 		})

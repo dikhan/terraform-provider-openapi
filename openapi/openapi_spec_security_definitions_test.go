@@ -16,8 +16,6 @@ func TestFindSecurityDefinitionFor(t *testing.T) {
 			secDef := s.findSecurityDefinitionFor(expectedSecDefName)
 			Convey("Then the secDef result should not be nil", func() {
 				So(secDef, ShouldNotBeNil)
-			})
-			Convey("And the secDef should match the expected one", func() {
 				So(secDef.getName(), ShouldEqual, expectedSecDefName)
 			})
 		})
