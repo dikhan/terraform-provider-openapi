@@ -29,18 +29,12 @@ func TestNewProviderConfiguration(t *testing.T) {
 		data := newTestSchema(stringProperty, stringWithPreferredNameProperty, headerProperty).getResourceData(t)
 		Convey("When newProviderConfiguration method is called", func() {
 			providerConfiguration, err := newProviderConfiguration(specAnalyser, data, providerConfigurationEndPoints)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error providerConfiguretion headers and security definitions should be configured as expected and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the providerConfiguration headers should contain the configured header with the right value", func() {
 				So(providerConfiguration.Headers, ShouldContainKey, headerProperty.GetTerraformCompliantPropertyName())
 				So(providerConfiguration.Headers[headerProperty.GetTerraformCompliantPropertyName()], ShouldEqual, headerProperty.Default)
-			})
-			Convey("And the providerConfiguration securitySchemaDefinitions should contain the configured stringProperty security definitions with the right value", func() {
 				So(providerConfiguration.SecuritySchemaDefinitions, ShouldContainKey, stringProperty.Name)
 				So(providerConfiguration.SecuritySchemaDefinitions[stringProperty.Name].getContext().(apiKey).value, ShouldEqual, stringProperty.Default)
-			})
-			Convey("And the providerConfiguration securitySchemaDefinitions should contain the configured stringWithPreferredNameProperty security definitions with the right value", func() {
 				So(providerConfiguration.SecuritySchemaDefinitions, ShouldContainKey, stringWithPreferredNameProperty.GetTerraformCompliantPropertyName())
 				So(providerConfiguration.SecuritySchemaDefinitions[stringWithPreferredNameProperty.GetTerraformCompliantPropertyName()].getContext().(apiKey).value, ShouldEqual, stringWithPreferredNameProperty.Default)
 			})
@@ -58,10 +52,8 @@ func TestGetAuthenticatorFor(t *testing.T) {
 		}
 		Convey("When getAuthenticatorFor method with an existing sec def", func() {
 			apiKeyAuth := providerConfiguration.getAuthenticatorFor(SpecSecurityScheme{"registered_sec_def_name"})
-			Convey("Then the apikey name should be headerName", func() {
+			Convey("Then the apikey name should be headerName and the apikey value should have the expected value", func() {
 				So(apiKeyAuth.getContext().(apiKey).name, ShouldEqual, "headerName")
-			})
-			Convey("Then the apikey value should be value", func() {
 				So(apiKeyAuth.getContext().(apiKey).value, ShouldEqual, "value")
 			})
 		})
