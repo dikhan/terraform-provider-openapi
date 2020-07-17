@@ -16,10 +16,8 @@ func TestNewServiceConfigV1(t *testing.T) {
 		insecureSkipVerifyEnabled := true
 		Convey("When NewServiceConfigV1 method is called", func() {
 			pluginConfigSchemaV1 := NewServiceConfigV1(url, insecureSkipVerifyEnabled, &TelemetryConfig{})
-			Convey("And the pluginConfigSchema returned should implement PluginConfigSchema interface", func() {
+			Convey("And the pluginConfigSchema returned should implement PluginConfigSchema interface and pluginConfigSchema should contain the configured telemetry", func() {
 				var _ ServiceConfiguration = pluginConfigSchemaV1
-			})
-			Convey("And the pluginConfigSchema should contain the configured telemetry", func() {
 				So(pluginConfigSchemaV1.TelemetryConfig, ShouldNotBeNil)
 			})
 		})

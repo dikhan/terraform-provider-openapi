@@ -50,9 +50,6 @@ func TestServiceSchemaConfigurationV1ExecuteCommand(t *testing.T) {
 		}
 		Convey("When ExecuteCommand method is called", func() {
 			err := serviceSchemaConfigurationV1.ExecuteCommand()
-			Convey("And the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message returned should be the expected", func() {
 				So(err.Error(), ShouldEqual, "provider schema property 'some_property_name' command failed: command '[cat nonexistingfile]' failed: cat: nonexistingfile: No such file or directory\n(exit status 1)")
 			})
@@ -66,9 +63,6 @@ func TestServiceSchemaConfigurationV1ExecuteCommand(t *testing.T) {
 		}
 		Convey("When ExecuteCommand method is called", func() {
 			err := serviceSchemaConfigurationV1.ExecuteCommand()
-			Convey("And the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message returned should be the expected", func() {
 				So(err.Error(), ShouldEqual, "provider schema property 'some_property_name' command failed: command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
 			})
@@ -100,9 +94,6 @@ func TestServiceSchemaConfigurationV1Exec(t *testing.T) {
 		Convey("When exec method is called", func() {
 			go serviceSchemaConfigurationV1.exec(doneChan)
 			err := <-doneChan
-			Convey("And the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message returned should be the expected", func() {
 				So(err.Error(), ShouldEqual, "command '[cat nonexistingfile]' failed: cat: nonexistingfile: No such file or directory\n(exit status 1)")
 			})
@@ -118,9 +109,6 @@ func TestServiceSchemaConfigurationV1Exec(t *testing.T) {
 		Convey("When exec method is called", func() {
 			go serviceSchemaConfigurationV1.exec(doneChan)
 			err := <-doneChan
-			Convey("And the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message returned should be the expected", func() {
 				So(err.Error(), ShouldEqual, "command '[sleep 2]' did not finish executing within the expected time 1s (signal: killed)")
 			})
@@ -136,10 +124,8 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 		}
 		Convey("When GetDefaultValue method is called", func() {
 			value, err := serviceSchemaConfigurationV1.GetDefaultValue()
-			Convey("And the err returned should be nil", func() {
+			Convey("Then the value returned should matched the default one and the err returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should matched the default one", func() {
 				So(value, ShouldEqual, serviceSchemaConfigurationV1.DefaultValue)
 			})
 		})
@@ -160,10 +146,8 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 		}
 		Convey("When GetDefaultValue method is called", func() {
 			value, err := serviceSchemaConfigurationV1.GetDefaultValue()
-			Convey("And the err returned should be nil", func() {
+			Convey("Then the value returned should matched the default one and the err returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should matched the default one", func() {
 				So(value, ShouldEqual, expectedValue)
 			})
 		})
@@ -186,10 +170,8 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 		}
 		Convey("When GetDefaultValue method is called", func() {
 			value, err := serviceSchemaConfigurationV1.GetDefaultValue()
-			Convey("And the err returned should be nil", func() {
+			Convey("Then the value returned should matched the default one and the err returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should matched the default one", func() {
 				So(value, ShouldEqual, expectedValue)
 			})
 		})
@@ -210,9 +192,6 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 		}
 		Convey("When GetDefaultValue method is called", func() {
 			_, err := serviceSchemaConfigurationV1.GetDefaultValue()
-			Convey("And the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "'schemaPropertyName': 'nonSupported' content type not supported")
 			})
@@ -230,9 +209,6 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 		}
 		Convey("When GetDefaultValue method is called", func() {
 			_, err := serviceSchemaConfigurationV1.GetDefaultValue()
-			Convey("And the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "failed to read external configuration file 'som_non_existing_file' for schema property 'schemaPropertyName': open som_non_existing_file: no such file or directory")
 			})
@@ -256,9 +232,6 @@ func TestServiceSchemaConfigurationV1GetDefaultValue(t *testing.T) {
 		}
 		Convey("When GetDefaultValue method is called", func() {
 			_, err := serviceSchemaConfigurationV1.GetDefaultValue()
-			Convey("And the err returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "key error: wrong not found in object")
 			})
@@ -279,13 +252,9 @@ func TestServiceExternalConfigurationV1GetFileParser(t *testing.T) {
 		}
 		Convey("When getFileParser method is called with some content", func() {
 			parser, err := serviceExternalConfigurationV1.getFileParser()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then parser returned should be of type parserRaw and parser get value should return the right value and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the parser returned should be of type parserRaw", func() {
 				So(parser, ShouldHaveSameTypeAs, parserRaw{})
-			})
-			Convey("And the parser get value should return the right value", func() {
 				value, err := parser.getValue()
 				So(err, ShouldBeNil)
 				So(value, ShouldEqual, expectedValue)
@@ -306,13 +275,9 @@ func TestServiceExternalConfigurationV1GetFileParser(t *testing.T) {
 		}
 		Convey("When getFileParser method is called with some content", func() {
 			parser, err := serviceExternalConfigurationV1.getFileParser()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the parser returned should be of type parserRaw and the parser get value should return the right value and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the parser returned should be of type parserRaw", func() {
 				So(parser, ShouldHaveSameTypeAs, parserJSON{})
-			})
-			Convey("And the parser get value should return the right value", func() {
 				value, err := parser.getValue()
 				So(err, ShouldBeNil)
 				So(value, ShouldEqual, expectedValue)
@@ -332,9 +297,6 @@ func TestServiceExternalConfigurationV1GetFileParser(t *testing.T) {
 		}
 		Convey("When getFileParser method is called with some content", func() {
 			_, err := serviceExternalConfigurationV1.getFileParser()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the err message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "'nonSupported' content type not supported")
 			})
@@ -364,10 +326,8 @@ func TestSchemaFileParserRawGetValue(t *testing.T) {
 		}
 		Convey("When getValue method is called", func() {
 			value, err := parserRaw.getValue()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then value returned should match the expected content and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should match the content", func() {
 				So(value, ShouldEqual, expectedContent)
 			})
 		})
@@ -401,11 +361,12 @@ func TestSchemaFileParserJsonGetValue(t *testing.T) {
 		}
 		Convey("When getValue method is called", func() {
 			value, err := parserJSON.getValue()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the value returned should match the content expected and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should match the content", func() {
 				So(value, ShouldEqual, expectedValue)
+			})
+			Convey("And ", func() {
+
 			})
 		})
 	})
@@ -420,9 +381,6 @@ func TestSchemaFileParserJsonGetValue(t *testing.T) {
 		}
 		Convey("When getValue method is called", func() {
 			_, err := parserJSON.getValue()
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the error returned should be", func() {
 				So(err.Error(), ShouldEqual, "key error: someNonExistingKey not found in object")
 			})
