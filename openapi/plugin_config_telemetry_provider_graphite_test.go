@@ -3,6 +3,7 @@ package openapi
 import (
 	"bytes"
 	"errors"
+	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net"
@@ -72,13 +73,16 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter(t *te
 }
 
 func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter_BadHost(t *testing.T) {
-	openAPIPluginVersion := "0.25.0"
-	expectedError := &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false}
-
-	tpg := createTestGraphiteProviderBadHost()
-	err := tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion, nil)
-
-	assert.Equal(t, expectedError, err)
+	Convey("Given a TelemetryProviderGraphite", t, func() {
+		openAPIPluginVersion := "0.25.0"
+		tpg := createTestGraphiteProviderBadHost()
+		Convey("When the GetTelemetryProviderConfiguration method is called", func() {
+			err := tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion, nil)
+			Convey("Then the telemetry config should be nil", func() {
+				So(err, ShouldResemble, &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false})
+			})
+		})
+	})
 }
 
 func TestTelemetryProviderGraphite_IncServiceProviderResourceTotalRunsCounter(t *testing.T) {
@@ -106,19 +110,28 @@ func TestTelemetryProviderGraphite_IncServiceProviderResourceTotalRunsCounter(t 
 }
 
 func TestTelemetryProviderGraphite_IncServiceProviderResourceTotalRunsCounter_BadHost(t *testing.T) {
-	providerName := "myProviderName"
-	expectedError := &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false}
-
-	tpg := createTestGraphiteProviderBadHost()
-	err := tpg.IncServiceProviderResourceTotalRunsCounter(providerName, "cdn_v1", TelemetryResourceOperationCreate, nil)
-
-	assert.Equal(t, expectedError, err)
+	Convey("Given a TelemetryProviderGraphite", t, func() {
+		providerName := "myProviderName"
+		tpg := createTestGraphiteProviderBadHost()
+		Convey("When the GetTelemetryProviderConfiguration method is called", func() {
+			err := tpg.IncServiceProviderResourceTotalRunsCounter(providerName, "cdn_v1", TelemetryResourceOperationCreate, nil)
+			Convey("Then the telemetry config shoudl be nil", func() {
+				So(err, ShouldResemble, &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false})
+			})
+		})
+	})
 }
 
 func TestTelemetryProviderGraphite_GetTelemetryProviderConfiguration(t *testing.T) {
-	tpg := TelemetryProviderGraphite{}
-	telemetryConfiguration := tpg.GetTelemetryProviderConfiguration(nil)
-	assert.Nil(t, telemetryConfiguration)
+	Convey("Given a TelemetryProviderGraphite", t, func() {
+		tpg := TelemetryProviderGraphite{}
+		Convey("When the GetTelemetryProviderConfiguration method is called", func() {
+			telemetryConfiguration := tpg.GetTelemetryProviderConfiguration(nil)
+			Convey("Then the telemetry config shoudl be nil", func() {
+				So(telemetryConfiguration, ShouldBeNil)
+			})
+		})
+	})
 }
 
 func TestTelemetryProviderGraphite_BuildMetricName(t *testing.T) {
