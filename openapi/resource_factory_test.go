@@ -32,10 +32,8 @@ func TestCreateSchemaResourceTimeout(t *testing.T) {
 		})
 		Convey("When createSchemaResourceTimeout is called", func() {
 			timeouts, err := r.createSchemaResourceTimeout()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then timeouts should match the expected ones and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the timeouts should match the expected ones", func() {
 				So(timeouts.Read, ShouldEqual, expectedTimeouts.Get)
 				So(timeouts.Create, ShouldEqual, expectedTimeouts.Post)
 				So(timeouts.Delete, ShouldEqual, expectedTimeouts.Delete)
@@ -56,27 +54,13 @@ func TestCreateTerraformResource(t *testing.T) {
 				},
 			}
 			schemaResource, err := r.createTerraformResource()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then schemaResource returned should be configured as expected and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema resource should not be empty", func() {
 				So(schemaResource.Schema, ShouldNotBeEmpty)
-			})
-			Convey("And the create function is invokable and returns nil error", func() {
-				err := schemaResource.Create(resourceData, client)
-				So(err, ShouldBeNil)
-			})
-			Convey("And the read function is invokable and returns nil error", func() {
-				err := schemaResource.Read(resourceData, client)
-				So(err, ShouldBeNil)
-			})
-			Convey("And the update function is invokable and returns nil error", func() {
-				err := schemaResource.Update(resourceData, client)
-				So(err, ShouldBeNil)
-			})
-			Convey("And the delete function is invokable and returns nil error", func() {
-				err := schemaResource.Delete(resourceData, client)
-				So(err, ShouldBeNil)
+				So(schemaResource.Create(resourceData, client), ShouldBeNil)
+				So(schemaResource.Read(resourceData, client), ShouldBeNil)
+				So(schemaResource.Update(resourceData, client), ShouldBeNil)
+				So(schemaResource.Delete(resourceData, client), ShouldBeNil)
 			})
 		})
 	})
@@ -87,13 +71,10 @@ func TestCreateTerraformResourceSchema(t *testing.T) {
 		r, _ := testCreateResourceFactory(t, idProperty, stringProperty)
 		Convey("When createResourceSchema is called", func() {
 			schema, err := r.createTerraformResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then schema returned should be configured as expected and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should not contain the ID property as schema already has a reserved ID field to store the unique identifier", func() {
+				// And the schema returned should not contain the ID property as schema already has a reserved ID field to store the unique identifier
 				So(schema, ShouldNotContainKey, idProperty.Name)
-			})
-			Convey("And the schema returned should contain the resource properties", func() {
 				So(schema, ShouldContainKey, stringProperty.Name)
 			})
 		})
@@ -119,15 +100,13 @@ func TestCreate(t *testing.T) {
 				},
 			}
 			err := r.create(resourceData, client)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then resourceData should be configured as expected, the error returned should be nil amd the telemetry endpoint have been called", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
+				// resourceData should be populated with the values returned by the API including the ID
 				So(resourceData.Id(), ShouldEqual, client.responsePayload[idProperty.Name])
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
-			})
-			Convey("And the expected telemetry provider should have been called", func() {
 				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				// the expected telemetry provider should have been called
 				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationCreate)
 			})
 		})
@@ -140,10 +119,7 @@ func TestCreate(t *testing.T) {
 				error: createError,
 			}
 			err := r.create(resourceData, client)
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error returned should be the error returned by the client delete operation", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err, ShouldEqual, createError)
 			})
 		})
@@ -154,10 +130,7 @@ func TestCreate(t *testing.T) {
 				returnHTTPCode:  http.StatusInternalServerError,
 			}
 			err := r.create(resourceData, client)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned should be", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] POST /v1/resource failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 201 202] ()")
 			})
 		})
@@ -167,10 +140,7 @@ func TestCreate(t *testing.T) {
 				responsePayload: map[string]interface{}{},
 			}
 			err := r.create(resourceData, client)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned should be", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "response object returned from the API is missing mandatory identifier property 'id'")
 			})
 		})
@@ -221,7 +191,7 @@ func TestCreate(t *testing.T) {
 		Convey("When create is called with resource data and an empty clientOpenAPI", func() {
 			err := r.create(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
-				assert.EqualError(t, err, "getResourcePath() failed")
+				So(err.Error(), ShouldEqual, "getResourcePath() failed")
 			})
 		})
 	})
@@ -309,7 +279,7 @@ func TestReadWithOptions(t *testing.T) {
 		Convey("When readWithOptions is called with nil data, an empty clientOpenAPI, and handleNotFound set to false", func() {
 			err := r.readWithOptions(&schema.ResourceData{}, &clientOpenAPIStub{}, false)
 			Convey("Then the error returned should be the expected one", func() {
-				assert.EqualError(t, err, "getResourcePath() failed")
+				So(err.Error(), ShouldEqual, "getResourcePath() failed")
 			})
 		})
 	})
@@ -324,13 +294,13 @@ func TestReadWithOptions(t *testing.T) {
 		Convey("When readWithOptions is called with handleNotFound set to true", func() {
 			err := r.readWithOptions(resourceData, c, true)
 			Convey("Then the error returned should be the expected one", func() {
-				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: NotFound")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/ failed: NotFound")
 			})
 		})
 		Convey("When readWithOptions is called with handleNotFound set to false", func() {
 			err := r.readWithOptions(resourceData, c, false)
 			Convey("Then the error returned should be nil", func() {
-				assert.Nil(t, err)
+				So(err, ShouldBeNil)
 			})
 		})
 	})
@@ -343,55 +313,70 @@ func TestReadWithOptions(t *testing.T) {
 		Convey("When readWithOptions is called with handleNotFound set to true", func() {
 			err := r.readWithOptions(resourceData, c, true)
 			Convey("Then the error returned should be the expected one", func() {
-				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
 			})
 		})
 		Convey("When readWithOptions is called with handleNotFound set to false", func() {
 			err := r.readWithOptions(resourceData, c, false)
 			Convey("Then the error returned should be nil", func() {
-				assert.EqualError(t, err, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/ failed: some generic error")
 			})
 		})
 	})
 }
 
 func TestGetParentID(t *testing.T) {
-	expectedParentID := "32"
-	resourceParentName := "cdns_v1"
-	expectedParentPropertyName := fmt.Sprintf("%s_id", resourceParentName)
-	expectedResourceInstanceID := "159"
-	IDValue := fmt.Sprintf("%s/%s", expectedParentID, expectedResourceInstanceID)
-	IDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, IDValue)
-	expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, expectedParentID)
-	r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{resourceParentName}, "cdns_v1", IDProperty, expectedParentProperty)
-	parentIDs, err := r.getParentIDs(resourceData)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedParentID, parentIDs[0])
-}
+	Convey("Given a root path /users, a root path item, schema definitions", t, func() {
+		expectedParentID := "32"
+		resourceParentName := "cdns_v1"
+		expectedParentPropertyName := fmt.Sprintf("%s_id", resourceParentName)
+		expectedResourceInstanceID := "159"
+		IDValue := fmt.Sprintf("%s/%s", expectedParentID, expectedResourceInstanceID)
+		IDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, IDValue)
+		expectedParentProperty := newStringSchemaDefinitionProperty(expectedParentPropertyName, "", true, true, false, false, false, true, false, false, expectedParentID)
+		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{resourceParentName}, "cdns_v1", IDProperty, expectedParentProperty)
+		Convey("When the getParentIDs method is called", func() {
+			parentIDs, err := r.getParentIDs(resourceData)
+			Convey(fmt.Sprintf("Then the parentIDs returned should contain 1 element '%s' and there should be no error", expectedParentID), func() {
+				So(err, ShouldBeNil)
+				So(len(parentIDs), ShouldEqual, 1)
+				So(parentIDs[0], ShouldEqual, expectedParentID)
+			})
+		})
+	})
 
-func TestGetParentID_MissingOpenAPIResource(t *testing.T) {
-	d := &schema.ResourceData{}
-	r := resourceFactory{openAPIResource: nil}
-	parentIDs, err := r.getParentIDs(d)
-	assert.Empty(t, parentIDs)
-	assert.EqualError(t, err, "can't get parent ids from a resourceFactory with no openAPIResource")
-}
+	Convey("Given a resourceFactory with a missing openAPIResource", t, func() {
+		d := &schema.ResourceData{}
+		r := resourceFactory{openAPIResource: nil}
+		Convey("When the getParentIDs method is called", func() {
+			parentIDs, err := r.getParentIDs(d)
+			Convey("Then the parent ids returned should be empty and the error should match the expected one", func() {
+				So(parentIDs, ShouldBeEmpty)
+				So(err.Error(), ShouldEqual, "can't get parent ids from a resourceFactory with no openAPIResource")
+			})
+		})
+	})
 
-func TestGetParentID_MissingParentPropID(t *testing.T) {
-	d := &schema.ResourceData{}
-	expectedParentProperty := &SpecSchemaDefinitionProperty{Name: "cdns_v1_id", Required: true, Type: TypeString, Default: "32"}
-	testSchema := &testSchemaDefinition{expectedParentProperty}
-	specResource := &specStubResource{
-		name:                   "firewall",
-		path:                   "/v1/cdns/{id}/firewall",
-		schemaDefinition:       testSchema.getSchemaDefinition(),
-		parentResourceNames:    []string{"cdns_v1"},
-		fullParentResourceName: "cdns_v1",
-	}
-	r := newResourceFactory(specResource)
-	parentIDs, err := r.getParentIDs(d)
-	assert.Empty(t, parentIDs)
-	assert.EqualError(t, err, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
+	Convey("Given a resourceFactory with openAPIResource that is missing the parent property", t, func() {
+		d := &schema.ResourceData{}
+		expectedParentProperty := &SpecSchemaDefinitionProperty{Name: "cdns_v1_id", Required: true, Type: TypeString, Default: "32"}
+		testSchema := &testSchemaDefinition{expectedParentProperty}
+		specResource := &specStubResource{
+			name:                   "firewall",
+			path:                   "/v1/cdns/{id}/firewall",
+			schemaDefinition:       testSchema.getSchemaDefinition(),
+			parentResourceNames:    []string{"cdns_v1"},
+			fullParentResourceName: "cdns_v1",
+		}
+		r := newResourceFactory(specResource)
+		Convey("When the getParentIDs method is called", func() {
+			parentIDs, err := r.getParentIDs(d)
+			Convey("Then the parent ids returned should be empty and the error should match the expected one", func() {
+				So(parentIDs, ShouldBeEmpty)
+				So(err.Error(), ShouldEqual, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
+			})
+		})
+	})
 }
 
 func TestReadRemote(t *testing.T) {
@@ -425,10 +410,7 @@ func TestReadRemote(t *testing.T) {
 				returnHTTPCode:  http.StatusInternalServerError,
 			}
 			_, err := r.readRemote("", client)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned should be", func() {
+			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] ()")
 			})
 		})
@@ -443,15 +425,11 @@ func TestReadRemote(t *testing.T) {
 				},
 			}
 			response, err := r.readRemote(expectedID, client, expectedParentID)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the response should be the expected one, the provider client should have been called with the right argument values, the values of the keys should match the values that came in the response and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the provider client should have been called with the right argument values", func() {
 				So(client.idReceived, ShouldEqual, expectedID)
 				So(len(client.parentIDsReceived), ShouldEqual, 1)
 				So(client.parentIDsReceived[0], ShouldEqual, expectedParentID)
-			})
-			Convey("And the values of the keys should match the values that came in the response", func() {
 				So(response[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
 				So(response[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
 			})
@@ -479,17 +457,11 @@ func TestUpdate(t *testing.T) {
 				},
 			}
 			err := r.update(resourceData, client)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then resourceData should be populated with the values returned by the API, the error returned should be nil, and the expected telemetry provider should have been called", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData should contain the ID property", func() {
 				So(resourceData.Id(), ShouldEqual, idProperty.Default)
-			})
-			Convey("And resourceData should be populated with the values returned by the API", func() {
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
-			})
-			Convey("And the expected telemetry provider should have been called", func() {
 				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
 				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
 			})
@@ -503,13 +475,9 @@ func TestUpdate(t *testing.T) {
 				},
 			}
 			err := r.update(resourceData, client)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should be the expected one and resourceData values should be the values got from the response payload (original values)", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned should equal ", func() {
 				So(err.Error(), ShouldEqual, "validation for immutable properties failed: user attempted to update an immutable property ('string_immutable_property'): [user input: updatedImmutableValue; actual: immutableOriginalValue]. Update operation was aborted; no updates were performed")
-			})
-			Convey("And resourceData values should be the values got from the response payload (original values)", func() {
 				So(resourceData.Id(), ShouldEqual, idProperty.Default)
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, client.responsePayload[immutableProperty.Name])
@@ -524,9 +492,6 @@ func TestUpdate(t *testing.T) {
 				error: updateError,
 			}
 			err := r.update(resourceData, client)
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("Then the error returned should be the error returned by the client update operation", func() {
 				So(err, ShouldEqual, updateError)
 			})
@@ -636,7 +601,7 @@ func TestUpdate(t *testing.T) {
 		Convey("When update is called with resource data and an empty clientOpenAPI", func() {
 			err := r.update(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
-				assert.EqualError(t, err, "getResourcePath() failed")
+				So(err.Error(), ShouldEqual, "getResourcePath() failed")
 			})
 		})
 	})
@@ -660,13 +625,9 @@ func TestDelete(t *testing.T) {
 				},
 			}
 			err := r.delete(resourceData, client)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the expectedValue returned should be true, expected telemetry provider should have been called and error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the expectedValue returned should be true", func() {
 				So(client.responsePayload, ShouldNotContainKey, idProperty.Name)
-			})
-			Convey("And the expected telemetry provider should have been called", func() {
 				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
 				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationDelete)
 			})
@@ -680,9 +641,6 @@ func TestDelete(t *testing.T) {
 				error: deleteError,
 			}
 			err := r.delete(resourceData, client)
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("Then the error returned should be the error returned by the client delete operation", func() {
 				So(err, ShouldEqual, deleteError)
 			})
@@ -694,10 +652,7 @@ func TestDelete(t *testing.T) {
 				returnHTTPCode:  http.StatusInternalServerError,
 			}
 			err := r.delete(resourceData, client)
-			Convey("Then the error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned should be", func() {
+			Convey("Then the error returned should be", func() {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] DELETE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [204 200 202] ()")
 			})
 		})
@@ -720,10 +675,7 @@ func TestDelete(t *testing.T) {
 		Convey("When delete is called with resource data and a client", func() {
 			client := &clientOpenAPIStub{}
 			err := r.delete(&schema.ResourceData{}, client)
-			Convey("Then the expectedValue returned should be true", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
+			Convey("Then the error returned should be", func() {
 				So(err.Error(), ShouldEqual, "[resource='resourceName'] resource does not support DELETE operation, check the swagger file exposed on '/v1/resource'")
 			})
 		})
@@ -774,7 +726,7 @@ func TestDelete(t *testing.T) {
 		Convey("When delete is called with resource data and an empty clientOpenAPI", func() {
 			err := r.delete(&schema.ResourceData{}, &clientOpenAPIStub{})
 			Convey("Then the error returned should be the expected one", func() {
-				assert.EqualError(t, err, "getResourcePath() failed")
+				So(err.Error(), ShouldEqual, "getResourcePath() failed")
 			})
 		})
 	})
@@ -804,22 +756,12 @@ func TestImporter(t *testing.T) {
 			})
 			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
 				data, err := resourceImporter.State(resourceData, client)
-				Convey("Then the err returned should be nil", func() {
+				Convey("Then the data returned should contained the expected configuration, the telemetry provider should have been called and the err returned should be nil", func() {
 					So(err, ShouldBeNil)
-				})
-				Convey("And the data list returned should have one item", func() {
 					So(len(data), ShouldEqual, 1)
-				})
-				Convey("And the data returned should contained the expected resource ID", func() {
 					So(data[0].Id(), ShouldEqual, idProperty.Default)
-				})
-				Convey("And the data returned should contained the imported id field with the right value", func() {
 					So(data[0].Get(importedIDProperty.Name), ShouldEqual, importedIDProperty.Default)
-				})
-				Convey("And the data returned should contained the imported string field with the right value returned from the API", func() {
 					So(data[0].Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
-				})
-				Convey("And the expected telemetry provider should have been called", func() {
 					So(telemetryHandlerResourceNameReceived[0], ShouldEqual, "resourceName")
 					So(telemetryHandlerTFOperationReceived[0], ShouldEqual, TelemetryResourceOperationImport)
 					So(telemetryHandlerResourceNameReceived[1], ShouldEqual, "resourceName")
@@ -845,11 +787,9 @@ func TestImporter(t *testing.T) {
 			})
 			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
 				data, err := resourceImporter.State(resourceData, client)
-				Convey("Then the err returned should mention that the resource does not exists", func() {
-					So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/id failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: ")
-				})
-				Convey("Then the data should be nil", func() {
+				Convey("Then the err returned should mention that the resource does not exists and the data should be nil", func() {
 					So(data, ShouldBeNil)
+					So(err.Error(), ShouldEqual, "[resource='resourceName'] GET /v1/resource/id failed: HTTP Response Status Code 404 - Not Found. Could not find resource instance: ")
 				})
 			})
 		})
@@ -878,19 +818,11 @@ func TestImporter(t *testing.T) {
 			})
 			Convey("And when the resourceImporter State method is invoked with the provider client and resource data for one item", func() {
 				data, err := resourceImporter.State(resourceData, client)
-				Convey("Then the err returned should be nil", func() {
+				Convey("Then the data list returned should be configured as expected and the error returned should be nil", func() {
 					So(err, ShouldBeNil)
-				})
-				Convey("And the data list returned should have one item", func() {
 					So(len(data), ShouldEqual, 1)
-				})
-				Convey("And the data returned should contain the parent id field with the right value", func() {
 					So(data[0].Get(expectedParentPropertyName), ShouldEqual, expectedParentID)
-				})
-				Convey("And the data returned should contain the expected resource ID", func() {
 					So(data[0].Id(), ShouldEqual, expectedResourceInstanceID)
-				})
-				Convey("And the data returned should contain the imported string field with the right value returned from the API", func() {
 					So(data[0].Get(stringProperty.Name), ShouldEqual, client.responsePayload[stringProperty.Name])
 				})
 			})
@@ -984,7 +916,6 @@ func TestImporter(t *testing.T) {
 		importedIDValue := "1234/5678"
 		importedIDProperty := newStringSchemaDefinitionProperty("id", "", true, true, false, false, false, true, false, false, importedIDValue)
 		r, resourceData := testCreateSubResourceFactory(t, "/v1/cdns/{id}/firewall", []string{"cdns_v1"}, "cdns_v1", importedIDProperty, stringProperty)
-
 		Convey("When importer is called", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
@@ -992,14 +923,10 @@ func TestImporter(t *testing.T) {
 				},
 			}
 			resourceImporter := r.importer()
-			Convey("Then the resource importer returned should Not be nil", func() {
+			Convey("Then the resource importer returned should not be nil and when the resourceImporter State method is invoked with data resource and the provider client", func() {
 				So(resourceImporter, ShouldNotBeNil)
-			})
-			Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
 				_, err := resourceImporter.State(resourceData, client)
-				Convey("Then the err returned should be the expected one", func() {
-					So(err.Error(), ShouldEqual, `Invalid address to set: []string{"cdns_v1_id"}`)
-				})
+				So(err.Error(), ShouldEqual, `Invalid address to set: []string{"cdns_v1_id"}`)
 			})
 		})
 	})
@@ -1030,16 +957,12 @@ func TestImporter(t *testing.T) {
 		}
 		Convey("When import is called", func() {
 			resourceImporter := r.importer()
-			Convey("Then resourceImporter not be nil", func() {
+			Convey("Then resourceImporter not be nil and when the resourceImporter State method is invoked with data resource and the provider client", func() {
 				So(resourceImporter, ShouldNotBeNil)
-				Convey("And when the resourceImporter State method is invoked with data resource and the provider client", func() {
-					resourceData := &schema.ResourceData{}
-					data, err := resourceImporter.State(resourceData, &clientOpenAPIStub{})
-					Convey("Then the error returned should be the expected one and data should be nil", func() {
-						So(err.Error(), ShouldEqual, "getResourcePath() failed")
-						So(data, ShouldBeNil)
-					})
-				})
+				resourceData := &schema.ResourceData{}
+				data, err := resourceImporter.State(resourceData, &clientOpenAPIStub{})
+				So(err.Error(), ShouldEqual, "getResourcePath() failed")
+				So(data, ShouldBeNil)
 			})
 		})
 	})
@@ -1058,9 +981,7 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 				},
 				returnHTTPCode: http.StatusOK,
 			}
-
 			responsePayload := map[string]interface{}{}
-
 			responseStatusCode := http.StatusAccepted
 			operation := &specResourceOperation{
 				responses: map[int]*specResponse{
@@ -1072,10 +993,8 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 				},
 			}
 			err := r.handlePollingIfConfigured(&responsePayload, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then he remote data should be the payload returned by the API and the err returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the remote data should be the payload returned by the API", func() {
 				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
 				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
 				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
@@ -1100,10 +1019,8 @@ func TestHandlePollingIfConfigured(t *testing.T) {
 				},
 			}
 			err := r.handlePollingIfConfigured(nil, resourceData, client, operation, responseStatusCode, schema.TimeoutCreate)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the remote data should be the payload returned by the API and the err returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the remote data should be the payload returned by the API", func() {
 				So(responsePayload[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
 				So(responsePayload[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
 				So(responsePayload[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
@@ -1184,18 +1101,13 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 			}
 			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
 			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the new status should match the one returned by the API and the remote data should be the payload returned by the API and the err returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the new status should match the one returned by the API", func() {
 				So(newStatus, ShouldEqual, client.responsePayload[statusProperty.Name])
-			})
-			Convey("And the remote data should be the payload returned by the API", func() {
 				So(remoteData.(map[string]interface{})[idProperty.Name], ShouldEqual, client.responsePayload[idProperty.Name])
 				So(remoteData.(map[string]interface{})[stringProperty.Name], ShouldEqual, client.responsePayload[stringProperty.Name])
 				So(remoteData.(map[string]interface{})[statusProperty.Name], ShouldEqual, client.responsePayload[statusProperty.Name])
 			})
-
 		})
 		Convey("When resourceStateRefreshFunc is called with an update resource data and an open api client that returns 404 not found", func() {
 			client := &clientOpenAPIStub{
@@ -1203,10 +1115,8 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 			}
 			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
 			_, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the the new status should be the internal hardcoded status 'destroyed' as a response with 404 status code is not expected to have a body and err returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the new status should be the internal hardcoded status 'destroyed' as a response with 404 status code is not expected to have a body", func() {
 				So(newStatus, ShouldEqual, defaultDestroyStatus)
 			})
 		})
@@ -1218,16 +1128,10 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 			}
 			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
 			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should not be nil", func() {
+			Convey("Then the remoteData should be empty, the new status should be empty and the err returned should not be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected one", func() {
 				So(err.Error(), ShouldEqual, fmt.Sprintf("error on retrieving resource 'resourceName' (id) when waiting: %s", expectedError))
-			})
-			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)
-			})
-			Convey("And the new status should be empty", func() {
 				So(newStatus, ShouldBeEmpty)
 			})
 		})
@@ -1244,16 +1148,9 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 			}
 			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
 			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected one", func() {
+			Convey("Then the remoteData should be empty, the new status should be empty and the err returned should not be the expected one", func() {
 				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource 'resourceName' (id): could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
-			})
-			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)
-			})
-			Convey("And the new status should be empty", func() {
 				So(newStatus, ShouldBeEmpty)
 			})
 		})
@@ -1270,16 +1167,9 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 			}
 			stateRefreshFunc := r.resourceStateRefreshFunc(resourceData, client)
 			remoteData, newStatus, err := stateRefreshFunc()
-			Convey("Then the err returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected one", func() {
+			Convey("Then the remoteData should be empty, the new status should be empty and the err returned should not be the expected one", func() {
 				So(err.Error(), ShouldEqual, "error occurred while retrieving status identifier value from payload for resource 'resourceName' (id): payload does not match resouce schema, could not find the status field: [status]")
-			})
-			Convey("And the remoteData should be empty", func() {
 				So(remoteData, ShouldBeNil)
-			})
-			Convey("And the new status should be empty", func() {
 				So(newStatus, ShouldBeEmpty)
 			})
 		})
@@ -1288,83 +1178,84 @@ func TestResourceStateRefreshFunc(t *testing.T) {
 
 func TestCheckImmutableFields(t *testing.T) {
 
+	propName := "property_name"
+
 	testCases := []struct {
-		name          string
-		inputProps    []*SpecSchemaDefinitionProperty
-		client        clientOpenAPIStub
-		assertions    func(*schema.ResourceData)
-		expectedError error
+		name           string
+		inputProps     []*SpecSchemaDefinitionProperty
+		inputClient    clientOpenAPIStub
+		expectedResult interface{}
+		assertions     func(*schema.ResourceData)
+		expectedError  error
 	}{
 		{
 			name: "mutable string property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "mutable_prop",
+					Name:      propName,
 					Type:      TypeString,
 					Immutable: false,
-					Default:   4,
+					Default:   "newValue",
 				}, // this pretends the property value in the state file has been updated
 			},
-			client: clientOpenAPIStub{
+			inputClient: clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
-					"mutable_prop": "originalPropertyValue",
+					propName: "originalPropertyValue",
 				},
 			},
-			expectedError: nil,
+			expectedResult: "newValue",
+			expectedError:  nil,
 		},
 		{
 			name: "immutable string property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeString,
 					Immutable: true,
 					Default:   "updatedImmutableValue",
 				}, // this pretends the property value in the state file has been updated
 			},
-			client: clientOpenAPIStub{
+			inputClient: clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
-					"immutable_prop": "originalImmutablePropertyValue",
+					propName: "originalImmutablePropertyValue",
 				},
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, "originalImmutablePropertyValue", resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
+			expectedResult: "originalImmutablePropertyValue",
+			expectedError:  errors.New(fmt.Sprintf("validation for immutable properties failed: user attempted to update an immutable property ('%s'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed", propName)),
 		},
 		{
 			name: "immutable int property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeInt,
 					Immutable: true,
 					Default:   4,
-				},
+				}, // this pretends the property value in the state file has been updated
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": 6}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": 6}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, 6, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable integer property ('immutable_prop'): [user input: 4; actual: 6]. Update operation was aborted; no updates were performed"),
+			expectedResult: 6,
+			expectedError:  errors.New(fmt.Sprintf("validation for immutable properties failed: user attempted to update an immutable integer property ('%s'): [user input: 4; actual: 6]. Update operation was aborted; no updates were performed", propName)),
 		},
 		{
 			name: "immutable int property has not changed",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeInt,
 					Immutable: true,
 					Default:   4,
-				},
+				}, // this pretends the property value in the state file has NOT been updated
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": 4}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": 4}`, propName)),
 			},
+			expectedResult: 4,
 			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, 4, resourceData.Get("immutable_prop"))
+				assert.Equal(t, 4, resourceData.Get(propName))
 			},
 			expectedError: nil,
 		},
@@ -1372,118 +1263,106 @@ func TestCheckImmutableFields(t *testing.T) {
 			name: "immutable float property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeFloat,
 					Immutable: true,
 					Default:   4.5,
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": 3.8}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": 3.8}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, 3.8, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable float property ('immutable_prop'): [user input: %!s(float64=4.5); actual: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
+			expectedResult: 3.8,
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable float property ('property_name'): [user input: %!s(float64=4.5); actual: %!s(float64=3.8)]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable float property has not changed",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeFloat,
 					Immutable: true,
 					Default:   4.5,
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": 4.5}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": 4.5}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, 4.5, resourceData.Get("immutable_prop"))
-			},
-			expectedError: nil,
+			expectedResult: 4.5,
+			expectedError:  nil,
 		},
 		{
 			name: "immutable bool property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeBool,
 					Immutable: true,
 					Default:   true,
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": false}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": false}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, false, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: %!s(bool=true); actual: %!s(bool=false)]. Update operation was aborted; no updates were performed"),
+			expectedResult: false,
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable property ('property_name'): [user input: %!s(bool=true); actual: %!s(bool=false)]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable list property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:           "immutable_prop",
+					Name:           propName,
 					Type:           TypeList,
 					ArrayItemsType: TypeString,
 					Immutable:      true,
 					Default:        []interface{}{"value1Updated", "value2Updated"},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": ["value1","value2"]}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": ["value1","value2"]}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable list property ('immutable_prop') element: [user input: [value1Updated value2Updated]; actual: [value1 value2]]. Update operation was aborted; no updates were performed"),
+			expectedResult: []interface{}{"value1", "value2"},
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable list property ('property_name') element: [user input: [value1Updated value2Updated]; actual: [value1 value2]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "mutable list property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:           "mutable_prop",
+					Name:           propName,
 					Type:           TypeList,
 					ArrayItemsType: TypeString,
 					Immutable:      false,
 					Default:        []interface{}{"value1Updated", "value2Updated", "newValue"},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"mutable_prop": ["value1","value2"]}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": ["value1","value2"]}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, []interface{}{"value1Updated", "value2Updated", "newValue"}, resourceData.Get("mutable_prop"))
-			},
-			expectedError: nil,
+			expectedResult: []interface{}{"value1Updated", "value2Updated", "newValue"},
+			expectedError:  nil,
 		},
 		{
 			name: "immutable list size is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:           "immutable_prop",
+					Name:           propName,
 					Type:           TypeList,
 					ArrayItemsType: TypeString,
 					Immutable:      true,
 					Default:        []interface{}{"value1Updated", "value2Updated", "value3Updated"},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": ["value1","value2"]}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": ["value1","value2"]}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, []interface{}{"value1", "value2"}, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable list property ('immutable_prop') size: [user input list size: 3; actual list size: 2]. Update operation was aborted; no updates were performed"),
+			expectedResult: []interface{}{"value1", "value2"},
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable list property ('property_name') size: [user input list size: 3; actual list size: 2]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable object property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeObject,
 					Immutable: true,
 					SpecSchemaDefinition: &SpecSchemaDefinition{
@@ -1500,19 +1379,17 @@ func TestCheckImmutableFields(t *testing.T) {
 					},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			expectedResult: map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"},
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('immutable_prop') property ('origin_port'): [user input: map[origin_port:%!s(int64=80) protocol:http]; actual: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('origin_port'): [user input: map[origin_port:%!s(int64=80) protocol:http]; actual: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "mutable object properties are updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeObject,
 					Immutable: false,
 					SpecSchemaDefinition: &SpecSchemaDefinition{
@@ -1529,19 +1406,17 @@ func TestCheckImmutableFields(t *testing.T) {
 					},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"}, resourceData.Get("immutable_prop"))
-			},
-			expectedError: nil,
+			expectedResult: map[string]interface{}{"origin_port": "80", "protocol": "http", "read_only_property": "some_value"},
+			expectedError:  nil,
 		},
 		{
 			name: "immutable property inside a mutable object is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "mutable_prop",
+					Name:      propName,
 					Type:      TypeObject,
 					Immutable: false, // the object in this case is mutable; however some props are immutable
 					SpecSchemaDefinition: &SpecSchemaDefinition{
@@ -1558,19 +1433,17 @@ func TestCheckImmutableFields(t *testing.T) {
 					},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"mutable_prop": {"string_immutable_property":"some_value","origin_port":443,"protocol":"https"}}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"string_immutable_property":"some_value","origin_port":443,"protocol":"https"}}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, map[string]interface{}{"origin_port": "443", "protocol": "https", "string_immutable_property": "some_value"}, resourceData.Get("mutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('mutable_prop') property ('string_immutable_property'): [user input: map[origin_port:%!s(int64=80) protocol:http string_immutable_property:updatedImmutableValue]; actual: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
+			expectedResult: map[string]interface{}{"origin_port": "443", "protocol": "https", "string_immutable_property": "some_value"},
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('string_immutable_property'): [user input: map[origin_port:%!s(int64=80) protocol:http string_immutable_property:updatedImmutableValue]; actual: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable object with nested object property is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:      "immutable_prop",
+					Name:      propName,
 					Type:      TypeObject,
 					Immutable: true,
 					SpecSchemaDefinition: &SpecSchemaDefinition{
@@ -1593,19 +1466,17 @@ func TestCheckImmutableFields(t *testing.T) {
 					},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": {"object_property": {"some_prop":"someValue"}}}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"object_property": {"some_prop":"someValue"}}}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}}, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('immutable_prop') property ('object_property'): [user input: map[object_property:map[some_prop:someUpdatedValue]]; actual: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
+			expectedResult: []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}},
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('object_property'): [user input: map[object_property:map[some_prop:someUpdatedValue]]; actual: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable list of objects is updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:           "immutable_prop",
+					Name:           propName,
 					Type:           TypeList,
 					ArrayItemsType: TypeObject,
 					Immutable:      true,
@@ -1623,19 +1494,17 @@ func TestCheckImmutableFields(t *testing.T) {
 					},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": [{"origin_port":443, "protocol":"https"}]}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": [{"origin_port":443, "protocol":"https"}]}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https"}}, resourceData.Get("immutable_prop"))
-			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable list of objects ('immutable_prop'): [user input: [map[origin_port:%!s(int=80) protocol:http]]; actual: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
+			expectedResult: []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https"}},
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable list of objects ('property_name'): [user input: [map[origin_port:%!s(int=80) protocol:http]]; actual: [map[origin_port:%!s(float64=443) protocol:https]]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "mutable list of objects where some properties are immutable and values are not updated",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				{
-					Name:           "immutable_prop",
+					Name:           propName,
 					Type:           TypeList,
 					ArrayItemsType: TypeObject,
 					Immutable:      false,
@@ -1685,22 +1554,20 @@ func TestCheckImmutableFields(t *testing.T) {
 					},
 				},
 			},
-			client: clientOpenAPIStub{
-				responsePayload: getMapFromJSON(t, `{"immutable_prop": [{"origin_port":80, "protocol":"http", "float_prop":99.99,"enabled":true}]}`),
+			inputClient: clientOpenAPIStub{
+				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": [{"origin_port":80, "protocol":"http", "float_prop":99.99,"enabled":true}]}`, propName)),
 			},
-			assertions: func(resourceData *schema.ResourceData) {
-				assert.Equal(t, []interface{}{map[string]interface{}{"origin_port": 80, "protocol": "http", "float_prop": 99.99, "enabled": true}}, resourceData.Get("immutable_prop"))
-			},
-			expectedError: nil,
+			expectedResult: []interface{}{map[string]interface{}{"origin_port": 80, "protocol": "http", "float_prop": 99.99, "enabled": true}},
+			expectedError:  nil,
 		},
 		{
 			name:       "client returns an error",
 			inputProps: []*SpecSchemaDefinitionProperty{},
-			client: clientOpenAPIStub{
+			inputClient: clientOpenAPIStub{
 				error: errors.New("some error"),
 			},
-			assertions:    func(resourceData *schema.ResourceData) {},
-			expectedError: errors.New("some error"),
+			expectedResult: nil,
+			expectedError:  errors.New("some error"),
 		},
 		{
 			name: "immutable property is updated",
@@ -1712,27 +1579,30 @@ func TestCheckImmutableFields(t *testing.T) {
 					Default:   "updatedImmutableValue",
 				},
 			},
-			client: clientOpenAPIStub{
+			inputClient: clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
 					"immutable_prop": "originalImmutablePropertyValue",
 					"unknown_prop":   "some value",
 				},
 			},
-			assertions:    func(resourceData *schema.ResourceData) {},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
+			expectedResult: nil,
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
 		},
 	}
 
-	for _, tc := range testCases {
-		r, resourceData := testCreateResourceFactory(t, tc.inputProps...)
-		err := r.checkImmutableFields(resourceData, &tc.client)
-		if tc.expectedError == nil {
-			assert.NoError(t, err, tc.name)
-		} else {
-			assert.Equal(t, tc.expectedError, err, tc.name)
-			tc.assertions(resourceData)
+	Convey("Given a resource factory", t, func() {
+		for _, tc := range testCases {
+			r, resourceData := testCreateResourceFactory(t, tc.inputProps...)
+			Convey(fmt.Sprintf("When checkImmutableFields method is called: %s", tc.name), func() {
+				err := r.checkImmutableFields(resourceData, &tc.inputClient)
+				Convey("Then the result returned should be the expected one", func() {
+					So(err, ShouldResemble, tc.expectedError)
+					So(resourceData.Get(propName), ShouldResemble, tc.expectedResult)
+				})
+			})
 		}
-	}
+	})
+
 }
 
 func getMapFromJSON(t *testing.T, input string) map[string]interface{} {

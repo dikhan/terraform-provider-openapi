@@ -11,32 +11,28 @@ import (
 )
 
 func TestExpandPath(t *testing.T) {
-	Convey("Given a file with absolute path", t, func() {
-		expectedPath := "/Users/username/.terraform/plugins"
-		Convey("When expandPath is called", func() {
-			path, err := expandPath(expectedPath)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the path should be the same as the input", func() {
-				So(path, ShouldEqual, path)
-			})
-		})
-	})
-	Convey("Given a file starting with ~", t, func() {
-		homePath := "~/some_folder"
-		Convey("When expandPath is called", func() {
-			path, err := expandPath(homePath)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the path returned should be expanded with the home dir", func() {
-				// Getting home dir to make the test OS-agnostic
-				homeDir, _ := homedir.Dir()
-				So(path, ShouldEqual, fmt.Sprintf("%s/%s", homeDir, "some_folder"))
+	// Getting home dir to make the test OS-agnostic
+	homeDir, _ := homedir.Dir()
+
+	testCases := []struct {
+		name           string
+		inputPath      string
+		expectedResult string
+		expectedError  error
+	}{
+		{name: "file with absolute path", inputPath: "/Users/username/.terraform/plugins", expectedResult: "/Users/username/.terraform/plugins", expectedError: nil},
+		{name: "file starting with ~", inputPath: "~/some_folder", expectedResult: fmt.Sprintf("%s/%s", homeDir, "some_folder"), expectedError: nil},
+	}
+
+	for _, tc := range testCases {
+		Convey(fmt.Sprintf("When expandPath method is called: %s", tc.name), t, func() {
+			returnedPath, err := expandPath(tc.inputPath)
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldResemble, tc.expectedError)
+				So(returnedPath, ShouldEqual, tc.expectedResult)
 			})
 		})
-	})
+	}
 }
 
 func TestGetFileContent(t *testing.T) {
@@ -46,14 +42,15 @@ func TestGetFileContent(t *testing.T) {
 		So(err, ShouldBeNil)
 		_, err = f.Write([]byte(expectedContent))
 		So(err, ShouldBeNil)
-		defer os.Remove(f.Name())
+		defer func() {
+			err := os.Remove(f.Name())
+			So(err, ShouldBeNil)
+		}()
 		So(err, ShouldBeNil)
 		Convey("When getFileContent is called", func() {
 			content, err := getFileContent(f.Name())
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the content returned should match the expected one and there should be no error", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the content should be the expected one", func() {
 				So(content, ShouldEqual, expectedContent)
 			})
 		})
