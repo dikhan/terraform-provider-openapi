@@ -547,10 +547,8 @@ func TestTerraformType(t *testing.T) {
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
-			Convey("Then error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And value type should be string", func() {
 				So(valueType, ShouldEqual, schema.TypeString)
 			})
 		})
@@ -561,10 +559,8 @@ func TestTerraformType(t *testing.T) {
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
-			Convey("Then error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And valye type should be int", func() {
 				So(valueType, ShouldEqual, schema.TypeInt)
 			})
 		})
@@ -575,10 +571,8 @@ func TestTerraformType(t *testing.T) {
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
-			Convey("Then error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And valye type should be float", func() {
 				So(valueType, ShouldEqual, schema.TypeFloat)
 			})
 		})
@@ -589,10 +583,8 @@ func TestTerraformType(t *testing.T) {
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
-			Convey("Then error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And valye type should be bool", func() {
 				So(valueType, ShouldEqual, schema.TypeBool)
 			})
 		})
@@ -603,10 +595,8 @@ func TestTerraformType(t *testing.T) {
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
-			Convey("Then error returned should not be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And value type should be invalid", func() {
 				So(valueType, ShouldEqual, schema.TypeInvalid)
 			})
 		})
@@ -617,10 +607,8 @@ func TestTerraformType(t *testing.T) {
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
-			Convey("Then error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And valye type should be map", func() {
 				So(valueType, ShouldEqual, schema.TypeMap)
 			})
 		})
@@ -631,10 +619,8 @@ func TestTerraformType(t *testing.T) {
 		}
 		Convey("When terraformType method is called", func() {
 			valueType, err := s.terraformType()
-			Convey("Then error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And valye type should be int", func() {
 				So(valueType, ShouldEqual, schema.TypeList)
 			})
 		})
@@ -650,10 +636,8 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
-			Convey("Then the result should be true", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(isTerraformListOfSimpleValues, ShouldBeTrue)
-			})
-			Convey("And the returned schema should be of tupe schema.Schema", func() {
 				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 			})
 		})
@@ -666,10 +650,8 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
-			Convey("Then the result should be true", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(isTerraformListOfSimpleValues, ShouldBeTrue)
-			})
-			Convey("And the returned schema should be of tupe schema.Schema", func() {
 				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 			})
 		})
@@ -682,10 +664,8 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
-			Convey("Then the result should be true", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(isTerraformListOfSimpleValues, ShouldBeTrue)
-			})
-			Convey("And the returned schema should be of tupe schema.Schema", func() {
 				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 			})
 		})
@@ -698,10 +678,8 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
-			Convey("Then the result should be true", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(isTerraformListOfSimpleValues, ShouldBeTrue)
-			})
-			Convey("And the returned schema should be of tupe schema.Schema", func() {
 				So(reflect.TypeOf(*listSchema), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 			})
 		})
@@ -714,10 +692,8 @@ func TestIsTerraformListOfSimpleValues(t *testing.T) {
 		}
 		Convey("When isTerraformListOfSimpleValues method is called", func() {
 			isTerraformListOfSimpleValues, listSchema := s.isTerraformListOfSimpleValues()
-			Convey("Then the result should be true", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(isTerraformListOfSimpleValues, ShouldBeFalse)
-			})
-			Convey("And the returned schema should be of tupe schema.Schema", func() {
 				So(listSchema, ShouldBeNil)
 			})
 		})
@@ -780,10 +756,8 @@ func TestTerraformObjectSchema(t *testing.T) {
 		}
 		Convey("When terraformObjectSchema method is called", func() {
 			_, err := s.terraformObjectSchema()
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("Then the error message returned should match the expected one", func() {
+				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldEqual, "object schema can only be formed for types object or types list with elems of type object: found type='string' elemType='' instead")
 			})
 		})
@@ -796,10 +770,8 @@ func TestTerraformObjectSchema(t *testing.T) {
 		}
 		Convey("When terraformObjectSchema method is called", func() {
 			_, err := s.terraformObjectSchema()
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("Then the error message returned should match the expected one", func() {
+				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldEqual, "missing spec schema definition for property 'prop' of type 'object'")
 			})
 		})
@@ -941,18 +913,17 @@ func TestTerraformSchema(t *testing.T) {
 			}}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
-			})
-			Convey("And the returned terraform schema contains the 'nested_object1' with the right configuration", func() {
+				// the returned terraform schema contains the 'nested_object1' with the right configuration
 				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_object1"]
 				So(nestedObject1, ShouldNotBeNil)
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
 				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)
-			})
-			Convey("And the returned terraform schema contains the 'nested_float_2' with the right configuration", func() {
+				// the returned terraform schema contains the 'nested_float_2' with the right configuration
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema["nested_float_2"]
 				So(nestedObject2.Type, ShouldEqual, schema.TypeFloat)
 			})
@@ -995,18 +966,17 @@ func TestTerraformSchema(t *testing.T) {
 			}}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
-			})
-			Convey("And the returned terraform schema contains the schema for the first nested object property with the right configuration", func() {
+				// the returned terraform schema contains the schema for the first nested object property with the right configuration
 				nestedObject1 := tfPropSchema.Elem.(*schema.Resource).Schema[expectedNestedObjectPropertyName1]
 				So(nestedObject1, ShouldNotBeNil)
 				So(nestedObject1.Type, ShouldEqual, schema.TypeMap)
 				So(nestedObject1.Elem.(*schema.Resource).Schema["string_property_1"].Type, ShouldEqual, schema.TypeString)
-			})
-			Convey("And the returned terraform schema contains the schema for the Second nested object property with the right configuration", func() {
+				// the returned terraform schema contains the schema for the Second nested object property with the right configuration
 				nestedObject2 := tfPropSchema.Elem.(*schema.Resource).Schema[expectedNestedObjectPropertyName2]
 				So(nestedObject2, ShouldNotBeNil)
 				So(nestedObject2.Type, ShouldEqual, schema.TypeMap)
@@ -1044,12 +1014,12 @@ func TestTerraformSchema(t *testing.T) {
 			}}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulting tfPropSchema should have a top level that is a 1 element list (workaround for object property with nested object)
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
 				So(tfPropSchema.MaxItems, ShouldEqual, 1)
-			})
-			Convey("And the returned terraform schema contains the schema for the first nested AND complex object property with the right configuration --> TypeList", func() {
+				// the returned terraform schema contains the schema for the first nested AND complex object property with the right configuration --> TypeList
 				nestedAndComplexObj := tfPropSchema.Elem.(*schema.Resource).Schema[complexObjectName]
 				So(nestedAndComplexObj, ShouldNotBeNil)
 				So(nestedAndComplexObj.Type, ShouldEqual, schema.TypeList)
@@ -1249,11 +1219,11 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulted terraform property schema should be of type array too
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type string", func() {
+				// the array elements are of type string
 				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
 			})
@@ -1270,11 +1240,11 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulted terraform property schema should be of type array too
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type int", func() {
+				// the array elements are of type int
 				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeInt)
 			})
@@ -1291,11 +1261,11 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulted terraform property schema should be of type array too
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type float", func() {
+				// the array elements are of type float
 				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeFloat)
 			})
@@ -1312,11 +1282,11 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulted terraform property schema should be of type array too
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type bool", func() {
+				// the array elements are of type bool
 				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Schema{}))
 				So(tfPropSchema.Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeBool)
 			})
@@ -1341,11 +1311,11 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the resulted terraform property schema should be of type array too", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				// the resulted terraform property schema should be of type array too
 				So(err, ShouldBeNil)
 				So(tfPropSchema.Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the array elements are of type object (resource object) containing the object schema properties", func() {
+				// the array elements are of type object (resource object) containing the object schema properties
 				So(reflect.TypeOf(tfPropSchema.Elem).Elem(), ShouldEqual, reflect.TypeOf(schema.Resource{}))
 				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "protocol")
 			})
@@ -1361,10 +1331,8 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			_, err := s.terraformSchema()
-			Convey("Then the error returned should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("Then the error message returned should be the expected one", func() {
+				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldEqual, "object schema can only be formed for types object or types list with elems of type object: found type='list' elemType='' instead")
 			})
 		})
@@ -1387,13 +1355,10 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the tf resource schema returned should not be nil", func() {
 				So(tfPropSchema, ShouldNotBeNil)
-			})
-			Convey("And the tf resource schema returned should contained the sub property - 'message'", func() {
+				// the tf resource schema returned should contained the sub property - 'message'
 				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
 			})
 		})
@@ -1420,16 +1385,13 @@ func TestTerraformSchema(t *testing.T) {
 		}
 		Convey("When terraformSchema method is called", func() {
 			tfPropSchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the tf resource schema returned should not be nil", func() {
+				// the tf resource schema returned should not be nil
 				So(tfPropSchema, ShouldNotBeNil)
-			})
-			Convey("And the tf resource schema returned should contain the sub property - 'message'", func() {
+				// the tf resource schema returned should contain the sub property - 'message'
 				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "message")
-			})
-			Convey("And the tf resource schema returned should contain the sub property - 'id' and should not be ignored", func() {
+				// the tf resource schema returned should contain the sub property - 'id' and should not be ignored
 				So(tfPropSchema.Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
 			})
 		})
@@ -1439,28 +1401,15 @@ func TestTerraformSchema(t *testing.T) {
 		s := newStringSchemaDefinitionProperty("propertyName", "", true, false, false, true, true, false, false, false, "default value")
 		Convey("When terraformSchema is called with a schema definition property that is required, force new, sensitive and has a default value", func() {
 			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as required", func() {
-				So(terraformPropertySchema.Required, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured as optional", func() {
 				So(terraformPropertySchema.Optional, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as NOT computed", func() {
+				So(terraformPropertySchema.Required, ShouldBeTrue)
 				So(terraformPropertySchema.Computed, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as force new", func() {
 				So(terraformPropertySchema.ForceNew, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as sensitive", func() {
 				So(terraformPropertySchema.Sensitive, ShouldBeTrue)
-			})
-			Convey("And the schema returned should have a default value (note: terraform will complain in this case at runtime since required properties cannot have default values)", func() {
+				// the schema returned should have a default value (note: terraform will complain in this case at runtime since required properties cannot have default values)
 				So(terraformPropertySchema.Default, ShouldEqual, s.Default)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
 		})
@@ -1470,19 +1419,11 @@ func TestTerraformSchema(t *testing.T) {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "")
 		Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
 			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
 				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
 				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as computed", func() {
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
 		})
@@ -1492,22 +1433,12 @@ func TestTerraformSchema(t *testing.T) {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, true, false, false, false, false, false, "some value")
 		Convey("When terraformSchema is called with a schema definition property that is readonly", func() {
 			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
 				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
 				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as computed", func() {
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured since the property is readOnly", func() {
 				So(terraformPropertySchema.Default, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
 		})
@@ -1517,22 +1448,12 @@ func TestTerraformSchema(t *testing.T) {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, nil)
 		Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
 			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
 				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
 				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should be configured as computed", func() {
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured with a default value", func() {
 				So(terraformPropertySchema.Default, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
 		})
@@ -1542,22 +1463,13 @@ func TestTerraformSchema(t *testing.T) {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, true, false, false, false, false, false, "some known value")
 		Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
 			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as not required", func() {
-				So(terraformPropertySchema.Required, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured as optional", func() {
 				So(terraformPropertySchema.Optional, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured as computed since in this case terraform will make use of the default value as input for the user. This makes the default value visible at plan time", func() {
+				So(terraformPropertySchema.Required, ShouldBeFalse)
+				// the schema returned should not be configured as computed since in this case terraform will make use of the default value as input for the user. This makes the default value visible at plan time
 				So(terraformPropertySchema.Computed, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured with a default value", func() {
 				So(terraformPropertySchema.Default, ShouldNotBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
 			})
 		})
@@ -1567,13 +1479,10 @@ func TestTerraformSchema(t *testing.T) {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
 		Convey("When terraformSchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
 			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-			Convey("And the schema validate function should return an error ", func() {
+				// the schema validate function should return an error
 				_, err := terraformPropertySchema.ValidateFunc(nil, "")
 				So(err, ShouldNotBeNil)
 				So(err, ShouldNotBeEmpty)
@@ -1586,19 +1495,11 @@ func TestTerraformSchema(t *testing.T) {
 		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, false, nil)
 		Convey("When terraformSchema is called with a schema definition property that validation fails due to required and computed set", func() {
 			terraformPropertySchema, err := s.terraformSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema returned should be configured as required", func() {
 				So(terraformPropertySchema.Required, ShouldBeTrue)
-			})
-			Convey("And the schema returned should not be configured as computed as it's not optional property", func() {
 				So(terraformPropertySchema.Computed, ShouldBeFalse)
-			})
-			Convey("And the schema returned should be configured with a validate function", func() {
 				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-			})
-			Convey("And the schema validate function should return an error ", func() {
 				_, err := terraformPropertySchema.ValidateFunc(nil, "")
 				So(err, ShouldNotBeNil)
 				So(err, ShouldNotBeEmpty)
@@ -1613,10 +1514,8 @@ func TestValidateFunc(t *testing.T) {
 	Convey("Given a schemaDefinitionProperty that is computed and has a default value set", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, false, "defaultValue")
 		Convey("When validateFunc is called with a schema definition property", func() {
-			Convey("And the schema returned should be configured with a validate function", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(s.validateFunc(), ShouldNotBeNil)
-			})
-			Convey("And the schema validate function should return successfully", func() {
 				_, err := s.validateFunc()(nil, "")
 				So(err, ShouldBeNil)
 			})
@@ -1626,10 +1525,8 @@ func TestValidateFunc(t *testing.T) {
 	Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
 		Convey("When validateFunc is called with a schema definition property", func() {
-			Convey("And the schema returned should be configured with a validate function", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(s.validateFunc(), ShouldNotBeNil)
-			})
-			Convey("And the schema validate function should return an error due to immutable and forceNew set", func() {
 				_, err := s.validateFunc()(nil, "")
 				So(err, ShouldNotBeNil)
 				So(err, ShouldNotBeEmpty)
@@ -1641,10 +1538,8 @@ func TestValidateFunc(t *testing.T) {
 	Convey("Given a schemaDefinitionProperty that is computed and required", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, false, nil)
 		Convey("When validateFunc is called with a schema definition property", func() {
-			Convey("And the schema returned should be configured with a validate function", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(s.validateFunc(), ShouldNotBeNil)
-			})
-			Convey("And the schema validate function should return an error due to required and computed set", func() {
 				_, err := s.validateFunc()(nil, "")
 				So(err, ShouldNotBeNil)
 				So(err, ShouldNotBeEmpty)
