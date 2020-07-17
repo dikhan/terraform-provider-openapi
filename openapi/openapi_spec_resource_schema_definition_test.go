@@ -268,13 +268,9 @@ func TestCreateResourceSchema(t *testing.T) {
 		}
 		Convey("When createResourceSchema method is called", func() {
 			tfResourceSchema, err := s.createResourceSchema()
-			Convey("Then the  err returned should not be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
-			})
-			Convey("Then the resulted tfResourceSchema should contain string_prop property", func() {
 				So(tfResourceSchema, ShouldContainKey, "string_prop")
 			})
 		})
@@ -299,13 +295,9 @@ func TestCreateResourceSchema(t *testing.T) {
 		}
 		Convey("When createResourceSchema method is called", func() {
 			tfResourceSchema, err := s.createResourceSchema()
-			Convey("Then the  err returned should not be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
-			})
-			Convey("Then the resulted tfResourceSchema should contain a key with the terraform compliant name string_prop ", func() {
 				So(tfResourceSchema, ShouldContainKey, "string_prop")
 			})
 		})
@@ -351,23 +343,13 @@ func TestCreateResourceSchema(t *testing.T) {
 		}
 		Convey("When createResourceSchema method is called", func() {
 			tfResourceSchema, err := s.createResourceSchema()
-			Convey("Then the  err returned should not be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
-			})
-			Convey("And the resulted tfResourceSchema should contain string_prop property of type string", func() {
 				So(tfResourceSchema, ShouldContainKey, "string_prop")
 				So(tfResourceSchema["string_prop"].Type, ShouldEqual, schema.TypeString)
-			})
-			Convey("And the resulted tfResourceSchema should contain status property", func() {
 				So(tfResourceSchema, ShouldContainKey, statusDefaultPropertyName)
-			})
-			Convey("And the resulted tfResourceSchema status field be of type map", func() {
 				So(tfResourceSchema[statusDefaultPropertyName].Type, ShouldEqual, schema.TypeMap)
-			})
-			Convey("And the resulted tfResourceSchema status field should contain all the sub-properties including the id property", func() {
 				So(tfResourceSchema[statusDefaultPropertyName].Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
 				So(tfResourceSchema[statusDefaultPropertyName].Elem.(*schema.Resource).Schema, ShouldContainKey, "name")
 			})
@@ -392,16 +374,10 @@ func TestCreateResourceSchema(t *testing.T) {
 		}
 		Convey("When createResourceSchema method is called", func() {
 			tfResourceSchema, err := s.createResourceSchema()
-			Convey("Then the  err returned should not be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
-			})
-			Convey("And the resulted tfResourceSchema should contain the array property", func() {
 				So(tfResourceSchema, ShouldContainKey, "listeners")
-			})
-			Convey("And the resulted tfResourceSchema listeners field should be of type list and contain the right item schema string type", func() {
 				So(tfResourceSchema["listeners"].Type, ShouldEqual, schema.TypeList)
 				So(tfResourceSchema["listeners"].Elem.(*schema.Schema).Type, ShouldEqual, schema.TypeString)
 			})
@@ -434,16 +410,10 @@ func TestCreateResourceSchema(t *testing.T) {
 		}
 		Convey("When createResourceSchema method is called", func() {
 			tfResourceSchema, err := s.createResourceSchema()
-			Convey("Then the  err returned should not be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resulted tfResourceSchema should not contain ID property", func() {
 				So(tfResourceSchema, ShouldNotContainKey, "id")
-			})
-			Convey("And the resulted tfResourceSchema should contain the array property", func() {
 				So(tfResourceSchema, ShouldContainKey, "listeners")
-			})
-			Convey("And the resulted tfResourceSchema should contain a field of type list and the list should have the right object elem schema of type Resource", func() {
 				So(tfResourceSchema["listeners"].Type, ShouldEqual, schema.TypeList)
 				So(tfResourceSchema["listeners"].Elem.(*schema.Resource).Schema, ShouldContainKey, "protocol")
 				So(tfResourceSchema["listeners"].Elem.(*schema.Resource).Schema["protocol"].Type, ShouldEqual, schema.TypeString)
@@ -468,10 +438,9 @@ func TestCreateResourceSchema(t *testing.T) {
 		}
 		Convey("When createResourceSchema method is called", func() {
 			tfResourceSchema, err := s.createResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the schema for the resource should contain the expected attributes", func() {
+				// the schema for the resource should contain the expected attributes
 				So(tfResourceSchema, ShouldContainKey, stringProperty.Name)
 				So(tfResourceSchema, ShouldContainKey, computedProperty.Name)
 				So(tfResourceSchema, ShouldContainKey, intProperty.Name)
@@ -481,15 +450,13 @@ func TestCreateResourceSchema(t *testing.T) {
 				So(tfResourceSchema, ShouldContainKey, optionalProperty.Name)
 				So(tfResourceSchema, ShouldContainKey, sensitiveProperty.Name)
 				So(tfResourceSchema, ShouldContainKey, forceNewProperty.Name)
-			})
-			Convey("And the schema property types should match the expected configuration", func() {
+				// the schema property types should match the expected configuration
 				So(tfResourceSchema[stringProperty.Name].Type, ShouldEqual, schema.TypeString)
 				So(tfResourceSchema[intProperty.Name].Type, ShouldEqual, schema.TypeInt)
 				So(tfResourceSchema[numberProperty.Name].Type, ShouldEqual, schema.TypeFloat)
 				So(tfResourceSchema[boolProperty.Name].Type, ShouldEqual, schema.TypeBool)
 				So(tfResourceSchema[slicePrimitiveProperty.Name].Type, ShouldEqual, schema.TypeList)
-			})
-			Convey("And the schema property options should match the expected configuration", func() {
+				// the schema property options should match the expected configuration
 				So(tfResourceSchema[computedProperty.Name].Computed, ShouldBeTrue)
 				So(tfResourceSchema[optionalProperty.Name].Optional, ShouldBeTrue)
 				So(tfResourceSchema[sensitiveProperty.Name].Sensitive, ShouldBeTrue)
@@ -519,10 +486,8 @@ func TestGetImmutableProperties(t *testing.T) {
 		}
 		Convey("When getImmutableProperties method is called", func() {
 			immutableProperties := s.getImmutableProperties()
-			Convey("Then the array returned should contain 'immutable_property'", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(immutableProperties, ShouldContain, "immutable_property")
-			})
-			Convey("And the 'id' property should be ignored even if it's marked as immutable (should never happen though, edge case)", func() {
 				So(immutableProperties, ShouldNotContain, "id")
 			})
 		})
@@ -567,10 +532,8 @@ func TestGetResourceIdentifier(t *testing.T) {
 		}
 		Convey("When getResourceIdentifier method is called", func() {
 			id, err := s.getResourceIdentifier()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the id returned should be the same as the one in the SpecSchemaDefinition", func() {
 				So(id, ShouldEqual, s.Properties[0].Name)
 			})
 		})
@@ -589,10 +552,8 @@ func TestGetResourceIdentifier(t *testing.T) {
 		}
 		Convey("When getResourceIdentifier method is called", func() {
 			id, err := s.getResourceIdentifier()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the id returned should be the same as the one in the SpecSchemaDefinition", func() {
 				So(id, ShouldEqual, s.Properties[0].Name)
 			})
 		})
@@ -610,10 +571,8 @@ func TestGetResourceIdentifier(t *testing.T) {
 		}
 		Convey("When getResourceIdentifier method is called", func() {
 			_, err := s.getResourceIdentifier()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then error message should equal", func() {
 				So(err.Error(), ShouldEqual, "could not find any identifier property in the resource schema definition")
 			})
 		})
@@ -634,13 +593,9 @@ func TestGetStatusId(t *testing.T) {
 
 		Convey("When getStatusIdentifier method is called", func() {
 			statuses, err := s.getStatusIdentifier()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the statuses returned should not be empty'", func() {
 				So(statuses, ShouldNotBeEmpty)
-			})
-			Convey("Then the value returned should contain the name of the property 'statuses'", func() {
 				So(statuses[0], ShouldEqual, statusDefaultPropertyName)
 			})
 		})
@@ -660,13 +615,9 @@ func TestGetStatusId(t *testing.T) {
 		}
 		Convey("When getStatusIdentifier method is called", func() {
 			status, err := s.getStatusIdentifier()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the status returned should not be empty'", func() {
 				So(status, ShouldNotBeEmpty)
-			})
-			Convey("Then the value returned should contain the name of the property 'some-other-property-holding-status'", func() {
 				So(status[0], ShouldEqual, expectedStatusProperty)
 			})
 		})
@@ -691,13 +642,9 @@ func TestGetStatusId(t *testing.T) {
 		}
 		Convey("When getStatusIdentifier method is called", func() {
 			status, err := s.getStatusIdentifier()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the status returned should not be empty'", func() {
 				So(status, ShouldNotBeEmpty)
-			})
-			Convey("Then the value returned should be 'some-other-property-holding-status' as it takes preference over the default 'status' property", func() {
 				So(status[0], ShouldEqual, expectedStatusProperty)
 			})
 		})
@@ -731,13 +678,10 @@ func TestGetStatusId(t *testing.T) {
 		}
 		Convey("When getStatusIdentifier method is called", func() {
 			status, err := s.getStatusIdentifier()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the status returned should not be empty'", func() {
 				So(status, ShouldNotBeEmpty)
-			})
-			Convey("Then the status array returned should contain the different the trace of property names (hierarchy) until the last one which is the one used as status, in this case 'actualStatus' on the last index", func() {
+				// the status array returned should contain the different the trace of property names (hierarchy) until the last one which is the one used as status, in this case 'actualStatus' on the last index
 				So(status[0], ShouldEqual, "status")
 				So(status[1], ShouldEqual, expectedStatusProperty)
 			})
@@ -823,10 +767,8 @@ func TestGetStatusIdentifierFor(t *testing.T) {
 		}
 		Convey("When getStatusIdentifierFor method is called with a schema definition and forceReadOnly check is disabled (this happens when the method is called recursively)", func() {
 			status, err := s.getStatusIdentifierFor(s, true, false)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the status array returned should contain the status property even though it's not read only...readonly checks are only perform on root level properties", func() {
+				So(err, ShouldBeNil)
 				So(status[0], ShouldEqual, "status")
 			})
 		})
@@ -847,19 +789,15 @@ func TestGetProperty(t *testing.T) {
 		}
 		Convey("When getProperty method is called with an existing property name", func() {
 			property, err := s.getProperty(existingPropertyName)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the property returned should be the same as the one in the SpecSchemaDefinition", func() {
+				So(err, ShouldBeNil)
 				So(property, ShouldEqual, s.Properties[0])
 			})
 		})
 		Convey("When getProperty method is called with a NON existing property name", func() {
 			_, err := s.getProperty("nonExistingPropertyName")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("Then the property returned should be the same as the one in the SpecSchemaDefinition", func() {
+				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldEqual, "property with name 'nonExistingPropertyName' not existing in resource schema definition")
 			})
 		})
