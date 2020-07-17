@@ -19,13 +19,8 @@ func TestOpenAPIProvider(t *testing.T) {
 		Convey("When getServiceConfiguration method is called", func() {
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProvider()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message returned should be", func() {
+			Convey("Then the schema provider returned should also be nil and the error returned should be the expected one", func() {
 				So(err.Error(), ShouldContainSubstring, "plugin init error")
-			})
-			Convey("Then the schema provider returned should also be nil", func() {
 				So(tfProvider, ShouldBeNil)
 			})
 		})
@@ -42,13 +37,8 @@ func TestOpenAPIProvider(t *testing.T) {
 		Convey("When getServiceConfiguration method is called", func() {
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProvider()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message returned should be", func() {
+			Convey("Then the schema provider returned should also be nil and the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "plugin OpenAPI spec analyser error: failed to retrieve the OpenAPI document from '"+attemptedSwaggerURL+`' - error = could not access document at "`+attemptedSwaggerURL+`" [404 Not Found] `)
-			})
-			Convey("Then the schema provider returned should also be nil", func() {
 				So(tfProvider, ShouldBeNil)
 			})
 		})
@@ -202,105 +192,88 @@ definitions:
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("Then the error should be nil", func() {
-				So(err, ShouldBeNil)
+			Convey("Then ", func() {
+
 			})
-			Convey("And the provider returned should be configured as expected", func() {
+			Convey("And the provider returned should be configured as expected and the the error should be nil", func() {
+				So(err, ShouldBeNil)
 				So(tfProvider, ShouldNotBeNil)
-				Convey("the provider schema should be the expected one", func() {
-					So(tfProvider.Schema, ShouldNotBeNil)
-					So(tfProvider.Schema, ShouldContainKey, "apikey_auth")
-					So(tfProvider.Schema["apikey_auth"].Required, ShouldBeTrue)
-					So(tfProvider.Schema["apikey_auth"].Type, ShouldEqual, schema.TypeString)
-				})
-				Convey("the provider resource map should contain the cdn resource with the expected configuration", func() {
-					So(tfProvider.ResourcesMap, ShouldNotBeNil)
-					resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
-					So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
-					Convey("the provider cdn resource should have the expected schema", func() {
-						So(tfProvider.ResourcesMap, ShouldNotBeNil)
-						resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
-						So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
-						So(tfProvider.ResourcesMap[resourceName].Schema, ShouldContainKey, "label")
-						So(tfProvider.ResourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
-						So(tfProvider.ResourcesMap[resourceName].Schema["label"].Required, ShouldBeTrue)
-						So(tfProvider.ResourcesMap[resourceName].Schema["label"].Computed, ShouldBeFalse)
-					})
-					Convey("the provider cdn resource should have the expected operations configured", func() {
-						So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
-					})
-				})
-				Convey("the provider data source map should contain the cdn data source instance with the expected configuration", func() {
-					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
-					dataSourceInstanceName := fmt.Sprintf("%s_cdn_v1_instance", providerName)
-					So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceInstanceName)
-					Convey("the provider cdn resource should have the expected schema", func() {
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "id")
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Type, ShouldEqual, schema.TypeString)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Required, ShouldBeTrue)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Computed, ShouldBeFalse)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "label")
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Required, ShouldBeFalse)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Computed, ShouldBeTrue)
-					})
-					Convey("the provider cdn data source instance should have the expected operations configured", func() {
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
-					})
-				})
-				Convey("the provider resource map should contain the firewall resource with the expected configuration", func() {
-					So(tfProvider.ResourcesMap, ShouldNotBeNil)
-					resourceName := fmt.Sprintf("%s_cdn_v1_firewall", providerName)
-					So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
-					Convey("the provider cdn resource should have the expected schema", func() {
-						So(tfProvider.ResourcesMap, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
-						So(tfProvider.ResourcesMap[resourceName].Schema, ShouldContainKey, "name")
-						So(tfProvider.ResourcesMap[resourceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
-						So(tfProvider.ResourcesMap[resourceName].Schema["name"].Required, ShouldBeTrue)
-						So(tfProvider.ResourcesMap[resourceName].Schema["name"].Computed, ShouldBeFalse)
-					})
-					Convey("the provider cdn resource should have the expected operations configured", func() {
-						So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
-					})
-				})
-				Convey("the provider data source map should contain the firewall data source instance with the expected configuration", func() {
-					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
-					dataSourceInstanceName := fmt.Sprintf("%s_cdn_v1_firewall_instance", providerName)
-					So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceInstanceName)
-					Convey("the provider cdn resource should have the expected schema", func() {
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "id")
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Type, ShouldEqual, schema.TypeString)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Required, ShouldBeTrue)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Computed, ShouldBeFalse)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "name")
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Required, ShouldBeFalse)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Computed, ShouldBeTrue)
-					})
-					Convey("the provider cdn data source instance should have the expected operations configured", func() {
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
-						So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
-					})
-				})
-				Convey("the provider configuration function should not be nil", func() {
-					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
-				})
+
+				So(tfProvider.Schema, ShouldNotBeNil)
+				So(tfProvider.Schema, ShouldContainKey, "apikey_auth")
+				So(tfProvider.Schema["apikey_auth"].Required, ShouldBeTrue)
+				So(tfProvider.Schema["apikey_auth"].Type, ShouldEqual, schema.TypeString)
+
+				// the provider resource map should contain the cdn resource with the expected configuration
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
+				So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				resourceName = fmt.Sprintf("%s_cdn_v1", providerName)
+				So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+				So(tfProvider.ResourcesMap[resourceName].Schema, ShouldContainKey, "label")
+				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Required, ShouldBeTrue)
+				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Computed, ShouldBeFalse)
+				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
+
+				// the provider data source map should contain the cdn data source instance with the expected configuration
+				So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+				dataSourceInstanceName := fmt.Sprintf("%s_cdn_v1_instance", providerName)
+				So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceInstanceName)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "id")
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Required, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Computed, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "label")
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Required, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Computed, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
+
+				// the provider resource map should contain the firewall resource with the expected configuration
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				resourceName = fmt.Sprintf("%s_cdn_v1_firewall", providerName)
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+				So(tfProvider.ResourcesMap[resourceName].Schema, ShouldContainKey, "name")
+				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Required, ShouldBeTrue)
+				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Computed, ShouldBeFalse)
+				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
+
+				// the provider data source map should contain the firewall data source instance with the expected configuration
+				So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+				dataSourceInstanceName = fmt.Sprintf("%s_cdn_v1_firewall_instance", providerName)
+				So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceInstanceName)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "id")
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Required, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Computed, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "name")
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Required, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Computed, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
+
+				// the provider configuration function should not be nil
+				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -370,57 +343,47 @@ definitions:
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("Then the error should be nil", func() {
+			Convey("Then the provider returned should be configured as expected and the error should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the provider returned should be configured as expected", func() {
 				So(tfProvider, ShouldNotBeNil)
-				Convey("the provider schema should be the expected one", func() {
-					So(tfProvider.Schema, ShouldNotBeNil)
-					So(tfProvider.Schema, ShouldContainKey, "apikey_auth")
-					So(tfProvider.Schema["apikey_auth"].Required, ShouldBeTrue)
-					So(tfProvider.Schema["apikey_auth"].Type, ShouldEqual, schema.TypeString)
-				})
-				Convey("the provider dataSource map should contain the cdn resource with the expected configuration", func() {
-					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
-					So(len(tfProvider.DataSourcesMap), ShouldEqual, 1)
+				So(tfProvider.Schema, ShouldNotBeNil)
+				So(tfProvider.Schema, ShouldContainKey, "apikey_auth")
+				So(tfProvider.Schema["apikey_auth"].Required, ShouldBeTrue)
+				So(tfProvider.Schema["apikey_auth"].Type, ShouldEqual, schema.TypeString)
 
-					resourceName := fmt.Sprintf("%s_cdn_datasource_v1", providerName)
-					So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
-					Convey("the provider cdn resource should have the expected schema", func() {
-						resourceName := fmt.Sprintf("%s_cdn_datasource_v1", providerName)
-						So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
+				// the provider dataSource map should contain the cdn resource with the expected configuration
+				So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+				So(len(tfProvider.DataSourcesMap), ShouldEqual, 1)
+				resourceName := fmt.Sprintf("%s_cdn_datasource_v1", providerName)
+				So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
+				resourceName = fmt.Sprintf("%s_cdn_datasource_v1", providerName)
+				So(tfProvider.DataSourcesMap, ShouldContainKey, resourceName)
 
-						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["label"], schema.TypeString)
-						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["owners"], schema.TypeList)
-						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["int_property"], schema.TypeInt)
-						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["bool_property"], schema.TypeBool)
-						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["float_property"], schema.TypeFloat)
-						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeMap)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["label"], schema.TypeString)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["owners"], schema.TypeList)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["int_property"], schema.TypeInt)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["bool_property"], schema.TypeBool)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["float_property"], schema.TypeFloat)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeMap)
 
-						So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
-						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
-						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Required, ShouldBeFalse)
-						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Optional, ShouldBeTrue)
-						So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Computed, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
+				So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
+				So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Required, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Optional, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Computed, ShouldBeFalse)
 
-						elements := tfProvider.DataSourcesMap[resourceName].Schema["filter"].Elem.(*schema.Resource).Schema
-						So(elements["name"].Type, ShouldEqual, schema.TypeString)
-						So(elements["values"].Type, ShouldEqual, schema.TypeList)
-					})
-					Convey("the provider cdn-datasource data source should have only the READ operation configured", func() {
-						So(tfProvider.DataSourcesMap[resourceName].Read, ShouldNotBeNil)
-						So(tfProvider.DataSourcesMap[resourceName].Create, ShouldBeNil)
-						So(tfProvider.DataSourcesMap[resourceName].Delete, ShouldBeNil)
-					})
+				elements := tfProvider.DataSourcesMap[resourceName].Schema["filter"].Elem.(*schema.Resource).Schema
+				So(elements["name"].Type, ShouldEqual, schema.TypeString)
+				So(elements["values"].Type, ShouldEqual, schema.TypeList)
 
-					Convey("and the provider resource map must be nil as no resources are configured in the swagger", func() {
-						So(tfProvider.ResourcesMap, ShouldBeEmpty)
-					})
-				})
-				Convey("the provider configuration function should not be nil", func() {
-					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
-				})
+				// the provider cdn-datasource data source should have only the READ operation configured
+				So(tfProvider.DataSourcesMap[resourceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[resourceName].Create, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[resourceName].Delete, ShouldBeNil)
+
+				// the provider resource map must be nil as no resources are configured in the swagger"
+				So(tfProvider.ResourcesMap, ShouldBeEmpty)
+				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -462,52 +425,34 @@ definitions:
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 
-			Convey("Then the error should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-			Convey("And the provider returned should be configured as expected", func() {
+			Convey("And the provider returned should be configured as expected and the error should be nil", func() {
 				So(tfProvider, ShouldNotBeNil)
-				Convey("the provider schema should be the expected one", func() {
-					So(tfProvider.Schema, ShouldNotBeNil)
-				})
-				Convey("the provider dataSource map should contain the cdn resource with the expected configuration", func() {
-					So(tfProvider.DataSourcesMap, ShouldNotBeNil)
-					So(len(tfProvider.DataSourcesMap), ShouldEqual, 1)
+				So(err, ShouldBeNil)
+				So(tfProvider.Schema, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+				So(len(tfProvider.DataSourcesMap), ShouldEqual, 1)
 
-					dataSourceName := fmt.Sprintf("%s_cdns_v1_firewalls", providerName)
-					So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceName)
-					Convey("the provider cdn resource should have the expected schema", func() {
-						So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceName)
+				dataSourceName := fmt.Sprintf("%s_cdns_v1_firewalls", providerName)
+				So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceName)
 
-						// check parent id is part of the schema
+				So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceName)
+				// check parent id is part of the schema
+				assertTerraformSchemaProperty(t, tfProvider.DataSourcesMap[dataSourceName].Schema["cdns_v1_id"], schema.TypeString, true, false)
+				// check actual model properties are part of the schema
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[dataSourceName].Schema["label"], schema.TypeString)
+				// check filter property is in the schema
+				So(tfProvider.DataSourcesMap[dataSourceName].Schema, ShouldContainKey, "filter")
+				So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
+				So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Required, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Optional, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Computed, ShouldBeFalse)
 
-						assertTerraformSchemaProperty(t, tfProvider.DataSourcesMap[dataSourceName].Schema["cdns_v1_id"], schema.TypeString, true, false)
-
-						// check actual model properties are part of the schema
-						assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[dataSourceName].Schema["label"], schema.TypeString)
-
-						// check filter property is in the schema
-						So(tfProvider.DataSourcesMap[dataSourceName].Schema, ShouldContainKey, "filter")
-						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
-						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Required, ShouldBeFalse)
-						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Optional, ShouldBeTrue)
-						So(tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Computed, ShouldBeFalse)
-
-						elements := tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Elem.(*schema.Resource).Schema
-						So(elements["name"].Type, ShouldEqual, schema.TypeString)
-						So(elements["values"].Type, ShouldEqual, schema.TypeList)
-					})
-					Convey("the provider cdn-datasource data source should have only the READ operation configured", func() {
-						So(tfProvider.DataSourcesMap[dataSourceName].Read, ShouldNotBeNil)
-					})
-
-					Convey("and the provider resource map must be nil as no resources are configured in the swagger", func() {
-						So(tfProvider.ResourcesMap, ShouldBeEmpty)
-					})
-				})
-				Convey("the provider configuration function should not be nil", func() {
-					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
-				})
+				elements := tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Elem.(*schema.Resource).Schema
+				So(elements["name"].Type, ShouldEqual, schema.TypeString)
+				So(elements["values"].Type, ShouldEqual, schema.TypeList)
+				So(tfProvider.DataSourcesMap[dataSourceName].Read, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap, ShouldBeEmpty)
+				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -581,44 +526,42 @@ definitions:
 			providerName := "openapi"
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
-			Convey("Then the error should be nil", func() {
-				So(err, ShouldBeNil)
+			Convey("Then ", func() {
+
 			})
-			Convey("And the provider returned should be configured as expected", func() {
+			Convey("And the provider returned should be configured as expected and the error should be nil", func() {
 				So(tfProvider, ShouldNotBeNil)
-				Convey("the provider schema should only include the endpoints property that enables users to override the resource host from the configuration", func() {
-					So(tfProvider.Schema, ShouldNotBeNil)
-					assertTerraformSchemaProperty(t, tfProvider.Schema["endpoints"], schema.TypeSet, false, false)
-					So(tfProvider.Schema["endpoints"].Elem.(*schema.Resource).Schema, ShouldContainKey, "cdn_v1")
-				})
-				Convey("the provider resource map should contain the cdn resource with the expected configuration", func() {
-					So(tfProvider.ResourcesMap, ShouldNotBeNil)
-					resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
-					So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
-					Convey("the provider cdn resource should have the expected schema", func() {
-						So(tfProvider.ResourcesMap, ShouldNotBeNil)
-						resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
-						So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
-						assertTerraformSchemaProperty(t, tfProvider.ResourcesMap[resourceName].Schema["label"], schema.TypeString, true, false)
-						assertTerraformSchemaNestedObjectProperty(t, tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"], false, false)
-						nestedObject := tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"]
-						assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["name"], schema.TypeString, false, true)
-						assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["object_property"], schema.TypeMap, false, false)
-						object := nestedObject.Elem.(*schema.Resource).Schema["object_property"]
-						assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["account"], schema.TypeString, false, false)
-						assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["read_only"], schema.TypeString, false, true)
-					})
-					Convey("the provider cdn resource should have the expected operations configured", func() {
-						So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
-						So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
-					})
-				})
-				Convey("the provider configuration function should not be nil", func() {
-					So(tfProvider.ConfigureFunc, ShouldNotBeNil)
-				})
+				So(err, ShouldBeNil)
+
+				// provider schema should only include the endpoints property that enables users to override the resource host from the configuration
+				So(tfProvider.Schema, ShouldNotBeNil)
+				assertTerraformSchemaProperty(t, tfProvider.Schema["endpoints"], schema.TypeSet, false, false)
+				So(tfProvider.Schema["endpoints"].Elem.(*schema.Resource).Schema, ShouldContainKey, "cdn_v1")
+
+				// provider resource map should contain the cdn resource with the expected configuration
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
+				So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				resourceName = fmt.Sprintf("%s_cdn_v1", providerName)
+				So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+				assertTerraformSchemaProperty(t, tfProvider.ResourcesMap[resourceName].Schema["label"], schema.TypeString, true, false)
+				assertTerraformSchemaNestedObjectProperty(t, tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"], false, false)
+				nestedObject := tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"]
+				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["name"], schema.TypeString, false, true)
+				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["object_property"], schema.TypeMap, false, false)
+				object := nestedObject.Elem.(*schema.Resource).Schema["object_property"]
+				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["account"], schema.TypeString, false, false)
+				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["read_only"], schema.TypeString, false, true)
+
+				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
+
+				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -711,105 +654,97 @@ definitions:
 		return swaggerServer.URL
 	}
 
-	Convey("Given a swagger doc that declares resources with colliding names, "+
-		"When CreateSchemaProviderWithConfiguration is called, "+
-		"Then there should be no error but the provider should not have those resources and a warning should be logged", t, func() {
+	Convey("Given a ProviderOpenAPI and different swagger docs that declare resources with colliding names", t, func() {
+		p := ProviderOpenAPI{ProviderName: "something"}
 
 		testcases := []struct {
-			label           string
-			path1           string
-			preferredName1  string
-			path2           string
-			preferredName2  string
-			expectedWarning string
+			label             string
+			path1             string
+			preferredName1    string
+			path2             string
+			preferredName2    string
+			expectedResources int
+			expectedWarning   string
 		}{
-			{label: "resources with colliding x-terraform-resource-names",
-				preferredName1:  "collision",
-				preferredName2:  "collision",
-				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
-			{label: "resources with colliding x-terraform-resource-name calculated name and calculated versioned name",
-				path1:           "/v1/collision",
-				path2:           "/xyz",
-				preferredName2:  "collision_v1",
-				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
-			{label: "resources with colliding x-terraform-resource-name calculated name and calculated versioned name",
-				path1:           "/v1/collision",
-				path2:           "/v1/xyz",
-				preferredName2:  "collision",
-				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
-			{label: "resources with colliding calculated names",
-				path1:           "/v1/collision",
-				path2:           "/collision_v1",
-				expectedWarning: "'collision_v1' is a duplicate resource name and is being removed from the provider"},
+			{
+				label:             "resources with colliding x-terraform-resource-names",
+				preferredName1:    "collision",
+				preferredName2:    "collision",
+				expectedResources: 0,
+				expectedWarning:   "'collision_v1' is a duplicate resource name and is being removed from the provider"},
+			{
+				label:             "resources with colliding x-terraform-resource-name calculated name and calculated versioned name",
+				path1:             "/v1/collision",
+				path2:             "/xyz",
+				preferredName2:    "collision_v1",
+				expectedResources: 0,
+				expectedWarning:   "'collision_v1' is a duplicate resource name and is being removed from the provider"},
+			{
+				label:             "resources with colliding x-terraform-resource-name calculated preferred name and calculated versioned name",
+				path1:             "/v1/collision",
+				path2:             "/v1/xyz",
+				preferredName2:    "collision",
+				expectedResources: 0,
+				expectedWarning:   "'collision_v1' is a duplicate resource name and is being removed from the provider"},
+			{
+				label:             "resources with colliding calculated names",
+				path1:             "/v1/collision",
+				path2:             "/collision_v1",
+				expectedResources: 0,
+				expectedWarning:   "'collision_v1' is a duplicate resource name and is being removed from the provider"},
+			{
+				label:             "resources with identical paths and a colliding preferred name",
+				path1:             "/v1/collision",
+				path2:             "/v1/collision",
+				preferredName1:    "collision_v1",
+				expectedResources: 1,
+				expectedWarning:   "",
+			},
+			{
+				label:             "resources with identical paths and identical preferred names",
+				path1:             "/v1/collision",
+				path2:             "/v1/collision",
+				preferredName1:    "collision",
+				preferredName2:    "collision",
+				expectedResources: 1,
+				expectedWarning:   "",
+			},
 		}
 
 		for _, tc := range testcases {
 			out := newTestWriter()
 			log.SetOutput(out)
-
-			p := ProviderOpenAPI{ProviderName: "something"}
 			swaggerDoc := makeSwaggerDoc(tc.path1, tc.preferredName1, tc.path2, tc.preferredName2, false)
 			fmt.Println(">>>", swaggerDoc)
-			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
-			fmt.Println(">>>>", out.written)
-			So(err, ShouldBeNil)
-			So(len(tfProvider.ResourcesMap), ShouldEqual, 0)
-			So(out.written, ShouldContainSubstring, tc.expectedWarning)
+			Convey(fmt.Sprintf("When CreateSchemaProviderFromServiceConfiguration method is called: %s", tc.label), func() {
+				tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
+				Convey("Then the result returned should be the expected one", func() {
+					So(err, ShouldBeNil)
+					So(len(tfProvider.ResourcesMap), ShouldEqual, tc.expectedResources)
+					if tc.expectedWarning == "" {
+						So(out.written, ShouldNotContainSubstring, "duplicate resource name")
+					} else {
+						So(out.written, ShouldContainSubstring, tc.expectedWarning)
+					}
+				})
+			})
 		}
 	})
 
-	Convey("Given a swagger doc that declares resources identical paths and colliding names preferred names, "+
-		"When CreateSchemaProviderWithConfiguration is called, "+
-		"Then there will be no error and the provider will have one of those resources (indeterminately selected) and no warning will be logged", t, func() {
-
-		testcases := []struct {
-			label          string
-			path1          string
-			preferredName1 string
-			path2          string
-			preferredName2 string
-		}{
-			{label: "resources with identical paths and a colliding preferred name",
-				path1:          "/v1/collision",
-				path2:          "/v1/collision",
-				preferredName1: "collision_v1"},
-			{label: "resources with identical paths and identical preferred names",
-				path1:          "/v1/collision",
-				path2:          "/v1/collision",
-				preferredName1: "collision",
-				preferredName2: "collision"},
-		}
-
-		for _, tc := range testcases {
-			out := newTestWriter()
-			log.SetOutput(out)
-
-			p := ProviderOpenAPI{ProviderName: "something"}
-			swaggerDoc := makeSwaggerDoc("/v1/collision", tc.preferredName1, "/v1/collision", tc.preferredName2, false)
-			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
-
-			So(err, ShouldBeNil)
-			So(len(tfProvider.ResourcesMap), ShouldEqual, 1)
-			So(out.written, ShouldNotContainSubstring, "duplicate resource name")
-		}
-	})
-
-	Convey("Given a swagger doc that declares resources with colliding names, and all but one is ignored, "+
-		"When CreateSchemaProviderWithConfiguration is called, "+
-		"Then there should be no error and the provider should have the un-ignored resource and no warning should be logged", t, func() {
-
+	Convey("Given a ProviderOpenAPI and a swagger doc that declares resources with colliding names, and all but one is ignored", t, func() {
 		out := newTestWriter()
 		log.SetOutput(out)
-
 		p := ProviderOpenAPI{ProviderName: "something"}
 		swaggerDoc := makeSwaggerDoc("/v1/abc", "collision", "/v1/xyz", "collision", true)
-		tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
-
-		So(err, ShouldBeNil)
-		So(len(tfProvider.ResourcesMap), ShouldEqual, 1)
-		So(out.written, ShouldNotContainSubstring, "duplicate resource name")
-		So(out.written, ShouldContainSubstring, "is marked to be ignored")
-
+		Convey("When CreateSchemaProviderWithConfiguration is called", func() {
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerDocServerURL(swaggerDoc)})
+			Convey("Then there should be no error and the provider should have the un-ignored resource and no warning should be logged", func() {
+				So(err, ShouldBeNil)
+				So(len(tfProvider.ResourcesMap), ShouldEqual, 1)
+				So(out.written, ShouldNotContainSubstring, "duplicate resource name")
+				So(out.written, ShouldContainSubstring, "is marked to be ignored")
+			})
+		})
 	})
 
 }
