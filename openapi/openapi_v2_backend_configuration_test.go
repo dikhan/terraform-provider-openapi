@@ -19,10 +19,9 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 		openAPIDocumentURL := "www.domain.com"
 		Convey("When newOpenAPIBackendConfigurationV2 method is called", func() {
 			specV2BackendConfiguration, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
-			Convey("Then the error returned should be  nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the providerClient should comply with SpecBackendConfiguration interface", func() {
+				// the providerClient should comply with SpecBackendConfiguration interface", func() {
 				var _ SpecBackendConfiguration = specV2BackendConfiguration
 			})
 		})
@@ -39,8 +38,6 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 			_, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 			Convey("Then the error returned should be NOT nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldEqual, "swagger version '3.0' not supported, specV2BackendConfiguration only supports 2.0")
 			})
 		})
@@ -57,8 +54,6 @@ func TestNewOpenAPIBackendConfigurationV2(t *testing.T) {
 			_, err := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 			Convey("Then the error returned should be NOT nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldEqual, "missing mandatory parameter openAPIDocumentURL")
 			})
 		})
@@ -77,10 +72,8 @@ func TestGetHost(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getHost method is called", func() {
 			host, err := specV2BackendConfiguration.getHost()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the host should be correct", func() {
 				So(host, ShouldEqual, "www.some-backend.com")
 			})
 		})
@@ -97,10 +90,8 @@ func TestGetHost(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getHost method is called", func() {
 			host, err := specV2BackendConfiguration.getHost()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the host should be the one where the swagger file is being served", func() {
 				So(host, ShouldEqual, openAPIDocumentURL)
 			})
 		})
@@ -118,8 +109,6 @@ func TestGetHost(t *testing.T) {
 			_, err := specV2BackendConfiguration.getHost()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldEqual, "could not find valid host from URL provided: ''")
 			})
 		})
@@ -143,10 +132,8 @@ func TestGetHostByRegion(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When getHostByRegion method is called with an existing region", func() {
 			host, err := specV2BackendConfiguration.getHostByRegion("rst1")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the host should be correct", func() {
 				So(host, ShouldEqual, "www.rst1.some-backend.com")
 			})
 		})
@@ -154,8 +141,6 @@ func TestGetHostByRegion(t *testing.T) {
 			_, err := specV2BackendConfiguration.getHostByRegion("nonExisting")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "region nonExisting not matching allowed ones [rst1]")
 			})
 		})
@@ -163,8 +148,6 @@ func TestGetHostByRegion(t *testing.T) {
 			_, err := specV2BackendConfiguration.getHostByRegion("")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "can't get host by region, missing region value")
 			})
 		})
@@ -183,8 +166,6 @@ func TestGetHostByRegion(t *testing.T) {
 			_, err := specV2BackendConfiguration.getHostByRegion("nonExisting")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "missing 'x-terraform-provider-multiregion-fqdn' extension or value provided not matching multiregion host format")
 			})
 		})
@@ -207,8 +188,6 @@ func TestValidateRegion(t *testing.T) {
 			err := specV2BackendConfiguration.validateRegion("nonAllowed", allowedRegions)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "region nonAllowed not matching allowed ones [allowed]")
 			})
 		})
@@ -225,8 +204,7 @@ func TestGetDefaultRegion(t *testing.T) {
 			region, err := specV2BackendConfiguration.GetDefaultRegion(regions)
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then region should match the default one, which is the first one found in the 'x-terraform-provider-regions' extension value", func() {
+				// the region should match the default one, which is the first one found in the 'x-terraform-provider-regions' extension value
 				So(region, ShouldEqual, "rst1")
 			})
 		})
@@ -235,8 +213,6 @@ func TestGetDefaultRegion(t *testing.T) {
 			_, err := specV2BackendConfiguration.GetDefaultRegion(regions)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "empty regions provided")
 			})
 		})
@@ -244,8 +220,6 @@ func TestGetDefaultRegion(t *testing.T) {
 			_, err := specV2BackendConfiguration.GetDefaultRegion(nil)
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "empty regions provided")
 			})
 		})
@@ -269,16 +243,10 @@ func TestIsMultiRegion(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When IsMultiRegion() method is called", func() {
 			isMultiRegion, host, regions, err := specV2BackendConfiguration.IsMultiRegion()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then it should be multi region", func() {
 				So(isMultiRegion, ShouldBeTrue)
-			})
-			Convey("Then host should be the parameterised host", func() {
 				So(host, ShouldEqual, "www.${region}.some-backend.com")
-			})
-			Convey("Then regions should contain the right regions", func() {
 				So(regions, ShouldContain, "rst1")
 				So(regions, ShouldContain, "dub1")
 			})
@@ -301,10 +269,8 @@ func TestIsMultiRegion(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When IsMultiRegion() method is called", func() {
 			isMultiRegion, _, _, err := specV2BackendConfiguration.IsMultiRegion()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then it should NOT be multi region", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
 		})
@@ -327,11 +293,7 @@ func TestIsMultiRegion(t *testing.T) {
 			isMultiRegion, _, _, err := specV2BackendConfiguration.IsMultiRegion()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "'x-terraform-provider-multiregion-fqdn' extension value provided not matching multiregion host format")
-			})
-			Convey("Then it should NOT be multi region", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
 		})
@@ -355,11 +317,7 @@ func TestIsMultiRegion(t *testing.T) {
 			isMultiRegion, _, _, err := specV2BackendConfiguration.IsMultiRegion()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "mandatory multiregion 'x-terraform-provider-regions' extension empty value provided")
-			})
-			Convey("Then it should NOT be multi region", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
 		})
@@ -385,8 +343,6 @@ func TestGetProviderRegions(t *testing.T) {
 			regions, err := specV2BackendConfiguration.getProviderRegions()
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then regions should contain the right regions", func() {
 				So(regions, ShouldContain, "rst1")
 				So(regions, ShouldContain, "dub1")
 			})
@@ -410,8 +366,6 @@ func TestGetProviderRegions(t *testing.T) {
 			_, err := specV2BackendConfiguration.getProviderRegions()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "mandatory multiregion 'x-terraform-provider-regions' extension empty value provided")
 			})
 		})
@@ -434,8 +388,6 @@ func TestGetProviderRegions(t *testing.T) {
 			_, err := specV2BackendConfiguration.getProviderRegions()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "mandatory multiregion 'x-terraform-provider-regions' extension missing")
 			})
 		})
@@ -459,13 +411,9 @@ func TestIsHostMultiRegion(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, host, err := specV2BackendConfiguration.isHostMultiRegion()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then it should be multi region", func() {
 				So(isMultiRegion, ShouldBeTrue)
-			})
-			Convey("Then host should be the parameterised host", func() {
 				So(host, ShouldEqual, "www.${region}.some-backend.com")
 			})
 		})
@@ -486,13 +434,9 @@ func TestIsHostMultiRegion(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, host, err := specV2BackendConfiguration.isHostMultiRegion()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then it should be multi region", func() {
 				So(isMultiRegion, ShouldBeTrue)
-			})
-			Convey("Then host should be the parameterised host", func() {
 				So(host, ShouldEqual, "www.${region}.some-backend.com")
 			})
 		})
@@ -513,13 +457,9 @@ func TestIsHostMultiRegion(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, _, err := specV2BackendConfiguration.isHostMultiRegion()
-			Convey("Then the error returned should NOT be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected message", func() {
 				So(err.Error(), ShouldEqual, "'x-terraform-provider-multiregion-fqdn' extension value provided not matching multiregion host format")
-			})
-			Convey("Then it should be multi region", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
 		})
@@ -534,10 +474,8 @@ func TestIsHostMultiRegion(t *testing.T) {
 		specV2BackendConfiguration, _ := newOpenAPIBackendConfigurationV2(spec, openAPIDocumentURL)
 		Convey("When isHostMultiRegion() method is called", func() {
 			isMultiRegion, _, err := specV2BackendConfiguration.isHostMultiRegion()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result should be false", func() {
 				So(isMultiRegion, ShouldBeFalse)
 			})
 		})

@@ -44,10 +44,8 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be 'users'", func() {
 				So(r.GetResourceName(), ShouldEqual, "users")
 			})
 		})
@@ -62,10 +60,8 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be 'users'", func() {
 				So(r.GetResourceName(), ShouldEqual, "users")
 			})
 		})
@@ -81,10 +77,9 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2ResourceWithConfig(region, path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be the resource name plus the region appended at the end", func() {
+				// the value returned should be the resource name plus the region appended at the end
 				So(r.GetResourceName(), ShouldEqual, "users_rst1")
 			})
 		})
@@ -101,8 +96,6 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
 			Convey("Then the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be 'users_v1'", func() {
 				So(r.GetResourceName(), ShouldEqual, "users_v1")
 			})
 		})
@@ -117,10 +110,8 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be 'users_v1'", func() {
 				So(r.GetResourceName(), ShouldEqual, "users_v12")
 			})
 		})
@@ -135,10 +126,8 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should still be 'users'", func() {
 				So(r.GetResourceName(), ShouldEqual, "users")
 			})
 		})
@@ -160,10 +149,8 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, paths)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should still be 'nodes_v1_proxy'", func() {
 				So(r.GetResourceName(), ShouldEqual, "nodes_v1_proxy")
 			})
 		})
@@ -185,12 +172,10 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 		Convey("When newSpecV2ResourceWithConfig method is called", func() {
 			schemaDefinitions := map[string]spec.Schema{}
 			r, err := newSpecV2ResourceWithConfig("", path, spec.Schema{}, rootPathItem, spec.PathItem{}, schemaDefinitions, map[string]spec.PathItem{})
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			resourceName := r.GetResourceName()
 			expectedTerraformName := fmt.Sprintf("%s_v1", expectedResourceName)
 			Convey(fmt.Sprintf("And the value returned should still be '%s'", expectedTerraformName), func() {
+				So(err, ShouldBeNil)
 				So(resourceName, ShouldEqual, expectedTerraformName)
 			})
 		})
@@ -245,10 +230,8 @@ func TestNewSpecV2ResourceWithRegion(t *testing.T) {
 		region := ""
 		Convey("When newSpecV2ResourceWithRegion method is called", func() {
 			r, err := newSpecV2ResourceWithRegion(region, path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
-			Convey("Then the error returned should be the expected one", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "region must not be empty")
-			})
-			Convey("And the resource returned should be nil", func() {
 				So(r, ShouldBeNil)
 			})
 		})
@@ -267,10 +250,8 @@ func TestNewSpecV2ResourceWithRegion(t *testing.T) {
 		region := "rst1"
 		Convey("When newSpecV2ResourceWithRegion method is called", func() {
 			r, err := newSpecV2ResourceWithRegion(region, path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the value returned should be the resource name plus the region appended at the end", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be the resource name plus the region appended at the end", func() {
 				So(r.GetResourceName(), ShouldEqual, "users_rst1")
 			})
 		})
@@ -546,120 +527,138 @@ func TestBuildResourceName(t *testing.T) {
 func TestBuildResourceNameFromPath(t *testing.T) {
 
 	testCases := []struct {
+		name                 string
 		path                 string
 		expectedResourceName string
 		preferredName        string
 		expectedError        error
 	}{
 		{
+			name:                 "basic resource - no version, no preferred name",
 			path:                 "/cdns",
 			preferredName:        "",
 			expectedResourceName: "cdns",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with hyphen",
 			path:                 "/cdns-test",
 			preferredName:        "",
 			expectedResourceName: "cdns_test",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with version",
 			path:                 "/v1/cdns",
 			preferredName:        "",
 			expectedResourceName: "cdns_v1",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with version and preferred name",
 			path:                 "/v1/cdns",
 			preferredName:        "cdn",
 			expectedResourceName: "cdn_v1",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with double digit version number",
 			path:                 "/v11/cdns",
 			preferredName:        "",
 			expectedResourceName: "cdns_v11",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource using semver",
 			path:                 "/v1.1.1/cdns",
 			preferredName:        "",
 			expectedResourceName: "cdns", // semver in paths is not supported at the moment, this documents the resource output for such use case
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with number and letter in version",
 			path:                 "/v1a/cdns",
 			preferredName:        "",
 			expectedResourceName: "cdns",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with version and no preferred name",
 			path:                 "/v1/cdns/",
 			preferredName:        "",
 			expectedResourceName: "cdns_v1",
 			expectedError:        nil,
 		},
 		{
+			name:                 "basic resource with parent - no version or preferred name",
 			path:                 "/cdns/{id}/firewalls",
 			preferredName:        "",
 			expectedResourceName: "firewalls",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with parent and version on parent",
 			path:                 "/v1/cdns/{id}/firewalls",
 			preferredName:        "",
 			expectedResourceName: "firewalls",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with parent and version on child",
 			path:                 "/cdns/{id}/v1/firewalls",
 			preferredName:        "",
 			expectedResourceName: "firewalls_v1",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with parent and versions on both parent and child",
 			path:                 "/v1/cdns/{id}/v2/firewalls",
 			preferredName:        "",
 			expectedResourceName: "firewalls_v2",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with two parents - version on both parents and child",
 			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/v3/rules",
 			preferredName:        "",
 			expectedResourceName: "rules_v3",
 			expectedError:        nil,
 		},
 		{
+			name:                 "resource with two parents - version on both parents but not on child",
 			path:                 "/v1/cdns/{id}/v2/firewalls/{id}/rules",
 			preferredName:        "",
 			expectedResourceName: "rules",
 			expectedError:        nil,
 		},
 		{ // This is considered a wrongly structured path not following resful best practises for building subresource paths, however the plugin still supports it to not be so opinionated
+			name:                 "resource with two parents - version on one parent and child",
 			path:                 "/v1/cdns/{id}/firewalls/v3/rules",
 			preferredName:        "",
 			expectedResourceName: "rules_v3",
 			expectedError:        nil,
 		},
 		{
+			name:                 "path with no resource name",
 			path:                 "/",
 			preferredName:        "",
 			expectedResourceName: "",
 			expectedError:        nil,
 		},
 		{
-			path:                 "",
-			preferredName:        "",
-			expectedResourceName: "",
-			expectedError:        nil,
+			name:          "empty path",
+			path:          "",
+			preferredName: "",
+			expectedError: errors.New("could not find a valid name for resource instance path ''"),
 		},
 		{
-			path:                 "&^",
-			preferredName:        "",
-			expectedResourceName: "",
-			expectedError:        errors.New("could not find a valid name for resource instance path '&^'"),
+			name:          "badly formed path",
+			path:          "&^",
+			preferredName: "",
+			expectedError: errors.New("could not find a valid name for resource instance path '&^'"),
 		},
 		{
+			name:                 "path ending in backslash and starting with 'api'",
 			path:                 "/api/v1/group/",
 			preferredName:        "iamgroup",
 			expectedResourceName: "iamgroup_v1",
@@ -670,16 +669,19 @@ func TestBuildResourceNameFromPath(t *testing.T) {
 	for _, tc := range testCases {
 		Convey("Given a SpecV2Resource", t, func() {
 			r := SpecV2Resource{}
-			Convey("When buildResourceName is called with the given path and preferred name", func() {
+			Convey(fmt.Sprintf("When buildResourceName is called with the given path and preferred name: %s", tc.name), func() {
 				resourceName, err := r.buildResourceNameFromPath(tc.path, tc.preferredName)
 				if tc.expectedError != nil {
 					Convey("Then the error returned should be the expected one", func() {
 						So(err.Error(), ShouldEqual, tc.expectedError.Error())
+						So(resourceName, ShouldBeEmpty)
+					})
+				} else {
+					Convey("Then the resource name should be the expected one", func() {
+						So(err, ShouldBeNil)
+						So(resourceName, ShouldEqual, tc.expectedResourceName)
 					})
 				}
-				Convey("And the resource name should be the expected one", func() {
-					So(resourceName, ShouldEqual, tc.expectedResourceName)
-				})
 			})
 		})
 	}
@@ -723,21 +725,17 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1")
-			})
-			Convey("And the parentURIs contain the expected parent URIs", func() {
+				// the parentURIs contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
-			})
-			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				// the parentInstanceURIs contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 			})
@@ -763,21 +761,17 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1")
-			})
-			Convey("And the parentURIs contain the expected parent URIs", func() {
+				// the parentURIs contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
-			})
-			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				// the parentInstanceURIs contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 			})
@@ -797,21 +791,17 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "nodes_v1")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "nodes_v1")
-			})
-			Convey("And the parentURIs contain the expected parent URIs", func() {
+				// the parentURIs contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/nodes")
-			})
-			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				// the parentInstanceURIs contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/nodes/{name}")
 			})
@@ -836,23 +826,19 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
 				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewalls_v2")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls_v2")
-			})
-			Convey("And the parentURIs contain the expected parent URIs", func() {
+				// the parentURIs contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/cdns")
 				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/api/v1/cdns/{id}/v2/firewalls")
-			})
-			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				// the parentInstanceURIs contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/cdns/{id}")
 				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/api/v1/cdns/{id}/v2/firewalls/{id}")
@@ -860,7 +846,7 @@ func TestParentResourceInfo(t *testing.T) {
 		})
 	})
 
-	Convey("Given a SpecV2Resource configured with a base path and the 2 level parent starts with some base path too and it's not versionied", t, func() {
+	Convey("Given a SpecV2Resource configured with a base path and the 2 level parent starts with some base path too and it's not versioned", t, func() {
 		r := SpecV2Resource{
 			Path: "/api/v1/cdns/{id}/something/firewalls/{id}/v3/rules",
 			Paths: map[string]spec.PathItem{
@@ -878,23 +864,19 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
 				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewalls")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls")
-			})
-			Convey("And the parentURIs contain the expected parent URIs", func() {
+				// the parentURIs contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/api/v1/cdns")
 				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/api/v1/cdns/{id}/something/firewalls")
-			})
-			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				// the parentInstanceURIs contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/api/v1/cdns/{id}")
 				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/api/v1/cdns/{id}/something/firewalls/{id}")
@@ -915,21 +897,17 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns")
-			})
-			Convey("And the parentURIs contain the expected parent URIs", func() {
+				// the parentURIs contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/cdns")
-			})
-			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				// the parentInstanceURIs contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/cdns/{id}")
 			})
@@ -948,21 +926,17 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1")
-			})
-			Convey("And the parentURIs contain the expected parent URIs", func() {
+				// the parentURIs contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
-			})
-			Convey("And the parentInstanceURIs contain the expected instances URIs", func() {
+				// the parentInstanceURIs contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 			})
@@ -987,23 +961,19 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns")
 				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewalls")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_firewalls")
-			})
-			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				// the parentURIs should contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/cdns")
 				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/cdns/{id}/firewalls")
-			})
-			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				// the parentInstanceURIs should contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/cdns/{id}")
 				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/cdns/{id}/firewalls/{id}")
@@ -1028,23 +998,19 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("Then the ParentResourceInfo struct returned shouldn't be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
-			})
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+				//the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
 				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewalls_v2")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1_firewalls_v2")
-			})
-			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				// the parentURIs should contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
 				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls")
-			})
-			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				// the parentInstanceURIs should contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls/{id}")
@@ -1069,12 +1035,10 @@ func TestParentResourceInfo(t *testing.T) {
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdns_v1")
-			})
-			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				// the parentURIs should contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
-			})
-			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				// the parentInstanceURIs should contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 1)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 			})
@@ -1113,20 +1077,17 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+			Convey("Then the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
 				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewall_v2")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1_firewall_v2")
-			})
-			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				// the parentURIs should contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
 				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls")
-			})
-			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				// the parentInstanceURIs should contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls/{id}")
@@ -1158,20 +1119,17 @@ func TestParentResourceInfo(t *testing.T) {
 		}
 		Convey("When ParentResourceInfo is called", func() {
 			parentResourceInfo := r.GetParentResourceInfo()
-			Convey("And the parentResourceNames should not be empty and contain the right items", func() {
+			Convey("Then the parentResourceNames should not be empty and contain the right items", func() {
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 2)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdn_v1")
 				So(parentResourceInfo.parentResourceNames[1], ShouldEqual, "firewall_v2")
-			})
-			Convey("And the fullParentResourceName should match the expected name", func() {
+				// the fullParentResourceName should match the expected name
 				So(parentResourceInfo.fullParentResourceName, ShouldEqual, "cdn_v1_firewall_v2")
-			})
-			Convey("And the parentURIs should contain the expected parent URIs", func() {
+				// the parentURIs should contain the expected parent URIs
 				So(len(parentResourceInfo.parentURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentURIs[0], ShouldEqual, "/v1/cdns")
 				So(parentResourceInfo.parentURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls")
-			})
-			Convey("And the parentInstanceURIs should contain the expected instances URIs", func() {
+				// the parentInstanceURIs should contain the expected instances URIs
 				So(len(parentResourceInfo.parentInstanceURIs), ShouldEqual, 2)
 				So(parentResourceInfo.parentInstanceURIs[0], ShouldEqual, "/v1/cdns/{id}")
 				So(parentResourceInfo.parentInstanceURIs[1], ShouldEqual, "/v1/cdns/{id}/v2/firewalls/{id}")
@@ -1237,10 +1195,8 @@ func TestGetResourceSchema(t *testing.T) {
 		}
 		Convey("When GetResourceSchema is called", func() {
 			specSchemaDefinition, err := r.GetResourceSchema()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				So(err, ShouldBeNil)
 				So(len(specSchemaDefinition.Properties), ShouldEqual, len(r.SchemaDefinition.SchemaProps.Properties))
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
@@ -1271,16 +1227,13 @@ func TestGetResourceSchema(t *testing.T) {
 		}
 		Convey("When GetResourceSchema is called", func() {
 			specSchemaDefinition, err := r.GetResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				// the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required", func() {
+				// the SpecSchemaDefinition returned should be configured with the parent id property marked as IsParentProperty, with the right name, type and being required
 				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 			})
 		})
@@ -1307,16 +1260,13 @@ func TestGetResourceSchema(t *testing.T) {
 		}
 		Convey("When GetResourceSchema is called", func() {
 			specSchemaDefinition, err := r.GetResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				// the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				// the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration
 				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 			})
 		})
@@ -1342,16 +1292,13 @@ func TestGetResourceSchema(t *testing.T) {
 		}
 		Convey("When getSchemaDefinition is called with a schema containing various properties", func() {
 			specSchemaDefinition, err := r.GetResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should contain the expected number of properties (including the parent one)", func() {
+				// the SpecSchemaDefinition returned should contain the expected number of properties (including the parent one)
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
-			})
-			Convey("And the SpecSchemaDefinition returned should also include the parent property", func() {
+				// the SpecSchemaDefinition returned should also include the parent property
 				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
 			})
 		})
@@ -1377,16 +1324,13 @@ func TestGetResourceSchema(t *testing.T) {
 		}
 		Convey("When GetResourceSchema is called", func() {
 			specSchemaDefinition, err := r.GetResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should contain the expected number of properties (including the parent ones)", func() {
+				// the SpecSchemaDefinition returned should contain the expected number of properties (including the parent ones)
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
-			})
-			Convey("And the SpecSchemaDefinition returned should also include the parents properties", func() {
+				// the SpecSchemaDefinition returned should also include the parents properties
 				assertSchemaParentProperty(specSchemaDefinition, "parent_id")
 				assertSchemaParentProperty(specSchemaDefinition, "subparent_id")
 			})
@@ -1427,16 +1371,13 @@ func TestGetResourceSchema(t *testing.T) {
 		}
 		Convey("When GetResourceSchema is called", func() {
 			specSchemaDefinition, err := r.GetResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				// the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource", func() {
+				// the SpecSchemaDefinition returned should be configured with the parent id property named using the preferred parent name configured in the parent resource
 				assertSchemaParentProperty(specSchemaDefinition, "cdn_v1_id")
 			})
 		})
@@ -1484,19 +1425,16 @@ func TestGetResourceSchema(t *testing.T) {
 		}
 		Convey("When GetResourceSchema is called", func() {
 			specSchemaDefinition, err := r.GetResourceSchema()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id ones", func() {
+				// the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id ones
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 6)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
 				assertSchemaProperty(specSchemaDefinition, "number_required_prop", TypeFloat, true, false, false)
 				assertSchemaProperty(specSchemaDefinition, "bool_prop", TypeBool, false, false, false)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property too", func() {
+				// the SpecSchemaDefinition returned should be configured with the parent id property too
 				assertSchemaParentProperty(specSchemaDefinition, "cdns_v1_id")
 				assertSchemaParentProperty(specSchemaDefinition, "firewalls_v2_id")
 			})
@@ -1505,7 +1443,6 @@ func TestGetResourceSchema(t *testing.T) {
 }
 
 func TestGetSchemaDefinition(t *testing.T) {
-
 	Convey("Given a SpecV2Resource containing a root path", t, func() {
 		r := &SpecV2Resource{
 			Path: "/cdns",
@@ -1547,10 +1484,8 @@ func TestGetSchemaDefinition(t *testing.T) {
 				},
 			}
 			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the SpecSchemaDefinition returned should be configured as expected", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
 				So(len(specSchemaDefinition.Properties), ShouldEqual, len(s.SchemaProps.Properties))
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
@@ -1580,10 +1515,8 @@ func TestGetSchemaDefinition(t *testing.T) {
 				},
 			}
 			specSchemaDefinition, err := r.getSchemaDefinition(s)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the SpecSchemaDefinition returned should be 1 and no parent id should be in the schema. Only GetResourceSchema() allows parent ids to be injects", func() {
+				So(err, ShouldBeNil)
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 1)
 				assertSchemaProperty(specSchemaDefinition, "id", TypeString, false, true, true)
 			})
@@ -1592,7 +1525,6 @@ func TestGetSchemaDefinition(t *testing.T) {
 }
 
 func TestGetSchemaDefinitionWithOptions(t *testing.T) {
-
 	Convey("Given a blank SpecV2Resource", t, func() {
 		r := &SpecV2Resource{}
 		Convey("When getSchemaDefinitionWithOptions is called with a nil arg", func() {
@@ -1603,10 +1535,8 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 		})
 		Convey("When getSchemaDefinitionWithOptions is called passing a blank schema", func() {
 			d, e := r.getSchemaDefinitionWithOptions(&spec.Schema{}, true)
-			Convey("Then the error returned is not nil", func() {
+			Convey("Then the schema definition contains empty Properties", func() {
 				So(e, ShouldBeNil)
-			})
-			Convey("And the schema definition contains empty Properties", func() {
 				So(d, ShouldNotBeNil)
 				So(d.Properties, ShouldBeEmpty)
 			})
@@ -1624,10 +1554,8 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 				},
 			}
 			d, e := r.getSchemaDefinitionWithOptions(&schema, true)
-			Convey("Then the error returned is not nil", func() {
-				So(e, ShouldNotBeNil)
-			})
 			Convey("And the schema definition returned is nil", func() {
+				So(e, ShouldNotBeNil)
 				So(d, ShouldBeNil)
 			})
 		})
@@ -1659,16 +1587,13 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 		}
 		Convey("When getSchemaDefinitionWithOptions is called with the addParentProps set to true", func() {
 			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(&r.SchemaDefinition, true)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the id and the zone_id properties (and no extra parent property 'zone_id' will be added since it's already there)", func() {
+				// the SpecSchemaDefinition returned should be configured with the id and the zone_id properties (and no extra parent property 'zone_id' will be added since it's already there)
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 2)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "id", TypeString, false, true, true)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				// the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration
 				// Note due to the model already containing a parent id property (zone_id) it will be reconfigured to be required. This ensures the resource tf configuration requires the parent id property to be populated.
 				assertSchemaParentProperty(specSchemaDefinition, "zone_id")
 			})
@@ -1715,22 +1640,18 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 		}
 		Convey("When getSchemaDefinitionWithOptions is called with addParentProps set to true", func() {
 			specSchemaDefinition, err := r.getSchemaDefinitionWithOptions(&r.SchemaDefinition, true)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one", func() {
+				// the SpecSchemaDefinition returned should be configured with the expected number of properties including the parent id one
 				So(len(specSchemaDefinition.Properties), ShouldEqual, 3)
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
+				// the SpecSchemaDefinition returned should be configured as expected
 				assertSchemaProperty(specSchemaDefinition, "id", TypeString, false, true, true)
 				assertSchemaProperty(specSchemaDefinition, "record", TypeList, false, false, false)
-			})
-			Convey("And the SpecSchemaDefinition for the array property should not contain any parent id", func() {
+				// the SpecSchemaDefinition for the array property should not contain any parent id
 				recordProp, _ := specSchemaDefinition.getProperty("record")
 				So(len(recordProp.SpecSchemaDefinition.Properties), ShouldEqual, 1)
 				So(recordProp.SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "content")
-			})
-			Convey("And the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration", func() {
+				// the SpecSchemaDefinition returned should be configured with the parent id property with the expected configuration
 				assertSchemaParentProperty(specSchemaDefinition, "zone_id")
 			})
 		})
@@ -1738,26 +1659,21 @@ func TestGetSchemaDefinitionWithOptions(t *testing.T) {
 }
 
 func TestGetResourcePath(t *testing.T) {
-
 	Convey("Given a SpecV2Resource with path resource that is not parameterised (root resource)", t, func() {
 		r := SpecV2Resource{
 			Path: "/v1/cdns",
 		}
 		Convey("When getResourcePath is called with an empty list of IDs", func() {
 			resourcePath, err := r.getResourcePath([]string{})
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the returned resource path should match the expected one", func() {
 				So(resourcePath, ShouldEqual, "/v1/cdns")
 			})
 		})
 		Convey("When getResourcePath is called with a nil list of IDs", func() {
 			resourcePath, err := r.getResourcePath(nil)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the returned resource path should match the expected one", func() {
 				So(resourcePath, ShouldEqual, "/v1/cdns")
 			})
 		})
@@ -1770,10 +1686,8 @@ func TestGetResourcePath(t *testing.T) {
 		Convey("When getResourcePath is called with a list of IDs", func() {
 			ids := []string{"parentID"}
 			resourcePath, err := r.getResourcePath(ids)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the returned resource path should match the expected one", func() {
 				So(resourcePath, ShouldEqual, "/v1/cdns/parentID/v1/firewalls")
 			})
 		})
@@ -1810,10 +1724,8 @@ func TestGetResourcePath(t *testing.T) {
 		Convey("When getResourcePath is called with a list of IDs", func() {
 			ids := []string{"cdnID", "fwID"}
 			resourcePath, err := r.getResourcePath(ids)
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the returned resource path should match the expected one", func() {
+				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns/cdnID/v1/firewalls/fwID/rules")
 			})
 		})
@@ -2708,10 +2620,8 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("Then the result returned should not return an error", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the result returned should be true since the property matches the requirements to be an optional computed property", func() {
+				So(err, ShouldBeNil)
 				So(isOptionalComputed, ShouldBeTrue)
 			})
 		})
@@ -2724,10 +2634,8 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("Then the result returned should not return an error", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+				So(err, ShouldBeNil)
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -2743,13 +2651,11 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey(fmt.Sprintf("Then the result returned should not be nil since properties with the %s extension cannot be computed,", extTfComputed), func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected one", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'propertyName': optional computed properties marked with 'x-terraform-computed' can not be readOnly")
-			})
-			Convey("Then the result returned should be false since the property DOES NOT match the requirements to be an optional computed property", func() {
+				// the result returned should not be nil since properties with the x-terraform-computed extension cannot be computed
+				So(err, ShouldNotBeNil)
+				// the result returned should be false since the property DOES NOT match the requirements to be an optional computed property
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -2768,13 +2674,9 @@ func TestIsOptionalComputed(t *testing.T) {
 				},
 			}
 			isOptionalComputedProperty, err := r.isOptionalComputed("some_optional_property_name", property)
-			Convey("Then the error returned should not be nil", func() {
+			Convey("Then the result returned should be false since the property is NOT optional computed ", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message returned should not be the expected one", func() {
 				So(err.Error(), ShouldEqual, "optional computed property validation failed for property 'some_optional_property_name': optional computed properties marked with 'x-terraform-computed' can not have the default value as the value is not known at plan time. If the value is known, then this extension should not be used, and rather the 'default' attribute should be populated")
-			})
-			Convey("AND the result returned should be false since the property is NOT optional computed ", func() {
 				So(isOptionalComputedProperty, ShouldBeFalse)
 			})
 		})
@@ -2783,10 +2685,8 @@ func TestIsOptionalComputed(t *testing.T) {
 				SwaggerSchemaProps: spec.SwaggerSchemaProps{},
 			}
 			isOptionalComputed, err := r.isOptionalComputed("propertyName", property)
-			Convey("Then the result returned should not return an error", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the result returned should be false", func() {
+				So(err, ShouldBeNil)
 				So(isOptionalComputed, ShouldBeFalse)
 			})
 		})
@@ -2841,10 +2741,8 @@ func TestValidateArrayItems(t *testing.T) {
 		Convey("When validateArrayItems method is called with a property that does not have items", func() {
 			property := spec.Schema{}
 			_, err := r.validateArrayItems(property)
-			Convey("The error should not be nil", func() {
+			Convey("Then the error message should be the expected", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected", func() {
 				So(err.Error(), ShouldEqual, "array property is missing items schema definition")
 			})
 		})
@@ -2857,10 +2755,8 @@ func TestValidateArrayItems(t *testing.T) {
 				},
 			}
 			_, err := r.validateArrayItems(property)
-			Convey("The error should not be nil", func() {
+			Convey("Then the error message should be the expected", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected", func() {
 				So(err.Error(), ShouldEqual, "array property is missing items schema definition")
 			})
 		})
@@ -2877,10 +2773,8 @@ func TestValidateArrayItems(t *testing.T) {
 				},
 			}
 			_, err := r.validateArrayItems(property)
-			Convey("The error should not be nil", func() {
+			Convey("Then the error message should be the expected", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected", func() {
 				So(err.Error(), ShouldEqual, "array property can not have items of type 'array'")
 			})
 		})
@@ -2897,10 +2791,8 @@ func TestValidateArrayItems(t *testing.T) {
 				},
 			}
 			_, err := r.validateArrayItems(property)
-			Convey("The error should not be nil", func() {
+			Convey("Then the error message should be the expected", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be the expected", func() {
 				So(err.Error(), ShouldEqual, "non supported '[unknown]' type")
 			})
 		})
@@ -2917,10 +2809,8 @@ func TestValidateArrayItems(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.validateArrayItems(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected string", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected string", func() {
 				So(itemsPropType, ShouldEqual, TypeString)
 			})
 		})
@@ -2940,10 +2830,8 @@ func TestValidateArrayItems(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.validateArrayItems(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected object", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected object", func() {
 				So(itemsPropType, ShouldEqual, TypeObject)
 			})
 		})
@@ -2960,10 +2848,8 @@ func TestGetPropertyType(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.getPropertyType(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected array", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected array", func() {
 				So(itemsPropType, ShouldEqual, TypeList)
 			})
 		})
@@ -2978,10 +2864,8 @@ func TestGetPropertyType(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.getPropertyType(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected object", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected object", func() {
 				So(itemsPropType, ShouldEqual, TypeObject)
 			})
 		})
@@ -2993,10 +2877,8 @@ func TestGetPropertyType(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.getPropertyType(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected string", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected string", func() {
 				So(itemsPropType, ShouldEqual, TypeString)
 			})
 		})
@@ -3008,10 +2890,8 @@ func TestGetPropertyType(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.getPropertyType(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected integer", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected integer", func() {
 				So(itemsPropType, ShouldEqual, TypeInt)
 			})
 		})
@@ -3023,10 +2903,8 @@ func TestGetPropertyType(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.getPropertyType(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected float", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected float", func() {
 				So(itemsPropType, ShouldEqual, TypeFloat)
 			})
 		})
@@ -3038,10 +2916,8 @@ func TestGetPropertyType(t *testing.T) {
 				},
 			}
 			itemsPropType, err := r.getPropertyType(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the type of the items should match the expected bool", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the type of the items should match the expected bool", func() {
 				So(itemsPropType, ShouldEqual, TypeBool)
 			})
 		})
@@ -3053,10 +2929,8 @@ func TestGetPropertyType(t *testing.T) {
 				},
 			}
 			_, err := r.getPropertyType(property)
-			Convey("The error should NOT be nil", func() {
+			Convey("Then the error returned should be as expected", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error returned should be ", func() {
 				So(err.Error(), ShouldEqual, "non supported '[non supported]' type")
 			})
 		})
@@ -3076,13 +2950,9 @@ func TestResourceIsObjectProperty(t *testing.T) {
 				},
 			}
 			isObject, objectSchema, err := r.isObjectProperty(property)
-			Convey("The error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be true", func() {
 				So(isObject, ShouldBeTrue)
-			})
-			Convey("And the object schema should not be nil", func() {
 				So(objectSchema, ShouldNotBeNil)
 			})
 		})
@@ -3110,13 +2980,9 @@ func TestResourceIsObjectProperty(t *testing.T) {
 				},
 			}
 			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
-			Convey("The error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be true", func() {
 				So(isObject, ShouldBeTrue)
-			})
-			Convey("And the object schema should not be nil", func() {
 				So(objectSchema, ShouldNotBeNil)
 			})
 		})
@@ -3144,13 +3010,9 @@ func TestResourceIsObjectProperty(t *testing.T) {
 				},
 			}
 			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
-			Convey("The error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be true", func() {
 				So(isObject, ShouldBeTrue)
-			})
-			Convey("And the object schema should not be nil", func() {
 				So(objectSchema, ShouldNotBeNil)
 			})
 		})
@@ -3165,14 +3027,8 @@ func TestResourceIsObjectProperty(t *testing.T) {
 			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
 			Convey("The error should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("The error message should be the expected", func() {
 				So(err.Error(), ShouldEqual, "object ref is poitning to a non existing schema definition: missing schema definition in the swagger file with the supplied ref '#/definitions/nonExisting'")
-			})
-			Convey("And the result your be true", func() {
 				So(isObject, ShouldBeTrue)
-			})
-			Convey("And the object schema should be nil", func() {
 				So(objectSchema, ShouldBeNil)
 			})
 		})
@@ -3188,11 +3044,7 @@ func TestResourceIsObjectProperty(t *testing.T) {
 			isObject, objectSchema, err := r.isObjectProperty(property)
 			Convey("The error should NOT be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be false", func() {
 				So(isObject, ShouldBeFalse)
-			})
-			Convey("And the object schema should be nil", func() {
 				So(objectSchema, ShouldBeNil)
 			})
 		})
@@ -3206,15 +3058,10 @@ func TestResourceIsObjectProperty(t *testing.T) {
 			isObject, objectSchema, err := r.isObjectProperty(propertySchema)
 			Convey("The error should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be false", func() {
 				So(isObject, ShouldBeFalse)
-			})
-			Convey("And the object schema should be nil", func() {
 				So(objectSchema, ShouldBeNil)
 			})
 		})
-
 	})
 }
 
@@ -3247,16 +3094,10 @@ func TestResourceIsArrayProperty(t *testing.T) {
 				},
 			}
 			isArray, arrayItemType, objectItemSchema, err := r.isArrayProperty(propertySchema)
-			Convey("The error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be true", func() {
 				So(isArray, ShouldBeTrue)
-			})
-			Convey("And the array items should be of type object", func() {
 				So(arrayItemType, ShouldEqual, TypeObject)
-			})
-			Convey("And the object schema should not be nil", func() {
 				So(objectItemSchema, ShouldNotBeNil)
 				exists, _ := assertPropertyExists(objectItemSchema.Properties, "prop1")
 				So(exists, ShouldBeTrue)
@@ -3278,16 +3119,10 @@ func TestResourceIsArrayProperty(t *testing.T) {
 				},
 			}
 			isArray, arrayItemType, objectItemSchema, err := r.isArrayProperty(propertySchema)
-			Convey("The error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be true", func() {
 				So(isArray, ShouldBeTrue)
-			})
-			Convey("And the array items should be of type string", func() {
 				So(arrayItemType, ShouldEqual, TypeString)
-			})
-			Convey("And the object schema should be nil", func() {
 				So(objectItemSchema, ShouldBeNil)
 			})
 		})
@@ -3321,16 +3156,10 @@ func TestResourceIsArrayProperty(t *testing.T) {
 				},
 			}
 			isArray, arrayItemType, objectItemSchema, err := r.isArrayProperty(propertySchema)
-			Convey("The error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be true", func() {
 				So(isArray, ShouldBeTrue)
-			})
-			Convey("And the array items should be of type object", func() {
 				So(arrayItemType, ShouldEqual, TypeObject)
-			})
-			Convey("And the object schema should not be nil", func() {
 				So(objectItemSchema, ShouldNotBeNil)
 				exists, _ := assertPropertyExists(objectItemSchema.Properties, "protocol")
 				So(exists, ShouldBeTrue)
@@ -3343,13 +3172,9 @@ func TestResourceIsArrayProperty(t *testing.T) {
 				},
 			}
 			isArray, _, objectItemSchema, err := r.isArrayProperty(propertySchema)
-			Convey("The error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result your be false", func() {
 				So(isArray, ShouldBeFalse)
-			})
-			Convey("And the object schema should be nil", func() {
 				So(objectItemSchema, ShouldBeNil)
 			})
 		})
@@ -3642,13 +3467,9 @@ func TestCreateResponses(t *testing.T) {
 				},
 			}
 			specResponses := r.createResponses(operation)
-			Convey("Then the spec responses map returned should not be empty", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(specResponses, ShouldNotBeEmpty)
-			})
-			Convey("Then there should be an existing key for response code 202", func() {
 				So(specResponses, ShouldContainKey, http.StatusAccepted)
-			})
-			Convey("And the response should meet the configuration", func() {
 				So(specResponses[http.StatusAccepted].isPollingEnabled, ShouldBeTrue)
 				So(specResponses[http.StatusAccepted].pollTargetStatuses, ShouldContain, expectedTarget)
 				So(specResponses[http.StatusAccepted].pollPendingStatuses, ShouldContain, expectedStatus)
@@ -3899,10 +3720,8 @@ func TestGetTimeouts(t *testing.T) {
 		}
 		Convey("When getTimeouts method is called ", func() {
 			timeouts, err := r.getTimeouts()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the duration returned should contain the expected duration from the operation", func() {
+				So(err, ShouldBeNil)
 				So(*timeouts.Post, ShouldEqual, time.Duration(30*time.Second))
 				So(*timeouts.Get, ShouldEqual, time.Duration(30*time.Second))
 				So(*timeouts.Put, ShouldEqual, time.Duration(30*time.Second))
@@ -3925,10 +3744,8 @@ func TestGetResourceTimeout(t *testing.T) {
 				},
 			}
 			duration, err := r.getResourceTimeout(post)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the duration returned should contain", func() {
 				So(*duration, ShouldEqual, time.Duration(30*time.Second))
 			})
 		})
@@ -3943,10 +3760,8 @@ func TestGetTimeDuration(t *testing.T) {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourceTimeout, expectedTimeout)
 			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the duration returned should contain", func() {
 				So(*duration, ShouldEqual, time.Duration(30*time.Second))
 			})
 		})
@@ -3955,10 +3770,8 @@ func TestGetTimeDuration(t *testing.T) {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourceTimeout, expectedTimeout)
 			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the duration returned should contain", func() {
 				So(*duration, ShouldEqual, time.Duration((20*time.Minute)+(30*time.Second)))
 			})
 		})
@@ -3967,10 +3780,8 @@ func TestGetTimeDuration(t *testing.T) {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourceTimeout, expectedTimeout)
 			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the duration returned should contain", func() {
 				So(*duration, ShouldEqual, time.Duration(1*time.Hour))
 			})
 		})
@@ -3979,10 +3790,8 @@ func TestGetTimeDuration(t *testing.T) {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourceTimeout, expectedTimeout)
 			duration, err := r.getTimeDuration(extensions, "nonExistingExtension")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the duration returned should be nil", func() {
+				So(err, ShouldBeNil)
 				So(duration, ShouldBeNil)
 			})
 		})
@@ -3990,42 +3799,30 @@ func TestGetTimeDuration(t *testing.T) {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourceTimeout, "")
 			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the duration returned should be nil", func() {
-				So(duration, ShouldBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "invalid duration value: ''. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)")
+				So(duration, ShouldBeNil)
 			})
 		})
 		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that DOES contain the extension passed in '%s' BUT the value is a negative duration", extTfResourceTimeout), func() {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourceTimeout, "-1.5h")
 			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the duration returned should be nil", func() {
-				So(duration, ShouldBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "invalid duration value: '-1.5h'. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)")
+				So(duration, ShouldBeNil)
 			})
 		})
 		Convey(fmt.Sprintf("When getTimeDuration method is called with a list of extensions that DOES contain the extension passed in '%s' BUT the value is NOT supported (distinct than s,m and h)", extTfResourceTimeout), func() {
 			extensions := spec.Extensions{}
 			extensions.Add(extTfResourceTimeout, "300ms")
 			duration, err := r.getTimeDuration(extensions, extTfResourceTimeout)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the duration returned should be nil", func() {
-				So(duration, ShouldBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "invalid duration value: '300ms'. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)")
+				So(duration, ShouldBeNil)
 			})
 		})
 	})
@@ -4036,11 +3833,8 @@ func TestGetDuration(t *testing.T) {
 		r := SpecV2Resource{}
 		Convey("When getDuration method is called a valid formatted time'", func() {
 			duration, err := r.getDuration("30s")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the statuses returned should contain", func() {
-				fmt.Println(duration)
 				So(*duration, ShouldEqual, time.Duration(30*time.Second))
 			})
 		})
@@ -4070,10 +3864,8 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 		}
 		Convey("When getHost is called", func() {
 			host, err := r.getHost()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the host returned should be the override host", func() {
+				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "www.some-host.com")
 			})
 		})
@@ -4088,10 +3880,8 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 		}
 		Convey("When getHost is called", func() {
 			host, err := r.getHost()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the host returned should be the override host", func() {
+				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "")
 			})
 		})
@@ -4106,11 +3896,9 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 		}
 		Convey("When getHost is called", func() {
 			host, err := r.getHost()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the host returned should be an empty string", func() {
-				So(host, ShouldEqual, "")
+				So(err, ShouldBeNil)
+				So(host, ShouldBeEmpty)
 			})
 		})
 	})
@@ -4131,11 +3919,9 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 		}
 		Convey("When getHost is called", func() {
 			host, err := r.getHost()
-			Convey("Then the error returned should be as expected", func() {
-				So(err.Error(), ShouldEqual, "region can not be empty for multiregion resources")
-			})
 			Convey("Then the host returned should be an empty string", func() {
-				So(host, ShouldEqual, "")
+				So(err.Error(), ShouldEqual, "region can not be empty for multiregion resources")
+				So(host, ShouldBeEmpty)
 			})
 		})
 	})
@@ -4156,10 +3942,8 @@ func TestSpecV2ResourceGetHost(t *testing.T) {
 		}
 		Convey("When getHost is called", func() {
 			host, err := r.getHost()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the host returned should be the override host", func() {
+				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "www.rst1.some-host.com")
 			})
 		})

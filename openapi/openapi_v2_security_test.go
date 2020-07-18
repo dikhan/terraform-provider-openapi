@@ -27,13 +27,9 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
 			secDefs := *securityDefinitions
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes match the expectations", func() {
 				So(secDefs, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should be of type header bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderBearerSecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, authorizationHeader)
 				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "Bearer jwtToken")
@@ -56,13 +52,9 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
 			secDefs := *securityDefinitions
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes match the expectations", func() {
 				So(secDefs, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should be of type header bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderSecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, "headerName")
 				So(secDefs[0].buildValue("someToken"), ShouldEqual, "someToken")
@@ -89,13 +81,9 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
 			secDefs := *securityDefinitions
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes match the expectations", func() {
 				So(secDefs, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should be of type header bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderBearerSecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, "Authorization")
 				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "Bearer jwtToken")
@@ -118,13 +106,9 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
 			secDefs := *securityDefinitions
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes match the expectations", func() {
 				So(secDefs, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should be of type query bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQuerySecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, "queryParamName")
 				So(secDefs[0].buildValue("someToken"), ShouldEqual, "someToken")
@@ -152,13 +136,9 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
 			secDefs := *securityDefinitions
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes match the expectations", func() {
 				So(secDefs, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should be of type query bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyHeaderRefreshTokenSecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, "Authorization")
 				So(secDefs[0].getAPIKey().Metadata, ShouldContainKey, refreshTokenURLKey)
@@ -188,13 +168,9 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			securityDefinitions, err := specV2Security.GetAPIKeySecurityDefinitions()
 			secDefs := *securityDefinitions
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes match the expectations", func() {
 				So(secDefs, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should be of type query bearer", func() {
 				So(secDefs[0], ShouldHaveSameTypeAs, specAPIKeyQueryBearerSecurityDefinition{})
 				So(secDefs[0].getAPIKey().Name, ShouldEqual, "access_token")
 				So(secDefs[0].buildValue("jwtToken"), ShouldEqual, "jwtToken")
@@ -216,10 +192,8 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		}
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			_, err := specV2Security.GetAPIKeySecurityDefinitions()
-			Convey("Then the the error returned should NOT be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected one", func() {
 				So(err.Error(), ShouldEqual, "specAPIKeyHeaderSecurityDefinition missing mandatory apiKey name")
 			})
 		})
@@ -239,10 +213,8 @@ func TestGetAPIKeySecurityDefinitions(t *testing.T) {
 		}
 		Convey("When GetAPIKeySecurityDefinitions method is called", func() {
 			_, err := specV2Security.GetAPIKeySecurityDefinitions()
-			Convey("Then the the error returned should NOT be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should match the expected one", func() {
 				So(err.Error(), ShouldEqual, "specAPIKeyQuerySecurityDefinition missing mandatory apiKey name")
 			})
 		})
@@ -290,13 +262,9 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 		}
 		Convey("When GetGlobalSecuritySchemes method is called", func() {
 			specSecuritySchemes, err := specV2Security.GetGlobalSecuritySchemes()
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the security schemes should not be empty", func() {
 				So(specSecuritySchemes, ShouldNotBeEmpty)
-			})
-			Convey("And the security schemes should have the right security scheme name", func() {
 				So(specSecuritySchemes[0].Name, ShouldEqual, expectedSecuritySchemeName)
 			})
 		})
@@ -320,10 +288,8 @@ func TestGetGlobalSecuritySchemes(t *testing.T) {
 		}
 		Convey("When GetGlobalSecuritySchemes method is called", func() {
 			_, err := specV2Security.GetGlobalSecuritySchemes()
-			Convey("Then the the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the security schemes should not be empty", func() {
 				So(err.Error(), ShouldEqual, "global security scheme 'nonExistingScheme' not found or not matching supported 'apiKey' type")
 			})
 		})
