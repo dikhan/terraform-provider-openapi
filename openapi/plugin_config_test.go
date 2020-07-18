@@ -25,10 +25,8 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 		os.Setenv(otfVarPluginConfigurationFileLc, otfVarPluginConfigurationFileValue)
 		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should be nil and the pluginConfigurationFile returned should be match the env variable value", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the pluginConfigurationFile returned should not be nil ", func() {
 				So(pluginConfigurationFile, ShouldEqual, otfVarPluginConfigurationFileValue)
 			})
 		})
@@ -38,10 +36,8 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 		os.Setenv(otfVarPluginConfigurationFileUc, otfVarPluginConfigurationFileValue)
 		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should be nil and the pluginConfigurationFile returned should be match the env variable value", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the pluginConfigurationFile returned should not be nil ", func() {
 				So(pluginConfigurationFile, ShouldEqual, otfVarPluginConfigurationFileValue)
 			})
 		})
@@ -50,10 +46,8 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 	Convey("Given no environment variables set for the plugin configuration file", t, func() {
 		Convey("When getPluginConfigurationPath is called", func() {
 			pluginConfigurationFile, err := getPluginConfigurationPath(providerName)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should be nil and the returned config file should be the default location", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the pluginConfigurationFile returned should not be nil ", func() {
 				So(pluginConfigurationFile, ShouldContainSubstring, ".terraform.d/plugins/terraform-provider-openapi.yaml")
 			})
 		})
@@ -66,13 +60,9 @@ func TestGetServiceProviderConfiguration(t *testing.T) {
 		os.Setenv(otfVarNameLc, otfVarSwaggerURLValue)
 		Convey("When getServiceConfiguration is called", func() {
 			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the serviceConfiguration returned should contain a service 'test' with a swagger URL and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfiguration returned should not be nil ", func() {
 				So(serviceConfiguration, ShouldNotBeNil)
-			})
-			Convey("And the serviceConfiguration returned should contain a service 'test' with a swagger URL", func() {
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
@@ -85,13 +75,9 @@ func TestGetServiceProviderConfiguration(t *testing.T) {
 		os.Setenv(otfVarNameUc, otfVarSwaggerURLValue)
 		Convey("When getServiceConfiguration is called", func() {
 			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the pluginConfig returned should contain a service 'test' with a swagger URL and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfiguration returned should not be nil ", func() {
 				So(serviceConfiguration, ShouldNotBeNil)
-			})
-			Convey("And the pluginConfig returned should contain a service 'test' with a swagger URL", func() {
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
@@ -122,13 +108,9 @@ services:
 		os.Setenv(otfVarNameLc, otfVarSwaggerURLValue)
 		Convey("When getServiceConfiguration is called", func() {
 			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the serviceConfiguration returned should contain the URL of the environment variable as it takes preference and error should be nil and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfiguration returned should not be nil ", func() {
 				So(serviceConfiguration, ShouldNotBeNil)
-			})
-			Convey("And the serviceConfiguration returned should contain the URL of the environment variable as it takes preference and error should be nil", func() {
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
@@ -148,13 +130,9 @@ services:
 		}
 		Convey("When getServiceConfiguration is called", func() {
 			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the serviceConfiguration returned should contain the URL and error should be nil and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfiguration returned should not be nil ", func() {
 				So(serviceConfiguration, ShouldNotBeNil)
-			})
-			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
 			})
@@ -180,17 +158,11 @@ services:
 		}
 		Convey("When getServiceConfiguration is called", func() {
 			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then serviceConfiguration returned should contain the URL and contain the expected graphite telemetry configuration and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfiguration returned should not be nil ", func() {
 				So(serviceConfiguration, ShouldNotBeNil)
-			})
-			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
-			})
-			Convey("And the serviceConfiguration contains the expected graphite telemetry configuration", func() {
 				expectedGraphiteProvider := &TelemetryProviderGraphite{
 					Host:   expectedTelemetryHost,
 					Port:   expectedTelemetryPort,
@@ -219,17 +191,11 @@ services:
 		}
 		Convey("When getServiceConfiguration is called", func() {
 			serviceConfiguration, err := pluginConfiguration.getServiceConfiguration()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the serviceConfiguration shoudl be the expected and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfiguration returned should not be nil ", func() {
 				So(serviceConfiguration, ShouldNotBeNil)
-			})
-			Convey("And the serviceConfiguration returned should contain the URL and error should be nil", func() {
 				serviceSwaggerURL := serviceConfiguration.GetSwaggerURL()
 				So(serviceSwaggerURL, ShouldEqual, otfVarSwaggerURLValue)
-			})
-			Convey("And the serviceConfiguration contains the expected http_endpoint telemetry configuration", func() {
 				expectedHTTPEndpointProvider := &TelemetryProviderHTTPEndpoint{
 					URL:    expectedTelemetryHost,
 					Prefix: expectedPrefix,
@@ -251,10 +217,7 @@ services:
 		}
 		Convey("When getServiceConfiguration is called", func() {
 			_, err := pluginConfiguration.getServiceConfiguration()
-			Convey("The error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should containing the following message", func() {
+			Convey("The error returned should containing the following message", func() {
 				So(err.Error(), should.ContainSubstring, "'test' not found in provider's services configuration")
 			})
 		})
@@ -269,10 +232,7 @@ services:
 		}
 		Convey("When getServiceConfiguration is called", func() {
 			_, err := pluginConfiguration.getServiceConfiguration()
-			Convey("The error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should containing the following message", func() {
+			Convey("Then the error should containing the following message", func() {
 				So(err.Error(), should.ContainSubstring, "failed to unmarshall terraform-provider-openapi.yaml configuration file - error = yaml: found character that cannot start any token")
 			})
 		})
@@ -290,10 +250,7 @@ services:
 		}
 		Convey("When getServiceConfiguration is called", func() {
 			_, err := pluginConfiguration.getServiceConfiguration()
-			Convey("The error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should containing the following message", func() {
+			Convey("Then the error should containing the following message", func() {
 				So(err.Error(), should.ContainSubstring, "error occurred while validating 'terraform-provider-openapi.yaml' - error = provider configuration version not matching current implementation, please use version '1' of provider configuration specification")
 			})
 		})
@@ -312,10 +269,7 @@ services:
 		}
 		Convey("When getServiceConfiguration is called", func() {
 			_, err := pluginConfiguration.getServiceConfiguration()
-			Convey("The error returned should NOT be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error should containing the following message", func() {
+			Convey("Then the error should containing the following message", func() {
 				So(err.Error(), should.ContainSubstring, "service configuration for 'test' not valid: plugin version '0.14.0' in the plugin configuration file does not match the version of the OpenAPI plugin that is running 'dev'")
 			})
 		})

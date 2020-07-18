@@ -1222,7 +1222,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				},
 			},
 			expectedResult: "originalImmutablePropertyValue",
-			expectedError:  errors.New(fmt.Sprintf("validation for immutable properties failed: user attempted to update an immutable property ('%s'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed", propName)),
+			expectedError:  fmt.Errorf("validation for immutable properties failed: user attempted to update an immutable property ('%s'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed", propName),
 		},
 		{
 			name: "immutable int property is updated",
@@ -1238,7 +1238,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": 6}`, propName)),
 			},
 			expectedResult: 6,
-			expectedError:  errors.New(fmt.Sprintf("validation for immutable properties failed: user attempted to update an immutable integer property ('%s'): [user input: 4; actual: 6]. Update operation was aborted; no updates were performed", propName)),
+			expectedError:  fmt.Errorf("validation for immutable properties failed: user attempted to update an immutable integer property ('%s'): [user input: 4; actual: 6]. Update operation was aborted; no updates were performed", propName),
 		},
 		{
 			name: "immutable int property has not changed",
