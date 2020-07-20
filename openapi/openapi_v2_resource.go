@@ -93,6 +93,8 @@ type SpecV2Resource struct {
 
 	// specSchemaDefinitionCached is cached in GetResourceSchema() method
 	specSchemaDefinitionCached *SpecSchemaDefinition
+	// parentResourceInfoCached is cached in GetParentResourceInfo() method
+	parentResourceInfoCached *ParentResourceInfo
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
@@ -288,6 +290,9 @@ func (o *SpecV2Resource) ShouldIgnoreResource() bool {
 
 // GetParentResourceInfo returns the information about the parent resources
 func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
+	if o.parentResourceInfoCached != nil {
+		return o.parentResourceInfoCached
+	}
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
@@ -334,6 +339,7 @@ func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 			parentURIs:             parentURIs,
 			parentInstanceURIs:     parentInstanceURIs,
 		}
+		o.parentResourceInfoCached = sub
 		return sub
 	}
 	return nil
