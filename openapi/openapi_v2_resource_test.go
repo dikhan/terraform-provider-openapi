@@ -1440,6 +1440,42 @@ func TestGetResourceSchema(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a SpecV2Resource configured with a miss configured schema (eg: schema contains a property that is missing the type", t, func() {
+		r := &SpecV2Resource{
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"bad_property": spec.Schema{
+							SchemaProps: spec.SchemaProps{
+								// Type: Missing the type
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
+			Convey("Then the schema definition returned should nil and the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "failed to process property 'bad_property': non supported '[]' type")
+				So(specSchemaDefinition, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a cached specSchemaDefinitionCached", t, func() {
+		r := &SpecV2Resource{
+			specSchemaDefinitionCached: &SpecSchemaDefinition{},
+		}
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
+			Convey("Then the schema definition returned should be the cached one and the error should be nil", func() {
+				So(err, ShouldBeNil)
+				So(specSchemaDefinition, ShouldPointTo, r.specSchemaDefinitionCached)
+			})
+		})
+	})
 }
 
 func TestGetSchemaDefinition(t *testing.T) {
@@ -1824,7 +1860,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
 			Convey("Then the error returned should be the expected one and the schemaDefinitionProperty should be nil", func() {
 				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldEqual, "non supported '[]' type")
+				So(err.Error(), ShouldEqual, "failed to process property 'propertyName': non supported '[]' type")
 				So(schemaDefinitionProperty, ShouldBeNil)
 			})
 		})
@@ -1866,8 +1902,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			requiredProperties := []string{}
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
 			Convey("Then the error returned should be the expected one and the schemaDefinitionProperty should be nil", func() {
-				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldEqual, "failed to process object type property 'propertyName': object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
+				So(err.Error(), ShouldEqual, "failed to process property 'propertyName': object is missing the nested schema definition or the ref is pointing to a non existing schema definition")
 				So(schemaDefinitionProperty, ShouldBeNil)
 			})
 		})

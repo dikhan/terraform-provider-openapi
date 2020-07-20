@@ -88,6 +88,10 @@ type SpecV2Resource struct {
 
 	Paths map[string]spec.PathItem
 
+	// Cached objects that are loaded once (when the corresponding function that loads the object is called the first time) and
+	// on subsequent method calls the cached object is returned instead saving executing time.
+
+	// specSchemaDefinitionCached is cached in GetResourceSchema() method
 	specSchemaDefinitionCached *SpecSchemaDefinition
 }
 
@@ -389,6 +393,12 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*SpecSchemaDefinitionProperty, error) {
 	schemaDefinitionProperty := &SpecSchemaDefinitionProperty{}
 
+	schemaDefinitionProperty.Name = propertyName
+	propertyType, err := o.getPropertyType(property)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process property '%s': %s", propertyName, err)
+	}
+	schemaDefinitionProperty.Type = propertyType
 	schemaDefinitionProperty.Description = property.Description
 
 	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject || err != nil {
@@ -427,14 +437,6 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 		log.Printf("[DEBUG] found array type property '%s' with items of type '%s'", propertyName, itemsType)
 	}
-
-	propertyType, err := o.getPropertyType(property)
-	if err != nil {
-		return nil, err
-	}
-	schemaDefinitionProperty.Type = propertyType
-
-	schemaDefinitionProperty.Name = propertyName
 
 	if preferredPropertyName, exists := property.Extensions.GetString(extTfFieldName); exists {
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
@@ -629,7 +631,7 @@ func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Sch
 			}
 			return true, schema, nil
 		}
-		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
+		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is pointing to a non existing schema definition")
 	}
 	return false, nil, nil
 }
