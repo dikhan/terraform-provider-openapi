@@ -1136,7 +1136,15 @@ func TestParentResourceInfo(t *testing.T) {
 			})
 		})
 	})
-
+	Convey("Given a SpecV2Resource with parentResourceInfoCached populated", t, func() {
+		r := SpecV2Resource{parentResourceInfoCached: &ParentResourceInfo{}}
+		Convey("When GetParentResourceInfo is called", func() {
+			p := r.GetParentResourceInfo()
+			Convey("Then the returned ParentResourceInfo should point to parentResourceInfoCached", func() {
+				So(p, ShouldPointTo, r.parentResourceInfoCached)
+			})
+		})
+	})
 }
 
 func assertSchemaProperty(actualSpecSchemaDefinition *SpecSchemaDefinition, expectedName string, expectedType schemaDefinitionPropertyType, expectedRequired, expectedReadOnly, expectedComputed bool) {
