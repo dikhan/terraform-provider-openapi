@@ -1446,7 +1446,7 @@ func TestGetResourceSchema(t *testing.T) {
 			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"bad_property": spec.Schema{
+						"bad_property": {
 							SchemaProps: spec.SchemaProps{
 								// Type: Missing the type
 							},

@@ -121,7 +121,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 			return err
 		}
 		if value != nil {
-			if err := setResourceDataProperty(openAPIResource, propertyName, value, resourceLocalData); err != nil {
+			if err := setResourceDataProperty(*property, value, resourceLocalData); err != nil {
 				return err
 			}
 		}
@@ -268,12 +268,7 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 }
 
 // setResourceDataProperty sets the expectedValue for the given schemaDefinitionPropertyName using the terraform compliant property name
-func setResourceDataProperty(openAPIResource SpecResource, schemaDefinitionPropertyName string, value interface{}, resourceLocalData *schema.ResourceData) error {
-	resourceSchema, _ := openAPIResource.GetResourceSchema()
-	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
-	if err != nil {
-		return fmt.Errorf("could not find schema definition property name %s in the resource data: %s", schemaDefinitionPropertyName, err)
-	}
+func setResourceDataProperty(schemaDefinitionProperty SpecSchemaDefinitionProperty, value interface{}, resourceLocalData *schema.ResourceData) error {
 	return resourceLocalData.Set(schemaDefinitionProperty.GetTerraformCompliantPropertyName(), value)
 }
 

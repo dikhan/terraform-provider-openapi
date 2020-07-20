@@ -847,11 +847,11 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 }
 
 func TestSetResourceDataProperty(t *testing.T) {
-	Convey("Given a resource factory initialized with a spec resource with some schema definition", t, func() {
-		r, resourceData := testCreateResourceFactory(t, stringProperty, stringWithPreferredNameProperty)
-		Convey("When setResourceDataProperty is called with a schema definition property name that exists in terraform resource data object and with a new expectedValue", func() {
+	Convey("Given a resource data (state) loaded with couple propeprties", t, func() {
+		_, resourceData := testCreateResourceFactory(t, stringProperty, stringWithPreferredNameProperty)
+		Convey("When setResourceDataProperty is called with a schema definition property that exists in terraform resource data object and with a new expectedValue", func() {
 			expectedValue := "newValue"
-			err := setResourceDataProperty(r.openAPIResource, stringProperty.Name, expectedValue, resourceData)
+			err := setResourceDataProperty(*stringProperty, expectedValue, resourceData)
 			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
 				// keys stores in the resource data struct are always snake case
@@ -860,7 +860,7 @@ func TestSetResourceDataProperty(t *testing.T) {
 		})
 		Convey("When setResourceDataProperty is called with a schema definition property preferred name that exists in terraform resource data object and with a new expectedValue", func() {
 			expectedValue := "theNewValue"
-			err := setResourceDataProperty(r.openAPIResource, stringWithPreferredNameProperty.Name, expectedValue, resourceData)
+			err := setResourceDataProperty(*stringWithPreferredNameProperty, expectedValue, resourceData)
 			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
 				// keys stores in the resource data struct are always snake case
@@ -869,11 +869,11 @@ func TestSetResourceDataProperty(t *testing.T) {
 			})
 		})
 		Convey("When setResourceDataProperty is called with a schema definition property name does NOT exist", func() {
-			err := setResourceDataProperty(r.openAPIResource, "nonExistingKey", "", resourceData)
+			err := setResourceDataProperty(SpecSchemaDefinitionProperty{Name: "nonExistingKey"}, "", resourceData)
 			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
 				// keys stores in the resource data struct are always snake case
-				So(err.Error(), ShouldEqual, "could not find schema definition property name nonExistingKey in the resource data: property with name 'nonExistingKey' not existing in resource schema definition")
+				So(err.Error(), ShouldEqual, `Invalid address to set: []string{"non_existing_key"}`)
 			})
 		})
 	})

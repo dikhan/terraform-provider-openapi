@@ -2239,7 +2239,7 @@ func TestGetResourceDataOKExists(t *testing.T) {
 	Convey("Given a resource factory initialized with a spec resource with some schema definition and resource data", t, func() {
 		r, resourceData := testCreateResourceFactory(t, stringProperty, stringWithPreferredNameProperty)
 		Convey("When getResourceDataOKExists is called with a schema definition property name that exists in terraform resource data object", func() {
-			value, exists := r.getResourceDataOKExists(stringProperty.Name, resourceData)
+			value, exists := r.getResourceDataOKExists(*stringProperty, resourceData)
 			Convey("Then the bool returned should be true", func() {
 				So(exists, ShouldBeTrue)
 			})
@@ -2249,7 +2249,7 @@ func TestGetResourceDataOKExists(t *testing.T) {
 		})
 
 		Convey("When getResourceDataOKExists is called with a schema definition property name that has a preferred name and that exists in terraform resource data object", func() {
-			value, exists := r.getResourceDataOKExists(stringWithPreferredNameProperty.Name, resourceData)
+			value, exists := r.getResourceDataOKExists(*stringWithPreferredNameProperty, resourceData)
 			Convey("Then the bool returned should be true and the returned value should be the expected one", func() {
 				So(exists, ShouldBeTrue)
 				So(value, ShouldEqual, stringWithPreferredNameProperty.Default)
@@ -2257,7 +2257,7 @@ func TestGetResourceDataOKExists(t *testing.T) {
 		})
 
 		Convey("When getResourceDataOKExists is called with a schema definition property name that DOES NOT exists in terraform resource data object", func() {
-			_, exists := r.getResourceDataOKExists("nonExistingProperty", resourceData)
+			_, exists := r.getResourceDataOKExists(SpecSchemaDefinitionProperty{Name: "nonExistingProperty"}, resourceData)
 			Convey("Then the bool returned should be true", func() {
 				So(exists, ShouldBeFalse)
 			})
@@ -2268,7 +2268,7 @@ func TestGetResourceDataOKExists(t *testing.T) {
 		var stringPropertyWithNonCompliantName = newStringSchemaDefinitionPropertyWithDefaults("stringProperty", "", true, false, "updatedValue")
 		r, resourceData := testCreateResourceFactory(t, stringPropertyWithNonCompliantName)
 		Convey("When getResourceDataOKExists is called with a schema definition property name that exists in terraform resource data object", func() {
-			value, exists := r.getResourceDataOKExists(stringPropertyWithNonCompliantName.Name, resourceData)
+			value, exists := r.getResourceDataOKExists(*stringPropertyWithNonCompliantName, resourceData)
 			Convey("Then the bool returned should be true and the returned value should be the expected one", func() {
 				So(exists, ShouldBeTrue)
 				So(value, ShouldEqual, stringPropertyWithNonCompliantName.Default)
