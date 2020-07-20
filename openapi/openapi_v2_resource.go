@@ -222,6 +222,7 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 // If the resource path is not parameterised, then regular path will be returned accordingly
 func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	if o.resolvedPathCached != "" {
+		log.Printf("[DEBUG] getResourcePath hit the cache for '%s'", o.Name)
 		return o.resolvedPathCached, nil
 	}
 	resolvedPath := o.Path
@@ -232,6 +233,7 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	switch {
 	case len(pathParamsMatches) == 0:
 		o.resolvedPathCached = resolvedPath
+		log.Printf("[DEBUG] getResourcePath cache loaded for '%s'", o.Name)
 		return resolvedPath, nil
 
 	case len(parentIDs) > len(pathParamsMatches):
@@ -250,6 +252,7 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	}
 
 	o.resolvedPathCached = resolvedPath
+	log.Printf("[DEBUG] getResourcePath cache loaded for '%s'", o.Name)
 	return resolvedPath, nil
 }
 
