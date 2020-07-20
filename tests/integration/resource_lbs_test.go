@@ -151,7 +151,7 @@ func TestAccLB_Destroy(t *testing.T) {
 
 // resource create operation is configured with x-terraform-resource-timeout: "1s"
 func TestAccLB_CreateTimeout(t *testing.T) {
-	timeToProcess := 3
+	timeToProcess := 2
 	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
 	testCreateConfigLB = populateTemplateConfigurationLB(lb.Name, lb.Backends, lb.TimeToProcess, lb.SimulateFailure)
 	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\(last state: 'deploy_in_progress', timeout: 2s\\).*")
