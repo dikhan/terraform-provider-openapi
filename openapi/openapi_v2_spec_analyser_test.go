@@ -439,10 +439,8 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 			param := spec.Parameter{ParamProps: spec.ParamProps{In: "body", Schema: schema}}
 			resourceRootPostOperation.Parameters = []spec.Parameter{param}
 			schema, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
-			Convey("Then the schema returned should not be empty", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(schema, ShouldNotBeNil)
-			})
-			Convey("And the err returned should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 		})
@@ -481,8 +479,6 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 			schema, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
 			Convey("Then the schema returned should be empty", func() {
 				So(schema, ShouldBeNil)
-			})
-			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "the operation ref was not expanded properly, check that the ref is valid (no cycles, bogus, etc)")
 			})
 		})
@@ -498,8 +494,6 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 			schema, err := specV2Analyser.getBodyParameterBodySchema(resourceRootPostOperation)
 			Convey("Then the schema returned should be empty", func() {
 				So(schema, ShouldBeNil)
-			})
-			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "POST operation contains an schema with no properties")
 			})
 		})
@@ -507,7 +501,6 @@ func Test_getBodyParameterBodySchema(t *testing.T) {
 }
 
 func TestNewSpecAnalyserV2(t *testing.T) {
-
 	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case file system)", t, func() {
 		externalRefFile := initAPISpecFile(createExternalSwaggerContent())
 		defer os.Remove(externalRefFile.Name())
@@ -518,21 +511,15 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specAnalyserV2 struct should not be nil", func() {
 				So(specAnalyserV2, ShouldNotBeNil)
-			})
-			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
+				// the new doc should contain the definition ref expanded with the right required fields
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Required[0], ShouldEqual, "name")
-			})
-			Convey("And the new doc should contain the definition ref expanded with the right required properties", func() {
+				// the new doc should contain the definition ref expanded with the right required properties
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "id")
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "name")
-
-			})
-			Convey("And the ref should be empty", func() {
+				// the ref should be empty
 				ref := specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Ref.Ref
 				So(ref.GetURL(), ShouldBeNil)
 			})
@@ -552,21 +539,15 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specAnalyserV2 struct should not be nil", func() {
 				So(specAnalyserV2, ShouldNotBeNil)
-			})
-			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
+				// the new doc should contain the definition ref expanded with the right required fields
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Required[0], ShouldEqual, "name")
-			})
-			Convey("And the new doc should contain the definition ref expanded with the right required properties", func() {
+				// the new doc should contain the definition ref expanded with the right required properties
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "id")
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "name")
-
-			})
-			Convey("And the ref should be empty", func() {
+				// the ref should be empty
 				ref := specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Ref.Ref
 				So(ref.GetURL(), ShouldBeNil)
 			})
@@ -583,8 +564,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldContainSubstring, "error = invalid character 'h' after object key:value pair")
-			})
-			Convey("AND the specAnalyserV2 struct should  be nil", func() {
 				So(specAnalyserV2, ShouldBeNil)
 			})
 		})
@@ -605,8 +584,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
 			Convey("Then the error returned should be the expected error", func() {
 				So(err.Error(), ShouldContainSubstring, "error = read .: is a directory")
-			})
-			Convey("AND the specAnalyserV2 struct should be nil", func() {
 				So(specAnalyserV2, ShouldBeNil)
 			})
 		})
@@ -697,23 +674,18 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specAnalyserV2 struct should not be nil", func() {
 				So(specAnalyserV2, ShouldNotBeNil)
-			})
-			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
+				// the new doc should contain the definition ref expanded with the right required fields
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Required[0], ShouldEqual, "name")
 				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Required[0], ShouldEqual, "name")
-			})
-			Convey("And the new doc should contain the definition ref expanded with the right required properties", func() {
+				// the new doc should contain the definition ref expanded with the right required properties
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "id")
 				So(specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Properties, ShouldContainKey, "name")
 				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Properties, ShouldContainKey, "id")
 				So(specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Properties, ShouldContainKey, "name")
-			})
-			Convey("And the ref should be empty", func() {
+				// the ref should be empty
 				ref1 := specAnalyserV2.d.Spec().Definitions["ContentDeliveryNetwork"].SchemaProps.Ref.Ref
 				So(ref1.GetURL(), ShouldBeNil)
 				ref2 := specAnalyserV2.d.Spec().Definitions["OtherKindOfAThing"].SchemaProps.Ref.Ref
@@ -752,16 +724,12 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specAnalyserV2 struct should not be nil", func() {
 				So(specAnalyserV2, ShouldNotBeNil)
-			})
-			Convey("And the new doc should contain the definition ref expanded with the right required fields", func() {
+				// the new doc should contain the definition ref expanded with the right required fields
 				So(specAnalyserV2.d.Spec().Definitions, ShouldContainKey, "ContentDeliveryNetwork")
-			})
-			Convey("And the ref should NOT be empty as per the go-openapi library documentation", func() {
+				// the ref should NOT be empty as per the go-openapi library documentation
 				// As per the go-openapi documentation (https://github.com/go-openapi/spec/blob/master/expander.go#L314):
 				// this means there is a cycle in the recursion tree: return the Ref
 				// - circular refs cannot be expanded. We leave them as ref.
@@ -799,8 +767,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldContainSubstring, "error = object has no key \"NonExistingDef\"")
-			})
-			Convey("AND the specAnalyserV2 struct should be nil", func() {
 				So(specAnalyserV2, ShouldBeNil)
 			})
 		})
@@ -833,8 +799,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
 			Convey("Then the error returned should be the expected one", func() {
 				So(err.Error(), ShouldContainSubstring, "error = invalid character '}' looking for beginning of value")
-			})
-			Convey("AND the specAnalyserV2 struct should be nil", func() {
 				So(specAnalyserV2, ShouldBeNil)
 			})
 		})
@@ -850,8 +814,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 			Convey("Then the error returned should be not nil", func() {
 				So(err.Error(), ShouldContainSubstring, "failed to expand the OpenAPI document from ")
 				So(err.Error(), ShouldContainSubstring, " - error = open nosuchfile.json: no such file or directory")
-			})
-			Convey("AND the specAnalyserV2 struct should be nil", func() {
 				So(specAnalyserV2, ShouldBeNil)
 			})
 		})
@@ -861,8 +823,6 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		specAnalyserV2, err := newSpecAnalyserV2("")
 		Convey("Then the error returned should be not nil", func() {
 			So(err.Error(), ShouldEqual, "open api document filename argument empty, please provide the url of the OpenAPI document")
-		})
-		Convey("AND the specAnalyserV2 struct should be nil", func() {
 			So(specAnalyserV2, ShouldBeNil)
 		})
 	})
@@ -871,12 +831,9 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		specAnalyserV2, err := newSpecAnalyserV2("nosuchthing")
 		Convey("Then the error returned should be not nil", func() {
 			So(err.Error(), ShouldEqual, "failed to retrieve the OpenAPI document from 'nosuchthing' - error = open nosuchthing: no such file or directory")
-		})
-		Convey("AND the specAnalyserV2 struct should be nil", func() {
 			So(specAnalyserV2, ShouldBeNil)
 		})
 	})
-
 }
 
 func TestSpecV2AnalyserGetAllHeaderParameters(t *testing.T) {
@@ -931,10 +888,8 @@ func TestSpecV2AnalyserGetAllHeaderParameters(t *testing.T) {
 		r := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetAllHeaderParameters method is called", func() {
 			specHeaderParameters := r.GetAllHeaderParameters()
-			Convey("Then the specHeaderParameters size should be one", func() {
-				So(len(specHeaderParameters), ShouldEqual, 1)
-			})
 			Convey("Then the specBackedConfig returned should not be nil", func() {
+				So(len(specHeaderParameters), ShouldEqual, 1)
 				So(specHeaderParameters, ShouldContain, SpecHeaderParam{Name: "header_name"})
 			})
 		})
@@ -1032,8 +987,6 @@ func TestSpecV2AnalyserGetAllHeaderParameters(t *testing.T) {
 			specHeaderParameters := r.GetAllHeaderParameters()
 			Convey("Then the specHeaderParameters should have size one since the same header is present in multiple resources", func() {
 				So(len(specHeaderParameters), ShouldEqual, 1)
-			})
-			Convey("Then the specBackedConfig returned should not be nil", func() {
 				So(specHeaderParameters, ShouldContain, SpecHeaderParam{Name: "header_name"})
 			})
 		})
@@ -1050,10 +1003,8 @@ func TestGetAPIBackendConfiguration(t *testing.T) {
 		r.openAPIDocumentURL = "http://hostname.com/swagger.json"
 		Convey("When GetAPIBackendConfiguration method is called", func() {
 			specBackedConfig, err := r.GetAPIBackendConfiguration()
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the specBackedConfig returned should not be nil", func() {
+				So(err, ShouldBeNil)
 				So(specBackedConfig, ShouldNotBeNil)
 			})
 		})
@@ -1080,13 +1031,9 @@ func TestIsMultiRegionResource(t *testing.T) {
 			rootLevelExtensions := spec.Extensions{}
 			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest,useast")
 			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the list returned should contain uswest and useast", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
-			})
-			Convey("And the list returned should contain uswest and useast", func() {
 				So(regions, ShouldContain, "uswest")
 				So(regions, ShouldContain, "useast")
 			})
@@ -1096,16 +1043,10 @@ func TestIsMultiRegionResource(t *testing.T) {
 			rootLevelExtensions := spec.Extensions{}
 			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, "someOtherServiceProvider"), "rst, dub")
 			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the err returned should contain the following error message", func() {
 				So(err.Error(), ShouldEqual, "missing matching 'serviceProviderName' root level region extension 'x-terraform-resource-regions-serviceProviderName'")
-			})
-			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeFalse)
-			})
-			Convey("And the regions list returned should be empty", func() {
 				So(regions, ShouldBeEmpty)
 			})
 		})
@@ -1114,13 +1055,9 @@ func TestIsMultiRegionResource(t *testing.T) {
 			rootLevelExtensions := spec.Extensions{}
 			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest useast")
 			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
-			})
-			Convey("And the list returned should contain uswestuseast", func() {
 				So(regions, ShouldContain, "uswestuseast")
 			})
 		})
@@ -1129,13 +1066,9 @@ func TestIsMultiRegionResource(t *testing.T) {
 			rootLevelExtensions := spec.Extensions{}
 			rootLevelExtensions.Add(fmt.Sprintf(extTfResourceRegionsFmt, serviceProviderName), "uswest, useast")
 			isMultiRegion, regions, err := r.isMultiRegionResource(resourceRoot, rootLevelExtensions)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the value returned should be true", func() {
 				So(isMultiRegion, ShouldBeTrue)
-			})
-			Convey("And the list returned should contain uswest and useast", func() {
 				So(regions, ShouldContain, "uswest")
 				So(regions, ShouldContain, "useast")
 			})
@@ -1148,55 +1081,43 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 		a := specV2Analyser{}
 		Convey("When isResourceInstanceEndPoint method is called with a valid resource path such as '/resource/{id}'", func() {
 			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{id}")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the value returned should be true", func() {
+				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a long path such as '/very/long/path/{id}'", func() {
 			resourceInstance, err := a.isResourceInstanceEndPoint("/very/long/path/{id}")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the value returned should be true", func() {
+				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters '/resource/{name}/subresource/{id}'", func() {
 			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the value returned should be true", func() {
+				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters and ends with trailing slash '/resource/{name}/subresource/{id}/'", func() {
 			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}/")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the value returned should be true", func() {
+				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a path that is a root path of a subresource '/resource/{name}/subresource'", func() {
 			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the value returned should be false since it's the sub-resource root endpoint", func() {
+				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeFalse)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with an invalid resource path such as '/resource/not/instance/path' not conforming with the expected pattern '/resource/{id}'", func() {
 			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/not/valid/instance/path")
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("And the value returned should be false", func() {
+				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeFalse)
 			})
 		})
@@ -1204,7 +1125,6 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 }
 
 func TestFindMatchingResourceRootPath(t *testing.T) {
-
 	Convey("Given an apiSpecAnalyser with a valid resource path such as '/users/{id}' and missing resource root path", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
@@ -1221,8 +1141,6 @@ paths:
 			_, err := a.findMatchingResourceRootPath("/users/{id}")
 			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource instance path '/users/{id}' missing resource root path")
 			})
 		})
@@ -1268,10 +1186,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called ", func() {
 			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the value returned should be '/users/'", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be '/users/'", func() {
 				So(resourceRootPath, ShouldEqual, "/users/")
 			})
 		})
@@ -1317,10 +1233,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called ", func() {
 			resourceRootPath, err := a.findMatchingResourceRootPath("/users/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the value returned should be '/users'", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be '/users'", func() {
 				So(resourceRootPath, ShouldEqual, "/users")
 			})
 		})
@@ -1366,10 +1280,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called ", func() {
 			resourceRootPath, err := a.findMatchingResourceRootPath("/v1/users/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the value returned should be '/v1/users'", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be '/v1/users'", func() {
 				So(resourceRootPath, ShouldEqual, "/v1/users")
 			})
 		})
@@ -1490,19 +1402,15 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When findMatchingResourceRootPath method is called with subresource instance path '/v1/cdns/{cdn_id}/v1/firewalls/{id}'", func() {
 			resourceRootPath, err := a.findMatchingResourceRootPath("/v1/cdns/{cdn_id}/v1/firewalls/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the value returned should be '/v1/cdns/{cdn_id}/v1/firewalls/{id}'", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be '/v1/cdns/{cdn_id}/v1/firewalls/{id}'", func() {
 				So(resourceRootPath, ShouldEqual, "/v1/cdns/{cdn_id}/v1/firewalls")
 			})
 		})
 	})
-
 }
 
 func TestPostIsPresent(t *testing.T) {
-
 	Convey("Given an specV2Analyser with a path '/users' that has a post operation", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
@@ -1731,13 +1639,9 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateRootPath method is called with '/users/{id}'", func() {
 			resourceRootPath, _, resourceRootPostSchemaDef, err := a.validateRootPath("/users/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resourceRootPath should be", func() {
 				So(resourceRootPath, ShouldContainSubstring, "/users")
-			})
-			Convey("And the resourceRootPostSchemaDef should contain the expected properties", func() {
 				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "id")
 				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "name")
 			})
@@ -1778,13 +1682,9 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateRootPath method is called with '/deployKey/{id}'", func() {
 			resourceRootPath, _, resourceSchemaDef, err := a.validateRootPath("/deployKey/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resourceRootPath should be", func() {
 				So(resourceRootPath, ShouldContainSubstring, "/deployKey")
-			})
-			Convey("And the resourceSchemaDef should contain the expected properties", func() {
 				So(resourceSchemaDef.Properties, ShouldContainKey, "id")
 				So(resourceSchemaDef.Properties, ShouldContainKey, "deploy_key")
 			})
@@ -1823,7 +1723,7 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When validateRootPath method is called with '/deployKey/{id}'", func() {
 			_, _, _, err := a.validateRootPath("/deployKey/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should not be nil", func() {
 				So(err.Error(), ShouldEqual, "resource root path '/deployKey' POST operation (without body parameter) error: operation response '201' is missing the schema definition")
 			})
 		})
@@ -1860,8 +1760,6 @@ definitions:
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource instance path '/users/{id}' missing resource root path")
 			})
 		})
@@ -1905,8 +1803,6 @@ definitions:
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource root path '/users' POST operation (without body parameter) validation error: resource schema contains properties that are not just read only")
 			})
 		})
@@ -1945,8 +1841,6 @@ definitions:
 			_, _, _, err := a.validateRootPath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource root path '/users' missing required POST operation")
 			})
 		})
@@ -2020,8 +1914,6 @@ definitions:
 			err := a.validateInstancePath("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource instance path '/users/{id}' missing required GET operation")
 			})
 		})
@@ -2033,8 +1925,6 @@ definitions:
 			err := a.validateInstancePath("/users")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "path '/users' is not a resource instance path")
 			})
 		})
@@ -2042,7 +1932,6 @@ definitions:
 }
 
 func TestIsEndPointTerraformDataSourceCompliant(t *testing.T) {
-
 	testCases := []struct {
 		name          string
 		inputPathItem spec.PathItem
@@ -2249,10 +2138,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When isEndPointFullyTerraformResourceCompliant method is called ", func() {
 			resourceRootPath, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be", func() {
 				So(resourceRootPath, ShouldEqual, "/users")
 			})
 		})
@@ -2321,10 +2208,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When isEndPointFullyTerraformResourceCompliant method is called ", func() {
 			resourceRootPath, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the value returned should be", func() {
 				So(resourceRootPath, ShouldEqual, "/users")
 			})
 		})
@@ -2336,10 +2221,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When isEndPointFullyTerraformResourceCompliant method is called with a non resource instance path such as '/users'", func() {
 			_, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users")
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "path '/users' is not a resource instance path")
 			})
 		})
@@ -2356,8 +2239,6 @@ paths:
 			_, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource instance path '/users/{id}' missing required GET operation")
 			})
 		})
@@ -2396,8 +2277,6 @@ definitions:
 			_, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource root path '/users' missing required POST operation")
 			})
 		})
@@ -2443,8 +2322,6 @@ definitions:
 			_, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And the error message should be", func() {
 				So(err.Error(), ShouldContainSubstring, "resource root operation missing the schema for the POST operation body parameter")
 			})
 		})
@@ -2461,7 +2338,6 @@ func getExpectedResource(terraformCompliantResources []SpecResource, expectedRes
 }
 
 func TestValidateSubResourceTerraformCompliance(t *testing.T) {
-
 	type testCasesDef []struct {
 		name          string
 		inputResource SpecV2Resource
@@ -2615,15 +2491,13 @@ definitions:
 			pathItem := a.d.Spec().Paths.Paths["/v1/cdns/{id}"]
 			resourcePayloadSchemaDef := a.d.Spec().Definitions["ContentDeliveryNetwork"]
 			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, pathRootItem, pathItem, &resourcePayloadSchemaDef)
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the list resources return should only contain a resource called cdns_v1_rst1", func() {
+				// the list resources return should only contain a resource called cdns_v1_rst1
 				So(len(multiRegionResources), ShouldEqual, 1)
 				So(multiRegionResources[0].GetResourceName(), ShouldEqual, "cdns_v1_rst1")
-			})
-			cdnMultiRegionResource := multiRegionResources[0]
-			Convey("And the host is correctly configured according to the swagger", func() {
+				cdnMultiRegionResource := multiRegionResources[0]
+				// the host is correctly configured according to the swagger
 				host, err := cdnMultiRegionResource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "some.subdomain.rst1.domain.com")
@@ -2638,8 +2512,6 @@ definitions:
 			multiRegionResources, err := a.createMultiRegionResources(regions, resourceRootPath, pathRootItem, pathItem, &resourcePayloadSchemaDef)
 			Convey("Then the error returned should be as expected", func() {
 				So(err.Error(), ShouldEqual, "failed to create a resource with region: path must not be empty")
-			})
-			Convey("And multiRegionResources should be nil", func() {
 				So(multiRegionResources, ShouldBeNil)
 			})
 		})
@@ -2766,7 +2638,6 @@ definitions:
 }
 
 func TestGetTerraformCompliantResources(t *testing.T) {
-
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls but missing the parent resource resource description", t, func() {
 		swaggerContent := `swagger: "2.0"
 host: 127.0.0.1 
@@ -2821,10 +2692,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the list of resources returned should be empty since the subresource is not considered compliant if the parent is missing", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the list of resources returned should be empty since the subresource is not considered compliant if the parent is missing", func() {
 				So(terraformCompliantResources, ShouldBeEmpty)
 			})
 		})
@@ -2869,10 +2738,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the list of resources returned should be empty since the subresource is not considered compliant if the parent is missing", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the list of resources returned should be empty since the subresource is not considered compliant if the parent is missing", func() {
 				So(terraformCompliantResources, ShouldBeEmpty)
 			})
 		})
@@ -3028,54 +2895,42 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-
 			cdnV1Resource := getExpectedResource(terraformCompliantResources, "cdn_v1")
 			firewallV1Resource := getExpectedResource(terraformCompliantResources, "cdn_v1_firewalls_v1")
-
-			Convey("And the resources info map should only contain a resource called both the parent cdns_v1 resource and the subresource cdns_v1_firewalls_v1", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+				// the resources info map should only contain a resource called both the parent cdns_v1 resource and the subresource cdns_v1_firewalls_v1
 				So(len(terraformCompliantResources), ShouldEqual, 2)
 				So(cdnV1Resource, ShouldNotBeNil)
 				So(firewallV1Resource, ShouldNotBeNil)
-			})
-
-			Convey("And the firewall is a subresource which references the parent CDN resource", func() {
+				// the firewall is a subresource which references the parent CDN resource
 				subRes := firewallV1Resource.GetParentResourceInfo()
 				So(subRes, ShouldNotBeNil)
 				So(subRes.parentResourceNames, ShouldResemble, []string{"cdn_v1"})
 				So(subRes.fullParentResourceName, ShouldEqual, "cdn_v1")
-				Convey("And the full resourcePath is resolved correctly, with the the cdn {parent_id} resolved as 42", func() {
-					parentID := "42"
-					resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
-					So(err, ShouldBeNil)
-					So(resourcePath, ShouldEqual, "/v1/cdns/42/v1/firewalls")
-				})
-			})
-			Convey("And the firewall resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				// the full resourcePath is resolved correctly, with the the cdn {parent_id} resolved as 42
+				parentID := "42"
+				resourcePath, err := firewallV1Resource.getResourcePath([]string{parentID})
+				So(err, ShouldBeNil)
+				So(resourcePath, ShouldEqual, "/v1/cdns/42/v1/firewalls")
+				// the firewall resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML
 				resOperation := firewallV1Resource.getResourceOperations()
 				So(resOperation.Get.responses, ShouldContainKey, 200)
 				So(resOperation.Post.responses, ShouldContainKey, 201)
 				So(resOperation.Put.responses, ShouldContainKey, 200)
 				So(resOperation.Delete.responses, ShouldContainKey, 204)
-			})
-			Convey("And each firewall operation exposed on the resource has its own timeout set", func() {
+				// each firewall operation exposed on the resource has its own timeout set
 				timeoutSpec, err := firewallV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
-
 				So(timeoutSpec.Put.String(), ShouldEqual, "5m0s")
 				So(timeoutSpec.Get, ShouldBeNil)
 				So(timeoutSpec.Post, ShouldBeNil)
 				So(timeoutSpec.Delete, ShouldBeNil)
-			})
-			Convey("And the firewall host is correctly configured according to the swagger", func() {
+				// the firewall host is correctly configured according to the swagger
 				host, err := firewallV1Resource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "178.168.3.4")
-			})
-
-			Convey("And the firewall resource schema contains 3 properties, 2 taken from the model and one added on the fly for the parent resource id", func() {
+				// the firewall resource schema contains 3 properties, 2 taken from the model and one added on the fly for the parent resource id
 				actualResourceSchema, err := firewallV1Resource.GetResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 3)
@@ -3087,7 +2942,6 @@ definitions:
 				parentPropExists, _ := assertPropertyExists(actualResourceSchema.Properties, "cdn_v1_id")
 				So(parentPropExists, ShouldBeTrue)
 			})
-
 		})
 	})
 
@@ -3129,41 +2983,34 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resources info map should only contain a resource called cdns_v1_sea1", func() {
+				// the resources info map should only contain a resource called cdns_v1_sea1
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1_sea1")
-			})
-			cndV1Resource := terraformCompliantResources[0]
-			Convey("And the cndV1Resource should not be considered a subresource", func() {
+				cndV1Resource := terraformCompliantResources[0]
+				// the cndV1Resource should not be considered a subresource
 				subRes := cndV1Resource.GetParentResourceInfo()
 				So(err, ShouldBeNil)
 				So(subRes, ShouldBeNil)
-			})
-			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				// the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML
 				resOperation := cndV1Resource.getResourceOperations()
 				So(resOperation.Get.responses, ShouldContainKey, 200)
 				So(resOperation.Post.responses, ShouldContainKey, 201)
 				So(resOperation.Put, ShouldBeNil)
 				So(resOperation.Delete, ShouldBeNil)
-			})
-			Convey("And each operation exposed on the resource has a nil timeout", func() {
+				// each operation exposed on the resource has a nil timeout
 				timeoutSpec, err := cndV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
 				So(timeoutSpec.Post, ShouldBeNil)
 				So(timeoutSpec.Get, ShouldBeNil)
 				So(timeoutSpec.Put, ShouldBeNil)
 				So(timeoutSpec.Delete, ShouldBeNil)
-			})
-			Convey("And the host is correctly configured according to the swagger", func() {
+				// the host is correctly configured according to the swagger
 				host, err := cndV1Resource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "some.subdomain.sea1.domain.com")
-			})
-
-			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
+				// the resource schema contains the one property specified in the ContentDeliveryNetwork model definition
 				actualResourceSchema, err := cndV1Resource.GetResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
@@ -3259,41 +3106,33 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				// the resources info map should only contain a resource called cdns_v1
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
-			})
-			cndV1Resource := terraformCompliantResources[0]
-			Convey("And the cndV1Resource should not be considered a subresource", func() {
+				cndV1Resource := terraformCompliantResources[0]
+				// the cndV1Resource should not be considered a subresource
 				subRes := cndV1Resource.GetParentResourceInfo()
-				So(err, ShouldBeNil)
 				So(subRes, ShouldBeNil)
-			})
-			Convey("And the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML", func() {
+				// the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML
 				resOperation := cndV1Resource.getResourceOperations()
 				So(resOperation.Get.responses, ShouldContainKey, 200)
 				So(resOperation.Post.responses, ShouldContainKey, 201)
 				So(resOperation.Put.responses, ShouldContainKey, 200)
 				So(resOperation.Delete.responses, ShouldContainKey, 204)
-			})
-			Convey("And each operation exposed on the resource has it own timeout set", func() {
+				// each operation exposed on the resource has it own timeout set
 				timeoutSpec, err := cndV1Resource.getTimeouts()
 				So(err, ShouldBeNil)
 				So(timeoutSpec.Post.String(), ShouldEqual, "5s")
 				So(timeoutSpec.Get, ShouldBeNil)
 				So(timeoutSpec.Put, ShouldBeNil)
 				So(timeoutSpec.Delete, ShouldBeNil)
-			})
-			Convey("And the host is correctly configured according to the swagger", func() {
+				// the host is correctly configured according to the swagger
 				host, err := cndV1Resource.getHost()
 				So(err, ShouldBeNil)
 				So(host, ShouldEqual, "some-host.com")
-			})
-
-			Convey("And the resource schema contains the one property specified in the ContentDeliveryNetwork model definition", func() {
+				// the resource schema contains the one property specified in the ContentDeliveryNetwork model definition
 				actualResourceSchema, err := cndV1Resource.GetResourceSchema()
 				So(err, ShouldBeNil)
 				So(len(actualResourceSchema.Properties), ShouldEqual, 1)
@@ -3342,28 +3181,23 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				// the resources info map should only contain a resource called cdns_v1
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
-			})
-			Convey("And the resources schema should contain the right configuration", func() {
+				// the resources schema should contain the right configuration
 				resourceSchema, err := terraformCompliantResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
-				Convey("And the resources schema should contain the id property", func() {
-					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-					So(exists, ShouldBeTrue)
-				})
-				Convey("And the resources schema should contain the listeners property", func() {
-					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
-					So(exists, ShouldBeTrue)
-					So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
-					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeString)
-				})
+				// the resources schema should contain the id property
+				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+				So(exists, ShouldBeTrue)
+				// the resources schema should contain the listeners property
+				exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+				So(exists, ShouldBeTrue)
+				So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
+				So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeString)
 			})
-
 		})
 	})
 
@@ -3414,28 +3248,24 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				// the resources info map should only contain a resource called cdns_v1
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
-			})
-			Convey("And the resources schema should contain the right configuration", func() {
+				// the resources schema should contain the right configuration
 				resourceSchema, err := terraformCompliantResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
-				Convey("And the resources schema should contain the id property", func() {
-					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-					So(exists, ShouldBeTrue)
-				})
-				Convey("And the resources schema should contain the listeners property", func() {
-					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
-					So(exists, ShouldBeTrue)
-					So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
-					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeObject)
-					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
-					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
-				})
+				// the resources schema should contain the id property
+				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+				So(exists, ShouldBeTrue)
+				// the resources schema should contain the listeners property
+				exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+				So(exists, ShouldBeTrue)
+				So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
+				So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeObject)
+				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
+				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
 			})
 		})
 	})
@@ -3472,36 +3302,23 @@ definitions:
 
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned by calling newSpecAnalyserV2 should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specAnalyserV2 struct should not be nil", func() {
 				So(specAnalyserV2, ShouldNotBeNil)
-			})
 
-			specResources, err := specAnalyserV2.GetTerraformCompliantResources()
-			Convey("Then the error returned by calling GetTerraformCompliantResources should be nil", func() {
+				specResources, err := specAnalyserV2.GetTerraformCompliantResources()
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specResources slice should not be nil", func() {
 				So(specResources, ShouldNotBeNil)
-			})
-			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
 				So(len(specResources), ShouldEqual, 1)
 				So(specResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
-			})
 
-			Convey("And the resources schema should contain the right configuration", func() {
+				// the resources schema should contain the right configuration
 				resourceSchema, err := specResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
-				Convey("And the resources schema should contain the id property", func() {
-					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-					So(exists, ShouldBeTrue)
-				})
-				Convey("And the resources schema should contain the name property", func() {
-					exists, _ := assertPropertyExists(resourceSchema.Properties, "name")
-					So(exists, ShouldBeTrue)
-				})
+				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+				So(exists, ShouldBeTrue)
+				exists, _ = assertPropertyExists(resourceSchema.Properties, "name")
+				So(exists, ShouldBeTrue)
 			})
 		})
 	})
@@ -3551,28 +3368,24 @@ definitions:
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("specResErr", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resources info map should only contain a resource called cdns_v1", func() {
+				// the resources info map should only contain a resource called cdns_v1
 				So(len(terraformCompliantResources), ShouldEqual, 1)
 				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
-			})
-			Convey("And the resources schema should contain the right configuration", func() {
+				// the resources schema should contain the right configuration
 				resourceSchema, err := terraformCompliantResources[0].GetResourceSchema()
 				So(err, ShouldBeNil)
-				Convey("And the resources schema should contain the id property", func() {
-					exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
-					So(exists, ShouldBeTrue)
-				})
-				Convey("And the resources schema should contain the listeners property", func() {
-					exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
-					So(exists, ShouldBeTrue)
-					So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
-					So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeObject)
-					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
-					So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
-				})
+				// the resources schema should contain the id property
+				exists, _ := assertPropertyExists(resourceSchema.Properties, "id")
+				So(exists, ShouldBeTrue)
+				// the resources schema should contain the listeners property
+				exists, idx := assertPropertyExists(resourceSchema.Properties, "listeners")
+				So(exists, ShouldBeTrue)
+				So(resourceSchema.Properties[idx].Type, ShouldEqual, TypeList)
+				So(resourceSchema.Properties[idx].ArrayItemsType, ShouldEqual, TypeObject)
+				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Name, ShouldEqual, "protocol")
+				So(resourceSchema.Properties[idx].SpecSchemaDefinition.Properties[0].Type, ShouldEqual, TypeString)
 			})
 		})
 	})
@@ -3607,10 +3420,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the resources info map should contain a resource called cdns_v1", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resources info map should contain a resource called cdns_v1", func() {
 				So(terraformCompliantResources, ShouldBeEmpty)
 			})
 		})
@@ -3663,10 +3474,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the terraformCompliantResources map should contain one resource with ignore flag set to true", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the terraformCompliantResources map should contain one resource with ignore flag set to true", func() {
 				So(terraformCompliantResources[0].ShouldIgnoreResource(), ShouldBeTrue)
 			})
 		})
@@ -3719,10 +3528,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
-			Convey("Then the error returned should be nil", func() {
+			Convey("Then the terraformCompliantResources map should be empty since the resource ref is empty", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the terraformCompliantResources map should be empty since the resource ref is empty", func() {
 				So(terraformCompliantResources, ShouldBeEmpty)
 			})
 		})
@@ -3736,18 +3543,12 @@ definitions:
 
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the error returned by calling newSpecAnalyserV2 should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specAnalyserV2 struct should not be nil", func() {
 				So(specAnalyserV2, ShouldNotBeNil)
-			})
 
-			specResources, err := specAnalyserV2.GetTerraformCompliantResources()
-			Convey("Then the error returned by calling GetTerraformCompliantResources should be nil", func() {
+				specResources, err := specAnalyserV2.GetTerraformCompliantResources()
 				So(err, ShouldBeNil)
-			})
-			Convey("AND the specResources slice should not be nil", func() {
 				So(specResources, ShouldBeEmpty)
 			})
 		})
@@ -3801,10 +3602,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called", func() {
 			r, err := a.GetTerraformCompliantResources()
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the value returned should be empty", func() {
+				So(err, ShouldBeNil)
 				So(r, ShouldBeEmpty)
 			})
 		})
@@ -3857,10 +3656,8 @@ definitions:
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called", func() {
 			r, err := a.GetTerraformCompliantResources()
-			Convey("Then the err returned should be nil", func() {
-				So(err, ShouldBeNil)
-			})
 			Convey("Then the value returned should be empty", func() {
+				So(err, ShouldBeNil)
 				So(r, ShouldBeEmpty)
 			})
 		})

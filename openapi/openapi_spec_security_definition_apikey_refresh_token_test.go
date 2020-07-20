@@ -105,8 +105,6 @@ func TestAPIKeyHeaderRefreshTokenSecurityDefinitionValidate(t *testing.T) {
 			err := apiKeyHeaderRefreshTokenSecurityDefinition.validate()
 			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should match the expected", func() {
 				So(err.Error(), ShouldEqual, "specAPIKeyHeaderRefreshTokenSecurityDefinition missing mandatory security definition name")
 			})
 		})
@@ -117,8 +115,6 @@ func TestAPIKeyHeaderRefreshTokenSecurityDefinitionValidate(t *testing.T) {
 			err := apiKeyHeaderRefreshTokenSecurityDefinition.validate()
 			Convey("Then the error returned should not be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should match the expected", func() {
 				So(err.Error(), ShouldEqual, "refresh token URL must be a valid URL")
 			})
 		})

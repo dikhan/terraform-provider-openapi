@@ -83,13 +83,11 @@ func TestApiKeyQueryAuthenticatorPrepareAuth(t *testing.T) {
 				url:     expectedURL,
 			}
 			err := apiKeyQueryAuthenticator.prepareAuth(ctx)
-			Convey("Then the err returned  should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And then the context url should have the query auth", func() {
+				// the context url should have the query auth
 				So(ctx.url, ShouldEqual, fmt.Sprintf("%s?%s=%s", expectedURL, apiKeyQueryAuthenticator.name, apiKeyQueryAuthenticator.value))
-			})
-			Convey("Then the context headers should remain the same", func() {
+				// the context headers should remain the same
 				So(ctx.headers, ShouldBeEmpty)
 				So(ctx.headers, ShouldEqual, expectedHeaders)
 			})

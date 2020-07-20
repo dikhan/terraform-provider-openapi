@@ -16,76 +16,79 @@ import (
 )
 
 func TestCheckHTTPStatusCode(t *testing.T) {
-
 	testCases := []struct {
-		name                string
-		response            *http.Response
-		expectedStatusCodes []int
-		expectedError       error
+		name             string
+		inputResponse    *http.Response
+		inputStatusCodes []int
+		expectedError    error
 	}{
 		{
 			name: "response containing a status codes that matches one of the expected response status codes",
-			response: &http.Response{
+			inputResponse: &http.Response{
 				StatusCode: http.StatusOK,
 			},
-			expectedStatusCodes: []int{http.StatusOK},
-			expectedError:       nil,
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    nil,
 		},
 		{
 			name: "response that IS NOT expected",
-			response: &http.Response{
+			inputResponse: &http.Response{
 				Body:       ioutil.NopCloser(strings.NewReader("some backend error")),
 				StatusCode: http.StatusInternalServerError,
 			},
-			expectedStatusCodes: []int{http.StatusOK},
-			expectedError:       errors.New("[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] (some backend error)"),
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    errors.New("[resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200] (some backend error)"),
 		},
 		{
 			name: "response known with code 401 Unauthorized",
-			response: &http.Response{
+			inputResponse: &http.Response{
 				Body:       ioutil.NopCloser(strings.NewReader("unauthorized")),
 				StatusCode: http.StatusUnauthorized,
 			},
-			expectedStatusCodes: []int{http.StatusOK},
-			expectedError:       errors.New("[resource='resourceName'] HTTP Response Status Code 401 - Unauthorized: API access is denied due to invalid credentials (unauthorized)"),
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    errors.New("[resource='resourceName'] HTTP Response Status Code 401 - Unauthorized: API access is denied due to invalid credentials (unauthorized)"),
 		},
 	}
-
-	for _, tc := range testCases {
+	Convey("Given a specStubResource", t, func() {
 		openAPIResource := &specStubResource{name: "resourceName"}
-		err := checkHTTPStatusCode(openAPIResource, tc.response, tc.expectedStatusCodes)
-		if tc.expectedError == nil {
-			assert.Nil(t, err, tc.name)
-		} else {
-			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.name)
+		for _, tc := range testCases {
+			Convey(fmt.Sprintf("When checkHTTPStatusCode is called: %s", tc.name), func() {
+				err := checkHTTPStatusCode(openAPIResource, tc.inputResponse, tc.inputStatusCodes)
+				Convey("Then the error returned should be the expected one", func() {
+					So(err, ShouldResemble, tc.expectedError)
+				})
+			})
 		}
-	}
+	})
 }
 
 func TestResponseContainsExpectedStatus(t *testing.T) {
 	testCases := []struct {
-		name                        string
-		expectedResponseStatusCodes []int
-		responseCode                int
-		expectedResult              bool
+		name                     string
+		inputResponseStatusCodes []int
+		inputResponseCode        int
+		expectedResult           bool
 	}{
 		{
-			name:                        "response code that exists in the given list of expected status codes",
-			expectedResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
-			responseCode:                http.StatusCreated,
-			expectedResult:              true,
+			name:                     "response code that exists in the given list of input status codes",
+			inputResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
+			inputResponseCode:        http.StatusCreated,
+			expectedResult:           true,
 		},
 		{
-			name:                        "response code that DOES NOT exists in 'expectedResponseStatusCodes'",
-			expectedResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
-			responseCode:                http.StatusUnauthorized,
-			expectedResult:              false,
+			name:                     "response code that DOES NOT exists in the given list of input status codes",
+			inputResponseStatusCodes: []int{http.StatusCreated, http.StatusAccepted},
+			inputResponseCode:        http.StatusUnauthorized,
+			expectedResult:           false,
 		},
 	}
-
 	for _, tc := range testCases {
-		exists := responseContainsExpectedStatus(tc.expectedResponseStatusCodes, tc.responseCode)
-		assert.Equal(t, tc.expectedResult, exists, tc.name)
+		Convey(fmt.Sprintf("When responseContainsExpectedStatus is called: %s", tc.name), t, func() {
+			exists := responseContainsExpectedStatus(tc.inputResponseStatusCodes, tc.inputResponseCode)
+			Convey("Then the result returned should be the expected one", func() {
+				So(exists, ShouldEqual, tc.expectedResult)
+			})
+		})
 	}
 }
 
@@ -93,13 +96,9 @@ func TestGetParentIDsAndResourcePath(t *testing.T) {
 	Convey("Given an nil openapi resource (internal getParentIDs call fails for some reason)", t, func() {
 		Convey("When getParentIDsAndResourcePath is called", func() {
 			parentIDs, resourcePath, err := getParentIDsAndResourcePath(nil, nil)
-			Convey("Then the error returned should be the expected one", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "can't get parent ids from an empty SpecResource")
-			})
-			Convey("And the parentIDs should be empty", func() {
 				So(parentIDs, ShouldBeEmpty)
-			})
-			Convey("And the resourcePath should be empty", func() {
 				So(resourcePath, ShouldBeEmpty)
 			})
 		})
@@ -118,13 +117,9 @@ func TestGetParentIDsAndResourcePath(t *testing.T) {
 
 		Convey("When getParentIDsAndResourcePath is called", func() {
 			parentIDs, resourcePath, err := getParentIDsAndResourcePath(openAPIResource, resourceData)
-			Convey("Then the error returned should be the expected one", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "getResourcePath() failed")
-			})
-			Convey("And the parentIDs should be empty", func() {
 				So(parentIDs, ShouldBeEmpty)
-			})
-			Convey("And the resourcePath should be empty", func() {
 				So(resourcePath, ShouldBeEmpty)
 			})
 		})
@@ -156,14 +151,10 @@ func TestGetParentIDsAndResourcePath(t *testing.T) {
 
 		Convey("When getParentIDsAndResourcePath is called", func() {
 			parentIDs, resourcePath, err := getParentIDsAndResourcePath(openAPIResource, resourceData)
-			Convey("Then the error returned should be the expected one", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the parentIDs should match the expected", func() {
 				So(len(parentIDs), ShouldEqual, 1)
 				So(parentIDs[0], ShouldEqual, "parentPropertyID")
-			})
-			Convey("And the resourcePath be '/v1/cdns/parentPropertyID/firewall'", func() {
 				So(resourcePath, ShouldEqual, "/v1/cdns/parentPropertyID/firewall")
 			})
 		})
@@ -174,10 +165,8 @@ func Test_getParentIDs(t *testing.T) {
 	Convey("Given a nil openAPIResource", t, func() {
 		Convey("When getParentIDs is called with a nil SpecResource", func() {
 			ss, e := getParentIDs(nil, nil)
-			Convey("Then an error is raised", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(e.Error(), ShouldEqual, "can't get parent ids from an empty SpecResource")
-			})
-			Convey("And the slice of string returned is empty", func() {
 				So(ss, ShouldBeEmpty)
 			})
 		})
@@ -187,19 +176,15 @@ func Test_getParentIDs(t *testing.T) {
 		s := &SpecV2Resource{}
 		Convey("When getParentIDs is called with an empty ResourceData", func() {
 			ss, err := getParentIDs(s, &schema.ResourceData{})
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the slice of string returned is empty", func() {
 				So(ss, ShouldBeEmpty)
 			})
 		})
 		Convey("When getParentIDs is called with a nil ResourceData", func() {
 			ss, err := getParentIDs(s, nil)
-			Convey("Then an error is raised", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "can't get parent ids from a nil ResourceData")
-			})
-			Convey("And the slice of string returned is empty", func() {
 				So(ss, ShouldBeEmpty)
 			})
 		})
@@ -215,10 +200,8 @@ func Test_getParentIDs(t *testing.T) {
 		}
 		Convey("When getParentIDs is called with an empty ResourceData", func() {
 			ss, err := getParentIDs(s, &schema.ResourceData{})
-			Convey("Then an error is raised", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "could not find ID value in the state file for subresource parent property 'cdns_v1_id'")
-			})
-			Convey("And the slice of string returned is empty", func() {
 				So(ss, ShouldBeEmpty)
 			})
 		})
@@ -249,10 +232,8 @@ func Test_getParentIDs(t *testing.T) {
 		}
 		Convey("When getParentIDs is called with non-empty ResourceData", func() {
 			parentIDs, err := getParentIDs(s, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the parent IDs returned should be populated as expected", func() {
 				So(parentIDs[0], ShouldEqual, "parentPropertyID")
 			})
 		})
@@ -293,7 +274,7 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 
 		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, objectWithNestedObjectStateValue, propertyWithNestedObjectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, stringWithPreferredNameProperty, intProperty, numberProperty, boolProperty, slicePrimitiveProperty, objectProperty, listOfObjectsProperty, propertyWithNestedObject)
-		Convey("When  is called with a map containing all property types supported (string, int, number, bool, slice of primitives, objects, list of objects and property with nested objects)", func() {
+		Convey("When updateStateWithPayloadData is called with a map containing all property types supported (string, int, number, bool, slice of primitives, objects, list of objects and property with nested objects)", func() {
 			remoteData := map[string]interface{}{
 				stringWithPreferredNameProperty.Name: "someUpdatedStringValue",
 				intProperty.Name:                     15,
@@ -319,10 +300,8 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 				},
 			}
 			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the expectedValue should equal to the expectedValue coming from remote, the key expectedValue should be the preferred as defined in the property, the error should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the expectedValue should equal to the expectedValue coming from remote, and also the key expectedValue should be the preferred as defined in the property", func() {
 				// keys stores in the resource data struct are always snake case
 				So(resourceData.Get(stringWithPreferredNameProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
 				So(resourceData.Get(intProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[intProperty.Name])
@@ -391,10 +370,8 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 				},
 			}
 			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the expectedValue should maintain the order of the local input (not the order of the remote lists) and error should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the expectedValue should maintain the order of the local input (not the order of the remote lists)", func() {
 				// keys stores in the resource data struct are always snake case
 				So(len(resourceData.Get(listOfStrings.GetTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
 				So(resourceData.Get(listOfStrings.GetTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, listOfStrings.Default.([]interface{})[0])
@@ -422,10 +399,8 @@ func TestUpdateStateWithPayloadData(t *testing.T) {
 				"some_other_property_not_documented_in_openapi_doc": 15,
 			}
 			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the resource state data only contains the properties and values for the documented properties and error should be nil", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the resource state data only contains the properties and values for the documented properties", func() {
 				So(resourceData.Get(stringWithPreferredNameProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
 				So(resourceData.Get("some_other_property_not_documented_in_openapi_doc"), ShouldBeNil)
 			})
@@ -464,10 +439,8 @@ func TestDataSourceUpdateStateWithPayloadData(t *testing.T) {
 				},
 			}
 			err := dataSourceUpdateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the error should be nil and the expectedValue should equal to the expectedValue coming from remote", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the expectedValue should equal to the expectedValue coming from remote", func() {
 				// keys stores in the resource data struct are always snake case
 				So(len(resourceData.Get(listOfStrings.GetTerraformCompliantPropertyName()).([]interface{})), ShouldEqual, 2)
 				So(resourceData.Get(listOfStrings.GetTerraformCompliantPropertyName()).([]interface{})[0], ShouldEqual, remoteData[listOfStrings.Name].([]interface{})[0])
@@ -495,10 +468,8 @@ func TestDataSourceUpdateStateWithPayloadData(t *testing.T) {
 				"some_other_property_not_documented_in_openapi_doc": 15,
 			}
 			err := updateStateWithPayloadData(r.openAPIResource, remoteData, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the error should be nil and the resource state data only contains the properties and values for the documented properties", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the resource state data only contains the properties and values for the documented properties", func() {
 				So(resourceData.Get(stringWithPreferredNameProperty.GetTerraformCompliantPropertyName()), ShouldEqual, remoteData[stringWithPreferredNameProperty.Name])
 				So(resourceData.Get("some_other_property_not_documented_in_openapi_doc"), ShouldBeNil)
 			})
@@ -530,10 +501,8 @@ func TestUpdateStateWithPayloadDataAndOptions(t *testing.T) {
 			}
 			var resourceLocalData *schema.ResourceData
 			err := updateStateWithPayloadDataAndOptions(specResource, remoteData, resourceLocalData, true)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the error returned should be nil and the resource local data should be intact since the id property is ignored when updating the resource data file behind the scenes", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the resource local data should be intact since the id property is ignored when updating the resource data file behind the scenes", func() {
 				So(resourceLocalData, ShouldEqual, nil)
 			})
 		})
@@ -586,10 +555,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newStringSchemaDefinitionPropertyWithDefaults("string_property", "", false, false, nil)
 			dataValue := "someValue"
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value with the right type string", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value with the right type string", func() {
 				So(resultValue, ShouldEqual, dataValue)
 			})
 		})
@@ -598,10 +565,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
 			dataValue := true
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value with the right type boolean", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value with the right type boolean", func() {
 				So(resultValue, ShouldEqual, dataValue)
 			})
 		})
@@ -609,10 +574,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
 			dataValue := true
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, true)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value with the right type boolean", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value with the right type boolean", func() {
 				So(resultValue, ShouldEqual, "true")
 			})
 		})
@@ -620,10 +583,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
 			dataValue := false
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, true)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value formatted string with the right type boolean", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value formatted string with the right type boolean", func() {
 				So(resultValue, ShouldEqual, "false")
 			})
 		})
@@ -632,10 +593,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
 			dataValue := 10
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value with the right type int", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value with the right type int", func() {
 				So(resultValue, ShouldEqual, dataValue)
 			})
 		})
@@ -643,10 +602,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
 			dataValue := 10
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, true)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value formatted string with the right type int", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
 				So(resultValue, ShouldEqual, "10")
 			})
 		})
@@ -655,10 +612,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
 			dataValue := 'f'
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, true)
-			Convey("Then the error should not be nil", func() {
+			Convey("Then the error should not be nil and the result value should be the expected value formatted string with the right type int", func() {
 				So(err.Error(), ShouldEqual, "'int32' type not supported")
-			})
-			Convey("Then the result value should be the expected value formatted string with the right type int", func() {
 				So(resultValue, ShouldEqual, nil)
 			})
 		})
@@ -667,10 +622,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
 			dataValue := 45.23
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then error should be nil and the result value should be the expected value formatted string with the right type float", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value formatted string with the right type float", func() {
 				So(resultValue, ShouldEqual, dataValue)
 			})
 		})
@@ -678,10 +631,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
 			dataValue := 0
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, true)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value 0 formatted string with the right type float", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value 0 formatted string with the right type float", func() {
 				So(resultValue, ShouldEqual, "0")
 			})
 		})
@@ -689,10 +640,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
 			dataValue := 10.12
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, true)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value formatted string with the right type float", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value formatted string with the right type float", func() {
 				So(resultValue, ShouldEqual, "10.12")
 			})
 		})
@@ -700,10 +649,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
 			dataValue := 45
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value formatted string with the right type integer", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value formatted string with the right type integer", func() {
 				So(resultValue, ShouldEqual, dataValue)
 				So(resultValue, ShouldHaveSameTypeAs, int(dataValue))
 			})
@@ -712,10 +659,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
 			dataValue := 45
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, true)
-			Convey("Then the error should be nil", func() {
+			Convey("Then error should be nil and the result value should be the expected value formatted string with the right type integer", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value formatted string with the right type integer", func() {
 				So(resultValue, ShouldEqual, "45")
 			})
 		})
@@ -738,10 +683,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeObject, objectSchemaDefinition)
 			dataValue := []interface{}{objectDefault}
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the list containing the object items with the expected types (int, string, bool and float)", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the list containing the object items with the expected types (int, string, bool and float)", func() {
 				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_int")
 				So(resultValue.([]interface{})[0].(map[string]interface{})["example_int"].(int), ShouldEqual, objectDefault["example_int"])
 				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_string")
@@ -756,10 +699,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeString, nil)
 			dataValue := []interface{}{"value1"}
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value with the right type array", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value with the right type array", func() {
 				So(resultValue.([]interface{}), ShouldContain, dataValue[0])
 			})
 		})
@@ -771,10 +712,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				Required: true,
 			}
 			resultValue, err := convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the expected value with the right type array", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the expected value with the right type array", func() {
 				So(resultValue.(map[string]interface{}), ShouldBeEmpty)
 			})
 		})
@@ -814,10 +753,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			}
 			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
 				So(resultValue.(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
 				So(resultValue.(map[string]interface{})["example_string_2"].(string), ShouldEqual, "something")
 			})
@@ -842,10 +779,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
 			property.EnableLegacyComplexObjectBlockConfiguration = true
 			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, false)
-			Convey("Then the error should be nil", func() {
+			Convey("Then the error should be nil and the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
 				So(resultValue.([]interface{})[0], ShouldContainKey, "example_int")
 				So(resultValue.([]interface{})[0].(map[string]interface{})["example_int"].(string), ShouldEqual, "80")
 				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_string")
@@ -884,11 +819,10 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			expectedPropertyWithNestedObjectName := "property_with_nested_object"
 			propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
 			resultValue, err := convertPayloadToLocalStateDataValue(propertyWithNestedObject, dataValue, false)
-
-			Convey("Then the error should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the result value should be the list containing just one element (as per the nested struct workaround)", func() {
+
+				// The result value should be the list containing just one element (as per the nested struct workaround)
 				// Tag(NestedStructsWorkaround)
 				// Note: This is the workaround needed to support properties with nested structs. The current Terraform sdk version
 				// does not support this now, hence the suggestion from the Terraform maintainer was to use a list of map[string]interface{}
@@ -896,12 +830,12 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				// for an object property that contains other objects
 				So(resultValue.([]interface{}), ShouldNotBeEmpty)
 				So(len(resultValue.([]interface{})), ShouldEqual, 1)
-			})
-			Convey("AND the object should have the expected properties including the nested object", func() {
+
+				// AND the object should have the expected properties including the nested object
 				So(resultValue.([]interface{})[0], ShouldContainKey, propertyWithNestedObjectSchemaDefinition.Properties[0].Name)
 				So(resultValue.([]interface{})[0], ShouldContainKey, propertyWithNestedObjectSchemaDefinition.Properties[1].Name)
-			})
-			Convey("AND the object property with nested object should have the expected configuration", func() {
+
+				// AND the object property with nested object should have the expected configuration
 				nestedObject := propertyWithNestedObjectSchemaDefinition.Properties[1]
 				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name], ShouldContainKey, nestedObjectSchemaDefinition.Properties[0].Name)
 				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].(map[string]interface{})[nestedObjectSchemaDefinition.Properties[0].Name], ShouldEqual, strconv.Itoa(nestedObjectSchemaDefinition.Properties[0].Default.(int)))
@@ -918,10 +852,8 @@ func TestSetResourceDataProperty(t *testing.T) {
 		Convey("When setResourceDataProperty is called with a schema definition property name that exists in terraform resource data object and with a new expectedValue", func() {
 			expectedValue := "newValue"
 			err := setResourceDataProperty(r.openAPIResource, stringProperty.Name, expectedValue, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And then expectedValue should equal", func() {
 				// keys stores in the resource data struct are always snake case
 				So(resourceData.Get(stringProperty.Name), ShouldEqual, expectedValue)
 			})
@@ -929,20 +861,17 @@ func TestSetResourceDataProperty(t *testing.T) {
 		Convey("When setResourceDataProperty is called with a schema definition property preferred name that exists in terraform resource data object and with a new expectedValue", func() {
 			expectedValue := "theNewValue"
 			err := setResourceDataProperty(r.openAPIResource, stringWithPreferredNameProperty.Name, expectedValue, resourceData)
-			Convey("Then the err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And then expectedValue should equal the expected value (note the state is queried using the preferred name)", func() {
 				// keys stores in the resource data struct are always snake case
+				// note the state is queried using the preferred name
 				So(resourceData.Get(stringWithPreferredNameProperty.PreferredName), ShouldEqual, expectedValue)
 			})
 		})
 		Convey("When setResourceDataProperty is called with a schema definition property name does NOT exist", func() {
 			err := setResourceDataProperty(r.openAPIResource, "nonExistingKey", "", resourceData)
-			Convey("Then the err returned should not be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And then expectedValue should equal", func() {
 				// keys stores in the resource data struct are always snake case
 				So(err.Error(), ShouldEqual, "could not find schema definition property name nonExistingKey in the resource data: property with name 'nonExistingKey' not existing in resource schema definition")
 			})
@@ -958,10 +887,8 @@ func TestSetStateID(t *testing.T) {
 				idProperty.Name: "idValue",
 			}
 			err := setStateID(r.openAPIResource, resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
+			Convey("Then resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(resourceData.Id(), ShouldEqual, responsePayload[idProperty.Name])
 			})
 		})
@@ -971,10 +898,8 @@ func TestSetStateID(t *testing.T) {
 				"someOtherProperty": "idValue",
 			}
 			err := setStateID(r.openAPIResource, resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
+			Convey("Then resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err.Error(), ShouldEqual, "response object returned from the API is missing mandatory identifier property 'id'")
 			})
 		})
@@ -987,10 +912,8 @@ func TestSetStateID(t *testing.T) {
 				someIdentifierProperty.Name: "idValue",
 			}
 			err := setStateID(r.openAPIResource, resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
+			Convey("Then resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(resourceData.Id(), ShouldEqual, responsePayload[someIdentifierProperty.Name])
 			})
 		})
@@ -1003,10 +926,8 @@ func TestSetStateID(t *testing.T) {
 				"someOtherProperty": "idValue",
 			}
 			err := setStateID(r.openAPIResource, resourceData, responsePayload)
-			Convey("Then the expectedValue returned should be true", func() {
+			Convey("Then resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("And resourceData should be populated with the values returned by the API including the ID", func() {
 				So(err.Error(), ShouldEqual, "could not find any identifier property in the resource schema definition")
 			})
 		})

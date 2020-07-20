@@ -107,8 +107,6 @@ func TestAPIKeyQueryBearerSecurityDefinitionValidate(t *testing.T) {
 			err := specAPIKeyQueryBearerSecurityDefinition.validate()
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should match the expected", func() {
 				So(err.Error(), ShouldEqual, "specAPIKeyQueryBearerSecurityDefinition missing mandatory security definition name")
 			})
 		})

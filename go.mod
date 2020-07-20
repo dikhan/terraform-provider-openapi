@@ -42,13 +42,14 @@ require (
 	github.com/spf13/cobra v0.0.3
 	github.com/stretchr/testify v1.3.0
 	github.com/stvp/go-udp-testing v0.0.0-20191102171040-06b61409b154
+	github.com/yuin/goldmark v1.1.33 // indirect
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/text v0.3.3 // indirect
-	golang.org/x/tools v0.0.0-20200709181711-e327e1019dfe // indirect
+	golang.org/x/tools v0.0.0-20200717024301-6ddee64345a6 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )

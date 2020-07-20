@@ -125,10 +125,8 @@ func TestGetHeaderConfigurations(t *testing.T) {
 		}
 		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
 			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameters)
-			Convey("Then the header configs returned should contain 'x_request_id'", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id", IsRequired: true})
-			})
-			Convey("And the header configs returned should also contain 'x_some_other_header'", func() {
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Some-Other-Header", TerraformName: "x_some_other_header", IsRequired: true})
 			})
 		})
@@ -166,10 +164,8 @@ func TestGetHeaderConfigurations(t *testing.T) {
 		}
 		Convey("When GetHeaderConfigurationsForParameterGroups method is called", func() {
 			headerConfigProps := getHeaderConfigurationsForParameterGroups(parameterGroups)
-			Convey("Then the header configs returned should contain 'x_request_id'", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", TerraformName: "x_request_id", IsRequired: true})
-			})
-			Convey("Then the header configs returned should contain 'x_request_id_2'", func() {
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID2", TerraformName: "x_request_id2", IsRequired: true})
 			})
 		})
@@ -275,8 +271,6 @@ func TestGetAllHeaderParameters(t *testing.T) {
 			headerConfigProps := getAllHeaderParameters(spec.Paths.Paths)
 			Convey("Then the headers shoud contain just one header since the other header names were the same", func() {
 				So(len(headerConfigProps), ShouldEqual, 1)
-			})
-			Convey("Then the header configs returned ", func() {
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", IsRequired: true})
 			})
 		})
@@ -466,10 +460,9 @@ func TestGetPathHeaderParams(t *testing.T) {
 		}
 		Convey("When getPathHeaderParams method is called", func() {
 			headerConfigProps := getPathHeaderParams(spec.Paths.Paths["/v1/cdns"])
-			Convey("Then the headers size should be 1", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(len(headerConfigProps), ShouldEqual, 1)
-			})
-			Convey("Then the header configs returned should contain all header parameters specified in the path operation", func() {
+				// the header configs returned should contain all header parameters specified in the path operation
 				So(headerConfigProps, ShouldContain, SpecHeaderParam{Name: "X-Request-ID", IsRequired: true})
 			})
 		})
@@ -513,8 +506,6 @@ func TestAppendOperationParametersIfPresent(t *testing.T) {
 			headerConfigProps := appendOperationParametersIfPresent(parametersGroup, spec.Paths.Paths["/v1/cdns"].Post)
 			Convey("Then the header config groups should not be empty", func() {
 				So(headerConfigProps, ShouldNotBeEmpty)
-			})
-			Convey("And the header group should contain", func() {
 				So(headerConfigProps[0], ShouldContain, spec.Paths.Paths["/v1/cdns"].Post.Parameters[0])
 			})
 		})

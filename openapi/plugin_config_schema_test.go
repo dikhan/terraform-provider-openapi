@@ -32,10 +32,8 @@ func TestNewPluginConfigSchemaV1(t *testing.T) {
 		}
 		Convey("When NewPluginConfigSchemaV1 method is called", func() {
 			pluginConfigSchemaV1 := NewPluginConfigSchemaV1(services)
-			Convey("And the pluginConfigSchema returned should implement PluginConfigSchema interface", func() {
+			Convey("And the pluginConfigSchema returned should implement PluginConfigSchema interface and have services configured", func() {
 				var _ PluginConfigSchema = pluginConfigSchemaV1
-			})
-			Convey("And the pluginConfigSchema services", func() {
 				So(pluginConfigSchemaV1.Services, ShouldNotBeNil)
 			})
 		})
@@ -74,9 +72,6 @@ func TestPluginConfigSchemaV1Validate(t *testing.T) {
 		}
 		Convey("When Validate method is called", func() {
 			err := pluginConfigSchema.Validate()
-			Convey("Then the error returned should NOT be nil as version is not supported", func() {
-				So(err, ShouldNotBeNil)
-			})
 			Convey("And the error returned be equal to", func() {
 				So(err.Error(), ShouldEqual, "provider configuration version not matching current implementation, please use version '1' of provider configuration specification")
 			})
@@ -97,13 +92,9 @@ func TestPluginConfigSchemaV1GetServiceConfig(t *testing.T) {
 		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When GetServiceConfig method is called with a service described in the configuration", func() {
 			serviceConfig, err := pluginConfigSchema.GetServiceConfig("test")
-			Convey("Then the error returned should be nil as configuration is correct", func() {
+			Convey("Then serviceConfig should not be nil, the url returned should be equal to the one in the service configuration and the error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfig should not be nil", func() {
 				So(serviceConfig, ShouldNotBeNil)
-			})
-			Convey("And the url returned should be equal to the one in the service configuration", func() {
 				So(serviceConfig.GetSwaggerURL(), ShouldEqual, expectedURL)
 			})
 		})
@@ -129,10 +120,8 @@ func TestPluginConfigSchemaV1GetVersion(t *testing.T) {
 		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When GetVersion method is called", func() {
 			configVersion, err := pluginConfigSchema.GetVersion()
-			Convey("Then the error returned should be nil as configuration is correct", func() {
+			Convey("Then the serviceConfig should not be nil and error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfig should not be nil", func() {
 				So(configVersion, ShouldEqual, "1")
 			})
 		})
@@ -153,13 +142,9 @@ func TestPluginConfigSchemaV1GetAllServiceConfigurations(t *testing.T) {
 		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When GetAllServiceConfigurations method is called", func() {
 			serviceConfigurations, err := pluginConfigSchema.GetAllServiceConfigurations()
-			Convey("Then the error returned should be nil as configuration is correct", func() {
+			Convey("Then the serviceConfigurations contain 1 configuration, serviceConfigurations item should be test and error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the serviceConfigurations contain 1 configuration", func() {
 				So(len(serviceConfigurations), ShouldEqual, 1)
-			})
-			Convey("And the serviceConfigurations item should be test", func() {
 				So(serviceConfigurations[serviceConfigName], ShouldNotBeNil)
 			})
 		})
@@ -207,10 +192,8 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When Marshal method is called", func() {
 			marshalConfig, err := pluginConfigSchema.Marshal()
-			Convey("Then the error returned should be nil as configuration is correct", func() {
+			Convey("Then the marshalConfig should contain the right marshal configuration and the error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the marshalConfig should contain the right marshal configuration", func() {
 				expectedConfig := fmt.Sprintf(`version: "1"
 services:
   test:
@@ -268,10 +251,8 @@ services:
 		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When Marshal method is called", func() {
 			marshalConfig, err := pluginConfigSchema.Marshal()
-			Convey("Then the error returned should be nil as configuration is correct", func() {
+			Convey("Then the marshalConfig should contain the right marshal configuration (and the plugin_version property should not be present) and the error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the marshalConfig should contain the right marshal configuration (and the plugin_version property should not be present)", func() {
 				expectedConfig := fmt.Sprintf(`version: "1"
 services:
   test:
@@ -312,10 +293,8 @@ services:
 		pluginConfigSchema = NewPluginConfigSchemaV1(services)
 		Convey("When Marshal method is called", func() {
 			marshalConfig, err := pluginConfigSchema.Marshal()
-			Convey("Then the error returned should be nil as configuration is correct", func() {
+			Convey("Then the marshalConfig should contain the right marshal configuration (and the plugin_version property should not be present) and the error returned should be nil as configuration is correct", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And the marshalConfig should contain the right marshal configuration (and the plugin_version property should not be present)", func() {
 				expectedConfig := fmt.Sprintf(`version: "1"
 services:
   test:

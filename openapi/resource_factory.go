@@ -524,11 +524,14 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 }
 
 func (r resourceFactory) populatePayload(input map[string]interface{}, property *SpecSchemaDefinitionProperty, dataValue interface{}) error {
-	if property.isReadOnly() {
-		return nil
+	if property == nil {
+		return errors.New("populatePayload must receive a non nil property")
 	}
 	if dataValue == nil {
 		return fmt.Errorf("property '%s' has a nil state dataValue", property.Name)
+	}
+	if property.isReadOnly() {
+		return nil
 	}
 	dataValueKind := reflect.TypeOf(dataValue).Kind()
 	switch dataValueKind {

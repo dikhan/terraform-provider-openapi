@@ -16,30 +16,24 @@ func TestCreateSpecAnalyser(t *testing.T) {
 		openAPIDocumentURL := file.Name()
 		Convey("When CreateSpecAnalyser method is called", func() {
 			specAnalyser, err := CreateSpecAnalyser(specAnalyserVersion, openAPIDocumentURL)
-			Convey("Then err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("Then the specAnalyser is of type specV2Analyser", func() {
 				So(specAnalyser, ShouldHaveSameTypeAs, &specV2Analyser{})
 			})
 		})
 
 		Convey("When CreateSpecAnalyser method is called with a non valid openAPIDocumentURL", func() {
 			_, err := CreateSpecAnalyser(specAnalyserVersion, "some non valid spec file")
-			Convey("Then err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should equal", func() {
 				So(err.Error(), ShouldEqual, "failed to retrieve the OpenAPI document from 'some non valid spec file' - error = open some non valid spec file: no such file or directory")
 			})
 		})
 
 		Convey("When CreateSpecAnalyser method is called with a non supported version", func() {
 			_, err := CreateSpecAnalyser("nonSupportedVersion", openAPIDocumentURL)
-			Convey("Then err returned should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldNotBeNil)
-			})
-			Convey("Then the error message should equal", func() {
 				So(err.Error(), ShouldEqual, "open api spec analyser version 'nonSupportedVersion' not supported, please choose a valid SpecAnalyser implementation [v2]")
 			})
 		})

@@ -81,13 +81,11 @@ func TestApiKeyHeaderAuthenticatorPrepareAuth(t *testing.T) {
 				url:     expectedURL,
 			}
 			err := apiKeyHeaderAuthenticator.prepareAuth(ctx)
-			Convey("Then the err returned  should be nil", func() {
+			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-			})
-			Convey("And then the context url should remain the same", func() {
+				// the context url should remain the same
 				So(ctx.url, ShouldEqual, expectedURL)
-			})
-			Convey("Then the context header should be populated with the apiKey info", func() {
+				// the context header should be populated with the apiKey info
 				So(ctx.headers, ShouldNotBeEmpty)
 				So(ctx.headers[apiKeyHeaderAuthenticator.name], ShouldEqual, apiKeyHeaderAuthenticator.value)
 			})

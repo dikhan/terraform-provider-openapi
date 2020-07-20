@@ -14,8 +14,6 @@ func TestNewAPIKey(t *testing.T) {
 			specAPIKey := newAPIKey(name, apiKeyIn)
 			Convey("Then the specAPIKey name should match", func() {
 				So(specAPIKey.Name, ShouldEqual, name)
-			})
-			Convey("And the specAPIKey type should be apiKey", func() {
 				So(specAPIKey.In, ShouldEqual, apiKeyIn)
 			})
 		})
@@ -29,8 +27,6 @@ func TestNewAPIKeyQuery(t *testing.T) {
 			specAPIKey := newAPIKeyQuery(name)
 			Convey("Then the specAPIKey name should match", func() {
 				So(specAPIKey.Name, ShouldEqual, name)
-			})
-			Convey("And the specAPIKey IN value should be inQuery", func() {
 				So(specAPIKey.In, ShouldEqual, inQuery)
 			})
 		})
@@ -44,8 +40,6 @@ func TestNewAPIKeyHeader(t *testing.T) {
 			specAPIKey := newAPIKeyHeader(name)
 			Convey("Then the specAPIKey name should match", func() {
 				So(specAPIKey.Name, ShouldEqual, name)
-			})
-			Convey("And the specAPIKey IN value should be inQuery", func() {
 				So(specAPIKey.In, ShouldEqual, inHeader)
 			})
 		})
