@@ -727,6 +727,7 @@ func TestParentResourceInfo(t *testing.T) {
 			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
+				So(parentResourceInfo, ShouldPointTo, r.parentResourceInfoCached) // checking cache is populated
 				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
@@ -1136,7 +1137,15 @@ func TestParentResourceInfo(t *testing.T) {
 			})
 		})
 	})
-
+	Convey("Given a SpecV2Resource with parentResourceInfoCached populated", t, func() {
+		r := SpecV2Resource{parentResourceInfoCached: &ParentResourceInfo{}}
+		Convey("When GetParentResourceInfo is called", func() {
+			p := r.GetParentResourceInfo()
+			Convey("Then the returned ParentResourceInfo should point to parentResourceInfoCached", func() {
+				So(p, ShouldPointTo, r.parentResourceInfoCached)
+			})
+		})
+	})
 }
 
 func assertSchemaProperty(actualSpecSchemaDefinition *SpecSchemaDefinition, expectedName string, expectedType schemaDefinitionPropertyType, expectedRequired, expectedReadOnly, expectedComputed bool) {
@@ -1198,6 +1207,7 @@ func TestGetResourceSchema(t *testing.T) {
 			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
 				So(err, ShouldBeNil)
 				So(len(specSchemaDefinition.Properties), ShouldEqual, len(r.SchemaDefinition.SchemaProps.Properties))
+				So(specSchemaDefinition, ShouldPointTo, r.specSchemaDefinitionCached) // checking cache is populated
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
 				assertSchemaProperty(specSchemaDefinition, "number_required_prop", TypeFloat, true, false, false)
@@ -1440,6 +1450,42 @@ func TestGetResourceSchema(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a SpecV2Resource configured with a miss configured schema (eg: schema contains a property that is missing the type", t, func() {
+		r := &SpecV2Resource{
+			SchemaDefinition: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"bad_property": {
+							SchemaProps: spec.SchemaProps{
+								// Type: Missing the type
+							},
+						},
+					},
+				},
+			},
+		}
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
+			Convey("Then the schema definition returned should nil and the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "failed to process property 'bad_property': non supported '[]' type")
+				So(specSchemaDefinition, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource containing a cached specSchemaDefinitionCached", t, func() {
+		r := &SpecV2Resource{
+			specSchemaDefinitionCached: &SpecSchemaDefinition{},
+		}
+		Convey("When GetResourceSchema is called", func() {
+			specSchemaDefinition, err := r.GetResourceSchema()
+			Convey("Then the schema definition returned should be the cached one and the error should be nil", func() {
+				So(err, ShouldBeNil)
+				So(specSchemaDefinition, ShouldPointTo, r.specSchemaDefinitionCached)
+			})
+		})
+	})
 }
 
 func TestGetSchemaDefinition(t *testing.T) {
@@ -1668,6 +1714,7 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns")
 			})
 		})
 		Convey("When getResourcePath is called with a nil list of IDs", func() {
@@ -1675,6 +1722,7 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns")
 			})
 		})
 	})
@@ -1689,29 +1737,38 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns/parentID/v1/firewalls")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns/parentID/v1/firewalls")
 			})
 		})
 		Convey("When getResourcePath is called with an empty list of IDs", func() {
-			_, err := r.getResourcePath([]string{})
+			resourcePath, err := r.getResourcePath([]string{})
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
 			})
 		})
 		Convey("When getResourcePath is called with an nil list of IDs", func() {
-			_, err := r.getResourcePath(nil)
+			resourcePath, err := r.getResourcePath(nil)
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
 			})
 		})
 		Convey("When getResourcePath is called with a list of IDs that is bigger than the parameterised params in the path", func() {
-			_, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
+			resourcePath, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
 			})
 		})
 		Convey("When getResourcePath is called with a list of IDs twhere some IDs contain forward slashes", func() {
-			_, err := r.getResourcePath([]string{"cdnID/somethingElse"})
+			resourcePath, err := r.getResourcePath([]string{"cdnID/somethingElse"})
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' due to parent IDs ([cdnID/somethingElse]) containing not supported characters (forward slashes)")
 			})
 		})
@@ -1727,6 +1784,20 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("And the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns/cdnID/v1/firewalls/fwID/rules")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns/cdnID/v1/firewalls/fwID/rules")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with resolvedPathCached populated", t, func() {
+		r := SpecV2Resource{
+			resolvedPathCached: "/v1/cdns",
+		}
+		Convey("When getResourcePath is called with a nil list of IDs", func() {
+			resourcePath, err := r.getResourcePath(nil)
+			Convey("Then the returned resource path should match the expected one", func() {
+				So(err, ShouldBeNil)
+				So(resourcePath, ShouldEqual, "/v1/cdns")
 			})
 		})
 	})
@@ -1824,7 +1895,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
 			Convey("Then the error returned should be the expected one and the schemaDefinitionProperty should be nil", func() {
 				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldEqual, "non supported '[]' type")
+				So(err.Error(), ShouldEqual, "failed to process property 'propertyName': non supported '[]' type")
 				So(schemaDefinitionProperty, ShouldBeNil)
 			})
 		})
@@ -1866,8 +1937,7 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			requiredProperties := []string{}
 			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty(propertyName, propertySchema, requiredProperties)
 			Convey("Then the error returned should be the expected one and the schemaDefinitionProperty should be nil", func() {
-				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldEqual, "failed to process object type property 'propertyName': object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
+				So(err.Error(), ShouldEqual, "failed to process property 'propertyName': object is missing the nested schema definition or the ref is pointing to a non existing schema definition")
 				So(schemaDefinitionProperty, ShouldBeNil)
 			})
 		})

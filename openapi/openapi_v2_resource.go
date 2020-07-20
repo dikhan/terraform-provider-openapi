@@ -87,6 +87,16 @@ type SpecV2Resource struct {
 	SchemaDefinitions map[string]spec.Schema
 
 	Paths map[string]spec.PathItem
+
+	// Cached objects that are loaded once (when the corresponding function that loads the object is called the first time) and
+	// on subsequent method calls the cached object is returned instead saving executing time.
+
+	// specSchemaDefinitionCached is cached in GetResourceSchema() method
+	specSchemaDefinitionCached *SpecSchemaDefinition
+	// parentResourceInfoCached is cached in GetParentResourceInfo() method
+	parentResourceInfoCached *ParentResourceInfo
+	// resolvedPathCached is cached in getResourcePath() method
+	resolvedPathCached string
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
@@ -211,6 +221,10 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 // resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
 // If the resource path is not parameterised, then regular path will be returned accordingly
 func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
+	if o.resolvedPathCached != "" {
+		log.Printf("[DEBUG] getResourcePath hit the cache for '%s'", o.Name)
+		return o.resolvedPathCached, nil
+	}
 	resolvedPath := o.Path
 
 	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
@@ -218,6 +232,8 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 
 	switch {
 	case len(pathParamsMatches) == 0:
+		o.resolvedPathCached = resolvedPath
+		log.Printf("[DEBUG] getResourcePath cache loaded for '%s'", o.Name)
 		return resolvedPath, nil
 
 	case len(parentIDs) > len(pathParamsMatches):
@@ -235,6 +251,8 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], parentIDs[idx], 1)
 	}
 
+	o.resolvedPathCached = resolvedPath
+	log.Printf("[DEBUG] getResourcePath cache loaded for '%s'", o.Name)
 	return resolvedPath, nil
 }
 
@@ -282,6 +300,10 @@ func (o *SpecV2Resource) ShouldIgnoreResource() bool {
 
 // GetParentResourceInfo returns the information about the parent resources
 func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
+	if o.parentResourceInfoCached != nil {
+		log.Printf("[DEBUG] GetParentResourceInfo hit the cache for '%s'", o.Name)
+		return o.parentResourceInfoCached
+	}
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
 	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
 	if len(parentMatches) > 0 {
@@ -328,6 +350,8 @@ func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 			parentURIs:             parentURIs,
 			parentInstanceURIs:     parentInstanceURIs,
 		}
+		o.parentResourceInfoCached = sub
+		log.Printf("[DEBUG] GetParentResourceInfo cache loaded for '%s'", o.Name)
 		return sub
 	}
 	return nil
@@ -335,7 +359,17 @@ func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 
 // GetResourceSchema returns the resource schema
 func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
-	return o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
+	if o.specSchemaDefinitionCached != nil {
+		log.Printf("[DEBUG] GetResourceSchema hit the cache for '%s'", o.Name)
+		return o.specSchemaDefinitionCached, nil
+	}
+	specSchemaDefinition, err := o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
+	if err != nil {
+		return nil, err
+	}
+	o.specSchemaDefinitionCached = specSchemaDefinition
+	log.Printf("[DEBUG] GetResourceSchema cache loaded for '%s'", o.Name)
+	return o.specSchemaDefinitionCached, nil
 }
 
 func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*SpecSchemaDefinition, error) {
@@ -379,6 +413,12 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*SpecSchemaDefinitionProperty, error) {
 	schemaDefinitionProperty := &SpecSchemaDefinitionProperty{}
 
+	schemaDefinitionProperty.Name = propertyName
+	propertyType, err := o.getPropertyType(property)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process property '%s': %s", propertyName, err)
+	}
+	schemaDefinitionProperty.Type = propertyType
 	schemaDefinitionProperty.Description = property.Description
 
 	if isObject, schemaDefinition, err := o.isObjectProperty(property); isObject || err != nil {
@@ -417,14 +457,6 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 		log.Printf("[DEBUG] found array type property '%s' with items of type '%s'", propertyName, itemsType)
 	}
-
-	propertyType, err := o.getPropertyType(property)
-	if err != nil {
-		return nil, err
-	}
-	schemaDefinitionProperty.Type = propertyType
-
-	schemaDefinitionProperty.Name = propertyName
 
 	if preferredPropertyName, exists := property.Extensions.GetString(extTfFieldName); exists {
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
@@ -619,7 +651,7 @@ func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Sch
 			}
 			return true, schema, nil
 		}
-		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is poitning to a non existing schema definition")
+		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is pointing to a non existing schema definition")
 	}
 	return false, nil, nil
 }

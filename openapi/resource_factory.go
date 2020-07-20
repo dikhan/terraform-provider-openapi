@@ -510,7 +510,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 			continue
 		}
 		if !property.IsParentProperty {
-			if dataValue, ok := r.getResourceDataOKExists(propertyName, resourceLocalData); ok {
+			if dataValue, ok := r.getResourceDataOKExists(*property, resourceLocalData); ok {
 				err := r.populatePayload(input, property, dataValue)
 				if err != nil {
 					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.GetResourceName(), propertyName, err)
@@ -646,11 +646,6 @@ func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{
 }
 
 // getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
-func (r resourceFactory) getResourceDataOKExists(schemaDefinitionPropertyName string, resourceLocalData *schema.ResourceData) (interface{}, bool) {
-	resourceSchema, _ := r.openAPIResource.GetResourceSchema()
-	schemaDefinitionProperty, err := resourceSchema.getProperty(schemaDefinitionPropertyName)
-	if err != nil {
-		return nil, false
-	}
+func (r resourceFactory) getResourceDataOKExists(schemaDefinitionProperty SpecSchemaDefinitionProperty, resourceLocalData *schema.ResourceData) (interface{}, bool) {
 	return resourceLocalData.GetOkExists(schemaDefinitionProperty.GetTerraformCompliantPropertyName())
 }
