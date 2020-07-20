@@ -87,6 +87,8 @@ type SpecV2Resource struct {
 	SchemaDefinitions map[string]spec.Schema
 
 	Paths map[string]spec.PathItem
+
+	specSchemaDefinitionCached *SpecSchemaDefinition
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
@@ -335,7 +337,15 @@ func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 
 // GetResourceSchema returns the resource schema
 func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
-	return o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
+	if o.specSchemaDefinitionCached != nil {
+		return o.specSchemaDefinitionCached, nil
+	}
+	specSchemaDefinition, err := o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
+	if err != nil {
+		return nil, err
+	}
+	o.specSchemaDefinitionCached = specSchemaDefinition
+	return o.specSchemaDefinitionCached, nil
 }
 
 func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*SpecSchemaDefinition, error) {
