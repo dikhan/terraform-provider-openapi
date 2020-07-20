@@ -298,6 +298,7 @@ func (o *SpecV2Resource) ShouldIgnoreResource() bool {
 // GetParentResourceInfo returns the information about the parent resources
 func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 	if o.parentResourceInfoCached != nil {
+		log.Printf("[DEBUG] GetParentResourceInfo hit the cache for '%s'", o.Name)
 		return o.parentResourceInfoCached
 	}
 	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
@@ -347,6 +348,7 @@ func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 			parentInstanceURIs:     parentInstanceURIs,
 		}
 		o.parentResourceInfoCached = sub
+		log.Printf("[DEBUG] GetParentResourceInfo cache loaded for '%s'", o.Name)
 		return sub
 	}
 	return nil
@@ -355,6 +357,7 @@ func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
 // GetResourceSchema returns the resource schema
 func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	if o.specSchemaDefinitionCached != nil {
+		log.Printf("[DEBUG] GetResourceSchema hit the cache for '%s'", o.Name)
 		return o.specSchemaDefinitionCached, nil
 	}
 	specSchemaDefinition, err := o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
@@ -362,6 +365,7 @@ func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 		return nil, err
 	}
 	o.specSchemaDefinitionCached = specSchemaDefinition
+	log.Printf("[DEBUG] GetResourceSchema cache loaded for '%s'", o.Name)
 	return o.specSchemaDefinitionCached, nil
 }
 

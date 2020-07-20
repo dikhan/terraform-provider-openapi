@@ -727,6 +727,7 @@ func TestParentResourceInfo(t *testing.T) {
 			parentResourceInfo := r.GetParentResourceInfo()
 			Convey("Then the result returned should be the expected one", func() {
 				So(parentResourceInfo, ShouldNotBeNil)
+				So(parentResourceInfo, ShouldPointTo, r.parentResourceInfoCached) // checking cache is populated
 				// the parentResourceNames should not be empty and contain the right items
 				So(len(parentResourceInfo.parentResourceNames), ShouldEqual, 1)
 				So(parentResourceInfo.parentResourceNames[0], ShouldEqual, "cdns_v1")
@@ -1206,6 +1207,7 @@ func TestGetResourceSchema(t *testing.T) {
 			Convey("And the SpecSchemaDefinition returned should be configured as expected", func() {
 				So(err, ShouldBeNil)
 				So(len(specSchemaDefinition.Properties), ShouldEqual, len(r.SchemaDefinition.SchemaProps.Properties))
+				So(specSchemaDefinition, ShouldPointTo, r.specSchemaDefinitionCached) // checking cache is populated
 				assertSchemaProperty(specSchemaDefinition, "string_readonly_prop", TypeString, false, true, true)
 				assertSchemaProperty(specSchemaDefinition, "int_optional_computed_prop", TypeInt, false, false, true)
 				assertSchemaProperty(specSchemaDefinition, "number_required_prop", TypeFloat, true, false, false)
