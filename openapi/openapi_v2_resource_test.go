@@ -1454,7 +1454,7 @@ func TestGetResourceSchema(t *testing.T) {
 			SchemaDefinition: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"bad_property": spec.Schema{
+						"bad_property": {
 							SchemaProps: spec.SchemaProps{
 								// Type: Missing the type
 							},
@@ -1712,6 +1712,7 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns")
 			})
 		})
 		Convey("When getResourcePath is called with a nil list of IDs", func() {
@@ -1719,6 +1720,7 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns")
 			})
 		})
 	})
@@ -1733,29 +1735,38 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("Then the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns/parentID/v1/firewalls")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns/parentID/v1/firewalls")
 			})
 		})
 		Convey("When getResourcePath is called with an empty list of IDs", func() {
-			_, err := r.getResourcePath([]string{})
+			resourcePath, err := r.getResourcePath([]string{})
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
 			})
 		})
 		Convey("When getResourcePath is called with an nil list of IDs", func() {
-			_, err := r.getResourcePath(nil)
+			resourcePath, err := r.getResourcePath(nil)
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - missing ids to resolve the path params properly: []")
 			})
 		})
 		Convey("When getResourcePath is called with a list of IDs that is bigger than the parameterised params in the path", func() {
-			_, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
+			resourcePath, err := r.getResourcePath([]string{"cdnID", "somethingThatDoesNotBelongHere"})
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' with the given ids - more ids than path params: [cdnID somethingThatDoesNotBelongHere]")
 			})
 		})
 		Convey("When getResourcePath is called with a list of IDs twhere some IDs contain forward slashes", func() {
-			_, err := r.getResourcePath([]string{"cdnID/somethingElse"})
+			resourcePath, err := r.getResourcePath([]string{"cdnID/somethingElse"})
 			Convey("Then the error returned should not be nil", func() {
+				So(resourcePath, ShouldBeEmpty)
+				So(r.resolvedPathCached, ShouldBeEmpty)
 				So(err.Error(), ShouldEqual, "could not resolve sub-resource path correctly '/v1/cdns/{cdn_id}/v1/firewalls' due to parent IDs ([cdnID/somethingElse]) containing not supported characters (forward slashes)")
 			})
 		})
@@ -1771,6 +1782,20 @@ func TestGetResourcePath(t *testing.T) {
 			Convey("And the returned resource path should match the expected one", func() {
 				So(err, ShouldBeNil)
 				So(resourcePath, ShouldEqual, "/v1/cdns/cdnID/v1/firewalls/fwID/rules")
+				So(r.resolvedPathCached, ShouldEqual, "/v1/cdns/cdnID/v1/firewalls/fwID/rules")
+			})
+		})
+	})
+
+	Convey("Given a SpecV2Resource with resolvedPathCached populated", t, func() {
+		r := SpecV2Resource{
+			resolvedPathCached: "/v1/cdns",
+		}
+		Convey("When getResourcePath is called with a nil list of IDs", func() {
+			resourcePath, err := r.getResourcePath(nil)
+			Convey("Then the returned resource path should match the expected one", func() {
+				So(err, ShouldBeNil)
+				So(resourcePath, ShouldEqual, "/v1/cdns")
 			})
 		})
 	})

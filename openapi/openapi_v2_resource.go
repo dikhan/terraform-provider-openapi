@@ -95,6 +95,8 @@ type SpecV2Resource struct {
 	specSchemaDefinitionCached *SpecSchemaDefinition
 	// parentResourceInfoCached is cached in GetParentResourceInfo() method
 	parentResourceInfoCached *ParentResourceInfo
+	// resolvedPathCached is cached in getResourcePath() method
+	resolvedPathCached string
 }
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
@@ -219,6 +221,9 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 // resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
 // If the resource path is not parameterised, then regular path will be returned accordingly
 func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
+	if o.resolvedPathCached != "" {
+		return o.resolvedPathCached, nil
+	}
 	resolvedPath := o.Path
 
 	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
@@ -226,6 +231,7 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 
 	switch {
 	case len(pathParamsMatches) == 0:
+		o.resolvedPathCached = resolvedPath
 		return resolvedPath, nil
 
 	case len(parentIDs) > len(pathParamsMatches):
@@ -243,6 +249,7 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], parentIDs[idx], 1)
 	}
 
+	o.resolvedPathCached = resolvedPath
 	return resolvedPath, nil
 }
 
