@@ -48,20 +48,17 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
     <li>
         <a href="#provider_resources" target="_self">Provider Resources</a>
         <ul>
-            
-        </ul>
+            </ul>
     </li>
     <li>
         <a href="#provider_datasources" target="_self">Data Sources (using resource id)</a>
         <ul>
-            
-        </ul>
+            </ul>
     </li>
     <li>
         <a href="#provider_datasources_filters" target="_self">Data Sources (using filters)</a>
         <ul>
-            
-        </ul>
+            </ul>
     </li>
 
 

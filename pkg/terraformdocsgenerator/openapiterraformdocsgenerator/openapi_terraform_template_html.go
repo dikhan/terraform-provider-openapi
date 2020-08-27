@@ -35,7 +35,7 @@ var TableOfContentsTmpl = `<p dir="ltr">
         <ul>
             {{range .ProviderResources.Resources -}}
                 <li><a href="#{{.Name}}" target="_self">{{$.ProviderName}}_{{.Name}}</a></li>
-            {{- end}}
+            {{end -}}
         </ul>
     </li>
     <li>
@@ -43,7 +43,7 @@ var TableOfContentsTmpl = `<p dir="ltr">
         <ul>
             {{range .DataSources.DataSourceInstances -}}
                 <li><a href="#{{.Name}}" target="_self">{{$.ProviderName}}_{{.Name}}</a></li>
-            {{- end}}
+            {{end -}}
         </ul>
     </li>
     <li>
@@ -51,7 +51,7 @@ var TableOfContentsTmpl = `<p dir="ltr">
         <ul>
             {{range .DataSources.DataSources -}}
                 <li><a href="#{{.Name}}_datasource" target="_self">{{$.ProviderName}}_{{.Name}}</a></li>
-            {{- end}}
+            {{end -}}
         </ul>
     </li>
 
