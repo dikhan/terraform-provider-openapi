@@ -97,7 +97,7 @@ paths:
             $ref: "#/definitions/Error"
       #security: For the sake of the example, this POST operation will use the global security schemes
       #  - apikey_auth: []
-  /v1/cdns/{id}:
+  /v1/cdns/{cdn_id}:
     get:
       tags:
       - "cdn"
@@ -105,7 +105,7 @@ paths:
       description: ""
       operationId: "ContentDeliveryNetworkGetV1"
       parameters:
-      - name: "id"
+      - name: "cdn_id"
         in: "path"
         description: "The cdn id that needs to be fetched."
         required: true
@@ -173,7 +173,7 @@ paths:
 
   ## CDN sub-resource
 
-  /v1/cdns/{parent_id}/v1/firewalls:
+  /v1/cdns/{cdn_id}/v1/firewalls:
     post:
       x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
@@ -181,7 +181,7 @@ paths:
       summary: "Create cdn firewall"
       operationId: "ContentDeliveryNetworkFirewallCreateV1"
       parameters:
-      - name: "parent_id"
+      - name: "cdn_id"
         in: "path"
         description: "The cdn id that contains the firewall to be fetched."
         required: true
@@ -201,7 +201,7 @@ paths:
           description: "generic error response"
           schema:
             $ref: "#/definitions/Error"
-  /v1/cdns/{parent_id}/firewalls/{id}:
+  /v1/cdns/{cdn_id}/v1/firewalls/{fw_id}:
     get:
       tags:
       - "cdn"
@@ -209,12 +209,12 @@ paths:
       description: ""
       operationId: "ContentDeliveryNetworkFirewallGetV1"
       parameters:
-      - name: "parent_id"
+      - name: "cdn_id"
         in: "path"
         description: "The cdn id that contains the firewall to be fetched."
         required: true
         type: "string"
-      - name: "id"
+      - name: "fw_id"
         in: "path"
         description: "The cdn firewall id that needs to be fetched."
         required: true

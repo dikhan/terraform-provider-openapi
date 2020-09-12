@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -96,7 +97,15 @@ func testCheckDestroyWithDelay(state *terraform.State, openAPIResourceName, reso
 			return err
 		}
 
-		instancePath := fmt.Sprintf("%s/{id}", resourcePath)
+		instancePath := ""
+		// Find the corresponding instance path from the root path
+		for path := range apiSpec.Spec().Paths.Paths {
+			r, _ := regexp.Compile(fmt.Sprintf("%s/{\\w+}$", resourcePath))
+			if r.MatchString(path) {
+				instancePath = path
+				break
+			}
+		}
 
 		specResource := &openapi.SpecV2Resource{
 			Name:             resourceName,
