@@ -57,6 +57,16 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, err
 	}
 
+	sort.SliceStable(resources, func(i, j int) bool {
+		return resources[i].Name < resources[j].Name
+	})
+	sort.SliceStable(dataSourceInstances, func(i, j int) bool {
+		return dataSourceInstances[i].Name < dataSourceInstances[j].Name
+	})
+	sort.SliceStable(dataSourceFilters, func(i, j int) bool {
+		return dataSourceFilters[i].Name < dataSourceFilters[j].Name
+	})
+
 	return TerraformProviderDocumentation{
 		ProviderName: t.ProviderName,
 		ProviderInstallation: ProviderInstallation{
