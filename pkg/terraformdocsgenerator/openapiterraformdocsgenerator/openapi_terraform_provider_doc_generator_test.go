@@ -52,6 +52,20 @@ func TestGenerateDocumentation(t *testing.T) {
 				},
 			},
 		},
+		&specStubResource{
+			name:         "lb_v1",
+			shouldIgnore: false,
+			schemaDefinition: &openapi.SpecSchemaDefinition{
+				Properties: openapi.SpecSchemaDefinitionProperties{
+					&openapi.SpecSchemaDefinitionProperty{
+						Name:     "id",
+						Type:     openapi.TypeString,
+						Required: false,
+						Computed: true,
+					},
+				},
+			},
+		},
 	}
 	dg := TerraformProviderDocGenerator{
 		ProviderName: providerName,
@@ -99,7 +113,8 @@ func TestGenerateDocumentation(t *testing.T) {
 
 	// ProviderResources assertions
 	assert.Equal(t, providerName, d.ProviderResources.ProviderName)
-	assert.Len(t, d.ProviderResources.Resources, 1)
+	assert.Len(t, d.ProviderResources.Resources, 2)
+
 	cdnResource := d.ProviderResources.Resources[0]
 	assert.Equal(t, "cdn_v1", cdnResource.Name)
 	assert.Equal(t, "", cdnResource.Description)
@@ -108,11 +123,20 @@ func TestGenerateDocumentation(t *testing.T) {
 	assert.Len(t, cdnResourceProps, 1)
 	assertProperty(t, cdnResourceProps[0], "id", "string", "", "", false, true, nil)
 
+	assert.Equal(t, providerName, d.ProviderResources.ProviderName)
+	lbResource := d.ProviderResources.Resources[1]
+	assert.Equal(t, "lb_v1", lbResource.Name)
+	assert.Equal(t, "", lbResource.Description)
+	assert.Equal(t, ArgumentsReference{Notes: []string{}}, lbResource.ArgumentsReference)
+	lbResourceProps := lbResource.Properties
+	assert.Len(t, lbResourceProps, 1)
+	assertProperty(t, lbResourceProps[0], "id", "string", "", "", false, true, nil)
+
 	// DataSources assertions
 	assert.Equal(t, providerName, d.DataSources.ProviderName)
 
-	// DataSource assertions
-	assert.Len(t, d.DataSources.DataSources, 1)
+	// DataSource (filters) assertions
+	assert.Len(t, d.DataSources.DataSources, 2)
 	cdnDataSource := d.DataSources.DataSources[0]
 	assert.Equal(t, "cdn_v1", cdnDataSource.Name)
 	assert.Equal(t, "", cdnDataSource.OtherExample)
@@ -120,14 +144,28 @@ func TestGenerateDocumentation(t *testing.T) {
 	assert.Len(t, cdnResourceProps, 1)
 	assertDataSourceProperty(t, cdnDataSourceProps[0], "id", "string", "", "", nil)
 
+	lbDataSource := d.DataSources.DataSources[1]
+	assert.Equal(t, "lb_v1", lbDataSource.Name)
+	assert.Equal(t, "", lbDataSource.OtherExample)
+	lbDataSourceProps := lbDataSource.Properties
+	assert.Len(t, cdnResourceProps, 1)
+	assertDataSourceProperty(t, lbDataSourceProps[0], "id", "string", "", "", nil)
+
 	// DataSourceInstance assertions
-	assert.Len(t, d.DataSources.DataSourceInstances, 1)
+	assert.Len(t, d.DataSources.DataSourceInstances, 2)
 	cdnDataSourceInstance := d.DataSources.DataSourceInstances[0]
 	assert.Equal(t, "cdn_v1_instance", cdnDataSourceInstance.Name)
 	assert.Equal(t, "", cdnDataSourceInstance.OtherExample)
 	cdnDataSourceInstanceProps := cdnDataSourceInstance.Properties
 	assert.Len(t, cdnDataSourceInstanceProps, 1)
 	assertDataSourceProperty(t, cdnDataSourceInstanceProps[0], "id", "string", "", "", nil)
+
+	lbDataSourceInstance := d.DataSources.DataSourceInstances[1]
+	assert.Equal(t, "lb_v1_instance", lbDataSourceInstance.Name)
+	assert.Equal(t, "", lbDataSourceInstance.OtherExample)
+	lbDataSourceInstanceProps := lbDataSourceInstance.Properties
+	assert.Len(t, lbDataSourceInstanceProps, 1)
+	assertDataSourceProperty(t, lbDataSourceInstanceProps[0], "id", "string", "", "", nil)
 }
 
 func assertDataSourceProperty(t *testing.T, actualProp Property, expectedName, expectedType, expectedArrayItemsType, expectedDescription string, expectedSchema []Property) {

@@ -18,6 +18,12 @@ $ go run main.go
 
 The program will generate the Terraform documentation (in html format) for the sample swagger file and save the output locally. An example of the output: [example_provider_documentation_output.html](https://github.com/dikhan/terraform-provider-openapi/blob/master/pkg/terraformdocsgenerator/example_provider_documentation_output.html).
 
+Note: The rendered resources and data sources are ordered alphabetically and should be deterministic, meaning that multiple 
+executions of the terraform docs generator for a given OpenAPI document would result into the exact same documentation being rendered. 
+However the order in which the endpoints are described in the OpenAPI document may not necessarily match the order of the 
+corresponding rendered resources and data sources. Also, it is important to note that if the OpenAPI document is updated with new endpoints that are
+terraform compatible the order of the resources and data sources rendered might also change. 
+
 ## Customizing the output documentation
 You can customize sections of the documentation by overriding the default content used by `GenerateDocumentation()` before calling `RenderHTML()`.
 
