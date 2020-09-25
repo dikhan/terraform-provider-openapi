@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/version"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"

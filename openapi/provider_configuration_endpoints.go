@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type providerConfigurationEndPoints struct {
@@ -55,7 +55,7 @@ func (p *providerConfigurationEndPoints) endpointsToHash(resources []string) sch
 		for _, name := range resources {
 			buf.WriteString(fmt.Sprintf("%s-", m[name].(string)))
 		}
-		return hashcode.String(buf.String())
+		return String(buf.String())
 	}
 }
 

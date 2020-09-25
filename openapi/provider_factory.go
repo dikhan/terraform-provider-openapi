@@ -12,7 +12,7 @@ import (
 	"log"
 
 	"github.com/dikhan/http_goclient"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type providerFactory struct {

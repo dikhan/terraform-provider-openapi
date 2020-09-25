@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expectedHTTPStatusCodes []int) error {

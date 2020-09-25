@@ -1,13 +1,13 @@
 package main
 
 import (
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/dikhan/terraform-provider-openapi/openapi/version"
-	"github.com/hashicorp/terraform-plugin-sdk/plugin"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	"os"
 	"regexp"
 )

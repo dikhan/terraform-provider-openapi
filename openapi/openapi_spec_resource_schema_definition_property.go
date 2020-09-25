@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // schemaDefinitionPropertyType defines the type of a property

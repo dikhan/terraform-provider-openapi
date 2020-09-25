@@ -3,10 +3,10 @@ package openapi
 import (
 	"bytes"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -58,7 +58,7 @@ func TestEndpointsToHash(t *testing.T) {
 				m[resourceName] = "something to get the string representation from"
 				var buf bytes.Buffer
 				buf.WriteString(fmt.Sprintf("%s-", m[resourceName].(string)))
-				So(schemaSetFunction(m), ShouldEqual, hashcode.String(buf.String()))
+				So(schemaSetFunction(m), ShouldEqual, String(buf.String()))
 			})
 		})
 	})
