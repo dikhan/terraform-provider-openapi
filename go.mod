@@ -28,8 +28,7 @@ require (
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/hcl v0.0.0-20171017181929-23c074d0eceb // indirect
-	github.com/hashicorp/terraform-plugin-sdk v1.16.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.3
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
@@ -49,7 +48,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/net v0.0.0-20200923182212-328152dc79b1 // indirect
 	golang.org/x/sys v0.0.0-20200923182605-d9f96fdee20d // indirect
-	golang.org/x/tools v0.0.0-20200924224222-8d73f17870ce // indirect
+	golang.org/x/tools v0.0.0-20200925191224-5d1fdd8fa346 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528 // indirect
 	gopkg.in/yaml.v2 v2.2.4

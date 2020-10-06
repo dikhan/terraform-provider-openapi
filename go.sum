@@ -283,6 +283,7 @@ github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.0-20200730230259-b8c882339153/
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.0 h1:jPPqctLDg75CilV3IpypAz6on3MSMOiUMzXNz+Xex6E=
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.0/go.mod h1:xOf85UtHJ0/9/EF3eKgZFlJ6feN8sDtjQRWRHhimCUw=
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.3 h1:X7VmKpcIxq+rIbuqe5TPN27KLzbO9aXQcjG4c5iC3tk=
+github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.3/go.mod h1:oz4kkpfTJ/hA2VMD0WpITTd3yPDGpT4uN7CiKdre/YI=
 github.com/hashicorp/terraform-plugin-test/v2 v2.0.0-20200724200815-faa9931ac59e h1:Q8lNGrk3SVdXEbLuUJD03jghIjykJT9pu1aReKgb858=
 github.com/hashicorp/terraform-plugin-test/v2 v2.0.0-20200724200815-faa9931ac59e/go.mod h1:C6VALgUlvaif+PnHyRGKWPTdQkMJK4NQ20VJolxZLI0=
 github.com/hashicorp/terraform-plugin-test/v2 v2.1.2 h1:p96IIn+XpvVjw7AtN8y9MKxn0x69S7wtbGf7JgDJoIk=
@@ -702,6 +703,8 @@ golang.org/x/tools v0.0.0-20200717024301-6ddee64345a6 h1:nULzSsKgihxFGLnQFv2T7lE
 golang.org/x/tools v0.0.0-20200717024301-6ddee64345a6/go.mod h1:njjCfa9FT2d7l9Bc6FUM5FLjQPp3cFF28FI3qnDFljA=
 golang.org/x/tools v0.0.0-20200924224222-8d73f17870ce h1:XRr763sMfaUSNR4EsxbddvVEqYFa9picrx6ks9pJkKw=
 golang.org/x/tools v0.0.0-20200924224222-8d73f17870ce/go.mod h1:z6u4i615ZeAfBE4XtMziQW1fSVJXACjjbWkB/mvPzlU=
+golang.org/x/tools v0.0.0-20200925191224-5d1fdd8fa346 h1:hzJjkvxUIF3bSt+v8N5tBQNx/605vszZJ+3XsIamzZo=
+golang.org/x/tools v0.0.0-20200925191224-5d1fdd8fa346/go.mod h1:z6u4i615ZeAfBE4XtMziQW1fSVJXACjjbWkB/mvPzlU=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
