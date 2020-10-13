@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	"github.com/dikhan/terraform-provider-openapi/openapi"
 	"github.com/stretchr/testify/assert"
@@ -535,11 +534,10 @@ resource "openapi_cdn_v1" "my_cdn" {
 	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 	assert.NoError(t, err)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				ExpectNonEmptyPlan: false,
@@ -576,12 +574,11 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
 	}
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest:   true,
-		Providers:    testAccProviders,
-		PreCheck:     func() { testAccPreCheck(t, api.swaggerURL) },
-		CheckDestroy: testAccCheckDestroy(resourceInstancesToCheck),
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
+		CheckDestroy:      testAccCheckDestroy(resourceInstancesToCheck),
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,
@@ -660,7 +657,6 @@ func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testin
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	testCDNCreateMissingParentPropertyInFW := fmt.Sprintf(`
 		# URI /v1/cdns/
 		resource "%s" "%s" {
@@ -675,7 +671,7 @@ func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testin
 	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"cdn_v1_id\" is required, but no definition was found.*")
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:                true,
-		Providers:                 testAccProviders,
+		ProviderFactories:         testAccProviders(provider),
 		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			{
@@ -708,12 +704,11 @@ func TestAccCDN_ImportSubResource(t *testing.T) {
 		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
 	}
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest:   true,
-		Providers:    testAccProviders,
-		PreCheck:     func() { testAccPreCheck(t, api.swaggerURL) },
-		CheckDestroy: testAccCheckDestroy(resourceInstancesToCheck),
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
+		CheckDestroy:      testAccCheckDestroy(resourceInstancesToCheck),
 		Steps: []resource.TestStep{
 			{
 				Config:        tfFileContents,
@@ -749,11 +744,10 @@ func TestAccCDN_DataSource(t *testing.T) {
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, api.swaggerURL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,
@@ -794,11 +788,10 @@ func TestAccCDN_DataSourceInstance(t *testing.T) {
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, api.swaggerURL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,

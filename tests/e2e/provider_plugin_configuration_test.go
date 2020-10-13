@@ -148,11 +148,10 @@ services:
 	provider, err := p.CreateSchemaProvider()
 	assert.NoError(t, err)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -319,11 +318,10 @@ services:
 	provider, err := p.CreateSchemaProvider()
 	assert.NoError(t, err)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`resource "openapi_cdns_v1" "my_cdn" { label = "some_label"}`),

@@ -27,9 +27,9 @@ func init() {
 func TestAccMonitor_CreateRst1(t *testing.T) {
 	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://some\\.api\\.rst1\\.domain\\.com/v1/monitors HTTP/1\\.1'\\. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: nil,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigMonitor,
@@ -43,9 +43,9 @@ func TestAccMonitor_CreateRst1(t *testing.T) {
 func TestAccMonitor_CreateDub1(t *testing.T) {
 	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://some\\.api\\.dub1\\.domain\\.com/v1/monitors HTTP/1\\.1'\\. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: nil,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigMonitor,
@@ -60,9 +60,9 @@ func TestAccMonitor_MultiRegion_CreateRst1(t *testing.T) {
 	testCreateConfigMonitor = populateTemplateConfigurationMonitorServiceProvider("rst1")
 	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://some\\.api\\.rst1\\.domain\\.com/v1/multiregionmonitors HTTP/1\\.1'\\. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: nil,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigMonitor,
@@ -77,9 +77,9 @@ func TestAccMonitor_MultiRegion_CreateDub1(t *testing.T) {
 	testCreateConfigMonitor = populateTemplateConfigurationMonitorServiceProvider("dub1")
 	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://some\\.api\\.dub1\\.domain\\.com/v1/multiregionmonitors HTTP/1\\.1'\\. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: nil,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigMonitor,
@@ -103,9 +103,9 @@ resource "openapi_multiregionmonitors_v1" "%s" {
 
 	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://some\\.api\\.rst1\\.domain\\.com/v1/multiregionmonitors HTTP/1\\.1'\\. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: nil,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigMonitor,

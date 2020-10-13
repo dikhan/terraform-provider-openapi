@@ -32,9 +32,9 @@ func init() {
 
 func TestAccCDN_Create(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigCDN,
@@ -120,9 +120,9 @@ resource "%s" "%s" {
 }`, providerName, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedLabel, arrayToString(expectedIPs), arrayToString(expectedHostnames))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -206,9 +206,9 @@ resource "%s" "%s" {
 }`, providerName, resourceCDNName, endpoint, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
 	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://www\\.endpoint\\.com/v1/cdns HTTP/1\\.1'. Response = '404 Not Found'.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigCDNWithResourceEndpointOverride,
@@ -229,9 +229,9 @@ resource "%s" "my_cdn" {
   hostnames = ["%s"]
 }`, providerName, openAPIResourceNameCDN, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames))
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCDNCreateConfigWithoutProviderAuthProperty,
@@ -262,9 +262,9 @@ resource "%s" "my_cdn" {
 
 func TestAccCDN_Import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigCDN,
@@ -398,9 +398,9 @@ resource "%s" "my_cdn" {}`, providerName, openAPIResourceNameCDN)
 
 	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"apikey_auth\" is required, but no definition was found.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCDNCreateMissingAPIKeyAuthConfig,
@@ -423,9 +423,9 @@ resource "%s" "my_cdn" {
 
 	expectedValidationError, _ := regexp.Compile(".*{\"code\":\"401\", \"message\": \"unauthorized user\"}.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCDNCreateWrongAPIKeyAuthConfig,
@@ -448,9 +448,9 @@ resource "%s" "my_cdn" {
 
 	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"label\" is required, but no definition was found.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCDNCreateConfigMissingRequiredProperty,
@@ -464,9 +464,9 @@ func TestAccCDN_Update(t *testing.T) {
 	var cdnUpdated = newContentDeliveryNetworkWithOptionalPopulated(cdn.Label, cdn.Ips, cdn.Hostnames, 14, 14.14, false, "someOtherAccountValue", "some updated message news", "some message news with details", "http", 80, "https", 443, "some value for the optional property", "some value for the optionalComputed property", "some value for the optionalComputedWithDefault property")
 	testCDNUpdatedConfig := populateTemplateConfigurationCDNWithOptionalsPopulated(cdnUpdated.Label, cdnUpdated.Ips, cdnUpdated.Hostnames, cdnUpdated.ExampleInt, cdnUpdated.ExampleNumber, cdnUpdated.ExampleBoolean, cdnUpdated.ObjectNestedSchemeProperty.ObjectProperty.Account, cdnUpdated.ObjectProperty.Message, cdnUpdated.ObjectProperty.DetailedMessage, cdnUpdated.ArrayOfObjectsExample[0].Protocol, cdnUpdated.ArrayOfObjectsExample[0].OriginPort, cdnUpdated.ArrayOfObjectsExample[1].Protocol, cdnUpdated.ArrayOfObjectsExample[1].OriginPort, cdnUpdated.OptionalProperty, cdnUpdated.OptionalComputed, cdnUpdated.OptionalComputedWithDefault)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigCDN,
@@ -602,9 +602,9 @@ func TestAccCDN_CreateWithZeroValues(t *testing.T) {
 	var cdn = newContentDeliveryNetwork("label", []string{}, []string{}, 0, 0, false, "someAccountValue", "some message news", "some message news with details", "http", 80, "https", 443)
 	testCDNZeroValuesConfig := populateTemplateConfigurationCDN(cdn.Label, cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCDNZeroValuesConfig,
@@ -650,9 +650,9 @@ func TestAccCDN_UpdateImmutableProperty(t *testing.T) {
 	testCDNUpdatedImmutableConfig := populateTemplateConfigurationCDN("label updated", cdn.Ips, cdn.Hostnames, cdn.ExampleInt, cdn.ExampleNumber, cdn.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdn.ObjectProperty.Message, cdn.ObjectProperty.DetailedMessage, cdn.ArrayOfObjectsExample[0].Protocol, cdn.ArrayOfObjectsExample[0].OriginPort, cdn.ArrayOfObjectsExample[1].Protocol, cdn.ArrayOfObjectsExample[1].OriginPort)
 	expectedValidationError, _ := regexp.Compile("errors during apply: validation for immutable properties failed: user attempted to update an immutable property \\('label'\\): \\[user input: label updated; actual: someLabel\\]. Update operation was aborted; no updates were performed")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigCDN,
@@ -689,9 +689,9 @@ func TestAccCDN_UpdateForceNewProperty(t *testing.T) {
 	testCDNUpdatedForceNewConfig := populateTemplateConfigurationCDN(cdnUpdatedForceNew.Label, cdnUpdatedForceNew.Ips, cdnUpdatedForceNew.Hostnames, cdnUpdatedForceNew.ExampleInt, cdnUpdatedForceNew.ExampleNumber, cdnUpdatedForceNew.ExampleBoolean, cdn.ObjectNestedSchemeProperty.ObjectProperty.Account, cdnUpdatedForceNew.ObjectProperty.Message, cdnUpdatedForceNew.ObjectProperty.DetailedMessage, cdnUpdatedForceNew.ArrayOfObjectsExample[0].Protocol, cdnUpdatedForceNew.ArrayOfObjectsExample[0].OriginPort, cdnUpdatedForceNew.ArrayOfObjectsExample[1].Protocol, cdnUpdatedForceNew.ArrayOfObjectsExample[1].OriginPort)
 	var originalID string
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigCDN,

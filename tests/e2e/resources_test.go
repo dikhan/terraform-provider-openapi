@@ -7,10 +7,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/dikhan/terraform-provider-openapi/openapi"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,11 +86,10 @@ resource "openapi_cdns" "my_cdn" {
 }`)
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required header 'required_header_example' is missing the value. Please make sure the property 'required_header_example' is configured with a value in the provider's terraform configuration.*")
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config:      tfFileContents,
@@ -177,11 +174,10 @@ resource "openapi_cdns" "my_cdn" {
 }`)
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required security definition 'some_not_global_sec_def' is missing the value. Please make sure the property 'some_not_global_sec_def' is configured with a value in the provider's terraform configuration.*")
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config:      tfFileContents,
@@ -266,11 +262,10 @@ resource "openapi_cdns" "my_cdn" {
 }`)
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required security definition 'some_not_global_sec_def' is missing the value. Please make sure the property 'some_not_global_sec_def' is configured with a value in the provider's terraform configuration.*")
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config:      tfFileContents,
@@ -356,11 +351,10 @@ resource "openapi_cdns" "my_cdn" {
 }`)
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required security definition 'some_not_global_sec_def' is missing the value. Please make sure the property 'some_not_global_sec_def' is configured with a value in the provider's terraform configuration.*")
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config:      tfFileContents,
@@ -439,11 +433,10 @@ definitions:
 
 	tfFileContents := fmt.Sprintf(`resource "openapi_deploykey_v1" "my_deploykeyv1" {}`)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,
@@ -528,11 +521,10 @@ definitions:
 
 	tfFileContents := fmt.Sprintf(`resource "openapi_deploykey_v1" "my_deploykeyv1" {}`)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,

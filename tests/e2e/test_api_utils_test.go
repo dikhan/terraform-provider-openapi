@@ -3,12 +3,21 @@ package e2e
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"
 	"testing"
 )
+
+func testAccProviders(provider *schema.Provider) map[string]func() (*schema.Provider, error) {
+	return map[string]func() (*schema.Provider, error){
+		providerName: func() (*schema.Provider, error) {
+			return provider, nil
+		},
+	}
+}
 
 func assertExpectedRequestURI(t *testing.T, expectedRequestURI string, r *http.Request) {
 	if r.RequestURI != expectedRequestURI {
