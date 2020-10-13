@@ -32,12 +32,10 @@ func main() {
 		log.Fatalf("[ERROR] There was an error initialising the terraform provider: %s", err)
 	}
 
-	plugin.Serve(
-		&plugin.ServeOpts{
-			ProviderFunc: func() terraform.ResourceProvider {
-				return provider
-			},
-		})
+	plugin.Serve(&plugin.ServeOpts{
+		ProviderFunc: func() *schema.Provider {
+			return provider
+		}})
 }
 
 func getProviderName(binaryName string) (string, error) {
