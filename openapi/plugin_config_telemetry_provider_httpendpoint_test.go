@@ -106,7 +106,7 @@ func TestCreateNewRequest(t *testing.T) {
 		{
 			name:        "crappy path - bad url",
 			url:         "&^%",
-			expectedErr: errors.New("parse &^%: invalid URL escape \"%\""),
+			expectedErr: errors.New("parse \"&^%\": invalid URL escape \"%\""),
 		},
 	}
 
@@ -235,12 +235,12 @@ func TestTelemetryProviderHttpEndpointSubmitMetricFailureScenarios(t *testing.T)
 		{
 			testName:    "url is missing the protocol",
 			inputURL:    "?",
-			expectedErr: errors.New("request POST ? failed. Response Error: 'Post ?: unsupported protocol scheme \"\"'"),
+			expectedErr: errors.New("request POST ? failed. Response Error: 'Post \"?\": unsupported protocol scheme \"\"'"),
 		},
 		{
 			testName:    "url contains invalid characters",
 			inputURL:    "&^%",
-			expectedErr: errors.New("parse &^%: invalid URL escape \"%\""),
+			expectedErr: errors.New("parse \"&^%\": invalid URL escape \"%\""),
 		},
 	}
 

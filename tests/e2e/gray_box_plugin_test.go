@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"net/http"
 	"net/http/httptest"
 	"testing"
