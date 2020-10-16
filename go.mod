@@ -1,4 +1,4 @@
-module github.com/dikhan/terraform-provider-openapi
+module github.com/dikhan/terraform-provider-openapi/v1
 
 go 1.14
 
