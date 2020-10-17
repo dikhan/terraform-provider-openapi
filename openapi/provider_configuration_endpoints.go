@@ -3,7 +3,7 @@ package openapi
 import (
 	"bytes"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/v1/openapi/openapiutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"hash/crc32"
 )

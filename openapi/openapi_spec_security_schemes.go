@@ -1,6 +1,6 @@
 package openapi
 
-import "github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+import "github.com/dikhan/terraform-provider-openapi/v1/openapi/terraformutils"
 
 // SpecSecuritySchemes groups a list of SpecSecurityScheme
 type SpecSecuritySchemes []SpecSecurityScheme

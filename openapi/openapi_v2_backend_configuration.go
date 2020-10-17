@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/v1/openapi/openapiutils"
 	"github.com/go-openapi/spec"
 )
 

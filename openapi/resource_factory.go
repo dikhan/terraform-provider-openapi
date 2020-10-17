@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/dikhan/terraform-provider-openapi/v1/openapi/openapierr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
