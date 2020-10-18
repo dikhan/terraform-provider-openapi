@@ -965,7 +965,7 @@ definitions:
     properties:
       ...
       object_nested_scheme_property:
-        type: object # nested properties required type equal object to be considered as object
+        type: object # nested properties require type equal object to be considered as object
         properties:
           name:
             type: string
@@ -996,7 +996,6 @@ definitions:
     properties:
       ...
       object_property:
-        #type: object - type is optional for properties of object type that use $ref
         $ref: "#/definitions/ObjectProperty"
   ObjectProperty:
     type: object
