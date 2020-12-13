@@ -8,6 +8,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dikhan/http_goclient v0.0.0-20181010015730-b9de9b5ee7b6
+	github.com/dikhan/terraform-provider-openapi v0.31.1
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible // indirect
 	github.com/go-openapi/analysis v0.0.0-20171215055114-2bbaa248df98 // indirect
@@ -37,9 +38,8 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
-	golang.org/x/net v0.0.0-20200923182212-328152dc79b1 // indirect
-	golang.org/x/sys v0.0.0-20200923182605-d9f96fdee20d // indirect
-	golang.org/x/tools v0.0.0-20201015182029-a5d9e455e9c4 // indirect
+	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
+	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 )

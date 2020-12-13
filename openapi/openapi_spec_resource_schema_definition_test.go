@@ -238,7 +238,7 @@ func TestCreateDataSourceSchema_ForNestedObjects(t *testing.T) {
 		assert.Equal(t, 2, len(objectResource.Schema))
 
 		assertDataSourceSchemaProperty(t, objectResource.Schema["id"], schema.TypeString)
-		assertDataSourceSchemaProperty(t, objectResource.Schema["nested_object"], schema.TypeMap)
+		assertDataSourceSchemaProperty(t, objectResource.Schema["nested_object"], schema.TypeList)
 
 		// 2^ level
 		nestedObjectResource := objectResource.Schema["nested_object"].Elem.(*schema.Resource)
@@ -349,7 +349,7 @@ func TestCreateResourceSchema(t *testing.T) {
 				So(tfResourceSchema, ShouldContainKey, "string_prop")
 				So(tfResourceSchema["string_prop"].Type, ShouldEqual, schema.TypeString)
 				So(tfResourceSchema, ShouldContainKey, statusDefaultPropertyName)
-				So(tfResourceSchema[statusDefaultPropertyName].Type, ShouldEqual, schema.TypeMap)
+				So(tfResourceSchema[statusDefaultPropertyName].Type, ShouldEqual, schema.TypeList)
 				So(tfResourceSchema[statusDefaultPropertyName].Elem.(*schema.Resource).Schema, ShouldContainKey, "id")
 				So(tfResourceSchema[statusDefaultPropertyName].Elem.(*schema.Resource).Schema, ShouldContainKey, "name")
 			})

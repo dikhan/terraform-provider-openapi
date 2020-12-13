@@ -49,9 +49,9 @@ func TestAccLB_Create(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 		},
@@ -81,9 +81,9 @@ func TestAccLB_Update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 			{
@@ -101,9 +101,9 @@ func TestAccLB_Update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lbUpdated.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 		},
@@ -133,9 +133,9 @@ func TestAccLB_Destroy(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 			{

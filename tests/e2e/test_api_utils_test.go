@@ -49,20 +49,18 @@ func testAccCheckWhetherResourceExist(resourceInstancesToCheck map[string]string
 
 func testAccCheckDestroy(resourceInstancesToCheck map[string]string) func(state *terraform.State) error {
 	return func(s *terraform.State) error {
+		if len(s.RootModule().Resources) == 0 {
+			return nil
+		}
 		for openAPIResourceName, resourceInstancePath := range resourceInstancesToCheck {
-			resourceExistsInState := false
 			for _, res := range s.RootModule().Resources {
 				if res.Type != openAPIResourceName {
 					continue
 				}
-				resourceExistsInState = true
 				err := checkResourceIsDestroyed(resourceInstancePath, res.Primary.ID)
 				if err != nil {
-					return fmt.Errorf("API returned a non expected status code when checking if resource %s was destroy properly (GET %s/%s): %s", openAPIResourceName, resourceInstancePath, res.Primary.ID, err)
+					return fmt.Errorf("API returned a non expected status code when checking if resource %s was destroyed properly (GET %s/%s): %s", openAPIResourceName, resourceInstancePath, res.Primary.ID, err)
 				}
-			}
-			if !resourceExistsInState {
-				return fmt.Errorf("expected resource '%s' does not exist in the state file", openAPIResourceName)
 			}
 		}
 		return nil

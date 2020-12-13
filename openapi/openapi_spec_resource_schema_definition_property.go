@@ -53,11 +53,6 @@ type SpecSchemaDefinitionProperty struct {
 	Immutable          bool
 	IsIdentifier       bool
 	IsStatusIdentifier bool
-	// EnableLegacyComplexObjectBlockConfiguration defines whether this SpecSchemaDefinitionProperty should be handled with special treatment following
-	// the recommendation from hashi maintainers (https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851)
-	// to support complex object types with the legacy SDK (objects that contain properties with different types and configurations
-	// like computed properties).
-	EnableLegacyComplexObjectBlockConfiguration bool
 	// Default field is only for informative purposes to know what the openapi spec for the property stated the default value is
 	// As per the openapi spec default attributes, the value is expected to be computed by the API
 	Default interface{}
@@ -78,21 +73,6 @@ func (s *SpecSchemaDefinitionProperty) GetTerraformCompliantPropertyName() strin
 		return s.PreferredName
 	}
 	return terraformutils.ConvertToTerraformCompliantName(s.Name)
-}
-
-// This is the workaround to be able to process objects that contain properties that are not of the same type and may
-// contain other configurations like be computed properties (More info here: https://github.com/hashicorp/terraform/issues/22511)
-// The object properties that have EnableLegacyComplexObjectBlockConfiguration set to true will be represented in Terraform schema
-// as TypeList with MaxItems limited to 1. This will solve the current limitation in Terraform SDK 0.12 where blocks can only be
-// translated to lists and sets, maps can not be used to represent complex objects at the moment as it will result into undefined behavior.
-func (s *SpecSchemaDefinitionProperty) isLegacyComplexObjectExtensionEnabled() bool {
-	if !s.isObjectProperty() {
-		return false
-	}
-	if s.EnableLegacyComplexObjectBlockConfiguration {
-		return true
-	}
-	return false
 }
 
 func (s *SpecSchemaDefinitionProperty) isPropertyWithNestedObjects() bool {
@@ -169,8 +149,6 @@ func (s *SpecSchemaDefinitionProperty) IsOptionalComputed() bool {
 
 func (s *SpecSchemaDefinitionProperty) terraformType() (schema.ValueType, error) {
 	switch s.Type {
-	case TypeObject:
-		return schema.TypeMap, nil
 	case TypeString:
 		return schema.TypeString, nil
 	case TypeInt:
@@ -179,7 +157,7 @@ func (s *SpecSchemaDefinitionProperty) terraformType() (schema.ValueType, error)
 		return schema.TypeFloat, nil
 	case TypeBool:
 		return schema.TypeBool, nil
-	case TypeList:
+	case TypeObject, TypeList:
 		return schema.TypeList, nil
 	}
 	return schema.TypeInvalid, fmt.Errorf("non supported type %s", s.Type)
@@ -222,15 +200,16 @@ func (s *SpecSchemaDefinitionProperty) terraformObjectSchema() (*schema.Resource
 // In both cases, in order to represent complex objects with the current version of the Terraform SDK (<= v0.12.2), the workaround
 // suggested by hashi maintainers is to use TypeList limiting the MaxItems to 1.
 // References to the issues opened:
+// - https://github.com/hashicorp/terraform-plugin-sdk/issues/616
 // - https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737
 // - https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851
 func (s *SpecSchemaDefinitionProperty) shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() bool {
-	// is of type object and in turn contains at least one nested property that is an object.
-	if s.isPropertyWithNestedObjects() {
+	// Terraform SDK 2.0 upgrade: https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#more-robust-validation-of-helper-schema-typemap-elems
+	// Treating all object types as helper/schema.TypeList with Elem *helper/schema.Resource and MaxItems 1
+	if s.isObjectProperty() {
 		return true
 	}
-	// or is of type object and also has the EnableLegacyComplexObjectBlockConfiguration set to true
-	return s.isLegacyComplexObjectExtensionEnabled()
+	return false
 }
 
 // terraformSchema returns the terraform schema for a the given SpecSchemaDefinitionProperty
@@ -246,10 +225,13 @@ func (s *SpecSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// complex data structures
 	switch s.Type {
 	case TypeObject:
-		if s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
-			terraformSchema.Type = schema.TypeList
-			terraformSchema.MaxItems = 1
-		}
+		// Deprecated, treating all objects equally regardless whether they are simple or complex objects
+		//if s.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
+		//	terraformSchema.Type = schema.TypeList
+		//	terraformSchema.MaxItems = 1
+		//}
+		terraformSchema.Type = schema.TypeList
+		terraformSchema.MaxItems = 1
 		objectSchema, err := s.terraformObjectSchema()
 		if err != nil {
 			return nil, err

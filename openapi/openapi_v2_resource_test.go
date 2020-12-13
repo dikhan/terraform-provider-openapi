@@ -2235,26 +2235,6 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
-		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-complex-object-legacy-config' extension", func() {
-			expectedValue := true
-			propertySchema := spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Type: spec.StringOrArray{"string"},
-				},
-				VendorExtensible: spec.VendorExtensible{
-					Extensions: spec.Extensions{
-						extTfComplexObjectType: expectedValue,
-					},
-				},
-			}
-			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
-			Convey("Then the error returned should be nil and the schemaDefinitionProperty should be configured as expected", func() {
-				So(err, ShouldBeNil)
-				So(schemaDefinitionProperty.EnableLegacyComplexObjectBlockConfiguration, ShouldEqual, expectedValue)
-				So(schemaDefinitionProperty.isComputed(), ShouldBeFalse)
-			})
-		})
-
 		Convey("When createSchemaDefinitionProperty is called with a property schema that has the 'x-terraform-sensitive' extension", func() {
 			expectedSensitiveValue := true
 			propertySchema := spec.Schema{
