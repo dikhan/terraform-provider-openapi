@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -580,32 +579,7 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 			}
 		}
 	case reflect.String:
-		// This is so when object fields are processed, map values, they come as string so need to do the proper translation base
-		// on the origin type of the property
-		switch property.Type {
-		case TypeInt:
-			v, err := strconv.ParseInt(dataValue.(string), 0, 0)
-			if err != nil {
-				return err
-			}
-			input[property.Name] = v
-		case TypeFloat:
-			v, err := strconv.ParseFloat(dataValue.(string), 64)
-			if err != nil {
-				return err
-			}
-			input[property.Name] = v
-		case TypeBool:
-			v, err := strconv.ParseBool(dataValue.(string))
-			if err != nil {
-				return err
-			}
-			input[property.Name] = v
-		case TypeString:
-			input[property.Name] = dataValue.(string)
-		default:
-			return fmt.Errorf("property '%s' type not supported for reflect value string", property.Type)
-		}
+		input[property.Name] = dataValue.(string)
 	case reflect.Int:
 		input[property.Name] = dataValue.(int)
 	case reflect.Float64:

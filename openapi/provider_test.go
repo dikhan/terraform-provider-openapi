@@ -364,7 +364,7 @@ definitions:
 				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["int_property"], schema.TypeInt)
 				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["bool_property"], schema.TypeBool)
 				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["float_property"], schema.TypeFloat)
-				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeMap)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeList)
 
 				So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
 				So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
@@ -550,7 +550,7 @@ definitions:
 				assertTerraformSchemaNestedObjectProperty(t, tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"], false, false)
 				nestedObject := tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"]
 				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["name"], schema.TypeString, false, true)
-				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["object_property"], schema.TypeMap, false, false)
+				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["object_property"], schema.TypeList, false, false)
 				object := nestedObject.Elem.(*schema.Resource).Schema["object_property"]
 				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["account"], schema.TypeString, false, false)
 				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["read_only"], schema.TypeString, false, true)
