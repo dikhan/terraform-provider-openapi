@@ -1,8 +1,10 @@
 package openapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"net/http"
 	"reflect"
@@ -52,13 +54,13 @@ func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 		return nil, err
 	}
 	return &schema.Resource{
-		Schema:   s,
-		Create:   r.create,
-		Read:     r.read,
-		Delete:   r.delete,
-		Update:   r.update,
-		Importer: r.importer(),
-		Timeouts: timeouts,
+		Schema:        s,
+		CreateContext: r.crudWithContext(r.create, schema.TimeoutCreate),
+		ReadContext:   r.crudWithContext(r.read, schema.TimeoutRead),
+		DeleteContext: r.crudWithContext(r.delete, schema.TimeoutDelete),
+		UpdateContext: r.crudWithContext(r.update, schema.TimeoutUpdate),
+		Importer:      r.importer(),
+		Timeouts:      timeouts,
 	}, nil
 }
 
@@ -84,6 +86,22 @@ func (r resourceFactory) createTerraformResourceSchema() (map[string]*schema.Sch
 	}
 	log.Printf("[DEBUG] resource '%s' schemaDefinition: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(schemaDefinition))
 	return schemaDefinition.createResourceSchema()
+}
+
+func (r resourceFactory) crudWithContext(crudFunc func(data *schema.ResourceData, i interface{}) error, timeoutFor string) func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics {
+	return func(ctx context.Context, data *schema.ResourceData, i interface{}) diag.Diagnostics {
+		errChan := make(chan error, 1)
+		go func() { errChan <- crudFunc(data, i) }()
+		select {
+		case <-ctx.Done():
+			return diag.Errorf("%s: '%s' %s timeout is %s", ctx.Err(), r.openAPIResource.GetResourceName(), timeoutFor, data.Timeout(timeoutFor))
+		case err := <-errChan:
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		return nil
+	}
 }
 
 func (r resourceFactory) create(data *schema.ResourceData, i interface{}) error {

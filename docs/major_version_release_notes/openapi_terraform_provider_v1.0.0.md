@@ -1,6 +1,6 @@
 # OpenAPI Terraform Provider v1.0.0 release notes
 
-This version of the OpenAPI Terraform provider integrates Terraform SDK 2.0 major release which includes many breaking changes
+This version of the OpenAPI Terraform provider integrates Terraform SDK 2.0 major release which includes significant breaking changes
 as specified in the [Terraform Plugin SDK v2 Upgrade Guide](https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html).
 
 This document describes the changes applied in the plugin.
@@ -25,9 +25,9 @@ of the provider as well as the name etc.
 
 ### Dropped Support for Terraform 0.11 and Below
 
-Terraform Plugin SDK 2.0 only support Terraform 0.12 and higher.
+Terraform Plugin SDK 2.0 only supports Terraform 0.12 and higher.
 
-#### Deprecated support for OpenAPI property type object with internal Terraform schema representation of helper/schema.TypeMap with Elem *helper/schema.Resource
+### Deprecated Support for OpenAPI property type object with internal Terraform schema representation of helper/schema.TypeMap with Elem *helper/schema.Resource
 
 As per the addition of [more Robust Validation of helper/schema.TypeMap Elems](https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#more-robust-validation-of-helper-schema-typemap-elems)
 the OpenAPI Terraform plugin no longer supports properties of `type: "object"` with an internal Terraform schema representation
@@ -95,7 +95,7 @@ on the zero element. Example: `openapi_cdn_v1.my_cdn.object_property[0].account`
 
 More context on this decision can be found at [Terraform SDK Issue #616](https://github.com/hashicorp/terraform-plugin-sdk/issues/616)
 
-###### Deprecated OpenAPI extension x-terraform-complex-object-legacy-config
+### Deprecated OpenAPI extension x-terraform-complex-object-legacy-config
 
 This extension is deprecated and no longer drives special behaviour. The internal representation of the OpenAPI 'object' type
 properties will always be TypeList with Elem *Resource and MaxItems 1 regardless whether the object is simple (only contains same type properties) 
@@ -110,6 +110,13 @@ behaviour is now the default for any property of type object.
 - [Issue 21217](https://github.com/hashicorp/terraform/issues/21217): Objects that contain nested objects 
 - [Issue 616](https://github.com/hashicorp/terraform-plugin-sdk/issues/616): Upgrading OpenAPI Terraform provider to Terraform SDK 2.0: TypeMap with Elem*Resource not supported
 
+### Better support for resource operation timeouts and diagnostics
+
+As part of the update of the CRUD functions to support better diagnosis via the context as documented in the [Support for Diagnostics](https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#support-for-diagnostics)
+upgrade guide, the OpenAPI Terraform provider now supports timeouts not only for async resource operations but also synchronous. The timeouts can
+be specified in the OpenAPI document per resource operation using the [x-terraform-resource-timeout](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourceTimeout)
+extension.
+ 
 ### To be removed
 
 - Multi-region on resource name level
