@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"encoding/json"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
@@ -57,10 +59,80 @@ func TestCreateTerraformResource(t *testing.T) {
 			Convey("Then schemaResource returned should be configured as expected and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 				So(schemaResource.Schema, ShouldNotBeEmpty)
-				So(schemaResource.Create(resourceData, client), ShouldBeNil)
-				So(schemaResource.Read(resourceData, client), ShouldBeNil)
-				So(schemaResource.Update(resourceData, client), ShouldBeNil)
-				So(schemaResource.Delete(resourceData, client), ShouldBeNil)
+				So(schemaResource.CreateContext(context.Background(), resourceData, client), ShouldBeNil)
+				So(schemaResource.ReadContext(context.Background(), resourceData, client), ShouldBeNil)
+				So(schemaResource.UpdateContext(context.Background(), resourceData, client), ShouldBeNil)
+				So(schemaResource.DeleteContext(context.Background(), resourceData, client), ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestCRUDWithContext(t *testing.T) {
+	Convey("Given a resource factory configured with a create timeout", t, func() {
+		createTimeout := 1 * time.Second
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				name: "cdn_v1",
+			},
+		}
+		Convey("When crudWithContext is called with the create function which returns successfully", func() {
+			stubCreateFunction := func(data *schema.ResourceData, i interface{}) error {
+				return nil // this means the function returned successfully
+			}
+			contextAwareFunc := r.crudWithContext(stubCreateFunction, schema.TimeoutCreate)
+			Convey("Then the returned function which is context aware should not timeout and return an empty diagnosis", func() {
+				ctx := context.Background()
+				ctx, cancel := context.WithTimeout(ctx, createTimeout)
+				defer cancel()
+				diagnosis := contextAwareFunc(ctx, &schema.ResourceData{}, nil)
+				So(diagnosis, ShouldBeEmpty)
+			})
+		})
+	})
+	Convey("Given a resource factory configured with a create timeout", t, func() {
+		createTimeout := 1 * time.Second
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				name: "cdn_v1",
+			},
+		}
+		Convey("When crudWithContext is called with the create function which returns an error", func() {
+			expectedError := "some error"
+			stubCreateFunction := func(data *schema.ResourceData, i interface{}) error {
+				return errors.New(expectedError)
+			}
+			contextAwareFunc := r.crudWithContext(stubCreateFunction, schema.TimeoutCreate)
+			Convey("Then the returned function which is context aware should not timeout and return the error from the create function", func() {
+				ctx := context.Background()
+				ctx, cancel := context.WithTimeout(ctx, createTimeout)
+				defer cancel()
+				diagnosis := contextAwareFunc(ctx, &schema.ResourceData{}, nil)
+				So(diagnosis, ShouldNotBeEmpty)
+				So(diagnosis[0].Summary, ShouldEqual, expectedError)
+			})
+		})
+	})
+	Convey("Given a resource factory configured with a create timeout", t, func() {
+		createTimeout := 1 * time.Second
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				name: "cdn_v1",
+			},
+		}
+		Convey("When crudWithContext is called with the create function (configured to timeout on purpose) and the corresponding timeout identifier", func() {
+			stubCreateFunction := func(data *schema.ResourceData, i interface{}) error {
+				time.Sleep(2 * time.Second)
+				return nil
+			}
+			contextAwareFunc := r.crudWithContext(stubCreateFunction, schema.TimeoutCreate)
+			Convey("Then the returned function which is context aware should time out since the create operation takes longer than the context timeout", func() {
+				ctx := context.Background()
+				ctx, cancel := context.WithTimeout(ctx, createTimeout)
+				defer cancel()
+				diagnosis := contextAwareFunc(ctx, &schema.ResourceData{}, nil)
+				So(diagnosis, ShouldNotBeEmpty)
+				So(diagnosis[0].Summary, ShouldEqual, "context deadline exceeded: 'cdn_v1' create timeout is 20m0s") // the 20m0s is the default timeout if the openAPIResource is not configured with specific timeouts
 			})
 		})
 	})

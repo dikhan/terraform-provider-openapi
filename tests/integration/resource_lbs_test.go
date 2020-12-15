@@ -149,12 +149,13 @@ func TestAccLB_Destroy(t *testing.T) {
 	})
 }
 
-// resource create operation is configured with x-terraform-resource-timeout: "1s"
+// LB resource create operation is configured with x-terraform-resource-timeout: "2s"
+// - See endpoint `/v1/lbs` POST operation configuration at examples/swaggercodegen/api/resources/swagger.yaml
 func TestAccLB_CreateTimeout(t *testing.T) {
 	timeToProcess := 3
 	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
 	testCreateConfigLB = populateTemplateConfigurationLB(lb.Name, lb.Backends, lb.TimeToProcess, lb.SimulateFailure)
-	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\(last state: 'deploy_in_progress', timeout: 2s\\).*")
+	expectedValidationError, _ := regexp.Compile(".* context deadline exceeded: 'lbs_v1' create timeout is 2s.*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
@@ -186,10 +187,9 @@ resource "%s" "%s" {
   }
 }`, providerName, openAPIResourceNameLB, openAPIResourceInstanceNameLB, lb.Name, arrayToString(lb.Backends), timeToProcess, lb.SimulateFailure)
 
-	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed'*")
+	expectedValidationError, _ := regexp.Compile(".*context deadline exceeded: 'lbs_v1' create timeout is 0s*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		IsUnitTest:        true,
 		ProviderFactories: testAccProviders,
 		Steps: []resource.TestStep{
 			{

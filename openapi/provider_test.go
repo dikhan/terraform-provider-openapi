@@ -215,10 +215,10 @@ definitions:
 				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
 				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Required, ShouldBeTrue)
 				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Computed, ShouldBeFalse)
-				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].CreateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].UpdateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].DeleteContext, ShouldNotBeNil)
 				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
 
 				// the provider data source map should contain the cdn data source instance with the expected configuration
@@ -248,10 +248,10 @@ definitions:
 				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
 				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Required, ShouldBeTrue)
 				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Computed, ShouldBeFalse)
-				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].CreateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].UpdateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].DeleteContext, ShouldNotBeNil)
 				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
 
 				// the provider data source map should contain the firewall data source instance with the expected configuration
@@ -555,10 +555,10 @@ definitions:
 				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["account"], schema.TypeString, false, false)
 				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["read_only"], schema.TypeString, false, true)
 
-				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].CreateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].UpdateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].DeleteContext, ShouldNotBeNil)
 				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
 
 				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
