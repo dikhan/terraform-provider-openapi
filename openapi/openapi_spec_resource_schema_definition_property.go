@@ -221,6 +221,7 @@ func (s *SpecSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 		return nil, err
 	}
 	terraformSchema.Type = schemaType
+	terraformSchema.Description = s.Description
 
 	// complex data structures
 	switch s.Type {

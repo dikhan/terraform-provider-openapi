@@ -1162,6 +1162,21 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
+	Convey("Given a swagger schema definition that has a property with a description", t, func() {
+		s := &SpecSchemaDefinitionProperty{
+			Name:        "string_prop",
+			Type:        TypeString,
+			Description: "string_prop description",
+		}
+		Convey("When terraformSchema method is called", func() {
+			tfPropSchema, err := s.terraformSchema()
+			Convey("Then the resulted terraform property schema should contain the description too", func() {
+				So(err, ShouldBeNil)
+				So(tfPropSchema.Description, ShouldEqual, s.Description)
+			})
+		})
+	})
+
 	Convey("Given a swagger schema definition that has a property of type 'array' and the elems are type string", t, func() {
 		s := &SpecSchemaDefinitionProperty{
 			Name:           "array_prop",
