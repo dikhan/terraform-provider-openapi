@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"github.com/hashicorp/go-cty/cty"
 	"reflect"
 	"testing"
 
@@ -1378,7 +1379,7 @@ func TestTerraformSchema(t *testing.T) {
 				So(terraformPropertySchema.Sensitive, ShouldBeTrue)
 				// the schema returned should have a default value (note: terraform will complain in this case at runtime since required properties cannot have default values)
 				So(terraformPropertySchema.Default, ShouldEqual, s.Default)
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -1392,7 +1393,7 @@ func TestTerraformSchema(t *testing.T) {
 				So(terraformPropertySchema.Required, ShouldBeFalse)
 				So(terraformPropertySchema.Optional, ShouldBeTrue)
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -1407,7 +1408,7 @@ func TestTerraformSchema(t *testing.T) {
 				So(terraformPropertySchema.Optional, ShouldBeTrue)
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
 				So(terraformPropertySchema.Default, ShouldBeNil)
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -1422,7 +1423,7 @@ func TestTerraformSchema(t *testing.T) {
 				So(terraformPropertySchema.Optional, ShouldBeTrue)
 				So(terraformPropertySchema.Computed, ShouldBeTrue)
 				So(terraformPropertySchema.Default, ShouldBeNil)
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -1438,7 +1439,7 @@ func TestTerraformSchema(t *testing.T) {
 				// the schema returned should not be configured as computed since in this case terraform will make use of the default value as input for the user. This makes the default value visible at plan time
 				So(terraformPropertySchema.Computed, ShouldBeFalse)
 				So(terraformPropertySchema.Default, ShouldNotBeNil)
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldNotBeNil)
 			})
 		})
 	})
@@ -1449,12 +1450,12 @@ func TestTerraformSchema(t *testing.T) {
 			terraformPropertySchema, err := s.terraformSchema()
 			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldNotBeNil)
 				// the schema validate function should return an error
-				_, err := terraformPropertySchema.ValidateFunc(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as immutable and can not be configured with forceNew too")
+				diagnostics := terraformPropertySchema.ValidateDiagFunc(nil, cty.Path{})
+				So(diagnostics, ShouldNotBeNil)
+				So(diagnostics, ShouldNotBeEmpty)
+				So(diagnostics[0].Summary, ShouldContainSubstring, "property 'propertyName' is configured as immutable and can not be configured with forceNew too")
 			})
 		})
 	})
@@ -1467,11 +1468,51 @@ func TestTerraformSchema(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(terraformPropertySchema.Required, ShouldBeTrue)
 				So(terraformPropertySchema.Computed, ShouldBeFalse)
-				So(terraformPropertySchema.ValidateFunc, ShouldNotBeNil)
-				_, err := terraformPropertySchema.ValidateFunc(nil, "")
-				So(err, ShouldNotBeNil)
-				So(err, ShouldNotBeEmpty)
-				So(err[0].Error(), ShouldContainSubstring, "property 'propertyName' is configured as required and can not be configured as computed too")
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldNotBeNil)
+				diagnostics := terraformPropertySchema.ValidateDiagFunc(nil, cty.Path{})
+				So(diagnostics, ShouldNotBeNil)
+				So(diagnostics, ShouldNotBeEmpty)
+				So(diagnostics[0].Summary, ShouldContainSubstring, "property 'propertyName' is configured as required and can not be configured as computed too")
+			})
+		})
+	})
+}
+
+func TestValidateDiagFunc(t *testing.T) {
+
+	Convey("Given a schemaDefinitionProperty that is computed and has a default value set", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, true, false, false, false, false, false, false, "defaultValue")
+		Convey("When validateDiagFunc is called with a schema definition property", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				So(s.validateDiagFunc(), ShouldNotBeNil)
+				diagnostics := s.validateDiagFunc()(nil, cty.Path{})
+				So(diagnostics, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
+		Convey("When validateDiagFunc is called with a schema definition property", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				So(s.validateDiagFunc(), ShouldNotBeNil)
+				diagnostics := s.validateDiagFunc()(nil, cty.Path{})
+				So(diagnostics, ShouldNotBeNil)
+				So(diagnostics, ShouldNotBeEmpty)
+				So(diagnostics[0].Summary, ShouldContainSubstring, "property 'propertyName' is configured as immutable and can not be configured with forceNew too")
+			})
+		})
+	})
+
+	Convey("Given a schemaDefinitionProperty that is computed and required", t, func() {
+		s := newStringSchemaDefinitionProperty("propertyName", "", true, true, false, false, false, false, false, false, nil)
+		Convey("When validateDiagFunc is called with a schema definition property", func() {
+			Convey("Then the result returned should be the expected one", func() {
+				So(s.validateDiagFunc(), ShouldNotBeNil)
+				diagnostics := s.validateDiagFunc()(nil, cty.Path{})
+				So(diagnostics, ShouldNotBeNil)
+				So(diagnostics, ShouldNotBeEmpty)
+				So(diagnostics[0].Summary, ShouldContainSubstring, "property 'propertyName' is configured as required and can not be configured as computed too")
 			})
 		})
 	})
