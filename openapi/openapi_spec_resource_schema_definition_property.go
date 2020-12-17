@@ -2,6 +2,8 @@ package openapi
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"reflect"
 
 	"github.com/dikhan/terraform-provider-openapi/v1/openapi/terraformutils"
@@ -273,7 +275,7 @@ func (s *SpecSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 
 	// ValidateFunc is not yet supported on lists or sets
 	if !s.isArrayProperty() && !s.isObjectProperty() {
-		terraformSchema.ValidateFunc = s.validateFunc()
+		terraformSchema.ValidateDiagFunc = s.validateDiagFunc()
 	}
 
 	// Don't populate Default if property is readOnly as the property is expected to be computed by the API. Terraform does
@@ -284,6 +286,19 @@ func (s *SpecSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	}
 
 	return terraformSchema, nil
+}
+
+func (s *SpecSchemaDefinitionProperty) validateDiagFunc() schema.SchemaValidateDiagFunc {
+	return func(v interface{}, p cty.Path) diag.Diagnostics {
+		_, errs := s.validateFunc()(v, "") // it's not clear what would be the value of k with the new schema.SchemaValidateDiagFunc and whether it can be extracted from the cty.Path
+		var diags diag.Diagnostics
+		if errs != nil && len(errs) > 0 {
+			for _, e := range errs {
+				diags = append(diags, diag.FromErr(e)...)
+			}
+		}
+		return diags
+	}
 }
 
 func (s *SpecSchemaDefinitionProperty) validateFunc() schema.SchemaValidateFunc {
