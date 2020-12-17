@@ -116,7 +116,45 @@ As part of the update of the CRUD functions to support better diagnosis via the 
 upgrade guide, the OpenAPI Terraform provider now supports timeouts not only for async resource operations but also synchronous. The timeouts can
 be specified in the OpenAPI document per resource operation using the [x-terraform-resource-timeout](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourceTimeout)
 extension.
- 
+
+### Support for Field-Level Descriptions
+
+The [Terraform helper/schema.Schema](https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#support-for-resource-level-and-field-level-descriptions) for OpenAPI Terraform 
+compatible resources and data sources now contains a field Description which is populated based on the corresponding OpenAPI definition property's description. 
+
+For instance, the following OpenAPI object definition would be translated into the below helper/schema.Schema
+containing the `property_with_description` and its corresponding description as specified in the OpenAPI document.
+
+```yml
+definitions:
+  ContentDeliveryNetworkV1:
+    type: object
+    properties:
+      ...
+      property_with_description: 
+        type: string
+        description: "some description for the property..."
+      ... 
+```
+
+````
+&schema.Resource{
+        # This will be the Terraform schema of the resource using the ContentDeliveryNetworkV1 model definition
+		Schema: map[string]*schema.Schema {
+		    ...
+		    "property_with_description": *schema.Schema {
+                Type:TypeString 
+                Description: "some description" 
+                Optional:true 
+                Required:false
+                ...		    
+		    }
+		},
+		...
+	}
+````
+
+
 ### To be removed
 
 - Multi-region on resource name level
