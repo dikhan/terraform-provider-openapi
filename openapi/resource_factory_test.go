@@ -66,6 +66,43 @@ func TestCreateTerraformResource(t *testing.T) {
 			})
 		})
 	})
+	Convey("Given a resource factory initialised with a spec resource that returns an error when retreiving the schema", t, func() {
+		expectedError := "some error retrieving resource schema"
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+					return nil, fmt.Errorf(expectedError)
+				},
+			},
+		}
+		Convey("When createTerraformResource is called", func() {
+			resource, err := r.createTerraformResource()
+			Convey("Then resource should be nil and the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+				So(resource, ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given a resource factory initialised with a spec resource that returns an error for some reason", t, func() {
+		expectedError := "some error retrieving the timeouts"
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+					return &SpecSchemaDefinition{}, nil
+				},
+				funcGetTimeouts: func() (*specTimeouts, error) {
+					return nil, fmt.Errorf(expectedError)
+				},
+			},
+		}
+		Convey("When createTerraformResource is called", func() {
+			resource, err := r.createTerraformResource()
+			Convey("Then resource should be nil and the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+				So(resource, ShouldBeNil)
+			})
+		})
+	})
 }
 
 func TestCRUDWithContext(t *testing.T) {
@@ -1896,7 +1933,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 
 }
 
-func TestGetPropertyPayload(t *testing.T) {
+func TestPopulatePayload(t *testing.T) {
 
 	Convey("Given a resource factory", t, func() {
 		resourceFactory := resourceFactory{}
@@ -2258,6 +2295,91 @@ func TestGetPropertyPayload(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a resource factory initialized with a spec resource with a readOnly property schema definition", t, func() {
+		property := &SpecSchemaDefinitionProperty{
+			Name:     "computed_prop",
+			Type:     TypeString,
+			ReadOnly: true,
+		}
+		r := resourceFactory{}
+		Convey("When populatePayload is called with an empty map, the readOnly property and some dataValue", func() {
+			err := r.populatePayload(map[string]interface{}{}, property, &struct{}{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When populatePayload is called with a property with a dataValue that contains properties not defined in the SpecSchemaDefinitionProperty", func() {
+			property := &SpecSchemaDefinitionProperty{
+				Name:                 "object_prop",
+				Type:                 TypeObject,
+				SpecSchemaDefinition: &SpecSchemaDefinition{
+					// unknown_prop is not defined in the objects schema definition
+				},
+			}
+			dataValue := map[string]interface{}{
+				"unknown_prop": "something",
+			}
+			err := r.populatePayload(map[string]interface{}{}, property, dataValue)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "property with terraform name 'unknown_prop' not existing in resource schema definition")
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When populatePayload is called with a property with a dataValue that contains a value for an object but the object's sub-property properties are not defined in the 'prop' SpecSchemaDefinitionProperty", func() {
+			property := &SpecSchemaDefinitionProperty{
+				Name: "object_prop",
+				Type: TypeObject,
+				SpecSchemaDefinition: &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
+						&SpecSchemaDefinitionProperty{
+							Name:                 "prop",
+							Type:                 TypeObject,
+							SpecSchemaDefinition: &SpecSchemaDefinition{},
+						},
+					},
+				},
+			}
+			dataValue := map[string]interface{}{
+				"prop": map[string]interface{}{
+					"unknown_prop": "something",
+				},
+			}
+			err := r.populatePayload(map[string]interface{}{}, property, dataValue)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "property with terraform name 'unknown_prop' not existing in resource schema definition")
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When populatePayload is called with a dataValue list and the schema property is an object but the dataValue (representing an object) contains props that are not defined in the SpecSchemaDefinitionProperty", func() {
+			property := &SpecSchemaDefinitionProperty{
+				Name:                 "object_prop",
+				Type:                 TypeObject,
+				SpecSchemaDefinition: &SpecSchemaDefinition{
+					// unknown_prop is not defined in the objects schema definition
+				},
+			}
+			dataValue := []interface{}{
+				map[string]interface{}{
+					"unknown_prop": "something",
+				},
+			}
+			err := r.populatePayload(map[string]interface{}{}, property, dataValue)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "property with terraform name 'unknown_prop' not existing in resource schema definition")
+			})
+		})
+	})
 }
 
 func TestGetStatusValueFromPayload(t *testing.T) {
@@ -2309,6 +2431,18 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 				So(err.Error(), ShouldEqual, "status property value '[status]' does not have a supported type [string/map]")
 			})
 		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload with a 'status' field but does not match the spec in the SpecSchemaDefinition (which is a string status in the root level, not an object)", func() {
+			expectedStatusValue := map[string]interface{}{}
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: expectedStatusValue,
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then value returned should contain the name of the property 'status' and the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "could not find status value [[status]] in the payload provided")
+				So(statusField, ShouldBeEmpty)
+			})
+		})
 	})
 
 	Convey("Given a swagger schema definition that has an status property that IS an object", t, func() {
@@ -2355,6 +2489,45 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 			Convey("Then the value returned should contain the name of the property 'status' and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+	})
+
+	Convey("Given an empty resource schema", t, func() {
+		expectedError := "some error"
+		specResource := &specStubResource{
+			funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+				return nil, fmt.Errorf("some error")
+			},
+		}
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called", func() {
+			statusField, err := r.getStatusValueFromPayload(nil)
+			Convey("Then value returned should be empty and the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+				So(statusField, ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("Given an resource with no status field", t, func() {
+		specResource := &specStubResource{
+			funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+				return &SpecSchemaDefinition{
+					// Spec is missing the status field
+				}, nil
+			},
+		}
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called", func() {
+			statusField, err := r.getStatusValueFromPayload(nil)
+			Convey("Then value returned should be empty and the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+				So(statusField, ShouldEqual, "")
 			})
 		})
 	})
