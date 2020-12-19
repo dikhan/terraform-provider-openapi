@@ -16,26 +16,33 @@ func main() {
 
 	log.Printf("Running OpenAPI Terraform Provider v%s-%s; Released on: %s", version.Version, version.Commit, version.Date)
 
-	ex, err := os.Executable()
+	binaryName, err := os.Executable()
 	if err != nil {
 		log.Fatalf("[ERROR] There was an error when getting the provider binary name: %s", err)
 	}
 
-	providerName, err := getProviderName(ex)
+	provider, err := initProvider(binaryName)
 	if err != nil {
-		log.Fatalf("[ERROR] There was an error when getting the provider's name from the binary '%s': %s", ex, err)
-	}
-
-	p := openapi.ProviderOpenAPI{ProviderName: providerName}
-	provider, err := p.CreateSchemaProvider()
-	if err != nil {
-		log.Fatalf("[ERROR] There was an error initialising the terraform provider: %s", err)
+		log.Fatalf("[ERROR] %s", err)
 	}
 
 	plugin.Serve(&plugin.ServeOpts{
 		ProviderFunc: func() *schema.Provider {
 			return provider
 		}})
+}
+
+func initProvider(binaryName string) (*schema.Provider, error) {
+	providerName, err := getProviderName(binaryName)
+	if err != nil {
+		return nil, fmt.Errorf("error getting the provider's name from the binary '%s': %s", binaryName, err)
+	}
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProvider()
+	if err != nil {
+		return nil, fmt.Errorf("error initialising the terraform provider: %s", err)
+	}
+	return provider, nil
 }
 
 func getProviderName(binaryName string) (string, error) {

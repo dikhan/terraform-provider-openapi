@@ -787,7 +787,8 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 		specSchemaDefinition         *SpecSchemaDefinition
 		expected                     bool
 	}{
-		{name: "swagger schema definition property that is not of type 'object'",
+		{
+			name:                         "swagger schema definition property that is not of type 'object'",
 			schemaDefinitionPropertyType: TypeBool,
 			specSchemaDefinition: &SpecSchemaDefinition{
 				Properties: SpecSchemaDefinitionProperties{
@@ -797,7 +798,8 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 				},
 			},
 			expected: false},
-		{name: "swagger schema definition property that has nested objects",
+		{
+			name:                         "swagger schema definition property that has nested objects",
 			schemaDefinitionPropertyType: TypeObject,
 			specSchemaDefinition: &SpecSchemaDefinition{
 				Properties: SpecSchemaDefinitionProperties{
@@ -814,7 +816,8 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 				},
 			},
 			expected: true},
-		{name: "swagger schema definition property that DOES NOT have nested objects",
+		{
+			name: "swagger schema definition property that DOES NOT have nested objects",
 			specSchemaDefinition: &SpecSchemaDefinition{
 				Properties: SpecSchemaDefinitionProperties{
 					&SpecSchemaDefinitionProperty{
@@ -823,10 +826,20 @@ func TestSpecSchemaDefinitionIsPropertyWithNestedObjects(t *testing.T) {
 				},
 			},
 			expected: false},
-		{name: "spec definition property of type object that does not have a corresponding spec schema definition",
+		{
+			name:                         "spec definition property of type object that does not have a corresponding spec schema definition",
 			schemaDefinitionPropertyType: TypeObject,
 			specSchemaDefinition:         nil,
-			expected:                     false},
+			expected:                     false,
+		},
+		{
+			name:                         "spec definition property of type object that does not have Properties in the SpecSchemaDefinition",
+			schemaDefinitionPropertyType: TypeObject,
+			specSchemaDefinition: &SpecSchemaDefinition{
+				Properties: nil,
+			},
+			expected: false,
+		},
 	}
 	for _, tc := range testcases {
 		s := &SpecSchemaDefinitionProperty{
@@ -1772,6 +1785,13 @@ func TestEqualItems(t *testing.T) {
 			remoteItem:     map[string]interface{}{"group": "someGroup"},
 			expectedOutput: false,
 		},
+		{
+			name: "object input of unknown type",
+			schemaDefProp: SpecSchemaDefinitionProperty{
+				Type: "UnknownType",
+			},
+			expectedOutput: false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1873,38 +1893,65 @@ func TestValidateValueType(t *testing.T) {
 	}
 }
 
+func Test_isArrayOfObjectsProperty(t *testing.T) {
+	Convey("Given a schema definition property of type list and items of type object", t, func() {
+		p := &SpecSchemaDefinitionProperty{
+			Type:           TypeList,
+			ArrayItemsType: TypeObject,
+		}
+		Convey("When isArrayOfObjectsProperty is called", func() {
+			isArrayOfObjectsProperty := p.isArrayOfObjectsProperty()
+			Convey("Then the result returned should be true", func() {
+				So(isArrayOfObjectsProperty, ShouldBeTrue)
+			})
+		})
+	})
+	Convey("Given a schema definition property of type list and does not have items of type object", t, func() {
+		p := &SpecSchemaDefinitionProperty{
+			Type:           TypeList,
+			ArrayItemsType: TypeString,
+		}
+		Convey("When isArrayOfObjectsProperty is called", func() {
+			isArrayOfObjectsProperty := p.isArrayOfObjectsProperty()
+			Convey("Then the result returned should be false", func() {
+				So(isArrayOfObjectsProperty, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func Test_shouldIgnoreOrder(t *testing.T) {
-	Convey("Given a scjema definition property that is a list and configured with ignore order", t, func() {
+	Convey("Given a schema definition property that is a list and configured with ignore order", t, func() {
 		p := &SpecSchemaDefinitionProperty{
 			Type:             TypeList,
 			IgnoreItemsOrder: true,
 		}
 		Convey("When shouldIgnoreOrder is called", func() {
 			shouldIgnoreOrder := p.shouldIgnoreOrder()
-			Convey("Then the err returned should be true", func() {
+			Convey("Then the result returned should be true", func() {
 				So(shouldIgnoreOrder, ShouldBeTrue)
 			})
 		})
 	})
-	Convey("Given a scjema definition property that is NOT a list", t, func() {
+	Convey("Given a schema definition property that is NOT a list", t, func() {
 		p := &SpecSchemaDefinitionProperty{
 			Type: TypeString,
 		}
 		Convey("When shouldIgnoreOrder is called", func() {
 			shouldIgnoreOrder := p.shouldIgnoreOrder()
-			Convey("Then the err returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(shouldIgnoreOrder, ShouldBeFalse)
 			})
 		})
 	})
-	Convey("Given a scjema definition property that is a list but the ignore order is set to false", t, func() {
+	Convey("Given a schema definition property that is a list but the ignore order is set to false", t, func() {
 		p := &SpecSchemaDefinitionProperty{
 			Type:             TypeList,
 			IgnoreItemsOrder: false,
 		}
 		Convey("When shouldIgnoreOrder is called", func() {
 			shouldIgnoreOrder := p.shouldIgnoreOrder()
-			Convey("Then the err returned should be false", func() {
+			Convey("Then the result returned should be false", func() {
 				So(shouldIgnoreOrder, ShouldBeFalse)
 			})
 		})
