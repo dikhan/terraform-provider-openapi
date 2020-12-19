@@ -40,7 +40,7 @@ require (
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
-	golang.org/x/tools v0.0.0-20201215192005-fa10ef0b8743 // indirect
+	golang.org/x/tools v0.0.0-20201218024724-ae774e9781d2 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20160818020120-3f83fa500528 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 )
