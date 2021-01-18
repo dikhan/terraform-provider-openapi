@@ -113,6 +113,20 @@ func TestGetProviderName(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a valid binary path containing multiple matches for terraform-provider-", t, func() {
+		binaryName := "/Users/user/dev/src/github.com/terraform-provider-openapi/examples/swaggercodegen/.terraform/providers/terraform.example.com/examplecorp/swaggercodegen/1.0.0/darwin_amd64/terraform-provider-swaggercodegen"
+		Convey("When getProviderName method is called", func() {
+			providerName, err := getProviderName(binaryName)
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the error message returned should be", func() {
+				So(providerName, ShouldEqual, "swaggercodegen")
+			})
+		})
+	})
+
 	Convey("Given a valid pluginName with incorrect version format", t, func() {
 		binaryName := "terraform-provider-goa_v1"
 		Convey("When getProviderName method is called", func() {
