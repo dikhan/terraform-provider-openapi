@@ -14,6 +14,7 @@
 .glide/
 
 .terraform/*
+.terraform.*
 examples/*/.terraform/*
 examples/*/terraform.tfstate*
 .idea/*
