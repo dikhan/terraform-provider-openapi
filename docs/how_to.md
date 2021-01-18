@@ -1,6 +1,6 @@
 # How to
 
-The following describe some guidelines in terms of how to define the swagger file to be able to run this terraform
+The following describe some guidelines in terms of how to define the OpenAPI file to be able to run this terraform
 provider. These guidelines not only aim to encourage service providers to follow good practises when defining and 
 exposing APIs but also and more importantly serve as a reference on how the different sections of a swagger file
 are interpreted and translated into terraform idioms.

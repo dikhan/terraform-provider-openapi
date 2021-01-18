@@ -368,7 +368,7 @@ for learning how to bring up the example APIs and run terraform against them.
 
 ## Support for Debuggable Provider Binaries
 
-As of OpenAPI Terraform v1.0.0, the OpenAPI Terraform binary supports debuggers live delve to be attached to it. In order to
+As of OpenAPI Terraform v2.0.0, the OpenAPI Terraform binary supports debuggers live delve to be attached to it. In order to
 enable this behaviour the binary needs to be started first with the debug flag set to `true` and the environment variable `OTF_PROVIDER_SOURCE_ADDRESS`
 must be set with the provider's source address (where `<provider-name>` is your provider's name).
 
@@ -385,7 +385,7 @@ terraform {
  required_providers {
    openapi = {
      source  = "terraform.example.com/examplecorp/openapi"
-     version = ">= 1.0.0"
+     version = ">= 2.0.0"
    }
  }
 }

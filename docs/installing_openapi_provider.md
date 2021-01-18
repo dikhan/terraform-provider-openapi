@@ -39,7 +39,7 @@ resource "<your_provider_name>_<resource_name>" "my_resource" {
 
 ### OpenAPI provider installation instructions for Terraform >= v0.13 
 
-If you are using Terraform v0.12, the plugins must be installed following [Terraform's v0.13 installation instructions](https://www.terraform.io/docs/configuration/provider-requirements.html#in-house-providers). The following
+If you are using Terraform v0.13, the plugins must be installed following [Terraform's v0.13 installation instructions](https://www.terraform.io/docs/configuration/provider-requirements.html#in-house-providers). The following
 steps describe how to install the OpenAPI Terraform provider when using Terraform v0.13 or greater.
 
 - Download most recent release for your architecture (macOS/Linux) from [release](https://github.com/dikhan/terraform-provider-openapi/releases)
@@ -73,7 +73,7 @@ Where
 - `<your_provider_name>` should be replaced with your provider's name. This is the name that will also be used in the Terraform 
 tf files to refer to the provider resources ``resource "<your_provider_name>_<resource_name>" "my_resource" {}``.
 - `<version>` is the version of your provider. Since, the actual plugin used is the OpenAPI Terraform plugin it's recommended
- to pin the version of the OpenAPI plugin version used (eg: `1.0.0`)
+ to pin the version of the OpenAPI plugin version used (eg: `2.0.0`)
 
 - Now you can extract the contents of the tar ball downloaded previously and copy the terraform-provider-openapi binary into the 
 following file path: ````~/.terraform.d/plugins/<hostname>/<namespace>/<your_provider_name>/<version>/darwin_amd64/terraform-provider-<your_provider_name>````. Note, this
