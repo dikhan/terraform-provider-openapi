@@ -341,7 +341,6 @@ for the provider. Read more about how to configure the OpenAPI provider
 schema in the [Schema Configuration Object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/plugin_configuration_schema.md#schema-configuration-object)
 documentation.
 
-
 ## Examples
 
 Two API examples compliant with terraform are provided to make it easier to play around with this terraform provider. This
@@ -366,3 +365,39 @@ $ root@6d7ac292eebd:/openapi/goa# terraform init && terraform plan
 
 For more information refer to [How to set up the local environment?](./docs/local_environment.md) which contains instructions
 for learning how to bring up the example APIs and run terraform against them.
+
+## Support for Debuggable Provider Binaries
+
+As of OpenAPI Terraform v1.0.0, the OpenAPI Terraform binary supports debuggers live delve to be attached to it. In order to
+enable this behaviour the binary needs to be started first with the debug flag set to `true` and the environment variable `OTF_PROVIDER_SOURCE_ADDRESS`
+must be set with the provider's source address (where `<provider-name>` is your provider's name).
+
+````
+$ OTF_VAR_<provider-name>_SWAGGER_URL="https://www.example.com/openapi.yaml" OTF_PROVIDER_SOURCE_ADDRESS="terraform.example.com/examplecorp/<provider-name>" ~/.terraform.d/plugins/terraform.example.com/examplecorp/<provider-name>/1.0.0/darwin_amd64/terraform-provider-<provider-name> --debuggable true
+````
+
+The provider's source address value in the `OTF_PROVIDER_SOURCE_ADDRESS` environment variable must match the source value provided 
+in the terraform's `.tf` file configuration. For instance, the below example declares a local provider name 'openapi' where the source 
+is `terraform.example.com/examplecorp/openapi`:
+
+````
+terraform {
+ required_providers {
+   openapi = {
+     source  = "terraform.example.com/examplecorp/openapi"
+     version = ">= 1.0.0"
+   }
+ }
+}
+````
+
+Once the plugin has been executed, the output will display the value to set the `TF_REATTACH_PROVIDERS` so subsequent calls to
+Terraform will be directed to the new socket with debug enabled.
+
+````
+...
+Provider server started; to attach Terraform, set TF_REATTACH_PROVIDERS to the following:
+{"terraform.example.com/examplecorp/swaggercodegen":{"Protocol":"grpc","Pid":23647,"Test":true,"Addr":{"Network":"unix","String":"/var/folders/jh/lchbr1q95j73zwdy9_821qg40000gn/T/plugin768483034"}}}
+^C{"@level":"error","@message":"grpc server","@timestamp":"2021-01-17T19:56:25.506124-08:00","error":"accept unix /var/folders/jh/lchbr1q95j73zwdy9_821qg40000gn/T/plugin768483034: use of closed network connection"}
+
+````

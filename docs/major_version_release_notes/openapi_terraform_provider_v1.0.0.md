@@ -18,7 +18,7 @@ The OpenAPI Terraform Plugin is built in Go. Currently, that means Go 1.14 or la
 ### Version 1 of the 'github.com/dikhan/terraform-provider-openapi' Module
 
 As part of the breaking changes, the OpenAPI Terraform Plugin SDK Go Module has been upgraded to v1. This involves changing 
-import paths from github.com/dikhan/terraform-provider-openapi to github.com/dikhan/terraform-provider-openapi/v1 for the
+import paths from `github.com/dikhan/terraform-provider-openapi` to `github.com/dikhan/terraform-provider-openapi/v1` for the
 custom terraform providers repositories that use the `github.com/dikhan/terraform-provider-openapi` as the parent. This is done
 usually to leverage the OpenAPI Terraform plugin capabilities using this repo as a library that can be imported and customizing the release cycle
 of the provider as well as the name etc.
@@ -154,6 +154,11 @@ definitions:
 	}
 ````
 
+### Support for Debuggable Provider Binaries
+
+As per [Support for Debuggable Provider Binaries](https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#support-for-debuggable-provider-binaries), the
+OpenAPI Terraform binary now supports debuggers like delve attached to them. To learn more about how to enable this behaviour refer
+to the [Using OpenAPI Provider documentation](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#support-for-debuggable-provider-binaries)
 
 ### To be removed
 
