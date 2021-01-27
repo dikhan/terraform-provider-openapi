@@ -3,7 +3,7 @@ package openapi
 import (
 	"fmt"
 
-	"github.com/dikhan/terraform-provider-openapi/v1/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapiutils"
 )
 
 type specStubBackendConfiguration struct {

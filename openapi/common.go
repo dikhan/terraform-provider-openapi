@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/dikhan/terraform-provider-openapi/v1/openapi/openapierr"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapierr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 

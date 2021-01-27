@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
-	"github.com/dikhan/terraform-provider-openapi/v1/openapi/version"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"net/http"
