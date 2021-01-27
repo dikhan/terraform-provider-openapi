@@ -1,4 +1,4 @@
-# OpenAPI Terraform Provider v1.0.0 release notes
+# OpenAPI Terraform Provider v2.0.0 release notes
 
 This version of the OpenAPI Terraform provider integrates Terraform SDK 2.0 major release which includes significant breaking changes
 as specified in the [Terraform Plugin SDK v2 Upgrade Guide](https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html).
@@ -6,9 +6,9 @@ as specified in the [Terraform Plugin SDK v2 Upgrade Guide](https://www.terrafor
 This document describes the changes applied in the plugin.
 
 ## Terraform CLI Compatibility
-Terraform 0.12.0 or later is needed for version 1.0.0 and later of the OpenAPI Terraform provider.
+Terraform 0.12.0 or later is needed for version v2.0.0 and later of the OpenAPI Terraform provider.
 
-When running provider tests, Terraform 0.12.26 or later is needed for version 1.0.0 and later of the OpenAPI Terraform plugin.
+When running provider tests, Terraform 0.12.26 or later is needed for version v2.0.0 and later of the OpenAPI Terraform plugin.
 
 ## Go Compatibility
 The OpenAPI Terraform Plugin is built in Go. Currently, that means Go 1.14 or later must be used when building this provider.
@@ -18,7 +18,7 @@ The OpenAPI Terraform Plugin is built in Go. Currently, that means Go 1.14 or la
 ### Version 1 of the 'github.com/dikhan/terraform-provider-openapi' Module
 
 As part of the breaking changes, the OpenAPI Terraform Plugin SDK Go Module has been upgraded to v1. This involves changing 
-import paths from `github.com/dikhan/terraform-provider-openapi` to `github.com/dikhan/terraform-provider-openapi/v1` for the
+import paths from `github.com/dikhan/terraform-provider-openapi` to `github.com/dikhan/terraform-provider-openapi/v2` for the
 custom terraform providers repositories that use the `github.com/dikhan/terraform-provider-openapi` as the parent. This is done
 usually to leverage the OpenAPI Terraform plugin capabilities using this repo as a library that can be imported and customizing the release cycle
 of the provider as well as the name etc.
@@ -34,7 +34,7 @@ the OpenAPI Terraform plugin no longer supports properties of `type: "object"` w
 of helper/schema.TypeMap with Elem *helper/schema.Resource. This is due to the fact that inserting complex types into a HashMap field resulted into undefined behaviors as
 documented in [Terraform Issue #22511](https://github.com/hashicorp/terraform/issues/22511#issuecomment-522609116).
 
-Previous versions of the OpenAPI Terraform provider < 1.0.0 would translate OpenAPI definitions containing properties of `type: "object"`
+Previous versions of the OpenAPI Terraform provider < v2.0.0 would translate OpenAPI definitions containing properties of `type: "object"`
 that did not have the extension `x-terraform-complex-object-legacy-config` as helper/schema.TypeMap with Elem *helper/schema.Resource in the Terraform Schema 
 and hence the HCL representation resulting into an argument.
 
@@ -71,7 +71,7 @@ Even though the `create_date` property was readOnly and therefore marked as comp
 behaviours resulting of using HashMaps with complex types, Terraform apply would work fine but subsequent plans would result into
 diffs and as a workaround users would have to explicitly define the properties in the configuration files (as shown in the example above).
 
-As of OpenAPI Terraform 1.0.0, the same object property `object_property` definition is now following the workaround suggested 
+As of OpenAPI Terraform v2.0.0, the same object property `object_property` definition is now following the workaround suggested 
 by Hashicorp Maintainers [Terraform SDK Issue #155](https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737) 
 as described in the [x-terraform-complex-object-legacy-config](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#x-terraform-complex-object-legacy-config) 
 extension. This extension has been deprecated and property of `type: "object"` and now treated by default as `helper/schema.TypeList with Elem *helper/schema.Resource and MaxItems 1`.
@@ -102,7 +102,7 @@ properties will always be TypeList with Elem *Resource and MaxItems 1 regardless
 or whether it's a complex object containing a mix of different types (string, int, nested objects, etc properties) and different 
 configurations (eg: some properties being required, others optional, some computed etc). Refer to the [object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions) documentation instead. 
 
-Previous versions of the OpenAPI Terraform provider < 1.0.0 would require this extension to be present to treat complex object properties as
+Previous versions of the OpenAPI Terraform provider < v2.0.0 would require this extension to be present to treat complex object properties as
 recommended by Hashicorp Maintaners (see issues below) using the helper/schema.TypeList with *helper/schema.Resource as Elem and limiting the MaxItems to 1. This
 behaviour is now the default for any property of type object.
 
@@ -160,7 +160,12 @@ As per [Support for Debuggable Provider Binaries](https://www.terraform.io/docs/
 OpenAPI Terraform binary now supports debuggers like delve attached to them. To learn more about how to enable this behaviour refer
 to the [Using OpenAPI Provider documentation](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/using_openapi_provider.md#support-for-debuggable-provider-binaries)
 
-### To be removed
+## Deprecation notices
 
-- Multi-region on resource name level
-- Assumption that a property that has a $ref attribute is considered automatically an object so defining the type 'object' is optional (although it's recommended).
+The following functionality will be deprecated in future versions of the OpenAPI Terraform Provider.
+
+- [Multi-region on resource name level](./../how_to.md#xTerraformResourceRegions): This was introduced in early stages of the OpenAPI Terraform provider
+to support resources that could be managed in multiple regions. However, having the region name attached to the resource name (eg: `myprovider_resource_rst1`) did
+not play well with Terraform modules and as of [OpenAPI Terraform v0.10.0](https://github.com/dikhan/terraform-provider-openapi/releases/tag/v0.10.0) native [multi-region on the provider
+level configuration](./../how_to.md#multiRegionConfiguration) was added. Hence, OpenAPI Terraform providers should make use of the 
+latter approach when multi-region is needed and describe the OpenAPI document as described in the [multi region configuration instructions](./../how_to.md#multiRegionConfiguration).

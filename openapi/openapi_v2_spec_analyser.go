@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dikhan/terraform-provider-openapi/v1/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapiutils"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 )

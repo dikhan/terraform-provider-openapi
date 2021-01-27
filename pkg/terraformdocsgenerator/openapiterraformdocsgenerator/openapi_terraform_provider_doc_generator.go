@@ -2,7 +2,7 @@ package openapiterraformdocsgenerator
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/v1/openapi"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
 	"github.com/mitchellh/hashstructure"
 	"sort"
 )
@@ -72,7 +72,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		ProviderInstallation: ProviderInstallation{
 			ProviderName: t.ProviderName,
 			Example: fmt.Sprintf("$ export PROVIDER_NAME=%s && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>"+
-				"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/v1/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>"+
+				"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/v2/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>"+
 				"[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>"+
 				"[INFO] Cleaning up tmp dir created for installation purposes: /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh<br>"+
 				"[INFO] Terraform provider 'terraform-provider-%s' successfully installed at: '~/.terraform.d/plugins'!", t.ProviderName, t.ProviderName),

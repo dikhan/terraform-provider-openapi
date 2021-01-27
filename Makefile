@@ -5,7 +5,7 @@ NEW_RELEASE_VERSION_VALIDATION?=$(shell ./scripts/semver.sh $(RELEASE_TAG) $(CUR
 
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
-REPO=github.com/dikhan/terraform-provider-openapi/v1
+REPO=github.com/dikhan/terraform-provider-openapi/v2
 LDFLAGS = '-s -w -extldflags "-static" -X "$(REPO)/openapi/version.Version=$(VERSION)" -X "$(REPO)/openapi/version.Commit=$(COMMIT)" -X "$(REPO)/openapi/version.Date=$(DATE)"'
 
 PROVIDER_NAME?=""

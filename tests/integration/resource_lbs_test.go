@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/dikhan/terraform-provider-openapi/v1/examples/swaggercodegen/api/api"
+	"github.com/dikhan/terraform-provider-openapi/v2/examples/swaggercodegen/api/api"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )

@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"reflect"
 
-	"github.com/dikhan/terraform-provider-openapi/v1/openapi/terraformutils"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/terraformutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 

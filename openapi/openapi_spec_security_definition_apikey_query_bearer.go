@@ -2,7 +2,7 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/v1/openapi/terraformutils"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/terraformutils"
 )
 
 type specAPIKeyQueryBearerSecurityDefinition struct {
