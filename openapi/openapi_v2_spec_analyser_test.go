@@ -1012,6 +1012,7 @@ func TestGetAPIBackendConfiguration(t *testing.T) {
 	})
 }
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 func TestIsMultiRegionResource(t *testing.T) {
 	Convey("Given a specV2Analyser and a resource root has a POST operation containing the x-terraform-resource-host with a parametrized host containing region variable", t, func() {
 		serviceProviderName := "serviceProviderName"
@@ -2447,6 +2448,7 @@ paths:
 	})
 }
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 func TestCreateMultiRegionResources(t *testing.T) {
 	Convey("Given an specV2Analyser loaded with a swagger file containing a multiregion resource", t, func() {
 		swaggerContent := `swagger: "2.0"
@@ -2945,6 +2947,7 @@ definitions:
 		})
 	})
 
+	// TODO: [Deprecate] Resource with region in the name no longer supported
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that is multi region", t, func() {
 		swaggerContent := `swagger: "2.0"
 x-terraform-resource-regions-keyword: "sea1"
@@ -3535,6 +3538,7 @@ definitions:
 		})
 	})
 
+	// TODO: [Deprecate] Resource with region in the name no longer supported
 	Convey("Given a swagger doc that exposes a resource with not valid multi region configuration (x-terraform-resource-regions-serviceProviderName is missing", t, func() {
 		var swaggerJSON = `
 {

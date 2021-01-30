@@ -71,7 +71,7 @@ const extTfResourceURL = "x-terraform-resource-host"
 // SpecV2Resource defines a struct that implements the SpecResource interface and it's based on OpenAPI v2 specification
 type SpecV2Resource struct {
 	Name   string
-	Region string
+	Region string // TODO: [Deprecate] Resource with region in the name no longer supported
 	// Path contains the full relative path to the resource e,g: /v1/resource
 	Path string
 	// SpecSchemaDefinition definition represents the representational state (aka model) of the resource
@@ -106,7 +106,7 @@ func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, 
 func newSpecV2DataSource(path string, schemaDefinition spec.Schema, rootPathItem spec.PathItem, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	resource := &SpecV2Resource{
 		Path:              path,
-		Region:            "",
+		Region:            "", // TODO: [Deprecate] Resource with region in the name no longer supported
 		SchemaDefinition:  schemaDefinition,
 		RootPathItem:      rootPathItem,
 		InstancePathItem:  spec.PathItem{},
@@ -121,6 +121,7 @@ func newSpecV2DataSource(path string, schemaDefinition spec.Schema, rootPathItem
 	return resource, nil
 }
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 // newSpecV2ResourceWithRegion creates a SpecV2Resource with the region configured making the returned SpecV2Resource region based.
 func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	if region == "" {
@@ -138,7 +139,7 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 	}
 	resource := &SpecV2Resource{
 		Path:              path,
-		Region:            region,
+		Region:            region, // TODO: [Deprecate] Resource with region in the name no longer supported
 		SchemaDefinition:  schemaDefinition,
 		RootPathItem:      rootPathItem,
 		InstancePathItem:  instancePathItem,
@@ -155,7 +156,7 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 
 // GetResourceName returns the resource name including the region at the end of the resource name if applicable
 func (o *SpecV2Resource) GetResourceName() string {
-	if o.Region != "" {
+	if o.Region != "" { // TODO: [Deprecate] Resource with region in the name no longer supported
 		return fmt.Sprintf("%s_%s", o.Name, o.Region)
 	}
 	return o.Name
@@ -259,6 +260,7 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 // swagger host attribute or if not present the host used will be the host where the swagger file was served
 func (o *SpecV2Resource) getHost() (string, error) {
 	overrideHost := getResourceOverrideHost(o.RootPathItem.Post)
+	// TODO: [Deprecate] Resource with region in the name no longer supported
 	if overrideHost == "" {
 		return "", nil
 	}
@@ -269,6 +271,7 @@ func (o *SpecV2Resource) getHost() (string, error) {
 	if multiRegionHost != "" {
 		return multiRegionHost, nil
 	}
+	// TODO: [Deprecate] End deprecation
 	return overrideHost, nil
 }
 

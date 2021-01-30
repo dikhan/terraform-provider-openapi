@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
+
 const resourceNameMonitor = "monitors_v1"
 
 var regionRst1 = "rst1"

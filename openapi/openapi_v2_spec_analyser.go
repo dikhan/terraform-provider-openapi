@@ -14,6 +14,7 @@ import (
 	"github.com/go-openapi/spec"
 )
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 const extTfResourceRegionsFmt = "x-terraform-resource-regions-%s"
 
 // specV2Analyser defines an SpecAnalyser implementation for OpenAPI v2 specification
@@ -44,6 +45,7 @@ func newSpecAnalyserV2(openAPIDocumentFilename string) (*specV2Analyser, error) 
 	}, nil
 }
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string, resourceRootPath string, resourceRoot, pathItem spec.PathItem, resourcePayloadSchemaDef *spec.Schema) ([]SpecResource, error) {
 	var resources []SpecResource
 	for _, regionName := range regions {
@@ -92,6 +94,7 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			continue
 		}
 
+		// TODO: [Deprecate] Resource with region in the name no longer supported
 		isMultiRegion, regions, err := specAnalyser.isMultiRegionResource(resourceRoot, specAnalyser.d.Spec().Extensions)
 		if err != nil {
 			log.Printf("multi region configuration for resource '%s' is not valid: ", err)
@@ -107,6 +110,7 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 			resources = append(resources, multiRegionResources...)
 			continue
 		}
+		// TODO: [Deprecate] End of deprecation
 
 		r, err := newSpecV2Resource(resourceRootPath, *resourcePayloadSchemaDef, *resourceRoot, pathItem, specAnalyser.d.Spec().Definitions, specAnalyser.d.Spec().Paths.Paths)
 		if err != nil {
@@ -162,6 +166,7 @@ func (specAnalyser *specV2Analyser) pathExists(path string) (bool, spec.PathItem
 	return true, p
 }
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 // isMultiRegionResource returns true on ly if:
 // - the value is parametrized following the pattern: some.subdomain.${keyword}.domain.com, where ${keyword} must be present in the string, otherwise the resource will not be considered multi region
 // - there is a matching 'x-terraform-resource-regions-${keyword}' extension defined in the swagger root level (extensions passed in), where ${keyword} will be the value of the parameter in the above URL
@@ -199,6 +204,7 @@ func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.Pat
 	return false, nil, fmt.Errorf("missing matching '%s' root level region extension '%s'", regionIdentifier, regionExtensionName)
 }
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 func (specAnalyser *specV2Analyser) getResourceRegionExtensionName(regionIdentifier string) string {
 	return fmt.Sprintf(extTfResourceRegionsFmt, regionIdentifier)
 }

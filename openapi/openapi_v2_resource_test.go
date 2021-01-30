@@ -219,6 +219,7 @@ func TestNewSpecV2ResourceWithConfig(t *testing.T) {
 	})
 }
 
+// TODO: [Deprecate] Resource with region in the name no longer supported
 func TestNewSpecV2ResourceWithRegion(t *testing.T) {
 	Convey("Given a path, schemaDefinition, rootPathItem, instancePathItem, paths, schemaDefinitions AND a region that is empty", t, func() {
 		path := "/v1/users"

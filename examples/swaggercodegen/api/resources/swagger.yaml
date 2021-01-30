@@ -337,6 +337,7 @@ paths:
 
   ############################
   ##### Monitors Multiregion Resource name based ####
+  # // TODO: [Deprecate] Resource with region in the name no longer supported
   ############################
 
   # The monitor resource is not implemented in the backed, it only serves as an example on how the global host can be overridden
