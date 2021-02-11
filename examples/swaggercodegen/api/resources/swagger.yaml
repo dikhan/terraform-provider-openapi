@@ -9,29 +9,29 @@ info:
 #host: "localhost:8443" # If host is not specified, it is assumed to be the same host where the API documentation is being served.
 #basePath: ""
 tags:
-- name: "cdn"
-  description: "Operations about cdns"
-  externalDocs:
-    description: "Find out more about cdn api"
-    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
-- name: "lb"
-  description: "Operations about lbs"
-  externalDocs:
-    description: "Find out more about lb api"
-    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
-- name: "monitor"
-  description: "Operations about monitors"
-  externalDocs:
-    description: "Find out more about monitor api"
-    url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
+  - name: "cdn"
+    description: "Operations about cdns"
+    externalDocs:
+      description: "Find out more about cdn api"
+      url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
+  - name: "lb"
+    description: "Operations about lbs"
+    externalDocs:
+      description: "Find out more about lb api"
+      url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
+  - name: "monitor"
+    description: "Operations about monitors"
+    externalDocs:
+      description: "Find out more about monitor api"
+      url: "https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen"
 schemes:
-- "http"
-- "https"
+  - "http"
+  - "https"
 
 consumes:
-- "application/json"
+  - "application/json"
 produces:
-- "application/json"
+  - "application/json"
 
 security:
   - apikey_auth: []
@@ -70,21 +70,21 @@ paths:
       x-terraform-resource-name: "cdn"
       x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
-      - "cdn"
+        - "cdn"
       summary: "Create cdn"
       operationId: "ContentDeliveryNetworkCreateV1"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Created CDN"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      - in: "header"
-        x-terraform-header: x_request_id
-        name: "X-Request-ID"
-        type: "string"
-        required: true
+        - in: "body"
+          name: "body"
+          description: "Created CDN"
+          required: true
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+        - in: "header"
+          x-terraform-header: x_request_id
+          name: "X-Request-ID"
+          type: "string"
+          required: true
       x-terraform-resource-timeout: "30s"
       responses:
         201:
@@ -100,16 +100,16 @@ paths:
   /v1/cdns/{cdn_id}:
     get:
       tags:
-      - "cdn"
+        - "cdn"
       summary: "Get cdn by id"
       description: ""
       operationId: "ContentDeliveryNetworkGetV1"
       parameters:
-      - name: "cdn_id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
+        - name: "cdn_id"
+          in: "path"
+          description: "The cdn id that needs to be fetched."
+          required: true
+          type: "string"
       #x-terraform-resource-timeout: "30s" If a given operation does not have the 'x-terraform-resource-timeout' extension; the resource operation timeout will default to 10m (10 minutes)
       responses:
         200:
@@ -124,21 +124,21 @@ paths:
         - apikey_auth: []
     put:
       tags:
-      - "cdn"
+        - "cdn"
       summary: "Updated cdn"
       operationId: "ContentDeliveryNetworkUpdateV1"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "cdn that needs to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated cdn object"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
+        - name: "cdn_id"
+          in: "path"
+          description: "cdn that needs to be updated"
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Updated cdn object"
+          required: true
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
       responses:
         200:
           description: "successful operation"
@@ -152,15 +152,15 @@ paths:
         - apikey_auth: []
     delete:
       tags:
-      - "cdn"
+        - "cdn"
       summary: "Delete cdn"
       operationId: "ContentDeliveryNetworkDeleteV1"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn that needs to be deleted"
-        required: true
-        type: "string"
+        - name: "cdn_id"
+          in: "path"
+          description: "The cdn that needs to be deleted"
+          required: true
+          type: "string"
       responses:
         204:
           description: "successful operation, no content is returned"
@@ -177,21 +177,21 @@ paths:
     post:
       x-terraform-resource-host: localhost:8443 # If this extension is specified, it will override the global host and API calls will be made against this host instead
       tags:
-      - "cdn"
+        - "cdn"
       summary: "Create cdn firewall"
       operationId: "ContentDeliveryNetworkFirewallCreateV1"
       parameters:
-      - name: "cdn_id"
-        in: "path"
-        description: "The cdn id that contains the firewall to be fetched."
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Created CDN firewall"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+        - name: "cdn_id"
+          in: "path"
+          description: "The cdn id that contains the firewall to be fetched."
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Created CDN firewall"
+          required: true
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
       responses:
         201:
           description: "successful operation"
@@ -204,21 +204,21 @@ paths:
   /v1/cdns/{cdn_id}/v1/firewalls/{fw_id}:
     get:
       tags:
-      - "cdn"
+        - "cdn"
       summary: "Get cdn firewall by id"
       description: ""
       operationId: "ContentDeliveryNetworkFirewallGetV1"
       parameters:
-      - name: "cdn_id"
-        in: "path"
-        description: "The cdn id that contains the firewall to be fetched."
-        required: true
-        type: "string"
-      - name: "fw_id"
-        in: "path"
-        description: "The cdn firewall id that needs to be fetched."
-        required: true
-        type: "string"
+        - name: "cdn_id"
+          in: "path"
+          description: "The cdn id that contains the firewall to be fetched."
+          required: true
+          type: "string"
+        - name: "fw_id"
+          in: "path"
+          description: "The cdn firewall id that needs to be fetched."
+          required: true
+          type: "string"
       responses:
         200:
           description: "successful operation"
@@ -237,16 +237,16 @@ paths:
     post:
       x-terraform-resource-host: localhost:8443
       tags:
-      - "lb"
+        - "lb"
       summary: "Create lb v1"
       operationId: "LBCreateV1"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "LB v1 payload object to be posted as part of the POST request"
-        required: true
-        schema:
-          $ref: "#/definitions/LBV1"
+        - in: "body"
+          name: "body"
+          description: "LB v1 payload object to be posted as part of the POST request"
+          required: true
+          schema:
+            $ref: "#/definitions/LBV1"
       x-terraform-resource-timeout: "2s"
       responses:
         202: # Accepted
@@ -263,16 +263,16 @@ paths:
   /v1/lbs/{id}:
     get:
       tags:
-      - "lb"
+        - "lb"
       summary: "Get lb v1 by id"
       description: ""
       operationId: "LBGetV1"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "The lb v1 id that needs to be fetched."
-        required: true
-        type: "string"
+        - name: "id"
+          in: "path"
+          description: "The lb v1 id that needs to be fetched."
+          required: true
+          type: "string"
       responses:
         200:
           description: "successful operation"
@@ -284,21 +284,21 @@ paths:
           description: "LB not found"
     put:
       tags:
-      - "lb"
+        - "lb"
       summary: "Updated cdn"
       operationId: "LBUpdateV1"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "lb v1 that needs to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated cdn object"
-        required: true
-        schema:
-          $ref: "#/definitions/LBV1"
+        - name: "id"
+          in: "path"
+          description: "lb v1 that needs to be updated"
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Updated cdn object"
+          required: true
+          schema:
+            $ref: "#/definitions/LBV1"
       #      x-terraform-resource-timeout: "30s" If a given operation does not have the 'x-terraform-resource-timeout' extension; the resource operation timeout will default to 10m (10 minutes)
       responses:
         202: # Accepted
@@ -314,15 +314,15 @@ paths:
           description: "LB v1 not found"
     delete:
       tags:
-      - "lb"
+        - "lb"
       summary: "Delete lb v1"
       operationId: "LBDeleteV1"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "The lb v1 that needs to be deleted"
-        required: true
-        type: "string"
+        - name: "id"
+          in: "path"
+          description: "The lb v1 that needs to be deleted"
+          required: true
+          type: "string"
       responses:
         202:
           description: "LB v1 deletion"
@@ -345,17 +345,17 @@ paths:
   /v1/monitors:
     post:
       tags:
-      - "monitor"
+        - "monitor"
       summary: "Create monitor v1"
-      operationId: "MonitorV1"
+      operationId: "CreateMonitorV1"
       x-terraform-resource-host: "some.api.${monitor}.domain.com"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Monitor v1 payload object to be posted as part of the POST request"
-        required: true
-        schema:
-          $ref: "#/definitions/MonitorV1"
+        - in: "body"
+          name: "body"
+          description: "Monitor v1 payload object to be posted as part of the POST request"
+          required: true
+          schema:
+            $ref: "#/definitions/MonitorV1"
       responses:
         200:
           description: "this operation is asynchronous, to check the status of the deployment call GET operation and check the status field returned in the payload"
@@ -368,16 +368,16 @@ paths:
   /v1/monitors/{id}:
     get:
       tags:
-      - "monitor"
+        - "monitor"
       summary: "Get monitor by id"
       description: ""
-      operationId: "MonitorV1"
+      operationId: "GetMonitorV1"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "The monitor v1 id that needs to be fetched."
-        required: true
-        type: "string"
+        - name: "id"
+          in: "path"
+          description: "The monitor v1 id that needs to be fetched."
+          required: true
+          type: "string"
       responses:
         200:
           description: "successful operation"
@@ -398,16 +398,16 @@ paths:
   /v1/multiregionmonitors:
     post:
       tags:
-      - "multi_region_monitor"
+        - "multi_region_monitor"
       summary: "Create monitor v1"
       operationId: "MonitorV1"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Monitor v1 payload object to be posted as part of the POST request"
-        required: true
-        schema:
-          $ref: "#/definitions/MonitorV1"
+        - in: "body"
+          name: "body"
+          description: "Monitor v1 payload object to be posted as part of the POST request"
+          required: true
+          schema:
+            $ref: "#/definitions/MonitorV1"
       responses:
         200:
           description: "this operation is asynchronous, to check the status of the deployment call GET operation and check the status field returned in the payload"
@@ -420,16 +420,16 @@ paths:
   /v1/multiregionmonitors/{id}:
     get:
       tags:
-      - "multi_region_monitor"
+        - "multi_region_monitor"
       summary: "Get monitor by id"
       description: ""
-      operationId: "MonitorV1"
+      operationId: "GetMultiRegionMonitorV1"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "The monitor v1 id that needs to be fetched."
-        required: true
-        type: "string"
+        - name: "id"
+          in: "path"
+          description: "The monitor v1 id that needs to be fetched."
+          required: true
+          type: "string"
       responses:
         200:
           description: "successful operation"
@@ -475,7 +475,7 @@ definitions:
       id:
         type: "string"
         readOnly: true # This property will not be considered when creating a new resource, however, it is expected to
-                       # to be returned from the api, and will be saved as computed value in the terraform state file
+        # to be returned from the api, and will be saved as computed value in the terraform state file
       label:
         type: "string"
         x-terraform-immutable: true
@@ -538,11 +538,11 @@ definitions:
   ObjectProperty:
     type: object
     required:
-    - message
-    - detailedMessage
-    - exampleInt
-    - exampleNumber
-    - example_boolean
+      - message
+      - detailedMessage
+      - exampleInt
+      - exampleNumber
+      - example_boolean
     properties:
       message:
         type: string
@@ -559,8 +559,8 @@ definitions:
   LBV1:
     type: "object"
     required:
-    - name
-    - backends
+      - name
+      - backends
     properties:
       id:
         type: "string"
@@ -573,19 +573,19 @@ definitions:
         items:
           type: "string"
       status:
-#        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
+        #        x-terraform-field-status: true # identifies the field that should be used as status for async operations. This is handy when the field name is not status but some other name the service provider might have chosen and enables the provider to identify the field as the status field that will be used to track progress for the async operations
         description: lb resource status
         type: string
         readOnly: true
         enum: # this is just for documentation purposes and to let the consumer know what statues should be expected
-        - deploy_pending
-        - deploy_in_progress
-        - deploy_failed
-        - deployed
-        - delete_pending
-        - delete_in_progress
-        - delete_failed
-        - deleted
+          - deploy_pending
+          - deploy_in_progress
+          - deploy_failed
+          - deployed
+          - delete_pending
+          - delete_in_progress
+          - delete_failed
+          - deleted
       timeToProcess: # time that the resource will take to be processed in seconds
         type: integer
         default: 60 # it will take two minute to process the resource operation (POST/PUT/READ/DELETE)
@@ -607,7 +607,7 @@ definitions:
   MonitorV1:
     type: "object"
     required:
-    - name
+      - name
     properties:
       id:
         type: "string"
@@ -618,7 +618,7 @@ definitions:
   ContentDeliveryNetworkFirewallV1:
     type: "object"
     required:
-    - name
+      - name
     properties:
       id:
         type: "string"
@@ -630,8 +630,8 @@ definitions:
   Error:
     type: object
     required:
-    - code
-    - message
+      - code
+      - message
     properties:
       code:
         type: string

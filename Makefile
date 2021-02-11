@@ -75,6 +75,7 @@ show-terraform-version:
 # dockerhub-login logs into Docker if the environment variable PERFORM_DOCKER_LOGIN is set. This is used by Travis CI
 # to avoid Docker toomanyrequests: You have reached your pull rate limit.
 dockerhub-login:
+	@echo "[INFO] Logging into Docker Hub Enabled=$(PERFORM_DOCKER_LOGIN)"
 ifdef PERFORM_DOCKER_LOGIN
 	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
 endif
