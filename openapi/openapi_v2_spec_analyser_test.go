@@ -217,6 +217,960 @@ func Test_bodyParameterExists(t *testing.T) {
 	})
 }
 
+func Test_mergeRequestAndResponseSchemas(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		requestSchema        *spec.Schema
+		responseSchema       *spec.Schema
+		expectedMergedSchema *spec.Schema
+		expectedError        string
+	}{
+		{
+			name:                 "request schema is nil",
+			requestSchema:        nil,
+			responseSchema:       &spec.Schema{},
+			expectedMergedSchema: nil,
+			expectedError:        "resource missing request schema",
+		},
+		{
+			name:                 "response schema is nil",
+			requestSchema:        &spec.Schema{},
+			responseSchema:       nil,
+			expectedMergedSchema: nil,
+			expectedError:        "resource missing response schema",
+		},
+		{
+			name: "request schema contains more properties than response schema, this is not valid as response should always contain the request properties plus any other computed that is computed",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"optional_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: nil,
+			expectedError:        "resource response schema contains less properties than the request schema, response schema must contain the request schema properties to be able to merge both schemas",
+		},
+		{
+			name: "response schema is missing request schema properties",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: nil,
+			expectedError:        "resource's request schema property 'required_prop' not contained in the response schema",
+		},
+		{
+			name: "request properties contain readOnly properties and the response schema contains the request input properties (required/optional) as well as any other computed property",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"some_computed_property": { // readOnly props from the request schema are not considered in the final merged schema
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"some_computed_property": { // since the response schema also contains the some_computed_property it will be included in the final merged schema
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"some_computed_property": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "response contains properties that are not readOnly and the provide will automatically configure them as readOnly in the final merged schema",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some_property": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some_property": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+						"some_computed_property": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{}, // Not readOnly although it should
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some_property": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"some_computed_property": { // The merged schema converted automatically the response property as readOnly
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "request and response schemas are merged successfully, request's required properties are kept as is as well as the optional properties and any other response's computed property is merged into the final schema",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"optional_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"id", "optional_prop", "required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"optional_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"optional_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "request and response schemas are merged successfully, extensions in the response schema are kept as is",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"identifier_property": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfID: true,
+								},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"identifier_property": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfID: true,
+								},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "request and response schemas are merged successfully, extensions in the request schema are kept as is",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"id", "required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "request and response schemas are merged successfully, extensions in the request schema is nil and the response does have an extension",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "request and response schemas are merged successfully, extensions in the response schema is nil and the request does have an extension",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "request and response schemas are merged successfully, response schema extensions take preference when both the request and response have the same extension in a property and with different values",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_request_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"id", "required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_response_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									extTfFieldName: "required_response_preferred_name_prop",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "request and response schemas are merged successfully, final merged schema only keeps in the required list the required properties in the request schema",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"id"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedMergedSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		specV2Analyser := specV2Analyser{}
+		mergedSchema, err := specV2Analyser.mergeRequestAndResponseSchemas(tc.requestSchema, tc.responseSchema)
+		if tc.expectedError != "" {
+			assert.Equal(t, tc.expectedError, err.Error(), tc.name)
+		} else {
+			assert.Equal(t, tc.expectedMergedSchema, mergedSchema, tc.name)
+		}
+	}
+}
+
+func Test_schemaIsEqual(t *testing.T) {
+	testSchema := &spec.Schema{}
+	testCases := []struct {
+		name           string
+		requestSchema  *spec.Schema
+		responseSchema *spec.Schema
+		expectedOutput bool
+	}{
+		{
+			name:           "request schema and response schema are equal (empty schemas)",
+			requestSchema:  &spec.Schema{},
+			responseSchema: &spec.Schema{},
+			expectedOutput: true,
+		},
+		{
+			name:           "request schema and response schema are equal (same pointer)",
+			requestSchema:  testSchema,
+			responseSchema: testSchema,
+			expectedOutput: true,
+		},
+		{
+			name: "request schema and response schema are equal",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedOutput: true,
+		},
+		{
+			name: "request schema and response schema are equal (though the properties are not in the same order)",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"required_prop": { // changing order here on purpose to see if it makes any difference
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedOutput: true,
+		},
+		{
+			name: "request schema and response schema are NOT equal (request schema contains required props while response schema does not)",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedOutput: false,
+		},
+		{
+			name: "request schema and response schema are NOT equal (they are completely different)",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some_property": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"some_other_property": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedOutput: false,
+		},
+		{
+			name: "request schema and response schema are NOT equal (request schema contains properties with extensions and response schema does not)",
+			requestSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+							VendorExtensible: spec.VendorExtensible{
+								Extensions: spec.Extensions{
+									"x-terraform-field-name": "required_prop_preferred_name",
+								},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Required: []string{"required_prop"},
+					Properties: map[string]spec.Schema{
+						"id": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{
+								ReadOnly: true,
+							},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+						"required_prop": {
+							SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{"string"},
+							},
+						},
+					},
+				},
+			},
+			expectedOutput: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		specV2Analyser := specV2Analyser{}
+		isEqual := specV2Analyser.schemaIsEqual(tc.requestSchema, tc.responseSchema)
+		assert.Equal(t, tc.expectedOutput, isEqual, tc.name)
+	}
+}
+
 func Test_getSuccessfulResponseDefinition(t *testing.T) {
 	testCases := []struct {
 		name           string
@@ -506,6 +1460,8 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		defer os.Remove(externalRefFile.Name())
 
 		var swaggerJSON = createSwaggerWithExternalRef(externalRefFile.Name())
+
+		log.Println(swaggerJSON)
 
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
@@ -1648,6 +2604,123 @@ definitions:
 		})
 	})
 
+	Convey("Given an specV2Analyser with a terraform compliant root with a POST's request payload model without the id property and the returned payload and the GET operation have it", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/UsersInputPayload"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+definitions:
+  UsersInputPayload: # only used in POST request payload
+    type: "object"
+    required:
+      - label
+    properties:
+      label:
+        type: "string"
+  UsersOutputPayload: # used in both POST response payload and GET response payload (must return any input field plus all computed)
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
+			resourceRootPath, _, resourceRootPostSchemaDef, err := a.validateRootPath("/users/{id}")
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+				So(resourceRootPath, ShouldContainSubstring, "/users")
+				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "id")
+				So(resourceRootPostSchemaDef.Properties["id"].ReadOnly, ShouldBeTrue)
+				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "label")
+				So(resourceRootPostSchemaDef.Required, ShouldResemble, []string{"label"})
+				So(resourceRootPostSchemaDef.Properties["label"].ReadOnly, ShouldBeFalse)
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a terraform compliant root with a POST's request payload model with some computed properties and the response payload containing both the expected input props (required/optional) as well as any other computed property part of the response payload. This use case covers models ", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/UsersInputPayload"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+definitions:
+  UsersInputPayload: # only used in POST request payload, readOnly properties will be ignored
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+  UsersOutputPayload: # used in both POST response payload and GET response payload (must return any input field plus any other computed that may be autogenerated)
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
+			resourceRootPath, _, resourceRootPostSchemaDef, err := a.validateRootPath("/users/{id}")
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+				So(resourceRootPath, ShouldContainSubstring, "/users")
+				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "id")
+				So(resourceRootPostSchemaDef.Properties["id"].ReadOnly, ShouldBeTrue)
+				So(resourceRootPostSchemaDef.Properties, ShouldContainKey, "label")
+				So(resourceRootPostSchemaDef.Required, ShouldResemble, []string{"label"})
+				So(resourceRootPostSchemaDef.Properties["label"].ReadOnly, ShouldBeFalse)
+			})
+		})
+	})
+
 	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameter and contains a successful response 201 with a schema that has only readonly properties", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
@@ -2135,6 +3208,58 @@ definitions:
         readOnly: true
       name:
         type: "string"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When isEndPointFullyTerraformResourceCompliant method is called ", func() {
+			resourceRootPath, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+				So(resourceRootPath, ShouldEqual, "/users")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a fully terraform compliant resource Users with a POST's request payload model without the id property and the returned payload and the GET operation have it", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/UsersInputPayload"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+definitions:
+  UsersInputPayload: # only used in POST request payload
+    type: "object"
+    required:
+      - label
+    properties:
+      label:
+        type: "string"
+  UsersOutputPayload: # used in both POST response payload and GET response payload (must return any input field plus all computed)
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+        readOnly: true`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When isEndPointFullyTerraformResourceCompliant method is called ", func() {
 			resourceRootPath, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
@@ -2640,54 +3765,54 @@ definitions:
 func TestGetTerraformCompliantResources(t *testing.T) {
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform subresource /v1/cdns/{id}/v1/firewalls but missing the parent resource resource description", t, func() {
 		swaggerContent := `swagger: "2.0"
-host: 127.0.0.1 
+host: 127.0.0.1
 paths:
 
-  ######################
-  ## CDN sub-resource
-  ######################
+ ######################
+ ## CDN sub-resource
+ ######################
 
-  /v1/cdns/{parent_id}/v1/firewalls:
-    post:
-      parameters:
-      - name: "parent_id"
-        in: "path"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-  /v1/cdns/{parent_id}/v1/firewalls/{id}:
-    get:
-      parameters:
-      - name: "parent_id"
-        in: "path"
-        required: true
-        type: "string"
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+ /v1/cdns/{parent_id}/v1/firewalls:
+   post:
+     parameters:
+     - name: "parent_id"
+       in: "path"
+       required: true
+       type: "string"
+     - in: "body"
+       name: "body"
+       required: true
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+ /v1/cdns/{parent_id}/v1/firewalls/{id}:
+   get:
+     parameters:
+     - name: "parent_id"
+       in: "path"
+       required: true
+       type: "string"
+     - name: "id"
+       in: "path"
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
 definitions:
-  ContentDeliveryNetworkFirewallV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"`
+ ContentDeliveryNetworkFirewallV1:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     label:
+       type: "string"`
 
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
@@ -2702,38 +3827,38 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a resource where the name can not be computed", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
-  /^&:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-  /^&/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+ /^&:
+   post:
+     parameters:
+     - in: "body"
+       name: "body"
+       required: true
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+ /^&/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 definitions:
-  ContentDeliveryNetworkFirewallV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"`
+ ContentDeliveryNetworkFirewallV1:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     label:
+       type: "string"`
 
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
@@ -2747,151 +3872,151 @@ definitions:
 
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform parent resource /v1/cdns that uses a preferred resource name and a terraform compatible subresource /v1/cdns/{id}/v1/firewalls", t, func() {
 		swaggerContent := `swagger: "2.0"
-host: 127.0.0.1 
+host: 127.0.0.1
 paths:
 
-  ######################
-  ## CDN parent resource 
-  ######################
+ ######################
+ ## CDN parent resource
+ ######################
 
-  /v1/cdns:
-    post:
-      x-terraform-resource-name: "cdn"
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-  /v1/cdns/{cdn_id}:
-    get:
-      parameters:
-      - name: "cdn_id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-
-  ######################
-  ## CDN sub-resource
-  ######################
-
-  /v1/cdns/{cdn_id}/v1/firewalls:
-    get:
-      summary: List cdns firewalls
-      parameters:
-      - name: cdn_id
-      in: path
-      required: true
-      type: string
-      responses:
-       '200':
-         description: OK
+ /v1/cdns:
+   post:
+     x-terraform-resource-name: "cdn"
+     parameters:
+     - in: "body"
+       name: "body"
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetworkV1"
+     responses:
+       201:
          schema:
-           $ref: '#/definitions/ContentDeliveryNetworkFirewallV1Collection'
-    post:
-      x-terraform-resource-host: 178.168.3.4
-      parameters:
-      - name: "cdn_id"
-        in: "path"
-        description: "The cdn id that contains the firewall to be fetched."
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Created CDN firewall"
-        required: true
+           $ref: "#/definitions/ContentDeliveryNetworkV1"
+ /v1/cdns/{cdn_id}:
+   get:
+     parameters:
+     - name: "cdn_id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkV1"
+
+ ######################
+ ## CDN sub-resource
+ ######################
+
+ /v1/cdns/{cdn_id}/v1/firewalls:
+   get:
+     summary: List cdns firewalls
+     parameters:
+     - name: cdn_id
+     in: path
+     required: true
+     type: string
+     responses:
+      '200':
+        description: OK
         schema:
-          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-  /v1/cdns/{cdn_id}/v1/firewalls/{id}:
-    get:
-      parameters:
-      - name: "cdn_id"
-        in: "path"
-        description: "The cdn id that contains the firewall to be fetched."
-        required: true
-        type: "string"
-      - name: "id"
-        in: "path"
-        description: "The cdn firewall id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-    delete:
-      parameters: 
-        - description: "The cdn id that contains the firewall to be fetched."
-          in: path
-          name: parent_id
-          required: true
-          type: string
-        - description: "The cdn firewall id that needs to be fetched."
-          in: path
-          name: id
-          required: true
-          type: string
-      responses: 
-        204:
-    put:
-      x-terraform-resource-timeout: "300s"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "firewall that needs to be updated"
-        required: true
-        type: "string"
-      - name: "parent_id"
-        in: "path"
-        description: "cdn which this firewall belongs to"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated firewall object"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+          $ref: '#/definitions/ContentDeliveryNetworkFirewallV1Collection'
+   post:
+     x-terraform-resource-host: 178.168.3.4
+     parameters:
+     - name: "cdn_id"
+       in: "path"
+       description: "The cdn id that contains the firewall to be fetched."
+       required: true
+       type: "string"
+     - in: "body"
+       name: "body"
+       description: "Created CDN firewall"
+       required: true
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+ /v1/cdns/{cdn_id}/v1/firewalls/{id}:
+   get:
+     parameters:
+     - name: "cdn_id"
+       in: "path"
+       description: "The cdn id that contains the firewall to be fetched."
+       required: true
+       type: "string"
+     - name: "id"
+       in: "path"
+       description: "The cdn firewall id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+   delete:
+     parameters:
+       - description: "The cdn id that contains the firewall to be fetched."
+         in: path
+         name: parent_id
+         required: true
+         type: string
+       - description: "The cdn firewall id that needs to be fetched."
+         in: path
+         name: id
+         required: true
+         type: string
+     responses:
+       204:
+   put:
+     x-terraform-resource-timeout: "300s"
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "firewall that needs to be updated"
+       required: true
+       type: "string"
+     - name: "parent_id"
+       in: "path"
+       description: "cdn which this firewall belongs to"
+       required: true
+       type: "string"
+     - in: "body"
+       name: "body"
+       description: "Updated firewall object"
+       required: true
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetworkFirewallV1"
 
 definitions:
-  ContentDeliveryNetworkFirewallV1Collection:
-    type: array
-    items:
-      $ref: '#/definitions/ContentDeliveryNetworkFirewallV1'
-  ContentDeliveryNetworkFirewallV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"
-  ContentDeliveryNetworkV1:
-    type: "object"
-    required:
-      - label
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"`
+ ContentDeliveryNetworkFirewallV1Collection:
+   type: array
+   items:
+     $ref: '#/definitions/ContentDeliveryNetworkFirewallV1'
+ ContentDeliveryNetworkFirewallV1:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     label:
+       type: "string"
+ ContentDeliveryNetworkV1:
+   type: "object"
+   required:
+     - label
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     label:
+       type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -2949,37 +4074,37 @@ definitions:
 		swaggerContent := `swagger: "2.0"
 x-terraform-resource-regions-keyword: "sea1"
 paths:
-  /v1/cdns:
-    post:
-      x-terraform-resource-host: some.subdomain.${keyword}.domain.com
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
-  /v1/cdns/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns:
+   post:
+     x-terraform-resource-host: some.subdomain.${keyword}.domain.com
+     parameters:
+     - in: "body"
+       name: "body"
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetwork"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
 definitions:
-  ContentDeliveryNetwork:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true`
+ ContentDeliveryNetwork:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -3019,22 +4144,20 @@ definitions:
 		})
 	})
 
-	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns with a POST's request payload model without the id property and the returned payload and the GET operation have it'", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /v1/cdns:
     post:
-      x-terraform-resource-timeout: "5s"
-      x-terraform-resource-host: some-host.com
       parameters:
       - in: "body"
         name: "body"
         schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
+          $ref: "#/definitions/ContentDeliveryNetworkInputV1"
       responses:
         201:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+            $ref: "#/definitions/ContentDeliveryNetworkOutputV1"
   /v1/cdns/{id}:
     get:
       parameters:
@@ -3046,63 +4169,150 @@ paths:
       responses:
         200:
           schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
-    put:
-      parameters:
-      - name: "id"
-        in: "path"
-        type: "string"
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
-    delete:
-      parameters:
-      - name: "id"
-        in: "path"
-        type: "string"
-      responses:
-        204:
-          description: "successful operation, no content is returned"
-  /non/compliant:
-    post: # this path post operation is missing a reference to the schema definition (commented out)
-      parameters:
-      - in: "body"
-        name: "body"
-      #  schema:
-      #    $ref: "#/definitions/NonCompliant"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/NonCompliant"
-  /non/compliant/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/NonCompliant"
+            $ref: "#/definitions/ContentDeliveryNetworkOutputV1"
 definitions:
-  ContentDeliveryNetwork:
+  ContentDeliveryNetworkInputV1: # only used in POST request payload
+    type: "object"
+    required:
+      - label
+    properties:
+      label:
+        type: "string"
+  ContentDeliveryNetworkOutputV1: # used in both POST response payload and GET response payload (must return any input field plus all computed)
     type: "object"
     properties:
       id:
         type: "string"
         readOnly: true
-  NonCompliant:
-    type: "object"
-    properties:
-      id:
+      label:
         type: "string"
         readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When GetTerraformCompliantResources method is called ", func() {
+			terraformCompliantResources, err := a.GetTerraformCompliantResources()
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+				// the resources info map should only contain a resource called cdns_v1
+				So(len(terraformCompliantResources), ShouldEqual, 1)
+				So(terraformCompliantResources[0].GetResourceName(), ShouldEqual, "cdns_v1")
+				cndV1Resource := terraformCompliantResources[0]
+				// the cndV1Resource should not be considered a subresource
+				subRes := cndV1Resource.GetParentResourceInfo()
+				So(err, ShouldBeNil)
+				So(subRes, ShouldBeNil)
+				// the resource operations are attached to the resource schema (GET,POST,PUT,DELETE) as stated in the YAML
+				resOperation := cndV1Resource.getResourceOperations()
+				So(resOperation.Get.responses, ShouldContainKey, 200)
+				So(resOperation.Post.responses, ShouldContainKey, 201)
+				So(resOperation.Put, ShouldBeNil)
+				So(resOperation.Delete, ShouldBeNil)
+				// each operation exposed on the resource has a nil timeout
+				timeoutSpec, err := cndV1Resource.getTimeouts()
+				So(err, ShouldBeNil)
+				So(timeoutSpec.Post, ShouldBeNil)
+				So(timeoutSpec.Get, ShouldBeNil)
+				So(timeoutSpec.Put, ShouldBeNil)
+				So(timeoutSpec.Delete, ShouldBeNil)
+				// the host is correctly configured according to the swagger
+				host, err := cndV1Resource.getHost()
+				So(err, ShouldBeNil)
+				So(host, ShouldBeEmpty)
+				// the resource schema contains the one property specified in the ContentDeliveryNetwork model definition
+				actualResourceSchema, err := cndV1Resource.GetResourceSchema()
+				So(err, ShouldBeNil)
+				So(len(actualResourceSchema.Properties), ShouldEqual, 2)
+				exists, _ := assertPropertyExists(actualResourceSchema.Properties, "id")
+				So(exists, ShouldBeTrue)
+				exists, _ = assertPropertyExists(actualResourceSchema.Properties, "label")
+				So(exists, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns and some non compliant paths", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+ /v1/cdns:
+   post:
+     x-terraform-resource-timeout: "5s"
+     x-terraform-resource-host: some-host.com
+     parameters:
+     - in: "body"
+       name: "body"
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetwork"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
+   put:
+     parameters:
+     - name: "id"
+       in: "path"
+       type: "string"
+     - in: "body"
+       name: "body"
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetwork"
+     responses:
+       200:
+         description: "successful operation"
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
+   delete:
+     parameters:
+     - name: "id"
+       in: "path"
+       type: "string"
+     responses:
+       204:
+         description: "successful operation, no content is returned"
+ /non/compliant:
+   post: # this path post operation is missing a reference to the schema definition (commented out)
+     parameters:
+     - in: "body"
+       name: "body"
+     #  schema:
+     #    $ref: "#/definitions/NonCompliant"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/NonCompliant"
+ /non/compliant/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/NonCompliant"
+definitions:
+ ContentDeliveryNetwork:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+ NonCompliant:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -3144,40 +4354,40 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array of strings", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
-  /v1/cdns:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
-  /v1/cdns/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns:
+   post:
+     parameters:
+     - in: "body"
+       name: "body"
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetwork"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
 definitions:
-  ContentDeliveryNetwork:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      listeners:
-        type: array
-        items:
-          type: "string"`
+ ContentDeliveryNetwork:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     listeners:
+       type: array
+       items:
+         type: "string"`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -3204,47 +4414,47 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (using ref)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
-  /v1/cdns:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
-  /v1/cdns/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns:
+   post:
+     parameters:
+     - in: "body"
+       name: "body"
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetwork"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
 definitions:
-  ContentDeliveryNetwork:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      listeners:
-        type: array
-        items:
-          $ref: '#/definitions/Listener'
-  Listener:
-    type: object
-    required:
-      - protocol
-    properties:
-      protocol:
-        type: string`
+ ContentDeliveryNetwork:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     listeners:
+       type: array
+       items:
+         $ref: '#/definitions/Listener'
+ Listener:
+   type: object
+   required:
+     - protocol
+   properties:
+     protocol:
+       type: string`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -3326,45 +4536,45 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource /v1/cdns that has a property being an array objects (nested configuration)", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
-  /v1/cdns:
-    post:
-      parameters:
-      - in: "body"
-        name: "body"
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetwork"
-      responses:
-        201:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
-  /v1/cdns/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns:
+   post:
+     parameters:
+     - in: "body"
+       name: "body"
+       schema:
+         $ref: "#/definitions/ContentDeliveryNetwork"
+     responses:
+       201:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
+ /v1/cdns/{id}:
+   get:
+     parameters:
+     - name: "id"
+       in: "path"
+       description: "The cdn id that needs to be fetched."
+       required: true
+       type: "string"
+     responses:
+       200:
+         schema:
+           $ref: "#/definitions/ContentDeliveryNetwork"
 definitions:
-  ContentDeliveryNetwork:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      listeners:
-        type: array
-        items:
-          type: object
-          required:
-          - protocol
-          properties:
-            protocol:
-              type: string`
+ ContentDeliveryNetwork:
+   type: "object"
+   properties:
+     id:
+       type: "string"
+       readOnly: true
+     listeners:
+       type: array
+       items:
+         type: object
+         required:
+         - protocol
+         properties:
+           protocol:
+             type: string`
 		a := initAPISpecAnalyser(swaggerContent)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
 			terraformCompliantResources, err := a.GetTerraformCompliantResources()
@@ -3392,30 +4602,30 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a non compliant terraform resource /v1/cdns because its missing the post operation", t, func() {
 		var swaggerJSON = `
 {
-   "swagger":"2.0",
-   "paths":{
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
-            }
-         }
-      }
-   }
+  "swagger":"2.0",
+  "paths":{
+     "/v1/cdns/{id}":{
+        "get":{
+           "summary":"Get cdn by id"
+        },
+        "put":{
+           "summary":"Updated cdn"
+        },
+        "delete":{
+           "summary":"Delete cdn"
+        }
+     }
+  },
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "type":"object",
+        "properties":{
+           "id":{
+              "type":"string"
+           }
+        }
+     }
+  }
 }`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
@@ -3430,46 +4640,53 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a compliant terraform resource that has the 'x-terraform-exclude-resource' with value true", t, func() {
 		var swaggerJSON = `
 {
-   "swagger":"2.0",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "x-terraform-exclude-resource": true,
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
+  "swagger":"2.0",
+  "paths":{
+     "/v1/cdns":{
+        "post":{
+           "x-terraform-exclude-resource": true,
+           "summary":"Create cdn",
+           "parameters":[
+              {
+                 "in":"body",
+                 "name":"body",
+                 "description":"Created CDN",
+                 "schema":{
+                    "$ref":"#/definitions/ContentDeliveryNetwork"
+                 }
+              }
+           ],
+            "responses": {
+               "201": {
+                  "schema": {
+                     "$ref": "#/definitions/ContentDeliveryNetwork"
                   }
                }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
             }
-         }
-      }
-   }
+        }
+     },
+     "/v1/cdns/{id}":{
+        "get":{
+           "summary":"Get cdn by id"
+        },
+        "put":{
+           "summary":"Updated cdn"
+        },
+        "delete":{
+           "summary":"Delete cdn"
+        }
+     }
+  },
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "type":"object",
+        "properties":{
+           "id":{
+              "type":"string"
+           }
+        }
+     }
+  }
 }`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
@@ -3484,46 +4701,51 @@ definitions:
 	Convey("Given an specV2Analyser loaded with a swagger file containing a schema ref that is empty", t, func() {
 		var swaggerJSON = `
 {
-   "swagger":"2.0",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "x-terraform-exclude-resource": true,
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":""
-                  }
+  "swagger":"2.0",
+  "paths":{
+     "/v1/cdns":{
+        "post":{
+           "x-terraform-exclude-resource": true,
+           "summary":"Create cdn",
+           "parameters":[
+              {
+                 "in":"body",
+                 "name":"body",
+                 "description":"Created CDN",
+                 "schema":{
+                    "$ref":""
+                 }
+              }
+           ],
+            "responses": {
+               "201": {
+                  "schema": "#/definitions/ContentDeliveryNetwork"
                }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
             }
-         }
-      }
-   }
+        }
+     },
+     "/v1/cdns/{id}":{
+        "get":{
+           "summary":"Get cdn by id"
+        },
+        "put":{
+           "summary":"Updated cdn"
+        },
+        "delete":{
+           "summary":"Delete cdn"
+        }
+     }
+  },
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "type":"object",
+        "properties":{
+           "id":{
+              "type":"string"
+           }
+        }
+     }
+  }
 }`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called ", func() {
@@ -3538,47 +4760,47 @@ definitions:
 	Convey("Given a swagger doc that exposes a resource with not valid multi region configuration (x-terraform-resource-regions-serviceProviderName is missing", t, func() {
 		var swaggerJSON = `
 {
-   "swagger":"2.0",
-   "x-terraform-resource-regions-someOtherServiceProvider": "rst, dub",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "x-terraform-resource-host": "some.api.${serviceProviderName}.domain.com",
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
-                  }
-               }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
-            }
-         }
-      }
-   }
+  "swagger":"2.0",
+  "x-terraform-resource-regions-someOtherServiceProvider": "rst, dub",
+  "paths":{
+     "/v1/cdns":{
+        "post":{
+           "x-terraform-resource-host": "some.api.${serviceProviderName}.domain.com",
+           "summary":"Create cdn",
+           "parameters":[
+              {
+                 "in":"body",
+                 "name":"body",
+                 "description":"Created CDN",
+                 "schema":{
+                    "$ref":"#/definitions/ContentDeliveryNetwork"
+                 }
+              }
+           ]
+        }
+     },
+     "/v1/cdns/{id}":{
+        "get":{
+           "summary":"Get cdn by id"
+        },
+        "put":{
+           "summary":"Updated cdn"
+        },
+        "delete":{
+           "summary":"Delete cdn"
+        }
+     }
+  },
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "type":"object",
+        "properties":{
+           "id":{
+              "type":"string"
+           }
+        }
+     }
+  }
 }`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called", func() {
@@ -3592,47 +4814,47 @@ definitions:
 	Convey("Given a swagger doc that exposes a resource with a multi region configuration but missing region", t, func() {
 		var swaggerJSON = `
 {
-   "swagger":"2.0",
-   "x-terraform-resource-regions-serviceProviderName": "",
-   "paths":{
-      "/v1/cdns":{
-         "post":{
-            "x-terraform-resource-host": "some.api.${serviceProviderName}.domain.com",
-            "summary":"Create cdn",
-            "parameters":[
-               {
-                  "in":"body",
-                  "name":"body",
-                  "description":"Created CDN",
-                  "schema":{
-                     "$ref":"#/definitions/ContentDeliveryNetwork"
-                  }
-               }
-            ]
-         }
-      },
-      "/v1/cdns/{id}":{
-         "get":{
-            "summary":"Get cdn by id"
-         },
-         "put":{
-            "summary":"Updated cdn"
-         },
-         "delete":{
-            "summary":"Delete cdn"
-         }
-      }
-   },
-   "definitions":{
-      "ContentDeliveryNetwork":{
-         "type":"object",
-         "properties":{
-            "id":{
-               "type":"string"
-            }
-         }
-      }
-   }
+  "swagger":"2.0",
+  "x-terraform-resource-regions-serviceProviderName": "",
+  "paths":{
+     "/v1/cdns":{
+        "post":{
+           "x-terraform-resource-host": "some.api.${serviceProviderName}.domain.com",
+           "summary":"Create cdn",
+           "parameters":[
+              {
+                 "in":"body",
+                 "name":"body",
+                 "description":"Created CDN",
+                 "schema":{
+                    "$ref":"#/definitions/ContentDeliveryNetwork"
+                 }
+              }
+           ]
+        }
+     },
+     "/v1/cdns/{id}":{
+        "get":{
+           "summary":"Get cdn by id"
+        },
+        "put":{
+           "summary":"Updated cdn"
+        },
+        "delete":{
+           "summary":"Delete cdn"
+        }
+     }
+  },
+  "definitions":{
+     "ContentDeliveryNetwork":{
+        "type":"object",
+        "properties":{
+           "id":{
+              "type":"string"
+           }
+        }
+     }
+  }
 }`
 		a := initAPISpecAnalyser(swaggerJSON)
 		Convey("When GetTerraformCompliantResources method is called", func() {
@@ -3680,7 +4902,14 @@ func createSwaggerWithExternalRef(filename string) string {
                      "$ref":"#/definitions/ContentDeliveryNetwork"
                   }
                }
-            ]
+            ],
+            "responses": {
+               "201": {
+                  "schema":{
+                     "$ref":"#/definitions/ContentDeliveryNetwork"
+                  }
+               }
+            }
          }
       },
       "/v1/cdns/{id}":{

@@ -3,13 +3,12 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -269,6 +268,118 @@ definitions:
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
+
+				// the provider configuration function should not be nil
+				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a local server that exposes a swagger file containing a terraform compatible resource cdn where the POST (request) model only includes input properties (required/optional) and the POST (response) model includes the request properties as readOnly and any other computed property", t, func() {
+		swaggerContent := `swagger: "2.0"
+host: "localhost:8443"
+basePath: "/api"
+
+schemes:
+- "https"
+
+paths:
+  /v1/cdns:
+    post:
+      summary: "Create cdn"
+      x-terraform-resource-name: "cdn"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkInputV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkOutputV1"
+  /v1/cdns/{id}:
+    get:
+      summary: "Get cdn by id"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkOutputV1"
+
+definitions:
+  ContentDeliveryNetworkInputV1: # only used in POST request payload
+    type: "object"
+    required:
+      - label
+    properties:
+      label:
+        type: "string"
+  ContentDeliveryNetworkOutputV1: # used in both POST response payload and GET response payload
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+        readOnly: true`
+
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(swaggerContent))
+		}))
+
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			providerName := "openapi"
+			p := ProviderOpenAPI{ProviderName: providerName}
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+
+			Convey("Then the error should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the provider returned should be configured as expected and the the error should be nil", func() {
+				So(tfProvider, ShouldNotBeNil)
+				So(tfProvider.Schema, ShouldNotBeNil)
+				// the provider resource map should contain the cdn resource with the expected configuration
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				resourceName := fmt.Sprintf("%s_cdn_v1", providerName)
+				So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+				So(tfProvider.ResourcesMap, ShouldNotBeNil)
+				resourceName = fmt.Sprintf("%s_cdn_v1", providerName)
+				So(tfProvider.ResourcesMap, ShouldContainKey, resourceName)
+				So(tfProvider.ResourcesMap[resourceName].Schema, ShouldContainKey, "label")
+				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Required, ShouldBeTrue)
+				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Computed, ShouldBeFalse)
+				So(tfProvider.ResourcesMap[resourceName].CreateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].UpdateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].DeleteContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
+
+				// the provider data source map should contain the cdn data source instance with the expected configuration
+				So(tfProvider.DataSourcesMap, ShouldNotBeNil)
+				dataSourceInstanceName := fmt.Sprintf("%s_cdn_v1_instance", providerName)
+				So(tfProvider.DataSourcesMap, ShouldContainKey, dataSourceInstanceName)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "id")
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Required, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["id"].Computed, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema, ShouldContainKey, "label")
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Required, ShouldBeFalse)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Computed, ShouldBeTrue)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].CreateContext, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].UpdateContext, ShouldBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].DeleteContext, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
 
 				// the provider configuration function should not be nil
