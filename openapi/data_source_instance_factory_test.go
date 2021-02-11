@@ -58,7 +58,8 @@ func TestCreateTerraformInstanceDataSource(t *testing.T) {
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
 			assert.NotNil(t, dataSource, tc.name)
-			assert.NotNil(t, dataSource.Read, tc.name)
+			assert.NotNil(t, dataSource.ReadContext, tc.name)
+			assert.Nil(t, dataSource.Read, tc.name)
 			assert.Nil(t, dataSource.Delete, tc.name)
 			assert.Nil(t, dataSource.Create, tc.name)
 			assert.Nil(t, dataSource.Update, tc.name)

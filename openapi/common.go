@@ -1,8 +1,10 @@
 package openapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,6 +14,22 @@ import (
 	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapierr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+func crudWithContext(crudFunc func(data *schema.ResourceData, i interface{}) error, timeoutFor string, resourceName string) func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics {
+	return func(ctx context.Context, data *schema.ResourceData, i interface{}) diag.Diagnostics {
+		errChan := make(chan error, 1)
+		go func() { errChan <- crudFunc(data, i) }()
+		select {
+		case <-ctx.Done():
+			return diag.Errorf("%s: '%s' %s timeout is %s", ctx.Err(), resourceName, timeoutFor, data.Timeout(timeoutFor))
+		case err := <-errChan:
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		return nil
+	}
+}
 
 func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expectedHTTPStatusCodes []int) error {
 	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {

@@ -234,7 +234,8 @@ definitions:
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Required, ShouldBeFalse)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Computed, ShouldBeTrue)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
-				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
@@ -267,7 +268,8 @@ definitions:
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Required, ShouldBeFalse)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Computed, ShouldBeTrue)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
-				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
@@ -377,7 +379,8 @@ definitions:
 				So(elements["values"].Type, ShouldEqual, schema.TypeList)
 
 				// the provider cdn-datasource data source should have only the READ operation configured
-				So(tfProvider.DataSourcesMap[resourceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[resourceName].Read, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[resourceName].Create, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[resourceName].Delete, ShouldBeNil)
 
@@ -450,7 +453,8 @@ definitions:
 				elements := tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Elem.(*schema.Resource).Schema
 				So(elements["name"].Type, ShouldEqual, schema.TypeString)
 				So(elements["values"].Type, ShouldEqual, schema.TypeList)
-				So(tfProvider.DataSourcesMap[dataSourceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceName].Read, ShouldBeNil)
 				So(tfProvider.ResourcesMap, ShouldBeEmpty)
 				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
 			})

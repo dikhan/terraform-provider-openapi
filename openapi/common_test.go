@@ -1,18 +1,78 @@
 package openapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-openapi/spec"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestCRUDWithContext(t *testing.T) {
+	Convey("Given a create function (which returns successfully), a create timeout and a resource name", t, func() {
+		stubCreateFunction := func(data *schema.ResourceData, i interface{}) error {
+			return nil // this means the function returned successfully
+		}
+		createTimeout := 1 * time.Second
+		resourceName := "cdn_v1"
+		Convey("When crudWithContext is called", func() {
+			contextAwareFunc := crudWithContext(stubCreateFunction, schema.TimeoutCreate, resourceName)
+			Convey("Then the returned function which is context aware should not timeout and return an empty diagnosis", func() {
+				ctx := context.Background()
+				ctx, cancel := context.WithTimeout(ctx, createTimeout)
+				defer cancel()
+				diagnosis := contextAwareFunc(ctx, &schema.ResourceData{}, nil)
+				So(diagnosis, ShouldBeEmpty)
+			})
+		})
+	})
+	Convey("Given a create function (which returns an error), a create timeout and a resource name", t, func() {
+		expectedError := "some error"
+		stubCreateFunction := func(data *schema.ResourceData, i interface{}) error {
+			return errors.New(expectedError)
+		}
+		createTimeout := 1 * time.Second
+		resourceName := "cdn_v1"
+		Convey("When crudWithContext is called", func() {
+			contextAwareFunc := crudWithContext(stubCreateFunction, schema.TimeoutCreate, resourceName)
+			Convey("Then the returned function which is context aware should not timeout and return the error from the create function", func() {
+				ctx := context.Background()
+				ctx, cancel := context.WithTimeout(ctx, createTimeout)
+				defer cancel()
+				diagnosis := contextAwareFunc(ctx, &schema.ResourceData{}, nil)
+				So(diagnosis, ShouldNotBeEmpty)
+				So(diagnosis[0].Summary, ShouldEqual, expectedError)
+			})
+		})
+	})
+	Convey("Given a create function (configured to timeout on purpose), a create timeout and a resource name", t, func() {
+		stubCreateFunction := func(data *schema.ResourceData, i interface{}) error {
+			time.Sleep(2 * time.Second)
+			return nil
+		}
+		createTimeout := 1 * time.Second
+		resourceName := "cdn_v1"
+		Convey("When crudWithContext is called", func() {
+			contextAwareFunc := crudWithContext(stubCreateFunction, schema.TimeoutCreate, resourceName)
+			Convey("Then the returned function which is context aware should time out since the create operation takes longer than the context timeout", func() {
+				ctx := context.Background()
+				ctx, cancel := context.WithTimeout(ctx, createTimeout)
+				defer cancel()
+				diagnosis := contextAwareFunc(ctx, &schema.ResourceData{}, nil)
+				So(diagnosis, ShouldNotBeEmpty)
+				So(diagnosis[0].Summary, ShouldEqual, "context deadline exceeded: 'cdn_v1' create timeout is 20m0s") // the 20m0s is the default timeout if the openAPIResource is not configured with specific timeouts
+			})
+		})
+	})
+}
 
 func TestCheckHTTPStatusCode(t *testing.T) {
 	testCases := []struct {
