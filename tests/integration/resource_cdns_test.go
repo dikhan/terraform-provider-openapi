@@ -7,13 +7,13 @@ import (
 
 	"regexp"
 
-	"github.com/dikhan/terraform-provider-openapi/v2/examples/swaggercodegen/api/api"
+	"github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 const resourcePathCDN = "/v1/cdns"
-const resouceSchemaDefinitionNameCDN = "ContentDeliveryNetworkV1"
+const resourceSchemaDefinitionNameCDN = "ContentDeliveryNetworkV1"
 
 const resourceCDNName = "cdn_v1"
 
@@ -941,9 +941,9 @@ resource "%s" "%s" {
 //
 // Check all CDNs specified in the configuration have been destroyed.
 func testCheckCDNsV1Destroy(state *terraform.State) error {
-	return testCheckDestroy(state, openAPIResourceNameCDN, resourceCDNName, resourcePathCDN, resouceSchemaDefinitionNameCDN)
+	return testCheckDestroy(state, openAPIResourceNameCDN, resourceCDNName, resourcePathCDN, resourceSchemaDefinitionNameCDN)
 }
 
 func testAccCheckResourceExistCDN() resource.TestCheckFunc {
-	return testAccCheckResourceExist(openAPIResourceNameCDN, resourceCDNName, resourcePathCDN, resouceSchemaDefinitionNameCDN)
+	return testAccCheckResourceExist(openAPIResourceNameCDN, resourceCDNName, resourcePathCDN, resourceSchemaDefinitionNameCDN)
 }
