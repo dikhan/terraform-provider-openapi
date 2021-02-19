@@ -19,6 +19,7 @@ type specStubResource struct {
 
 	funcGetResourcePath   func(parentIDs []string) (string, error)
 	funcGetResourceSchema func() (*SpecSchemaDefinition, error)
+	funcGetTimeouts       func() (*specTimeouts, error)
 	error                 error
 }
 
@@ -72,6 +73,9 @@ func (s *specStubResource) getResourceOperations() specResourceOperations {
 }
 
 func (s *specStubResource) getTimeouts() (*specTimeouts, error) {
+	if s.funcGetTimeouts != nil {
+		return s.funcGetTimeouts()
+	}
 	return s.timeouts, nil
 }
 

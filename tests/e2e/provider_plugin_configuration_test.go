@@ -2,9 +2,9 @@ package e2e
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
@@ -148,11 +148,10 @@ services:
 	provider, err := p.CreateSchemaProvider()
 	assert.NoError(t, err)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -188,22 +187,16 @@ data "openapi_cdns_v1_instance" "my_cdn" {
 							return fmt.Errorf("expected header `some_header` in the metric API not received or not expected value received: %s", headersReceived.Get("some_header"))
 						}
 						expectedPluginVersionMetric := `{"metric_type":"IncCounter","metric_name":"terraform.openapi_plugin_version.total_runs","tags":["openapi_plugin_version:dev"]}`
-						if metricsReceived[0] != expectedPluginVersionMetric {
-							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[0], expectedPluginVersionMetric)
-						}
-						expectedDataSourceInstanceMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1_instance","terraform_operation:read"]}`
-						err := assertMetricExists(expectedDataSourceInstanceMetric, metricsReceived, []int{1, 2})
-						if err != nil {
+						if err := assertMetricExists(expectedPluginVersionMetric, metricsReceived); err != nil {
 							return err
 						}
-						expectedDataSourceWithFiltersMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1","terraform_operation:read"]}`
-						err = assertMetricExists(expectedDataSourceWithFiltersMetric, metricsReceived, []int{1, 2})
-						if err != nil {
+						expectedDataSourceInstanceMetric := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:data_cdns_v1_instance","terraform_operation:read"]}`
+						if err := assertMetricExists(expectedDataSourceInstanceMetric, metricsReceived); err != nil {
 							return err
 						}
 						expectedResourceMetrics := `{"metric_type":"IncCounter","metric_name":"terraform.provider","tags":["provider_name:openapi","resource_name:cdns_v1","terraform_operation:create"]}`
-						if metricsReceived[5] != expectedResourceMetrics {
-							return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metricsReceived[4], expectedResourceMetrics)
+						if err := assertMetricExists(expectedResourceMetrics, metricsReceived); err != nil {
+							return err
 						}
 						return nil
 					},
@@ -214,13 +207,13 @@ data "openapi_cdns_v1_instance" "my_cdn" {
 	os.Unsetenv(otfVarPluginConfigEnvVariableName)
 }
 
-func assertMetricExists(expectedMetric string, metrics []string, expectedIdx []int) error {
-	for _, idx := range expectedIdx {
-		if metrics[idx] == expectedMetric {
+func assertMetricExists(expectedMetric string, metrics []string) error {
+	for _, metric := range metrics {
+		if metric == expectedMetric {
 			return nil
 		}
 	}
-	return fmt.Errorf("metrics received [%s] don't match the expected ones [%s]", metrics, expectedMetric)
+	return fmt.Errorf("metrics received [%s] don't contain the expected one [%s]", metrics, expectedMetric)
 }
 
 // TestAcc_ProviderConfiguration_PluginExternalFile_GraphiteTelemetry confirms regressions introduced in the logic related to the plugin
@@ -319,11 +312,20 @@ services:
 	provider, err := p.CreateSchemaProvider()
 	assert.NoError(t, err)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
+	// Locking test to a fixed TF version to be able to assert the output more predictably since due to the channels the data received
+	// is consumed sequentially, otherwise the TF testing framework will download the latest version of TF CLI which is not assured will
+	// match the behaviour asserted below. Considering the assertions below are meant to test that the UDP server actually got the expected
+	// metrics based on the graphite telemetry config; it's not important how Terraform handled the calls (which can vary depending on the
+	// version and it's an implementation detail that should not affect the outcome of the test).
+	// Note: Making a conscious decision here to lock this particular test to a specific version instead of having a more robust solution
+	// like using Docker for the builds (configured with a locked go and terraform version) for the sake of more agile software development AND
+	// also for documentation purposes so it's clear in the test itself the rational. This decision might be revisited if more
+	// tests need a locked TF version; in which case other solutions might be preferable.
+	os.Setenv("TF_ACC_TERRAFORM_VERSION", "0.13.5")
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`resource "openapi_cdns_v1" "my_cdn" { label = "some_label"}`),
@@ -341,6 +343,7 @@ services:
 		},
 	})
 	os.Unsetenv(otfVarPluginConfigEnvVariableName)
+	os.Unsetenv("TF_ACC_TERRAFORM_VERSION")
 }
 
 func assertExpectedMetric(t *testing.T, metricChannel *chan string, expectedMetric string) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const dataSourceInstanceIDProperty = "id"
@@ -29,8 +29,8 @@ func (d dataSourceInstanceFactory) createTerraformInstanceDataSource() (*schema.
 		return nil, err
 	}
 	return &schema.Resource{
-		Schema: s,
-		Read:   d.read,
+		Schema:      s,
+		ReadContext: crudWithContext(d.read, schema.TimeoutRead, d.openAPIResource.GetResourceName()),
 	}, nil
 }
 

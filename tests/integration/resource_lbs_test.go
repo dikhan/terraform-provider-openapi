@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/dikhan/terraform-provider-openapi/examples/swaggercodegen/api/api"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 const resourceNameLB = "lbs_v1"
@@ -29,10 +29,10 @@ func init() {
 
 func TestAccLB_Create(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		IsUnitTest:   true,
-		CheckDestroy: testCheckLBsV1Destroy(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		IsUnitTest:        true,
+		CheckDestroy:      testCheckLBsV1Destroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigLB,
@@ -49,9 +49,9 @@ func TestAccLB_Create(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 		},
@@ -62,9 +62,9 @@ func TestAccLB_Update(t *testing.T) {
 	var lbUpdated = newLB("some_name_updated", []string{"backend2.com"}, 1, false)
 	testLBUpdatedConfig := populateTemplateConfigurationLB(lbUpdated.Name, lbUpdated.Backends, lbUpdated.TimeToProcess, lbUpdated.SimulateFailure)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckLBsV1Destroy(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckLBsV1Destroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigLB,
@@ -81,9 +81,9 @@ func TestAccLB_Update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 			{
@@ -101,9 +101,9 @@ func TestAccLB_Update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lbUpdated.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 		},
@@ -114,9 +114,9 @@ func TestAccLB_Destroy(t *testing.T) {
 	var lbUpdated = newLB("some_name_updated", []string{"backend2.com"}, 1, false)
 	testLBUpdatedConfig := populateTemplateConfigurationLB(lbUpdated.Name, lbUpdated.Backends, lbUpdated.TimeToProcess, lbUpdated.SimulateFailure)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckLBsV1Destroy(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckLBsV1Destroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testCreateConfigLB,
@@ -133,9 +133,9 @@ func TestAccLB_Destroy(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateLB, "simulate_failure", fmt.Sprintf("%v", lb.SimulateFailure)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.%", fmt.Sprintf("%d", 1)),
+						openAPIResourceStateLB, "new_status.#", fmt.Sprintf("%d", 1)),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateLB, "new_status.status", "deployed"),
+						openAPIResourceStateLB, "new_status.0.status", "deployed"),
 				),
 			},
 			{
@@ -149,16 +149,17 @@ func TestAccLB_Destroy(t *testing.T) {
 	})
 }
 
-// resource create operation is configured with x-terraform-resource-timeout: "1s"
+// LB resource create operation is configured with x-terraform-resource-timeout: "2s"
+// - See endpoint `/v1/lbs` POST operation configuration at examples/swaggercodegen/api/resources/swagger.yaml
 func TestAccLB_CreateTimeout(t *testing.T) {
 	timeToProcess := 3
 	lb = newLB("some_name", []string{"backend.com"}, timeToProcess, false)
 	testCreateConfigLB = populateTemplateConfigurationLB(lb.Name, lb.Backends, lb.TimeToProcess, lb.SimulateFailure)
-	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed' \\(last state: 'deploy_in_progress', timeout: 2s\\).*")
+	expectedValidationError, _ := regexp.Compile(".* context deadline exceeded: 'lbs_v1' create timeout is 2s.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckLBsV1DestroyWithDelay(timeToProcess + 1), // wait long enough so polling timeouts; otherwise
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckLBsV1DestroyWithDelay(timeToProcess + 1), // wait long enough so polling timeouts; otherwise
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,
@@ -186,11 +187,10 @@ resource "%s" "%s" {
   }
 }`, providerName, openAPIResourceNameLB, openAPIResourceInstanceNameLB, lb.Name, arrayToString(lb.Backends), timeToProcess, lb.SimulateFailure)
 
-	expectedValidationError, _ := regexp.Compile(".*timeout while waiting for state to become 'deployed'*")
+	expectedValidationError, _ := regexp.Compile(".*context deadline exceeded: 'lbs_v1' create timeout is 0s*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:   func() { testAccPreCheck(t) },
-		IsUnitTest: true,
-		Providers:  testAccProviders,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,
@@ -220,9 +220,9 @@ resource "%s" "%s" {
 
 	expectedValidationError, _ := regexp.Compile(".*An argument named \"delete\" is not expected here.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:   func() { testAccPreCheck(t) },
-		IsUnitTest: true,
-		Providers:  testAccProviders,
+		PreCheck:          func() { testAccPreCheck(t) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,
@@ -239,9 +239,9 @@ func TestAccLB_CreateFailureSimulation(t *testing.T) {
 	testCreateConfigLB = populateTemplateConfigurationLB(lb.Name, lb.Backends, lb.TimeToProcess, lb.SimulateFailure)
 	expectedValidationError, _ := regexp.Compile(".*unexpected state 'deploy_failed', wanted target 'deployed'.*")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckLBsV1Destroy(), // wait long enough so polling timeouts; otherwise
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckLBsV1Destroy(), // wait long enough so polling timeouts; otherwise
 		Steps: []resource.TestStep{
 			{
 				Config:      testCreateConfigLB,

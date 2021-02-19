@@ -1,8 +1,8 @@
 package openapiterraformdocsgenerator
 
 import (
-	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/terraformutils"
 )
 
 // specAnalyserStub is a stubbed spec analyser used for testing purposes that implements the SpecAnalyser interface

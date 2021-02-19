@@ -3,10 +3,10 @@ package openapi
 import (
 	"bytes"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"hash/crc32"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -58,7 +58,8 @@ func TestEndpointsToHash(t *testing.T) {
 				m[resourceName] = "something to get the string representation from"
 				var buf bytes.Buffer
 				buf.WriteString(fmt.Sprintf("%s-", m[resourceName].(string)))
-				So(schemaSetFunction(m), ShouldEqual, hashcode.String(buf.String()))
+				// Terraform SDK 2.0 upgrade: https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#removal-of-helper-hashcode-package
+				So(schemaSetFunction(m), ShouldEqual, int(crc32.ChecksumIEEE(buf.Bytes())))
 			})
 		})
 	})

@@ -36,12 +36,15 @@ rather than the tooling around it.
 
 ### Pre-requirements
 
--   The service provider hosts APIs compliant with OpenApi and swagger spec file is available via a discovery endpoint.
+- The service provider hosts APIs documented using [OpenApi 2.0 specification](https://swagger.io/specification/v2/) and the APIs
+comply with the OpenAPI Terraform Provider [How to](docs/how_to.md) guidelines. The service provider API's OpenAPI document must also 
+be available via a discovery endpoint served through HTTP/s or the file system.
 
 ### Requirements
 
-- [Terraform](https://www.terraform.io/downloads.html) v0.12.0 (to execute the terraform provider plugin)
-- [Go](https://golang.org/doc/install) 1.12.4 (to build the provider plugin)
+- [Terraform](https://www.terraform.io/downloads.html) >= v0.12.0 (to execute the terraform provider plugin)
+  - If you are using Terraform 0.11, refer to the latest [OpenAPI Terraform provider v0.13.1 released](https://github.com/dikhan/terraform-provider-openapi/releases/tag/v0.31.1) compatible with Terraform 0.11.
+- [Go](https://golang.org/doc/install) >=1.14 (to build the provider plugin)
   - This project uses [go modules](https://github.com/golang/go/wiki/Modules) for dependency management
 - [Docker](https://www.docker.com/) 17.09.0-ce (to run service provider example)
 - [Docker-compose](https://docs.docker.com/compose/) 1.16.1 (to run service provider example)
@@ -51,16 +54,16 @@ rather than the tooling around it.
 
 ### Things to know regarding custom terraform providers
 
-- Terraform expects third party providers to be manually installed in the '.terraform.d/plugins' sub-path in your user's home directory.
+- Terraform expects third party (in-house) providers to be manually installed in a specific directory. Refer to the [OpenAPI Terraform provider installation instructions](#openapi-terraform-provider-installation) to
+learn more about this.
 - Terraform expects terraform provider names to follow a specific naming scheme. The naming scheme for plugins is 
-``terraform-<type>-NAME_vX.Y.Z``, where type is either provider or provisioner. 
+``terraform-<type>-<name>_vX.Y.Z``, where `<type>` is either provider or provisioner, `<name>` is the provider's name and `X.Y.Z` is the version of the plugin.
 
 More information about how terraform discovers third party terraform providers and naming conventions [here](https://www.terraform.io/docs/extend/how-terraform-works.html#discovery).
 
 ### OpenAPI Terraform provider installation
 
-There are multiple ways how the OpenAPI Terraform provider can be installed. Please
-refer to the [OpenAPI Terraform provider installation document](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/installing_openapi_provider.md)
+There are multiple ways how the OpenAPI Terraform provider can be installed. Please refer to the [OpenAPI Terraform provider installation document](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/installing_openapi_provider.md)
 to learn more about it.
 
 ### OpenAPI Terraform provider in action
@@ -77,13 +80,14 @@ library. The OpenAPI document is the source of truth for both the OpenAPI Terraf
 
 Additionally, the following documents provide deep insight regarding OpenAPI and Terraform as well as frequently asked questions:
 
-- [How to](docs/how_to.md) document contains information about how to define a swagger file following good practises that
+- [How to](docs/how_to.md) document contains information about how to define a OpenAPI document following good practises that
 make it work seamlessly with this terraform provider. Additionally, learn more about what is currently supported.
 - [Migrating to Terraform 0.12](./docs/terraform_version_upgrades/upgrading_to_terraform_0.12.md). This document describes
 how to update configuration created using Terraform v0.11 to v0.12.
 - [FAQ](./docs/faq.md) document answers for the most frequently asked questions.
 
 ## Contributing
+
 Please follow the guidelines from:
 
  - [Contributor Guidelines](.github/CONTRIBUTING.md)

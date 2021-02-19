@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -215,10 +215,10 @@ definitions:
 				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Type, ShouldEqual, schema.TypeString)
 				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Required, ShouldBeTrue)
 				So(tfProvider.ResourcesMap[resourceName].Schema["label"].Computed, ShouldBeFalse)
-				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].CreateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].UpdateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].DeleteContext, ShouldNotBeNil)
 				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
 
 				// the provider data source map should contain the cdn data source instance with the expected configuration
@@ -234,7 +234,8 @@ definitions:
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Required, ShouldBeFalse)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["label"].Computed, ShouldBeTrue)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
-				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
@@ -248,10 +249,10 @@ definitions:
 				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Type, ShouldEqual, schema.TypeString)
 				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Required, ShouldBeTrue)
 				So(tfProvider.ResourcesMap[resourceName].Schema["name"].Computed, ShouldBeFalse)
-				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].CreateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].UpdateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].DeleteContext, ShouldNotBeNil)
 				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
 
 				// the provider data source map should contain the firewall data source instance with the expected configuration
@@ -267,7 +268,8 @@ definitions:
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Required, ShouldBeFalse)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Schema["name"].Computed, ShouldBeTrue)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Create, ShouldBeNil)
-				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Read, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Update, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Delete, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[dataSourceInstanceName].Importer, ShouldBeNil)
@@ -364,7 +366,7 @@ definitions:
 				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["int_property"], schema.TypeInt)
 				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["bool_property"], schema.TypeBool)
 				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["float_property"], schema.TypeFloat)
-				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeMap)
+				assertDataSourceSchemaProperty(t, tfProvider.DataSourcesMap[resourceName].Schema["obj_property"], schema.TypeList)
 
 				So(tfProvider.DataSourcesMap[resourceName].Schema, ShouldContainKey, "filter")
 				So(tfProvider.DataSourcesMap[resourceName].Schema["filter"].Type, ShouldEqual, schema.TypeSet)
@@ -377,7 +379,8 @@ definitions:
 				So(elements["values"].Type, ShouldEqual, schema.TypeList)
 
 				// the provider cdn-datasource data source should have only the READ operation configured
-				So(tfProvider.DataSourcesMap[resourceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[resourceName].Read, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[resourceName].Create, ShouldBeNil)
 				So(tfProvider.DataSourcesMap[resourceName].Delete, ShouldBeNil)
 
@@ -450,7 +453,8 @@ definitions:
 				elements := tfProvider.DataSourcesMap[dataSourceName].Schema["filter"].Elem.(*schema.Resource).Schema
 				So(elements["name"].Type, ShouldEqual, schema.TypeString)
 				So(elements["values"].Type, ShouldEqual, schema.TypeList)
-				So(tfProvider.DataSourcesMap[dataSourceName].Read, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.DataSourcesMap[dataSourceName].Read, ShouldBeNil)
 				So(tfProvider.ResourcesMap, ShouldBeEmpty)
 				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
 			})
@@ -550,15 +554,15 @@ definitions:
 				assertTerraformSchemaNestedObjectProperty(t, tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"], false, false)
 				nestedObject := tfProvider.ResourcesMap[resourceName].Schema["object_nested_scheme_property"]
 				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["name"], schema.TypeString, false, true)
-				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["object_property"], schema.TypeMap, false, false)
+				assertTerraformSchemaProperty(t, nestedObject.Elem.(*schema.Resource).Schema["object_property"], schema.TypeList, false, false)
 				object := nestedObject.Elem.(*schema.Resource).Schema["object_property"]
 				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["account"], schema.TypeString, false, false)
 				assertTerraformSchemaProperty(t, object.Elem.(*schema.Resource).Schema["read_only"], schema.TypeString, false, true)
 
-				So(tfProvider.ResourcesMap[resourceName].Create, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Read, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Update, ShouldNotBeNil)
-				So(tfProvider.ResourcesMap[resourceName].Delete, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].CreateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].ReadContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].UpdateContext, ShouldNotBeNil)
+				So(tfProvider.ResourcesMap[resourceName].DeleteContext, ShouldNotBeNil)
 				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
 
 				So(tfProvider.ConfigureFunc, ShouldNotBeNil)

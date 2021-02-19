@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    swaggercodegen = {
+      source  = "terraform.example.com/examplecorp/swaggercodegen"
+      version = ">= 2.0.0"
+    }
+  }
+}
+
 provider "swaggercodegen" {
   ## the example server is expecting the api key to have 'apiKeyValue' (it's hard coded)
   ## auth testing can be done by tweaking this value to be something else
@@ -18,7 +27,7 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   optional_computed              = "optional_computed value"
   optional_computed_with_default = "optional_computed_with_default value"
 
-  object_property = {
+  object_property {
     message          = "some message news2"
     detailed_message = "some message news with details"
     example_int      = 11
@@ -37,8 +46,8 @@ resource "swaggercodegen_cdn_v1" "my_cdn" {
   }
 }
 
-resource "swaggercodegen_cdns_v1_firewalls_v1" "my_cdn_firewall_v1" {
-  cdns_v1_id = swaggercodegen_cdn_v1.my_cdn.id
+resource "swaggercodegen_cdn_v1_firewalls_v1" "my_cdn_firewall_v1" {
+  cdn_v1_id = swaggercodegen_cdn_v1.my_cdn.id
   name = "my firewall fancy name"
 }
 
@@ -50,16 +59,16 @@ resource "swaggercodegen_cdn_v1" "my_cdn2" {
   ips       = ["127.0.0.2"] ## This is a force-new property (refer to swagger file)
   hostnames = ["origin.com"]
 
-  example_int                      = swaggercodegen_cdn_v1.my_cdn.object_property.example_int
-  better_example_number_field_name = swaggercodegen_cdn_v1.my_cdn.object_property.example_number
-  example_boolean                  = swaggercodegen_cdn_v1.my_cdn.object_property.example_boolean
+  example_int                      = swaggercodegen_cdn_v1.my_cdn.object_property[0].example_int
+  better_example_number_field_name = swaggercodegen_cdn_v1.my_cdn.object_property[0].example_number
+  example_boolean                  = swaggercodegen_cdn_v1.my_cdn.object_property[0].example_boolean
 
-  object_property = {
+  object_property {
     message          = "some message news2"
     detailed_message = "some message news with details"
-    example_int      = swaggercodegen_cdn_v1.my_cdn.object_property.example_int
-    example_number   = swaggercodegen_cdn_v1.my_cdn.object_property.example_number
-    example_boolean  = swaggercodegen_cdn_v1.my_cdn.object_property.example_boolean
+    example_int      = swaggercodegen_cdn_v1.my_cdn.object_property[0].example_int
+    example_number   = swaggercodegen_cdn_v1.my_cdn.object_property[0].example_number
+    example_boolean  = swaggercodegen_cdn_v1.my_cdn.object_property[0].example_boolean
   }
 
   dynamic "array_of_objects_example" {

@@ -3,9 +3,9 @@ package openapi
 import (
 	"bytes"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapiutils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"hash/crc32"
 )
 
 type providerConfigurationEndPoints struct {
@@ -55,7 +55,8 @@ func (p *providerConfigurationEndPoints) endpointsToHash(resources []string) sch
 		for _, name := range resources {
 			buf.WriteString(fmt.Sprintf("%s-", m[name].(string)))
 		}
-		return hashcode.String(buf.String())
+		// Terraform SDK 2.0 upgrade: https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#removal-of-helper-hashcode-package
+		return int(crc32.ChecksumIEEE(buf.Bytes()))
 	}
 }
 

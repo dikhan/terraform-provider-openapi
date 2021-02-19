@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapiutils"
 	"github.com/go-openapi/spec"
 )
 
@@ -56,7 +56,6 @@ const extTfFieldName = "x-terraform-field-name"
 const extTfFieldStatus = "x-terraform-field-status"
 const extTfID = "x-terraform-id"
 const extTfComputed = "x-terraform-computed"
-const extTfComplexObjectType = "x-terraform-complex-object-legacy-config"
 const extTfIgnoreOrder = "x-terraform-ignore-order"
 const extIgnoreOrder = "x-ignore-order"
 
@@ -513,10 +512,6 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 	if o.isBoolExtensionEnabled(property.Extensions, extTfFieldStatus) {
 		schemaDefinitionProperty.IsStatusIdentifier = true
-	}
-
-	if o.isBoolExtensionEnabled(property.Extensions, extTfComplexObjectType) {
-		schemaDefinitionProperty.EnableLegacyComplexObjectBlockConfiguration = true
 	}
 
 	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default

@@ -2,17 +2,17 @@ package openapi
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/version"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/version"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/dikhan/terraform-provider-openapi/openapi/terraformutils"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/terraformutils"
 
 	"log"
 
 	"github.com/dikhan/http_goclient"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type providerFactory struct {

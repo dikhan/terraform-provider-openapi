@@ -6,10 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
-	"github.com/dikhan/terraform-provider-openapi/openapi"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -124,11 +122,10 @@ resource "openapi_cdn_v1" "my_cdn_v1" {
 	label = "my_label"
 }`)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,

@@ -2,13 +2,22 @@ package e2e
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"
 	"testing"
 )
+
+func testAccProviders(provider *schema.Provider) map[string]func() (*schema.Provider, error) {
+	return map[string]func() (*schema.Provider, error){
+		providerName: func() (*schema.Provider, error) {
+			return provider, nil
+		},
+	}
+}
 
 func assertExpectedRequestURI(t *testing.T, expectedRequestURI string, r *http.Request) {
 	if r.RequestURI != expectedRequestURI {
@@ -40,20 +49,18 @@ func testAccCheckWhetherResourceExist(resourceInstancesToCheck map[string]string
 
 func testAccCheckDestroy(resourceInstancesToCheck map[string]string) func(state *terraform.State) error {
 	return func(s *terraform.State) error {
+		if len(s.RootModule().Resources) == 0 {
+			return nil
+		}
 		for openAPIResourceName, resourceInstancePath := range resourceInstancesToCheck {
-			resourceExistsInState := false
 			for _, res := range s.RootModule().Resources {
 				if res.Type != openAPIResourceName {
 					continue
 				}
-				resourceExistsInState = true
 				err := checkResourceIsDestroyed(resourceInstancePath, res.Primary.ID)
 				if err != nil {
-					return fmt.Errorf("API returned a non expected status code when checking if resource %s was destroy properly (GET %s/%s): %s", openAPIResourceName, resourceInstancePath, res.Primary.ID, err)
+					return fmt.Errorf("API returned a non expected status code when checking if resource %s was destroyed properly (GET %s/%s): %s", openAPIResourceName, resourceInstancePath, res.Primary.ID, err)
 				}
-			}
-			if !resourceExistsInState {
-				return fmt.Errorf("expected resource '%s' does not exist in the state file", openAPIResourceName)
 			}
 		}
 		return nil

@@ -2,8 +2,8 @@ package integration
 
 import (
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
@@ -39,9 +39,9 @@ resource "%s" "my_cdn" {
   hostnames = ["%s"]
 }`, providerName, openAPIResourceNameCDN, cdn.Label, arrayToString(cdn.Ips), arrayToString(cdn.Hostnames))
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCDNCreateConfigWithoutProviderAuthProperty,
@@ -80,9 +80,9 @@ services:
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCDNCreateConfigWithoutProviderAuthProperty,
@@ -127,9 +127,9 @@ services:
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCDNCreateConfigWithoutProviderAuthProperty,
@@ -175,9 +175,9 @@ services:
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCDNCreateConfigWithoutProviderAuthProperty,
@@ -224,9 +224,9 @@ services:
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
-		CheckDestroy: testCheckCDNsV1Destroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: getTestAccProviderInitWithPluginConfigurationFile(file.Name()),
+		CheckDestroy:      testCheckCDNsV1Destroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testCDNCreateConfigWithoutProviderAuthProperty,

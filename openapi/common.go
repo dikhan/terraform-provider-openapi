@@ -1,17 +1,35 @@
 package openapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
 	"strconv"
 
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapierr"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+func crudWithContext(crudFunc func(data *schema.ResourceData, i interface{}) error, timeoutFor string, resourceName string) func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics {
+	return func(ctx context.Context, data *schema.ResourceData, i interface{}) diag.Diagnostics {
+		errChan := make(chan error, 1)
+		go func() { errChan <- crudFunc(data, i) }()
+		select {
+		case <-ctx.Done():
+			return diag.Errorf("%s: '%s' %s timeout is %s", ctx.Err(), resourceName, timeoutFor, data.Timeout(timeoutFor))
+		case err := <-errChan:
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		return nil
+	}
+}
 
 func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expectedHTTPStatusCodes []int) error {
 	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
@@ -116,7 +134,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 			propValue = processIgnoreOrderIfEnabled(*property, desiredValue, propertyRemoteValue)
 		}
 
-		value, err := convertPayloadToLocalStateDataValue(property, propValue, false)
+		value, err := convertPayloadToLocalStateDataValue(property, propValue)
 		if err != nil {
 			return err
 		}
@@ -174,7 +192,7 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 	return remoteValue
 }
 
-func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty, propertyValue interface{}, useString bool) (interface{}, error) {
+func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty, propertyValue interface{}) (interface{}, error) {
 	if propertyValue == nil {
 		return nil, nil
 	}
@@ -191,11 +209,7 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 			var propValue interface{}
 			// Here we are processing the items of the list which are objects. In this case we need to keep the original
 			// types as Terraform honors property types for resource schemas attached to TypeList properties
-			if property.isArrayOfObjectsProperty() {
-				propValue, err = convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, false)
-			} else { // Here we need to use strings as values as terraform typeMap only supports string items
-				propValue, err = convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, true)
-			}
+			propValue, err = convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue)
 			if err != nil {
 				return nil, err
 			}
@@ -219,7 +233,7 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 			arrayInput := []interface{}{}
 			arrayValue := propertyValue.([]interface{})
 			for _, arrayItem := range arrayValue {
-				objectValue, err := convertPayloadToLocalStateDataValue(property, arrayItem, false)
+				objectValue, err := convertPayloadToLocalStateDataValue(property, arrayItem)
 				if err != nil {
 					return err, nil
 				}
@@ -231,36 +245,15 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 	case reflect.String:
 		return propertyValue.(string), nil
 	case reflect.Int:
-		if useString {
-			return fmt.Sprintf("%d", propertyValue.(int)), nil
-		}
 		return propertyValue.(int), nil
 	case reflect.Float64:
 		// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
 		// an actual int or if not then casting to float64
 		if property.Type == TypeInt {
-			if useString {
-				return fmt.Sprintf("%d", int(propertyValue.(float64))), nil
-			}
 			return int(propertyValue.(float64)), nil
-		}
-		if useString {
-			// For some reason after apply the state for object configurations is saved with values "0.00" but subsequent plans find diffs saying that the value changed from "0.00" to "0"
-			// Adding this check for the time being to avoid the above diffs
-			if propertyValue.(float64) == 0 {
-				return "0", nil
-			}
-			return fmt.Sprintf("%.2f", propertyValue.(float64)), nil
 		}
 		return propertyValue.(float64), nil
 	case reflect.Bool:
-		if useString {
-			// this is only applicable to objects
-			if propertyValue.(bool) {
-				return fmt.Sprintf("true"), nil
-			}
-			return fmt.Sprintf("false"), nil
-		}
 		return propertyValue.(bool), nil
 	default:
 		return nil, fmt.Errorf("'%s' type not supported", dataValueKind)

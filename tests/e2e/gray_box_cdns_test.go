@@ -10,13 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"github.com/dikhan/terraform-provider-openapi/openapi"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -238,17 +237,8 @@ definitions:
       computed_property:
         type: "string"
         readOnly: true
-      object_property_argument: # option 1 (handling objects with complex property types and configurations - eg: computed)
+      object_property_block: # Due to lack of support in Terraform for TypeMap with Elem *Resource; the only option available at the moment is to treat objects as TypeList with Elem *Resource and MaxItems 1. This will handle both simple objects as well as objects with complex property types (mix of types and even nested objects) and configurations - eg: computed)
         type: "object"
-        properties:
-          account:
-            type: string
-          object_read_only_property:
-            type: string
-            readOnly: true
-      object_property_block: # option 2 (handling objects with complex property types and configurations - eg: computed)
-        type: "object"
-        x-terraform-complex-object-legacy-config: true
         properties:
           account:
             type: string
@@ -309,7 +299,6 @@ func (a *api) handleCDNRequest(t *testing.T) map[string]http.HandlerFunc {
 "id":%s,
 "label":"%s",
 "computed_property": "some auto-generated value",
-"object_property_argument": {"account":"my_account", "object_read_only_property": "some computed value for object read only"},
 "object_property_block": {"account":"my_account", "object_read_only_property": "some computed value for object read only"}
 }`, expectedCDNID, expectedCDNLabel)
 
@@ -378,18 +367,16 @@ func (a *api) apiGetResponse(t *testing.T, w http.ResponseWriter, r *http.Reques
 func (a *api) apiListResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
 	cdnList := []map[string]interface{}{
 		{
-			"id":                       expectedCDNID,
-			"label":                    expectedCDNLabel,
-			"computed_property":        "some auto-generated value",
-			"object_property_argument": map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
-			"object_property_block":    map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
+			"id":                    expectedCDNID,
+			"label":                 expectedCDNLabel,
+			"computed_property":     "some auto-generated value",
+			"object_property_block": map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
 		},
 		{
-			"id":                       "some other id",
-			"label":                    "some other label",
-			"computed_property":        "some auto-generated value",
-			"object_property_argument": map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
-			"object_property_block":    map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
+			"id":                    "some other id",
+			"label":                 "some other label",
+			"computed_property":     "some auto-generated value",
+			"object_property_block": map[string]string{"account": "my_account", "object_read_only_property": "some computed value for object read only"},
 		},
 	}
 	response, err := json.Marshal(cdnList)
@@ -436,6 +423,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 	if responseBody != "" {
 		w.Write([]byte(responseBody))
 	}
+	//fmt.Printf("%d response body >>> %s\n", httpResponseStatusCode, responseBody)
 }
 
 func TestAccCDN_CreateResourceWithIgnoreListOrderExtension(t *testing.T) {
@@ -535,11 +523,10 @@ resource "openapi_cdn_v1" "my_cdn" {
 	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 	assert.NoError(t, err)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
 				ExpectNonEmptyPlan: false,
@@ -576,12 +563,11 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
 	}
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest:   true,
-		Providers:    testAccProviders,
-		PreCheck:     func() { testAccPreCheck(t, api.swaggerURL) },
-		CheckDestroy: testAccCheckDestroy(resourceInstancesToCheck),
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
+		CheckDestroy:      testAccCheckDestroy(resourceInstancesToCheck),
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,
@@ -595,15 +581,6 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "computed_property", "some auto-generated value"),
 
-					// option 1
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property_argument.%", "2"),
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property_argument.account", "my_account"),
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property_argument.object_read_only_property", "some computed value for object read only"),
-
-					// option 2 (chosen)
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property_block.#", "1"),
 					resource.TestCheckResourceAttr(
@@ -626,15 +603,6 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "computed_property", "some auto-generated value"),
 
-					// option 1
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property_argument.%", "2"),
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property_argument.account", "my_account"),
-					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "object_property_argument.object_read_only_property", "some computed value for object read only"),
-
-					// option 2
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "object_property_block.#", "1"),
 					resource.TestCheckResourceAttr(
@@ -660,7 +628,6 @@ func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testin
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	testCDNCreateMissingParentPropertyInFW := fmt.Sprintf(`
 		# URI /v1/cdns/
 		resource "%s" "%s" {
@@ -672,10 +639,10 @@ func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testin
            label = "%s"
         }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedCDNFirewallLabel)
 
-	expectedValidationError, _ := regexp.Compile(".*config is invalid: Missing required argument: The argument \"cdn_v1_id\" is required, but no definition was found.*")
+	expectedValidationError, _ := regexp.Compile(".*The argument \"cdn_v1_id\" is required, but no definition was found.*")
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:                true,
-		Providers:                 testAccProviders,
+		ProviderFactories:         testAccProviders(provider),
 		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			{
@@ -708,12 +675,11 @@ func TestAccCDN_ImportSubResource(t *testing.T) {
 		openAPIResourceNameCDN:         fmt.Sprintf("%s/v1/cdns", api.apiHost),
 	}
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest:   true,
-		Providers:    testAccProviders,
-		PreCheck:     func() { testAccPreCheck(t, api.swaggerURL) },
-		CheckDestroy: testAccCheckDestroy(resourceInstancesToCheck),
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
+		CheckDestroy:      testAccCheckDestroy(resourceInstancesToCheck),
 		Steps: []resource.TestStep{
 			{
 				Config:        tfFileContents,
@@ -749,11 +715,10 @@ func TestAccCDN_DataSource(t *testing.T) {
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, api.swaggerURL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,
@@ -777,7 +742,6 @@ func TestAccCDN_DataSourceInstance(t *testing.T) {
 "id":%s,
 "label":"%s",
 "computed_property": "some auto-generated value",
-"object_property_argument": {"account":"my_account", "object_read_only_property": "some computed value for object read only"},
 "object_property_block": {"account":"my_account", "object_read_only_property": "some computed value for object read only"}
 }`, expectedCDNID, expectedCDNLabel),
 	}
@@ -794,11 +758,10 @@ func TestAccCDN_DataSourceInstance(t *testing.T) {
 	assert.NoError(t, err)
 	assertProviderSchema(t, provider)
 
-	var testAccProviders = map[string]terraform.ResourceProvider{providerName: provider}
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Providers:  testAccProviders,
-		PreCheck:   func() { testAccPreCheck(t, api.swaggerURL) },
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, api.swaggerURL) },
 		Steps: []resource.TestStep{
 			{
 				Config: tfFileContents,
@@ -834,14 +797,12 @@ func assertProviderSchema(t *testing.T, provider *schema.Provider) {
 	assert.Nil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["id"])
 	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["label"])
 	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["computed_property"])
-	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["object_property_argument"])
 	assert.NotNil(t, provider.DataSourcesMap[openAPIResourceNameCDN].Schema["object_property_block"])
 
 	openAPIDataSourceInstanceCDN := openAPIResourceNameCDN + "_instance"
 	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["id"]) // data source instance expects only one property from the user called 'id'. Hence, checking that is configured as expected
 	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["label"])
 	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["computed_property"])
-	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["object_property_argument"])
 	assert.NotNil(t, provider.DataSourcesMap[openAPIDataSourceInstanceCDN].Schema["object_property_block"])
 }
 
@@ -852,12 +813,6 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
 		  object_property_block {
 		   account = "my_account"
 		  }
-
-		  object_property_argument = {
-		   account = "my_account"
-           object_read_only_property = "some computed value for object read only" // This is the workaround users will have to do in order to fix the diff issues with objects that contain readOnly properties
-		  }
-
 		}
 		# URI /v1/cdns/{parent_id}/v1/firewalls/
         resource "%s" "%s" {

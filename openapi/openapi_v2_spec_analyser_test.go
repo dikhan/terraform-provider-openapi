@@ -583,7 +583,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 		Convey("When newSpecAnalyserV2 method is called", func() {
 			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
 			Convey("Then the error returned should be the expected error", func() {
-				So(err.Error(), ShouldContainSubstring, "error = read .: is a directory")
+				So(err.Error(), ShouldContainSubstring, "error = object has no key \"ContentDeliveryNetwork\"")
 				So(specAnalyserV2, ShouldBeNil)
 			})
 		})
@@ -3531,25 +3531,6 @@ definitions:
 			Convey("Then the terraformCompliantResources map should be empty since the resource ref is empty", func() {
 				So(err, ShouldBeNil)
 				So(terraformCompliantResources, ShouldBeEmpty)
-			})
-		})
-	})
-
-	Convey("Given a valid swagger doc where a definition has a ref to an external definition hosted somewhere else (in this case an HTTP server)", t, func() {
-		var swaggerJSON = createSwaggerWithExternalRef("//not.a.user@%66%6f%6f.com/just/a/path/also")
-
-		swaggerFile := initAPISpecFile(swaggerJSON)
-		defer os.Remove(swaggerFile.Name())
-
-		Convey("When newSpecAnalyserV2 method is called", func() {
-			specAnalyserV2, err := newSpecAnalyserV2(swaggerFile.Name())
-			Convey("Then the result returned should be the expected one", func() {
-				So(err, ShouldBeNil)
-				So(specAnalyserV2, ShouldNotBeNil)
-
-				specResources, err := specAnalyserV2.GetTerraformCompliantResources()
-				So(err, ShouldBeNil)
-				So(specResources, ShouldBeEmpty)
 			})
 		})
 	})

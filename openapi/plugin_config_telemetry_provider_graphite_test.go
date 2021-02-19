@@ -79,7 +79,7 @@ func TestTelemetryProviderGraphite_IncOpenAPIPluginVersionTotalRunsCounter_BadHo
 		Convey("When the GetTelemetryProviderConfiguration method is called", func() {
 			err := tpg.IncOpenAPIPluginVersionTotalRunsCounter(openAPIPluginVersion, nil)
 			Convey("Then the telemetry config should be nil", func() {
-				So(err, ShouldResemble, &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false})
+				So(err, ShouldResemble, &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false, IsNotFound: true})
 			})
 		})
 	})
@@ -116,7 +116,7 @@ func TestTelemetryProviderGraphite_IncServiceProviderResourceTotalRunsCounter_Ba
 		Convey("When the GetTelemetryProviderConfiguration method is called", func() {
 			err := tpg.IncServiceProviderResourceTotalRunsCounter(providerName, "cdn_v1", TelemetryResourceOperationCreate, nil)
 			Convey("Then the telemetry config shoudl be nil", func() {
-				So(err, ShouldResemble, &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false})
+				So(err, ShouldResemble, &net.DNSError{Err: "no such host", Name: "bad graphite host", Server: "", IsTimeout: false, IsTemporary: false, IsNotFound: true})
 			})
 		})
 	})

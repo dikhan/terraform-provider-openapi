@@ -2,7 +2,7 @@ package openapi
 
 import (
 	"errors"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -58,7 +58,8 @@ func TestCreateTerraformInstanceDataSource(t *testing.T) {
 		if tc.expectedError == nil {
 			assert.Nil(t, err, tc.name)
 			assert.NotNil(t, dataSource, tc.name)
-			assert.NotNil(t, dataSource.Read, tc.name)
+			assert.NotNil(t, dataSource.ReadContext, tc.name)
+			assert.Nil(t, dataSource.Read, tc.name)
 			assert.Nil(t, dataSource.Delete, tc.name)
 			assert.Nil(t, dataSource.Create, tc.name)
 			assert.Nil(t, dataSource.Update, tc.name)

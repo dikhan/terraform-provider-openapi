@@ -5,13 +5,11 @@ NEW_RELEASE_VERSION_VALIDATION?=$(shell ./scripts/semver.sh $(RELEASE_TAG) $(CUR
 
 COMMIT :=$(shell git rev-parse --verify --short HEAD)
 DATE :=$(shell date +'%FT%TZ%z')
-REPO=github.com/dikhan/terraform-provider-openapi
+REPO=github.com/dikhan/terraform-provider-openapi/v2
 LDFLAGS = '-s -w -extldflags "-static" -X "$(REPO)/openapi/version.Version=$(VERSION)" -X "$(REPO)/openapi/version.Commit=$(COMMIT)" -X "$(REPO)/openapi/version.Date=$(DATE)"'
 
 PROVIDER_NAME?=""
 TF_CMD?="plan"
-
-TF_INSTALLED_PLUGINS_PATH="$(HOME)/.terraform.d/plugins"
 
 TEST_PACKAGES?=$$(go list ./... | grep -v "examples\|vendor\|integration")
 INT_TEST_PACKAGES?=$$(go list ./... | grep "/tests/integration")
@@ -81,10 +79,6 @@ integration-test: local-env-down local-env
 
 test-all: test integration-test
 
-pre-requirements:
-	@echo "[INFO] Creating $(TF_INSTALLED_PLUGINS_PATH) if it does not exist"
-	@[ -d $(TF_INSTALLED_PLUGINS_PATH) ] || mkdir -p $(TF_INSTALLED_PLUGINS_PATH)
-
 release-pre-requirements:
 ifeq (, $(shell which github-release-notes))
 	@echo "[INFO] No github-release-notes in $(PATH), installing github-release-notes"
@@ -96,7 +90,7 @@ ifeq (, $(shell which goreleaser))
 endif
 
 # PROVIDER_NAME="goa" make install
-install: build pre-requirements
+install: build
 	$(call install_plugin,$(PROVIDER_NAME))
 
 # make local-env-down
@@ -116,11 +110,11 @@ examples-container: local-env
 	@docker-compose -f ./build/docker-compose.yml run terraform-provider-openapi-examples
 
 # [TF_CMD=apply] make run-terraform-example-swaggercodegen
-run-terraform-example-swaggercodegen: build pre-requirements
+run-terraform-example-swaggercodegen: build
 	$(call run_terraform_example,"https://localhost:8443/swagger.yaml",swaggercodegen)
 
 # [TF_CMD=apply] make run-terraform-example-goa
-run-terraform-example-goa: build pre-requirements
+run-terraform-example-goa: build
 	$(call run_terraform_example,"http://localhost:9090/swagger/swagger.yaml",goa)
 
 # make latest-tag
@@ -145,10 +139,8 @@ else
 endif
 
 define install_plugin
-	@$(eval TF_PROVIDER_PLUGIN_NAME := $(TF_PROVIDER_NAMING_CONVENTION)$(1))
-
-	@echo "[INFO] Installing $(TF_PROVIDER_PLUGIN_NAME) binary in -> $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)"
-	@mv ./$(TF_OPENAPI_PROVIDER_PLUGIN_NAME) $(TF_INSTALLED_PLUGINS_PATH)/$(TF_PROVIDER_PLUGIN_NAME)
+	@$(eval PROVIDER_NAME := $(1))
+	@./scripts/install.sh --provider-name $(PROVIDER_NAME) --provider-source-address "terraform.example.com/examplecorp" --compiled-plugin-path $(TF_OPENAPI_PROVIDER_PLUGIN_NAME) --debug
 endef
 
 define run_terraform_example
@@ -158,6 +150,7 @@ define run_terraform_example
 	$(call install_plugin,$(PROVIDER_NAME))
 
 	@$(eval TF_EXAMPLE_FOLDER := ./examples/$(PROVIDER_NAME))
+	@rm -rf $(TF_EXAMPLE_FOLDER)/.terraform $(TF_EXAMPLE_FOLDER)/.terraform.lock.hcl
 
 	@echo "[INFO] Performing sanity check against the service provider's swagger endpoint '$(OTF_VAR_SWAGGER_URL)'"
 	@$(eval SWAGGER_HTTP_STATUS := $(shell curl -s -o /dev/null -w '%{http_code}' $(OTF_VAR_SWAGGER_URL) -k))

@@ -511,7 +511,6 @@ definitions:
         type: "string"
         default: "some computed value known at runtime" # this default value, will effectively
       object_property:
-        #type: object - type is optional for properties of object type that use $ref
         $ref: "#/definitions/ObjectProperty"
       arrayOfObjectsExample: # This is an example of an array of objects
         type: "array"

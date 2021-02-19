@@ -1,6 +1,6 @@
 # How to
 
-The following describe some guidelines in terms of how to define the swagger file to be able to run this terraform
+The following describe some guidelines in terms of how to define the OpenAPI file to be able to run this terraform
 provider. These guidelines not only aim to encourage service providers to follow good practises when defining and 
 exposing APIs but also and more importantly serve as a reference on how the different sections of a swagger file
 are interpreted and translated into terraform idioms.
@@ -472,7 +472,7 @@ above example*
 ###### <a name="xTerraformResourceTimeout">x-terraform-resource-timeout</a>
 
 This extension allows service providers to override the default timeout value for CRUD operations with a different value
-for just the operations that are [asynchronous](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourcePollEnabled).
+for both operations that are synchronous and [asynchronous](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourcePollEnabled).
 
 The value must comply with the duration type format. A duration string is a sequence of decimal positive numbers (negative numbers are not allowed),
 each with optional fraction and a unit suffix, such as "300s", "20.5m", "1.5h" or "2h45m".
@@ -495,8 +495,8 @@ paths:
 ````
 
 This extension will also enable users to specify a different value from the terraform configuration file. For instance, the
-example above will expose the timeouts property in the resource_v1 but only for the create and delete operations enablind the
-user to override the default values in the swagger file with different ones:
+example above will expose the timeouts property in the resource_v1 but only for the create and delete operations enabling the
+user to override the default values in the OpenAPI document with different ones:
 
 ````
 resource "openapi_resource_v1" "my_resource" {
@@ -507,7 +507,7 @@ resource "openapi_resource_v1" "my_resource" {
 }
 ````
 
-Hence overriding the default timeout value set in the swagger document for the ```/v1/resource``` post operation from 15m to 10s
+Hence, overriding the default timeout value set in the swagger document for the ```/v1/resource``` post operation from 15m to 10s
 and the default timeout value set in the swagger document for the ```/v1/resource/{id}``` delete operation from 20m to 5s.
 
 *Note: This extension is only supported at the operation level*
@@ -808,21 +808,27 @@ string | Type: schema.TypeString | string value
 integer | schema.TypeInt | int value
 number | schema.TypeFloat | float value
 boolean | schema.TypeBool | boolean value
-[object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions) | schema.TypeMap | map value
+[object](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions) | schema.TypeList with MaxItems 1 and Elem *Resource | The list will contain only one element. The element will be the object with its corresponding properties which can be primitives as well as objects or lists.
 [array](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#array-definitions) | schema.TypeList | list of values of the same type. The list item types can be primitives (string, integer, number or bool) or complex data structures (objects)
-[object with nested objects](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-with-nested-objects) | schema.TypeList | list with just one element. The element will be object that contains other objects
 
+###### Object definitions
 
-###### Object with nested objects
+Object types can be defined using `type: "object"` and the internal Terraform's schema representation will be a TypeList with MaxItems 1 and Elem *Resource
+and an HCL representation of block type. This is due to the current version of Terraform SDK, at the time of writing 2.0, not supporting helper/schema.TypeMap with Elem *helper/schema.Resource and
+follows Hashi Terraform maintainers' recommendations:
 
-As per [Terraform maintainer suggestion](https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737) and 
-the current version of Terraform SDK (<=0.12.3 at the time of writing), the only way to support objects with nested objects 
-is to configure the property schema as schema.TypeList limiting the items to one item. The OpenAPI Terraform plugin supports
-this enabling service providers to describe properties of type object that in turn contain other objects and expose that
-into the corresponding Terraform configuration. The following shows an example on how the translation will be done internally:
+- [Issue 616](https://github.com/hashicorp/terraform-plugin-sdk/issues/616): Upgrading OpenAPI Terraform provider to Terraform SDK 2.0: TypeMap with Elem*Resource not supported
+- [Issue 22511](https://github.com/hashicorp/terraform/issues/22511): Objects that contain properties with different types (e,g: string, integer, etc) and configurations (e,g: some of them being computed)
+- [Issue 21217](https://github.com/hashicorp/terraform/issues/21217): Objects that contain nested objects
 
-Given the following definition model containing one property named ```object_nested_scheme_property``` that contains two properties,
-```name``` a string property and ```object_property``` which is the nested object (with other properties).
+The OpenAPI Terraform provider supports among others the following scenarios when handling properties of type object:
+
+- Scenario 0: Simple objects where all the object properties are the same type and are required or optional.
+- Scenario 1: Complex objects that contain properties with different types (e,g: string, integer, etc) and configurations (e,g: some of them being computed)
+- Scenario 2: Complex objects that contain nested objects
+
+The following example shows how to define an OpenAPI definition `ContentDeliveryNetworkV1` that contains an object type property
+and what will be the internal Terraform schema representation as well as the user facing tf configuration using the block type.
 
 ````
 definitions:
@@ -830,12 +836,12 @@ definitions:
     type: "object"
     properties:
       ...
-      object_nested_scheme_property: # this proeprty contains other object properties
+      object_property: 
         type: "object"
         properties:
           name:
             type: "string"
-          object_property:
+          nested_object_property:
             type: "object"
             properties:
               account:
@@ -843,19 +849,20 @@ definitions:
       ...
 ````
 
-The above will be translated into the following Terraform schema:
+The above will be translated into the following Terraform schema internally:
 
 ````
 &schema.Resource{
-        # This will be the schema of the resource using the ContentDeliveryNetworkV1 model definition
+        # This will be the Terraform schema of the resource using the ContentDeliveryNetworkV1 model definition
 		Schema: map[string]*schema.Schema {
-		    "object_nested_scheme_property": *schema.Schema {
+		    ...
+		    "object_property": *schema.Schema {
                 Type:TypeList 
                 Optional:true 
                 Required:false 
                 ...
                 Elem: &{
-                          Schema:map[name:0xc0005ee700 object_property:0xc0005ee800] 
+                          Schema:map[name:0xc0005ee700 nested_object_property:0xc0005ee800] 
                           SchemaVersion:0 
                           MigrateState:<nil> 
                           StateUpgraders:[] 
@@ -877,6 +884,49 @@ The above will be translated into the following Terraform schema:
 		...
 	}
 ````
+
+This would translate into the following terraform configuration:
+
+````
+resource "openapi_cdn_v1" "my_cdn" {
+  ....
+  object_property {
+    name = ""
+    nested_object_property {
+      account = ""
+    }
+  }
+  ....
+}
+````
+
+The above OpenAPI spec could have also been defined using the $ref directive which would have resulted into the same result
+as far as the Terraform schema is concerned:
+
+````
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      ...
+      object_property:
+        $ref: "#/definitions/ObjectProperty"
+  ObjectProperty:
+    type: object
+    properties:
+      name:
+        type: string
+      nested_object_property:
+        type: "object"
+        properties:
+          account:
+            type: string
+````
+
+Remember that due to the internal schema representation of object properties being of `helper/schema.TypeList with Elem *helper/schema.Resource and MaxItems 1`
+if the object property needs to be referenced from other places in the terraform configuration the list syntax needs to be used indexing
+on the zero element. Example: `openapi_cdn_v1.my_cdn.object_property[0].name`. Similarly to reference the nested_object_property which
+is an object property you would do `openapi_cdn_v1.my_cdn.object_property[0].nested_object_property[0].account`.
 
 ###### Array definitions
 
@@ -931,93 +981,21 @@ definitions:
 The above OpenAPI configuration would translate into the following Terraform configuration:
 
 ````
-
 resource "swaggercodegen_cdn_v1" "my_cdn" {
   ...
-  array_of_objects_example = [
-    {
-      protocol = "http"
-    },
-    {
-      protocol = "tcp"
-    }
-  ]
+  array_of_objects_example {
+    protocol = "http"
+  }
+
+  array_of_objects_example {
+    protocol = "tcp"
+  }
   ...
 ````
 
 **Note**: The items support both nested object definitions (in which case the type **must** be object) and ref to other schema
 definitions as described in the [Object definitions](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#object-definitions)
 section.
-
-###### Object definitions
-
-Object types can be defined in two fashions:
-
-- Nested properties
-
-Properties can have their schema definition in place or nested; and they must be of type 'object'.
-
-````
-definitions:
-  ContentDeliveryNetworkV1:
-    type: "object"
-    ...
-    properties:
-      ...
-      object_nested_scheme_property:
-        type: object # nested properties required type equal object to be considered as object
-        properties:
-          name:
-            type: string
-````
-
-This would translate into the following terraform configuration:
-
-````
-resource "swaggercodegen_cdn_v1" "my_cdn" {
-  ....
-  object_nested_scheme_property = {
-    name = ""
-  }
-  ....
-}
-````
-
-- Ref schema definition
-
-A property that has a $ref attribute is considered automatically an object so defining the type 'object' is optional (although
-it's recommended).
-
-````
-definitions:
-  ContentDeliveryNetworkV1:
-    type: "object"
-    ...
-    properties:
-      ...
-      object_property:
-        #type: object - type is optional for properties of object type that use $ref
-        $ref: "#/definitions/ObjectProperty"
-  ObjectProperty:
-    type: object
-    required:
-    - message
-    properties:
-      message:
-        type: string
-````
-
-This would translate into the following terraform configuration:
-
-````
-resource "swaggercodegen_cdn_v1" "my_cdn" {
-  ....
-  object_property = {
-    name = ""
-  }
-  ....
-}
-````
 
 ##### <a name="attributeDetails">Attribute details</a>
 
@@ -1026,6 +1004,7 @@ The following is a list of attributes that can be added to each property to defi
 Attribute Name | Type | Description
 ---|:---:|---
 readOnly | boolean |  A property with this attribute enabled will be considered a computed property. readOnly properties are included in responses but not in requests. Hence, it will not be expected from the consumer of the API when posting the resource. However; it will be expected that the API will return tthe property with the computed value in the response payload.
+description | string | A description for property. 
 default | primitive (int, bool, string) | Documents what will be the default value generated by the API for the given property
 x-terraform-immutable | boolean |  The field will be used to create a brand new resource; however it can not be updated. Attempts to update this value will result into terraform aborting the update. This applies also to properties of type object and also list of objects. If an object property contains this attribute, any update to its child properties will result  terraform aborting the update too. Also, if an object property is does not contain this flag, but any of its child properties, the same principle applies and updates to the values of those properties will not be allowed.
 x-terraform-force-new | boolean |  If the value of this property is updated; terraform will delete the previously created resource and create a new one with this value
@@ -1033,8 +1012,7 @@ x-terraform-sensitive | boolean | If this meta attribute is present in a definit
 x-terraform-id | boolean | If this meta attribute is present in an object definition property, the value will be used as the resource identifier when performing the read, update and delete API operations. The value will also be stored in the ID field of the local state file.
 x-terraform-field-name | string | This enables service providers to override the schema definition property name with a different one which will be the property name used in the terraform configuration file. This is mostly used to expose the internal property to a more user friendly name. If the extension is not present and the property name is not terraform compliant (following snake_case), an automatic conversion will be performed by the OpenAPI Terraform provider to make the name compliant (following Terraform's field name convention to be snake_case) 
 x-terraform-field-status | boolean | If this meta attribute is present in a definition property, the value will be used as the status identifier when executing the polling mechanism on eligible async operations such as POST/PUT/DELETE.
-[x-terraform-ignore-order](#xTerraformIgnoreOrder) | boolean | If this meta attribute is present in a definition property of type list, when the plugin is updating the state for the property it will inspect the items of the list received from remote and compare with the local values and if the lists are the same but unordered the state will keep the users input. Please go to the `x-terraform-ignore-order` section to learn more about the different behaviours supported.
-[x-terraform-complex-object-legacy-config](#xTerraformComplexObjectLegacyConfig) | boolean | If this meta attribute is present in an definition property of type object with value set to true, the OpenAPI terraform plugin will configure the corresponding property schema in Terraform following [Hashi maintainers recommendation](https://github.com/hashicorp/terraform/issues/22511#issuecomment-522655851) using as Schema Type schema.TypeList and limiting the max items in the list to 1 (MaxItems = 1). 
+[x-terraform-ignore-order](#xTerraformIgnoreOrder) | boolean | If this meta attribute is present in a definition property of type list, when the plugin is updating the state for the property it will inspect the items of the list received from remote and compare with the local values and if the lists are the same but unordered the state will keep the users input. Please go to the `x-terraform-ignore-order` section to learn more about the different behaviours supported. 
 
 ###### <a name="xTerraformIgnoreOrder">x-terraform-ignore-order</a>
 
@@ -1062,111 +1040,6 @@ and saving the state of the property.
 - Use case 2: If the remote value for the property `members` contained the same items as the tf input in different order PLUS new ones (eg: `{"members":["user2", "user1", "user3", "user4"]}`) then state saved for the property would match the input values and also add to the end of the list the new elements received from the API. That is: ``members = ["user1", "user2", "user3", "user4"]``
 - Use case 3: If the remote value for the property `members` contained a shorter list than items in the tf input (eg: `{"members":["user3", "user1"}`) then state saved for the property would contain only the matching elements between the input and remote. That is: ``members = ["user1", "user3"]``
 - Use case 4: If the remote value for the property `members` contained the same list size as the items in the tf input but some elements inside where updated (eg: `{"members":["user1", "user5", "user9"]}`) then state saved for the property would contain the matching elements  between the input and output and also keep the remote values. That is: ``members = ["user1", "user5", "user9"]``
-
-###### <a name="xTerraformComplexObjectLegacyConfig">x-terraform-complex-object-legacy-config</a>
-
-The current version of Terraform SDK, at the time of writing terraform <= 0.12.7, has a limitation in the helper/schema SDK
-where as per the [documentation for Schema Elem field](https://github.com/hashicorp/terraform/blob/v0.12.7/helper/schema/schema.go#L169), 
-TypeMap does not support complex object types:
-
-- [Issue 22511](https://github.com/hashicorp/terraform/issues/22511): Objects that contain properties with different types (e,g: string, integer, etc) and configurations (e,g: some of them being computed)
-- [Issue 21217](https://github.com/hashicorp/terraform/issues/21217): Objects that contain nested objects
-
-The alternative suggested by Hashi Terraform maintainers is to use a workaround whereby configuring the terraform schema for complex objects 
-using a TypeList attribute with MaxItems: 1 set and its Elem set to a nested *schema.Resource removes the limitation enabling complex 
-objects to be set up properly and ensuring internal terraform behaviour works as expected.
-
-The OpenAPI Terraform provider supports the above as follows:
-
-- Scenario 1: Objects that contain properties with different types (e,g: string, integer, etc) and configurations (e,g: some of them being computed)
-
-Swagger representation:
-
-````
-definitions:
-  ContentDeliveryNetworkV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      complex_object: # this object is considered complex because it contains properties that have different configurations (some are readOnly, aka computed)
-        type: "object"
-        x-terraform-complex-object-legacy-config: true
-        properties:
-          account:
-            type: string
-          computed_property:
-            type: string
-            readOnly: true
-````
-
-Corresponding terraform configuration representation:
-
-````
-resource "swaggercodegen_cdn_v1" "my_cdn" {
-  object_property_block {
-    account = "my_account"
-  }
-}
-````
-
-As you can see the above complex object definition contains the extension ```x-terraform-complex-object-legacy-config:``` enabled (value set to true), whhich
-means that the service provider acknowledges that the behaviour expected from the OpenAPI Terraform provider plugin is the
-workaround suggested above.
-
-Note: This extension is needed to be able to let the OpenAPI plugin know that this behaviour is desired. Otherwise, the OpenAPI plugin
-will configure the terraform schema without the workaround configuring the terraform schema property with a type TypeMap which in the case of complex
-types will result into [unpredicted behaviour](https://github.com/hashicorp/terraform/issues/22511#issuecomment-522609116). This extension has 
-been added to safe guard from future Terraform releases and simplify support for proper complex types without workaround or 
-extra extension when the Terraform SDK supports it. 
-
-- Scenario 2: Objects that contain nested objects
-
-Swagger representation:
-
-````
-definitions:
-  ContentDeliveryNetworkV1:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      object_with_nested_objects:
-        type: "object"
-        properties:
-          name:
-            type: "string"
-            readOnly: true
-          object_property:
-            type: "object" # nested object
-            x-terraform-complex-object-legacy-config: true
-            properties:
-              account:
-                type: string
-            computed_property:
-              type: string
-              readOnly: true
-````
-
-Corresponding terraform configuration representation:
-
-````
-resource "swaggercodegen_cdn_v1" "my_cdn" {
-  object_with_nested_objects {
-    name = "dani"
-    object_property {
-      account = "something"
-    }
-  }
-}
-````
-
-Due to the nature of these objects, even though they are also considered complex objects, they do not require the extension
-```x-terraform-complex-object-legacy-config``` to be present and enabled to trigger the [workaround configuration](https://github.com/hashicorp/terraform/issues/21217#issuecomment-489699737) schema using
-TypeList with MaxItems equal to 1 and its Elem set to a nested *schema.Resource. Since this was the only way to set up these
- type of complex objects with the current limitation of Terraform SDK, another extension was not required and therefore the OpenAPI provider uses the legacy Terraform workaround for configuring objects with nested objects as the default behaviour. 
 
 ##### <a name="propertyUseCasesSupport">Property use cases</a>
 
@@ -1225,6 +1098,7 @@ definitions:
     properties:
       id: # the value of this computed property is not known at plan time (e,g: uuid, etc)
         type: string
+        description: "some description for the property..."
         readOnly: true
  
       mandatory_property: # this property is required

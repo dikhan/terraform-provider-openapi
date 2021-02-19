@@ -3,7 +3,7 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapierr"
 	"github.com/go-openapi/spec"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -13,8 +13,10 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"encoding/json"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -57,10 +59,47 @@ func TestCreateTerraformResource(t *testing.T) {
 			Convey("Then schemaResource returned should be configured as expected and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 				So(schemaResource.Schema, ShouldNotBeEmpty)
-				So(schemaResource.Create(resourceData, client), ShouldBeNil)
-				So(schemaResource.Read(resourceData, client), ShouldBeNil)
-				So(schemaResource.Update(resourceData, client), ShouldBeNil)
-				So(schemaResource.Delete(resourceData, client), ShouldBeNil)
+				So(schemaResource.CreateContext(context.Background(), resourceData, client), ShouldBeNil)
+				So(schemaResource.ReadContext(context.Background(), resourceData, client), ShouldBeNil)
+				So(schemaResource.UpdateContext(context.Background(), resourceData, client), ShouldBeNil)
+				So(schemaResource.DeleteContext(context.Background(), resourceData, client), ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given a resource factory initialised with a spec resource that returns an error when retreiving the schema", t, func() {
+		expectedError := "some error retrieving resource schema"
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+					return nil, fmt.Errorf(expectedError)
+				},
+			},
+		}
+		Convey("When createTerraformResource is called", func() {
+			resource, err := r.createTerraformResource()
+			Convey("Then resource should be nil and the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+				So(resource, ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given a resource factory initialised with a spec resource that returns an error for some reason", t, func() {
+		expectedError := "some error retrieving the timeouts"
+		r := resourceFactory{
+			openAPIResource: &specStubResource{
+				funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+					return &SpecSchemaDefinition{}, nil
+				},
+				funcGetTimeouts: func() (*specTimeouts, error) {
+					return nil, fmt.Errorf(expectedError)
+				},
+			},
+		}
+		Convey("When createTerraformResource is called", func() {
+			resource, err := r.createTerraformResource()
+			Convey("Then resource should be nil and the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+				So(resource, ShouldBeNil)
 			})
 		})
 	})
@@ -1372,18 +1411,20 @@ func TestCheckImmutableFields(t *testing.T) {
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 						},
 					},
-					Default: map[string]interface{}{
-						readOnlyProperty.Name: readOnlyProperty.Default,
-						"origin_port":         80,
-						"protocol":            "http",
+					Default: []interface{}{
+						map[string]interface{}{
+							readOnlyProperty.Name: readOnlyProperty.Default,
+							"origin_port":         80,
+							"protocol":            "http",
+						},
 					},
 				},
 			},
-			expectedResult: map[string]interface{}{"origin_port": "443", "protocol": "https", "read_only_property": "some_value"},
+			expectedResult: []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https", "read_only_property": "some_value"}},
 			inputClient: clientOpenAPIStub{
 				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`, propName)),
 			},
-			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('origin_port'): [user input: map[origin_port:%!s(int64=80) protocol:http]; actual: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
+			expectedError: errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('origin_port'): [user input: map[origin_port:%!s(int=80) protocol:http]; actual: map[origin_port:%!s(float64=443) protocol:https read_only_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "mutable object properties are updated",
@@ -1399,17 +1440,19 @@ func TestCheckImmutableFields(t *testing.T) {
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 						},
 					},
-					Default: map[string]interface{}{
-						readOnlyProperty.Name: readOnlyProperty.Default,
-						"origin_port":         80,
-						"protocol":            "http",
+					Default: []interface{}{
+						map[string]interface{}{
+							readOnlyProperty.Name: readOnlyProperty.Default,
+							"origin_port":         80,
+							"protocol":            "http",
+						},
 					},
 				},
 			},
 			inputClient: clientOpenAPIStub{
 				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"read_only_property":"some_value","origin_port":443,"protocol":"https"}}`, propName)),
 			},
-			expectedResult: map[string]interface{}{"origin_port": "80", "protocol": "http", "read_only_property": "some_value"},
+			expectedResult: []interface{}{map[string]interface{}{"origin_port": 80, "protocol": "http", "read_only_property": "some_value"}},
 			expectedError:  nil,
 		},
 		{
@@ -1426,18 +1469,20 @@ func TestCheckImmutableFields(t *testing.T) {
 							newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 						},
 					},
-					Default: map[string]interface{}{
-						immutableProperty.Name: immutableProperty.Default,
-						"origin_port":          80,
-						"protocol":             "http",
+					Default: []interface{}{
+						map[string]interface{}{
+							immutableProperty.Name: immutableProperty.Default,
+							"origin_port":          80,
+							"protocol":             "http",
+						},
 					},
 				},
 			},
 			inputClient: clientOpenAPIStub{
 				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"string_immutable_property":"some_value","origin_port":443,"protocol":"https"}}`, propName)),
 			},
-			expectedResult: map[string]interface{}{"origin_port": "443", "protocol": "https", "string_immutable_property": "some_value"},
-			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('string_immutable_property'): [user input: map[origin_port:%!s(int64=80) protocol:http string_immutable_property:updatedImmutableValue]; actual: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
+			expectedResult: []interface{}{map[string]interface{}{"origin_port": 443, "protocol": "https", "string_immutable_property": "some_value"}},
+			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('string_immutable_property'): [user input: map[origin_port:%!s(int=80) protocol:http string_immutable_property:updatedImmutableValue]; actual: map[origin_port:%!s(float64=443) protocol:https string_immutable_property:some_value]]. Update operation was aborted; no updates were performed"),
 		},
 		{
 			name: "immutable object with nested object property is updated",
@@ -1459,8 +1504,10 @@ func TestCheckImmutableFields(t *testing.T) {
 					},
 					Default: []interface{}{
 						map[string]interface{}{
-							"object_property": map[string]interface{}{
-								"some_prop": "someUpdatedValue",
+							"object_property": []interface{}{
+								map[string]interface{}{
+									"some_prop": "someUpdatedValue",
+								},
 							},
 						},
 					},
@@ -1469,7 +1516,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			inputClient: clientOpenAPIStub{
 				responsePayload: getMapFromJSON(t, fmt.Sprintf(`{"%s": {"object_property": {"some_prop":"someValue"}}}`, propName)),
 			},
-			expectedResult: []interface{}{map[string]interface{}{"object_property": map[string]interface{}{"some_prop": "someValue"}}},
+			expectedResult: []interface{}{map[string]interface{}{"object_property": []interface{}{map[string]interface{}{"some_prop": "someValue"}}}},
 			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable object ('property_name') property ('object_property'): [user input: map[object_property:map[some_prop:someUpdatedValue]]; actual: map[object_property:map[some_prop:someValue]]]. Update operation was aborted; no updates were performed"),
 		},
 		{
@@ -1659,10 +1706,12 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			name: "properties within objects that are computed should not be in the payload",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				stringProperty,
-				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
-					"origin_port": 80,
-					"protocol":    "http",
-					computedProperty.GetTerraformCompliantPropertyName(): computedProperty.Default,
+				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, []interface{}{
+					map[string]interface{}{
+						"origin_port": 80,
+						"protocol":    "http",
+						computedProperty.GetTerraformCompliantPropertyName(): computedProperty.Default,
+					},
 				}, &SpecSchemaDefinition{
 					Properties: SpecSchemaDefinitionProperties{
 						newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80),
@@ -1674,7 +1723,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			expectedPayload: map[string]interface{}{
 				stringProperty.GetTerraformCompliantPropertyName(): stringProperty.Default,
 				"object_property": map[string]interface{}{
-					"origin_port": int64(80), // this is how ints are stored internally in terraform state
+					"origin_port": 80, // this is how ints are stored internally in terraform state
 					"protocol":    "http",
 				},
 			},
@@ -1688,8 +1737,10 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			// }
 			name: "properties within objects that are named id and are not readOnly should be included in the payload",
 			inputProps: []*SpecSchemaDefinitionProperty{
-				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
-					"id": "someID",
+				newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, []interface{}{
+					map[string]interface{}{
+						"id": "someID",
+					},
 				}, &SpecSchemaDefinition{
 					Properties: SpecSchemaDefinitionProperties{
 						newStringSchemaDefinitionProperty("id", "", false, false, false, false, false, true, false, false, "someID"),
@@ -1706,9 +1757,9 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			// - Representation of resourceData configuration containing a complex object (object with other objects)
 			// {
 			//   string_property = "updatedValue"
-			//   property_with_nested_object = [ <-- complex objects are represented in the terraform schema as TypeList with maxElem = 1
+			//   property_object_with_nested_object = [ <-- complex objects are represented in the terraform schema as TypeList with maxElem = 1
 			//     {
-			//       id = "id"
+			//       computed_property = "id"
 			//       object_property = {
 			//		   some_prop = "someValue"
 			//		 }
@@ -1718,18 +1769,20 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			name: "nested objects should be added to the payload",
 			inputProps: []*SpecSchemaDefinitionProperty{
 				stringProperty,
-				newObjectSchemaDefinitionPropertyWithDefaults("property_with_nested_object", "", true, false, false, []interface{}{
+				newObjectSchemaDefinitionPropertyWithDefaults("property_object_with_nested_object", "", true, false, false, []interface{}{
 					map[string]interface{}{
-						computedProperty.GetTerraformCompliantPropertyName(): computedProperty.Default,
-						"object_property": map[string]interface{}{
-							"some_prop": "someValue",
+						"object_property": []interface{}{
+							map[string]interface{}{
+								"some_prop": "someValue",
+							},
 						},
 					},
 				}, &SpecSchemaDefinition{
 					Properties: SpecSchemaDefinitionProperties{
-						computedProperty,
-						newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, map[string]interface{}{
-							"some_prop": "someValue",
+						newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, []interface{}{
+							map[string]interface{}{
+								"some_prop": "someValue",
+							},
 						}, &SpecSchemaDefinition{
 							Properties: SpecSchemaDefinitionProperties{
 								newStringSchemaDefinitionProperty("some_prop", "", true, false, false, false, false, true, false, false, "someValue"),
@@ -1740,7 +1793,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			},
 			expectedPayload: map[string]interface{}{
 				stringProperty.GetTerraformCompliantPropertyName(): stringProperty.Default,
-				"property_with_nested_object": map[string]interface{}{
+				"property_object_with_nested_object": map[string]interface{}{
 					"object_property": map[string]interface{}{
 						"some_prop": "someValue",
 					},
@@ -1801,6 +1854,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 			Convey(fmt.Sprintf("When createPayloadFromLocalStateData method is called: %s", tc.name), func() {
 				payload := r.createPayloadFromLocalStateData(resourceData)
 				Convey("Then the result returned should be the expected one", func() {
+					Println(tc.name)
 					So(payload, ShouldResemble, tc.expectedPayload)
 				})
 			})
@@ -1809,7 +1863,7 @@ func TestCreatePayloadFromLocalStateData(t *testing.T) {
 
 }
 
-func TestGetPropertyPayload(t *testing.T) {
+func TestPopulatePayload(t *testing.T) {
 
 	Convey("Given a resource factory", t, func() {
 		resourceFactory := resourceFactory{}
@@ -1863,6 +1917,20 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(payload, ShouldNotBeEmpty)
 				So(payload, ShouldContainKey, stringProperty.Name)
 				So(payload[stringProperty.Name], ShouldEqual, stringProperty.Default)
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a schema definition containing a string property that is readOnly", t, func() {
+		// Use case - readonly properties are not treated as inputs
+		r, resourceData := testCreateResourceFactory(t, readOnlyProperty)
+		Convey("When populatePayload is called with an empty map, the string property in the resource schema and it's corresponding terraform resourceData state data value", func() {
+			payload := map[string]interface{}{}
+			dataValue, _ := resourceData.GetOk(readOnlyProperty.GetTerraformCompliantPropertyName())
+			err := r.populatePayload(payload, stringProperty, dataValue)
+			Convey("Then then payload returned should not have changed and the error should be nil", func() {
+				So(err, ShouldBeNil)
+				So(payload, ShouldEqual, payload)
 			})
 		})
 	})
@@ -1930,15 +1998,17 @@ func TestGetPropertyPayload(t *testing.T) {
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
 		}
-		objectDefault := map[string]interface{}{
-			"origin_port": 80,
-			"protocol":    "http",
+		objectDefault := []interface{}{
+			map[string]interface{}{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
 		}
 		objectProperty := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, objectDefault, objectSchemaDefinition)
 		r, resourceData := testCreateResourceFactory(t, objectProperty)
 		Convey("When populatePayload is called with an empty map, the object property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(objectProperty.GetTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOk(objectProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, objectProperty, dataValue)
 			Convey("Then then payload returned should have the data value from the state file and the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -1964,9 +2034,11 @@ func TestGetPropertyPayload(t *testing.T) {
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
 		}
-		objectDefault := map[string]interface{}{
-			"origin_port": 80,
-			"protocol":    "http",
+		objectDefault := []interface{}{
+			map[string]interface{}{
+				"origin_port": 80,
+				"protocol":    "http",
+			},
 		}
 		arrayObjectDefault := []interface{}{
 			objectDefault,
@@ -1975,7 +2047,7 @@ func TestGetPropertyPayload(t *testing.T) {
 		r, resourceData := testCreateResourceFactory(t, sliceObjectProperty)
 		Convey("When populatePayload is called with an empty map, the array of objects property in the resource schema and it's state data value", func() {
 			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(sliceObjectProperty.GetTerraformCompliantPropertyName())
+			dataValue, _ := resourceData.GetOk(sliceObjectProperty.GetTerraformCompliantPropertyName())
 			err := r.populatePayload(payload, sliceObjectProperty, dataValue)
 			Convey("Then then payload returned should have the data value from the state file properly formatter with the right types and the error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -2021,9 +2093,11 @@ func TestGetPropertyPayload(t *testing.T) {
 				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
 			},
 		}
-		nestedObjectDefault := map[string]interface{}{
-			"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
-			"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+		nestedObjectDefault := []interface{}{
+			map[string]interface{}{
+				"origin_port": nestedObjectSchemaDefinition.Properties[0].Default,
+				"protocol":    nestedObjectSchemaDefinition.Properties[1].Default,
+			},
 		}
 		nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nestedObjectDefault, nestedObjectSchemaDefinition)
 		propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
@@ -2069,48 +2143,52 @@ func TestGetPropertyPayload(t *testing.T) {
 				So(topLevel[idProperty.Name], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[0].Default)
 				So(topLevel, ShouldContainKey, nestedObject.Name)
 				nestedLevel := topLevel[nestedObject.Name].(map[string]interface{})
-				So(nestedLevel["origin_port"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["origin_port"])
-				So(nestedLevel["protocol"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.(map[string]interface{})["protocol"])
+				So(nestedLevel["origin_port"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.([]interface{})[0].(map[string]interface{})["origin_port"])
+				So(nestedLevel["protocol"], ShouldEqual, propertyWithNestedObjectSchemaDefinition.Properties[1].Default.([]interface{})[0].(map[string]interface{})["protocol"])
 			})
 		})
 	})
 
-	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing one nested struct but having terraform property names that are not valid within the resource definition", t, func() {
-		// Use case -  crappy path while getting properties paylod for properties which do not exists in nested objects
-		nestedObjectSchemaDefinition := &SpecSchemaDefinition{
-			Properties: SpecSchemaDefinitionProperties{
-				newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
-			},
-		}
-		nestedObjectNoTFCompliantName := map[string]interface{}{
-			"badprotocoldoesntexist": nestedObjectSchemaDefinition.Properties[0].Default,
-		}
-		nestedObjectNotTFCompliant := newObjectSchemaDefinitionPropertyWithDefaults("nested_object_not_compliant", "", true, false, false, nestedObjectNoTFCompliantName, nestedObjectSchemaDefinition)
-		propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
-			Properties: SpecSchemaDefinitionProperties{
-				idProperty,
-				nestedObjectNotTFCompliant,
-			},
-		}
-		propertyWithNestedObjectDefault := []interface{}{
-			map[string]interface{}{
-				"id":                          propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
-				"nested_object_not_compliant": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
-			},
-		}
-		expectedPropertyWithNestedObjectName := "property_with_nested_object"
-		propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
-		r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
-		Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
-			payload := map[string]interface{}{}
-			dataValue, _ := resourceData.GetOkExists(propertyWithNestedObject.GetTerraformCompliantPropertyName())
-			err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
-			Convey("Then the map returned should be empty and the error should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
-				So(payload, ShouldBeEmpty)
-			})
-		})
-	})
+	// OpenAPI Terraform provider migration to Terraform SDK 2.0: This test is no longer working due to Terraform SDK 2.0 no longer accepting in the state unknown property names that are not part of the schema
+	//Convey("Given a resource factory initialized with a spec resource with a property schema definition containing one nested struct but having terraform property names that are not valid within the resource definition", t, func() {
+	//	// Use case -  crappy path while getting properties paylod for properties which do not exists in nested objects
+	//	nestedObjectSchemaDefinition := &SpecSchemaDefinition{
+	//		Properties: SpecSchemaDefinitionProperties{
+	//			newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+	//		},
+	//	}
+	//	nestedObjectNoTFCompliantName := []interface{}{
+	//		map[string]interface{}{
+	//			"badprotocoldoesntexist": nestedObjectSchemaDefinition.Properties[0].Default,
+	//		},
+	//	}
+	//	nestedObjectNotTFCompliant := newObjectSchemaDefinitionPropertyWithDefaults("nested_object_not_compliant", "", true, false, false, nestedObjectNoTFCompliantName, nestedObjectSchemaDefinition)
+	//	propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+	//		Properties: SpecSchemaDefinitionProperties{
+	//			idProperty,
+	//			nestedObjectNotTFCompliant,
+	//		},
+	//	}
+	//	propertyWithNestedObjectDefault := []interface{}{
+	//		map[string]interface{}{
+	//			"id":                          propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+	//			"nested_object_not_compliant": propertyWithNestedObjectSchemaDefinition.Properties[1].Default,
+	//		},
+	//	}
+	//	expectedPropertyWithNestedObjectName := "property_with_nested_object"
+	//	propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, propertyWithNestedObjectDefault, propertyWithNestedObjectSchemaDefinition)
+	//	r, resourceData := testCreateResourceFactory(t, propertyWithNestedObject)
+	//	Convey("When populatePayload is called with an empty map, the property with nested object in the resource schema and it's corresponding terraform resourceData state data value", func() {
+	//		payload := map[string]interface{}{}
+	//		dataValue, _ := resourceData.GetOk(propertyWithNestedObject.GetTerraformCompliantPropertyName())
+	//		err := r.populatePayload(payload, propertyWithNestedObject, dataValue)
+	//		fmt.Println(payload)
+	//		Convey("Then the map returned should be empty and the error should be the expected one", func() {
+	//			So(err.Error(), ShouldEqual, "property with terraform name 'badprotocoldoesntexist' not existing in resource schema definition")
+	//			So(payload, ShouldBeEmpty)
+	//		})
+	//	})
+	//})
 
 	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing a slice of objects with an invalid slice name definition", t, func() {
 		// Use case -  crappy path while getting properties paylod for properties which do not exists in slices
@@ -2129,6 +2207,106 @@ func TestGetPropertyPayload(t *testing.T) {
 			Convey("Then the map returned should be empty and the error should be the expected one", func() {
 				So(err.Error(), ShouldEqual, "property 'slice_object_property_doesn_not_exists' has a nil state dataValue")
 				So(payload, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a property schema definition containing an unknown ", t, func() {
+		property := &SpecSchemaDefinitionProperty{
+			Name: "unknown",
+			Type: "unknown",
+		}
+		r := resourceFactory{}
+		Convey("When populatePayload is called with an empty map, the property slice of objects in the resource schema are not found", func() {
+			dataPointer := &struct{}{}
+			err := r.populatePayload(nil, property, dataPointer)
+			Convey("Then the error returned should contain that the type is not supported", func() {
+				So(err.Error(), ShouldEqual, "'unknown' type not supported")
+			})
+		})
+	})
+
+	Convey("Given a resource factory initialized with a spec resource with a readOnly property schema definition", t, func() {
+		property := &SpecSchemaDefinitionProperty{
+			Name:     "computed_prop",
+			Type:     TypeString,
+			ReadOnly: true,
+		}
+		r := resourceFactory{}
+		Convey("When populatePayload is called with an empty map, the readOnly property and some dataValue", func() {
+			err := r.populatePayload(map[string]interface{}{}, property, &struct{}{})
+			Convey("Then the error returned should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When populatePayload is called with a property with a dataValue that contains properties not defined in the SpecSchemaDefinitionProperty", func() {
+			property := &SpecSchemaDefinitionProperty{
+				Name:                 "object_prop",
+				Type:                 TypeObject,
+				SpecSchemaDefinition: &SpecSchemaDefinition{
+					// unknown_prop is not defined in the objects schema definition
+				},
+			}
+			dataValue := map[string]interface{}{
+				"unknown_prop": "something",
+			}
+			err := r.populatePayload(map[string]interface{}{}, property, dataValue)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "property with terraform name 'unknown_prop' not existing in resource schema definition")
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When populatePayload is called with a property with a dataValue that contains a value for an object but the object's sub-property properties are not defined in the 'prop' SpecSchemaDefinitionProperty", func() {
+			property := &SpecSchemaDefinitionProperty{
+				Name: "object_prop",
+				Type: TypeObject,
+				SpecSchemaDefinition: &SpecSchemaDefinition{
+					Properties: SpecSchemaDefinitionProperties{
+						&SpecSchemaDefinitionProperty{
+							Name:                 "prop",
+							Type:                 TypeObject,
+							SpecSchemaDefinition: &SpecSchemaDefinition{},
+						},
+					},
+				},
+			}
+			dataValue := map[string]interface{}{
+				"prop": map[string]interface{}{
+					"unknown_prop": "something",
+				},
+			}
+			err := r.populatePayload(map[string]interface{}{}, property, dataValue)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "property with terraform name 'unknown_prop' not existing in resource schema definition")
+			})
+		})
+	})
+
+	Convey("Given a resource factory", t, func() {
+		r := resourceFactory{}
+		Convey("When populatePayload is called with a dataValue list and the schema property is an object but the dataValue (representing an object) contains props that are not defined in the SpecSchemaDefinitionProperty", func() {
+			property := &SpecSchemaDefinitionProperty{
+				Name:                 "object_prop",
+				Type:                 TypeObject,
+				SpecSchemaDefinition: &SpecSchemaDefinition{
+					// unknown_prop is not defined in the objects schema definition
+				},
+			}
+			dataValue := []interface{}{
+				map[string]interface{}{
+					"unknown_prop": "something",
+				},
+			}
+			err := r.populatePayload(map[string]interface{}{}, property, dataValue)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "property with terraform name 'unknown_prop' not existing in resource schema definition")
 			})
 		})
 	})
@@ -2183,6 +2361,18 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 				So(err.Error(), ShouldEqual, "status property value '[status]' does not have a supported type [string/map]")
 			})
 		})
+
+		Convey("When getStatusValueFromPayload method is called with a payload with a 'status' field but does not match the spec in the SpecSchemaDefinition (which is a string status in the root level, not an object)", func() {
+			expectedStatusValue := map[string]interface{}{}
+			payload := map[string]interface{}{
+				statusDefaultPropertyName: expectedStatusValue,
+			}
+			statusField, err := r.getStatusValueFromPayload(payload)
+			Convey("Then value returned should contain the name of the property 'status' and the error returned should be nil", func() {
+				So(err.Error(), ShouldEqual, "could not find status value [[status]] in the payload provided")
+				So(statusField, ShouldBeEmpty)
+			})
+		})
 	})
 
 	Convey("Given a swagger schema definition that has an status property that IS an object", t, func() {
@@ -2229,6 +2419,45 @@ func TestGetStatusValueFromPayload(t *testing.T) {
 			Convey("Then the value returned should contain the name of the property 'status' and the error returned should be nil", func() {
 				So(err, ShouldBeNil)
 				So(statusField, ShouldEqual, expectedStatusValue)
+			})
+		})
+	})
+
+	Convey("Given an empty resource schema", t, func() {
+		expectedError := "some error"
+		specResource := &specStubResource{
+			funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+				return nil, fmt.Errorf("some error")
+			},
+		}
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called", func() {
+			statusField, err := r.getStatusValueFromPayload(nil)
+			Convey("Then value returned should be empty and the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, expectedError)
+				So(statusField, ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("Given an resource with no status field", t, func() {
+		specResource := &specStubResource{
+			funcGetResourceSchema: func() (*SpecSchemaDefinition, error) {
+				return &SpecSchemaDefinition{
+					// Spec is missing the status field
+				}, nil
+			},
+		}
+		r := resourceFactory{
+			openAPIResource: specResource,
+		}
+		Convey("When getStatusValueFromPayload method is called", func() {
+			statusField, err := r.getStatusValueFromPayload(nil)
+			Convey("Then value returned should be empty and the error should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "could not find any status property. Please make sure the resource schema definition has either one property named 'status' or one property is marked with IsStatusIdentifier set to true")
+				So(statusField, ShouldEqual, "")
 			})
 		})
 	})

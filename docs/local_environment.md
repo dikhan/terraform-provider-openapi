@@ -5,9 +5,8 @@ development purposes.
 
 ## Running tests
 
-First and foremost, try running both the unit tests as well as the integration
-tests. This should give you enough confidence when contributing to know
-if new changes introduce any regression to the base code.
+First and foremost, try running both the unit tests as well as the integration tests. This should give you enough confidence when contributing to know 
+if new changes introduce any regression to the base code. 
 
 - Running unit tests
 
@@ -15,10 +14,16 @@ if new changes introduce any regression to the base code.
 $ make test
 ````
 
-- Running integration tests
+- Running integration tests can be done with the following target. **Note**: The Terraform SDK 2.0 requires Terraform v0.12.26 or later to be installed when running the provider integration tests.
 
 ````
 $ make integration-test
+````
+
+- Alternatively, the following target will all the tests (unit tests and integration tests)
+
+````
+$ make test-all
 ````
 
 The tests should all pass but if you get any errors please feel free to raise an issue.

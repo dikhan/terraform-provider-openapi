@@ -1,14 +1,13 @@
 package integration
 
 import (
-	"github.com/dikhan/terraform-provider-openapi/openapi"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"os"
 	"testing"
 
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 var exampleSwaggerFile string
@@ -20,7 +19,15 @@ var otfVarSwaggerURLEnvVariableValue = "https://localhost:8443/swagger.yaml"
 var otfVarInsecureSkipVerifyEnvVariable = "OTF_INSECURE_SKIP_VERIFY"
 
 var testAccProvider = getAPIProviderInitWithPluginEnvVariables()
-var testAccProviders = map[string]terraform.ResourceProvider{providerName: testAccProvider}
+var testAccProviders = testAccProvidersFactory(testAccProvider)
+
+func testAccProvidersFactory(provider *schema.Provider) map[string]func() (*schema.Provider, error) {
+	return map[string]func() (*schema.Provider, error){
+		providerName: func() (*schema.Provider, error) {
+			return provider, nil
+		},
+	}
+}
 
 func TestOpenAPIProvider(t *testing.T) {
 	if err := testAccProvider.InternalValidate(); err != nil {
@@ -28,21 +35,15 @@ func TestOpenAPIProvider(t *testing.T) {
 	}
 }
 
-func TestProvider_impl(t *testing.T) {
-	var _ terraform.ResourceProvider = testAccProvider
-}
-
 func getAPIProviderInitWithPluginEnvVariables() *schema.Provider {
 	initPluginWithEnvironmentVariables()
 	return getAPIProvider()
 }
 
-func getTestAccProviderInitWithPluginConfigurationFile(pluginConfigFile string) map[string]terraform.ResourceProvider {
+func getTestAccProviderInitWithPluginConfigurationFile(pluginConfigFile string) map[string]func() (*schema.Provider, error) {
 	initPluginWithExternalConfigFile(pluginConfigFile)
 	testAccProvider = getAPIProvider()
-	return map[string]terraform.ResourceProvider{
-		providerName: testAccProvider,
-	}
+	return testAccProvidersFactory(testAccProvider)
 }
 
 func getAPIProvider() *schema.Provider {

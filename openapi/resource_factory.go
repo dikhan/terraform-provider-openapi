@@ -6,13 +6,12 @@ import (
 	"log"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/dikhan/terraform-provider-openapi/openapi/openapierr"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapierr"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type resourceFactory struct {
@@ -52,14 +51,15 @@ func (r resourceFactory) createTerraformResource() (*schema.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+	resourceName := r.openAPIResource.GetResourceName()
 	return &schema.Resource{
-		Schema:   s,
-		Create:   r.create,
-		Read:     r.read,
-		Delete:   r.delete,
-		Update:   r.update,
-		Importer: r.importer(),
-		Timeouts: timeouts,
+		Schema:        s,
+		CreateContext: crudWithContext(r.create, schema.TimeoutCreate, resourceName),
+		ReadContext:   crudWithContext(r.read, schema.TimeoutRead, resourceName),
+		DeleteContext: crudWithContext(r.delete, schema.TimeoutDelete, resourceName),
+		UpdateContext: crudWithContext(r.update, schema.TimeoutUpdate, resourceName),
+		Importer:      r.importer(),
+		Timeouts:      timeouts,
 	}, nil
 }
 
@@ -580,32 +580,7 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 			}
 		}
 	case reflect.String:
-		// This is so when object fields are processed, map values, they come as string so need to do the proper translation base
-		// on the origin type of the property
-		switch property.Type {
-		case TypeInt:
-			v, err := strconv.ParseInt(dataValue.(string), 0, 0)
-			if err != nil {
-				return err
-			}
-			input[property.Name] = v
-		case TypeFloat:
-			v, err := strconv.ParseFloat(dataValue.(string), 64)
-			if err != nil {
-				return err
-			}
-			input[property.Name] = v
-		case TypeBool:
-			v, err := strconv.ParseBool(dataValue.(string))
-			if err != nil {
-				return err
-			}
-			input[property.Name] = v
-		case TypeString:
-			input[property.Name] = dataValue.(string)
-		default:
-			return fmt.Errorf("property '%s' type not supported for reflect value string", property.Type)
-		}
+		input[property.Name] = dataValue.(string)
 	case reflect.Int:
 		input[property.Name] = dataValue.(int)
 	case reflect.Float64:
