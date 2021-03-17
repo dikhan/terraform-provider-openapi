@@ -1,9 +1,11 @@
 package openapiterraformdocsgenerator
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
 	"github.com/mitchellh/hashstructure"
+	"log"
 	"sort"
 )
 
@@ -11,6 +13,15 @@ import (
 type TerraformProviderDocGenerator struct {
 	// ProviderName defines the provider name
 	ProviderName string
+	// Hostname the Terraform registry that distributes the provider as documented in https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
+	// For in-house providers that you intend to distribute from a local filesystem directory, you can use an arbitrary hostname in a domain your organization controls. For example, if your corporate domain were example.com then you might choose
+	// to use terraform.example.com as your placeholder hostname, even if that hostname doesn't actually resolve in DNS.
+	Hostname string
+	// Namespace An organizational namespace within the specified registry to be used for configuration purposes as documented in https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
+	Namespace string
+	// PluginVersionConstraint should contain the OpenAPI plugin version constraint eg: "~> 2.1.0". If not populated the renderer
+	// will default to ">= 2.1.0" OpenAPI provider version
+	PluginVersionConstraint string
 	// SpecAnalyser analyses the swagger doc and provides helper methods to retrieve all the end points that can
 	// be used as terraform resources.
 	SpecAnalyser openapi.SpecAnalyser
@@ -18,16 +29,33 @@ type TerraformProviderDocGenerator struct {
 
 // NewTerraformProviderDocGenerator returns a TerraformProviderDocGenerator populated with the provider documentation which
 // exposes methods to render the documentation in different formats (only html supported at the moment)
-func NewTerraformProviderDocGenerator(providerName, openAPIDocURL string) (TerraformProviderDocGenerator, error) {
+func NewTerraformProviderDocGenerator(providerName, hostname, namespace, openAPIDocURL string) (TerraformProviderDocGenerator, error) {
 	analyser, err := openapi.CreateSpecAnalyser("v2", openAPIDocURL)
 	if err != nil {
 		return TerraformProviderDocGenerator{}, err
 	}
-	return TerraformProviderDocGenerator{ProviderName: providerName, SpecAnalyser: analyser}, nil
+	return TerraformProviderDocGenerator{
+		ProviderName: providerName,
+		Hostname:     hostname,
+		Namespace:    namespace,
+		SpecAnalyser: analyser,
+	}, nil
 }
 
 // GenerateDocumentation creates a TerraformProviderDocumentation object populated based on the OpenAPIDocURL documentation
 func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProviderDocumentation, error) {
+	if t.ProviderName == "" {
+		return TerraformProviderDocumentation{}, errors.New("provider name not provided")
+	}
+	if t.Hostname == "" {
+		return TerraformProviderDocumentation{}, errors.New("hostname not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>")
+	}
+	if t.Namespace == "" {
+		return TerraformProviderDocumentation{}, errors.New("namespace not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>")
+	}
+	if t.PluginVersionConstraint == "" {
+		log.Println("PluginVersionConstraint not provided, default value in the plugin's terraform required_providers rendered documentation will be version = \">= 2.1.0\"")
+	}
 	regions, err := getRegions(t.SpecAnalyser)
 	if err != nil {
 		return TerraformProviderDocumentation{}, err
@@ -70,7 +98,10 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 	return TerraformProviderDocumentation{
 		ProviderName: t.ProviderName,
 		ProviderInstallation: ProviderInstallation{
-			ProviderName: t.ProviderName,
+			ProviderName:            t.ProviderName,
+			Namespace:               t.Namespace,
+			Hostname:                t.Hostname,
+			PluginVersionConstraint: t.PluginVersionConstraint,
 			Example: fmt.Sprintf("$ export PROVIDER_NAME=%s && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>"+
 				"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/v2/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>"+
 				"[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>"+

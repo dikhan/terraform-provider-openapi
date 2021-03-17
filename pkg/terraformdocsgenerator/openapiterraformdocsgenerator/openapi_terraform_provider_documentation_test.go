@@ -17,6 +17,8 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 		ProviderNotes: []string{"provider custom note 1", "provider custom note 2"},
 		ProviderInstallation: ProviderInstallation{
 			ProviderName: providerName,
+			Hostname:     "terraform.example.com",
+			Namespace:    "examplecorp",
 		},
 		ProviderConfiguration: ProviderConfiguration{
 			ProviderName: providerName,
@@ -81,6 +83,20 @@ func TestTerraformProviderDocumentation_RenderZendeskHTML(t *testing.T) {
 <pre dir="ltr">
 ➜ ~ terraform init &amp;&amp; terraform plan
 </pre>
+<p>
+<b>Note:</b> As of Terraform &gt;= 0.13 each Terraform module must declare which providers it requires, so that Terraform can install and use them. If you are using Terraform &gt;= 0.13, copy into your .tf file the 
+following snippet already populated with the provider configuration: 
+<pre dir="ltr">
+terraform {
+  required_providers {
+    openapi = {
+      source  = "terraform.example.com/examplecorp/openapi"
+      version = ">= 2.0.1" 
+    }
+  }
+}
+</pre>
+</p>
 <h2 id="provider_resources">Provider Resources</h2>
 	
 <p>No resources are supported at the moment.</p> <h2 id="provider_datasources">Data Sources (using resource id)</h2>
