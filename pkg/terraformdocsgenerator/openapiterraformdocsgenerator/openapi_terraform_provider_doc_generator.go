@@ -48,7 +48,7 @@ func (t TerraformProviderDocGenerator) GenerateDocumentation() (TerraformProvide
 		return TerraformProviderDocumentation{}, errors.New("provider name not provided")
 	}
 	if t.Hostname == "" {
-		return TerraformProviderDocumentation{}, errors.New("hostname name not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>")
+		return TerraformProviderDocumentation{}, errors.New("hostname not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>")
 	}
 	if t.Namespace == "" {
 		return TerraformProviderDocumentation{}, errors.New("namespace not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>")

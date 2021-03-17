@@ -210,7 +210,7 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 			name:         "hostname name not provided",
 			providerName: "openapi",
 			specAnalyser: &specAnalyserStub{},
-			expectedErr:  errors.New("hostname name not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>"),
+			expectedErr:  errors.New("hostname not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>"),
 		},
 		{
 			name:         "namespace not provided",
