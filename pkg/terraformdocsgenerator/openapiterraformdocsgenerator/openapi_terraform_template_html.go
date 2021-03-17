@@ -84,7 +84,25 @@ var ProviderInstallationTmpl = `<h2 id="provider_installation">Provider Installa
 	{{- .OtherCommand -}}
 {{- end}}
 ➜ ~ terraform init &amp;&amp; terraform plan
-</pre>`
+</pre>
+<p>
+<b>Note:</b> As of Terraform &gt;= 0.13 each Terraform module must declare which providers it requires, so that Terraform can install and use them. If you are using Terraform &gt;= 0.13, copy into your .tf file the 
+following snippet already populated with the provider configuration: 
+<pre dir="ltr">
+terraform {
+  required_providers {
+    {{.ProviderName}} = {
+      source  = "{{.Hostname}}/{{.Namespace}}/{{.ProviderName}}"
+{{- if .PluginVersionConstraint }}
+      version = "{{.PluginVersionConstraint}}"
+{{- else}}
+      version = ">= 2.0.1"
+{{- end}} 
+    }
+  }
+}
+</pre>
+</p>`
 
 // ProviderConfigurationTmpl contains the template used to render the TerraformProviderDocumentation.ProviderConfiguration struct as HTML formatted for Zendesk
 var ProviderConfigurationTmpl = `{{if or .Regions .ConfigProperties}}

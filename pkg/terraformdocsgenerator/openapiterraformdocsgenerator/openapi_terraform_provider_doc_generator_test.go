@@ -23,20 +23,22 @@ func TestNewTerraformProviderDocGenerator(t *testing.T) {
 	defer swaggerServer.Close()
 
 	providerName := "openapi"
-	dg, err := NewTerraformProviderDocGenerator(providerName, swaggerServer.URL)
+	dg, err := NewTerraformProviderDocGenerator(providerName, "terraform.example.com", "examplecorp", swaggerServer.URL)
 	assert.Equal(t, providerName, dg.ProviderName)
 	assert.NotNil(t, dg.SpecAnalyser)
 	assert.NoError(t, err)
 }
 
 func TestNewTerraformProviderDocGenerator_ErrorLoadingSpecAnalyser(t *testing.T) {
-	dg, err := NewTerraformProviderDocGenerator("openapi", "badURL")
+	dg, err := NewTerraformProviderDocGenerator("openapi", "terraform.example.com", "examplecorp", "badURL")
 	assert.Empty(t, dg)
 	assert.EqualError(t, err, "failed to retrieve the OpenAPI document from 'badURL' - error = open badURL: no such file or directory")
 }
 
 func TestGenerateDocumentation(t *testing.T) {
 	providerName := "openapi"
+	hostname := "terraform.example.com"
+	namespace := "examplecorp"
 	resources := []openapi.SpecResource{
 		&specStubResource{
 			name:         "cdn_v1",
@@ -69,6 +71,8 @@ func TestGenerateDocumentation(t *testing.T) {
 	}
 	dg := TerraformProviderDocGenerator{
 		ProviderName: providerName,
+		Hostname:     hostname,
+		Namespace:    namespace,
 		SpecAnalyser: &specAnalyserStub{
 			resources:   func() ([]openapi.SpecResource, error) { return resources, nil },
 			dataSources: func() []openapi.SpecResource { return resources },
@@ -95,6 +99,8 @@ func TestGenerateDocumentation(t *testing.T) {
 
 	// ProviderInstallation assertions
 	assert.Equal(t, providerName, d.ProviderInstallation.ProviderName)
+	assert.Equal(t, hostname, d.ProviderInstallation.Hostname)
+	assert.Equal(t, namespace, d.ProviderInstallation.Namespace)
 	expectedProviderInstallExample := fmt.Sprintf("$ export PROVIDER_NAME=%s && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>"+
 		"[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/v2/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>"+
 		"[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>"+
@@ -189,11 +195,35 @@ func assertProperty(t *testing.T, actualProp Property, expectedName, expectedTyp
 func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 	testCases := []struct {
 		name         string
+		providerName string
+		hostname     string
+		namespace    string
 		specAnalyser *specAnalyserStub
 		expectedErr  error
 	}{
 		{
-			name: "getRegions error",
+			name:         "provider name not provided",
+			specAnalyser: &specAnalyserStub{},
+			expectedErr:  errors.New("provider name not provided"),
+		},
+		{
+			name:         "hostname name not provided",
+			providerName: "openapi",
+			specAnalyser: &specAnalyserStub{},
+			expectedErr:  errors.New("hostname name not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>"),
+		},
+		{
+			name:         "namespace not provided",
+			providerName: "openapi",
+			hostname:     "terraform.example.com",
+			specAnalyser: &specAnalyserStub{},
+			expectedErr:  errors.New("namespace not provided, this is required to be able to render the provider installation section containing the required_providers block with the source address configuration in the form of [<HOSTNAME>/]<NAMESPACE>/<TYPE>"),
+		},
+		{
+			name:         "getRegions error",
+			providerName: "openapi",
+			hostname:     "terraform.example.com",
+			namespace:    "examplecorp",
 			specAnalyser: &specAnalyserStub{
 				backendConfiguration: func() (*specStubBackendConfiguration, error) {
 					return nil, errors.New("getRegions error")
@@ -202,7 +232,10 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 			expectedErr: errors.New("getRegions error"),
 		},
 		{
-			name: "getSecurity error",
+			name:         "getSecurity error",
+			providerName: "openapi",
+			hostname:     "terraform.example.com",
+			namespace:    "examplecorp",
 			specAnalyser: &specAnalyserStub{
 				security: &specSecurityStub{
 					globalSecuritySchemes: func() (openapi.SpecSecuritySchemes, error) { return nil, errors.New("getSecurity error") },
@@ -211,7 +244,10 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 			expectedErr: errors.New("getSecurity error"),
 		},
 		{
-			name: "GetTerraformCompliantResources error",
+			name:         "GetTerraformCompliantResources error",
+			providerName: "openapi",
+			hostname:     "terraform.example.com",
+			namespace:    "examplecorp",
 			specAnalyser: &specAnalyserStub{
 				resources: func() ([]openapi.SpecResource, error) {
 					return nil, errors.New("GetTerraformCompliantResources error")
@@ -220,7 +256,10 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 			expectedErr: errors.New("GetTerraformCompliantResources error"),
 		},
 		{
-			name: "getProviderResources error",
+			name:         "getProviderResources error",
+			providerName: "openapi",
+			hostname:     "terraform.example.com",
+			namespace:    "examplecorp",
 			specAnalyser: &specAnalyserStub{
 				resources: func() ([]openapi.SpecResource, error) {
 					return []openapi.SpecResource{
@@ -234,7 +273,10 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 			expectedErr: errors.New("getProviderResources error"),
 		},
 		{
-			name: "getDataSourceFilters error",
+			name:         "getDataSourceFilters error",
+			providerName: "openapi",
+			hostname:     "terraform.example.com",
+			namespace:    "examplecorp",
 			specAnalyser: &specAnalyserStub{
 				dataSources: func() []openapi.SpecResource {
 					return []openapi.SpecResource{
@@ -250,7 +292,12 @@ func TestGenerateDocumentation_ErrorCases(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		dg := TerraformProviderDocGenerator{SpecAnalyser: tc.specAnalyser}
+		dg := TerraformProviderDocGenerator{
+			ProviderName: tc.providerName,
+			Hostname:     tc.hostname,
+			Namespace:    tc.namespace,
+			SpecAnalyser: tc.specAnalyser,
+		}
 		d, err := dg.GenerateDocumentation()
 		assert.Empty(t, d, tc.name)
 		assert.EqualError(t, err, tc.expectedErr.Error(), tc.name)

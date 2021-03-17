@@ -183,7 +183,50 @@ func TestAttributeReferenceTmpl(t *testing.T) {
 
 func TestProviderInstallationTmpl(t *testing.T) {
 	pi := ProviderInstallation{
+		ProviderName:            "openapi",
+		Hostname:                "terraform.example.com",
+		Namespace:               "examplecorp",
+		PluginVersionConstraint: ">= 2.2.2",
+		Example:                 "➜ ~ This is an example",
+		Other:                   "Some more info about the installation",
+		OtherCommand:            "➜ ~ init_command do_something",
+	}
+	var buf bytes.Buffer
+	expectedHTML := `<h2 id="provider_installation">Provider Installation</h2>
+<p>
+  In order to provision 'openapi' Terraform resources, you need to first install the 'openapi'
+  Terraform plugin by running&nbsp;the following command (you must be running Terraform &gt;= 0.12):
+</p>
+<pre>➜ ~ This is an example</pre>
+<p>
+  <span>Some more info about the installation</span>
+</p>
+<pre dir="ltr">➜ ~ init_command do_something
+➜ ~ terraform init &amp;&amp; terraform plan
+</pre>
+<p>
+<b>Note:</b> As of Terraform &gt;= 0.13 each Terraform module must declare which providers it requires, so that Terraform can install and use them. If you are using Terraform &gt;= 0.13, copy into your .tf file the 
+following snippet already populated with the provider configuration: 
+<pre dir="ltr">
+terraform {
+  required_providers {
+    openapi = {
+      source  = "terraform.example.com/examplecorp/openapi"
+      version = ">= 2.2.2" 
+    }
+  }
+}
+</pre>
+</p>`
+	renderTest(t, &buf, "ProviderInstallation", ProviderInstallationTmpl, pi, "ProviderInstallationTmpl")
+	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
+}
+
+func TestProviderInstallationWithDefaultPluginVersionTmpl(t *testing.T) {
+	pi := ProviderInstallation{
 		ProviderName: "openapi",
+		Hostname:     "terraform.example.com",
+		Namespace:    "examplecorp",
 		Example:      "➜ ~ This is an example",
 		Other:        "Some more info about the installation",
 		OtherCommand: "➜ ~ init_command do_something",
@@ -200,7 +243,21 @@ func TestProviderInstallationTmpl(t *testing.T) {
 </p>
 <pre dir="ltr">➜ ~ init_command do_something
 ➜ ~ terraform init &amp;&amp; terraform plan
-</pre>`
+</pre>
+<p>
+<b>Note:</b> As of Terraform &gt;= 0.13 each Terraform module must declare which providers it requires, so that Terraform can install and use them. If you are using Terraform &gt;= 0.13, copy into your .tf file the 
+following snippet already populated with the provider configuration: 
+<pre dir="ltr">
+terraform {
+  required_providers {
+    openapi = {
+      source  = "terraform.example.com/examplecorp/openapi"
+      version = ">= 2.0.1" 
+    }
+  }
+}
+</pre>
+</p>`
 	renderTest(t, &buf, "ProviderInstallation", ProviderInstallationTmpl, pi, "ProviderInstallationTmpl")
 	assert.Equal(t, expectedHTML, strings.Trim(buf.String(), "\n"))
 }

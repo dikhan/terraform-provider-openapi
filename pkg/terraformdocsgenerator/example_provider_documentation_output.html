@@ -53,13 +53,27 @@
   In order to provision 'openapi' Terraform resources, you need to first install the 'openapi'
   Terraform plugin by running&nbsp;the following command (you must be running Terraform &gt;= 0.12):
 </p>
-<pre>$ export PROVIDER_NAME=openapi && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>[INFO] Cleaning up tmp dir created for installation purposes: /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh<br>[INFO] Terraform provider 'terraform-provider-openapi' successfully installed at: '~/.terraform.d/plugins'!</pre>
+<pre>$ export PROVIDER_NAME=openapi && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME<br>[INFO] Downloading https://github.com/dikhan/terraform-provider-openapi/v2/releases/download/v0.29.4/terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz in temporally folder /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh...<br>[INFO] Extracting terraform-provider-openapi from terraform-provider-openapi_0.29.4_darwin_amd64.tar.gz...<br>[INFO] Cleaning up tmp dir created for installation purposes: /var/folders/n_/1lrwb99s7f50xmn9jpmfnddh0000gp/T/tmp.Xv1AkIZh<br>[INFO] Terraform provider 'terraform-provider-openapi' successfully installed at: '~/.terraform.d/plugins'!</pre>
 <p>
   <span>You can then start running the Terraform provider:</span>
 </p>
 <pre dir="ltr">$ export OTF_VAR_openapi_PLUGIN_CONFIGURATION_FILE="https://api.service.com/openapi.yaml"<br>
 ➜ ~ terraform init &amp;&amp; terraform plan
 </pre>
+<p>
+<b>Note:</b> As of Terraform &gt;= 0.13 each Terraform module must declare which providers it requires, so that Terraform can install and use them. If you are using Terraform &gt;= 0.13, copy into your .tf file the 
+following snippet already populated with the provider configuration: 
+<pre dir="ltr">
+terraform {
+  required_providers {
+    openapi = {
+      source  = "terraform.example.com/examplecorp/openapi"
+      version = ">= 2.0.1" 
+    }
+  }
+}
+</pre>
+</p>
 <h2 id="provider_configuration">Provider Configuration</h2>
 <h4 id="provider_configuration_example_usage" dir="ltr">Example Usage</h4>
     <pre>
