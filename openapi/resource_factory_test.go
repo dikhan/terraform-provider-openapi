@@ -505,6 +505,36 @@ func TestUpdate(t *testing.T) {
 				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
 			})
 		})
+
+		Convey("When update is called with resource data and a client and the API returns 204 (No Content) response to indicate successful completion of the request", func() {
+			client := &clientOpenAPIStub{
+				// This is the payload returned by the GET operation when checking whether any immutable property has been updated. This happens before even calling the PUT operation.
+				responsePayload: map[string]interface{}{
+					idProperty.Name:        idProperty.Default,
+					stringProperty.Name:    stringProperty.Default,
+					immutableProperty.Name: immutableProperty.Default,
+				},
+				funcPut: func() (*http.Response, error) {
+					return &http.Response{StatusCode: http.StatusNoContent}, nil
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
+				},
+			}
+			err := r.update(resourceData, client)
+			Convey("Then resourceData should be modified in accordance with the state of the enclosed representation, the error returned should be nil, and the expected telemetry provider should have been called", func() {
+				So(err, ShouldBeNil)
+				So(resourceData.Id(), ShouldEqual, idProperty.Default)
+				So(resourceData.Get(stringProperty.Name), ShouldEqual, stringProperty.Default)
+				So(resourceData.Get(immutableProperty.Name), ShouldEqual, immutableProperty.Default)
+				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
+				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
+			})
+		})
+
 		Convey("When update is called with a resource data containing updated values and the immutable check fails due to an immutable property being updated", func() {
 			client := &clientOpenAPIStub{
 				responsePayload: map[string]interface{}{
@@ -554,7 +584,7 @@ func TestUpdate(t *testing.T) {
 			}
 			err := r.update(resourceData, client)
 			Convey("And the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] UPDATE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 202] ()")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] UPDATE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 202 204] ()")
 			})
 		})
 		Convey("When update is called with resource data and a client returns a non expected error", func() {
