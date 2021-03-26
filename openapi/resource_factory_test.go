@@ -524,6 +524,12 @@ func TestUpdate(t *testing.T) {
 					},
 				},
 			}
+			operations := r.openAPIResource.getResourceOperations()
+			*operations.Put = specResourceOperation{
+				responses: specResponses{
+					http.StatusNoContent: &specResponse{},
+				},
+			}
 			err := r.update(resourceData, client)
 			Convey("Then resourceData should be modified in accordance with the state of the enclosed representation, the error returned should be nil, and the expected telemetry provider should have been called", func() {
 				So(err, ShouldBeNil)
@@ -532,6 +538,66 @@ func TestUpdate(t *testing.T) {
 				So(resourceData.Get(immutableProperty.Name), ShouldEqual, immutableProperty.Default)
 				So(telemetryHandlerResourceNameReceived, ShouldEqual, "resourceName")
 				So(telemetryHandlerTFOperationReceived, ShouldEqual, TelemetryResourceOperationUpdate)
+			})
+		})
+
+		Convey("When update is configured with response 204 and it's called with resource data and a client but the API call returns an error", func() {
+			client := &clientOpenAPIStub{
+				// This is the payload returned by the GET operation when checking whether any immutable property has been updated. This happens before even calling the PUT operation.
+				responsePayload: map[string]interface{}{
+					idProperty.Name:        idProperty.Default,
+					stringProperty.Name:    stringProperty.Default,
+					immutableProperty.Name: immutableProperty.Default,
+				},
+				funcPut: func() (*http.Response, error) {
+					return &http.Response{StatusCode: http.StatusNoContent}, errors.New("some error while calling PUT")
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
+				},
+			}
+			operations := r.openAPIResource.getResourceOperations()
+			*operations.Put = specResourceOperation{
+				responses: specResponses{
+					http.StatusNoContent: &specResponse{},
+				},
+			}
+			err := r.update(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "some error while calling PUT")
+			})
+		})
+
+		Convey("When update is configured with response 204 and it's called with resource data and a client but the API returns an HTTP response status code that is not 204", func() {
+			client := &clientOpenAPIStub{
+				// This is the payload returned by the GET operation when checking whether any immutable property has been updated. This happens before even calling the PUT operation.
+				responsePayload: map[string]interface{}{
+					idProperty.Name:        idProperty.Default,
+					stringProperty.Name:    stringProperty.Default,
+					immutableProperty.Name: immutableProperty.Default,
+				},
+				funcPut: func() (*http.Response, error) {
+					return &http.Response{StatusCode: http.StatusInternalServerError}, nil
+				},
+				telemetryHandler: &telemetryHandlerStub{
+					submitResourceExecutionMetricsFunc: func(resourceName string, tfOperation TelemetryResourceOperation) {
+						telemetryHandlerResourceNameReceived = resourceName
+						telemetryHandlerTFOperationReceived = tfOperation
+					},
+				},
+			}
+			operations := r.openAPIResource.getResourceOperations()
+			*operations.Put = specResourceOperation{
+				responses: specResponses{
+					http.StatusNoContent: &specResponse{},
+				},
+			}
+			err := r.update(resourceData, client)
+			Convey("Then the error returned should be the expected one", func() {
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] UPDATE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [204] ()")
 			})
 		})
 
@@ -584,7 +650,7 @@ func TestUpdate(t *testing.T) {
 			}
 			err := r.update(resourceData, client)
 			Convey("And the error returned should be the expected one", func() {
-				So(err.Error(), ShouldEqual, "[resource='resourceName'] UPDATE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 202 204] ()")
+				So(err.Error(), ShouldEqual, "[resource='resourceName'] UPDATE /v1/resource/id failed: [resource='resourceName'] HTTP Response Status Code 500 not matching expected one [200 202] ()")
 			})
 		})
 		Convey("When update is called with resource data and a client returns a non expected error", func() {

@@ -116,11 +116,11 @@ func (o *ProviderClient) performRequest(method httpMethodSupported, resourceURL 
 
 	switch method {
 	case httpPost:
-		return o.httpClient.PostJson(reqContext.url, reqContext.headers, requestPayload, &responsePayload)
+		return o.httpClient.PostJson(reqContext.url, reqContext.headers, requestPayload, responsePayload)
 	case httpPut:
-		return o.httpClient.PutJson(reqContext.url, reqContext.headers, requestPayload, &responsePayload)
+		return o.httpClient.PutJson(reqContext.url, reqContext.headers, requestPayload, responsePayload)
 	case httpGet:
-		return o.httpClient.Get(reqContext.url, reqContext.headers, &responsePayload)
+		return o.httpClient.Get(reqContext.url, reqContext.headers, responsePayload)
 	case httpDelete:
 		return o.httpClient.Delete(reqContext.url, reqContext.headers)
 	}

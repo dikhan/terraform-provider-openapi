@@ -220,29 +220,38 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.GetResourceName(), resourcePath)
 	}
 	requestPayload := r.createPayloadFromLocalStateData(data)
-	responsePayload := map[string]interface{}{}
 	if err := r.checkImmutableFields(data, providerClient, parentsIDs...); err != nil {
 		return err
 	}
+
+	if operation.responses.getResponse(http.StatusNoContent) != nil {
+		// Don't populate responsePayload if the API's successful update response is 204 No Content
+		res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, nil, parentsIDs...)
+		if err != nil {
+			return err
+		}
+		// If the target resource does have a current representation and that representation is successfully modified in
+		// accordance with the state of the enclosed representation, then the origin server must send either a 200 (OK) or
+		// a 204 (No Content) response to indicate successful completion of the request.
+		// Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT
+		if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusNoContent}); err != nil {
+			return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.GetResourceName(), resourcePath, data.Id(), err)
+		}
+		return nil
+	}
+
+	var responsePayload map[string]interface{}
 	res, err := providerClient.Put(r.openAPIResource, data.Id(), requestPayload, &responsePayload, parentsIDs...)
 	if err != nil {
 		return err
 	}
-	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}); err != nil {
+	if err := checkHTTPStatusCode(r.openAPIResource, res, []int{http.StatusOK, http.StatusAccepted}); err != nil {
 		return fmt.Errorf("[resource='%s'] UPDATE %s/%s failed: %s", r.openAPIResource.GetResourceName(), resourcePath, data.Id(), err)
 	}
 
 	err = r.handlePollingIfConfigured(&responsePayload, data, providerClient, operation, res.StatusCode, schema.TimeoutUpdate)
 	if err != nil {
 		return fmt.Errorf("polling mechanism failed after PUT %s call with response status code (%d): %s", resourcePath, res.StatusCode, err)
-	}
-
-	// If the target resource does have a current representation and that representation is successfully modified in
-	// accordance with the state of the enclosed representation, then the origin server must send either a 200 (OK) or
-	// a 204 (No Content) response to indicate successful completion of the request.
-	// Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT
-	if res.StatusCode == http.StatusNoContent {
-		return nil
 	}
 
 	return updateStateWithPayloadData(r.openAPIResource, responsePayload, data)
