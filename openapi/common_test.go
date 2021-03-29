@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapierr"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -74,6 +75,18 @@ func TestCRUDWithContext(t *testing.T) {
 	})
 }
 
+type faultyReader struct {
+	err error
+}
+
+func (f faultyReader) Read(p []byte) (n int, err error) {
+	return 0, f.err
+}
+
+func (f faultyReader) Close() error {
+	return f.err
+}
+
 func TestCheckHTTPStatusCode(t *testing.T) {
 	testCases := []struct {
 		name             string
@@ -88,6 +101,15 @@ func TestCheckHTTPStatusCode(t *testing.T) {
 			},
 			inputStatusCodes: []int{http.StatusOK},
 			expectedError:    nil,
+		},
+		{
+			name: "reading the body response returns an error",
+			inputResponse: &http.Response{
+				Body:       &faultyReader{errors.New("error reading the body")},
+				StatusCode: http.StatusInternalServerError,
+			},
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    errors.New("[resource='resourceName'] HTTP Response Status Code 500 - Error 'error reading the body' occurred while reading the response body"),
 		},
 		{
 			name: "response that IS NOT expected",
@@ -106,6 +128,15 @@ func TestCheckHTTPStatusCode(t *testing.T) {
 			},
 			inputStatusCodes: []int{http.StatusOK},
 			expectedError:    errors.New("[resource='resourceName'] HTTP Response Status Code 401 - Unauthorized: API access is denied due to invalid credentials (unauthorized)"),
+		},
+		{
+			name: "response known with code 404 Not Found",
+			inputResponse: &http.Response{
+				Body:       ioutil.NopCloser(strings.NewReader("item not found")),
+				StatusCode: http.StatusNotFound,
+			},
+			inputStatusCodes: []int{http.StatusOK},
+			expectedError:    &openapierr.NotFoundError{OriginalError: errors.New("HTTP Response Status Code 404 - Not Found. Could not find resource instance: item not found")},
 		},
 	}
 	Convey("Given a specStubResource", t, func() {

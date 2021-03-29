@@ -298,6 +298,11 @@ as described in the [OpenAPI documentation for $ref](https://swagger.io/docs/spe
 having a computed property (readOnly) called ```id``` or by adding the [x-terraform-id](#attributeDetails) extension to one of the
 existing properties.
 
+- The PUT operation may return one of the the following successful responses:
+  - 200 OK with a response payload containing the final state of the resource representation in accordance with the state of the enclosed representation and any other computed property.
+  - 202 Accepted for async resources. Refer to [asynchronous resources](https://github.com/dikhan/terraform-provider-openapi/blob/master/docs/how_to.md#xTerraformResourcePollEnabled) for more info.
+  - 204 No Content with an empty response payload.
+
 ###### Data source instance
 
 Any resources that are deemed terraform compatible as per the previous section, will also expose a terraform data source 

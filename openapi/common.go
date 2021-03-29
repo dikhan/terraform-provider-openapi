@@ -34,12 +34,14 @@ func crudWithContext(crudFunc func(data *schema.ResourceData, i interface{}) err
 func checkHTTPStatusCode(openAPIResource SpecResource, res *http.Response, expectedHTTPStatusCodes []int) error {
 	if !responseContainsExpectedStatus(expectedHTTPStatusCodes, res.StatusCode) {
 		var resBody string
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Error '%s' occurred while reading the response body", openAPIResource.GetResourceName(), res.StatusCode, err)
-		}
-		if b != nil && len(b) > 0 {
-			resBody = string(b)
+		if res.Body != nil {
+			b, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return fmt.Errorf("[resource='%s'] HTTP Response Status Code %d - Error '%s' occurred while reading the response body", openAPIResource.GetResourceName(), res.StatusCode, err)
+			}
+			if b != nil && len(b) > 0 {
+				resBody = string(b)
+			}
 		}
 		switch res.StatusCode {
 		case http.StatusUnauthorized:
