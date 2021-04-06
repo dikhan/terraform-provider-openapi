@@ -282,7 +282,10 @@ func (s *SpecSchemaDefinitionProperty) terraformSchema() (*schema.Schema, error)
 	// not allow properties with Computed = true having the Default field populated, otherwise the following error will be
 	// thrown at runtime: Default must be nil if computed
 	if !s.isComputed() {
-		terraformSchema.Default = s.Default
+		// Terraform does not allow defaults to be set on type list properties, an error (Default is not valid for lists) would be thrown otherwise (https://www.terraform.io/docs/extend/schemas/schema-behaviors.html#default)
+		if !s.isArrayProperty() {
+			terraformSchema.Default = s.Default
+		}
 	}
 
 	return terraformSchema, nil

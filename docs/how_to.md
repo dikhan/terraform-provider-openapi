@@ -1079,6 +1079,9 @@ if input is not given, that's the purpose of ```Optional computed``` properties.
 **NOTE**: 
   - Object properties containing optional computed child properties will also need to include the extension ```x-terraform-computed```. Otherwise
   the Terraform schema for the object will not be marked as computed and any non expected value change in the child properties will result into diffs.
+  - Optional properties that are of type `array` that contain a default value are not supported at the moment and the provider
+  will ignore the Default value when creating the schema for the property. This is due to Terraform not supporting at the moment
+  [default values to be set in the schema's Default field for TypeList properties](https://github.com/hashicorp/terraform-plugin-sdk/blob/v2.5.0/helper/schema/schema.go#L763).  
 
 - Computed properties: These properties must contain the ```readOnly``` attribute set. These properties are included 
 in responses but not in requests, and the value is automatically assigned by the API. See example below **computed**
