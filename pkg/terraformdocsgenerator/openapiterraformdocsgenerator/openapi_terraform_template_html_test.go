@@ -72,6 +72,31 @@ func TestArgumentReferenceTmpl(t *testing.T) {
 			expectedOutput: "<li> optional_computed_prop [string] - (Optional) this is an optional computed property</li>\n\t",
 		},
 		{
+			name:           "optional computed property with default value",
+			property:       Property{Name: "optional_computed_prop", Type: "string", Description: "this is an optional computed property", IsOptionalComputed: true, Default: "some default value"},
+			expectedOutput: "<li> optional_computed_prop [string] - (Optional) this is an optional computed property. Default value is: some default value</li>\n\t",
+		},
+		{
+			name:           "optional computed property int with default value",
+			property:       Property{Name: "optional_computed_prop", Type: "integer", Description: "this is an optional computed property", IsOptionalComputed: true, Default: 26},
+			expectedOutput: "<li> optional_computed_prop [integer] - (Optional) this is an optional computed property. Default value is: 26</li>\n\t",
+		},
+		{
+			name:           "optional computed property bool with default value",
+			property:       Property{Name: "optional_computed_prop", Type: "boolean", Description: "this is an optional computed property", IsOptionalComputed: true, Default: true},
+			expectedOutput: "<li> optional_computed_prop [boolean] - (Optional) this is an optional computed property. Default value is: true</li>\n\t",
+		},
+		{
+			name:           "optional computed property float with default value",
+			property:       Property{Name: "optional_computed_prop", Type: "number", Description: "this is an optional computed property", IsOptionalComputed: true, Default: 12.99},
+			expectedOutput: "<li> optional_computed_prop [number] - (Optional) this is an optional computed property. Default value is: 12.99</li>\n\t",
+		},
+		{
+			name:           "optional computed property list with default value",
+			property:       Property{Name: "optional_computed_prop", Type: "list", ArrayItemsType: "string", Description: "this is an optional computed property", IsOptionalComputed: true, Default: []string{""}},
+			expectedOutput: "<li> optional_computed_prop [list of strings] - (Optional) this is an optional computed property. Default value is: []</li>\n\t",
+		},
+		{
 			name:           "optional property",
 			property:       Property{Name: "optional_prop", Type: "string", Description: "this is an optional property", Required: false},
 			expectedOutput: "<li> optional_prop [string] - (Optional) this is an optional property</li>\n\t",

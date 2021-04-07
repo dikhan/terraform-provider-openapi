@@ -259,10 +259,11 @@ func (t TerraformProviderDocGenerator) resourceSchemaToProperty(specSchemaDefini
 		ArrayItemsType:     string(specSchemaDefinitionProperty.ArrayItemsType),
 		Required:           specSchemaDefinitionProperty.IsRequired(),
 		Computed:           specSchemaDefinitionProperty.Computed,
-		IsOptionalComputed: specSchemaDefinitionProperty.IsOptionalComputed(),
+		IsOptionalComputed: specSchemaDefinitionProperty.IsOptionalComputed() || specSchemaDefinitionProperty.IsOptionalComputedWithDefault(),
 		IsSensitive:        specSchemaDefinitionProperty.Sensitive,
 		IsParent:           specSchemaDefinitionProperty.IsParentProperty,
 		Description:        specSchemaDefinitionProperty.Description,
+		Default:            specSchemaDefinitionProperty.Default,
 		Schema:             orderProps(schema),
 	}
 }

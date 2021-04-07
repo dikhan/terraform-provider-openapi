@@ -495,8 +495,8 @@ func TestGetDataSourceFilters(t *testing.T) {
 					Type: openapi.TypeObject,
 					SpecSchemaDefinition: &openapi.SpecSchemaDefinition{
 						Properties: openapi.SpecSchemaDefinitionProperties{
-							{Name: "string_prop2", Type: openapi.TypeString},
 							{Name: "string_prop3", Type: openapi.TypeString},
+							{Name: "string_prop2", Type: openapi.TypeString},
 							{Name: "string_prop1", Type: openapi.TypeString},
 						},
 					},
@@ -510,8 +510,8 @@ func TestGetDataSourceFilters(t *testing.T) {
 					Computed:           true,
 					IsOptionalComputed: true,
 					Schema: []Property{
-						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 					},
 				},
@@ -626,8 +626,8 @@ func TestGetDataSourceInstances(t *testing.T) {
 					Computed:           true,
 					IsOptionalComputed: true,
 					Schema: []Property{
-						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 						{Name: "string_prop1", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
+						{Name: "string_prop3", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 						{Name: "string_prop2", Type: "string", Required: false, Computed: true, IsOptionalComputed: true},
 					},
 				},
@@ -741,8 +741,8 @@ func TestGetProviderResources(t *testing.T) {
 					Required: false,
 					Computed: false,
 					Schema: []Property{
-						{Name: "string_prop3", Type: "string", Required: false, Computed: false},
 						{Name: "string_prop1", Type: "string", Required: false, Computed: false},
+						{Name: "string_prop3", Type: "string", Required: false, Computed: false},
 						{Name: "string_prop2", Type: "string", Required: false, Computed: false},
 					},
 				},
@@ -947,9 +947,9 @@ func TestOrderProps(t *testing.T) {
 	}
 	orderedProps := orderProps(inputProps)
 	expectedProps := []Property{
-		{Name: "prop2"},
-		{Name: "prop1"},
 		{Name: "prop3"},
+		{Name: "prop1"},
+		{Name: "prop2"},
 	}
 	assert.Equal(t, expectedProps, orderedProps)
 }

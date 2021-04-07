@@ -11,6 +11,7 @@ type Property struct {
 	IsSensitive        bool
 	IsParent           bool
 	Description        string
+	Default            interface{}
 	Schema             []Property // This is used to describe the schema for array of objects or object properties
 }
 

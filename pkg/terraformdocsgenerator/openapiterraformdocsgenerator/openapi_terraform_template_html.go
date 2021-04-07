@@ -290,7 +290,7 @@ var ArgumentReferenceTmpl = `{{- define "resource_argument_reference" -}}
         {{- $required = "Required" -}}
     {{end}}
 	{{- if or .Required (and (not .Required) (not .Computed)) .IsOptionalComputed -}}
-    <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] {{- if .IsSensitive -}}(<a href="#special_terms_definitions_sensitive_property" target="_self">sensitive</a>){{- end}} - ({{$required}}) {{if .IsParent}}The {{.Name}} that this resource belongs to{{else}}{{.Description}}{{end}}
+    <li>{{if eq .Type "object"}}<span class="wysiwyg-color-red">*</span>{{end}} {{.Name}} [{{.Type}} {{- if eq .Type "list" }} of {{.ArrayItemsType}}s{{- end -}}] {{- if .IsSensitive -}}(<a href="#special_terms_definitions_sensitive_property" target="_self">sensitive</a>){{- end}} - ({{$required}}) {{if .IsParent}}The {{.Name}} that this resource belongs to{{else}}{{.Description}}{{- if .Default -}}. Default value is: {{.Default}}{{- end -}}{{end}}
         {{- if or (eq .Type "object") (eq .ArrayItemsType "object")}}. The following properties compose the object schema
         :<ul dir="ltr">
             {{- range .Schema}}
