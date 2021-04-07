@@ -1457,6 +1457,24 @@ func TestTerraformSchema(t *testing.T) {
 		})
 	})
 
+	Convey("Given a list type schemaDefinitionProperty that is optional and does have a default value (meaning the value is known at plan time)", t, func() {
+		s := newListSchemaDefinitionPropertyWithDefaults("slice_property", "", false, false, false, []interface{}{"value1"}, TypeString, nil)
+		Convey("When terraformSchema is called with a schema definition property that is optional computed", func() {
+			terraformPropertySchema, err := s.terraformSchema()
+			Convey("Then the result returned should be the expected one", func() {
+				So(err, ShouldBeNil)
+				So(terraformPropertySchema.Optional, ShouldBeTrue)
+				So(terraformPropertySchema.Required, ShouldBeFalse)
+				So(terraformPropertySchema.Computed, ShouldBeFalse)
+				// the schema returned should be configured with no default value since Terraform does not allow defaults to be set on type list properties, an error (Default is not valid for lists) would be thrown otherwise:
+				// Ref: https://www.terraform.io/docs/extend/schemas/schema-behaviors.html#default
+				So(terraformPropertySchema.Default, ShouldBeNil)
+				// ValidateFunc is not yet supported on lists or sets
+				So(terraformPropertySchema.ValidateDiagFunc, ShouldBeNil)
+			})
+		})
+	})
+
 	Convey("Given a schemaDefinitionProperty that is forceNew and immutable ", t, func() {
 		s := newStringSchemaDefinitionProperty("propertyName", "", false, false, false, true, false, true, false, false, "")
 		Convey("When terraformSchema is called with a schema definition property that validation fails due to immutable and forceNew set", func() {
