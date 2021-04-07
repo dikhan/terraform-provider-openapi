@@ -11,6 +11,7 @@ type Property struct {
 	IsSensitive        bool
 	IsParent           bool
 	Description        string
+	Default            interface{}
 	Schema             []Property // This is used to describe the schema for array of objects or object properties
 }
 
@@ -22,4 +23,9 @@ func (p Property) ContainsComputedSubProperties() bool {
 		}
 	}
 	return false
+}
+
+// DefaultNotNil checks whether the Default value is nil. If the value is populated it returns true, false otherwise
+func (p Property) DefaultNotNil() bool {
+	return p.Default != nil
 }
