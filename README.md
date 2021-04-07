@@ -104,7 +104,7 @@ properties that are coming from external files.
 ## Authors
 
 - Daniel I. Khan Ramiro
-
+ 
 See also the list of [contributors](https://github.com/dikhan/terraform-provider-api/graphs/contributors) who participated in this project.
 
 
