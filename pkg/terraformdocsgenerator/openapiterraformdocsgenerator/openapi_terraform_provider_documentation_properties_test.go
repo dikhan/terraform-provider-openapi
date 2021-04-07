@@ -51,3 +51,28 @@ func TestProperty_ContainsComputedSubProperties(t *testing.T) {
 		assert.Equal(t, tc.expectedResult, result)
 	}
 }
+
+func TestProperty_DefaultNotNil(t *testing.T) {
+	testCases := []struct {
+		name           string
+		property       Property
+		expectedResult bool
+	}{
+		{
+			name:           "property does not contain a default value",
+			expectedResult: false,
+		},
+		{
+			name: "property does contain a default value",
+			property: Property{
+				Name:    "some property with schema (eg: object or array of objects) containing computed props",
+				Default: "some value",
+			},
+			expectedResult: true,
+		},
+	}
+	for _, tc := range testCases {
+		result := tc.property.DefaultNotNil()
+		assert.Equal(t, tc.expectedResult, result)
+	}
+}
