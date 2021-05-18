@@ -1,11 +1,11 @@
-FROM golang:1.12.5
+FROM alpine:3.13
 
 WORKDIR /openapi
 
-ENV TERRAFORM_VERSION=0.12.0
+ENV TERRAFORM_VERSION=0.13.7
 
-RUN apt-get update && \
-    apt-get -yq install unzip openssl ca-certificates && \
+RUN apk update && \
+    apk add curl jq python3 bash ca-certificates git openssl unzip wget && \
     cd /tmp && \
     wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
     unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /usr/bin && \
@@ -13,11 +13,10 @@ RUN apt-get update && \
     rm -rf /var/cache/apk/* && \
     rm -rf /var/tmp/*
 
-COPY version /
-
 # provision openapi plugins
-RUN export PROVIDER_NAME=goa && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME
-RUN export PROVIDER_NAME=swaggercodegen && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME
+ENV PROVIDER_SOURCE_ADDRESS="terraform.example.com/examplecorp"
+RUN export PROVIDER_NAME=goa && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME --provider-source-address ${PROVIDER_SOURCE_ADDRESS}
+RUN export PROVIDER_NAME=swaggercodegen && curl -fsSL https://raw.githubusercontent.com/dikhan/terraform-provider-openapi/master/scripts/install.sh | bash -s -- --provider-name $PROVIDER_NAME --provider-source-address ${PROVIDER_SOURCE_ADDRESS}
 
 # copy examples including terraform configurations
 COPY examples/ .

@@ -12,6 +12,11 @@ services:
 install:
 #  - go get github.com/buchanae/github-release-notes
   - export BINDIR=/home/travis/bin && curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
+  - curl -sLo /tmp/terraform.zip https://releases.hashicorp.com/terraform/0.8.8/terraform_0.13.6_linux_amd64.zip
+  - unzip /tmp/terraform.zip -d /tmp
+  - mkdir ~/bin
+  - mv /tmp/terraform ~/bin
+  - export PATH="~/bin:$PATH"
 
 jobs:
   include:
