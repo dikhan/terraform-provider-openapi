@@ -9,9 +9,16 @@ go:
 services:
   - docker
 
+env:
+  - TF_VERSION=0.13.6
+
 install:
 #  - go get github.com/buchanae/github-release-notes
   - export BINDIR=/home/travis/bin && curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
+  - wget https://releases.hashicorp.com/terraform/"$TF_VERSION"/terraform_"$TF_VERSION"_linux_amd64.zip
+  - unzip terraform_"$TF_VERSION"_linux_amd64.zip
+  - sudo mv terraform /usr/local/bin/
+  - rm terraform_"$TF_VERSION"_linux_amd64.zip
 
 jobs:
   include:
