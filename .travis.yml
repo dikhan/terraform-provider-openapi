@@ -10,10 +10,9 @@ services:
   - docker
 
 env:
-  - TF_VERSION=0.13.6
+  - TF_VERSION=0.13.6 PERFORM_DOCKER_LOGIN=true GO111MODULE=on
 
 install:
-#  - go get github.com/buchanae/github-release-notes
   - export BINDIR=/home/travis/bin && curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
   - wget https://releases.hashicorp.com/terraform/"$TF_VERSION"/terraform_"$TF_VERSION"_linux_amd64.zip
   - unzip terraform_"$TF_VERSION"_linux_amd64.zip
@@ -24,13 +23,13 @@ jobs:
   include:
     - stage: test
       script:
-        - env GO111MODULE=on make test-all
+        - make test-all
     - stage: deploy
       script:
         # Set up git user name and tag this commit
         - git config --local user.name $GIT_USER
         - git config --local user.email $GIT_USER_EMAIL
-        - env GO111MODULE=on make release-version
+        - make release-version
 stages:
   - name: test
     if: type = pull_request OR (type = push AND branch = master)

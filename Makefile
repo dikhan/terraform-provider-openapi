@@ -72,8 +72,15 @@ test: fmt vet lint gosec unittest
 show-terraform-version:
 	terraform version
 
+# dockerhub-login logs into Docker if the environment variable PERFORM_DOCKER_LOGIN is set. This is used by Travis CI
+# to avoid Docker toomanyrequests: You have reached your pull rate limit.
+dockerhub-login:
+ifdef PERFORM_DOCKER_LOGIN
+	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+endif
+
 # make integration-test
-integration-test: local-env-down local-env show-terraform-version
+integration-test: local-env-down local-env show-terraform-version dockerhub-login
 	@echo "[INFO] Executing integration tests for $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@TF_ACC=true go test -v -cover $(INT_TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
 		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
