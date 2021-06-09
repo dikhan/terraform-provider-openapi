@@ -86,8 +86,6 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 	var serviceConfig ServiceConfiguration
 	var err error
 
-	skipVerify, _ := strconv.ParseBool(os.Getenv(otfVarInsecureSkipVerify))
-
 	swaggerURLEnvVar := fmt.Sprintf(otfVarSwaggerURL, p.ProviderName)
 	swaggerURLEnvVars := []string{swaggerURLEnvVar, strings.ToUpper(swaggerURLEnvVar)}
 	apiDiscoveryURL, err := terraformutils.MultiEnvDefaultString(swaggerURLEnvVars, "")
@@ -97,6 +95,8 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 	// Found OTF_VAR_%s_SWAGGER_URL env variable
 	if apiDiscoveryURL != "" {
 		log.Printf("[INFO] %s set with value %s", swaggerURLEnvVar, apiDiscoveryURL)
+		skipVerify, _ := strconv.ParseBool(os.Getenv(otfVarInsecureSkipVerify))
+		log.Printf("[INFO] %s set with value %t", otfVarInsecureSkipVerify, skipVerify)
 		pluginConfigV1.Services = map[string]*ServiceConfigV1{}
 		pluginConfigV1.Services[p.ProviderName] = NewServiceConfigV1(apiDiscoveryURL, skipVerify, nil)
 		serviceConfig, err = pluginConfigV1.GetServiceConfig(p.ProviderName)

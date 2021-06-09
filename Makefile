@@ -80,7 +80,7 @@ ifdef PERFORM_DOCKER_LOGIN
 endif
 
 # make integration-test
-integration-test: local-env-down local-env show-terraform-version dockerhub-login
+integration-test: dockerhub-login local-env-down local-env show-terraform-version
 	@echo "[INFO] Executing integration tests for $(TF_OPENAPI_PROVIDER_PLUGIN_NAME)"
 	@TF_ACC=true go test -v -cover $(INT_TEST_PACKAGES) ; if [ $$? -eq 1 ]; then \
 		echo "[ERROR] Test returned with failures. Please go through the different scenarios and fix the tests that are failing"; \
