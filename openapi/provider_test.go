@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -191,11 +192,7 @@ definitions:
 			providerName := "openapi"
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
-
-			Convey("Then ", func() {
-
-			})
-			Convey("And the provider returned should be configured as expected and the the error should be nil", func() {
+			Convey("Then the provider returned should be configured as expected and the the error should be nil", func() {
 				So(err, ShouldBeNil)
 				So(tfProvider, ShouldNotBeNil)
 
@@ -530,10 +527,7 @@ definitions:
 			providerName := "openapi"
 			p := ProviderOpenAPI{ProviderName: providerName}
 			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
-			Convey("Then ", func() {
-
-			})
-			Convey("And the provider returned should be configured as expected and the error should be nil", func() {
+			Convey("Then the provider returned should be configured as expected and the error should be nil", func() {
 				So(tfProvider, ShouldNotBeNil)
 				So(err, ShouldBeNil)
 
@@ -566,6 +560,118 @@ definitions:
 				So(tfProvider.ResourcesMap[resourceName].Importer, ShouldNotBeNil)
 
 				So(tfProvider.ConfigureFunc, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given a ProviderOpenAPI with an err field populated (this only happens once the provider has been initialized and the resulted provider/error have been cached in the ProviderOpenAPI", t, func() {
+		p := ProviderOpenAPI{ProviderName: providerName, err: errors.New("some error")}
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{})
+			Convey("Then the error returned should be the expecting one", func() {
+				So(err.Error(), ShouldEqual, "some error")
+			})
+			Convey("And the tfProvider returned should be nil ", func() {
+				So(tfProvider, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a ProviderOpenAPI with an provider field populated (this only happens once the provider has been initialized and the resulted provider/error have been cached in the ProviderOpenAPI", t, func() {
+		cachedProvider := &schema.Provider{}
+		p := ProviderOpenAPI{ProviderName: providerName, provider: cachedProvider}
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{})
+			Convey("Then the error returned should be the nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tfProvider returned should be the cached one ", func() {
+				So(tfProvider, ShouldEqual, cachedProvider)
+			})
+		})
+	})
+
+	Convey("Given a ProviderOpenAPI", t, func() {
+		swaggerContent := `swagger: "2.0"
+host: "localhost:8443"
+basePath: "/api"
+schemes:
+- "https"
+paths:
+  /v1/cdns:
+    x-terraform-resource-name: "cdn"
+    post:
+      summary: "Create cdn"
+      
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/cdns/{id}:
+    get:
+      summary: "Get cdn by id"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"`
+
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(swaggerContent))
+		}))
+		p := ProviderOpenAPI{ProviderName: providerName}
+		Convey("When CreateSchemaProviderWithConfiguration method is called with a serviceConfiguration that has InsecureSkipVerifyEnabled set to true", func() {
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL, InsecureSkipVerify: true})
+			Convey("Then the error returned should be the nil", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And the tfProvider returned should not be nil (skipping schema verification since that's covered in other tests)", func() {
+				So(tfProvider, ShouldNotBeNil)
+			})
+			Convey("And default TLS transport configuration should be configured to skip verify", func() {
+				tr := http.DefaultTransport.(*http.Transport)
+				So(tr.TLSClientConfig.InsecureSkipVerify, ShouldBeTrue)
+			})
+
+		})
+	})
+
+	Convey("Given a ProviderOpenAPI missing the providerName", t, func() {
+		swaggerContent := `swagger: "2.0"`
+		swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(swaggerContent))
+		}))
+		p := ProviderOpenAPI{}
+		Convey("When CreateSchemaProviderWithConfiguration method is called", func() {
+			tfProvider, err := p.CreateSchemaProviderFromServiceConfiguration(&ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+			Convey("Then the error returned should be the nil", func() {
+				So(err.Error(), ShouldEqual, "plugin provider factory init error: provider name not specified")
+			})
+			Convey("And the tfProvider returned should be nil", func() {
+				So(tfProvider, ShouldBeNil)
 			})
 		})
 	})
