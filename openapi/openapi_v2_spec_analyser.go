@@ -370,6 +370,7 @@ func (specAnalyser *specV2Analyser) validateRootPath(resourcePath string) (strin
 	}
 
 	if specAnalyser.schemaIsEqual(resourceRootPostRequestSchemaDef, resourceRootPostResponseSchemaDef) {
+		log.Printf("[DEBUG] resource '%s' root path POST's req and resp schema definitions are the same", resourceRootPath)
 		return resourceRootPath, &resourceRootPathItem, resourceRootPostRequestSchemaDef, nil
 	}
 

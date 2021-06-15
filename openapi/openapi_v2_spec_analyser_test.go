@@ -2661,7 +2661,7 @@ definitions:
 		})
 	})
 
-	Convey("Given an specV2Analyser with a terraform compliant root with a POST's request payload model with some computed properties and the response payload containing both the expected input props (required/optional) as well as any other computed property part of the response payload. This use case covers models ", t, func() {
+	Convey("Given an specV2Analyser with a terraform compliant root with a POST's request payload model with some computed properties and the response payload containing both the expected input props (required/optional) as well as any other computed property part of the response payload", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /users:
@@ -2764,7 +2764,108 @@ definitions:
 		})
 	})
 
-	Convey("Given an specV2Analyser with a terraform compliant root path that does not contain a body parameters and the response 201 schema is empty", t, func() {
+	Convey("Given an specV2Analyser with a non terraform compliant root with a POST's request payload model and the response payload containing less properties than the request schema (it's expected that the response contains the request properties as well as any other computed property)", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/UsersInputPayload"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+definitions:
+  UsersInputPayload: 
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+  UsersOutputPayload: 
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/users/{id}")
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "resource root path '/users' POST operation does not meet any of the supported use cases")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a non terraform compliant root POST operation that is missing a successful response definition", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/UsersInputPayload"
+      responses:
+        201:
+          schema:
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/UsersOutputPayload"
+definitions:
+  UsersInputPayload:
+    type: "object"
+    required:
+      - label
+    properties:
+      label:
+        type: "string"
+  UsersOutputPayload:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/users/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/users/{id}")
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "resource root path '/users' POST operation is missing a successful response definition: operation response '201' is missing the schema definition")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a non terraform compliant root path because it does not contain a body parameters and the response 201 schema is empty", t, func() {
 		swaggerContent := `swagger: "2.0"
 paths:
   /deployKey:
@@ -2798,6 +2899,48 @@ definitions:
 			_, _, _, err := a.validateRootPath("/deployKey/{id}")
 			Convey("Then the error returned should not be nil", func() {
 				So(err.Error(), ShouldEqual, "resource root path '/deployKey' POST operation (without body parameter) error: operation response '201' is missing the schema definition")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a non terraform compliant root path because it does contain a body parameters but it's missing the schema", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /deployKey:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+      responses:
+        201:
+          schema:  # the schema is missing
+  /deployKey/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/DeployKey"
+definitions:
+  DeployKey:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      deploy_key:
+        type: "string"
+        readOnly: true`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When validateRootPath method is called with '/deployKey/{id}'", func() {
+			_, _, _, err := a.validateRootPath("/deployKey/{id}")
+			Convey("Then the error returned should not be nil", func() {
+				So(err.Error(), ShouldEqual, "resource root path '/deployKey' POST operation validation error: resource root operation missing the schema for the POST operation body parameter")
 			})
 		})
 	})
