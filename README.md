@@ -76,6 +76,12 @@ by the OpenAPI service. Refer to [Using the OpenAPI Terraform Provider doc](http
 You can generate the Terraform documentation automatically given an already Terraform compatible OpenAPI document using the The [OpenAPI Terraform Documentation Renderer](https://github.com/dikhan/terraform-provider-openapi/tree/master/pkg/terraformdocsgenerator) 
 library. The OpenAPI document is the source of truth for both the OpenAPI Terraform provider as well as the user facing documentation.
 
+## How to publish the provider in the Terraform Registry
+
+The [Publishing OpenAPI Terraform providers in the Terraform Registry](./docs/publishing_provider.md) document describes how
+service providers can make use of the OpenAPI Terraform provider library to create their own Terraform provider and register it in 
+the [Terraform Registry](https://registry.terraform.io/).
+
 ## References
 
 Additionally, the following documents provide deep insight regarding OpenAPI and Terraform as well as frequently asked questions:
