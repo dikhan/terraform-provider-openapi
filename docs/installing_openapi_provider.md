@@ -103,7 +103,7 @@ $ export PROVIDER_NAME=myprovidername && curl -fsSL https://raw.githubuserconten
 
 The installation script will download the most recent [terraform-provider-openapi release](https://github.com/dikhan/terraform-provider-openapi/releases)
 and install it in the terraform plugins folder ````~/.terraform.d/plugins````. The terraform plugins folder should contain the newly
-installed open api customer terraform provider with the name provider in the installation (PROVIDER_NAME=myprovidername) ```terraform-provider-myprovidername```.
+installed open api customer terraform provider with the name provided in the installation (PROVIDER_NAME=myprovidername) ```terraform-provider-myprovidername```.
 
 ````
 $ ls -la ~/.terraform.d/plugins
