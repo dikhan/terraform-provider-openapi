@@ -111,6 +111,9 @@ func TestConvertToTerraformCompliantFieldName(t *testing.T) {
 		{name: "property name with leading and trailing underscores", inputPropertyName: "_cdns_", expectedPropertyName: "_cdns_"},
 		{name: "property name 1", inputPropertyName: "1", expectedPropertyName: "1"},
 		{name: "property name with a number and an underscore at the end", inputPropertyName: "cdns_1_", expectedPropertyName: "cdns_1_"},
+		{name: "property name with a colon character (:)", inputPropertyName: "this_is_a:field_name", expectedPropertyName: "this_is_a_field_name"},
+		{name: "property name with multiple colon characters ", inputPropertyName: "this:is:a:field:name", expectedPropertyName: "this_is_a_field_name"},
+		{name: "property name with multiple colon, hyphen characters and a number ", inputPropertyName: "now-this_1_is-a:tricky:one", expectedPropertyName: "now_this1_is_a_tricky_one"},
 	}
 
 	for _, tc := range testCases {
