@@ -70,6 +70,10 @@ func ConvertToTerraformCompliantName(name string) string {
 	//convert the name is Snake Case, this is the ONLY operation is needed in most of the case...
 	compliantName := strcase.ToSnake(name)
 
+	// ... but if colons are present in the `name`, replace them
+	compliantName = strings.ReplaceAll(compliantName, ":", "_")
+	// replaced all colon characters with _ character
+
 	if name == compliantName {
 		return compliantName
 	}
@@ -93,10 +97,6 @@ func ConvertToTerraformCompliantName(name string) string {
 		// unless other matches are found (for loop continue)
 		compliantName = tmpName
 	}
-
-	// ... also, if colons are present in the `name` ...
-	compliantName = strings.ReplaceAll(compliantName, ":", "_")
-	// repalced all colon characters with _ character
 
 	return compliantName
 }
