@@ -86,7 +86,7 @@ $ make vet
  $ make lint
  ```
 
-- Gosec, inspects source code for security problems [golint](https://github.com/securego/gosec). The following target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) runs go sec.
+- [Gosec](https://github.com/securego/gosec) inspects source code for security problems. The following target in the [Makefile](https://github.com/dikhan/terraform-provider-openapi/blob/master/Makefile) runs go sec.
  ```
  $ make gosec
  ```
