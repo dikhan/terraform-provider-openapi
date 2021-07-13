@@ -317,10 +317,7 @@ func (specAnalyser *specV2Analyser) isEndPointTerraformDataSourceCompliant(path 
 }
 
 func (specAnalyser *specV2Analyser) validateInstancePath(path string) error {
-	isResourceInstance, err := specAnalyser.isResourceInstanceEndPoint(path)
-	if err != nil {
-		return fmt.Errorf("error occurred while checking if path '%s' is a resource instance path", path)
-	}
+	isResourceInstance := specAnalyser.isResourceInstanceEndPoint(path)
 	if !isResourceInstance {
 		return fmt.Errorf("path '%s' is not a resource instance path", path)
 	}
@@ -567,9 +564,9 @@ func (specAnalyser *specV2Analyser) getBodyParameterBodySchema(resourceRootPostO
 }
 
 // isResourceInstanceEndPoint checks if the given path is of form /resource/{id}
-func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) (bool, error) {
+func (specAnalyser *specV2Analyser) isResourceInstanceEndPoint(p string) bool {
 	r, _ := regexp.Compile("^.*{.+}[\\/]?$")
-	return r.MatchString(p), nil
+	return r.MatchString(p)
 }
 
 // findMatchingResourceRootPath returns the corresponding POST root and path for a given end point

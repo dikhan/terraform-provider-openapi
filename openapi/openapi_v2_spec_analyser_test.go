@@ -2036,44 +2036,38 @@ func TestResourceInstanceEndPoint(t *testing.T) {
 	Convey("Given an specV2Analyser", t, func() {
 		a := specV2Analyser{}
 		Convey("When isResourceInstanceEndPoint method is called with a valid resource path such as '/resource/{id}'", func() {
-			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{id}")
+			resourceInstance := a.isResourceInstanceEndPoint("/resource/{id}")
 			Convey("And the value returned should be true", func() {
-				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a long path such as '/very/long/path/{id}'", func() {
-			resourceInstance, err := a.isResourceInstanceEndPoint("/very/long/path/{id}")
+			resourceInstance := a.isResourceInstanceEndPoint("/very/long/path/{id}")
 			Convey("And the value returned should be true", func() {
-				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters '/resource/{name}/subresource/{id}'", func() {
-			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}")
+			resourceInstance := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}")
 			Convey("And the value returned should be true", func() {
-				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a path that has path parameters and ends with trailing slash '/resource/{name}/subresource/{id}/'", func() {
-			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}/")
+			resourceInstance := a.isResourceInstanceEndPoint("/resource/{name}/subresource/{id}/")
 			Convey("And the value returned should be true", func() {
-				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeTrue)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with a path that is a root path of a subresource '/resource/{name}/subresource'", func() {
-			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/{name}/subresource")
+			resourceInstance := a.isResourceInstanceEndPoint("/resource/{name}/subresource")
 			Convey("And the value returned should be false since it's the sub-resource root endpoint", func() {
-				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeFalse)
 			})
 		})
 		Convey("When isResourceInstanceEndPoint method is called with an invalid resource path such as '/resource/not/instance/path' not conforming with the expected pattern '/resource/{id}'", func() {
-			resourceInstance, err := a.isResourceInstanceEndPoint("/resource/not/valid/instance/path")
+			resourceInstance := a.isResourceInstanceEndPoint("/resource/not/valid/instance/path")
 			Convey("And the value returned should be false", func() {
-				So(err, ShouldBeNil)
 				So(resourceInstance, ShouldBeFalse)
 			})
 		})
