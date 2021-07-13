@@ -2358,6 +2358,18 @@ definitions:
 			})
 		})
 	})
+
+	Convey("Given an apiSpecAnalyser", t, func() {
+		swaggerContent := `swagger: "2.0"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When findMatchingResourceRootPath method is called with a non resource instance path", func() {
+			resourceRootPath, err := a.findMatchingResourceRootPath("/users")
+			Convey("Then the error returned should match the expected one", func() {
+				So(err.Error(), ShouldEqual, "resource instance path '/users' missing valid resource root path, more than two results returned from match '[]'")
+				So(resourceRootPath, ShouldEqual, "")
+			})
+		})
+	})
 }
 
 func TestPostIsPresent(t *testing.T) {
@@ -3585,6 +3597,50 @@ definitions:
 			Convey("Then the error returned should NOT be nil", func() {
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "resource root operation missing the schema for the POST operation body parameter")
+			})
+		})
+	})
+
+	Convey("Given an specV2Analyser with a resource that fails the schema validation (schema does not contain an id property)", t, func() {
+		swaggerContent := `swagger: "2.0"
+paths:
+  /users:
+    post:
+      parameters:
+      - in: "body"
+        name: "body"
+        schema:
+          $ref: "#/definitions/Users"
+      responses:
+        201:
+          schema:
+            $ref: "#/definitions/Users"
+  /users/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/Users"
+definitions:
+  Users:
+    type: "object"
+    required:
+      - name
+    properties:
+      name:
+        type: "string"`
+		a := initAPISpecAnalyser(swaggerContent)
+		Convey("When isEndPointFullyTerraformResourceCompliant method is called ", func() {
+			_, _, _, err := a.isEndPointFullyTerraformResourceCompliant("/users/{id}")
+			Convey("Then the error returned should NOT be nil", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "resource schema is missing a property that uniquely identifies the resource, either a property named 'id' or a property with the extension 'x-terraform-id' set to true")
 			})
 		})
 	})
