@@ -39,7 +39,7 @@ security:
 # This make the provider multiregional, so API calls will be make against the specific region as per the value provided
 # provided by the user according to the 'x-terraform-provider-regions' regions. If non is provided, the default value will
 # be the first item in the 'x-terraform-provider-regions' list of strings. in the case below that will be 'rst1'
-x-terraform-provider-multiregion-fqdn: "some.api.${region}.domain.com"
+x-terraform-provider-multiregion-fqdn: "some.api.${region}.nonexistingrandomdomain.io" # Making it a bit more random to avoid resolving to an actual existing domain
 x-terraform-provider-regions: "rst1,dub1"
 
 # This is legacy configuration that will be deprecated soon
@@ -348,7 +348,7 @@ paths:
         - "monitor"
       summary: "Create monitor v1"
       operationId: "CreateMonitorV1"
-      x-terraform-resource-host: "some.api.${monitor}.domain.com"
+      x-terraform-resource-host: "some.api.${monitor}.nonexistingrandomdomain.io" # Making it a bit more random to avoid resolving to an actual existing domain
       parameters:
         - in: "body"
           name: "body"
