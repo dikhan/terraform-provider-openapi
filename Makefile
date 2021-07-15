@@ -75,6 +75,7 @@ show-terraform-version:
 # dockerhub-login logs into Docker if the environment variable PERFORM_DOCKER_LOGIN is set. This is used by Travis CI
 # to avoid Docker toomanyrequests: You have reached your pull rate limit.
 dockerhub-login:
+	@echo "[INFO] Logging into Docker Hub Enabled=$(PERFORM_DOCKER_LOGIN)"
 ifdef PERFORM_DOCKER_LOGIN
 	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
 endif
@@ -147,6 +148,18 @@ ifeq ($(NEW_RELEASE_VERSION_VALIDATION),1) # This checks that the new release ve
 else
 	@echo "Cancelling release due to new version $(RELEASE_TAG) <= latest release version $(CURRENT_RELEASE_TAG)"
 endif
+
+# RELEASE_ALPHA_VERSION=2.1.0 make release-alpha
+release-alpha:
+	@$(eval ALPHA_VERSION := v$(RELEASE_ALPHA_VERSION)-alpha.1)
+	git tag $(ALPHA_VERSION)
+	git push origin $(ALPHA_VERSION)
+
+# RELEASE_ALPHA_VERSION=2.1.0 make delete-release-alpha
+delete-release-alpha:
+	@$(eval ALPHA_VERSION := v$(RELEASE_ALPHA_VERSION)-alpha.1)
+	git tag -d $(ALPHA_VERSION)
+	git push --delete origin $(ALPHA_VERSION)
 
 define install_plugin
 	@$(eval PROVIDER_NAME := $(1))

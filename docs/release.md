@@ -44,3 +44,23 @@ Note - For new releases, the PR title should follow the below convention (replac
 With the above title, the new version would be v0.2.0.
 
 The PR will need one admin approval. Once approved and merged, the release will be automatically performed by Travis CI.
+
+## How to release a new alpha version
+
+Alpha means the features haven't been locked down, it's an exploratory phase. Releasing an alpha version enable users to 
+start early adopting the version even though it may not be production ready yet and functionality might still change until
+the final version released. The following targets have been created to help create alpha release versions:
+
+- To create a new alpha release version run the following command:
+````
+RELEASE_ALPHA_VERSION=2.1.0 make release-alpha
+````
+This will create a local tag in the form v$(RELEASE_ALPHA_VERSION)-alpha.1. For the example above that would be `v2.1.0-alpha.1` and
+push the tag to origin.
+
+- To delete a previously create alpha version run the following command:
+````
+RELEASE_ALPHA_VERSION=2.1.0 make delete-release-alpha
+````
+This will delete a local tag in the form v$(RELEASE_ALPHA_VERSION)-alpha.1. For the example above that would be `v2.1.0-alpha.1` and
+delete the tag in origin.

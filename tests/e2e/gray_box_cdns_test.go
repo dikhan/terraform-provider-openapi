@@ -620,6 +620,132 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	})
 }
 
+func TestAccCDN_POSTRequestSchemaContainsInputsAndResponseSchemaContainsOutputs(t *testing.T) {
+	expectedID := "some_id"
+	expectedLabel := "my_label"
+	swagger := `swagger: "2.0"
+host: %s 
+schemes:
+- "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    x-terraform-resource-name: "cdn"
+    post:
+      summary: "Create cdn"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkInput"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkOutput"
+  /v1/cdns/{cdn_id}:
+    get:
+      summary: "Get cdn by id"
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkOutput"
+    delete:
+      summary: "Delete cdn"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn that needs to be deleted"
+        required: true
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+definitions:
+  ContentDeliveryNetworkInput:
+    type: "object"
+    required:
+      - label
+    properties:
+      label:
+        type: "string"
+  ContentDeliveryNetworkOutput:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+        readOnly: true`
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var responsePayload string
+		switch r.Method {
+		case http.MethodPost:
+			body, err := ioutil.ReadAll(r.Body)
+			assert.Nil(t, err)
+			bodyJSON := map[string]interface{}{}
+			err = json.Unmarshal(body, &bodyJSON)
+			assert.Nil(t, err)
+			assert.Equal(t, expectedLabel, bodyJSON["label"])
+			w.WriteHeader(http.StatusCreated)
+		case http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+		case http.MethodDelete:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		responsePayload = fmt.Sprintf(`{"id": "%s", "label":"%s"}`, expectedID, expectedLabel)
+		w.Write([]byte(responsePayload))
+	}))
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	tfFileContents := fmt.Sprintf(`# URI /v1/cdns/
+resource "openapi_cdn_v1" "my_cdn" {
+  label = "%s"
+}`, expectedLabel)
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
+		Steps: []resource.TestStep{
+			{
+				ExpectNonEmptyPlan: false,
+				Config:             tfFileContents,
+				Check: resource.ComposeTestCheckFunc(
+					// check resource
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "id", expectedID),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", expectedLabel),
+				),
+			},
+		},
+	})
+}
+
 func TestAcc_Create_MissingRequiredParentPropertyInTFConfigurationFile(t *testing.T) {
 	api := initAPI(t, cdnSwaggerYAMLTemplate)
 
