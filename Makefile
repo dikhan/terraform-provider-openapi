@@ -77,7 +77,7 @@ show-terraform-version:
 dockerhub-login:
 	@echo "[INFO] Logging into Docker Hub Enabled=$(PERFORM_DOCKER_LOGIN)"
 ifdef PERFORM_DOCKER_LOGIN
-	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD)
 endif
 
 # make integration-test
