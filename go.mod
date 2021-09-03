@@ -11,16 +11,15 @@ require (
 	github.com/go-openapi/loads v0.0.0-20171207192234-2a2b323bab96
 	github.com/go-openapi/spec v0.19.0
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.4.3
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.7.1
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
-	github.com/stretchr/testify v1.6.1
-	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
+	github.com/stretchr/testify v1.7.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/tools v0.1.5 // indirect
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.3.0
 )
