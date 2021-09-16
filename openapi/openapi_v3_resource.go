@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -139,11 +140,24 @@ func (o *SpecV3Resource) getResourceTerraformName() string {
 
 func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
 	// TODO: can we inline assert .(string) this way? the other lib has a .GetString() to simplify
-	preferredName, _ := path.Extensions[extTfResourceName].(string)
+	preferredName, _ := getExtensionAsJsonString(path.Extensions, extTfResourceName)
 	if preferredName == "" && path.Post != nil {
-		preferredName, _ = path.Post.Extensions[extTfResourceName].(string)
+		preferredName, _ = getExtensionAsJsonString(path.Post.Extensions, extTfResourceName)
 	}
 	return preferredName
+}
+
+func getExtensionAsJsonString(ext map[string]interface{}, name string) (string, error) {
+	ifaceVal, found := ext[name]
+	jsonVal, ok := ifaceVal.(json.RawMessage)
+	if !found || !ok {
+		return "", fmt.Errorf("extension '%s' is not a json string", name)
+	}
+	var val string
+	if err := json.Unmarshal(jsonVal, &val); err != nil {
+		return "", fmt.Errorf("extension '%s' is not a json string", name)
+	}
+	return val, nil
 }
 
 func (o *SpecV3Resource) getHost() (string, error) {

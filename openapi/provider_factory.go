@@ -235,9 +235,7 @@ func (p providerFactory) createTerraformProviderResourceMapAndDataSourceInstance
 		fullDataSourceInstanceName, _ := p.getProviderResourceName(d.getDataSourceInstanceName())
 
 		if _, alreadyThere := resourceMap[resourceName]; alreadyThere {
-			log.Printf("[WARN] '%s' is a duplicate resource name and is being removed from the provider", openAPIResource.GetResourceName())
-			delete(resourceMap, resourceName)
-			delete(dataSourceInstanceMap, fullDataSourceInstanceName)
+			log.Printf("[WARN] '%s' is a duplicate resource name and will not be added to the provider", openAPIResource.GetResourceName())
 			continue
 		}
 
