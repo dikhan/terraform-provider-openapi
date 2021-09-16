@@ -39,20 +39,23 @@ type SpecAnalyserVersion string
 const (
 	// specAnalyserV2 version that supports OpenAPI v2 (swagger)
 	specAnalyserV2 SpecAnalyserVersion = "v2"
+	// specAnalyserV3 version that supports OpenAPI v3
+	specAnalyserV3 SpecAnalyserVersion = "v3"
 )
 
 // CreateSpecAnalyser is a factory method that returns the appropriate implementation of SpecAnalyser
 // depending upon the openApiSpecAnalyserVersion passed in.
-// Currently only OpenAPI v2 version is supported but this constructor is ready to handle new implementations such as v3
-// when the time comes
+// Currently supports OpenAPI v2 and OpenAPI v3 versions
 func CreateSpecAnalyser(specAnalyserVersion SpecAnalyserVersion, openAPIDocumentURL string) (SpecAnalyser, error) {
 	var err error
 	var specAnalyser SpecAnalyser
 	switch specAnalyserVersion {
 	case specAnalyserV2:
 		specAnalyser, err = newSpecAnalyserV2(openAPIDocumentURL)
+	case specAnalyserV3:
+		specAnalyser, err = newSpecAnalyserV3(openAPIDocumentURL)
 	default:
-		return nil, fmt.Errorf("open api spec analyser version '%s' not supported, please choose a valid SpecAnalyser implementation [%s]", specAnalyserVersion, specAnalyserV2)
+		return nil, fmt.Errorf("open api spec analyser version '%s' not supported, please choose a valid SpecAnalyser implementation [%s,%s]", specAnalyserVersion, specAnalyserV2, specAnalyserV3)
 	}
 	if err != nil {
 		return nil, err

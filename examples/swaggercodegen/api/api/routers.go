@@ -82,6 +82,13 @@ var routes = Routes{
 	},
 
 	Route{
+		"ApiDiscoveryV3",
+		strings.ToUpper("Get"),
+		"/openapiv3.yaml",
+		ApiDiscoveryV3,
+	},
+
+	Route{
 		"LBCreateV1",
 		strings.ToUpper("Post"),
 		"/v1/lbs",

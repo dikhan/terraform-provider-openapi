@@ -46,7 +46,7 @@ func (p *ProviderOpenAPI) CreateSchemaProviderFromServiceConfiguration(serviceCo
 		log.Printf("[WARN] TLSClientConfig has been configured with InsecureSkipVerify set to true, this means that TLS connections will accept any certificate presented by the server and any host name in that certificate")
 	}
 
-	openAPISpecAnalyser, err := CreateSpecAnalyser(specAnalyserV2, serviceConfiguration.GetSwaggerURL())
+	openAPISpecAnalyser, err := CreateSpecAnalyser(specAnalyserV3, serviceConfiguration.GetSwaggerURL())
 	if err != nil {
 		return nil, fmt.Errorf("plugin OpenAPI spec analyser error: %s", err)
 	}

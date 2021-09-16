@@ -29,6 +29,18 @@ func ApiDiscovery(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
+func ApiDiscoveryV3(w http.ResponseWriter, r *http.Request) {
+	pwd, _ := os.Getwd()
+	b, err := ioutil.ReadFile(pwd + "/resources/openapiv3.yaml")
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
+}
+
 func GetVersion(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
