@@ -138,23 +138,23 @@ func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
 }
 
 func (o *SpecV3Resource) GetResourceName() string {
-	panic("implement me")
+	panic("implement me - GetResourceName")
 }
 
 func (o *SpecV3Resource) getHost() (string, error) {
-	panic("implement me")
+	panic("implement me - getHost")
 }
 
 func (o *SpecV3Resource) getResourcePath(parentIDs []string) (string, error) {
-	panic("implement me")
+	panic("implement me - getResourcePath")
 }
 
 func (o *SpecV3Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
-	panic("implement me")
+	panic("implement me - GetResourceSchema")
 }
 
 func (o *SpecV3Resource) ShouldIgnoreResource() bool {
-	panic("implement me")
+	panic("implement me - ShouldIgnoreResource")
 }
 
 func (o *SpecV3Resource) getResourceOperations() specResourceOperations {

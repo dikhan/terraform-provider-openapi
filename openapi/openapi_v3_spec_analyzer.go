@@ -298,23 +298,24 @@ func (specAnalyser *specV3Analyser) mergeRequestAndResponseSchemas(requestSchema
 }
 
 func (specAnalyser *specV3Analyser) getBodyParameterBodySchema(resourceRootPostOperation *openapi3.Operation) (*openapi3.Schema, error) {
-	bodyParameter := specAnalyser.bodyParameterExists(resourceRootPostOperation)
-	if bodyParameter == nil {
-		return nil, fmt.Errorf("resource root operation missing body parameter")
+	requestBody := specAnalyser.requestBodyExists(resourceRootPostOperation)
+	if requestBody == nil {
+		return nil, fmt.Errorf("resource root operation missing request body")
 	}
 
-	if bodyParameter.Schema == nil {
+	// TODO: support other mime types
+	bodySchema := requestBody.Content.Get("application/json").Schema
+	if bodySchema.Value == nil {
 		return nil, fmt.Errorf("resource root operation missing the schema for the POST operation body parameter")
 	}
 
 	// TODO: test that this schema ref worked the way I think (removed .String())
-	if bodyParameter.Schema.Ref != "" {
-		return nil, fmt.Errorf("the operation ref was not expanded properly, check that the ref is valid (no cycles, bogus, etc)")
-	}
+	//if bodySchema.Ref != "" {
+	//	return nil, fmt.Errorf("the operation ref was not expanded properly, check that the ref is valid (no cycles, bogus, etc)")
+	//}
 
-	// TODO: test that Schema.Ref was expanded to Schema.Value already
-	if len(bodyParameter.Schema.Value.Properties) > 0 {
-		return bodyParameter.Schema.Value, nil
+	if len(bodySchema.Value.Properties) > 0 {
+		return bodySchema.Value, nil
 	}
 	return nil, fmt.Errorf("POST operation contains an schema with no properties")
 }
@@ -397,15 +398,14 @@ func (specAnalyser *specV3Analyser) postDefined(resourceRootPath string) bool {
 	return true
 }
 
-func (specAnalyser *specV3Analyser) bodyParameterExists(resourceRootPostOperation *openapi3.Operation) *openapi3.Parameter {
+func (specAnalyser *specV3Analyser) requestBodyExists(resourceRootPostOperation *openapi3.Operation) *openapi3.RequestBody {
 	if resourceRootPostOperation == nil {
 		return nil
 	}
-	for _, parameter := range resourceRootPostOperation.Parameters {
-		// TODO: support parameter $ref
-		if parameter.Value.In == "body" {
-			return parameter.Value
-		}
+	bodyRef := resourceRootPostOperation.RequestBody
+	// TODO: support request body $ref
+	if bodyRef.Value != nil {
+		return bodyRef.Value
 	}
 	return nil
 }
