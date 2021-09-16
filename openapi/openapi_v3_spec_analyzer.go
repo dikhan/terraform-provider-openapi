@@ -16,6 +16,8 @@ type specV3Analyser struct {
 	d                  *openapi3.T
 }
 
+var _ SpecAnalyser = (*specV3Analyser)(nil)
+
 // newSpecAnalyserV3 creates an instance of specV2Analyser which implements the SpecAnalyser interface
 // This implementation provides an analyser that understands an OpenAPI v2 document
 func newSpecAnalyserV3(openAPIDocumentFilename string) (*specV3Analyser, error) {
@@ -37,21 +39,28 @@ func newSpecAnalyserV3(openAPIDocumentFilename string) (*specV3Analyser, error) 
 }
 
 func (s *specV3Analyser) GetTerraformCompliantResources() ([]SpecResource, error) {
-	panic("implement me - GetTerraformCompliantResources")
+	return []SpecResource{}, nil
 }
 
 func (s specV3Analyser) GetTerraformCompliantDataSources() []SpecResource {
-	panic("implement me - GetTerraformCompliantDataSources")
+	return []SpecResource{}
 }
 
 func (s specV3Analyser) GetSecurity() SpecSecurity {
-	panic("implement me - GetSecurity")
+	// TODO: replace this stub
+	return &specSecurityStub{
+		securityDefinitions: &SpecSecurityDefinitions{
+			newAPIKeyHeaderSecurityDefinition("apikey_auth", "Authorization"),
+		},
+		globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
+	}
 }
 
 func (s specV3Analyser) GetAllHeaderParameters() SpecHeaderParameters {
-	panic("implement me - GetAllHeaderParameters")
+	// TODO: add support for header params
+	return []SpecHeaderParam{}
 }
 
 func (s specV3Analyser) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {
-	panic("implement me - GetAPIBackendConfiguration")
+	return newOpenAPIBackendConfigurationV3(s.d, s.openAPIDocumentURL)
 }
