@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -67,6 +68,14 @@ func newSpecV3ResourceWithConfig(region, path string, schemaDefinition *openapi3
 	}
 	resource.Name = name
 	return resource, nil
+}
+
+func (o *SpecV3Resource) GetResourceName() string {
+	// TODO: implement multi-region support
+	//if o.Region != "" {
+	//	return fmt.Sprintf("%s_%s", o.Name, o.Region)
+	//}
+	return o.Name
 }
 
 // GetResourceName returns the name of the resource (including the version if applicable). The name is build from the resource
@@ -137,10 +146,6 @@ func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
 	return preferredName
 }
 
-func (o *SpecV3Resource) GetResourceName() string {
-	panic("implement me - GetResourceName")
-}
-
 func (o *SpecV3Resource) getHost() (string, error) {
 	panic("implement me - getHost")
 }
@@ -150,21 +155,39 @@ func (o *SpecV3Resource) getResourcePath(parentIDs []string) (string, error) {
 }
 
 func (o *SpecV3Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
-	panic("implement me - GetResourceSchema")
+	// TODO: replace stub with core impl -- this is the heart. <3
+	return &SpecSchemaDefinition{
+		Properties: SpecSchemaDefinitionProperties{
+			{
+				Name: "prop1",
+				Description: "fake desc",
+				Required: true,
+				Type: TypeString,
+			},
+		},
+	}, nil
 }
 
 func (o *SpecV3Resource) ShouldIgnoreResource() bool {
-	panic("implement me - ShouldIgnoreResource")
+	// TODO: support 'x-terraform-exclude-resource' extension
+	return false
 }
 
 func (o *SpecV3Resource) getResourceOperations() specResourceOperations {
-	panic("implement me")
+	panic("implement me - getResourceOperations")
 }
 
 func (o *SpecV3Resource) getTimeouts() (*specTimeouts, error) {
-	panic("implement me")
+	// TODO: support "x-terraform-resource-timeout" extension
+	timeout := 5*time.Second
+	return &specTimeouts{
+		Post:   &timeout,
+		Get:    &timeout,
+		Put:    &timeout,
+		Delete: &timeout,
+	}, nil
 }
 
 func (o *SpecV3Resource) GetParentResourceInfo() *ParentResourceInfo {
-	panic("implement me")
+	panic("implement me - GetParentResourceInfo")
 }
