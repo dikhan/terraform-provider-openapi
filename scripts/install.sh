@@ -104,16 +104,20 @@ function setupInstallationPath(){
   else
     einfo "Detected Terraform v$TF_VERSION"
   fi
-  TF_MINOR_VERSION=$(echo $TF_VERSION| cut -f2 -d.)
-  if [ $TF_MINOR_VERSION -lt 12 ]
+
+  TF_PATCH_VERSION=$(echo $TF_VERSION | cut -f3 -d.)
+  TF_MINOR_VERSION=$(echo $TF_VERSION | cut -f2 -d.)
+  TF_MAJOR_VERSION=$(echo $TF_VERSION | cut -f1 -d.)
+
+  if [ $TF_MINOR_VERSION -lt 12 ] && [ $TF_MAJOR_VERSION -eq 0 ]
   then
     eerror "OpenAPI Terraform provider no longer supports versions of Terraform less than v0.12.0"
     exit 1
-  elif [ $TF_MINOR_VERSION -eq 12 ]
+  elif [ $TF_MINOR_VERSION -eq 12 ] && [ $TF_MAJOR_VERSION -eq 0 ]
   then
     einfo "Installing provider based on Terraform v0.12.* plugin installation instructions: https://www.terraform.io/docs/plugins/basics.html#installing-plugins"
     TF_PROVIDER_PLUGIN_NAME="${TF_PROVIDER_BASE_NAME}${PROVIDER_NAME}_v${PLUGIN_VERSION}"
-  elif [ $TF_MINOR_VERSION -ge 13 ]
+  elif (([ $TF_MINOR_VERSION -ge 13 ] && [ $TF_MAJOR_VERSION -eq 0 ]) || [ $TF_MAJOR_VERSION -ge 1 ])
   then
     einfo "Installing provider based on Terraform >= v0.13.* plugin installation instructions: https://www.terraform.io/docs/configuration/provider-requirements.html#in-house-providers"
     INSTALLATION_DIR="${INSTALLATION_DIR}/${PROVIDER_SOURCE_ADDRESS}/${PROVIDER_NAME}/${PROVIDER_VERSION}/${XC_OS}_${XC_ARCH}"
