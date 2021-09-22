@@ -589,3 +589,203 @@ func TestV3_mergeRequestAndResponseSchemas(t *testing.T) {
 		}
 	}
 }
+
+func TestV3_schemaIsEqual(t *testing.T) {
+	testSchema := &openapi3.Schema{}
+	testCases := []struct {
+		name           string
+		requestSchema  *openapi3.Schema
+		responseSchema *openapi3.Schema
+		expectedOutput bool
+	}{
+		{
+			name:           "request schema and response schema are equal (empty schemas)",
+			requestSchema:  &openapi3.Schema{},
+			responseSchema: &openapi3.Schema{},
+			expectedOutput: true,
+		},
+		{
+			name:           "request schema and response schema are equal (same pointer)",
+			requestSchema:  testSchema,
+			responseSchema: testSchema,
+			expectedOutput: true,
+		},
+		{
+			name: "request schema and response schema are equal",
+			requestSchema: &openapi3.Schema{
+				Required: []string{"required_prop"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+					"required_prop": {
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+				},
+			},
+			responseSchema: &openapi3.Schema{
+				Required: []string{"required_prop"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+					"required_prop": {
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+				},
+			},
+			expectedOutput: true,
+		},
+		{
+			name: "request schema and response schema are equal (though the properties are not in the same order)",
+			requestSchema: &openapi3.Schema{
+				Required: []string{"required_prop"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"required_prop": { // changing order here on purpose to see if it makes any difference
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+				},
+			},
+			responseSchema: &openapi3.Schema{
+				Required: []string{"required_prop"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+					"required_prop": {
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+				},
+			},
+			expectedOutput: true,
+		},
+		{
+			name: "request schema and response schema are NOT equal (request schema contains required props while response schema does not)",
+			requestSchema: &openapi3.Schema{
+				Required: []string{"required_prop"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+					"required_prop": {
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+				},
+			},
+			responseSchema: &openapi3.Schema{
+				Properties: map[string]*openapi3.SchemaRef{
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+					"required_prop": {
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+				},
+			},
+			expectedOutput: false,
+		},
+		{
+			name: "request schema and response schema are NOT equal (they are completely different)",
+			requestSchema: &openapi3.Schema{
+				Properties: map[string]*openapi3.SchemaRef{
+					"some_property": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+				},
+			},
+			responseSchema: &openapi3.Schema{
+				Properties: map[string]*openapi3.SchemaRef{
+					"some_other_property": {
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+				},
+			},
+			expectedOutput: false,
+		},
+		{
+			name: "request schema and response schema are NOT equal (request schema contains properties with extensions and response schema does not)",
+			requestSchema: &openapi3.Schema{
+				Required: []string{"required_prop"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+					"required_prop": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"x-terraform-field-name": "required_prop_preferred_name",
+								},
+							},
+						},
+					},
+				},
+			},
+			responseSchema: &openapi3.Schema{
+				Required: []string{"required_prop"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"id": {
+						Value: &openapi3.Schema{
+							Type: "string",
+							ReadOnly: true,
+						},
+					},
+					"required_prop": {
+						Value: &openapi3.Schema{
+							Type: "string",
+						},
+					},
+				},
+			},
+			expectedOutput: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		specV3Analyser := specV3Analyser{}
+		isEqual := specV3Analyser.schemaIsEqual(tc.requestSchema, tc.responseSchema)
+		assert.Equal(t, tc.expectedOutput, isEqual, tc.name)
+	}
+}
