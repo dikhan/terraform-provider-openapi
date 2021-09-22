@@ -139,7 +139,6 @@ func (o *SpecV3Resource) getResourceTerraformName() string {
 }
 
 func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
-	// TODO: can we inline assert .(string) this way? the other lib has a .GetString() to simplify
 	preferredName, _ := getExtensionAsJsonString(path.Extensions, extTfResourceName)
 	if preferredName == "" && path.Post != nil {
 		preferredName, _ = getExtensionAsJsonString(path.Post.Extensions, extTfResourceName)
@@ -173,10 +172,10 @@ func (o *SpecV3Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	return &SpecSchemaDefinition{
 		Properties: SpecSchemaDefinitionProperties{
 			{
-				Name: "prop1",
+				Name:        "prop1",
 				Description: "fake desc",
-				Required: true,
-				Type: TypeString,
+				Required:    true,
+				Type:        TypeString,
 			},
 		},
 	}, nil
@@ -193,7 +192,7 @@ func (o *SpecV3Resource) getResourceOperations() specResourceOperations {
 
 func (o *SpecV3Resource) getTimeouts() (*specTimeouts, error) {
 	// TODO: support "x-terraform-resource-timeout" extension
-	timeout := 5*time.Second
+	timeout := 5 * time.Second
 	return &specTimeouts{
 		Post:   &timeout,
 		Get:    &timeout,

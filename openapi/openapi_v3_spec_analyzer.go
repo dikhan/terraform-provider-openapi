@@ -187,7 +187,7 @@ func (specAnalyser *specV3Analyser) validateRootPath(resourcePath string) (strin
 	resourceRootPathItem, _ := specAnalyser.d.Paths[resourceRootPath]
 	resourceRootPostOperation := resourceRootPathItem.Post
 
-	resourceRootPostRequestSchemaDef, err := specAnalyser.getBodyParameterBodySchema(resourceRootPostOperation)
+	resourceRootPostRequestSchemaDef, err := specAnalyser.getRequestDefinition(resourceRootPostOperation)
 	if err != nil {
 		// TODO: Use case where resource does not expect any input as part of the POST root operation, and only produces computed properties
 		return "", nil, nil, fmt.Errorf("resource root path '%s' POST operation validation error: %s", resourceRootPath, err)
@@ -297,7 +297,7 @@ func (specAnalyser *specV3Analyser) mergeRequestAndResponseSchemas(requestSchema
 	return mergedSchema, nil
 }
 
-func (specAnalyser *specV3Analyser) getBodyParameterBodySchema(resourceRootPostOperation *openapi3.Operation) (*openapi3.Schema, error) {
+func (specAnalyser *specV3Analyser) getRequestDefinition(resourceRootPostOperation *openapi3.Operation) (*openapi3.Schema, error) {
 	requestBody := specAnalyser.requestBodyExists(resourceRootPostOperation)
 	if requestBody == nil {
 		return nil, fmt.Errorf("resource root operation missing request body")
