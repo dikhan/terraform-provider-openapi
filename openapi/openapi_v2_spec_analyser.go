@@ -24,6 +24,8 @@ type specV2Analyser struct {
 	d                  *loads.Document
 }
 
+var _ SpecAnalyser = (*specV2Analyser)(nil)
+
 // newSpecAnalyserV2 creates an instance of specV2Analyser which implements the SpecAnalyser interface
 // This implementation provides an analyser that understands an OpenAPI v2 document
 func newSpecAnalyserV2(openAPIDocumentFilename string) (*specV2Analyser, error) {

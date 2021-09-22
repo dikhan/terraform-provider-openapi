@@ -16,22 +16,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestSpecV2Analyser(t *testing.T) {
-	Convey("Given a openAPIDocumentURL and a swagger doc object", t, func() {
-		openAPIDocumentURL := ""
-		d := &loads.Document{}
-		Convey("When specV2Analyser method is constructed", func() {
-			specV2Analyser := &specV2Analyser{
-				openAPIDocumentURL: openAPIDocumentURL,
-				d:                  d,
-			}
-			Convey("Then the specV2Analyser should comply with SpecAnalyser interface", func() {
-				var _ SpecAnalyser = specV2Analyser
-			})
-		})
-	})
-}
-
 func Test_pathExists(t *testing.T) {
 	Convey("Given a blank specV2Analyser", t, func() {
 		a := &specV2Analyser{}

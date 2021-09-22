@@ -379,7 +379,7 @@ func (specAnalyser *specV3Analyser) getSuccessfulResponseDefinition(operation *o
 		if responseStatusCode == strconv.Itoa(http.StatusOK) || responseStatusCode == strconv.Itoa(http.StatusCreated) || responseStatusCode == strconv.Itoa(http.StatusAccepted) {
 			// TODO: support response $ref
 			if response.Value.Content == nil {
-				return nil, fmt.Errorf("operation response '%d' is missing the schema definition", responseStatusCode)
+				return nil, fmt.Errorf("operation response '%s' is missing the schema definition", responseStatusCode)
 			}
 			// TODO: support response $ref, other content-types, schema $ref, etc
 			return response.Value.Content.Get("application/json").Schema.Value, nil
