@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -139,8 +140,44 @@ func (o *SpecV3Resource) getHost() (string, error) {
 	panic("implement me - getHost")
 }
 
+// getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
+// path parameters these will be resolved accordingly based on the ids provided. For instance, considering the given
+// resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []string{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
+// If the resource path is not parameterised, then regular path will be returned accordingly
 func (o *SpecV3Resource) getResourcePath(parentIDs []string) (string, error) {
-	panic("implement me - getResourcePath")
+	if o.resolvedPathCached != "" {
+		log.Printf("[DEBUG] getResourcePath hit the cache for '%s'", o.Name)
+		return o.resolvedPathCached, nil
+	}
+	resolvedPath := o.Path
+
+	pathParameterRegex, _ := regexp.Compile(pathParameterRegex)
+	pathParamsMatches := pathParameterRegex.FindAllStringSubmatch(resolvedPath, -1)
+
+	switch {
+	case len(pathParamsMatches) == 0:
+		o.resolvedPathCached = resolvedPath
+		log.Printf("[DEBUG] getResourcePath cache loaded for '%s'", o.Name)
+		return resolvedPath, nil
+
+	case len(parentIDs) > len(pathParamsMatches):
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' with the given ids - more ids than path params: %s", resolvedPath, parentIDs)
+
+	case len(parentIDs) < len(pathParamsMatches):
+		return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' with the given ids - missing ids to resolve the path params properly: %s", resolvedPath, parentIDs)
+	}
+
+	// At this point it's assured that there is an equal number of parameters to resolved and their corresponding ID values
+	for idx, parentID := range parentIDs {
+		if strings.Contains(parentID, "/") {
+			return "", fmt.Errorf("could not resolve sub-resource path correctly '%s' due to parent IDs (%s) containing not supported characters (forward slashes)", resolvedPath, parentIDs)
+		}
+		resolvedPath = strings.Replace(resolvedPath, pathParamsMatches[idx][1], parentIDs[idx], 1)
+	}
+
+	o.resolvedPathCached = resolvedPath
+	log.Printf("[DEBUG] getResourcePath cache loaded for '%s'", o.Name)
+	return resolvedPath, nil
 }
 
 // GetResourceSchema returns the resource schema
@@ -539,13 +576,78 @@ func getExtensionAsJsonBool(ext map[string]interface{}, name string) (value bool
 	return val, true
 }
 
+func (o *SpecV3Resource) createResourceOperation(operation *openapi3.Operation) *specResourceOperation {
+	if operation == nil {
+		return nil
+	}
+	// TODO: implement this
+	//headerParameters := getHeaderConfigurations(operation.Parameters)
+	//securitySchemes := createSecuritySchemes(operation.Security) // ([]map[string][]string)
+	return &specResourceOperation{
+		//HeaderParameters: headerParameters,
+		//SecuritySchemes:  securitySchemes,
+		responses:        o.createResponses(operation),
+	}
+}
+
+func (o *SpecV3Resource) createResponses(operation *openapi3.Operation) specResponses {
+	responses := specResponses{}
+	for statusCode, response := range operation.Responses { //panics on ImportState if the swagger doesn't define status code responses
+		status, err := strconv.Atoi(statusCode)
+		if err != nil {
+			log.Printf("[DEBUG] invalid response '%s' on '%s': %v", statusCode, o.Name, err)
+			continue
+		}
+		responses[status] = &specResponse{
+			// TODO: support .Ref
+			isPollingEnabled:    o.isResourcePollingEnabled(response.Value),
+			pollTargetStatuses:  o.getResourcePollTargetStatuses(response.Value),
+			pollPendingStatuses: o.getResourcePollPendingStatuses(response.Value),
+		}
+	}
+	return responses
+}
+
+// isResourcePollingEnabled checks whether there is any response code defined for the given responseStatusCode and if so
+// whether that response contains the extension 'x-terraform-resource-poll-enabled' set to true returning true;
+// otherwise false is returned
+func (o *SpecV3Resource) isResourcePollingEnabled(response *openapi3.Response) bool {
+	if o.isBoolExtensionEnabled(response.Extensions, extTfResourcePollEnabled) {
+		return true
+	}
+	return false
+}
+
+func (o *SpecV3Resource) getResourcePollTargetStatuses(response *openapi3.Response) []string {
+	return o.getPollingStatuses(response, extTfResourcePollTargetStatuses)
+}
+
+func (o *SpecV3Resource) getResourcePollPendingStatuses(response *openapi3.Response) []string {
+	return o.getPollingStatuses(response, extTfResourcePollPendingStatuses)
+}
+
+func (o *SpecV3Resource) getPollingStatuses(response *openapi3.Response, extension string) []string {
+	var statuses []string
+	if resourcePollTargets, exists := getExtensionAsJsonString(response.Extensions, extension); exists {
+		spaceTrimmedTargets := strings.Replace(resourcePollTargets, " ", "", -1)
+		statuses = strings.Split(spaceTrimmedTargets, ",")
+	}
+	return statuses
+}
+
 func (o *SpecV3Resource) ShouldIgnoreResource() bool {
 	// TODO: support 'x-terraform-exclude-resource' extension
 	return false
 }
 
 func (o *SpecV3Resource) getResourceOperations() specResourceOperations {
-	panic("implement me - getResourceOperations")
+	return specResourceOperations{
+		List:   o.createResourceOperation(o.RootPathItem.Get),
+		Post:   o.createResourceOperation(o.RootPathItem.Post),
+		Get:    o.createResourceOperation(o.InstancePathItem.Get),
+		Put:    o.createResourceOperation(o.InstancePathItem.Put),
+		Delete: o.createResourceOperation(o.InstancePathItem.Delete),
+	}
 }
 
 func (o *SpecV3Resource) getTimeouts() (*specTimeouts, error) {
