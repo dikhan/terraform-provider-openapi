@@ -72,6 +72,7 @@ func newSpecV3ResourceWithConfig(region, path string, schemaDefinition *openapi3
 	return resource, nil
 }
 
+// GetResourceName returns the resource name including the region at the end of the resource name if applicable
 func (o *SpecV3Resource) GetResourceName() string {
 	// TODO: implement multi-region support
 	//if o.Region != "" {
@@ -92,11 +93,10 @@ func (o *SpecV3Resource) buildResourceName() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// TODO: add support for subresources
-	//parentResourceInfo := o.GetParentResourceInfo()
-	//if parentResourceInfo != nil {
-	//	fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
-	//}
+	parentResourceInfo := o.GetParentResourceInfo()
+	if parentResourceInfo != nil {
+		fullResourceName = parentResourceInfo.fullParentResourceName + "_" + fullResourceName
+	}
 	return fullResourceName, nil
 }
 
