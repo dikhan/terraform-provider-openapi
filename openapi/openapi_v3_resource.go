@@ -135,54 +135,6 @@ func (o *SpecV3Resource) buildResourceNameFromPath(resourcePath, preferredName s
 	return fullResourceName, nil
 }
 
-func (o *SpecV3Resource) getResourceTerraformName() string {
-	return o.getPreferredName(o.RootPathItem)
-}
-
-func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
-	preferredName, _ := getExtensionAsJsonString(path.Extensions, extTfResourceName)
-	if preferredName == "" && path.Post != nil {
-		preferredName, _ = getExtensionAsJsonString(path.Post.Extensions, extTfResourceName)
-	}
-	return preferredName
-}
-
-func getExtensionAsJsonString(ext map[string]interface{}, name string) (string, bool) {
-	ifaceVal, found := ext[name]
-	if !found {
-		return "", false
-	}
-	jsonVal, ok := ifaceVal.(json.RawMessage)
-	if !ok {
-		log.Printf("[DEBUG] extension '%s' is not a json string", name)
-		return "", false
-	}
-	var val string
-	if err := json.Unmarshal(jsonVal, &val); err != nil {
-		log.Printf("[DEBUG] extension '%s' is not a json string - error: %v", name, err)
-		return "", false
-	}
-	return val, true
-}
-
-func getExtensionAsJsonBool(ext map[string]interface{}, name string) (value bool, ok bool) {
-	ifaceVal, found := ext[name]
-	if !found {
-		return false, false
-	}
-	jsonVal, ok := ifaceVal.(json.RawMessage)
-	if !ok {
-		log.Printf("[DEBUG] extension '%s' is not a json bool", name)
-		return false, false
-	}
-	var val bool
-	if err := json.Unmarshal(jsonVal, &val); err != nil {
-		log.Printf("[DEBUG] extension '%s' is not a json bool - error: %v", name, err)
-		return false, false
-	}
-	return val, true
-}
-
 func (o *SpecV3Resource) getHost() (string, error) {
 	panic("implement me - getHost")
 }
@@ -191,6 +143,7 @@ func (o *SpecV3Resource) getResourcePath(parentIDs []string) (string, error) {
 	panic("implement me - getResourcePath")
 }
 
+// GetResourceSchema returns the resource schema
 func (o *SpecV3Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	if o.specSchemaDefinitionCached != nil {
 		log.Printf("[DEBUG] GetResourceSchema hit the cache for '%s'", o.Name)
@@ -293,7 +246,7 @@ func (o *SpecV3Resource) createSchemaDefinitionProperty(propertyName string, pro
 		log.Printf("[DEBUG] found array type property '%s' with items of type '%s'", propertyName, itemsType)
 	}
 
-	if preferredPropertyName, found := getExtensionAsJsonString(property.Extensions, extTfFieldName); found {
+	if preferredPropertyName, exists := getExtensionAsJsonString(property.Extensions, extTfFieldName); exists {
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
 	}
 
@@ -536,6 +489,54 @@ func (o *SpecV3Resource) isRequired(propertyName string, requiredProps []string)
 		}
 	}
 	return required
+}
+
+func (o *SpecV3Resource) getResourceTerraformName() string {
+	return o.getPreferredName(o.RootPathItem)
+}
+
+func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
+	preferredName, _ := getExtensionAsJsonString(path.Extensions, extTfResourceName)
+	if preferredName == "" && path.Post != nil {
+		preferredName, _ = getExtensionAsJsonString(path.Post.Extensions, extTfResourceName)
+	}
+	return preferredName
+}
+
+func getExtensionAsJsonString(ext map[string]interface{}, name string) (string, bool) {
+	ifaceVal, found := ext[name]
+	if !found {
+		return "", false
+	}
+	jsonVal, ok := ifaceVal.(json.RawMessage)
+	if !ok {
+		log.Printf("[DEBUG] extension '%s' is not a json string", name)
+		return "", false
+	}
+	var val string
+	if err := json.Unmarshal(jsonVal, &val); err != nil {
+		log.Printf("[DEBUG] extension '%s' is not a json string - error: %v", name, err)
+		return "", false
+	}
+	return val, true
+}
+
+func getExtensionAsJsonBool(ext map[string]interface{}, name string) (value bool, ok bool) {
+	ifaceVal, found := ext[name]
+	if !found {
+		return false, false
+	}
+	jsonVal, ok := ifaceVal.(json.RawMessage)
+	if !ok {
+		log.Printf("[DEBUG] extension '%s' is not a json bool", name)
+		return false, false
+	}
+	var val bool
+	if err := json.Unmarshal(jsonVal, &val); err != nil {
+		log.Printf("[DEBUG] extension '%s' is not a json bool - error: %v", name, err)
+		return false, false
+	}
+	return val, true
 }
 
 func (o *SpecV3Resource) ShouldIgnoreResource() bool {
