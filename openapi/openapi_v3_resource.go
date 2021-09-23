@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/go-openapi/spec"
 )
 
 // SpecV3Resource defines a struct that implements the SpecResource interface and it's based on OpenAPI v3 specification
@@ -148,17 +147,40 @@ func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
 	return preferredName
 }
 
-func getExtensionAsJsonString(ext map[string]interface{}, name string) (string, error) {
+func getExtensionAsJsonString(ext map[string]interface{}, name string) (string, bool) {
 	ifaceVal, found := ext[name]
+	if !found {
+		return "", false
+	}
 	jsonVal, ok := ifaceVal.(json.RawMessage)
-	if !found || !ok {
-		return "", fmt.Errorf("extension '%s' is not a json string", name)
+	if !ok {
+		log.Printf("[DEBUG] extension '%s' is not a json string", name)
+		return "", false
 	}
 	var val string
 	if err := json.Unmarshal(jsonVal, &val); err != nil {
-		return "", fmt.Errorf("extension '%s' is not a json string", name)
+		log.Printf("[DEBUG] extension '%s' is not a json string - error: %v", name, err)
+		return "", false
 	}
-	return val, nil
+	return val, true
+}
+
+func getExtensionAsJsonBool(ext map[string]interface{}, name string) (value bool, ok bool) {
+	ifaceVal, found := ext[name]
+	if !found {
+		return false, false
+	}
+	jsonVal, ok := ifaceVal.(json.RawMessage)
+	if !ok {
+		log.Printf("[DEBUG] extension '%s' is not a json bool", name)
+		return false, false
+	}
+	var val bool
+	if err := json.Unmarshal(jsonVal, &val); err != nil {
+		log.Printf("[DEBUG] extension '%s' is not a json bool - error: %v", name, err)
+		return false, false
+	}
+	return val, true
 }
 
 func (o *SpecV3Resource) getHost() (string, error) {
@@ -181,17 +203,6 @@ func (o *SpecV3Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	o.specSchemaDefinitionCached = specSchemaDefinition
 	log.Printf("[DEBUG] GetResourceSchema cache loaded for '%s'", o.Name)
 	return o.specSchemaDefinitionCached, nil
-	//// TODO: replace stub with core impl -- this is the heart. <3
-	//return &SpecSchemaDefinition{
-	//	Properties: SpecSchemaDefinitionProperties{
-	//		{
-	//			Name:        "prop1",
-	//			Description: "fake desc",
-	//			Required:    true,
-	//			Type:        TypeString,
-	//		},
-	//	},
-	//}, nil
 }
 
 func (o *SpecV3Resource) getSchemaDefinition(schema *openapi3.Schema) (*SpecSchemaDefinition, error) {
@@ -282,7 +293,7 @@ func (o *SpecV3Resource) createSchemaDefinitionProperty(propertyName string, pro
 		log.Printf("[DEBUG] found array type property '%s' with items of type '%s'", propertyName, itemsType)
 	}
 
-	if preferredPropertyName, err := getExtensionAsJsonString(property.Extensions, extTfFieldName); err != nil {
+	if preferredPropertyName, found := getExtensionAsJsonString(property.Extensions, extTfFieldName); found {
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
 	}
 
@@ -347,9 +358,9 @@ func (o *SpecV3Resource) createSchemaDefinitionProperty(propertyName string, pro
 	return schemaDefinitionProperty, nil
 }
 
-func (o *SpecV3Resource) isBoolExtensionEnabled(extensions spec.Extensions, extension string) bool {
+func (o *SpecV3Resource) isBoolExtensionEnabled(extensions map[string]interface{}, extension string) bool {
 	if extensions != nil {
-		if enabled, ok := extensions.GetBool(extension); ok && enabled {
+		if enabled, ok := getExtensionAsJsonBool(extensions, extension); ok && enabled {
 			return true
 		}
 	}
