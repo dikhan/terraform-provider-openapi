@@ -118,7 +118,6 @@ function setupInstallationPath(){
     einfo "Installing provider based on Terraform v0.12.* plugin installation instructions: https://www.terraform.io/docs/plugins/basics.html#installing-plugins"
     TF_PROVIDER_PLUGIN_NAME="${TF_PROVIDER_BASE_NAME}${PROVIDER_NAME}_v${PLUGIN_VERSION}"
   else
-  then
     einfo "Installing provider based on Terraform >= v0.13.* plugin installation instructions: https://www.terraform.io/docs/configuration/provider-requirements.html#in-house-providers"
     INSTALLATION_DIR="${INSTALLATION_DIR}/${PROVIDER_SOURCE_ADDRESS}/${PROVIDER_NAME}/${PROVIDER_VERSION}/${XC_OS}_${XC_ARCH}"
     mkdir -p ${INSTALLATION_DIR}
