@@ -19,3 +19,7 @@ const extTfResourcePollPendingStatuses = "x-terraform-resource-poll-pending-stat
 const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourceName = "x-terraform-resource-name"
 const extTfResourceURL = "x-terraform-resource-host"
+
+// Security level extensions
+const extTfAuthenticationSchemeBearer = "x-terraform-authentication-scheme-bearer"
+const extTfAuthenticationRefreshToken = "x-terraform-refresh-token-url" // #nosec G101

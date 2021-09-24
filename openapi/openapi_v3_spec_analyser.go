@@ -77,12 +77,9 @@ func (specAnalyser specV3Analyser) GetTerraformCompliantDataSources() []SpecReso
 }
 
 func (specAnalyser specV3Analyser) GetSecurity() SpecSecurity {
-	// TODO: replace this stub
-	return &specSecurityStub{
-		securityDefinitions: &SpecSecurityDefinitions{
-			newAPIKeyHeaderSecurityDefinition("apikey_auth", "Authorization"),
-		},
-		globalSecuritySchemes: createSecuritySchemes([]map[string][]string{}),
+	return &specV3Security{
+		SecuritySchemes: specAnalyser.d.Components.SecuritySchemes,
+		GlobalSecurity:  specAnalyser.d.Security,
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
@@ -136,8 +137,21 @@ func (o *SpecV3Resource) buildResourceNameFromPath(resourcePath, preferredName s
 	return fullResourceName, nil
 }
 
+// getHost can return an empty host in which case the expectation is that the host used will be the one specified in the
+// swagger host attribute or if not present the host used will be the host where the swagger file was served
 func (o *SpecV3Resource) getHost() (string, error) {
-	panic("implement me - getHost")
+	overrideHost := getResourceOverrideHostV3(o.RootPathItem.Post)
+	if overrideHost == "" {
+		return "", nil
+	}
+	multiRegionHost, err := openapiutils.GetMultiRegionHost(overrideHost, o.Region)
+	if err != nil {
+		return "", err
+	}
+	if multiRegionHost != "" {
+		return multiRegionHost, nil
+	}
+	return overrideHost, nil
 }
 
 // getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
@@ -593,6 +607,10 @@ func (o *SpecV3Resource) createResourceOperation(operation *openapi3.Operation) 
 func (o *SpecV3Resource) createResponses(operation *openapi3.Operation) specResponses {
 	responses := specResponses{}
 	for statusCode, response := range operation.Responses { //panics on ImportState if the swagger doesn't define status code responses
+		// We don't care about the default response, just ignore it...
+		if statusCode == "default" {
+			continue
+		}
 		status, err := strconv.Atoi(statusCode)
 		if err != nil {
 			log.Printf("[DEBUG] invalid response '%s' on '%s': %v", statusCode, o.Name, err)
@@ -717,4 +735,16 @@ func (o *SpecV3Resource) GetParentResourceInfo() *ParentResourceInfo {
 		return sub
 	}
 	return nil
+}
+
+// getResourceOverrideHostV3 checks if the x-terraform-resource-host extension is present and if so returns its value. This
+// value will override the global host value, and the API calls for this resource will be made against the value returned
+func getResourceOverrideHostV3(rootPathItemPost *openapi3.Operation) string {
+	if rootPathItemPost == nil {
+		return ""
+	}
+	if resourceURL, exists := getExtensionAsJsonString(rootPathItemPost.Extensions, extTfResourceURL); exists && resourceURL != "" {
+		return resourceURL
+	}
+	return ""
 }
