@@ -595,12 +595,17 @@ func (o *SpecV3Resource) createResourceOperation(operation *openapi3.Operation) 
 		return nil
 	}
 	// TODO: implement this
-	//headerParameters := getHeaderConfigurations(operation.Parameters)
+	var params []*openapi3.Parameter
+	for _, param := range operation.Parameters {
+		// TODO: support .Ref
+		params = append(params, param.Value)
+	}
+	headerParameters := getHeaderConfigurationsV3(params)
 	//securitySchemes := createSecuritySchemes(operation.Security) // ([]map[string][]string)
 	return &specResourceOperation{
-		//HeaderParameters: headerParameters,
+		HeaderParameters: headerParameters,
 		//SecuritySchemes:  securitySchemes,
-		responses:        o.createResponses(operation),
+		responses: o.createResponses(operation),
 	}
 }
 

@@ -84,14 +84,7 @@ func (specAnalyser specV3Analyser) GetSecurity() SpecSecurity {
 }
 
 func (specAnalyser specV3Analyser) GetAllHeaderParameters() SpecHeaderParameters {
-	// TODO: add support for header params
-	return []SpecHeaderParam{
-		{
-			Name:          "X-Request-ID",
-			TerraformName: "x_request_id",
-			IsRequired:    true,
-		},
-	}
+	return getAllHeaderParametersV3(specAnalyser.d.Paths)
 }
 
 func (specAnalyser specV3Analyser) GetAPIBackendConfiguration() (SpecBackendConfiguration, error) {

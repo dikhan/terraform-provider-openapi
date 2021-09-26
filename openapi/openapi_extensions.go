@@ -20,6 +20,9 @@ const extTfExcludeResource = "x-terraform-exclude-resource"
 const extTfResourceName = "x-terraform-resource-name"
 const extTfResourceURL = "x-terraform-resource-host"
 
+// Param level extensions
+const extTfHeader = "x-terraform-header"
+
 // Security level extensions
 const extTfAuthenticationSchemeBearer = "x-terraform-authentication-scheme-bearer"
 const extTfAuthenticationRefreshToken = "x-terraform-refresh-token-url" // #nosec G101

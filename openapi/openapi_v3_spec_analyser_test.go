@@ -617,7 +617,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -633,7 +633,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -658,7 +658,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 					},
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -669,7 +669,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -689,7 +689,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -704,7 +704,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -723,7 +723,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"some_property": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -747,7 +747,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
@@ -768,7 +768,7 @@ func TestV3_schemaIsEqual(t *testing.T) {
 				Properties: map[string]*openapi3.SchemaRef{
 					"id": {
 						Value: &openapi3.Schema{
-							Type: "string",
+							Type:     "string",
 							ReadOnly: true,
 						},
 					},
