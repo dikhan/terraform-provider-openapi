@@ -609,6 +609,7 @@ components:
           $ref: '#/components/schemas/Status'
     Status:
       type: object
+      readOnly: true
       properties:
         message:
           type: string
