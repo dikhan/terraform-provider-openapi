@@ -127,7 +127,7 @@ The above will download and install the latest release of the OpenAPI Terraform 
 provider name provided `myprovidername` in the expected Terraform's plugin installation directory based on the source address provided `terraform.example.com/examplecorp`:
 
 ````
-$ ls -la ~/.terraform.d/plugins/terraform.example.com/examplecorp/myprovidername/1.0.0/darwin_amd64/terraform-provider-myprovidername
+$ ls -la ~/.terraform.d/plugins/terraform.example.com/examplecorp/myprovidername/2.2.0/darwin_amd64/terraform-provider-myprovidername
 total 29656
 drwxr-xr-x  4 dikhan  staff       128  3 Jul 15:13 .
 drwxr-xr-x  4 dikhan  staff       128  3 Jul 13:53 ..
