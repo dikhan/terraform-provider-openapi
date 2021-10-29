@@ -9,12 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapiutils"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 )
-
-const extTfResourceRegionsFmt = "x-terraform-resource-regions-%s"
 
 // specV2Analyser defines an SpecAnalyser implementation for OpenAPI v2 specification
 // Forcing creation of this object via constructor so proper input validation is performed before creating the struct
@@ -42,19 +39,6 @@ func newSpecAnalyserV2(openAPIDocumentFilename string) (*specV2Analyser, error) 
 		d:                  apiSpec,
 		openAPIDocumentURL: openAPIDocumentFilename,
 	}, nil
-}
-
-func (specAnalyser *specV2Analyser) createMultiRegionResources(regions []string, resourceRootPath string, resourceRoot, pathItem spec.PathItem, resourcePayloadSchemaDef *spec.Schema) ([]SpecResource, error) {
-	var resources []SpecResource
-	for _, regionName := range regions {
-		r, err := newSpecV2ResourceWithRegion(regionName, resourceRootPath, *resourcePayloadSchemaDef, resourceRoot, pathItem, specAnalyser.d.Spec().Definitions, specAnalyser.d.Spec().Paths.Paths)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create a resource with region: %s", err)
-		}
-		log.Printf("[INFO] multi region resource name = %s, region = '%s'", r.GetResourceName(), regionName)
-		resources = append(resources, r)
-	}
-	return resources, nil
 }
 
 func (specAnalyser *specV2Analyser) GetTerraformCompliantDataSources() []SpecResource {
@@ -89,22 +73,6 @@ func (specAnalyser *specV2Analyser) GetTerraformCompliantResources() ([]SpecReso
 		resourceRootPath, resourceRoot, resourcePayloadSchemaDef, err := specAnalyser.isEndPointFullyTerraformResourceCompliant(resourcePath)
 		if err != nil {
 			log.Printf("[DEBUG] resource path '%s' not terraform compliant: %s", resourcePath, err)
-			continue
-		}
-
-		isMultiRegion, regions, err := specAnalyser.isMultiRegionResource(resourceRoot, specAnalyser.d.Spec().Extensions)
-		if err != nil {
-			log.Printf("multi region configuration for resource '%s' is not valid: ", err)
-			continue
-		}
-		if isMultiRegion {
-			log.Printf("[INFO] resource '%s' is configured with host override AND multi region; creating one reasource per region", resourceRootPath)
-			multiRegionResources, err := specAnalyser.createMultiRegionResources(regions, resourceRootPath, *resourceRoot, pathItem, resourcePayloadSchemaDef)
-			if err != nil {
-				log.Printf("[WARN] ignoring multiregion resource '%s' due to an error: %s", resourceRootPath, err)
-				continue
-			}
-			resources = append(resources, multiRegionResources...)
 			continue
 		}
 
@@ -160,47 +128,6 @@ func (specAnalyser *specV2Analyser) pathExists(path string) (bool, spec.PathItem
 		}
 	}
 	return true, p
-}
-
-// isMultiRegionResource returns true on ly if:
-// - the value is parametrized following the pattern: some.subdomain.${keyword}.domain.com, where ${keyword} must be present in the string, otherwise the resource will not be considered multi region
-// - there is a matching 'x-terraform-resource-regions-${keyword}' extension defined in the swagger root level (extensions passed in), where ${keyword} will be the value of the parameter in the above URL
-// - and finally the value of the extension is an array of strings containing the different regions where the resource can be created
-func (specAnalyser *specV2Analyser) isMultiRegionResource(resourceRoot *spec.PathItem, extensions spec.Extensions) (bool, []string, error) {
-	overrideHost := getResourceOverrideHost(resourceRoot.Post)
-	if overrideHost == "" {
-		return false, nil, nil
-	}
-	isMultiRegionHost, regex := openapiutils.IsMultiRegionHost(overrideHost)
-	if !isMultiRegionHost {
-		return false, nil, nil
-	}
-	region := regex.FindStringSubmatch(overrideHost)
-	if len(region) != 5 {
-		return false, nil, fmt.Errorf("override host %s provided does not comply with expected regex format", overrideHost)
-	}
-	regionIdentifier := region[3]
-	regionExtensionName := specAnalyser.getResourceRegionExtensionName(regionIdentifier)
-	if resourceRegions, exists := openapiutils.StringExtensionExists(extensions, regionExtensionName); exists {
-		resourceRegions = strings.Replace(resourceRegions, " ", "", -1)
-		regions := strings.Split(resourceRegions, ",")
-		if len(regions) < 1 {
-			return false, nil, fmt.Errorf("could not find any region for '%s' matching region extension %s: '%s'", regionIdentifier, regionExtensionName, resourceRegions)
-		}
-		apiRegions := []string{}
-		for _, region := range regions {
-			apiRegions = append(apiRegions, region)
-		}
-		if len(apiRegions) < 1 {
-			return false, nil, fmt.Errorf("could not build properly the resource region map for '%s' matching region extension %s: '%s'", regionIdentifier, regionExtensionName, resourceRegions)
-		}
-		return true, apiRegions, nil
-	}
-	return false, nil, fmt.Errorf("missing matching '%s' root level region extension '%s'", regionIdentifier, regionExtensionName)
-}
-
-func (specAnalyser *specV2Analyser) getResourceRegionExtensionName(regionIdentifier string) string {
-	return fmt.Sprintf(extTfResourceRegionsFmt, regionIdentifier)
 }
 
 func (specAnalyser *specV2Analyser) GetSecurity() SpecSecurity {

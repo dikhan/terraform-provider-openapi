@@ -70,8 +70,7 @@ const extTfResourceURL = "x-terraform-resource-host"
 
 // SpecV2Resource defines a struct that implements the SpecResource interface and it's based on OpenAPI v2 specification
 type SpecV2Resource struct {
-	Name   string
-	Region string
+	Name string
 	// Path contains the full relative path to the resource e,g: /v1/resource
 	Path string
 	// SpecSchemaDefinition definition represents the representational state (aka model) of the resource
@@ -100,13 +99,12 @@ type SpecV2Resource struct {
 
 // newSpecV2Resource creates a SpecV2Resource with no region and default host
 func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
-	return newSpecV2ResourceWithConfig("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+	return newSpecV2ResourceWithConfig(path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
 }
 
 func newSpecV2DataSource(path string, schemaDefinition spec.Schema, rootPathItem spec.PathItem, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	resource := &SpecV2Resource{
 		Path:              path,
-		Region:            "",
 		SchemaDefinition:  schemaDefinition,
 		RootPathItem:      rootPathItem,
 		InstancePathItem:  spec.PathItem{},
@@ -121,15 +119,7 @@ func newSpecV2DataSource(path string, schemaDefinition spec.Schema, rootPathItem
 	return resource, nil
 }
 
-// newSpecV2ResourceWithRegion creates a SpecV2Resource with the region configured making the returned SpecV2Resource region based.
-func newSpecV2ResourceWithRegion(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
-	if region == "" {
-		return nil, fmt.Errorf("region must not be empty")
-	}
-	return newSpecV2ResourceWithConfig(region, path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
-}
-
-func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
+func newSpecV2ResourceWithConfig(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path must not be empty")
 	}
@@ -138,7 +128,6 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 	}
 	resource := &SpecV2Resource{
 		Path:              path,
-		Region:            region,
 		SchemaDefinition:  schemaDefinition,
 		RootPathItem:      rootPathItem,
 		InstancePathItem:  instancePathItem,
@@ -155,9 +144,6 @@ func newSpecV2ResourceWithConfig(region, path string, schemaDefinition spec.Sche
 
 // GetResourceName returns the resource name including the region at the end of the resource name if applicable
 func (o *SpecV2Resource) GetResourceName() string {
-	if o.Region != "" {
-		return fmt.Sprintf("%s_%s", o.Name, o.Region)
-	}
 	return o.Name
 }
 
@@ -261,13 +247,6 @@ func (o *SpecV2Resource) getHost() (string, error) {
 	overrideHost := getResourceOverrideHost(o.RootPathItem.Post)
 	if overrideHost == "" {
 		return "", nil
-	}
-	multiRegionHost, err := openapiutils.GetMultiRegionHost(overrideHost, o.Region)
-	if err != nil {
-		return "", err
-	}
-	if multiRegionHost != "" {
-		return multiRegionHost, nil
 	}
 	return overrideHost, nil
 }
