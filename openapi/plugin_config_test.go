@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"fmt"
 	"github.com/smartystreets/assertions/should"
 	. "github.com/smartystreets/goconvey/convey"
@@ -52,6 +53,14 @@ func TestGetPluginConfigurationPath(t *testing.T) {
 			})
 		})
 	})
+}
+
+type errReader struct {
+	errorMessage string
+}
+
+func (e errReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New(e.errorMessage)
 }
 
 func TestGetServiceProviderConfiguration(t *testing.T) {
@@ -256,12 +265,25 @@ services:
 		})
 	})
 
-	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service configuration that is invalid (e,g: plugin version is specified but does not match the version of the plugin executing)", t, func() {
+	Convey("Given a PluginConfiguration that fails to read", t, func() {
+		errReader := errReader{"some error"}
+		pluginConfiguration := PluginConfiguration{
+			ProviderName:  providerName,
+			Configuration: errReader,
+		}
+		Convey("When getServiceConfiguration is called", func() {
+			_, err := pluginConfiguration.getServiceConfiguration()
+			Convey("Then the error should containing the following message", func() {
+				So(err.Error(), should.ContainSubstring, "failed to read terraform-provider-openapi.yaml configuration file")
+			})
+		})
+	})
+
+	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration file containing a service called 'test' with non valid configuration", t, func() {
 		pluginConfig := fmt.Sprintf(`version: '1'
 services:
-    %s:
-        swagger-url: %s
-        plugin_version: 0.14.0`, providerName, otfVarSwaggerURLValue)
+   %s:
+       swagger-url: non-valid-url`, providerName)
 		configReader := strings.NewReader(pluginConfig)
 		pluginConfiguration := PluginConfiguration{
 			ProviderName:  providerName,
@@ -270,7 +292,7 @@ services:
 		Convey("When getServiceConfiguration is called", func() {
 			_, err := pluginConfiguration.getServiceConfiguration()
 			Convey("Then the error should containing the following message", func() {
-				So(err.Error(), should.ContainSubstring, "service configuration for 'test' not valid: plugin version '0.14.0' in the plugin configuration file does not match the version of the OpenAPI plugin that is running 'dev'")
+				So(err.Error(), should.ContainSubstring, "service configuration for 'test' not valid: service swagger URL configuration not valid ('non-valid-url'). URL must be either a valid formed URL or a path to an existing swagger file stored in the disk")
 			})
 		})
 	})

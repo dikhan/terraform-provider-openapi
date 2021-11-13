@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/dikhan/terraform-provider-openapi/v2/openapi/terraformutils"
-	"github.com/dikhan/terraform-provider-openapi/v2/openapi/version"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
@@ -133,7 +132,7 @@ func (p *PluginConfiguration) getServiceConfiguration() (ServiceConfiguration, e
 		return nil, fmt.Errorf("swagger url not provided, please export OTF_VAR_<provider_name>_SWAGGER_URL env variable with the URL where '%s' service provider is exposing the swagger file OR create a plugin configuration file at ~/.terraform.d/plugins following the Plugin configuration schema specifications", p.ProviderName)
 	}
 
-	if err = serviceConfig.Validate(version.Version); err != nil {
+	if err = serviceConfig.Validate(); err != nil {
 		return nil, fmt.Errorf("service configuration for '%s' not valid: %s", p.ProviderName, err)
 	}
 
