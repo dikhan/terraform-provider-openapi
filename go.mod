@@ -7,6 +7,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/dikhan/http_goclient v0.0.0-20181010015730-b9de9b5ee7b6
 	github.com/dikhan/terraform-provider-openapi v0.31.1
+	github.com/getkin/kin-openapi v0.75.0
 	github.com/go-openapi/jsonreference v0.17.0
 	github.com/go-openapi/loads v0.0.0-20171207192234-2a2b323bab96
 	github.com/go-openapi/spec v0.19.0

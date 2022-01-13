@@ -1,33 +1,36 @@
 package openapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/dikhan/terraform-provider-openapi/v2/openapi/openapiutils"
-	"github.com/go-openapi/spec"
+	"github.com/dikhan/terraform-provider-openapi/openapi/openapiutils"
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
-// SpecV2Resource defines a struct that implements the SpecResource interface and it's based on OpenAPI v2 specification
-type SpecV2Resource struct {
-	Name string
+// SpecV3Resource defines a struct that implements the SpecResource interface and it's based on OpenAPI v3 specification
+type SpecV3Resource struct {
+	Name   string
+	Region string
 	// Path contains the full relative path to the resource e,g: /v1/resource
 	Path string
 	// SpecSchemaDefinition definition represents the representational state (aka model) of the resource
-	SchemaDefinition spec.Schema
+	SchemaDefinition *openapi3.Schema
 	// RootPathItem contains info about the resource root path e,g: /resource, including the POST operation used to create instances of this resource
-	RootPathItem spec.PathItem
+	RootPathItem *openapi3.PathItem
 	// InstancePathItem contains info about the resource's instance /resource/{id}, including GET, PUT and REMOVE operations if applicable
-	InstancePathItem spec.PathItem
+	InstancePathItem *openapi3.PathItem
 
 	// SchemaDefinitions contains all the definitions which might be needed in case the resource schema contains properties
 	// of type object which in turn refer to other definitions
-	SchemaDefinitions map[string]spec.Schema
+	SchemaDefinitions openapi3.Schemas
 
-	Paths map[string]spec.PathItem
+	Paths openapi3.Paths
 
 	// Cached objects that are loaded once (when the corresponding function that loads the object is called the first time) and
 	// on subsequent method calls the cached object is returned instead saving executing time.
@@ -40,37 +43,23 @@ type SpecV2Resource struct {
 	resolvedPathCached string
 }
 
-// newSpecV2Resource creates a SpecV2Resource with no region and default host
-func newSpecV2Resource(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
-	return newSpecV2ResourceWithConfig(path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
+var _ SpecResource = (*SpecV3Resource)(nil)
+
+// newSpecV3Resource creates a SpecV3Resource with no region and default host
+func newSpecV3Resource(path string, schemaDefinition *openapi3.Schema, rootPathItem, instancePathItem *openapi3.PathItem, schemaDefinitions openapi3.Schemas, paths map[string]*openapi3.PathItem) (*SpecV3Resource, error) {
+	return newSpecV3ResourceWithConfig("", path, schemaDefinition, rootPathItem, instancePathItem, schemaDefinitions, paths)
 }
 
-func newSpecV2DataSource(path string, schemaDefinition spec.Schema, rootPathItem spec.PathItem, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
-	resource := &SpecV2Resource{
-		Path:              path,
-		SchemaDefinition:  schemaDefinition,
-		RootPathItem:      rootPathItem,
-		InstancePathItem:  spec.PathItem{},
-		SchemaDefinitions: nil,
-		Paths:             paths,
-	}
-	name, err := resource.buildResourceName()
-	if err != nil {
-		return nil, fmt.Errorf("could not build resource name for '%s': %s", path, err)
-	}
-	resource.Name = name
-	return resource, nil
-}
-
-func newSpecV2ResourceWithConfig(path string, schemaDefinition spec.Schema, rootPathItem, instancePathItem spec.PathItem, schemaDefinitions map[string]spec.Schema, paths map[string]spec.PathItem) (*SpecV2Resource, error) {
+func newSpecV3ResourceWithConfig(region, path string, schemaDefinition *openapi3.Schema, rootPathItem, instancePathItem *openapi3.PathItem, schemaDefinitions openapi3.Schemas, paths map[string]*openapi3.PathItem) (*SpecV3Resource, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path must not be empty")
 	}
 	if paths == nil {
 		return nil, fmt.Errorf("paths must not be nil")
 	}
-	resource := &SpecV2Resource{
+	resource := &SpecV3Resource{
 		Path:              path,
+		Region:            region,
 		SchemaDefinition:  schemaDefinition,
 		RootPathItem:      rootPathItem,
 		InstancePathItem:  instancePathItem,
@@ -86,14 +75,18 @@ func newSpecV2ResourceWithConfig(path string, schemaDefinition spec.Schema, root
 }
 
 // GetResourceName returns the resource name including the region at the end of the resource name if applicable
-func (o *SpecV2Resource) GetResourceName() string {
+func (o *SpecV3Resource) GetResourceName() string {
+	// TODO: implement multi-region support
+	//if o.Region != "" {
+	//	return fmt.Sprintf("%s_%s", o.Name, o.Region)
+	//}
 	return o.Name
 }
 
 // GetResourceName returns the name of the resource (including the version if applicable). The name is build from the resource
 // root path /resource/{id} or if specified the value set in the x-terraform-resource-name extension is used instead along
 // with the version (if applicable)
-func (o *SpecV2Resource) buildResourceName() (string, error) {
+func (o *SpecV3Resource) buildResourceName() (string, error) {
 	preferredName := ""
 	if preferred := o.getResourceTerraformName(); preferred != "" {
 		preferredName = preferred
@@ -118,7 +111,7 @@ func (o *SpecV2Resource) buildResourceName() (string, error) {
 // /cdns/{id} and preferred name being cdn -> cdn
 // /v1/cdns/{id} -> cdns_v1
 // /v1/cdns/{id} and preferred name being cdn -> cdn_v1
-func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName string) (string, error) {
+func (o *SpecV3Resource) buildResourceNameFromPath(resourcePath, preferredName string) (string, error) {
 	nameRegex, _ := regexp.Compile(resourceNameRegex)
 	var resourceName string
 	matches := nameRegex.FindStringSubmatch(resourcePath)
@@ -144,11 +137,28 @@ func (o *SpecV2Resource) buildResourceNameFromPath(resourcePath, preferredName s
 	return fullResourceName, nil
 }
 
+// getHost can return an empty host in which case the expectation is that the host used will be the one specified in the
+// swagger host attribute or if not present the host used will be the host where the swagger file was served
+func (o *SpecV3Resource) getHost() (string, error) {
+	overrideHost := getResourceOverrideHostV3(o.RootPathItem.Post)
+	if overrideHost == "" {
+		return "", nil
+	}
+	multiRegionHost, err := openapiutils.GetMultiRegionHost(overrideHost, o.Region)
+	if err != nil {
+		return "", err
+	}
+	if multiRegionHost != "" {
+		return multiRegionHost, nil
+	}
+	return overrideHost, nil
+}
+
 // getResourcePath returns the root path of the resource. If the resource is a subresource and therefore the path contains
 // path parameters these will be resolved accordingly based on the ids provided. For instance, considering the given
-// resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []strin{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
+// resource path "/v1/cdns/{cdn_id}/v1/firewalls" and the []string{"cdnID"} the returned path will be "/v1/cdns/cdnID/v1/firewalls".
 // If the resource path is not parameterised, then regular path will be returned accordingly
-func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
+func (o *SpecV3Resource) getResourcePath(parentIDs []string) (string, error) {
 	if o.resolvedPathCached != "" {
 		log.Printf("[DEBUG] getResourcePath hit the cache for '%s'", o.Name)
 		return o.resolvedPathCached, nil
@@ -184,107 +194,13 @@ func (o *SpecV2Resource) getResourcePath(parentIDs []string) (string, error) {
 	return resolvedPath, nil
 }
 
-// getHost can return an empty host in which case the expectation is that the host used will be the one specified in the
-// swagger host attribute or if not present the host used will be the host where the swagger file was served
-func (o *SpecV2Resource) getHost() (string, error) {
-	overrideHost := getResourceOverrideHost(o.RootPathItem.Post)
-	if overrideHost == "" {
-		return "", nil
-	}
-	return overrideHost, nil
-}
-
-func (o *SpecV2Resource) getResourceOperations() specResourceOperations {
-	return specResourceOperations{
-		List:   o.createResourceOperation(o.RootPathItem.Get),
-		Post:   o.createResourceOperation(o.RootPathItem.Post),
-		Get:    o.createResourceOperation(o.InstancePathItem.Get),
-		Put:    o.createResourceOperation(o.InstancePathItem.Put),
-		Delete: o.createResourceOperation(o.InstancePathItem.Delete),
-	}
-}
-
-// ShouldIgnoreResource checks whether the POST operation for a given resource as the 'x-terraform-exclude-resource' extension
-// defined with true value. If so, the resource will not be exposed to the OpenAPI Terraform provider; otherwise it will
-// be exposed and users will be able to manage such resource via terraform.
-func (o *SpecV2Resource) ShouldIgnoreResource() bool {
-	postOperation := o.RootPathItem.Post
-	if postOperation != nil {
-		if postOperation.Extensions != nil {
-			if o.isBoolExtensionEnabled(postOperation.Extensions, extTfExcludeResource) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// GetParentResourceInfo returns the information about the parent resources
-func (o *SpecV2Resource) GetParentResourceInfo() *ParentResourceInfo {
-	if o.parentResourceInfoCached != nil {
-		log.Printf("[DEBUG] GetParentResourceInfo hit the cache for '%s'", o.Name)
-		return o.parentResourceInfoCached
-	}
-	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
-	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
-	if len(parentMatches) > 0 {
-		var parentURI string
-		var parentInstanceURI string
-
-		var parentResourceNames, parentURIs, parentInstanceURIs []string
-		for _, match := range parentMatches {
-			fullMatch := match[0]
-			rootPath := match[1]
-			parentURI = parentInstanceURI + rootPath
-			parentInstanceURI = parentInstanceURI + fullMatch
-			parentURIs = append(parentURIs, parentURI)
-			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
-		}
-
-		fullParentResourceName := ""
-		preferredParentName := ""
-		for _, parentURI := range parentURIs {
-			// `o.Paths` is used to read the preferred name over that resource if `x-terraform-preferred-name` is set
-			if o.Paths != nil {
-				if parent, ok := o.Paths[parentURI]; ok {
-					preferredParentName = o.getPreferredName(parent)
-				} else {
-					// Falling back to checking path with trailing slash
-					if parent, ok := o.Paths[parentURI+"/"]; ok {
-						preferredParentName = o.getPreferredName(parent)
-					}
-				}
-			}
-			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
-			if err != nil {
-				log.Printf("[ERROR] could not build parent resource info due to the following error: %s", err)
-				return nil //untested
-			}
-			parentResourceNames = append(parentResourceNames, parentResourceName)
-			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
-		}
-		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
-
-		sub := &ParentResourceInfo{
-			parentResourceNames:    parentResourceNames,
-			fullParentResourceName: fullParentResourceName,
-			parentURIs:             parentURIs,
-			parentInstanceURIs:     parentInstanceURIs,
-		}
-		o.parentResourceInfoCached = sub
-		log.Printf("[DEBUG] GetParentResourceInfo cache loaded for '%s'", o.Name)
-		return sub
-	}
-	return nil
-}
-
 // GetResourceSchema returns the resource schema
-func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
+func (o *SpecV3Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	if o.specSchemaDefinitionCached != nil {
 		log.Printf("[DEBUG] GetResourceSchema hit the cache for '%s'", o.Name)
 		return o.specSchemaDefinitionCached, nil
 	}
-	specSchemaDefinition, err := o.getSchemaDefinitionWithOptions(&o.SchemaDefinition, true)
+	specSchemaDefinition, err := o.getSchemaDefinitionWithOptions(o.SchemaDefinition, true)
 	if err != nil {
 		return nil, err
 	}
@@ -293,11 +209,11 @@ func (o *SpecV2Resource) GetResourceSchema() (*SpecSchemaDefinition, error) {
 	return o.specSchemaDefinitionCached, nil
 }
 
-func (o *SpecV2Resource) getSchemaDefinition(schema *spec.Schema) (*SpecSchemaDefinition, error) {
+func (o *SpecV3Resource) getSchemaDefinition(schema *openapi3.Schema) (*SpecSchemaDefinition, error) {
 	return o.getSchemaDefinitionWithOptions(schema, false)
 }
 
-func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, addParentProps bool) (*SpecSchemaDefinition, error) {
+func (o *SpecV3Resource) getSchemaDefinitionWithOptions(schema *openapi3.Schema, addParentProps bool) (*SpecSchemaDefinition, error) {
 	if schema == nil {
 		return nil, fmt.Errorf("schema argument must not be nil")
 	}
@@ -307,7 +223,8 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 	// This map ensures no duplicates will happen if the schema happens to have a parent id property. if so, it will be overridden with the expected parent property configuration (e,g: making the prop required)
 	schemaProps := map[string]*SpecSchemaDefinitionProperty{}
 	for propertyName, property := range schema.Properties {
-		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property, schema.Required)
+		// TODO: support property.Ref
+		schemaDefinitionProperty, err := o.createSchemaDefinitionProperty(propertyName, property.Value, schema.Required)
 		if err != nil {
 			return nil, err
 		}
@@ -318,7 +235,7 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 		if parentResourceInfo != nil {
 			parentPropertyNames := parentResourceInfo.GetParentPropertiesNames()
 			for _, parentPropertyName := range parentPropertyNames {
-				pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, spec.Schema{SchemaProps: spec.SchemaProps{Type: spec.StringOrArray{"string"}}}, []string{parentPropertyName})
+				pr, _ := o.createSchemaDefinitionProperty(parentPropertyName, &openapi3.Schema{Type: "string"}, []string{parentPropertyName})
 				pr.IsParentProperty = true
 				schemaProps[parentPropertyName] = pr
 			}
@@ -331,7 +248,7 @@ func (o *SpecV2Resource) getSchemaDefinitionWithOptions(schema *spec.Schema, add
 	return schemaDefinition, nil
 }
 
-func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, property spec.Schema, requiredProperties []string) (*SpecSchemaDefinitionProperty, error) {
+func (o *SpecV3Resource) createSchemaDefinitionProperty(propertyName string, property *openapi3.Schema, requiredProperties []string) (*SpecSchemaDefinitionProperty, error) {
 	schemaDefinitionProperty := &SpecSchemaDefinitionProperty{}
 
 	schemaDefinitionProperty.Name = propertyName
@@ -364,8 +281,9 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		//          type: string
 		//        type: array
 		if schemaDefinitionProperty.Description == "" {
-			if property.Items != nil && property.Items.Schema != nil {
-				schemaDefinitionProperty.Description = property.Items.Schema.Description
+			// TODO: support property.Items.Ref
+			if property.Items != nil && property.Items.Value != nil {
+				schemaDefinitionProperty.Description = property.Items.Value.Description
 			}
 		}
 
@@ -379,7 +297,7 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 		log.Printf("[DEBUG] found array type property '%s' with items of type '%s'", propertyName, itemsType)
 	}
 
-	if preferredPropertyName, exists := property.Extensions.GetString(extTfFieldName); exists {
+	if preferredPropertyName, exists := getExtensionAsJsonString(property.Extensions, extTfFieldName); exists {
 		schemaDefinitionProperty.PreferredName = preferredPropertyName
 	}
 
@@ -444,16 +362,16 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 	return schemaDefinitionProperty, nil
 }
 
-func (o *SpecV2Resource) isBoolExtensionEnabled(extensions spec.Extensions, extension string) bool {
+func (o *SpecV3Resource) isBoolExtensionEnabled(extensions map[string]interface{}, extension string) bool {
 	if extensions != nil {
-		if enabled, ok := extensions.GetBool(extension); ok && enabled {
+		if enabled, ok := getExtensionAsJsonBool(extensions, extension); ok && enabled {
 			return true
 		}
 	}
 	return false
 }
 
-func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, property spec.Schema, requiredProperties []string) (bool, error) {
+func (o *SpecV3Resource) isOptionalComputedProperty(propertyName string, property *openapi3.Schema, requiredProperties []string) (bool, error) {
 	required := o.isRequired(propertyName, requiredProperties)
 	if required {
 		return false, nil
@@ -487,7 +405,7 @@ func (o *SpecV2Resource) isOptionalComputedProperty(propertyName string, propert
 // optional_computed_with_default:  # optional property that the default value is known at runtime, hence service provider documents it
 //  type: "string"
 //  default: “some known default value”
-func (o *SpecV2Resource) isOptionalComputedWithDefault(propertyName string, property spec.Schema) (bool, error) {
+func (o *SpecV3Resource) isOptionalComputedWithDefault(propertyName string, property *openapi3.Schema) (bool, error) {
 	if !property.ReadOnly && property.Default != nil {
 		if o.isBoolExtensionEnabled(property.Extensions, extTfComputed) {
 			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties with default attributes should not have '%s' extension too", propertyName, extTfComputed)
@@ -503,7 +421,7 @@ func (o *SpecV2Resource) isOptionalComputedWithDefault(propertyName string, prop
 // optional_computed: # optional property that the default value is NOT known at runtime
 //  type: "string"
 //  x-terraform-computed: true
-func (o *SpecV2Resource) isOptionalComputed(propertyName string, property spec.Schema) (bool, error) {
+func (o *SpecV3Resource) isOptionalComputed(propertyName string, property *openapi3.Schema) (bool, error) {
 	if o.isBoolExtensionEnabled(property.Extensions, extTfComputed) {
 		if property.ReadOnly {
 			return false, fmt.Errorf("optional computed property validation failed for property '%s': optional computed properties marked with '%s' can not be readOnly", propertyName, extTfComputed)
@@ -516,18 +434,21 @@ func (o *SpecV2Resource) isOptionalComputed(propertyName string, property spec.S
 	return false, nil
 }
 
-func (o *SpecV2Resource) isArrayItemPrimitiveType(propertyType schemaDefinitionPropertyType) bool {
+func (o *SpecV3Resource) isArrayItemPrimitiveType(propertyType schemaDefinitionPropertyType) bool {
 	return propertyType == TypeString || propertyType == TypeInt || propertyType == TypeFloat || propertyType == TypeBool
 }
 
-func (o *SpecV2Resource) validateArrayItems(property spec.Schema) (schemaDefinitionPropertyType, error) {
-	if property.Items == nil || property.Items.Schema == nil {
+func (o *SpecV3Resource) validateArrayItems(property *openapi3.Schema) (schemaDefinitionPropertyType, error) {
+	// TODO: support .Ref
+	if property.Items == nil || property.Items.Value == nil {
 		return "", fmt.Errorf("array property is missing items schema definition")
 	}
-	if o.isArrayTypeProperty(*property.Items.Schema) {
+	// TODO: support .Ref
+	if o.isArrayTypeProperty(property.Items.Value) {
 		return "", fmt.Errorf("array property can not have items of type 'array'")
 	}
-	itemsType, err := o.getPropertyType(*property.Items.Schema)
+	// TODO: support .Ref
+	itemsType, err := o.getPropertyType(property.Items.Value)
 	if err != nil {
 		return "", err
 	}
@@ -537,43 +458,44 @@ func (o *SpecV2Resource) validateArrayItems(property spec.Schema) (schemaDefinit
 	return itemsType, nil
 }
 
-func (o *SpecV2Resource) getPropertyType(property spec.Schema) (schemaDefinitionPropertyType, error) {
+func (o *SpecV3Resource) getPropertyType(property *openapi3.Schema) (schemaDefinitionPropertyType, error) {
 	if o.isArrayTypeProperty(property) {
 		return TypeList, nil
 	} else if isObject, _, err := o.isObjectProperty(property); isObject || err != nil {
 		return TypeObject, err
-	} else if property.Type.Contains("string") {
+	} else if property.Type == "string" {
 		return TypeString, nil
-	} else if property.Type.Contains("integer") {
+	} else if property.Type == "integer" {
 		return TypeInt, nil
-	} else if property.Type.Contains("number") {
+	} else if property.Type == "number" {
 		return TypeFloat, nil
-	} else if property.Type.Contains("boolean") {
+	} else if property.Type == "boolean" {
 		return TypeBool, nil
 	}
 	return "", fmt.Errorf("non supported '%+v' type", property.Type)
 }
 
-func (o *SpecV2Resource) isObjectProperty(property spec.Schema) (bool, *spec.Schema, error) {
-	if o.isObjectTypeProperty(property) || property.Ref.Ref.GetURL() != nil {
+func (o *SpecV3Resource) isObjectProperty(property *openapi3.Schema) (bool, *openapi3.Schema, error) {
+	if o.isObjectTypeProperty(property) { // TODO: || property.Ref.Ref.GetURL() != nil {
 		// Case of nested object schema
 		if len(property.Properties) != 0 {
-			return true, &property, nil
+			return true, property, nil
 		}
-		// Case of external ref - in this case the type could be populated or not
-		if property.Ref.Ref.GetURL() != nil {
-			schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
-			if err != nil {
-				return true, nil, fmt.Errorf("object ref is poitning to a non existing schema definition: %s", err)
-			}
-			return true, schema, nil
-		}
+		// TODO: support external ref
+		//// Case of external ref - in this case the type could be populated or not
+		//if property.Ref.Ref.GetURL() != nil {
+		//	schema, err := openapiutils.GetSchemaDefinition(o.SchemaDefinitions, property.Ref.String())
+		//	if err != nil {
+		//		return true, nil, fmt.Errorf("object ref is poitning to a non existing schema definition: %s", err)
+		//	}
+		//	return true, schema, nil
+		//}
 		return true, nil, fmt.Errorf("object is missing the nested schema definition or the ref is pointing to a non existing schema definition")
 	}
 	return false, nil, nil
 }
 
-func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefinitionPropertyType, *SpecSchemaDefinition, error) {
+func (o *SpecV3Resource) isArrayProperty(property *openapi3.Schema) (bool, schemaDefinitionPropertyType, *SpecSchemaDefinition, error) {
 	if o.isArrayTypeProperty(property) {
 		itemsType, err := o.validateArrayItems(property)
 		if err != nil {
@@ -583,7 +505,8 @@ func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefi
 			return true, itemsType, nil, nil
 		}
 		// This is the case where items must be object
-		if isObject, schemaDefinition, err := o.isObjectProperty(*property.Items.Schema); isObject || err != nil {
+		// TODO: support .Ref
+		if isObject, schemaDefinition, err := o.isObjectProperty(property.Items.Value); isObject || err != nil {
 			if err != nil {
 				return true, itemsType, nil, err
 			}
@@ -597,19 +520,19 @@ func (o *SpecV2Resource) isArrayProperty(property spec.Schema) (bool, schemaDefi
 	return false, "", nil, nil
 }
 
-func (o *SpecV2Resource) isArrayTypeProperty(property spec.Schema) bool {
+func (o *SpecV3Resource) isArrayTypeProperty(property *openapi3.Schema) bool {
 	return o.isOfType(property, "array")
 }
 
-func (o *SpecV2Resource) isObjectTypeProperty(property spec.Schema) bool {
+func (o *SpecV3Resource) isObjectTypeProperty(property *openapi3.Schema) bool {
 	return o.isOfType(property, "object")
 }
 
-func (o *SpecV2Resource) isOfType(property spec.Schema, propertyType string) bool {
-	return property.Type.Contains(propertyType)
+func (o *SpecV3Resource) isOfType(property *openapi3.Schema, propertyType string) bool {
+	return property.Type == propertyType
 }
 
-func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string) bool {
+func (o *SpecV3Resource) isRequired(propertyName string, requiredProps []string) bool {
 	var required = false
 	for _, f := range requiredProps {
 		if f == propertyName {
@@ -619,45 +542,90 @@ func (o *SpecV2Resource) isRequired(propertyName string, requiredProps []string)
 	return required
 }
 
-func (o *SpecV2Resource) getResourceTerraformName() string {
+func (o *SpecV3Resource) getResourceTerraformName() string {
 	return o.getPreferredName(o.RootPathItem)
 }
 
-func (o *SpecV2Resource) getPreferredName(path spec.PathItem) string {
-	preferredName, _ := path.Extensions.GetString(extTfResourceName)
+func (o *SpecV3Resource) getPreferredName(path *openapi3.PathItem) string {
+	preferredName, _ := getExtensionAsJsonString(path.Extensions, extTfResourceName)
 	if preferredName == "" && path.Post != nil {
-		preferredName, _ = path.Post.Extensions.GetString(extTfResourceName)
+		preferredName, _ = getExtensionAsJsonString(path.Post.Extensions, extTfResourceName)
 	}
 	return preferredName
 }
 
-func (o *SpecV2Resource) getExtensionStringValue(extensions spec.Extensions, key string) string {
-	if value, exists := extensions.GetString(key); exists && value != "" {
-		return value
+func getExtensionAsJsonString(ext map[string]interface{}, name string) (string, bool) {
+	ifaceVal, found := ext[name]
+	if !found {
+		return "", false
 	}
-	return ""
+	jsonVal, ok := ifaceVal.(json.RawMessage)
+	if !ok {
+		log.Printf("[DEBUG] extension '%s' is not a json string", name)
+		return "", false
+	}
+	var val string
+	if err := json.Unmarshal(jsonVal, &val); err != nil {
+		log.Printf("[DEBUG] extension '%s' is not a json string - error: %v", name, err)
+		return "", false
+	}
+	return val, true
 }
 
-func (o *SpecV2Resource) createResourceOperation(operation *spec.Operation) *specResourceOperation {
+func getExtensionAsJsonBool(ext map[string]interface{}, name string) (value bool, ok bool) {
+	ifaceVal, found := ext[name]
+	if !found {
+		return false, false
+	}
+	jsonVal, ok := ifaceVal.(json.RawMessage)
+	if !ok {
+		log.Printf("[DEBUG] extension '%s' is not a json bool", name)
+		return false, false
+	}
+	var val bool
+	if err := json.Unmarshal(jsonVal, &val); err != nil {
+		log.Printf("[DEBUG] extension '%s' is not a json bool - error: %v", name, err)
+		return false, false
+	}
+	return val, true
+}
+
+func (o *SpecV3Resource) createResourceOperation(operation *openapi3.Operation) *specResourceOperation {
 	if operation == nil {
 		return nil
 	}
-	headerParameters := getHeaderConfigurations(operation.Parameters)
-	securitySchemes := createSecuritySchemes(operation.Security)
+	// TODO: implement this
+	var params []*openapi3.Parameter
+	for _, param := range operation.Parameters {
+		// TODO: support .Ref
+		params = append(params, param.Value)
+	}
+	headerParameters := getHeaderConfigurationsV3(params)
+	//securitySchemes := createSecuritySchemes(operation.Security) // ([]map[string][]string)
 	return &specResourceOperation{
 		HeaderParameters: headerParameters,
-		SecuritySchemes:  securitySchemes,
-		responses:        o.createResponses(operation),
+		//SecuritySchemes:  securitySchemes,
+		responses: o.createResponses(operation),
 	}
 }
 
-func (o *SpecV2Resource) createResponses(operation *spec.Operation) specResponses {
+func (o *SpecV3Resource) createResponses(operation *openapi3.Operation) specResponses {
 	responses := specResponses{}
-	for statusCode, response := range operation.Responses.StatusCodeResponses { //panics on ImportState if the swagger doesn't define status code responses
-		responses[statusCode] = &specResponse{
-			isPollingEnabled:    o.isResourcePollingEnabled(response),
-			pollTargetStatuses:  o.getResourcePollTargetStatuses(response),
-			pollPendingStatuses: o.getResourcePollPendingStatuses(response),
+	for statusCode, response := range operation.Responses { //panics on ImportState if the swagger doesn't define status code responses
+		// We don't care about the default response, just ignore it...
+		if statusCode == "default" {
+			continue
+		}
+		status, err := strconv.Atoi(statusCode)
+		if err != nil {
+			log.Printf("[DEBUG] invalid response '%s' on '%s': %v", statusCode, o.Name, err)
+			continue
+		}
+		responses[status] = &specResponse{
+			// TODO: support .Ref
+			isPollingEnabled:    o.isResourcePollingEnabled(response.Value),
+			pollTargetStatuses:  o.getResourcePollTargetStatuses(response.Value),
+			pollPendingStatuses: o.getResourcePollPendingStatuses(response.Value),
 		}
 	}
 	return responses
@@ -666,89 +634,121 @@ func (o *SpecV2Resource) createResponses(operation *spec.Operation) specResponse
 // isResourcePollingEnabled checks whether there is any response code defined for the given responseStatusCode and if so
 // whether that response contains the extension 'x-terraform-resource-poll-enabled' set to true returning true;
 // otherwise false is returned
-func (o *SpecV2Resource) isResourcePollingEnabled(response spec.Response) bool {
+func (o *SpecV3Resource) isResourcePollingEnabled(response *openapi3.Response) bool {
 	if o.isBoolExtensionEnabled(response.Extensions, extTfResourcePollEnabled) {
 		return true
 	}
 	return false
 }
 
-func (o *SpecV2Resource) getResourcePollTargetStatuses(response spec.Response) []string {
+func (o *SpecV3Resource) getResourcePollTargetStatuses(response *openapi3.Response) []string {
 	return o.getPollingStatuses(response, extTfResourcePollTargetStatuses)
 }
 
-func (o *SpecV2Resource) getResourcePollPendingStatuses(response spec.Response) []string {
+func (o *SpecV3Resource) getResourcePollPendingStatuses(response *openapi3.Response) []string {
 	return o.getPollingStatuses(response, extTfResourcePollPendingStatuses)
 }
 
-func (o *SpecV2Resource) getPollingStatuses(response spec.Response, extension string) []string {
+func (o *SpecV3Resource) getPollingStatuses(response *openapi3.Response, extension string) []string {
 	var statuses []string
-	if resourcePollTargets, exists := response.Extensions.GetString(extension); exists {
+	if resourcePollTargets, exists := getExtensionAsJsonString(response.Extensions, extension); exists {
 		spaceTrimmedTargets := strings.Replace(resourcePollTargets, " ", "", -1)
 		statuses = strings.Split(spaceTrimmedTargets, ",")
 	}
 	return statuses
 }
 
-func (o *SpecV2Resource) getTimeouts() (*specTimeouts, error) {
-	var postTimeout *time.Duration
-	var getTimeout *time.Duration
-	var putTimeout *time.Duration
-	var deleteTimeout *time.Duration
-	var err error
-	if postTimeout, err = o.getResourceTimeout(o.RootPathItem.Post); err != nil {
-		return nil, err
+func (o *SpecV3Resource) ShouldIgnoreResource() bool {
+	// TODO: support 'x-terraform-exclude-resource' extension
+	return false
+}
+
+func (o *SpecV3Resource) getResourceOperations() specResourceOperations {
+	return specResourceOperations{
+		List:   o.createResourceOperation(o.RootPathItem.Get),
+		Post:   o.createResourceOperation(o.RootPathItem.Post),
+		Get:    o.createResourceOperation(o.InstancePathItem.Get),
+		Put:    o.createResourceOperation(o.InstancePathItem.Put),
+		Delete: o.createResourceOperation(o.InstancePathItem.Delete),
 	}
-	if getTimeout, err = o.getResourceTimeout(o.InstancePathItem.Get); err != nil {
-		return nil, err
-	}
-	if putTimeout, err = o.getResourceTimeout(o.InstancePathItem.Put); err != nil {
-		return nil, err
-	}
-	if deleteTimeout, err = o.getResourceTimeout(o.InstancePathItem.Delete); err != nil {
-		return nil, err
-	}
+}
+
+func (o *SpecV3Resource) getTimeouts() (*specTimeouts, error) {
+	// TODO: support "x-terraform-resource-timeout" extension
+	timeout := 5 * time.Second
 	return &specTimeouts{
-		Post:   postTimeout,
-		Get:    getTimeout,
-		Put:    putTimeout,
-		Delete: deleteTimeout,
+		Post:   &timeout,
+		Get:    &timeout,
+		Put:    &timeout,
+		Delete: &timeout,
 	}, nil
 }
 
-func (o *SpecV2Resource) getResourceTimeout(operation *spec.Operation) (*time.Duration, error) {
-	if operation == nil {
-		return nil, nil
+func (o *SpecV3Resource) GetParentResourceInfo() *ParentResourceInfo {
+	if o.parentResourceInfoCached != nil {
+		log.Printf("[DEBUG] GetParentResourceInfo hit the cache for '%s'", o.Name)
+		return o.parentResourceInfoCached
 	}
-	return o.getTimeDuration(operation.Extensions, extTfResourceTimeout)
-}
+	resourceParentRegex, _ := regexp.Compile(resourceParentNameRegex)
+	parentMatches := resourceParentRegex.FindAllStringSubmatch(o.Path, -1)
+	if len(parentMatches) > 0 {
+		var parentURI string
+		var parentInstanceURI string
 
-func (o *SpecV2Resource) getTimeDuration(extensions spec.Extensions, extension string) (*time.Duration, error) {
-	if value, exists := extensions.GetString(extension); exists {
-		regex, err := regexp.Compile("^\\d+(\\.\\d+)?[smh]{1}$")
-		if err != nil {
-			return nil, err
+		var parentResourceNames, parentURIs, parentInstanceURIs []string
+		for _, match := range parentMatches {
+			fullMatch := match[0]
+			rootPath := match[1]
+			parentURI = parentInstanceURI + rootPath
+			parentInstanceURI = parentInstanceURI + fullMatch
+			parentURIs = append(parentURIs, parentURI)
+			parentInstanceURIs = append(parentInstanceURIs, parentInstanceURI)
 		}
-		if !regex.Match([]byte(value)) {
-			return nil, fmt.Errorf("invalid duration value: '%s'. The value must be a sequence of decimal numbers each with optional fraction and a unit suffix (negative durations are not allowed). The value must be formatted either in seconds (s), minutes (m) or hours (h)", value)
+
+		fullParentResourceName := ""
+		preferredParentName := ""
+		for _, parentURI := range parentURIs {
+			// `o.Paths` is used to read the preferred name over that resource if `x-terraform-preferred-name` is set
+			if o.Paths != nil {
+				if parent, ok := o.Paths[parentURI]; ok {
+					preferredParentName = o.getPreferredName(parent)
+				} else {
+					// Falling back to checking path with trailing slash
+					if parent, ok := o.Paths[parentURI+"/"]; ok {
+						preferredParentName = o.getPreferredName(parent)
+					}
+				}
+			}
+			parentResourceName, err := o.buildResourceNameFromPath(parentURI, preferredParentName)
+			if err != nil {
+				log.Printf("[ERROR] could not build parent resource info due to the following error: %s", err)
+				return nil //untested
+			}
+			parentResourceNames = append(parentResourceNames, parentResourceName)
+			fullParentResourceName = fullParentResourceName + parentResourceName + "_"
 		}
-		return o.getDuration(value)
+		fullParentResourceName = strings.TrimRight(fullParentResourceName, "_")
+
+		sub := &ParentResourceInfo{
+			parentResourceNames:    parentResourceNames,
+			fullParentResourceName: fullParentResourceName,
+			parentURIs:             parentURIs,
+			parentInstanceURIs:     parentInstanceURIs,
+		}
+		o.parentResourceInfoCached = sub
+		log.Printf("[DEBUG] GetParentResourceInfo cache loaded for '%s'", o.Name)
+		return sub
 	}
-	return nil, nil
+	return nil
 }
 
-func (o *SpecV2Resource) getDuration(t string) (*time.Duration, error) {
-	duration, err := time.ParseDuration(t)
-	return &duration, err
-}
-
-// getResourceOverrideHost checks if the x-terraform-resource-host extension is present and if so returns its value. This
+// getResourceOverrideHostV3 checks if the x-terraform-resource-host extension is present and if so returns its value. This
 // value will override the global host value, and the API calls for this resource will be made against the value returned
-func getResourceOverrideHost(rootPathItemPost *spec.Operation) string {
+func getResourceOverrideHostV3(rootPathItemPost *openapi3.Operation) string {
 	if rootPathItemPost == nil {
 		return ""
 	}
-	if resourceURL, exists := rootPathItemPost.Extensions.GetString(extTfResourceURL); exists && resourceURL != "" {
+	if resourceURL, exists := getExtensionAsJsonString(rootPathItemPost.Extensions, extTfResourceURL); exists && resourceURL != "" {
 		return resourceURL
 	}
 	return ""

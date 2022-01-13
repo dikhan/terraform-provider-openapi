@@ -1,22 +1,23 @@
 package openapi
 
 import (
-	"github.com/go-openapi/spec"
 	"log"
+
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
-type parameterGroups [][]spec.Parameter
+type parameterGroupsV3 [][]*openapi3.Parameter
 
 // getHeaderConfigurations gets all the header configurations for a specific
-func getHeaderConfigurations(parameters []spec.Parameter) SpecHeaderParameters {
-	return getHeaderConfigurationsForParameterGroups(parameterGroups{parameters})
+func getHeaderConfigurationsV3(parameters []*openapi3.Parameter) SpecHeaderParameters {
+	return getHeaderConfigurationsForParameterGroupsV3(parameterGroupsV3{parameters})
 }
 
-// getHeaderConfigurationsForParameterGroups loops through the provided parametersGroup (collection of parameters per operation) and
+// getHeaderConfigurationsForParameterGroupsV3 loops through the provided parametersGroup (collection of parameters per operation) and
 // returns a map containing all the header configurations; the key will either be the value specified in the extTfHeader
 // or if not present the default value will be the name of the header. In any case, the key name will be translated to
 // a terraform compliant field name if needed (more details in convertToTerraformCompliantFieldName method)
-func getHeaderConfigurationsForParameterGroups(parametersGroup parameterGroups) SpecHeaderParameters {
+func getHeaderConfigurationsForParameterGroupsV3(parametersGroup parameterGroupsV3) SpecHeaderParameters {
 	headerParameters := SpecHeaderParameters{}
 	headers := map[string]string{}
 	for _, parameters := range parametersGroup {
@@ -27,7 +28,7 @@ func getHeaderConfigurationsForParameterGroups(parametersGroup parameterGroups) 
 				headers[parameter.Name] = parameter.Name
 				switch parameter.In {
 				case "header":
-					if preferredName, exists := parameter.Extensions.GetString(extTfHeader); exists {
+					if preferredName, exists := getExtensionAsJsonString(parameter.Extensions, extTfHeader); exists {
 						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, TerraformName: preferredName, IsRequired: parameter.Required})
 					} else {
 						headerParameters = append(headerParameters, SpecHeaderParam{Name: parameter.Name, IsRequired: parameter.Required})
@@ -41,21 +42,21 @@ func getHeaderConfigurationsForParameterGroups(parametersGroup parameterGroups) 
 	return headerParameters
 }
 
-// getPathHeaderParams aggregates all header type parameters found in the given path and returns the corresponding
+// getPathHeaderParamsV3 aggregates all header type parameters found in the given path and returns the corresponding
 // header configurations
-func getPathHeaderParams(path spec.PathItem) SpecHeaderParameters {
-	parametersGroup := parameterGroups{}
-	parametersGroup = appendOperationParametersIfPresent(parametersGroup, path.Post)
-	parametersGroup = appendOperationParametersIfPresent(parametersGroup, path.Get)
-	parametersGroup = appendOperationParametersIfPresent(parametersGroup, path.Put)
-	parametersGroup = appendOperationParametersIfPresent(parametersGroup, path.Delete)
-	return getHeaderConfigurationsForParameterGroups(parametersGroup)
+func getPathHeaderParamsV3(path *openapi3.PathItem) SpecHeaderParameters {
+	parametersGroup := parameterGroupsV3{}
+	parametersGroup = appendOperationParametersIfPresentV3(parametersGroup, path.Post)
+	parametersGroup = appendOperationParametersIfPresentV3(parametersGroup, path.Get)
+	parametersGroup = appendOperationParametersIfPresentV3(parametersGroup, path.Put)
+	parametersGroup = appendOperationParametersIfPresentV3(parametersGroup, path.Delete)
+	return getHeaderConfigurationsForParameterGroupsV3(parametersGroup)
 }
 
-func getAllHeaderParameters(paths map[string]spec.PathItem) SpecHeaderParameters {
+func getAllHeaderParametersV3(paths map[string]*openapi3.PathItem) SpecHeaderParameters {
 	specHeaderParameters := SpecHeaderParameters{}
 	for _, path := range paths {
-		for _, headerParam := range getPathHeaderParams(path) {
+		for _, headerParam := range getPathHeaderParamsV3(path) {
 			// The below statement avoids dup headers in the list. Note subsequent encounters with a header type that has
 			// already been registered will be ignored
 			if !specHeaderParameters.specHeaderExists(headerParam) {
@@ -66,11 +67,16 @@ func getAllHeaderParameters(paths map[string]spec.PathItem) SpecHeaderParameters
 	return specHeaderParameters
 }
 
-// appendOperationParametersIfPresent is a helper function that checks whether the given operation is not nil and if so
+// appendOperationParametersIfPresentV3 is a helper function that checks whether the given operation is not nil and if so
 // appends its parameters to the parametersGroups
-func appendOperationParametersIfPresent(parametersGroups parameterGroups, operation *spec.Operation) parameterGroups {
+func appendOperationParametersIfPresentV3(parametersGroups parameterGroupsV3, operation *openapi3.Operation) parameterGroupsV3 {
 	if operation != nil {
-		parametersGroups = append(parametersGroups, operation.Parameters)
+		var params []*openapi3.Parameter
+		for _, param := range operation.Parameters {
+			// TODO: support .Ref
+			params = append(params, param.Value)
+		}
+		parametersGroups = append(parametersGroups, params)
 	}
 	return parametersGroups
 }

@@ -1,0 +1,669 @@
+# Used https://editor.swagger.io/ to convert swagger.yaml to OpenAPI 3, as per
+# these instructions: https://stackoverflow.com/a/59749691/337735
+openapi: 3.0.1
+info:
+  title: Dummy Service Provider generated using 'swaggercodegen' that has two resources
+    'cdns' and 'lbs' which are terraform compliant
+  description: This service provider allows the creation of fake 'cdns' and 'lbs'
+    resources
+  contact:
+    email: apiteam@serviceprovider.io
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - apikey_auth: []
+tags:
+  - name: cdn
+    description: Operations about cdns
+    externalDocs:
+      description: Find out more about cdn api
+      url: https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen
+  - name: lb
+    description: Operations about lbs
+    externalDocs:
+      description: Find out more about lb api
+      url: https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen
+  - name: monitor
+    description: Operations about monitors
+    externalDocs:
+      description: Find out more about monitor api
+      url: https://github.com/dikhan/terraform-provider-openapi/tree/master/examples/swaggercodegen
+paths:
+  /swagger.json:
+    get:
+      summary: Api discovery endpoint
+      operationId: ApiDiscovery
+      responses:
+        200:
+          description: successful operation
+          content: {}
+  /version:
+    get:
+      summary: Get api version
+      operationId: getVersion
+      responses:
+        200:
+          description: successful operation
+          content: {}
+  /v1/cdns:
+    post:
+      tags:
+        - cdn
+      summary: Create cdn
+      operationId: ContentDeliveryNetworkCreateV1
+      parameters:
+        - name: X-Request-ID
+          in: header
+          required: true
+          schema:
+            type: string
+            x-terraform-header: x_request_id
+          x-terraform-header: x_request_id
+      requestBody:
+        description: Created CDN
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentDeliveryNetworkV1'
+        required: true
+      responses:
+        201:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentDeliveryNetworkV1'
+        default:
+          description: generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-terraform-resource-name: cdn
+      x-terraform-resource-host: localhost:8443
+      x-terraform-resource-timeout: 30s
+      x-codegen-request-body-name: body
+  /v1/cdns/{cdn_id}:
+    get:
+      tags:
+        - cdn
+      summary: Get cdn by id
+      operationId: ContentDeliveryNetworkGetV1
+      parameters:
+        - name: cdn_id
+          in: path
+          description: The cdn id that needs to be fetched.
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentDeliveryNetworkV1'
+        400:
+          description: Invalid cdn id supplied
+          content: {}
+        404:
+          description: CDN not found
+          content: {}
+      security:
+        - apikey_auth: []
+    put:
+      tags:
+        - cdn
+      summary: Updated cdn
+      operationId: ContentDeliveryNetworkUpdateV1
+      parameters:
+        - name: cdn_id
+          in: path
+          description: cdn that needs to be updated
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Updated cdn object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentDeliveryNetworkV1'
+        required: true
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentDeliveryNetworkV1'
+        400:
+          description: Invalid cdn id supplied
+          content: {}
+        404:
+          description: CDN not found
+          content: {}
+      security:
+        - apikey_auth: []
+      x-codegen-request-body-name: body
+    delete:
+      tags:
+        - cdn
+      summary: Delete cdn
+      operationId: ContentDeliveryNetworkDeleteV1
+      parameters:
+        - name: cdn_id
+          in: path
+          description: The cdn that needs to be deleted
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: successful operation, no content is returned
+          content: {}
+        400:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: The specified resource was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - apikey_auth: []
+  /v1/cdns/{cdn_id}/v1/firewalls:
+    post:
+      tags:
+        - cdn
+      summary: Create cdn firewall
+      operationId: ContentDeliveryNetworkFirewallCreateV1
+      parameters:
+        - name: cdn_id
+          in: path
+          description: The cdn id that contains the firewall to be fetched.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Created CDN firewall
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentDeliveryNetworkFirewallV1'
+        required: true
+      responses:
+        201:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentDeliveryNetworkFirewallV1'
+        default:
+          description: generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-terraform-resource-host: localhost:8443
+      x-codegen-request-body-name: body
+  /v1/cdns/{cdn_id}/v1/firewalls/{fw_id}:
+    get:
+      tags:
+        - cdn
+      summary: Get cdn firewall by id
+      operationId: ContentDeliveryNetworkFirewallGetV1
+      parameters:
+        - name: cdn_id
+          in: path
+          description: The cdn id that contains the firewall to be fetched.
+          required: true
+          schema:
+            type: string
+        - name: fw_id
+          in: path
+          description: The cdn firewall id that needs to be fetched.
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentDeliveryNetworkFirewallV1'
+        400:
+          description: Invalid cdn id supplied
+          content: {}
+        404:
+          description: CDN not found
+          content: {}
+  /v1/lbs:
+    post:
+      tags:
+        - lb
+      summary: Create lb v1
+      operationId: LBCreateV1
+      requestBody:
+        description: LB v1 payload object to be posted as part of the POST request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LBV1'
+        required: true
+      responses:
+        202:
+          description: this operation is asynchronous, to check the status of the
+            deployment call GET operation and check the status field returned in the
+            payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LBV1'
+          x-terraform-resource-poll-enabled: true
+          x-terraform-resource-poll-completed-statuses: deployed
+          x-terraform-resource-poll-pending-statuses: deploy_pending,deploy_in_progress
+        default:
+          description: generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-terraform-resource-host: localhost:8443
+      x-terraform-resource-timeout: 2s
+      x-codegen-request-body-name: body
+  /v1/lbs/{id}:
+    get:
+      tags:
+        - lb
+      summary: Get lb v1 by id
+      operationId: LBGetV1
+      parameters:
+        - name: id
+          in: path
+          description: The lb v1 id that needs to be fetched.
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LBV1'
+        400:
+          description: Invalid lb id supplied
+          content: {}
+        404:
+          description: LB not found
+          content: {}
+    put:
+      tags:
+        - lb
+      summary: Updated cdn
+      operationId: LBUpdateV1
+      parameters:
+        - name: id
+          in: path
+          description: lb v1 that needs to be updated
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Updated cdn object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LBV1'
+        required: true
+      responses:
+        202:
+          description: this operation is asynchronous, to check the status of the
+            deployment call GET operation and check the status field returned in the
+            payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LBV1'
+          x-terraform-resource-poll-enabled: true
+          x-terraform-resource-poll-completed-statuses: deployed
+          x-terraform-resource-poll-pending-statuses: deploy_pending,deploy_in_progress
+        400:
+          description: Invalid lb id supplied
+          content: {}
+        404:
+          description: LB v1 not found
+          content: {}
+      x-codegen-request-body-name: body
+    delete:
+      tags:
+        - lb
+      summary: Delete lb v1
+      operationId: LBDeleteV1
+      parameters:
+        - name: id
+          in: path
+          description: The lb v1 that needs to be deleted
+          required: true
+          schema:
+            type: string
+      responses:
+        202:
+          description: LB v1 deletion
+          content: {}
+          x-terraform-resource-poll-enabled: true
+          x-terraform-resource-poll-pending-statuses: delete_pending,delete_in_progress
+        400:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: The specified resource was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/monitors:
+    post:
+      tags:
+        - monitor
+      summary: Create monitor v1
+      operationId: CreateMonitorV1
+      requestBody:
+        description: Monitor v1 payload object to be posted as part of the POST request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorV1'
+        required: true
+      responses:
+        200:
+          description: this operation is asynchronous, to check the status of the
+            deployment call GET operation and check the status field returned in the
+            payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorV1'
+        default:
+          description: generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-terraform-resource-host: some.api.${monitor}.nonexistingrandomdomain.io
+      x-codegen-request-body-name: body
+  /v1/monitors/{id}:
+    get:
+      tags:
+        - monitor
+      summary: Get monitor by id
+      operationId: GetMonitorV1
+      parameters:
+        - name: id
+          in: path
+          description: The monitor v1 id that needs to be fetched.
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorV1'
+        400:
+          description: Invalid monitor id supplied
+          content: {}
+        404:
+          description: Monitor not found
+          content: {}
+  /v1/multiregionmonitors:
+    post:
+      tags:
+        - multi_region_monitor
+      summary: Create monitor v1
+      operationId: MonitorV1
+      requestBody:
+        description: Monitor v1 payload object to be posted as part of the POST request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorV1'
+        required: true
+      responses:
+        200:
+          description: this operation is asynchronous, to check the status of the
+            deployment call GET operation and check the status field returned in the
+            payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorV1'
+        default:
+          description: generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-codegen-request-body-name: body
+  /v1/multiregionmonitors/{id}:
+    get:
+      tags:
+        - multi_region_monitor
+      summary: Get monitor by id
+      operationId: GetMultiRegionMonitorV1
+      parameters:
+        - name: id
+          in: path
+          description: The monitor v1 id that needs to be fetched.
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorV1'
+        400:
+          description: Invalid monitor id supplied
+          content: {}
+        404:
+          description: Monitor not found
+          content: {}
+components:
+  schemas:
+    ContentDeliveryNetworkV1:
+      required:
+        - hostnames
+        - ips
+        - label
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        label:
+          type: string
+          x-terraform-immutable: true
+        ips:
+          type: array
+          items:
+            type: string
+          x-terraform-force-new: true
+        hostnames:
+          type: array
+          items:
+            type: string
+        exampleInt:
+          type: integer
+        exampleNumber:
+          type: number
+          x-terraform-field-name: better_example_number_field_name
+        example_boolean:
+          type: boolean
+        optional_property:
+          type: string
+        computed:
+          type: string
+          readOnly: true
+        computed_with_default:
+          type: string
+          readOnly: true
+          default: computed value known at runtime
+        optional_computed:
+          type: string
+          x-terraform-computed: true
+        optional_computed_with_default:
+          type: string
+          default: some computed value known at runtime
+        object_property:
+          $ref: '#/components/schemas/ObjectProperty'
+        arrayOfObjectsExample:
+          type: array
+          items:
+            type: object
+            properties:
+              protocol:
+                type: string
+              originPort:
+                type: integer
+                x-terraform-field-name: origin_port
+        object_nested_scheme_property:
+          type: object
+          properties:
+            name:
+              type: string
+              readOnly: true
+            object_property:
+              type: object
+              properties:
+                account:
+                  type: string
+          x-terraform-computed: true
+    ObjectProperty:
+      required:
+        - detailedMessage
+        - exampleInt
+        - exampleNumber
+        - example_boolean
+        - message
+      type: object
+      properties:
+        message:
+          type: string
+        detailedMessage:
+          type: string
+          x-terraform-field-name: detailed_message
+        exampleInt:
+          type: integer
+        exampleNumber:
+          type: number
+        example_boolean:
+          type: boolean
+    LBV1:
+      required:
+        - backends
+        - name
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        backends:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          description: lb resource status
+          readOnly: true
+          enum:
+            - deploy_pending
+            - deploy_in_progress
+            - deploy_failed
+            - deployed
+            - delete_pending
+            - delete_in_progress
+            - delete_failed
+            - deleted
+        timeToProcess:
+          type: integer
+        simulate_failure:
+          type: boolean
+        newStatus:
+          $ref: '#/components/schemas/Status'
+    Status:
+      type: object
+      readOnly: true
+      properties:
+        message:
+          type: string
+        status:
+          type: string
+      x-terraform-field-status: true
+    MonitorV1:
+      required:
+        - name
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+    ContentDeliveryNetworkFirewallV1:
+      required:
+        - name
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    apikey_auth:
+      type: apiKey
+      name: Authorization
+      in: header
+x-terraform-provider-multiregion-fqdn: some.api.${region}.nonexistingrandomdomain.io
+x-terraform-provider-regions: rst1,dub1
+x-terraform-resource-regions-monitor: rst1,dub1
