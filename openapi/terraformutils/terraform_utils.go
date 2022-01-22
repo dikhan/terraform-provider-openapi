@@ -150,8 +150,7 @@ func multiEnvDefaultFunc(ks []string, defaultValue interface{}) schema.SchemaDef
 
 // MultiEnvDefaultString is a helper function that returns the value as string of the first
 // environment variable in the given list 'ks' that returns a non-empty value. If none of the environment variables
-// return a value, the default value is
-// returned.
+// return a value, the default value is returned.
 func MultiEnvDefaultString(ks []string, defaultValue interface{}) (string, error) {
 	dv, err := multiEnvDefaultFunc(ks, defaultValue)()
 	if err != nil {

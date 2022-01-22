@@ -27,18 +27,13 @@ func (s *ServiceConfigStub) GetSwaggerURL() string {
 	return s.SwaggerURL
 }
 
-// GetPluginVersion returns the plugin version value configured in the ServiceConfigStub.PluginVersion field
-func (s *ServiceConfigStub) GetPluginVersion() string {
-	return s.PluginVersion
-}
-
 // IsInsecureSkipVerifyEnabled returns the bool configured in the ServiceConfigStub.InsecureSkipVerify field
 func (s *ServiceConfigStub) IsInsecureSkipVerifyEnabled() bool {
 	return s.InsecureSkipVerify
 }
 
 // Validate returns an error if the ServiceConfigStub.Err field is set with an error
-func (s *ServiceConfigStub) Validate(runningPluginVersion string) error {
+func (s *ServiceConfigStub) Validate() error {
 	return s.Err
 }
 

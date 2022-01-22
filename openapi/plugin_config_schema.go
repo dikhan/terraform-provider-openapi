@@ -28,7 +28,6 @@ type PluginConfigSchema interface {
 // services:
 //   monitor:
 //     swagger-url: http://monitor-api.com/swagger.json
-//     plugin_version: 0.14.0
 //     insecure_skip_verify: true
 //   cdn:
 //     swagger-url: https://cdn-api.com/swagger.json

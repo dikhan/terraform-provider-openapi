@@ -155,13 +155,11 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 	Convey("Given a PluginConfigSchemaV1 containing a version supported and some services containing telemetry", t, func() {
 		var pluginConfigSchema PluginConfigSchema
 		expectedURL := "http://sevice-api.com/swagger.yaml"
-		expectedPluginVersion := "0.14.0"
 		serviceConfigName := "test"
 		expectedInscureSkipVerify := true
 		services := map[string]*ServiceConfigV1{
 			serviceConfigName: {
 				SwaggerURL:         expectedURL,
-				PluginVersion:      expectedPluginVersion,
 				InsecureSkipVerify: expectedInscureSkipVerify,
 				TelemetryConfig: &TelemetryConfig{
 					Graphite: &TelemetryProviderGraphite{
@@ -198,7 +196,6 @@ func TestPluginConfigSchemaV1Marshal(t *testing.T) {
 services:
   test:
     swagger-url: %s
-    plugin_version: %s
     insecure_skip_verify: %t
     schema_configuration:
     - schema_property_name: apikey_auth
@@ -217,7 +214,7 @@ services:
       http_endpoint:
         url: http://my-api.com/v1/metrics
         prefix: some_prefix
-`, expectedURL, expectedPluginVersion, expectedInscureSkipVerify)
+`, expectedURL, expectedInscureSkipVerify)
 				So(string(marshalConfig), ShouldEqual, expectedConfig)
 			})
 		})
@@ -231,7 +228,7 @@ services:
 		services := map[string]*ServiceConfigV1{
 			serviceConfigName: {
 				SwaggerURL: expectedURL,
-				//PluginVersion: expectedPluginVersion,
+				//PluginVersion: expectedPluginVersion, Note: This functionality has been deprecated as of OpenAPI version > 2.2.0. Nonetheless, this test confirms backwards compatibility with configurations that are still specifying the plugin_version property
 				InsecureSkipVerify: expectedInscureSkipVerify,
 				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
 					{
@@ -276,12 +273,11 @@ services:
 		var pluginConfigSchema PluginConfigSchema
 		expectedURL := "http://sevice-api.com/swagger.yaml"
 		serviceConfigName := "test"
-		expectedInscureSkipVerify := true
+		expectedInsecureSkipVerify := true
 		services := map[string]*ServiceConfigV1{
 			serviceConfigName: {
 				SwaggerURL:         expectedURL,
-				PluginVersion:      "0.14.0",
-				InsecureSkipVerify: expectedInscureSkipVerify,
+				InsecureSkipVerify: expectedInsecureSkipVerify,
 				SchemaConfigurationV1: []ServiceSchemaPropertyConfigurationV1{
 					{
 						SchemaPropertyName: "apikey_auth",
@@ -299,12 +295,11 @@ services:
 services:
   test:
     swagger-url: %s
-    plugin_version: 0.14.0
     insecure_skip_verify: %t
     schema_configuration:
     - schema_property_name: apikey_auth
       default_value: apiKeyValue
-`, expectedURL, expectedInscureSkipVerify)
+`, expectedURL, expectedInsecureSkipVerify)
 				So(string(marshalConfig), ShouldEqual, expectedConfig)
 			})
 		})
