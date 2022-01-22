@@ -44,7 +44,7 @@ be available via a discovery endpoint served through HTTP/s or the file system.
 
 - [Terraform](https://www.terraform.io/downloads.html) >= v0.12.0 (to execute the terraform provider plugin)
   - If you are using Terraform 0.11, refer to the latest [OpenAPI Terraform provider v0.13.1 released](https://github.com/dikhan/terraform-provider-openapi/releases/tag/v0.31.1) compatible with Terraform 0.11.
-- [Go](https://golang.org/doc/install) >=1.14 (to build the provider plugin)
+- [Go](https://golang.org/doc/install) >= 1.16 (to build the provider plugin)
   - This project uses [go modules](https://github.com/golang/go/wiki/Modules) for dependency management
 - [Docker](https://www.docker.com/) 17.09.0-ce (to run service provider example)
 - [Docker-compose](https://docs.docker.com/compose/) 1.16.1 (to run service provider example)

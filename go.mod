@@ -1,6 +1,6 @@
 module github.com/dikhan/terraform-provider-openapi/v2
 
-go 1.14
+go 1.16
 
 require (
 	github.com/DataDog/datadog-go v2.2.0+incompatible
@@ -20,6 +20,6 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/tools v0.1.7 // indirect
+	golang.org/x/tools v0.1.8 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )

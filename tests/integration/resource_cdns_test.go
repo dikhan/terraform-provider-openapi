@@ -204,7 +204,7 @@ resource "%s" "%s" {
   ips = ["0.0.0.0"]
   hostnames = ["www.hostname.com"]
 }`, providerName, resourceCDNName, endpoint, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
-	expectedValidationError, _ := regexp.Compile(".*unable to unmarshal response body \\['invalid character '<' looking for beginning of value'\\] for request = 'POST https://www\\.endpoint\\.com/v1/cdns HTTP/1\\.1'. Response = '404 Not Found'.*")
+	expectedValidationError, _ := regexp.Compile(".Post \"https://www.endpoint.com/v1/cdns\": dial tcp [.\\w]*:[0-9]+: connect: connection refused*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
