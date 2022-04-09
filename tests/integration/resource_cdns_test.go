@@ -190,7 +190,7 @@ resource "%s" "%s" {
 }
 
 func TestAccCDN_Create_EndPointOverride(t *testing.T) {
-	endpoint := "www.endpoint.com"
+	endpoint := "www.endpoint-that-does-not-exist.com"
 	testCreateConfigCDNWithResourceEndpointOverride := fmt.Sprintf(`provider "%s" {
   apikey_auth = "apiKeyValue"
   x_request_id = "some value..."
@@ -204,7 +204,7 @@ resource "%s" "%s" {
   ips = ["0.0.0.0"]
   hostnames = ["www.hostname.com"]
 }`, providerName, resourceCDNName, endpoint, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
-	expectedValidationError, _ := regexp.Compile(".Post \"https://www.endpoint.com/v1/cdns\": dial tcp [.\\w]*:[0-9]+: connect: connection refused*")
+	expectedValidationError, _ := regexp.Compile(".Post \"https://www.endpoint-that-does-not-exist.com/v1/cdns\": dial tcp: lookup www.endpoint-that-does-not-exist.com: no such host*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
