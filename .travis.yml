@@ -10,7 +10,7 @@ services:
   - docker
 
 env:
-  - TF_VERSION=0.13.6 PERFORM_DOCKER_LOGIN=true GO111MODULE=on
+  - TF_VERSION=0.13.6 PERFORM_DOCKER_LOGIN=$TRAVIS_SECURE_ENV_VARS GO111MODULE=on
 
 install:
   - go install github.com/goreleaser/goreleaser@v1.6.3
