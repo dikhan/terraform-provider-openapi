@@ -76,7 +76,7 @@ show-terraform-version:
 # to avoid Docker toomanyrequests: You have reached your pull rate limit.
 dockerhub-login:
 	@echo "[INFO] Logging into Docker Hub Enabled=$(PERFORM_DOCKER_LOGIN)"
-ifdef PERFORM_DOCKER_LOGIN
+ifeq ($(PERFORM_DOCKER_LOGIN),true)
 	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
 endif
 
