@@ -204,7 +204,7 @@ resource "%s" "%s" {
   ips = ["0.0.0.0"]
   hostnames = ["www.hostname.com"]
 }`, providerName, resourceCDNName, endpoint, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN)
-	expectedValidationError, _ := regexp.Compile(".Post \"https://www.endpoint-that-does-not-exist.com/v1/cdns\": dial tcp: lookup www.endpoint-that-does-not-exist.com: no such host*")
+	expectedValidationError, _ := regexp.Compile(".Post \"https://www.endpoint-that-does-not-exist.com/v1/cdns\": dial tcp: lookup www.endpoint-that-does-not-exist.com.*: no such host*")
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
