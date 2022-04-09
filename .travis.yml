@@ -13,7 +13,7 @@ env:
   - TF_VERSION=0.13.6 PERFORM_DOCKER_LOGIN=true GO111MODULE=on
 
 install:
-  - go install github.com/goreleaser/goreleaser@latest
+  - go install github.com/goreleaser/goreleaser@v1.6.3
   - wget https://releases.hashicorp.com/terraform/"$TF_VERSION"/terraform_"$TF_VERSION"_linux_amd64.zip
   - unzip terraform_"$TF_VERSION"_linux_amd64.zip
   - sudo mv terraform /usr/local/bin/
