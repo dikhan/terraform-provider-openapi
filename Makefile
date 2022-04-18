@@ -93,7 +93,7 @@ test-all: test integration-test
 release-pre-requirements:
 ifeq (, $(shell which github-release-notes))
 	@echo "[INFO] No github-release-notes in $(PATH), installing github-release-notes"
-	go get github.com/buchanae/github-release-notes@0.2.0
+	go install github.com/buchanae/github-release-notes@0.2.0
 endif
 ifeq (, $(shell which goreleaser))
 		@echo "[INFO] No goreleaser in $(PATH), installing goreleaser"
