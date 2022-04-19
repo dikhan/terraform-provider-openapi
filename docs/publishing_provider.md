@@ -30,7 +30,7 @@ and the `providerOpenAPIURL` should be the URL where the service API OpenAPI doc
 package main
 
 import (
-	"github.com/dikhan/terraform-provider-openapi/v2/openapi"
+	"github.com/dikhan/terraform-provider-openapi/v3/openapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	"log"
@@ -89,13 +89,13 @@ module github.com/dikhan/terraform-provider-openapiexample
 go 1.16
 
 require (
-	github.com/dikhan/terraform-provider-openapi/v2 v2.0.6
+	github.com/dikhan/terraform-provider-openapi/v3 v2.0.6
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.6.1
 	github.com/mattn/go-colorable v0.1.8 // indirect
 )
 ````
 
-Note: If you want to use a different version of the `github.com/dikhan/terraform-provider-openapi/v2` library you can update
+Note: If you want to use a different version of the `github.com/dikhan/terraform-provider-openapi/v3` library you can update
 the version with the commit hash you want to use (eg: a branch that has not been merged to master yet) or even alpha versions
 released, etc.
 
