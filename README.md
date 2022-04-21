@@ -7,7 +7,7 @@ of the resources and depends on a swagger file (hosted on a remote endpoint) to 
 <center>
     <table cellspacing="0" cellpadding="0" style="width:100%; border: none;">
       <tr>
-        <th align="center"><img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px"></th>
+        <th align="center"><img src="https://www.datocms-assets.com/2885/1620155113-brandhcterraformprimaryattributedcolor.svg" width="400px"></th>
         <th align="center"><img src="https://www.openapis.org/wp-content/uploads/sites/3/2018/02/OpenAPI_Logo_Pantone-1.png" width="400px"></th> 
       </tr>
       <tr>
