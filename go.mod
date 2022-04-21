@@ -1,6 +1,6 @@
 module github.com/dikhan/terraform-provider-openapi/v3
 
-go 1.16
+go 1.17
 
 require (
 	github.com/DataDog/datadog-go v2.2.0+incompatible

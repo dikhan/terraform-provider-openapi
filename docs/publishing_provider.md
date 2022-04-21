@@ -86,7 +86,7 @@ successfully also run `go tidy`. The resulting `go.mod` file should look like:
 ````
 module github.com/dikhan/terraform-provider-openapiexample
 
-go 1.16
+go 1.17
 
 require (
 	github.com/dikhan/terraform-provider-openapi/v3 v2.0.6
