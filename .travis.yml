@@ -4,7 +4,7 @@ dist: trusty
 
 language: go
 go:
-- "1.17.x"
+- "1.16.x"
 
 services:
   - docker

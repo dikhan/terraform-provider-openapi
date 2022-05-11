@@ -11,7 +11,7 @@ Same as stated in [OpenAPI Terraform Provider v2.0.0 release notes - Terraform C
 
 ## Go Compatibility
 
-The OpenAPI Terraform Plugin is built in Go. Currently, that means Go 1.17 or later must be used when building this provider.
+The OpenAPI Terraform Plugin is built in Go. Currently, that means Go 1.16 or later must be used when building this provider.
 
 ## What's changed?
 
