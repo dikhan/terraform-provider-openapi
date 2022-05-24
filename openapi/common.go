@@ -189,9 +189,48 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, updatedItem := range modifiedItems {
 			newPropertyValue = append(newPropertyValue, updatedItem)
 		}
-		return newPropertyValue
+		return fixEmptyMapsOnList(property, newPropertyValue)
 	}
 	return remoteValue
+}
+
+func fixEmptyMapsOnList(listProperty SpecSchemaDefinitionProperty, items []interface{}) []interface{} {
+	fixedItems := []interface{}{}
+
+	for _, item := range items {
+		if listProperty.ArrayItemsType == TypeObject {
+			objectItemProperty, successfulCast := item.(map[string]interface{})
+			if successfulCast {
+				fixedItems = append(fixedItems, fixEmptyMapsOnObject(listProperty.SpecSchemaDefinition.Properties, objectItemProperty))
+			} else { // if an empty slice (defaulted by terraform even for objects) fails to cast to a map
+				fixedItems = append(fixedItems, make(map[string]interface{}))
+			}
+		} else if listProperty.ArrayItemsType == TypeList && listProperty.SpecSchemaDefinition != nil { // SpecSchemaDefinition can be nil if it's a primitive array
+			fixedItems = append(fixedItems, fixEmptyMapsOnList(*listProperty.SpecSchemaDefinition.Properties[0], item.([]interface{})))
+		} else {
+			fixedItems = append(fixedItems, item)
+		}
+	}
+
+	return fixedItems
+}
+
+func fixEmptyMapsOnObject(objectProperties SpecSchemaDefinitionProperties, item map[string]interface{}) map[string]interface{} {
+	fixedItem := make(map[string]interface{})
+	for _, objectProperty := range objectProperties {
+		itemProperty := item[objectProperty.Name]
+		if objectProperty.Type == TypeObject {
+			objectItemProperty, successfulCast := itemProperty.(map[string]interface{})
+			if successfulCast {
+				fixedItem[objectProperty.Name] = fixEmptyMapsOnObject(objectProperty.SpecSchemaDefinition.Properties, objectItemProperty)
+			}
+		} else if objectProperty.Type == TypeList && objectProperty.SpecSchemaDefinition != nil { // SpecSchemaDefinition can be nil if it's a primitive array
+			fixedItem[objectProperty.Name] = fixEmptyMapsOnList(*objectProperty.SpecSchemaDefinition.Properties[0], itemProperty.([]interface{}))
+		} else {
+			fixedItem[objectProperty.Name] = itemProperty
+		}
+	}
+	return fixedItem
 }
 
 func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty, propertyValue interface{}) (interface{}, error) {

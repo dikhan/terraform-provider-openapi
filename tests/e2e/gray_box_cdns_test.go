@@ -502,13 +502,70 @@ definitions:
         type: "array"
         x-terraform-ignore-order: true
         items:
-          type: "integer"`
+          type: "integer"
+      nested_list_prop:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "object"
+          properties:
+            some_property:
+              type: "string"
+            other_property_str:
+              type: "string"
+            other_property_int:
+              type: "integer"
+            other_property_float:
+              type: "number"
+            other_property_bool:
+              type: "boolean"
+            other_property_list:
+              type: "array"
+              items:
+                type: "string"
+            other_property_object:
+              type: "object"
+              properties:
+                deeply_nested_property:
+                  type: "string"`
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		body := `{"id": "someid", "label":"some label", "list_prop": ["value1", "value2", "value3"], "integer_list_prop": [1, 2, 3]}`
+		body := `{
+  "id": "someid",
+  "label": "some label",
+  "list_prop": [
+    "value1",
+    "value2",
+    "value3"
+  ],
+  "integer_list_prop": [
+    1,
+    2,
+    3
+  ],
+  "nested_list_prop": [
+    {
+      "some_property": "value1",
+      "other_property_str": "otherValue1",
+      "other_property_int": 5,
+      "other_property_float": 3.14,
+      "other_property_bool": true,
+      "other_property_list": ["someValue1"],
+      "other_property_object": {
+        "deeply_nested_property": "someDeeplyNestedValue1"
+      }
+    },
+    {
+      "some_property": "value2"
+    },
+    {
+      "some_property": "value3"
+    }
+  ]
+}`
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(body))
 	}))
@@ -523,6 +580,15 @@ resource "openapi_cdn_v1" "my_cdn" {
   label = "some label"
   list_prop = ["value3", "value1", "value2"]
   integer_list_prop = [3, 1, 2]
+  nested_list_prop {
+    some_property = "value3"
+  }
+  nested_list_prop {
+    some_property = "value1"
+  }
+  nested_list_prop {
+    some_property = "value2"
+  }
 }`
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
@@ -555,6 +621,14 @@ resource "openapi_cdn_v1" "my_cdn" {
 						openAPIResourceStateCDN, "integer_list_prop.1", "1"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "integer_list_prop.2", "2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.#", "3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.0.some_property", "value3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.1.some_property", "value1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.2.some_property", "value2"),
 				),
 			},
 		},

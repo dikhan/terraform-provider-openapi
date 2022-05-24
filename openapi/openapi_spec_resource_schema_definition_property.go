@@ -328,23 +328,27 @@ func (s *SpecSchemaDefinitionProperty) equal(item1, item2 interface{}) bool {
 }
 
 func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
+	var defaultValueForType interface{} = nil
 	switch itemsType {
 	case TypeString:
+		defaultValueForType = ""
 		if !s.validateValueType(item1, reflect.String) || !s.validateValueType(item2, reflect.String) {
 			return false
 		}
 	case TypeInt:
-		// deal with API responses mapping all numbers to float64
-		item1 = s.castToIntegerIfFloat(item1)
+		item1 = s.castToIntegerIfFloat(item1) // deal with API responses mapping all numbers to float64
 		item2 = s.castToIntegerIfFloat(item2)
+		defaultValueForType = 0
 		if !s.validateValueType(item1, reflect.Int) || !s.validateValueType(item2, reflect.Int) {
 			return false
 		}
 	case TypeFloat:
+		defaultValueForType = 0.0
 		if !s.validateValueType(item1, reflect.Float64) || !s.validateValueType(item2, reflect.Float64) {
 			return false
 		}
 	case TypeBool:
+		defaultValueForType = false
 		if !s.validateValueType(item1, reflect.Bool) || !s.validateValueType(item2, reflect.Bool) {
 			return false
 		}
@@ -352,8 +356,16 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 		if !s.validateValueType(item1, reflect.Slice) || !s.validateValueType(item2, reflect.Slice) {
 			return false
 		}
+		if item1 == nil || item2 == nil {
+			return s.isOptional()
+		}
 		list1 := item1.([]interface{})
 		list2 := item2.([]interface{})
+
+		if s.isOptional() && (len(list1) == 0 || len(list2) == 0) {
+			return true
+		}
+
 		if len(list1) != len(list2) {
 			return false
 		}
@@ -376,6 +388,8 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
 	case TypeObject:
+		item1 = s.castEmptySliceToEmptyMap(item1) // deal with terraform setting empty maps to empty slices
+		item2 = s.castEmptySliceToEmptyMap(item2)
 		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
 			return false
 		}
@@ -392,17 +406,42 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 	default:
 		return false
 	}
+
+	if s.isOptional() {
+		if item1 == nil || item2 == nil { // deals with cases where optional properties aren't returned by the API but Terraform sets a default value for them
+			return true
+		}
+		if item1 == defaultValueForType || item2 == defaultValueForType { // deals with cases where optional properties are returned by the API, but these properties are not defined in the tf config and Terraform gives sets them to default values
+			return true
+		}
+	}
 	return item1 == item2
 }
 
 func (s *SpecSchemaDefinitionProperty) validateValueType(item interface{}, expectedKind reflect.Kind) bool {
+	if item == nil {
+		return true // API responses can skip optional properties, resulting in nils, which are technically valid for the given type
+	}
 	if reflect.TypeOf(item).Kind() != expectedKind {
 		return false
 	}
 	return true
 }
 
+func (s *SpecSchemaDefinitionProperty) castEmptySliceToEmptyMap(item interface{}) interface{} {
+	if item == nil {
+		return make(map[string]interface{})
+	}
+	if s.validateValueType(item, reflect.Slice) && len(item.([]interface{})) == 0 {
+		return make(map[string]interface{})
+	}
+	return item
+}
+
 func (s *SpecSchemaDefinitionProperty) castToIntegerIfFloat(item interface{}) interface{} {
+	if item == nil {
+		return 0
+	}
 	if s.validateValueType(item, reflect.Float64) {
 		var floatValue = item.(float64)
 		var integerValue = int(floatValue)
