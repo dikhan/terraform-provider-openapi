@@ -334,6 +334,9 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 			return false
 		}
 	case TypeInt:
+		// deal with API responses mapping all numbers to float64
+		item1 = s.castToIntegerIfFloat(item1)
+		item2 = s.castToIntegerIfFloat(item2)
 		if !s.validateValueType(item1, reflect.Int) || !s.validateValueType(item2, reflect.Int) {
 			return false
 		}
@@ -397,4 +400,15 @@ func (s *SpecSchemaDefinitionProperty) validateValueType(item interface{}, expec
 		return false
 	}
 	return true
+}
+
+func (s *SpecSchemaDefinitionProperty) castToIntegerIfFloat(item interface{}) interface{} {
+	if s.validateValueType(item, reflect.Float64) {
+		var floatValue = item.(float64)
+		var integerValue = int(floatValue)
+		if item == float64(integerValue) { // check if float is really an integer
+			return integerValue
+		}
+	}
+	return item
 }

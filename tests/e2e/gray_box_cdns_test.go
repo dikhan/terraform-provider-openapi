@@ -497,13 +497,18 @@ definitions:
         type: "array"
         x-terraform-ignore-order: true
         items:
-          type: "string"`
+          type: "string"
+      integer_list_prop:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "integer"`
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		body := `{"id": "someid", "label":"some label", "list_prop": ["value1", "value2", "value3"]}`
+		body := `{"id": "someid", "label":"some label", "list_prop": ["value1", "value2", "value3"], "integer_list_prop": [1, 2, 3]}`
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(body))
 	}))
@@ -517,6 +522,7 @@ definitions:
 resource "openapi_cdn_v1" "my_cdn" {
   label = "some label"
   list_prop = ["value3", "value1", "value2"]
+  integer_list_prop = [3, 1, 2]
 }`
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
@@ -543,6 +549,12 @@ resource "openapi_cdn_v1" "my_cdn" {
 						openAPIResourceStateCDN, "list_prop.1", "value1"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "list_prop.2", "value2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.0", "3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.1", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.2", "2"),
 				),
 			},
 		},
