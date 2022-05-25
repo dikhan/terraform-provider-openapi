@@ -336,8 +336,8 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 			return false
 		}
 	case TypeInt:
-		item1 = s.castToIntegerIfFloat(item1) // deal with API responses mapping all numbers to float64
-		item2 = s.castToIntegerIfFloat(item2)
+		item1 = terraformutils.CastToIntegerIfFloat(item1) // deal with API responses mapping all numbers to float64
+		item2 = terraformutils.CastToIntegerIfFloat(item2)
 		defaultValueForType = 0
 		if !s.validateValueType(item1, reflect.Int) || !s.validateValueType(item2, reflect.Int) {
 			return false
@@ -388,8 +388,8 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
 	case TypeObject:
-		item1 = s.castEmptySliceToEmptyMap(item1) // deal with terraform setting empty maps to empty slices
-		item2 = s.castEmptySliceToEmptyMap(item2)
+		item1, _ = terraformutils.CastTerraformSliceToMap(item1) // deal with terraform schema returning nested objects as slices
+		item2, _ = terraformutils.CastTerraformSliceToMap(item2)
 		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
 			return false
 		}
@@ -426,28 +426,4 @@ func (s *SpecSchemaDefinitionProperty) validateValueType(item interface{}, expec
 		return false
 	}
 	return true
-}
-
-func (s *SpecSchemaDefinitionProperty) castEmptySliceToEmptyMap(item interface{}) interface{} {
-	if item == nil {
-		return make(map[string]interface{})
-	}
-	if s.validateValueType(item, reflect.Slice) && len(item.([]interface{})) == 0 {
-		return make(map[string]interface{})
-	}
-	return item
-}
-
-func (s *SpecSchemaDefinitionProperty) castToIntegerIfFloat(item interface{}) interface{} {
-	if item == nil {
-		return 0
-	}
-	if s.validateValueType(item, reflect.Float64) {
-		var floatValue = item.(float64)
-		var integerValue = int(floatValue)
-		if item == float64(integerValue) { // check if float is really an integer
-			return integerValue
-		}
-	}
-	return item
 }
