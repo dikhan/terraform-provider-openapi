@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dikhan/terraform-provider-openapi/v3/openapi/terraformutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"io/ioutil"
 	"log"
@@ -220,9 +221,9 @@ func fixEmptyMapsOnObject(objectProperties SpecSchemaDefinitionProperties, item 
 	for _, objectProperty := range objectProperties {
 		itemProperty := item[objectProperty.Name]
 		if objectProperty.Type == TypeObject {
-			objectItemProperty, successfulCast := itemProperty.(map[string]interface{})
+			objectItemProperty, successfulCast := terraformutils.CastTerraformSliceToMap(itemProperty)
 			if successfulCast {
-				fixedItem[objectProperty.Name] = fixEmptyMapsOnObject(objectProperty.SpecSchemaDefinition.Properties, objectItemProperty)
+				fixedItem[objectProperty.Name] = fixEmptyMapsOnObject(objectProperty.SpecSchemaDefinition.Properties, objectItemProperty.(map[string]interface{}))
 			}
 		} else if objectProperty.Type == TypeList && objectProperty.SpecSchemaDefinition != nil { // SpecSchemaDefinition can be nil if it's a primitive array
 			fixedItem[objectProperty.Name] = fixEmptyMapsOnList(*objectProperty.SpecSchemaDefinition.Properties[0], itemProperty.([]interface{}))
