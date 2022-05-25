@@ -396,8 +396,8 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 		object1 := item1.(map[string]interface{})
 		object2 := item2.(map[string]interface{})
 		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
-			objectPropertyValue1 := object1[objectProperty.Name]
-			objectPropertyValue2 := object2[objectProperty.Name]
+			objectPropertyValue1 := objectProperty.getPropertyValueFromMap(object1)
+			objectPropertyValue2 := objectProperty.getPropertyValueFromMap(object2)
 			if !objectProperty.equal(objectPropertyValue1, objectPropertyValue2) {
 				return false
 			}
@@ -426,4 +426,11 @@ func (s *SpecSchemaDefinitionProperty) validateValueType(item interface{}, expec
 		return false
 	}
 	return true
+}
+
+func (s *SpecSchemaDefinitionProperty) getPropertyValueFromMap(mapItem map[string]interface{}) interface{} {
+	if mapItem[s.Name] != nil {
+		return mapItem[s.Name]
+	}
+	return mapItem[s.GetTerraformCompliantPropertyName()]
 }

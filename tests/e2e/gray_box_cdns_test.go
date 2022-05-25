@@ -503,33 +503,33 @@ definitions:
         x-terraform-ignore-order: true
         items:
           type: "integer"
-      nested_list_prop:
+      nestedListProp:
         type: "array"
         x-terraform-ignore-order: true
         items:
           type: "object"
           properties:
-            some_property:
+            someProperty:
               type: "string"
               x-terraform-force-new: true
-            other_property_str:
+            otherPropertyStr:
               type: "string"
-            other_property_int:
+            otherPropertyInt:
               type: "integer"
-            other_property_float:
+            otherPropertyFloat:
               type: "number"
-            other_property_bool:
+            otherPropertyBool:
               type: "boolean"
-            other_property_list:
+            otherPropertyList:
               type: "array"
               x-terraform-computed: true
               items:
                 type: "string"
-            other_property_object:
+            otherPropertyObject:
               type: "object"
               x-terraform-computed: true
               properties:
-                deeply_nested_property:
+                deeplyNestedProperty:
                   type: "string"`
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
@@ -549,31 +549,31 @@ definitions:
     2,
     3
   ],
-  "nested_list_prop": [
+  "nestedListProp": [
     {
-      "some_property": "value1",
-      "other_property_str": "otherValue1",
-      "other_property_int": 5,
-      "other_property_float": 3.14,
-      "other_property_bool": true,
-      "other_property_list": ["someValue1"],
-      "other_property_object": {
-        "deeply_nested_property": "someDeeplyNestedValue1"
+      "someProperty": "value1",
+      "otherPropertyStr": "otherValue1",
+      "otherPropertyInt": 5,
+      "otherPropertyFloat": 3.14,
+      "otherPropertyBool": true,
+      "otherPropertyList": ["someValue1"],
+      "otherPropertyObject": {
+        "deeplyNestedProperty": "someDeeplyNestedValue1"
       }
     },
     {
-      "some_property": "value2",
-      "other_property_str": "otherValue2",
-      "other_property_int": 10,
-      "other_property_float": 1.23,
-      "other_property_bool": false,
-      "other_property_list": ["someValue2"],
-      "other_property_object": {
-        "deeply_nested_property": "someDeeplyNestedValue2"
+      "someProperty": "value2",
+      "otherPropertyStr": "otherValue2",
+      "otherPropertyInt": 10,
+      "otherPropertyFloat": 1.23,
+      "otherPropertyBool": false,
+      "otherPropertyList": ["someValue2"],
+      "otherPropertyObject": {
+        "deeplyNestedProperty": "someDeeplyNestedValue2"
       }
     },
     {
-      "some_property": "value3"
+      "someProperty": "value3"
     }
   ]
 }`

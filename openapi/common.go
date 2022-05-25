@@ -219,7 +219,7 @@ func fixEmptyMapsOnList(listProperty SpecSchemaDefinitionProperty, items []inter
 func fixEmptyMapsOnObject(objectProperties SpecSchemaDefinitionProperties, item map[string]interface{}) map[string]interface{} {
 	fixedItem := make(map[string]interface{})
 	for _, objectProperty := range objectProperties {
-		itemProperty := item[objectProperty.Name]
+		itemProperty := objectProperty.getPropertyValueFromMap(item)
 		if objectProperty.Type == TypeObject {
 			objectItemProperty, successfulCast := terraformutils.CastTerraformSliceToMap(itemProperty)
 			if successfulCast {
