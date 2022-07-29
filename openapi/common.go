@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dikhan/terraform-provider-openapi/v3/openapi/terraformutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"io/ioutil"
 	"log"
@@ -169,7 +168,7 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, inputItemValue := range inputValueArray {
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
-					newPropertyValue = append(newPropertyValue, inputItemValue)
+					newPropertyValue = append(newPropertyValue, remoteItemValue)
 					break
 				}
 			}
@@ -190,48 +189,9 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, updatedItem := range modifiedItems {
 			newPropertyValue = append(newPropertyValue, updatedItem)
 		}
-		return fixEmptyMapsOnList(property, newPropertyValue)
+		return newPropertyValue
 	}
 	return remoteValue
-}
-
-func fixEmptyMapsOnList(listProperty SpecSchemaDefinitionProperty, items []interface{}) []interface{} {
-	fixedItems := []interface{}{}
-
-	for _, item := range items {
-		if listProperty.ArrayItemsType == TypeObject {
-			objectItemProperty, successfulCast := item.(map[string]interface{})
-			if successfulCast {
-				fixedItems = append(fixedItems, fixEmptyMapsOnObject(listProperty.SpecSchemaDefinition.Properties, objectItemProperty))
-			} else { // if an empty slice (defaulted by terraform even for objects) fails to cast to a map
-				fixedItems = append(fixedItems, make(map[string]interface{}))
-			}
-		} else if listProperty.ArrayItemsType == TypeList && listProperty.SpecSchemaDefinition != nil { // SpecSchemaDefinition can be nil if it's a primitive array
-			fixedItems = append(fixedItems, fixEmptyMapsOnList(*listProperty.SpecSchemaDefinition.Properties[0], item.([]interface{})))
-		} else {
-			fixedItems = append(fixedItems, item)
-		}
-	}
-
-	return fixedItems
-}
-
-func fixEmptyMapsOnObject(objectProperties SpecSchemaDefinitionProperties, item map[string]interface{}) map[string]interface{} {
-	fixedItem := make(map[string]interface{})
-	for _, objectProperty := range objectProperties {
-		itemProperty := objectProperty.getPropertyValueFromMap(item)
-		if objectProperty.Type == TypeObject {
-			objectItemProperty, successfulCast := terraformutils.CastTerraformSliceToMap(itemProperty)
-			if successfulCast {
-				fixedItem[objectProperty.Name] = fixEmptyMapsOnObject(objectProperty.SpecSchemaDefinition.Properties, objectItemProperty.(map[string]interface{}))
-			}
-		} else if objectProperty.Type == TypeList && objectProperty.SpecSchemaDefinition != nil { // SpecSchemaDefinition can be nil if it's a primitive array
-			fixedItem[objectProperty.Name] = fixEmptyMapsOnList(*objectProperty.SpecSchemaDefinition.Properties[0], itemProperty.([]interface{}))
-		} else {
-			fixedItem[objectProperty.Name] = itemProperty
-		}
-	}
-	return fixedItem
 }
 
 func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty, propertyValue interface{}) (interface{}, error) {

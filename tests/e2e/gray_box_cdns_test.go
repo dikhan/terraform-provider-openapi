@@ -610,7 +610,7 @@ resource "openapi_cdn_v1" "my_cdn" {
     other_property_str = "otherValue2"
     other_property_int = 10
     other_property_float = 1.23
-    other_property_bool = true
+    other_property_bool = false
     other_property_list = ["someValue2"]
     other_property_object {
       deeply_nested_property = "someDeeplyNestedValue2"
