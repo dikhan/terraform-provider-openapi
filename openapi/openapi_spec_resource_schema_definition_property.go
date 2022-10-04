@@ -329,20 +329,27 @@ func (s *SpecSchemaDefinitionProperty) equal(item1, item2 interface{}) bool {
 }
 
 func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) bool {
+	var defaultValueForType interface{} = nil
 	switch itemsType {
 	case TypeString:
+		defaultValueForType = ""
 		if !s.validateValueType(item1, reflect.String) || !s.validateValueType(item2, reflect.String) {
 			return false
 		}
 	case TypeInt:
+		item1 = terraformutils.CastToIntegerIfFloat(item1) // deal with API responses mapping all numbers to float64
+		item2 = terraformutils.CastToIntegerIfFloat(item2)
+		defaultValueForType = 0
 		if !s.validateValueType(item1, reflect.Int) || !s.validateValueType(item2, reflect.Int) {
 			return false
 		}
 	case TypeFloat:
+		defaultValueForType = 0.0
 		if !s.validateValueType(item1, reflect.Float64) || !s.validateValueType(item2, reflect.Float64) {
 			return false
 		}
 	case TypeBool:
+		defaultValueForType = false
 		if !s.validateValueType(item1, reflect.Bool) || !s.validateValueType(item2, reflect.Bool) {
 			return false
 		}
@@ -350,8 +357,16 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 		if !s.validateValueType(item1, reflect.Slice) || !s.validateValueType(item2, reflect.Slice) {
 			return false
 		}
+		if item1 == nil || item2 == nil {
+			return s.isOptional()
+		}
 		list1 := item1.([]interface{})
 		list2 := item2.([]interface{})
+
+		if s.isOptional() && (len(list1) == 0 || len(list2) == 0) {
+			return true
+		}
+
 		if len(list1) != len(list2) {
 			return false
 		}
@@ -374,14 +389,16 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 			return s.equalItems(s.ArrayItemsType, list1[idx], list2[idx])
 		}
 	case TypeObject:
+		item1, _ = terraformutils.CastTerraformSliceToMap(item1) // deal with terraform schema returning nested objects as slices
+		item2, _ = terraformutils.CastTerraformSliceToMap(item2)
 		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
 			return false
 		}
 		object1 := item1.(map[string]interface{})
 		object2 := item2.(map[string]interface{})
 		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
-			objectPropertyValue1 := object1[objectProperty.Name]
-			objectPropertyValue2 := object2[objectProperty.Name]
+			objectPropertyValue1 := objectProperty.getPropertyValueFromMap(object1)
+			objectPropertyValue2 := objectProperty.getPropertyValueFromMap(object2)
 			if !objectProperty.equal(objectPropertyValue1, objectPropertyValue2) {
 				return false
 			}
@@ -390,12 +407,31 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 	default:
 		return false
 	}
+
+	if s.isOptional() {
+		if item1 == nil || item2 == nil { // deals with cases where optional properties aren't returned by the API but Terraform sets a default value for them
+			return true
+		}
+		if item1 == defaultValueForType || item2 == defaultValueForType { // deals with cases where optional properties are returned by the API, but these properties are not defined in the tf config and Terraform gives sets them to default values
+			return true
+		}
+	}
 	return item1 == item2
 }
 
 func (s *SpecSchemaDefinitionProperty) validateValueType(item interface{}, expectedKind reflect.Kind) bool {
+	if item == nil {
+		return true // API responses can skip optional properties, resulting in nils, which are technically valid for the given type
+	}
 	if reflect.TypeOf(item).Kind() != expectedKind {
 		return false
 	}
 	return true
+}
+
+func (s *SpecSchemaDefinitionProperty) getPropertyValueFromMap(mapItem map[string]interface{}) interface{} {
+	if mapItem[s.Name] != nil {
+		return mapItem[s.Name]
+	}
+	return mapItem[s.GetTerraformCompliantPropertyName()]
 }

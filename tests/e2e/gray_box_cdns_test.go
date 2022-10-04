@@ -497,13 +497,86 @@ definitions:
         type: "array"
         x-terraform-ignore-order: true
         items:
-          type: "string"`
+          type: "string"
+      integer_list_prop:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "integer"
+      nestedListProp:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "object"
+          properties:
+            someProperty:
+              type: "string"
+              x-terraform-force-new: true
+            otherPropertyStr:
+              type: "string"
+            otherPropertyInt:
+              type: "integer"
+            otherPropertyFloat:
+              type: "number"
+            otherPropertyBool:
+              type: "boolean"
+            otherPropertyList:
+              type: "array"
+              x-terraform-computed: true
+              items:
+                type: "string"
+            otherPropertyObject:
+              type: "object"
+              x-terraform-computed: true
+              properties:
+                deeplyNestedProperty:
+                  type: "string"`
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		body := `{"id": "someid", "label":"some label", "list_prop": ["value1", "value2", "value3"]}`
+		body := `{
+  "id": "someid",
+  "label": "some label",
+  "list_prop": [
+    "value1",
+    "value2",
+    "value3"
+  ],
+  "integer_list_prop": [
+    1,
+    2,
+    3
+  ],
+  "nestedListProp": [
+    {
+      "someProperty": "value1",
+      "otherPropertyStr": "otherValue1",
+      "otherPropertyInt": 5,
+      "otherPropertyFloat": 3.14,
+      "otherPropertyBool": true,
+      "otherPropertyList": ["someValue1"],
+      "otherPropertyObject": {
+        "deeplyNestedProperty": "someDeeplyNestedValue1"
+      }
+    },
+    {
+      "someProperty": "value2",
+      "otherPropertyStr": "otherValue2",
+      "otherPropertyInt": 10,
+      "otherPropertyFloat": 1.23,
+      "otherPropertyBool": false,
+      "otherPropertyList": ["someValue2"],
+      "otherPropertyObject": {
+        "deeplyNestedProperty": "someDeeplyNestedValue2"
+      }
+    },
+    {
+      "someProperty": "value3"
+    }
+  ]
+}`
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(body))
 	}))
@@ -517,6 +590,32 @@ definitions:
 resource "openapi_cdn_v1" "my_cdn" {
   label = "some label"
   list_prop = ["value3", "value1", "value2"]
+  integer_list_prop = [3, 1, 2]
+  nested_list_prop {
+    some_property = "value3"
+  }
+  nested_list_prop {
+    some_property = "value1"
+    other_property_str = "otherValue1"
+    other_property_int = 5
+    other_property_float = 3.14
+    other_property_bool = true
+    other_property_list = ["someValue1"]
+    other_property_object {
+      deeply_nested_property = "someDeeplyNestedValue1"
+    }
+  }
+  nested_list_prop {
+    some_property = "value2"
+    other_property_str = "otherValue2"
+    other_property_int = 10
+    other_property_float = 1.23
+    other_property_bool = false
+    other_property_list = ["someValue2"]
+    other_property_object {
+      deeply_nested_property = "someDeeplyNestedValue2"
+    }
+  }
 }`
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
@@ -543,6 +642,20 @@ resource "openapi_cdn_v1" "my_cdn" {
 						openAPIResourceStateCDN, "list_prop.1", "value1"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "list_prop.2", "value2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.0", "3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.1", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.2", "2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.#", "3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.0.some_property", "value3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.1.some_property", "value1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.2.some_property", "value2"),
 				),
 			},
 		},

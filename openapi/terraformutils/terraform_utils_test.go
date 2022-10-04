@@ -242,3 +242,68 @@ func TestEnvDefaultFunc(t *testing.T) {
 		})
 	})
 }
+
+func TestCastTerraformSliceToMap(t *testing.T) {
+	Convey("Given a nil input when CastTerraformSliceToMap is called then the result should be successfully cast an empty map", t, func() {
+		var input interface{} = nil
+		Convey("When CastTerraformSliceToMap is called", func() {
+			result, success := CastTerraformSliceToMap(input)
+			Convey("Then the result should be successfully cast", func() {
+				checkedResult, checkSuccess := result.(map[string]interface{})
+				So(success, ShouldBeTrue)
+				So(checkSuccess, ShouldBeTrue)
+				Convey("And the result should be an empty map", func() {
+					So(len(checkedResult), ShouldEqual, 0)
+				})
+			})
+		})
+	})
+
+	Convey("Given an empty slice input", t, func() {
+		var input []interface{}
+		Convey("When CastTerraformSliceToMap is called", func() {
+			result, success := CastTerraformSliceToMap(input)
+			Convey("Then the result should be successfully cast", func() {
+				checkedResult, checkSuccess := result.(map[string]interface{})
+				So(success, ShouldBeTrue)
+				So(checkSuccess, ShouldBeTrue)
+				Convey("And the result should be an empty map", func() {
+					So(len(checkedResult), ShouldEqual, 0)
+				})
+			})
+		})
+	})
+
+	Convey("Given a single element slice input", t, func() {
+		var input []interface{}
+		Convey("And the element is a map", func() {
+			mapItem := make(map[string]interface{})
+			mapItem["some_property"] = "some_value"
+			input := append(input, mapItem)
+			Convey("When CastTerraformSliceToMap is called", func() {
+				result, success := CastTerraformSliceToMap(input)
+				Convey("Then the result should be successfully cast", func() {
+					checkedResult, checkSuccess := result.(map[string]interface{})
+					So(success, ShouldBeTrue)
+					So(checkSuccess, ShouldBeTrue)
+					Convey("And the result should be the same map from the slice", func() {
+						So(checkedResult, ShouldEqual, mapItem)
+					})
+				})
+			})
+		})
+
+		Convey("And the element is a non-map", func() {
+			input := append(input, "some_value", "other_value")
+			Convey("When CastTerraformSliceToMap is called", func() {
+				result, success := CastTerraformSliceToMap(input)
+				Convey("Then the result should not be successfully cast", func() {
+					So(success, ShouldBeFalse)
+					Convey("And the result should be the same as the input", func() {
+						So(len(result.([]interface{})), ShouldEqual, len(input))
+					})
+				})
+			})
+		})
+	})
+}
