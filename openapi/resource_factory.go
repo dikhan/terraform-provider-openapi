@@ -444,7 +444,7 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 }
 
 func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitionProperty, remoteData interface{}, localData interface{}, checkObjectPropertiesUpdates bool) error {
-	if property.ReadOnly || property.IsParentProperty {
+	if property.ReadOnly || property.IsParentProperty || property.WriteOnly {
 		return nil
 	}
 	switch property.Type {

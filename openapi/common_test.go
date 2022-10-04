@@ -645,7 +645,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		Convey("When convertPayloadToLocalStateDataValue is called with ", func() {
 			property := newStringSchemaDefinitionPropertyWithDefaults("string_property", "", false, false, nil)
 			dataValue := "someValue"
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the expected value with the right type string", func() {
 				So(err, ShouldBeNil)
 				So(resultValue, ShouldEqual, dataValue)
@@ -655,7 +655,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		Convey("When convertPayloadToLocalStateDataValue is called with a bool property and a bool value", func() {
 			property := newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", false, false, nil)
 			dataValue := true
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the expected value with the right type boolean", func() {
 				So(err, ShouldBeNil)
 				So(resultValue, ShouldEqual, dataValue)
@@ -665,7 +665,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		Convey("When convertPayloadToLocalStateDataValue is called with an int property and a int value", func() {
 			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
 			dataValue := 10
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the expected value with the right type int", func() {
 				So(err, ShouldBeNil)
 				So(resultValue, ShouldEqual, dataValue)
@@ -674,7 +674,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value", func() {
 			property := newNumberSchemaDefinitionPropertyWithDefaults("float_property", "", false, false, nil)
 			dataValue := 45.23
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then error should be nil and the result value should be the expected value formatted string with the right type float", func() {
 				So(err, ShouldBeNil)
 				So(resultValue, ShouldEqual, dataValue)
@@ -683,20 +683,20 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		Convey("When convertPayloadToLocalStateDataValue is called with an float property and a float value but the swagger property is an integer", func() {
 			property := newIntSchemaDefinitionPropertyWithDefaults("int_property", "", false, false, nil)
 			dataValue := 45
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the expected value formatted string with the right type integer", func() {
 				So(err, ShouldBeNil)
 				So(resultValue, ShouldEqual, dataValue)
 				So(resultValue, ShouldHaveSameTypeAs, int(dataValue))
 			})
 		})
-		Convey("When convertPayloadToLocalStateDataValue is called with an list property and a with items object", func() {
+		Convey("When convertPayloadToLocalStateDataValue is called with a list property and with items object", func() {
 			objectSchemaDefinition := &SpecSchemaDefinition{
 				Properties: SpecSchemaDefinitionProperties{
 					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
-					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
-					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
+					newBoolSchemaDefinitionPropertyWithDefaults("example_bool", "", true, false, nil),
+					newNumberSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
 				},
 			}
 			objectDefault := map[string]interface{}{
@@ -707,7 +707,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 			}
 			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeObject, objectSchemaDefinition)
 			dataValue := []interface{}{objectDefault}
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the list containing the object items with the expected types (int, string, bool and float)", func() {
 				So(err, ShouldBeNil)
 				So(resultValue.([]interface{})[0].(map[string]interface{}), ShouldContainKey, "example_int")
@@ -723,7 +723,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		Convey("When convertPayloadToLocalStateDataValue is called with a list property and an array with items string value", func() {
 			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeString, nil)
 			dataValue := []interface{}{"value1"}
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the expected value with the right type array", func() {
 				So(err, ShouldBeNil)
 				So(resultValue.([]interface{}), ShouldContain, dataValue[0])
@@ -732,11 +732,12 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 
 		Convey("When convertPayloadToLocalStateDataValue is called with simple object property and an empty map as value", func() {
 			property := &SpecSchemaDefinitionProperty{
-				Name:     "some_object",
-				Type:     TypeObject,
-				Required: true,
+				Name:                 "some_object",
+				Type:                 TypeObject,
+				Required:             true,
+				SpecSchemaDefinition: &SpecSchemaDefinition{},
 			}
-			resultValue, err := convertPayloadToLocalStateDataValue(property, map[string]interface{}{})
+			resultValue, err := convertPayloadToLocalStateDataValue(property, map[string]interface{}{}, nil)
 			Convey("Then the error should be nil and the result value should be the expected value with the right type array", func() {
 				So(err, ShouldBeNil)
 				So(resultValue.([]interface{}), ShouldNotBeEmpty) // By default objects' internal terraform schema is Type List with Max 1 elem *Resource
@@ -747,7 +748,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 		// Edge case
 		Convey("When convertPayloadToLocalStateDataValue is called with a slice of map interfaces", func() {
 			property := newListSchemaDefinitionPropertyWithDefaults("slice_object_property", "", true, false, false, nil, TypeString, nil)
-			_, err := convertPayloadToLocalStateDataValue(property, []map[string]interface{}{})
+			_, err := convertPayloadToLocalStateDataValue(property, []map[string]interface{}{}, nil)
 			Convey("Then the error should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -759,7 +760,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				Type:           TypeList,
 				ArrayItemsType: schemaDefinitionPropertyType("unknown"),
 			}
-			_, err := convertPayloadToLocalStateDataValue(property, []interface{}{})
+			_, err := convertPayloadToLocalStateDataValue(property, []interface{}{}, nil)
 			Convey("Then the error should match the expected one", func() {
 				So(err.Error(), ShouldEqual, "property 'not_well_configured_property' is supposed to be an array objects")
 			})
@@ -778,7 +779,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"example_string_2": "something",
 			}
 			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
 				So(err, ShouldBeNil)
 				So(resultValue.([]interface{})[0].(map[string]interface{})["example_string"].(string), ShouldEqual, "http")
@@ -792,8 +793,8 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				Properties: SpecSchemaDefinitionProperties{
 					newIntSchemaDefinitionPropertyWithDefaults("example_int", "", true, false, nil),
 					newStringSchemaDefinitionPropertyWithDefaults("example_string", "", true, false, nil),
-					newStringSchemaDefinitionPropertyWithDefaults("example_bool", "", true, true, nil),
-					newStringSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
+					newBoolSchemaDefinitionPropertyWithDefaults("example_bool", "", true, true, nil),
+					newNumberSchemaDefinitionPropertyWithDefaults("example_float", "", true, false, nil),
 				},
 			}
 			dataValue := map[string]interface{}{
@@ -803,7 +804,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				"example_float":  10.45,
 			}
 			property := newObjectSchemaDefinitionPropertyWithDefaults("object_property", "", true, false, false, nil, objectSchemaDefinition)
-			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(property, dataValue, nil)
 			Convey("Then the error should be nil and the result value should be the list containing the object items all being string type (as terraform only supports maps of strings, hence values need to be stored as strings)", func() {
 				So(err, ShouldBeNil)
 				So(resultValue.([]interface{})[0], ShouldContainKey, "example_int")
@@ -843,7 +844,7 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 
 			expectedPropertyWithNestedObjectName := "property_with_nested_object"
 			propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
-			resultValue, err := convertPayloadToLocalStateDataValue(propertyWithNestedObject, dataValue)
+			resultValue, err := convertPayloadToLocalStateDataValue(propertyWithNestedObject, dataValue, nil)
 			Convey("Then the result returned should be the expected one", func() {
 				So(err, ShouldBeNil)
 
@@ -866,6 +867,105 @@ func TestConvertPayloadToLocalStateDataValue(t *testing.T) {
 				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].([]interface{})[0].(map[string]interface{})[nestedObjectSchemaDefinition.Properties[0].Name], ShouldEqual, nestedObjectSchemaDefinition.Properties[0].Default.(int))
 				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].([]interface{})[0].(map[string]interface{}), ShouldContainKey, nestedObjectSchemaDefinition.Properties[1].Name)
 				So(resultValue.([]interface{})[0].(map[string]interface{})[nestedObject.Name].([]interface{})[0].(map[string]interface{})[nestedObjectSchemaDefinition.Properties[1].Name], ShouldEqual, nestedObjectSchemaDefinition.Properties[1].Default)
+			})
+		})
+
+		Convey("When convertPayloadToLocalStateDataValue is called with complex objects with write-only properties", func() {
+			nestedArrayItemSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					newIntSchemaDefinitionPropertyWithDefaults("nested_list_property", "", true, false, 456),
+					setSchemaDefinitionPropertyWriteOnly(newIntSchemaDefinitionPropertyWithDefaults("nested_list_property_password", "", true, false, nil)),
+				},
+			}
+
+			nestedObjectSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					setSchemaDefinitionPropertyWriteOnly(newIntSchemaDefinitionPropertyWithDefaults("origin_port", "", true, false, 80)),
+					newStringSchemaDefinitionPropertyWithDefaults("protocol", "", true, false, "http"),
+					setSchemaDefinitionPropertyWriteOnly(newStringSchemaDefinitionPropertyWithDefaults("password", "", true, false, nil)),
+					setSchemaDefinitionPropertyWriteOnly(newListSchemaDefinitionPropertyWithDefaults("password_array", "", true, false, false, nil, TypeString, nil)),
+					newListSchemaDefinitionPropertyWithDefaults("nested_list", "", true, false, false, nil, TypeObject, nestedArrayItemSchemaDefinition),
+				},
+			}
+			nestedObject := newObjectSchemaDefinitionPropertyWithDefaults("nested_object", "", true, false, false, nil, nestedObjectSchemaDefinition)
+			propertyWithNestedObjectSchemaDefinition := &SpecSchemaDefinition{
+				Properties: SpecSchemaDefinitionProperties{
+					idProperty,
+					nestedObject,
+				},
+			}
+			// The below represents the JSON representation of the response payload received by the API
+			dataValue := map[string]interface{}{
+				"id": propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+				"nested_object": map[string]interface{}{
+					"origin_port": 12345,
+					"protocol":    "tcp",
+					"nested_list": []interface{}{
+						map[string]interface{}{
+							"nested_list_property":          123,
+							"nested_list_property_password": "some changed value",
+						},
+					},
+				},
+			}
+
+			expectedPropertyWithNestedObjectName := "property_with_nested_object"
+			propertyWithNestedObject := newObjectSchemaDefinitionPropertyWithDefaults(expectedPropertyWithNestedObjectName, "", true, false, false, dataValue, propertyWithNestedObjectSchemaDefinition)
+
+			Convey("When the local state is empty", func() {
+				resultValue, err := convertPayloadToLocalStateDataValue(propertyWithNestedObject, dataValue, nil)
+
+				Convey("Then the result returned should be the expected one", func() {
+					So(err, ShouldBeNil)
+
+					nestedObject := resultValue.([]interface{})[0].(map[string]interface{})["nested_object"].([]interface{})[0].(map[string]interface{})
+					So(nestedObject["origin_port"], ShouldBeNil)
+					So(nestedObject["protocol"], ShouldEqual, "tcp")
+					So(nestedObject["password"], ShouldBeNil)
+					So(nestedObject["password_array"], ShouldBeNil)
+
+					firstNestedListItem := nestedObject["nested_list"].([]interface{})[0].(map[string]interface{})
+					So(firstNestedListItem["nested_list_property"], ShouldEqual, 123)
+					So(firstNestedListItem["nested_list_property_password"], ShouldBeNil)
+				})
+			})
+
+			Convey("When the local state is populated", func() {
+				localStateValue := map[string]interface{}{
+					"id": propertyWithNestedObjectSchemaDefinition.Properties[0].Default,
+					"nested_object": map[string]interface{}{
+						"origin_port":    1111,
+						"protocol":       "tcp",
+						"password":       "secret",
+						"password_array": []interface{}{"secret1", "secret2"},
+						"nested_list": []interface{}{
+							map[string]interface{}{
+								"nested_list_property":          555,
+								"nested_list_property_password": "local secret value",
+							},
+						},
+					},
+				}
+				resultValue, err := convertPayloadToLocalStateDataValue(propertyWithNestedObject, dataValue, localStateValue)
+
+				Convey("Then the result returned should be the expected one", func() {
+					So(err, ShouldBeNil)
+
+					nestedObject := resultValue.([]interface{})[0].(map[string]interface{})["nested_object"].([]interface{})[0].(map[string]interface{})
+					So(nestedObject["origin_port"], ShouldEqual, 1111)
+					So(nestedObject["protocol"], ShouldEqual, "tcp")
+					So(nestedObject["password"], ShouldEqual, "secret")
+					So(len(nestedObject["password_array"].([]interface{})), ShouldEqual, 2)
+
+					passwordArray := nestedObject["password_array"].([]interface{})
+					So(passwordArray[0], ShouldEqual, "secret1")
+					So(passwordArray[1], ShouldEqual, "secret2")
+
+					So(len(nestedObject["nested_list"].([]interface{})), ShouldEqual, 1)
+					nestedListItem := nestedObject["nested_list"].([]interface{})[0].(map[string]interface{})
+					So(nestedListItem["nested_list_property"], ShouldEqual, 123)
+					So(nestedListItem["nested_list_property_password"], ShouldEqual, "local secret value")
+				})
 			})
 		})
 	})

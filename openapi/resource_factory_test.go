@@ -1731,6 +1731,25 @@ func TestCheckImmutableFields(t *testing.T) {
 			expectedResult: nil,
 			expectedError:  errors.New("validation for immutable properties failed: user attempted to update an immutable property ('immutable_prop'): [user input: updatedImmutableValue; actual: originalImmutablePropertyValue]. Update operation was aborted; no updates were performed"),
 		},
+		{
+			name: "write-only properties are not validated for immutability",
+			inputProps: []*SpecSchemaDefinitionProperty{
+				{
+					Name:      "write_only_immutable_prop",
+					Type:      TypeString,
+					Immutable: true,
+					WriteOnly: true,
+				},
+			},
+			inputClient: clientOpenAPIStub{
+				responsePayload: map[string]interface{}{
+					"write_only_immutable_prop": "some value that will be ignored",
+					"unknown_prop":              "some value",
+				},
+			},
+			expectedResult: nil,
+			expectedError:  nil,
+		},
 	}
 
 	Convey("Given a resource factory", t, func() {
