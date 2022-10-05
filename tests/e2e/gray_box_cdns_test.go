@@ -1059,3 +1059,186 @@ func createTerraformFile(expectedCDNLabel, expectedFirewallLabel string) string 
            label = "%s"
         }`, openAPIResourceNameCDN, openAPIResourceInstanceNameCDN, expectedCDNLabel, openAPIResourceNameCDNFirewall, openAPIResourceInstanceNameCDNFirewall, openAPIResourceStateCDN, expectedFirewallLabel)
 }
+
+func TestAccCDN_WriteOnlyProperties(t *testing.T) {
+	swagger := `swagger: "2.0"
+host: %s 
+schemes:
+- "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    x-terraform-resource-name: "cdn"
+    post:
+      summary: "Create cdn"
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created CDN"
+        required: true
+        schema:
+          $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/cdns/{cdn_id}:
+    get:
+      summary: "Get cdn by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+      - name: "cdn_id"
+        in: "path"
+        description: "The cdn id that needs to be fetched."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    put:
+      summary: "Updated cdn"
+      operationId: "ContentDeliveryNetworkUpdateV1"
+      parameters:
+        - name: "id"
+          in: "path"
+          description: "cdn that needs to be updated"
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Updated cdn object"
+          required: true
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    delete:
+      summary: "Delete cdn"
+      operationId: "ContentDeliveryNetworkDeleteV1"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The cdn that needs to be deleted"
+        required: true
+        type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+      - write_only_property
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+      write_only_property:
+        type: "string"
+        x-terraform-write-only: true
+      list_prop:
+        type: "array"
+        x-terraform-write-only: true
+        items:
+          type: "string"
+      object_write_only_prop:
+        type: "object"
+        x-terraform-write-only: true
+        required:
+          - nested_prop
+        properties:
+          nested_prop:
+            type: "string"
+      object_prop:
+        type: "object"
+        required:
+          - nested_prop
+        properties:
+          nested_prop:
+            type: "string"
+            x-terraform-write-only: true`
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := `{"id": "someid", "label": "some label", "object_prop":{}}`
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(body))
+	}))
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:        true,
+		ProviderFactories: testAccProviders(provider),
+		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
+		Steps: []resource.TestStep{
+			{
+				ExpectNonEmptyPlan: false,
+				Config: `# URI /v1/cdns/
+resource "openapi_cdn_v1" "my_cdn" {
+  label = "some label"
+  write_only_property = "some property value"
+  list_prop = ["value1", "value2"]
+  object_write_only_prop {
+    nested_prop = "some value"
+  }
+  object_prop {
+    nested_prop = "some other value"
+  }
+}`,
+			},
+			{
+				ExpectNonEmptyPlan: false,
+				Config: `# URI /v1/cdns/
+resource "openapi_cdn_v1" "my_cdn" {
+  label = "some label"
+  write_only_property = "some property label"
+  list_prop = ["value3", "value4"]
+  object_write_only_prop {
+    nested_prop = "some new value"
+  }
+  object_prop {
+    nested_prop = "some other new value"
+  }
+}`,
+			},
+			{
+				ExpectNonEmptyPlan: false,
+				ImportStateVerify:  true,
+				ImportStateId:      "someid",
+				Config: `# URI /v1/cdns/
+resource "openapi_cdn_v1" "my_cdn" {
+  label = "some label"
+  write_only_property = "some property label"
+  list_prop = ["value3", "value4"]
+  object_write_only_prop {
+    nested_prop = "some new value"
+  }
+  object_prop {
+    nested_prop = "some other new value"
+  }
+}`,
+			},
+		},
+	})
+}
