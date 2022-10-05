@@ -278,7 +278,7 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 	if propertyLocalStateValue != nil {
 		if reflect.TypeOf(propertyLocalStateValue).Kind() == reflect.Map {
 			localStateMapValue = propertyLocalStateValue.(map[string]interface{})
-		} else if reflect.TypeOf(propertyLocalStateValue).Kind() == reflect.Slice {
+		} else if reflect.TypeOf(propertyLocalStateValue).Kind() == reflect.Slice && len(propertyLocalStateValue.([]interface{})) == 1 {
 			localStateMapValue = propertyLocalStateValue.([]interface{})[0].(map[string]interface{}) // local state can store nested objects as a single item array
 		}
 	}
