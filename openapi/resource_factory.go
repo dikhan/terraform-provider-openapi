@@ -451,7 +451,10 @@ func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitio
 	case TypeList:
 		if property.Immutable {
 			localList := localData.([]interface{})
-			remoteList := remoteData.([]interface{})
+			remoteList := make([]interface{}, 0)
+			if remoteList != nil {
+				remoteList = remoteData.([]interface{})
+			}
 			if len(localList) != len(remoteList) {
 				return fmt.Errorf("user attempted to update an immutable list property ('%s') size: [user input list size: %d; actual list size: %d]", property.Name, len(localList), len(remoteList))
 			}
@@ -468,7 +471,7 @@ func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitio
 					localObj := localListObj.(map[string]interface{})
 					remoteObj := remoteListObj.(map[string]interface{})
 					for _, objectProp := range property.SpecSchemaDefinition.Properties {
-						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], property.Immutable)
+						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.GetTerraformCompliantPropertyName()], property.Immutable)
 						if err != nil {
 							return fmt.Errorf("user attempted to update an immutable list of objects ('%s'): [user input: %s; actual: %s]", property.Name, localData, remoteData)
 						}
@@ -478,9 +481,12 @@ func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitio
 		}
 	case TypeObject:
 		localObject := localData.(map[string]interface{})
-		remoteObject := remoteData.(map[string]interface{})
+		remoteObject := make(map[string]interface{})
+		if remoteData != nil {
+			remoteObject = remoteData.(map[string]interface{})
+		}
 		for _, objProp := range property.SpecSchemaDefinition.Properties {
-			err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], property.Immutable)
+			err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.GetTerraformCompliantPropertyName()], property.Immutable)
 			if err != nil {
 				return fmt.Errorf("user attempted to update an immutable object ('%s') property ('%s'): [user input: %s; actual: %s]", property.Name, objProp.Name, localData, remoteData)
 			}
