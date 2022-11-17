@@ -1141,39 +1141,44 @@ definitions:
     type: "object"
     required:
       - label
-      - write_only_property
+      - writeOnlyProperty
+      - objectWriteOnlyProp
     properties:
       id:
         type: "string"
         readOnly: true
       label:
         type: "string"
-      write_only_property:
+      writeOnlyProperty:
         type: "string"
         x-terraform-write-only: true
-      list_prop:
+      listProp:
         type: "array"
         x-terraform-write-only: true
         items:
           type: "string"
-      object_write_only_prop:
+      objectWriteOnlyProp:
         type: "object"
         x-terraform-write-only: true
         required:
-          - nested_prop
+          - nestedProp
         properties:
-          nested_prop:
+          nestedProp:
             type: "string"
-      object_prop:
+            x-terraform-write-only: true
+          nestedOptionalProp:
+            type: "string"
+            x-terraform-write-only: true
+      objectProp:
         type: "object"
         required:
-          - nested_prop
+          - nestedProp
         properties:
-          nested_prop:
+          nestedProp:
             type: "string"
             x-terraform-write-only: true`
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body := `{"id": "someid", "label": "some label", "object_prop":{}}`
+		body := `{"id": "someid", "label": "some label", "objectProp":{}, "objectWriteOnlyProp": null}`
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(body))
 	}))
@@ -1201,43 +1206,44 @@ resource "openapi_cdn_v1" "my_cdn" {
   list_prop = ["value1", "value2"]
   object_write_only_prop {
     nested_prop = "some value"
+    nested_optional_prop = "optional val"
   }
   object_prop {
     nested_prop = "some other value"
   }
 }`,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "label", "some label"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "list_prop.#", "2"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "list_prop.0", "value1"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "list_prop.1", "value2"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "write_only_property", "some property value"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "object_write_only_prop.0.nested_prop", "some value"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "object_write_only_prop.0.nested_optional_prop", "optional val"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "object_prop.0.nested_prop", "some other value"),
+				),
 			},
 			{
 				ExpectNonEmptyPlan: false,
 				Config: `# URI /v1/cdns/
 resource "openapi_cdn_v1" "my_cdn" {
   label = "some label"
-  write_only_property = "some property label"
+  write_only_property = "some new property"
   list_prop = ["value3", "value4"]
   object_write_only_prop {
     nested_prop = "some new value"
+    nested_optional_prop = "optional new val"
   }
   object_prop {
     nested_prop = "some other new value"
   }
 }`,
-			},
-			{
-				ExpectNonEmptyPlan: false,
-				ImportStateVerify:  true,
-				ImportStateId:      "someid",
-				Config: `# URI /v1/cdns/
-resource "openapi_cdn_v1" "my_cdn" {
-  label = "some label"
-  write_only_property = "some property label"
-  list_prop = ["value3", "value4"]
-  object_write_only_prop {
-    nested_prop = "some new value"
-  }
-  object_prop {
-    nested_prop = "some other new value"
-  }
-}`,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "write_only_property", "some new property"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "object_write_only_prop.0.nested_prop", "some new value"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "object_write_only_prop.0.nested_optional_prop", "optional new val"),
+					resource.TestCheckResourceAttr(openAPIResourceStateCDN, "object_prop.0.nested_prop", "some other new value"),
+				),
 			},
 		},
 	})

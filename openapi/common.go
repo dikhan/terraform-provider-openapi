@@ -289,7 +289,7 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 
 		// Here we are processing the items of the list which are objects. In this case we need to keep the original
 		// types as Terraform honors property types for resource schemas attached to TypeList properties
-		propValue, err := convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, localStateMapValue[propertyName])
+		propValue, err := convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, localStateMapValue[schemaDefinitionProperty.GetTerraformCompliantPropertyName()])
 		if err != nil {
 			return nil, err
 		}
