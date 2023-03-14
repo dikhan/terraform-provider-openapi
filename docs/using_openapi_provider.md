@@ -9,7 +9,7 @@ different ways:
 ### OTF_VAR_<provider_name>_SWAGGER_URL
 
 Terraform will need to be executed passing in the OTF_VAR_<provider_name>_SWAGGER_URL environment variable pointing at the location
-where the swagger file is hosted, where````<your_provider_name>```` should be replaced with your provider's name.
+where the swagger file is hosted, where````<your_provider_name>```` should be replaced with your provider's name. Note that this variable will not be available to other contexts, like IDE extensions.
 
 ```
 $ terraform init && OTF_VAR_goa_SWAGGER_URL="https://some-domain-where-swagger-is-served.com/swagger.yaml" terraform plan
