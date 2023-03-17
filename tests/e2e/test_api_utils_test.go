@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
@@ -103,4 +104,14 @@ func testAccPreCheck(t *testing.T, swaggerURLEndpoint string) {
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("GET %s returned not expected response status code %d", swaggerURLEndpoint, res.StatusCode)
 	}
+}
+
+func getFileContents(t *testing.T, filePath string) string {
+	return string(getFileContentsBytes(t, filePath))
+}
+
+func getFileContentsBytes(t *testing.T, filePath string) []byte {
+	fileContents, err := ioutil.ReadFile(filePath)
+	assert.Nil(t, err)
+	return fileContents
 }

@@ -1,0 +1,26 @@
+[
+  {
+    "nestedListProp": [
+      {
+        "computedProperty": "value1",
+        "someProperty": "value1"
+      },
+      {
+        "computedProperty": "",
+        "someProperty": "value2"
+      }
+    ]
+  },
+  {
+    "nestedListProp": [
+      {
+        "computedProperty": "",
+        "someProperty": "value2"
+      },
+      {
+        "computedProperty": "value1",
+        "someProperty": "value1"
+      }
+    ]
+  }
+]

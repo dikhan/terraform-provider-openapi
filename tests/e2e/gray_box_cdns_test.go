@@ -620,6 +620,68 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	})
 }
 
+func TestAcc_Thinga(t *testing.T) {
+	swagger := getFileContents(t, "data/gray_box_test_data/updatable-computed-properties-test/openapi.yaml")
+	expectedRequestBodiesRaw := getFileContentsBytes(t, "data/gray_box_test_data/updatable-computed-properties-test/expected_request_bodies.json")
+	var expectedRequestBodiesJSON []map[string]interface{}
+	err := json.Unmarshal(expectedRequestBodiesRaw, &expectedRequestBodiesJSON)
+	assert.Nil(t, err)
+
+	resourceStateRemote := make([]byte, 0)
+	requestWithBodyIdx := 0
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			resourceStateRemote = make([]byte, 0)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			body, err := ioutil.ReadAll(r.Body)
+			assert.Nil(t, err)
+
+			expectedRequestBody, _ := json.Marshal(expectedRequestBodiesJSON[requestWithBodyIdx])
+			assert.Equal(t, string(expectedRequestBody), string(body))
+			requestWithBodyIdx++
+
+			bodyJSON := map[string]interface{}{}
+			err = json.Unmarshal(body, &bodyJSON)
+			assert.Nil(t, err)
+			bodyJSON["id"] = "someid"
+			resourceStateRemote, err = json.Marshal(bodyJSON)
+			assert.Nil(t, err)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(resourceStateRemote)
+	}))
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	tfFileContentsStage1 := getFileContents(t, "data/gray_box_test_data/updatable-computed-properties-test/test_stage_1.tf")
+	tfFileContentsStage2 := getFileContents(t, "data/gray_box_test_data/updatable-computed-properties-test/test_stage_2.tf")
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		ProviderFactories:         testAccProviders(provider),
+		PreCheck:                  func() { testAccPreCheck(t, swaggerServer.URL) },
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				Config: tfFileContentsStage1,
+			},
+			{
+				Config: tfFileContentsStage2,
+			},
+		},
+	})
+}
+
 func TestAccCDN_POSTRequestSchemaContainsInputsAndResponseSchemaContainsOutputs(t *testing.T) {
 	expectedID := "some_id"
 	expectedLabel := "my_label"
