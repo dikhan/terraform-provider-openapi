@@ -620,7 +620,7 @@ func TestAccCDN_Create_and_UpdateSubResource(t *testing.T) {
 	})
 }
 
-func TestAcc_Thinga(t *testing.T) {
+func TestAcc_ArrayBasedComputedPropertiesUpdateCorrectly(t *testing.T) {
 	swagger := getFileContents(t, "data/gray_box_test_data/updatable-computed-properties-test/openapi.yaml")
 	expectedRequestBodiesRaw := getFileContentsBytes(t, "data/gray_box_test_data/updatable-computed-properties-test/expected_request_bodies.json")
 	var expectedRequestBodiesJSON []map[string]interface{}

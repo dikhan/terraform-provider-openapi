@@ -91,3 +91,4 @@ definitions:
               type: "string"
             computedProperty:
               type: "string"
+              x-terraform-computed: true
