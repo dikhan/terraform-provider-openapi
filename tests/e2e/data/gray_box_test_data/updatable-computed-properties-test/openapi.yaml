@@ -76,8 +76,6 @@ paths:
 definitions:
   ContentDeliveryNetworkV1:
     type: "object"
-    required:
-      - label
     properties:
       id:
         type: "string"
