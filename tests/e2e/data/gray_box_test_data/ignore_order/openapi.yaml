@@ -1,0 +1,104 @@
+swagger: "2.0"
+host: %s
+schemes:
+  - "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    x-terraform-resource-name: "cdn"
+    post:
+      summary: "Create cdn"
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Created CDN"
+          required: true
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/cdns/{cdn_id}:
+    get:
+      summary: "Get cdn by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+        - name: "cdn_id"
+          in: "path"
+          description: "The cdn id that needs to be fetched."
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    delete:
+      summary: "Delete cdn"
+      operationId: "ContentDeliveryNetworkDeleteV1"
+      parameters:
+        - name: "id"
+          in: "path"
+          description: "The cdn that needs to be deleted"
+          required: true
+          type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    required:
+      - label
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      label:
+        type: "string"
+      list_prop:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "string"
+      integer_list_prop:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "integer"
+      nestedListProp:
+        type: "array"
+        x-terraform-ignore-order: true
+        items:
+          type: "object"
+          properties:
+            someProperty:
+              type: "string"
+              x-terraform-force-new: true
+            otherPropertyStr:
+              type: "string"
+            otherPropertyInt:
+              type: "integer"
+            otherPropertyFloat:
+              type: "number"
+            otherPropertyBool:
+              type: "boolean"
+            otherPropertyList:
+              type: "array"
+              x-terraform-computed: true
+              items:
+                type: "string"
+            otherPropertyObject:
+              type: "object"
+              x-terraform-computed: true
+              properties:
+                deeplyNestedProperty:
+                  type: "string"
