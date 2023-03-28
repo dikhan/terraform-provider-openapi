@@ -232,7 +232,9 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 				if err != nil {
 					return err, nil
 				}
-				arrayInput = append(arrayInput, objectValue)
+				if objectValue != nil {
+					arrayInput = append(arrayInput, objectValue)
+				}
 			}
 			return arrayInput, nil
 		}
@@ -293,7 +295,13 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 		if err != nil {
 			return nil, err
 		}
-		objectInput[schemaDefinitionProperty.GetTerraformCompliantPropertyName()] = propValue
+		if propValue != nil {
+			objectInput[schemaDefinitionProperty.GetTerraformCompliantPropertyName()] = propValue
+		}
+	}
+
+	if len(objectInput) == 0 {
+		return nil, nil
 	}
 
 	// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
