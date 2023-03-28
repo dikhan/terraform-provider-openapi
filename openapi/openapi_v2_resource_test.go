@@ -2311,6 +2311,25 @@ func TestCreateSchemaDefinitionProperty(t *testing.T) {
 			})
 		})
 
+		Convey(fmt.Sprintf("When createSchemaDefinitionProperty is called with a property schema that has the '%s' extension", extTfWriteOnly), func() {
+			expectedWriteOnlyValue := true
+			propertySchema := spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{"string"},
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{
+						extTfWriteOnly: expectedWriteOnlyValue,
+					},
+				},
+			}
+			schemaDefinitionProperty, err := r.createSchemaDefinitionProperty("propertyName", propertySchema, []string{})
+			Convey("Then the error returned should be nil and the schemaDefinitionProperty should be configured as expected", func() {
+				So(err, ShouldBeNil)
+				So(schemaDefinitionProperty.WriteOnly, ShouldEqual, expectedWriteOnlyValue)
+			})
+		})
+
 		Convey(fmt.Sprintf("When createSchemaDefinitionProperty is called with an optional property schema that has the %s extension (this means the property is optional-computed, and the value computed is not known at runtime)", extTfComputed), func() {
 			propertySchema := spec.Schema{
 				SchemaProps: spec.SchemaProps{

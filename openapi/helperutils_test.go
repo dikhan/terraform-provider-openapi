@@ -39,6 +39,11 @@ var numberZeroValueProperty = newNumberSchemaDefinitionPropertyWithDefaults("num
 var boolZeroValueProperty = newBoolSchemaDefinitionPropertyWithDefaults("bool_property", "", true, false, false)
 var sliceZeroValueProperty = newListSchemaDefinitionPropertyWithDefaults("slice_property", "", true, false, false, []interface{}{""}, TypeString, nil)
 
+func setSchemaDefinitionPropertyWriteOnly(propertySchemaDefinition *SpecSchemaDefinitionProperty) *SpecSchemaDefinitionProperty {
+	propertySchemaDefinition.WriteOnly = true
+	return propertySchemaDefinition
+}
+
 func newStringSchemaDefinitionPropertyWithDefaults(name, preferredName string, required, readOnly bool, defaultValue interface{}) *SpecSchemaDefinitionProperty {
 	return newStringSchemaDefinitionProperty(name, preferredName, required, readOnly, false, false, false, false, false, false, defaultValue)
 }

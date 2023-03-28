@@ -55,6 +55,7 @@ type SpecSchemaDefinitionProperty struct {
 	Immutable          bool
 	IsIdentifier       bool
 	IsStatusIdentifier bool
+	WriteOnly          bool
 	// Default field is only for informative purposes to know what the openapi spec for the property stated the default value is
 	// As per the openapi spec default attributes, the value is expected to be computed by the API
 	Default interface{}
