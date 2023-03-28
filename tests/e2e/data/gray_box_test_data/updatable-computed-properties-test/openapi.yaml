@@ -87,8 +87,14 @@ definitions:
         items:
           type: "object"
           properties:
-            someProperty:
+            stringProperty:
               type: "string"
+            numberProperty:
+              type: "number"
+            integerProperty:
+              type: "integer"
+            booleanProperty:
+              type: "boolean"
             computedProperty:
               type: "string"
               x-terraform-computed: true

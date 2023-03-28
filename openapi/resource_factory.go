@@ -3,6 +3,7 @@ package openapi
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-cty/cty"
 	"log"
 	"net/http"
 	"reflect"
@@ -219,7 +220,9 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.GetResourceName(), resourcePath)
 	}
-	requestPayload := r.createPayloadFromLocalStateData(data)
+
+	requestPayload := r.createPayloadFromTerraformConfig(data)
+
 	if err := r.checkImmutableFields(data, providerClient, parentsIDs...); err != nil {
 		return err
 	}
@@ -540,6 +543,88 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 	return input
 }
 
+// Similar to createPayloadFromLocalStateData but uses the current terraform configuration to create the request payload
+func (r resourceFactory) createPayloadFromTerraformConfig(resourceLocalData *schema.ResourceData) map[string]interface{} {
+	terraformConfigObject := r.getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
+
+	input := map[string]interface{}{}
+	resourceSchema, _ := r.openAPIResource.GetResourceSchema()
+	for _, property := range resourceSchema.Properties {
+		propertyName := property.Name
+		// ReadOnly properties are not considered for the payload data (including the id if it's computed)
+		if property.isReadOnly() {
+			continue
+		}
+		if !property.IsParentProperty {
+			if dataValue, ok := terraformConfigObject[property.GetTerraformCompliantPropertyName()]; ok {
+				err := r.populatePayload(input, property, dataValue)
+				if err != nil {
+					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.GetResourceName(), propertyName, err)
+				}
+			}
+			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.GetResourceName(), propertyName, input[propertyName])
+		}
+	}
+	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(input))
+	return input
+}
+
+func (r resourceFactory) getTerraformConfigObject(rawConfig cty.Value) interface{} {
+	objectType := rawConfig.Type()
+	if objectType.IsMapType() || objectType.IsObjectType() {
+		output := map[string]interface{}{}
+		if rawConfig.IsNull() {
+			return output
+		}
+		mapValue := rawConfig.AsValueMap()
+		for key, value := range mapValue {
+			output[key] = r.getTerraformConfigObject(value)
+		}
+		return output
+	}
+
+	if objectType.IsListType() {
+		output := []interface{}{}
+		if rawConfig.IsNull() {
+			return output
+		}
+		for _, listItemValue := range rawConfig.AsValueSlice() {
+			output = append(output, r.getTerraformConfigObject(listItemValue))
+		}
+		return output
+	}
+
+	if objectType.Equals(cty.String) {
+		if rawConfig.IsNull() {
+			return ""
+		}
+		return rawConfig.AsString()
+	}
+
+	if objectType.Equals(cty.Number) {
+		if rawConfig.IsNull() {
+			return 0
+		}
+		number := rawConfig.AsBigFloat()
+		if number.IsInt() {
+			intVal, _ := number.Int64()
+			return intVal
+		} else {
+			floatVal, _ := number.Float64()
+			return floatVal
+		}
+	}
+
+	if objectType.Equals(cty.Bool) {
+		if rawConfig.IsNull() {
+			return false
+		}
+		return rawConfig.True()
+	}
+
+	return nil // unknown type, default to nil
+}
+
 func (r resourceFactory) populatePayload(input map[string]interface{}, property *SpecSchemaDefinitionProperty, dataValue interface{}) error {
 	if property == nil {
 		return errors.New("populatePayload must receive a non nil property")
@@ -600,6 +685,8 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 		input[property.Name] = dataValue.(string)
 	case reflect.Int:
 		input[property.Name] = dataValue.(int)
+	case reflect.Int64:
+		input[property.Name] = dataValue.(int64)
 	case reflect.Float64:
 		input[property.Name] = dataValue.(float64)
 	case reflect.Bool:

@@ -2,24 +2,50 @@
   {
     "nestedListProp": [
       {
+        "booleanProperty": true,
         "computedProperty": "value1",
-        "someProperty": "value1"
+        "integerProperty": 5,
+        "numberProperty": 3,
+        "stringProperty": "value1"
       },
       {
+        "booleanProperty": false,
         "computedProperty": "",
-        "someProperty": "value2"
+        "integerProperty": 0,
+        "numberProperty": 0,
+        "stringProperty": "value2"
+      },
+      {
+        "booleanProperty": false,
+        "computedProperty": "value3",
+        "integerProperty": 0,
+        "numberProperty": 0,
+        "stringProperty": "value3"
       }
     ]
   },
   {
     "nestedListProp": [
       {
+        "booleanProperty": false,
         "computedProperty": "",
-        "someProperty": "value2"
+        "integerProperty": 0,
+        "numberProperty": 0,
+        "stringProperty": "value2"
       },
       {
+        "booleanProperty": true,
         "computedProperty": "value1",
-        "someProperty": "value1"
+        "integerProperty": 5,
+        "numberProperty": 3,
+        "stringProperty": "value1"
+      },
+      {
+        "booleanProperty": false,
+        "computedProperty": "value3",
+        "integerProperty": 0,
+        "numberProperty": 0,
+        "stringProperty": "value3"
       }
     ]
   }
