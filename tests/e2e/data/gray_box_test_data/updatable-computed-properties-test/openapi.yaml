@@ -1,0 +1,98 @@
+swagger: "2.0"
+host: %s
+schemes:
+  - "http"
+
+paths:
+  ######################
+  #### CDN Resource ####
+  ######################
+
+  /v1/cdns:
+    x-terraform-resource-name: "cdn"
+    post:
+      summary: "Create cdn"
+      operationId: "ContentDeliveryNetworkCreateV1"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Created CDN"
+          required: true
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+  /v1/cdns/{cdn_id}:
+    get:
+      summary: "Get cdn by id"
+      description: ""
+      operationId: "ContentDeliveryNetworkGetV1"
+      parameters:
+        - name: "cdn_id"
+          in: "path"
+          description: "The cdn id that needs to be fetched."
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    put:
+      summary: "Update cdn"
+      operationId: "ContentDeliveryNetworkDeleteV1"
+      parameters:
+        - name: "cdn_id"
+          in: "path"
+          description: "The cdn id that needs to be fetched."
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Created CDN"
+          required: true
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
+    delete:
+      summary: "Delete cdn"
+      operationId: "ContentDeliveryNetworkDeleteV1"
+      parameters:
+        - name: "id"
+          in: "path"
+          description: "The cdn that needs to be deleted"
+          required: true
+          type: "string"
+      responses:
+        204:
+          description: "successful operation, no content is returned"
+definitions:
+  ContentDeliveryNetworkV1:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      nestedListProp:
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            stringProperty:
+              type: "string"
+            numberProperty:
+              type: "number"
+            integerProperty:
+              type: "integer"
+            booleanProperty:
+              type: "boolean"
+            computedProperty:
+              type: "string"
+              x-terraform-computed: true
