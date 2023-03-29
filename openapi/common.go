@@ -354,7 +354,11 @@ func setStateID(openAPIres SpecResource, resourceLocalData *schema.ResourceData,
 	return nil
 }
 
-// TODO - field name should be applied?
+// Gets the HCL code equivalent map object of the resource without caring about the state file.
+// Only usable during certain operation lifecycles like updates, since read operations do not appear to
+// expose the raw configuration during runtime. Useful to deal with scenarios where the local terraform state
+// behaves unexpected, like the problem of computed properties within lists not "moving" as expected
+// when the ordering changes
 func getTerraformConfigObject(rawConfig cty.Value) interface{} {
 	objectType := rawConfig.Type()
 	if objectType.IsMapType() || objectType.IsObjectType() {
