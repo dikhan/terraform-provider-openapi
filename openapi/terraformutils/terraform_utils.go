@@ -158,3 +158,42 @@ func MultiEnvDefaultString(ks []string, defaultValue interface{}) (string, error
 	}
 	return dv.(string), nil
 }
+
+// CastTerraformSliceToMap tries to cast the provided input to a map and returns an unaltered shallow
+// copy of the input if it fails to cast. It exists to deal with the fact the Terraform defines nested
+// objects as single element lists, and this method normalises the structure so that it can be
+// compared against non-Terraform produced models.
+func CastTerraformSliceToMap(item interface{}) (interface{}, bool) {
+	if item == nil {
+		return make(map[string]interface{}), true
+	}
+	sliceItem, successfulCast := item.([]interface{})
+	if successfulCast {
+		if len(sliceItem) == 0 {
+			return make(map[string]interface{}), true
+		}
+		if len(sliceItem) == 1 {
+			mapItem, successfulCast := sliceItem[0].(map[string]interface{})
+			if successfulCast {
+				return mapItem, true
+			}
+		}
+	}
+	return item, false
+}
+
+// CastToIntegerIfFloat tries to cast the input to an integer if it can be represented as an integer.
+// Failure to cast to an integer will return an unaltered shallow copy of the input.
+func CastToIntegerIfFloat(item interface{}) interface{} {
+	if item == nil {
+		return 0
+	}
+	var floatValue, successfulCast = item.(float64)
+	if successfulCast {
+		var integerValue = int(floatValue)
+		if item == float64(integerValue) { // check if float is really an integer
+			return integerValue
+		}
+	}
+	return item
+}

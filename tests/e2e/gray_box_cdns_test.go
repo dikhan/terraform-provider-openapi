@@ -427,85 +427,30 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 }
 
 func TestAccCDN_CreateResourceWithIgnoreListOrderExtension(t *testing.T) {
-	swagger := `swagger: "2.0"
-host: %s 
-schemes:
-- "http"
+	swagger := getFileContents(t, "data/gray_box_test_data/ignore_order/openapi.yaml")
 
-paths:
-  ######################
-  #### CDN Resource ####
-  ######################
-
-  /v1/cdns:
-    x-terraform-resource-name: "cdn"
-    post:
-      summary: "Create cdn"
-      operationId: "ContentDeliveryNetworkCreateV1"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Created CDN"
-        required: true
-        schema:
-          $ref: "#/definitions/ContentDeliveryNetworkV1"
-      responses:
-        201:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-  /v1/cdns/{cdn_id}:
-    get:
-      summary: "Get cdn by id"
-      description: ""
-      operationId: "ContentDeliveryNetworkGetV1"
-      parameters:
-      - name: "cdn_id"
-        in: "path"
-        description: "The cdn id that needs to be fetched."
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ContentDeliveryNetworkV1"
-    delete:
-      summary: "Delete cdn"
-      operationId: "ContentDeliveryNetworkDeleteV1"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The cdn that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        204:
-          description: "successful operation, no content is returned"
-definitions:
-  ContentDeliveryNetworkV1:
-    type: "object"
-    required:
-      - label
-    properties:
-      id:
-        type: "string"
-        readOnly: true
-      label:
-        type: "string"
-      list_prop:
-        type: "array"
-        x-terraform-ignore-order: true
-        items:
-          type: "string"`
+	resourceStateRemote := make([]byte, 0)
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
+			resourceStateRemote = make([]byte, 0)
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		body := `{"id": "someid", "label":"some label", "list_prop": ["value1", "value2", "value3"]}`
+		if r.Method == http.MethodPost {
+			body, err := ioutil.ReadAll(r.Body)
+			assert.Nil(t, err)
+			bodyJSON := map[string]interface{}{}
+			err = json.Unmarshal(body, &bodyJSON)
+			assert.Nil(t, err)
+			bodyJSON["id"] = "someid"
+			if len(resourceStateRemote) > 0 {
+				assert.Fail(t, "POST request triggered more than once where the resource is only expected to be created once.")
+			}
+			resourceStateRemote, err = json.Marshal(bodyJSON)
+			assert.Nil(t, err)
+		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(body))
+		w.Write(resourceStateRemote)
 	}))
 	apiHost := apiServer.URL[7:]
 	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -513,37 +458,63 @@ definitions:
 		w.Write([]byte(swaggerReturned))
 	}))
 
-	tfFileContents := `# URI /v1/cdns/
-resource "openapi_cdn_v1" "my_cdn" {
-  label = "some label"
-  list_prop = ["value3", "value1", "value2"]
-}`
+	tfFileContentsStage1 := getFileContents(t, "data/gray_box_test_data/ignore_order/test_stage_1.tf")
+	tfFileContentsStage2 := getFileContents(t, "data/gray_box_test_data/ignore_order/test_stage_2.tf")
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
 	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
 	assert.NoError(t, err)
 
 	resource.Test(t, resource.TestCase{
-		IsUnitTest:        true,
-		ProviderFactories: testAccProviders(provider),
-		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
+		IsUnitTest:                true,
+		ProviderFactories:         testAccProviders(provider),
+		PreCheck:                  func() { testAccPreCheck(t, swaggerServer.URL) },
+		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			{
-				ExpectNonEmptyPlan: false,
-				Config:             tfFileContents,
+				Config: tfFileContentsStage1,
 				Check: resource.ComposeTestCheckFunc(
 					// check resource
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "label", "some label"),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "list_prop.#", "3"),
+						openAPIResourceStateCDN, "list_prop.0", "value1"),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "list_prop.0", "value3"),
+						openAPIResourceStateCDN, "list_prop.2", "value3"),
 					resource.TestCheckResourceAttr(
-						openAPIResourceStateCDN, "list_prop.1", "value1"),
+						openAPIResourceStateCDN, "integer_list_prop.0", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.2", "3"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.0.some_property", "value1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.2.some_property", "value3"),
+				),
+			},
+			{
+				Config: tfFileContentsStage2,
+				Check: resource.ComposeTestCheckFunc(
+					// check resource
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "label", "some label"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.0", "value1"),
 					resource.TestCheckResourceAttr(
 						openAPIResourceStateCDN, "list_prop.2", "value2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.0", "1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "integer_list_prop.2", "2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.0.some_property", "value1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "nested_list_prop.2.some_property", "value2"),
 				),
+			},
+			{
+				Config:             tfFileContentsStage2,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
