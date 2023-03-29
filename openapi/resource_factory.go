@@ -3,7 +3,6 @@ package openapi
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-cty/cty"
 	"log"
 	"net/http"
 	"reflect"
@@ -551,7 +550,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 
 // Similar to createPayloadFromLocalStateData but uses the current terraform configuration to create the request payload
 func (r resourceFactory) createPayloadFromTerraformConfig(resourceLocalData *schema.ResourceData) map[string]interface{} {
-	terraformConfigObject := r.getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
+	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
 
 	input := map[string]interface{}{}
 	resourceSchema, _ := r.openAPIResource.GetResourceSchema()
@@ -573,62 +572,6 @@ func (r resourceFactory) createPayloadFromTerraformConfig(resourceLocalData *sch
 	}
 	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(input))
 	return input
-}
-
-func (r resourceFactory) getTerraformConfigObject(rawConfig cty.Value) interface{} {
-	objectType := rawConfig.Type()
-	if objectType.IsMapType() || objectType.IsObjectType() {
-		output := map[string]interface{}{}
-		if rawConfig.IsNull() {
-			return output
-		}
-		mapValue := rawConfig.AsValueMap()
-		for key, value := range mapValue {
-			output[key] = r.getTerraformConfigObject(value)
-		}
-		return output
-	}
-
-	if objectType.IsListType() {
-		output := []interface{}{}
-		if rawConfig.IsNull() {
-			return output
-		}
-		for _, listItemValue := range rawConfig.AsValueSlice() {
-			output = append(output, r.getTerraformConfigObject(listItemValue))
-		}
-		return output
-	}
-
-	if objectType.Equals(cty.String) {
-		if rawConfig.IsNull() {
-			return ""
-		}
-		return rawConfig.AsString()
-	}
-
-	if objectType.Equals(cty.Number) {
-		if rawConfig.IsNull() {
-			return 0
-		}
-		number := rawConfig.AsBigFloat()
-		if number.IsInt() {
-			intVal, _ := number.Int64()
-			return intVal
-		} else {
-			floatVal, _ := number.Float64()
-			return floatVal
-		}
-	}
-
-	if objectType.Equals(cty.Bool) {
-		if rawConfig.IsNull() {
-			return false
-		}
-		return rawConfig.True()
-	}
-
-	return nil // unknown type, default to nil
 }
 
 func (r resourceFactory) populatePayload(input map[string]interface{}, property *SpecSchemaDefinitionProperty, dataValue interface{}) error {

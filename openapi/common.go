@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"io/ioutil"
 	"log"
@@ -120,6 +121,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 	if err != nil {
 		return err
 	}
+	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
 	for propertyName, propertyRemoteValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
@@ -131,7 +133,13 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 		}
 
 		propValue := propertyRemoteValue
-		propertyLocalStateValue := resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
+		var propertyLocalStateValue interface{}
+		if len(terraformConfigObject) > 0 {
+			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
+		} else {
+			propertyLocalStateValue = resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
+		}
+
 		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
 			propValue = processIgnoreOrderIfEnabled(*property, propertyLocalStateValue, propertyRemoteValue)
 		}
@@ -168,7 +176,7 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, inputItemValue := range inputValueArray {
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
-					newPropertyValue = append(newPropertyValue, remoteItemValue)
+					newPropertyValue = append(newPropertyValue, inputItemValue)
 					break
 				}
 			}
@@ -344,4 +352,60 @@ func setStateID(openAPIres SpecResource, resourceLocalData *schema.ResourceData,
 		resourceLocalData.SetId(payload[identifierProperty].(string))
 	}
 	return nil
+}
+
+func getTerraformConfigObject(rawConfig cty.Value) interface{} {
+	objectType := rawConfig.Type()
+	if objectType.IsMapType() || objectType.IsObjectType() {
+		output := map[string]interface{}{}
+		if rawConfig.IsNull() {
+			return output
+		}
+		mapValue := rawConfig.AsValueMap()
+		for key, value := range mapValue {
+			output[key] = getTerraformConfigObject(value)
+		}
+		return output
+	}
+
+	if objectType.IsListType() {
+		output := []interface{}{}
+		if rawConfig.IsNull() {
+			return output
+		}
+		for _, listItemValue := range rawConfig.AsValueSlice() {
+			output = append(output, getTerraformConfigObject(listItemValue))
+		}
+		return output
+	}
+
+	if objectType.Equals(cty.String) {
+		if rawConfig.IsNull() {
+			return ""
+		}
+		return rawConfig.AsString()
+	}
+
+	if objectType.Equals(cty.Number) {
+		if rawConfig.IsNull() {
+			return 0
+		}
+		number := rawConfig.AsBigFloat()
+		if number.IsInt() {
+			intVal, _ := number.Int64()
+			return intVal
+		} else {
+			floatVal, _ := number.Float64()
+			return floatVal
+		}
+	}
+
+	if objectType.Equals(cty.Bool) {
+		if rawConfig.IsNull() {
+			return false
+		}
+		return rawConfig.True()
+	}
+
+	return nil // unknown type, default to nil
 }

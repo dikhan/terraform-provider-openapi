@@ -653,6 +653,49 @@ func TestAcc_ArrayBasedComputedPropertiesUpdateCorrectly(t *testing.T) {
 	})
 }
 
+func TestAcc_OrderIgnoredPlanIsStableWithReadOnlyProperties(t *testing.T) {
+	swagger := getFileContents(t, "data/gray_box_test_data/ignore-order-plan-stability-test/openapi.yaml")
+
+	testResponseJSONStr := getFileContents(t, "data/gray_box_test_data/ignore-order-plan-stability-test/test_response.json")
+
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(testResponseJSONStr))
+	}))
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	tfFileContentsStage1 := getFileContents(t, "data/gray_box_test_data/ignore-order-plan-stability-test/test_stage_1.tf")
+	tfFileContentsStage2 := getFileContents(t, "data/gray_box_test_data/ignore-order-plan-stability-test/test_stage_2.tf")
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		ProviderFactories:         testAccProviders(provider),
+		PreCheck:                  func() { testAccPreCheck(t, swaggerServer.URL) },
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				Config: tfFileContentsStage1,
+			},
+			{
+				Config: tfFileContentsStage2,
+			},
+		},
+	})
+}
+
 func TestAccCDN_POSTRequestSchemaContainsInputsAndResponseSchemaContainsOutputs(t *testing.T) {
 	expectedID := "some_id"
 	expectedLabel := "my_label"

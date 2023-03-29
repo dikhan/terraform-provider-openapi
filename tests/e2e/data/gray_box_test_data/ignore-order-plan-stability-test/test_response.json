@@ -1,0 +1,23 @@
+{
+  "id": "someid",
+  "list_prop": [
+    {
+      "readonly_property": "read_only_val_1",
+      "string_property": "value1",
+      "computed_property": "value1",
+      "nested_list_prop": []
+    },
+    {
+      "readonly_property": "read_only_val_2",
+      "string_property": "value2",
+      "nested_list_prop": [
+        {
+          "string_property": "nested_value_2_1"
+        },
+        {
+          "string_property": "nested_value_2_2"
+        }
+      ]
+    }
+  ]
+}
