@@ -427,9 +427,7 @@ func (a *api) apiResponse(t *testing.T, responseBody string, httpResponseStatusC
 }
 
 func TestAccCDN_CreateResourceWithIgnoreListOrderExtension(t *testing.T) {
-	fileContents, err := ioutil.ReadFile("data/gray_box_test_data/ignore_order/openapi.yaml")
-	assert.Nil(t, err)
-	swagger := string(fileContents)
+	swagger := getFileContents(t, "data/gray_box_test_data/ignore_order/openapi.yaml")
 
 	resourceStateRemote := make([]byte, 0)
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -451,7 +449,6 @@ func TestAccCDN_CreateResourceWithIgnoreListOrderExtension(t *testing.T) {
 			resourceStateRemote, err = json.Marshal(bodyJSON)
 			assert.Nil(t, err)
 		}
-		//body, _ := ioutil.ReadFile("data/gray_box_test_data/ignore_order/response.json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(resourceStateRemote)
 	}))
@@ -461,11 +458,8 @@ func TestAccCDN_CreateResourceWithIgnoreListOrderExtension(t *testing.T) {
 		w.Write([]byte(swaggerReturned))
 	}))
 
-	fileContents, _ = ioutil.ReadFile("data/gray_box_test_data/ignore_order/test_stage_1.tf")
-	tfFileContentsStage1 := string(fileContents)
-
-	fileContents, _ = ioutil.ReadFile("data/gray_box_test_data/ignore_order/test_stage_2.tf")
-	tfFileContentsStage2 := string(fileContents)
+	tfFileContentsStage1 := getFileContents(t, "data/gray_box_test_data/ignore_order/test_stage_1.tf")
+	tfFileContentsStage2 := getFileContents(t, "data/gray_box_test_data/ignore_order/test_stage_2.tf")
 
 	p := openapi.ProviderOpenAPI{ProviderName: providerName}
 	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
