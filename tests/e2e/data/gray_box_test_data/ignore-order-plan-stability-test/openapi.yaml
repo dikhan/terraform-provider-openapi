@@ -80,22 +80,26 @@ definitions:
       id:
         type: "string"
         readOnly: true
-      list_prop:
+      list_props:
         type: "array"
+        x-terraform-field-name: "list_prop"
         x-terraform-ignore-order: true
         items:
           type: "object"
           properties:
             string_property:
               type: "string"
+            integer_property:
+              type: "integer"
             computed_property:
               type: "string"
               x-terraform-computed: true
             readonly_property:
               type: "string"
               readOnly: true
-            nested_list_prop:
+            nested_list_props:
               type: "array"
+              x-terraform-field-name: "nested_list_prop"
               x-terraform-ignore-order: true
               items:
                 type: "object"

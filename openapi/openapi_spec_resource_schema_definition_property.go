@@ -132,10 +132,10 @@ func (s *SpecSchemaDefinitionProperty) shouldIgnoreArrayItemsOrder() bool {
 }
 
 // isComputed returns true if one of the following cases is met:
-//- The property is optional (marked as required=false), in which case there few use cases:
-//  - readOnly properties (marked as readOnly=true):
-//  - optional-computed (marked as readOnly=false, computed=true):
-//    - with no default (default=nil)
+// - The property is optional (marked as required=false), in which case there few use cases:
+//   - readOnly properties (marked as readOnly=true):
+//   - optional-computed (marked as readOnly=false, computed=true):
+//   - with no default (default=nil)
 func (s *SpecSchemaDefinitionProperty) isComputed() bool {
 	return s.isOptional() && (s.isReadOnly() || s.IsOptionalComputed())
 }

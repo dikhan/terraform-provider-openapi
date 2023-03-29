@@ -249,12 +249,12 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 		return nil, fmt.Errorf("property '%s' is supposed to be an array objects", property.Name)
 	case TypeString:
 		if propertyValue == nil {
-			return nil, nil
+			return propertyLocalStateValue, nil
 		}
 		return propertyValue.(string), nil
 	case TypeInt:
 		if propertyValue == nil {
-			return nil, nil
+			return propertyLocalStateValue, nil
 		}
 		// In golang, a number in JSON message is always parsed into float64, however testing/internal use can define the property value as a proper int.
 		if reflect.TypeOf(propertyValue).Kind() == reflect.Int {
@@ -263,12 +263,12 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 		return int(propertyValue.(float64)), nil
 	case TypeFloat:
 		if propertyValue == nil {
-			return nil, nil
+			return propertyLocalStateValue, nil
 		}
 		return propertyValue.(float64), nil
 	case TypeBool:
 		if propertyValue == nil {
-			return nil, nil
+			return propertyLocalStateValue, nil
 		}
 		return propertyValue.(bool), nil
 	default:
@@ -354,6 +354,7 @@ func setStateID(openAPIres SpecResource, resourceLocalData *schema.ResourceData,
 	return nil
 }
 
+// TODO - field name should be applied?
 func getTerraformConfigObject(rawConfig cty.Value) interface{} {
 	objectType := rawConfig.Type()
 	if objectType.IsMapType() || objectType.IsObjectType() {
@@ -393,7 +394,7 @@ func getTerraformConfigObject(rawConfig cty.Value) interface{} {
 		number := rawConfig.AsBigFloat()
 		if number.IsInt() {
 			intVal, _ := number.Int64()
-			return intVal
+			return int(intVal)
 		} else {
 			floatVal, _ := number.Float64()
 			return floatVal

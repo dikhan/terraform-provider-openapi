@@ -634,8 +634,6 @@ func (r resourceFactory) populatePayload(input map[string]interface{}, property 
 		input[property.Name] = dataValue.(string)
 	case reflect.Int:
 		input[property.Name] = dataValue.(int)
-	case reflect.Int64:
-		input[property.Name] = dataValue.(int64)
 	case reflect.Float64:
 		input[property.Name] = dataValue.(float64)
 	case reflect.Bool:
