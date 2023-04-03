@@ -219,7 +219,9 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 	if operation == nil {
 		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.GetResourceName(), resourcePath)
 	}
-	requestPayload := r.createPayloadFromLocalStateData(data)
+
+	requestPayload := r.createPayloadFromTerraformConfig(data)
+
 	if err := r.checkImmutableFields(data, providerClient, parentsIDs...); err != nil {
 		return err
 	}
@@ -444,14 +446,17 @@ func (r resourceFactory) checkImmutableFields(updatedResourceLocalData *schema.R
 }
 
 func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitionProperty, remoteData interface{}, localData interface{}, checkObjectPropertiesUpdates bool) error {
-	if property.ReadOnly || property.IsParentProperty {
+	if property.ReadOnly || property.IsParentProperty || property.WriteOnly {
 		return nil
 	}
 	switch property.Type {
 	case TypeList:
 		if property.Immutable {
 			localList := localData.([]interface{})
-			remoteList := remoteData.([]interface{})
+			remoteList := make([]interface{}, 0)
+			if remoteList != nil {
+				remoteList = remoteData.([]interface{})
+			}
 			if len(localList) != len(remoteList) {
 				return fmt.Errorf("user attempted to update an immutable list property ('%s') size: [user input list size: %d; actual list size: %d]", property.Name, len(localList), len(remoteList))
 			}
@@ -468,7 +473,7 @@ func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitio
 					localObj := localListObj.(map[string]interface{})
 					remoteObj := remoteListObj.(map[string]interface{})
 					for _, objectProp := range property.SpecSchemaDefinition.Properties {
-						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.Name], property.Immutable)
+						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.GetTerraformCompliantPropertyName()], property.Immutable)
 						if err != nil {
 							return fmt.Errorf("user attempted to update an immutable list of objects ('%s'): [user input: %s; actual: %s]", property.Name, localData, remoteData)
 						}
@@ -478,9 +483,12 @@ func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitio
 		}
 	case TypeObject:
 		localObject := localData.(map[string]interface{})
-		remoteObject := remoteData.(map[string]interface{})
+		remoteObject := make(map[string]interface{})
+		if remoteData != nil {
+			remoteObject = remoteData.(map[string]interface{})
+		}
 		for _, objProp := range property.SpecSchemaDefinition.Properties {
-			err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.Name], property.Immutable)
+			err := r.validateImmutableProperty(objProp, remoteObject[objProp.Name], localObject[objProp.GetTerraformCompliantPropertyName()], property.Immutable)
 			if err != nil {
 				return fmt.Errorf("user attempted to update an immutable object ('%s') property ('%s'): [user input: %s; actual: %s]", property.Name, objProp.Name, localData, remoteData)
 			}
@@ -528,6 +536,32 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 		}
 		if !property.IsParentProperty {
 			if dataValue, ok := r.getResourceDataOKExists(*property, resourceLocalData); ok {
+				err := r.populatePayload(input, property, dataValue)
+				if err != nil {
+					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.GetResourceName(), propertyName, err)
+				}
+			}
+			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.GetResourceName(), propertyName, input[propertyName])
+		}
+	}
+	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(input))
+	return input
+}
+
+// Similar to createPayloadFromLocalStateData but uses the current terraform configuration to create the request payload
+func (r resourceFactory) createPayloadFromTerraformConfig(resourceLocalData *schema.ResourceData) map[string]interface{} {
+	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
+
+	input := map[string]interface{}{}
+	resourceSchema, _ := r.openAPIResource.GetResourceSchema()
+	for _, property := range resourceSchema.Properties {
+		propertyName := property.Name
+		// ReadOnly properties are not considered for the payload data (including the id if it's computed)
+		if property.isReadOnly() {
+			continue
+		}
+		if !property.IsParentProperty {
+			if dataValue, ok := terraformConfigObject[property.GetTerraformCompliantPropertyName()]; ok {
 				err := r.populatePayload(input, property, dataValue)
 				if err != nil {
 					log.Printf("[ERROR] [resource='%s'] error when creating the property payload for property '%s': %s", r.openAPIResource.GetResourceName(), propertyName, err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"io/ioutil"
 	"log"
@@ -120,6 +121,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 	if err != nil {
 		return err
 	}
+	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
 	for propertyName, propertyRemoteValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
@@ -131,12 +133,18 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 		}
 
 		propValue := propertyRemoteValue
-		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
-			desiredValue := resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
-			propValue = processIgnoreOrderIfEnabled(*property, desiredValue, propertyRemoteValue)
+		var propertyLocalStateValue interface{}
+		if len(terraformConfigObject) > 0 {
+			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
+		} else {
+			propertyLocalStateValue = resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
 		}
 
-		value, err := convertPayloadToLocalStateDataValue(property, propValue)
+		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
+			propValue = processIgnoreOrderIfEnabled(*property, propertyLocalStateValue, propertyRemoteValue)
+		}
+
+		value, err := convertPayloadToLocalStateDataValue(property, propValue, propertyLocalStateValue)
 		if err != nil {
 			return err
 		}
@@ -194,72 +202,124 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 	return remoteValue
 }
 
-func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty, propertyValue interface{}) (interface{}, error) {
-	if propertyValue == nil {
-		return nil, nil
+func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty, propertyValue interface{}, propertyLocalStateValue interface{}) (interface{}, error) {
+	if property.WriteOnly {
+		return propertyLocalStateValue, nil
 	}
-	dataValueKind := reflect.TypeOf(propertyValue).Kind()
-	switch dataValueKind {
-	case reflect.Map:
-		objectInput := map[string]interface{}{}
-		mapValue := propertyValue.(map[string]interface{})
-		for propertyName, propertyValue := range mapValue {
-			schemaDefinitionProperty, err := property.SpecSchemaDefinition.getProperty(propertyName)
-			if err != nil {
-				return nil, err
-			}
-			var propValue interface{}
-			// Here we are processing the items of the list which are objects. In this case we need to keep the original
-			// types as Terraform honors property types for resource schemas attached to TypeList properties
-			propValue, err = convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue)
-			if err != nil {
-				return nil, err
-			}
-			objectInput[schemaDefinitionProperty.GetTerraformCompliantPropertyName()] = propValue
-		}
 
-		// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
-		// blocks only for TypeList and TypeSet . In this case, we need to make sure that the json (which reflects to a map)
-		// gets translated to the expected array of one item that terraform expects.
-		if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
-			arrayInput := []interface{}{}
-			arrayInput = append(arrayInput, objectInput)
-			return arrayInput, nil
-		}
-		return objectInput, nil
-	case reflect.Slice, reflect.Array:
+	switch property.Type {
+	case TypeObject:
+		return convertObjectToLocalStateData(property, propertyValue, propertyLocalStateValue)
+	case TypeList:
 		if isListOfPrimitives, _ := property.isTerraformListOfSimpleValues(); isListOfPrimitives {
 			return propertyValue, nil
 		}
 		if property.isArrayOfObjectsProperty() {
 			arrayInput := []interface{}{}
-			arrayValue := propertyValue.([]interface{})
-			for _, arrayItem := range arrayValue {
-				objectValue, err := convertPayloadToLocalStateDataValue(property, arrayItem)
+
+			arrayValue := make([]interface{}, 0)
+			if propertyValue != nil {
+				arrayValue = propertyValue.([]interface{})
+			}
+
+			localStateArrayValue := make([]interface{}, 0)
+			if propertyLocalStateValue != nil {
+				localStateArrayValue = propertyLocalStateValue.([]interface{})
+			}
+
+			for arrayIdx := 0; arrayIdx < len(arrayValue); arrayIdx++ {
+				var arrayItem interface{} = nil
+				if arrayIdx < len(arrayValue) {
+					arrayItem = arrayValue[arrayIdx]
+				}
+				var localStateArrayItem interface{} = nil
+				if arrayIdx < len(localStateArrayValue) {
+					localStateArrayItem = localStateArrayValue[arrayIdx]
+				}
+				objectValue, err := convertObjectToLocalStateData(property, arrayItem, localStateArrayItem)
 				if err != nil {
 					return err, nil
 				}
-				arrayInput = append(arrayInput, objectValue)
+				if objectValue != nil {
+					arrayInput = append(arrayInput, objectValue)
+				}
 			}
 			return arrayInput, nil
 		}
 		return nil, fmt.Errorf("property '%s' is supposed to be an array objects", property.Name)
-	case reflect.String:
+	case TypeString:
+		if propertyValue == nil {
+			return propertyLocalStateValue, nil
+		}
 		return propertyValue.(string), nil
-	case reflect.Int:
-		return propertyValue.(int), nil
-	case reflect.Float64:
-		// In golang, a number in JSON message is always parsed into float64. Hence, checking here if the property value is
-		// an actual int or if not then casting to float64
-		if property.Type == TypeInt {
-			return int(propertyValue.(float64)), nil
+	case TypeInt:
+		if propertyValue == nil {
+			return propertyLocalStateValue, nil
+		}
+		// In golang, a number in JSON message is always parsed into float64, however testing/internal use can define the property value as a proper int.
+		if reflect.TypeOf(propertyValue).Kind() == reflect.Int {
+			return propertyValue.(int), nil
+		}
+		return int(propertyValue.(float64)), nil
+	case TypeFloat:
+		if propertyValue == nil {
+			return propertyLocalStateValue, nil
 		}
 		return propertyValue.(float64), nil
-	case reflect.Bool:
+	case TypeBool:
+		if propertyValue == nil {
+			return propertyLocalStateValue, nil
+		}
 		return propertyValue.(bool), nil
 	default:
-		return nil, fmt.Errorf("'%s' type not supported", dataValueKind)
+		return nil, fmt.Errorf("'%s' type not supported", property.Type)
 	}
+}
+
+func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, propertyValue interface{}, propertyLocalStateValue interface{}) (interface{}, error) {
+	objectInput := map[string]interface{}{}
+
+	mapValue := make(map[string]interface{})
+	if propertyValue != nil {
+		mapValue = propertyValue.(map[string]interface{})
+	}
+
+	localStateMapValue := make(map[string]interface{})
+	if propertyLocalStateValue != nil {
+		if reflect.TypeOf(propertyLocalStateValue).Kind() == reflect.Map {
+			localStateMapValue = propertyLocalStateValue.(map[string]interface{})
+		} else if reflect.TypeOf(propertyLocalStateValue).Kind() == reflect.Slice && len(propertyLocalStateValue.([]interface{})) == 1 {
+			localStateMapValue = propertyLocalStateValue.([]interface{})[0].(map[string]interface{}) // local state can store nested objects as a single item array
+		}
+	}
+
+	for _, schemaDefinitionProperty := range property.SpecSchemaDefinition.Properties {
+		propertyValue := schemaDefinitionProperty.getPropertyValueFromMap(mapValue)
+
+		// Here we are processing the items of the list which are objects. In this case we need to keep the original
+		// types as Terraform honors property types for resource schemas attached to TypeList properties
+		propValue, err := convertPayloadToLocalStateDataValue(schemaDefinitionProperty, propertyValue, localStateMapValue[schemaDefinitionProperty.GetTerraformCompliantPropertyName()])
+		if err != nil {
+			return nil, err
+		}
+		if propValue != nil {
+			objectInput[schemaDefinitionProperty.GetTerraformCompliantPropertyName()] = propValue
+		}
+	}
+
+	if len(objectInput) == 0 {
+		return nil, nil
+	}
+
+	// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
+	// blocks only for TypeList and TypeSet . In this case, we need to make sure that the json (which reflects to a map)
+	// gets translated to the expected array of one item that terraform expects.
+	if property.shouldUseLegacyTerraformSDKBlockApproachForComplexObjects() {
+		arrayInput := []interface{}{}
+		arrayInput = append(arrayInput, objectInput)
+		return arrayInput, nil
+	}
+	return objectInput, nil
 }
 
 // setResourceDataProperty sets the expectedValue for the given schemaDefinitionPropertyName using the terraform compliant property name
@@ -291,4 +351,65 @@ func setStateID(openAPIres SpecResource, resourceLocalData *schema.ResourceData,
 		resourceLocalData.SetId(payload[identifierProperty].(string))
 	}
 	return nil
+}
+
+// Gets the HCL code equivalent map object of the resource without caring about the state file.
+// Only usable during certain operation lifecycles like updates, since read operations do not appear to
+// expose the raw configuration during runtime. Useful to deal with scenarios where the local terraform state
+// behaves unexpected, like the problem of computed properties within lists not "moving" as expected
+// when the ordering changes
+func getTerraformConfigObject(rawConfig cty.Value) interface{} {
+	objectType := rawConfig.Type()
+	if objectType.IsMapType() || objectType.IsObjectType() {
+		output := map[string]interface{}{}
+		if rawConfig.IsNull() {
+			return output
+		}
+		mapValue := rawConfig.AsValueMap()
+		for key, value := range mapValue {
+			output[key] = getTerraformConfigObject(value)
+		}
+		return output
+	}
+
+	if objectType.IsListType() {
+		output := []interface{}{}
+		if rawConfig.IsNull() {
+			return output
+		}
+		for _, listItemValue := range rawConfig.AsValueSlice() {
+			output = append(output, getTerraformConfigObject(listItemValue))
+		}
+		return output
+	}
+
+	if objectType.Equals(cty.String) {
+		if rawConfig.IsNull() {
+			return ""
+		}
+		return rawConfig.AsString()
+	}
+
+	if objectType.Equals(cty.Number) {
+		if rawConfig.IsNull() {
+			return 0
+		}
+		number := rawConfig.AsBigFloat()
+		if number.IsInt() {
+			intVal, _ := number.Int64()
+			return int(intVal)
+		} else {
+			floatVal, _ := number.Float64()
+			return floatVal
+		}
+	}
+
+	if objectType.Equals(cty.Bool) {
+		if rawConfig.IsNull() {
+			return false
+		}
+		return rawConfig.True()
+	}
+
+	return nil // unknown type, default to nil
 }

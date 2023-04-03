@@ -58,6 +58,7 @@ const extTfID = "x-terraform-id"
 const extTfComputed = "x-terraform-computed"
 const extTfIgnoreOrder = "x-terraform-ignore-order"
 const extIgnoreOrder = "x-ignore-order"
+const extTfWriteOnly = "x-terraform-write-only"
 
 // Operation level extensions
 const extTfResourceTimeout = "x-terraform-resource-timeout"
@@ -491,6 +492,10 @@ func (o *SpecV2Resource) createSchemaDefinitionProperty(propertyName string, pro
 
 	if o.isBoolExtensionEnabled(property.Extensions, extTfFieldStatus) {
 		schemaDefinitionProperty.IsStatusIdentifier = true
+	}
+
+	if o.isBoolExtensionEnabled(property.Extensions, extTfWriteOnly) {
+		schemaDefinitionProperty.WriteOnly = true
 	}
 
 	// Use the default keyword in the parameter schema to specify the default value for an optional parameter. The default
