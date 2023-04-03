@@ -227,7 +227,7 @@ func convertPayloadToLocalStateDataValue(property *SpecSchemaDefinitionProperty,
 				localStateArrayValue = propertyLocalStateValue.([]interface{})
 			}
 
-			for arrayIdx := 0; arrayIdx < intMax(len(arrayValue), len(localStateArrayValue)); arrayIdx++ {
+			for arrayIdx := 0; arrayIdx < len(arrayValue); arrayIdx++ {
 				var arrayItem interface{} = nil
 				if arrayIdx < len(arrayValue) {
 					arrayItem = arrayValue[arrayIdx]
@@ -294,8 +294,7 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 	}
 
 	for _, schemaDefinitionProperty := range property.SpecSchemaDefinition.Properties {
-		propertyName := schemaDefinitionProperty.Name
-		propertyValue := mapValue[propertyName]
+		propertyValue := schemaDefinitionProperty.getPropertyValueFromMap(mapValue)
 
 		// Here we are processing the items of the list which are objects. In this case we need to keep the original
 		// types as Terraform honors property types for resource schemas attached to TypeList properties

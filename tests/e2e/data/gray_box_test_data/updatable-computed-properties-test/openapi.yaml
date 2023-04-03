@@ -71,8 +71,10 @@ paths:
           required: true
           type: "string"
       responses:
-        204:
-          description: "successful operation, no content is returned"
+        202:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ContentDeliveryNetworkV1"
 definitions:
   ContentDeliveryNetworkV1:
     type: "object"
