@@ -151,7 +151,8 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 			log.Printf("[ignore order -longlonglonglong] %s", sPrettyPrint(propValue))
 		}
 
-		value, err := convertPayloadToLocalStateDataValue(property, propValue, propertyLocalStateValue)
+		value, err := convertPayloadToLocalStateDataValue(property, propertyRemoteValue, propertyLocalStateValue)
+		//value, err := convertPayloadToLocalStateDataValue(property, propValue, propertyLocalStateValue)
 		if err != nil {
 			return err
 		}
