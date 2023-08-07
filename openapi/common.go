@@ -134,10 +134,13 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 
 		propValue := propertyRemoteValue
 		var propertyLocalStateValue interface{}
+		log.Printf("[1longlonglonglong]  %s", sPrettyPrint(property))
 		if len(terraformConfigObject) > 0 && !property.ReadOnly {
 			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
+			log.Printf("[terraformConfig-longlonglonglong] %s", propertyLocalStateValue)
 		} else {
 			propertyLocalStateValue = resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
+			log.Printf("[localdata-longlonglonglong] %s", propertyLocalStateValue)
 		}
 
 		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
