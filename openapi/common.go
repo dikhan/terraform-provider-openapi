@@ -117,6 +117,7 @@ func dataSourceUpdateStateWithPayloadData(openAPIResource SpecResource, remoteDa
 // it will go ahead and compare the items in the list (input vs remote) for properties of type list and the flag 'IgnoreItemsOrder' set to true
 // The property names are converted into compliant terraform names if needed.
 func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData, ignoreListOrderEnabled bool) error {
+	log.Printf("[start ------------------------------ longlonglonglong]")
 	resourceSchema, err := openAPIResource.GetResourceSchema()
 	if err != nil {
 		return err
@@ -134,7 +135,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 
 		propValue := propertyRemoteValue
 		var propertyLocalStateValue interface{}
-		log.Printf("[1longlonglonglong]  %s", sPrettyPrint(property))
+		log.Printf("[1longlonglonglong]  %s - %s - %s - %s", property.Name, property.PreferredName, property.Type, property.ArrayItemsType)
 		if len(terraformConfigObject) > 0 && !property.ReadOnly {
 			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
 			log.Printf("[terraformConfig-longlonglonglong] %s", propertyLocalStateValue)
