@@ -136,9 +136,11 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 		propValue := propertyRemoteValue
 		var propertyLocalStateValue interface{}
 		log.Printf("[1longlonglonglong]  %s - %s - %s - %s", property.Name, property.PreferredName, property.Type, property.ArrayItemsType)
+		log.Printf("[1 propValue]  %s", propValue)
 		if len(terraformConfigObject) > 0 && !property.ReadOnly {
 			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
 			log.Printf("[terraformConfig-longlonglonglong] %s", propertyLocalStateValue)
+			log.Printf("[terraformConfig case - local value -longlonglonglong] %s", resourceLocalData.Get(property.GetTerraformCompliantPropertyName()))
 		} else {
 			propertyLocalStateValue = resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
 			log.Printf("[localdata-longlonglonglong] %s", propertyLocalStateValue)
@@ -146,6 +148,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 
 		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
 			propValue = processIgnoreOrderIfEnabled(*property, propertyLocalStateValue, propertyRemoteValue)
+			log.Printf("[ignore order -longlonglonglong] %s - %s", property.Name, property.PreferredName)
 		}
 
 		value, err := convertPayloadToLocalStateDataValue(property, propValue, propertyLocalStateValue)
@@ -153,6 +156,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 			return err
 		}
 		if value != nil {
+			log.Printf("setResourceDataProperty %s", value)
 			if err := setResourceDataProperty(*property, value, resourceLocalData); err != nil {
 				return err
 			}
