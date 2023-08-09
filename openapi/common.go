@@ -186,6 +186,8 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
 					newPropertyValue = append(newPropertyValue, inputItemValue)
+					log.Printf("[equal inputItemValue -longlonglonglong] %s", sPrettyPrint(inputItemValue))
+					log.Printf("[equal remoteItemValue -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
 					break
 				}
 			}
@@ -196,18 +198,23 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 			for _, inputItemValue := range inputValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
 					match = true
+					log.Printf("[match true -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
 					break
 				}
 			}
 			if !match {
 				modifiedItems = append(modifiedItems, remoteItemValue)
+				log.Printf("[append modified remoteItemValue -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
 			}
 		}
 		for _, updatedItem := range modifiedItems {
 			newPropertyValue = append(newPropertyValue, updatedItem)
+			log.Printf("[modifiedItems -longlonglonglong]")
 		}
+		log.Printf("[return newPropertyValue -longlonglonglong] %s", sPrettyPrint(newPropertyValue))
 		return newPropertyValue
 	}
+	log.Printf("[return remoteValue -longlonglonglong]")
 	return remoteValue
 }
 
