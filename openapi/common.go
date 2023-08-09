@@ -151,8 +151,8 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 			log.Printf("[ignore order -longlonglonglong] %s", sPrettyPrint(propValue))
 		}
 
-		value, err := convertPayloadToLocalStateDataValue(property, propertyRemoteValue, propertyLocalStateValue)
-		//value, err := convertPayloadToLocalStateDataValue(property, propValue, propertyLocalStateValue)
+		//value, err := convertPayloadToLocalStateDataValue(property, propertyRemoteValue, propertyLocalStateValue)
+		value, err := convertPayloadToLocalStateDataValue(property, propValue, propertyLocalStateValue)
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, inputItemValue := range inputValueArray {
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
-					newPropertyValue = append(newPropertyValue, inputItemValue)
+					newPropertyValue = append(newPropertyValue, remoteItemValue)
 					log.Printf("[equal inputItemValue -longlonglonglong] %s", sPrettyPrint(inputItemValue))
 					log.Printf("[equal remoteItemValue -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
 					break
