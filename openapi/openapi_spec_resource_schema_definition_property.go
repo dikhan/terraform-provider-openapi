@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"log"
 	"reflect"
 
 	"github.com/dikhan/terraform-provider-openapi/v3/openapi/terraformutils"
@@ -417,6 +418,66 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 		}
 	}
 	return item1 == item2
+}
+
+// copy of equalItems with modifications to return first item with all optional properties copied from
+func (s *SpecSchemaDefinitionProperty) syncOrderWhenEqual(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) interface{} {
+	//var ret interface{}
+	//var defaultValueForType interface{} = nil
+	switch itemsType {
+	case TypeList:
+		if !s.validateValueType(item1, reflect.Slice) || !s.validateValueType(item2, reflect.Slice) {
+			return item2
+		}
+		if item1 == nil || item2 == nil {
+			return s.isOptional()
+		}
+		list1 := item1.([]interface{})
+		list2 := item2.([]interface{})
+		var retList = list2
+
+		if s.isOptional() && (len(list1) == 0 || len(list2) == 0) {
+			return item2
+		}
+
+		if len(list1) != len(list2) {
+			return item2
+		}
+		if s.shouldIgnoreOrder() {
+			for idx := range list1 {
+				for idx2 := range retList {
+					if s.equalItems(s.ArrayItemsType, list1[idx], retList[idx2]) {
+						// swap
+						var tmpEntry = retList[idx]
+						retList[idx] = retList[idx2]
+						retList[idx2] = tmpEntry
+						log.Printf("[syncOrder swap -longlonglonglong] ")
+					}
+				}
+			}
+			log.Printf("[syncOrder sorted list -longlonglonglong] %s", retList)
+			return retList
+		}
+		return list2
+	case TypeObject:
+		item1, _ = terraformutils.CastTerraformSliceToMap(item1) // deal with terraform schema returning nested objects as slices
+		item2, _ = terraformutils.CastTerraformSliceToMap(item2)
+		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
+			return nil
+		}
+		object1 := item1.(map[string]interface{})
+		object2 := item2.(map[string]interface{})
+		var retObj = object2
+		for _, objectProperty := range s.SpecSchemaDefinition.Properties {
+			objectPropertyValue1 := objectProperty.getPropertyValueFromMap(object1)
+			objectPropertyValue2 := objectProperty.getPropertyValueFromMap(object2)
+			retObj[objectProperty.GetTerraformCompliantPropertyName()] = objectProperty.syncOrderWhenEqual(objectProperty.Type, objectPropertyValue1, objectPropertyValue2)
+		}
+		log.Printf("[syncOrder object -longlonglonglong] %s", retObj)
+		return retObj
+	}
+
+	return item2
 }
 
 func (s *SpecSchemaDefinitionProperty) validateValueType(item interface{}, expectedKind reflect.Kind) bool {

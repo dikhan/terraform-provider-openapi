@@ -185,9 +185,11 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, inputItemValue := range inputValueArray {
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
-					newPropertyValue = append(newPropertyValue, remoteItemValue)
+					var sortedRemoteItemValue = property.syncOrderWhenEqual(property.ArrayItemsType, inputItemValue, remoteItemValue)
+					newPropertyValue = append(newPropertyValue, sortedRemoteItemValue)
 					log.Printf("[equal inputItemValue -longlonglonglong] %s", sPrettyPrint(inputItemValue))
 					log.Printf("[equal remoteItemValue -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
+					log.Printf("[equal sorted remoteItemValue -longlonglonglong] %s", sPrettyPrint(sortedRemoteItemValue))
 					break
 				}
 			}
