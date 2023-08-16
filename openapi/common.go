@@ -117,7 +117,6 @@ func dataSourceUpdateStateWithPayloadData(openAPIResource SpecResource, remoteDa
 // it will go ahead and compare the items in the list (input vs remote) for properties of type list and the flag 'IgnoreItemsOrder' set to true
 // The property names are converted into compliant terraform names if needed.
 func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteData map[string]interface{}, resourceLocalData *schema.ResourceData, ignoreListOrderEnabled bool) error {
-	log.Printf("[start ------------------------------ longlonglonglong]")
 	resourceSchema, err := openAPIResource.GetResourceSchema()
 	if err != nil {
 		return err
@@ -140,20 +139,14 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 
 		propValue := propertyRemoteValue
 		var propertyLocalStateValue interface{}
-		log.Printf("[1longlonglonglong]  %s - %s - %s - %s", property.Name, property.PreferredName, property.Type, property.ArrayItemsType)
-		log.Printf("[1 propValue]  %s", sPrettyPrint(propValue))
-		if len(terraformConfigObject) > 0 && !property.ReadOnly {
+		if len(terraformConfigObject) > 0 && !property.isOptional() {
 			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
-			log.Printf("[terraformConfig-longlonglonglong] %s", sPrettyPrint(propertyLocalStateValue))
-			log.Printf("[terraformConfig case - local value -longlonglonglong] %s", resourceLocalData.Get(property.GetTerraformCompliantPropertyName()))
 		} else {
 			propertyLocalStateValue = resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
-			log.Printf("[localdata-longlonglonglong] %s", propertyLocalStateValue)
 		}
 
 		if ignoreListOrderEnabled && property.shouldIgnoreOrder() {
 			propValue = processIgnoreOrderIfEnabled(*property, propertyLocalStateValue, propertyRemoteValue)
-			log.Printf("[ignore order -longlonglonglong] %s", sPrettyPrint(propValue))
 		}
 
 		//value, err := convertPayloadToLocalStateDataValue(property, propertyRemoteValue, propertyLocalStateValue)
@@ -190,11 +183,11 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, inputItemValue := range inputValueArray {
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
+					// rearrange elements in remoteValue to follow order in inputValue, which is from the tf config
+					// remoteValue is needed as it contains Optional (e.g., ReadOnly) attributes that tf config does not have
+					// while retaining the order of elements in tf config to ensure consistency
 					var sortedRemoteItemValue = property.syncOrderWhenEqual(property.ArrayItemsType, inputItemValue, remoteItemValue)
 					newPropertyValue = append(newPropertyValue, sortedRemoteItemValue)
-					log.Printf("[equal inputItemValue -longlonglonglong] %s", sPrettyPrint(inputItemValue))
-					log.Printf("[equal remoteItemValue -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
-					log.Printf("[equal sorted remoteItemValue -longlonglonglong] %s", sPrettyPrint(sortedRemoteItemValue))
 					break
 				}
 			}
@@ -205,23 +198,18 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 			for _, inputItemValue := range inputValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
 					match = true
-					log.Printf("[match true -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
 					break
 				}
 			}
 			if !match {
 				modifiedItems = append(modifiedItems, remoteItemValue)
-				log.Printf("[append modified remoteItemValue -longlonglonglong] %s", sPrettyPrint(remoteItemValue))
 			}
 		}
 		for _, updatedItem := range modifiedItems {
 			newPropertyValue = append(newPropertyValue, updatedItem)
-			log.Printf("[modifiedItems -longlonglonglong]")
 		}
-		log.Printf("[return newPropertyValue -longlonglonglong] %s", sPrettyPrint(newPropertyValue))
 		return newPropertyValue
 	}
-	log.Printf("[return remoteValue -longlonglonglong]")
 	return remoteValue
 }
 

@@ -762,8 +762,11 @@ func TestAcc_ErrorOnUpdateDoesNotUpdateState(t *testing.T) {
 // Optional properties should be saved to state on state update
 func TestAcc_OptionalPropertiesReflectedOnStateUpdate(t *testing.T) {
 	swagger := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/openapi.yaml")
+
+	// stage 1: 1 resource creation containing optional properties, including nested ones under a list property
+	// stage 2: modify the optional property in tf config, extend the list property
 	responseStage1 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/stage1_response.json")
-	responseStage2 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/stage1_response.json")
+	responseStage2 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/stage2_response.json")
 
 	resourceUpdated := false
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -773,19 +776,6 @@ func TestAcc_OptionalPropertiesReflectedOnStateUpdate(t *testing.T) {
 		}
 		if r.Method == http.MethodPut {
 			resourceUpdated = true
-			//body, err := ioutil.ReadAll(r.Body)
-			//assert.Nil(t, err)
-			//
-			//expectedRequestBody, _ := json.Marshal(expectedRequestBodiesJSON[requestWithBodyIdx])
-			//assert.Equal(t, string(expectedRequestBody), string(body))
-			//requestWithBodyIdx++
-			//
-			//bodyJSON := map[string]interface{}{}
-			//err = json.Unmarshal(body, &bodyJSON)
-			//assert.Nil(t, err)
-			//bodyJSON["id"] = "someid"
-			//resourceStateRemote, err = json.Marshal(bodyJSON)
-			//assert.Nil(t, err)
 		}
 		w.WriteHeader(http.StatusOK)
 		if resourceUpdated {
@@ -818,6 +808,22 @@ func TestAcc_OptionalPropertiesReflectedOnStateUpdate(t *testing.T) {
 			},
 			{
 				Config: tfFileContentsStage2,
+				Check: resource.ComposeTestCheckFunc(
+					// check resource attributes
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "id", "id_value"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "main_optional_prop", "main_optional_value_modified"),
+					// order of elements in list property must follow order in tf config
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.0.sub_readonly_prop", "sub_readonly_value_2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.0.sub_optional_prop", "sub_optional_value_2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.1.sub_readonly_prop", "sub_readonly_value_1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.1.sub_optional_prop", "sub_optional_value_1"),
+				),
 			},
 		},
 	})

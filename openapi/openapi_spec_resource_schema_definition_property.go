@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"log"
 	"reflect"
 
 	"github.com/dikhan/terraform-provider-openapi/v3/openapi/terraformutils"
@@ -451,11 +450,9 @@ func (s *SpecSchemaDefinitionProperty) syncOrderWhenEqual(itemsType schemaDefini
 						var tmpEntry = retList[idx]
 						retList[idx] = retList[idx2]
 						retList[idx2] = tmpEntry
-						log.Printf("[syncOrder swap -longlonglonglong] ")
 					}
 				}
 			}
-			log.Printf("[syncOrder sorted list -longlonglonglong] %s", retList)
 			return retList
 		}
 		return list2
@@ -473,7 +470,6 @@ func (s *SpecSchemaDefinitionProperty) syncOrderWhenEqual(itemsType schemaDefini
 			objectPropertyValue2 := objectProperty.getPropertyValueFromMap(object2)
 			retObj[objectProperty.GetTerraformCompliantPropertyName()] = objectProperty.syncOrderWhenEqual(objectProperty.Type, objectPropertyValue1, objectPropertyValue2)
 		}
-		log.Printf("[syncOrder object -longlonglonglong] %s", retObj)
 		return retObj
 	}
 

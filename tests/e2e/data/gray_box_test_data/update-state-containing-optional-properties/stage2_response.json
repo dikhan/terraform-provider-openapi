@@ -5,6 +5,10 @@
     {
       "sub_readonly_prop": "sub_readonly_value_1",
       "sub_optional_prop": "sub_optional_value_1"
+    },
+    {
+      "sub_readonly_prop": "sub_readonly_value_2",
+      "sub_optional_prop": "sub_optional_value_2"
     }
   ]
 }
