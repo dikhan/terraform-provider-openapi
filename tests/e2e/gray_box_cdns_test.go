@@ -759,6 +759,70 @@ func TestAcc_ErrorOnUpdateDoesNotUpdateState(t *testing.T) {
 	})
 }
 
+// Optional properties should be saved to state on state update
+func TestAcc_OptionalPropertiesReflectedOnStateUpdate(t *testing.T) {
+	swagger := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/openapi.yaml")
+	responseStage1 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/stage1_response.json")
+	responseStage2 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/stage1_response.json")
+
+	resourceUpdated := false
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method == http.MethodPut {
+			resourceUpdated = true
+			//body, err := ioutil.ReadAll(r.Body)
+			//assert.Nil(t, err)
+			//
+			//expectedRequestBody, _ := json.Marshal(expectedRequestBodiesJSON[requestWithBodyIdx])
+			//assert.Equal(t, string(expectedRequestBody), string(body))
+			//requestWithBodyIdx++
+			//
+			//bodyJSON := map[string]interface{}{}
+			//err = json.Unmarshal(body, &bodyJSON)
+			//assert.Nil(t, err)
+			//bodyJSON["id"] = "someid"
+			//resourceStateRemote, err = json.Marshal(bodyJSON)
+			//assert.Nil(t, err)
+		}
+		w.WriteHeader(http.StatusOK)
+		if resourceUpdated {
+			w.Write([]byte(responseStage2))
+		} else {
+			w.Write([]byte(responseStage1))
+		}
+	}))
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	tfFileContentsStage1 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/test_stage_1.tf")
+	tfFileContentsStage2 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/test_stage_2.tf")
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		ProviderFactories:         testAccProviders(provider),
+		PreCheck:                  func() { testAccPreCheck(t, swaggerServer.URL) },
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				Config: tfFileContentsStage1,
+			},
+			{
+				Config: tfFileContentsStage2,
+			},
+		},
+	})
+}
+
 func TestAccCDN_POSTRequestSchemaContainsInputsAndResponseSchemaContainsOutputs(t *testing.T) {
 	expectedID := "some_id"
 	expectedLabel := "my_label"

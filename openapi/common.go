@@ -122,7 +122,12 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 	if err != nil {
 		return err
 	}
-	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
+	var terraformConfigObject map[string]interface{}
+	if resourceLocalData != nil {
+		terraformConfigObject = getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
+	} else {
+		return nil
+	}
 	for propertyName, propertyRemoteValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
@@ -299,7 +304,11 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 
 	mapValue := make(map[string]interface{})
 	if propertyValue != nil {
-		mapValue = propertyValue.(map[string]interface{})
+		var ok bool
+		mapValue, ok = propertyValue.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid value '%s' for property '%s' of type '%s'", propertyValue, property.Name, property.Type)
+		}
 	}
 
 	localStateMapValue := make(map[string]interface{})
@@ -325,9 +334,9 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 		}
 	}
 
-	if len(objectInput) == 0 {
-		return nil, nil
-	}
+	//if len(objectInput) == 0 {
+	//	return objectInput, nil
+	//}
 
 	// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
 	// blocks only for TypeList and TypeSet . In this case, we need to make sure that the json (which reflects to a map)
@@ -416,10 +425,9 @@ func getTerraformConfigObject(rawConfig cty.Value) interface{} {
 		if number.IsInt() {
 			intVal, _ := number.Int64()
 			return int(intVal)
-		} else {
-			floatVal, _ := number.Float64()
-			return floatVal
 		}
+		floatVal, _ := number.Float64()
+		return floatVal
 	}
 
 	if objectType.Equals(cty.Bool) {

@@ -1,0 +1,10 @@
+{
+  "id": "id_value",
+  "main_optional_prop": "main_optional_value",
+  "list_props": [
+    {
+      "sub_readonly_prop": "sub_readonly_value_1",
+      "sub_optional_prop": "sub_optional_value_1"
+    }
+  ]
+}
