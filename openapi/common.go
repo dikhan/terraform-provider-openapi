@@ -139,7 +139,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 
 		propValue := propertyRemoteValue
 		var propertyLocalStateValue interface{}
-		if len(terraformConfigObject) > 0 && !property.isOptional() {
+		if len(terraformConfigObject) > 0 && !property.isReadOnly() {
 			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
 		} else {
 			propertyLocalStateValue = resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
