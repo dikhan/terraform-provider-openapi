@@ -320,10 +320,6 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 		}
 	}
 
-	//if len(objectInput) == 0 {
-	//	return objectInput, nil
-	//}
-
 	// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
 	// blocks only for TypeList and TypeSet . In this case, we need to make sure that the json (which reflects to a map)
 	// gets translated to the expected array of one item that terraform expects.
