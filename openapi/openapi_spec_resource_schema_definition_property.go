@@ -419,17 +419,16 @@ func (s *SpecSchemaDefinitionProperty) equalItems(itemsType schemaDefinitionProp
 	return item1 == item2
 }
 
-// copy of equalItems with modifications to return first item with all optional properties copied from
+// recursively rearrange elements within item2 to follow order in item1
+// this is called to sync order in 2 items that equals
 func (s *SpecSchemaDefinitionProperty) syncOrderWhenEqual(itemsType schemaDefinitionPropertyType, item1, item2 interface{}) interface{} {
-	//var ret interface{}
-	//var defaultValueForType interface{} = nil
 	switch itemsType {
 	case TypeList:
 		if !s.validateValueType(item1, reflect.Slice) || !s.validateValueType(item2, reflect.Slice) {
 			return item2
 		}
 		if item1 == nil || item2 == nil {
-			return s.isOptional()
+			return item2
 		}
 		list1 := item1.([]interface{})
 		list2 := item2.([]interface{})
@@ -446,7 +445,7 @@ func (s *SpecSchemaDefinitionProperty) syncOrderWhenEqual(itemsType schemaDefini
 			for idx := range list1 {
 				for idx2 := range retList {
 					if s.equalItems(s.ArrayItemsType, list1[idx], retList[idx2]) {
-						// swap
+						// swap element
 						var tmpEntry = retList[idx]
 						retList[idx] = retList[idx2]
 						retList[idx2] = tmpEntry
@@ -460,7 +459,7 @@ func (s *SpecSchemaDefinitionProperty) syncOrderWhenEqual(itemsType schemaDefini
 		item1, _ = terraformutils.CastTerraformSliceToMap(item1) // deal with terraform schema returning nested objects as slices
 		item2, _ = terraformutils.CastTerraformSliceToMap(item2)
 		if !s.validateValueType(item1, reflect.Map) || !s.validateValueType(item2, reflect.Map) {
-			return nil
+			return item2
 		}
 		object1 := item1.(map[string]interface{})
 		object2 := item2.(map[string]interface{})

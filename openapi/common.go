@@ -149,13 +149,11 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 			propValue = processIgnoreOrderIfEnabled(*property, propertyLocalStateValue, propertyRemoteValue)
 		}
 
-		//value, err := convertPayloadToLocalStateDataValue(property, propertyRemoteValue, propertyLocalStateValue)
 		value, err := convertPayloadToLocalStateDataValue(property, propValue, propertyLocalStateValue)
 		if err != nil {
 			return err
 		}
 		if value != nil {
-			log.Printf("setResourceDataProperty %s", sPrettyPrint(value))
 			if err := setResourceDataProperty(*property, value, resourceLocalData); err != nil {
 				return err
 			}
@@ -292,9 +290,9 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 
 	mapValue := make(map[string]interface{})
 	if propertyValue != nil {
-		var ok bool
-		mapValue, ok = propertyValue.(map[string]interface{})
-		if !ok {
+		var castOk bool
+		mapValue, castOk = propertyValue.(map[string]interface{})
+		if !castOk {
 			return nil, fmt.Errorf("invalid value '%s' for property '%s' of type '%s'", propertyValue, property.Name, property.Type)
 		}
 	}
