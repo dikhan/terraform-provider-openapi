@@ -1727,7 +1727,7 @@ func TestEqualItems(t *testing.T) {
 		},
 		{
 			name:           "bool input value doesn't match bool remote value",
-			schemaDefProp:  SpecSchemaDefinitionProperty{Type: TypeBool},
+			schemaDefProp:  SpecSchemaDefinitionProperty{Type: TypeBool, Required: true},
 			inputItem:      true,
 			remoteItem:     false,
 			expectedOutput: false,

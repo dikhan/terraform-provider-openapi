@@ -121,7 +121,12 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 	if err != nil {
 		return err
 	}
-	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
+	var terraformConfigObject map[string]interface{}
+	if resourceLocalData != nil {
+		terraformConfigObject = getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
+	} else {
+		return nil
+	}
 	for propertyName, propertyRemoteValue := range remoteData {
 		property, err := resourceSchema.getProperty(propertyName)
 		if err != nil {
@@ -134,7 +139,7 @@ func updateStateWithPayloadDataAndOptions(openAPIResource SpecResource, remoteDa
 
 		propValue := propertyRemoteValue
 		var propertyLocalStateValue interface{}
-		if len(terraformConfigObject) > 0 {
+		if len(terraformConfigObject) > 0 && !property.isReadOnly() {
 			propertyLocalStateValue = terraformConfigObject[property.GetTerraformCompliantPropertyName()]
 		} else {
 			propertyLocalStateValue = resourceLocalData.Get(property.GetTerraformCompliantPropertyName())
@@ -176,7 +181,11 @@ func processIgnoreOrderIfEnabled(property SpecSchemaDefinitionProperty, inputPro
 		for _, inputItemValue := range inputValueArray {
 			for _, remoteItemValue := range remoteValueArray {
 				if property.equalItems(property.ArrayItemsType, inputItemValue, remoteItemValue) {
-					newPropertyValue = append(newPropertyValue, inputItemValue)
+					// rearrange elements in remoteValue to follow order in inputValue, which is from the tf config
+					// remoteValue is needed as it contains Optional (e.g., ReadOnly) attributes that tf config does not have
+					// while retaining the order of elements in tf config to ensure consistency
+					var sortedRemoteItemValue = property.syncOrderWhenEqual(property.ArrayItemsType, inputItemValue, remoteItemValue)
+					newPropertyValue = append(newPropertyValue, sortedRemoteItemValue)
 					break
 				}
 			}
@@ -281,7 +290,11 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 
 	mapValue := make(map[string]interface{})
 	if propertyValue != nil {
-		mapValue = propertyValue.(map[string]interface{})
+		var castOk bool
+		mapValue, castOk = propertyValue.(map[string]interface{})
+		if !castOk {
+			return nil, fmt.Errorf("invalid value '%s' for property '%s' of type '%s'", propertyValue, property.Name, property.Type)
+		}
 	}
 
 	localStateMapValue := make(map[string]interface{})
@@ -305,10 +318,6 @@ func convertObjectToLocalStateData(property *SpecSchemaDefinitionProperty, prope
 		if propValue != nil {
 			objectInput[schemaDefinitionProperty.GetTerraformCompliantPropertyName()] = propValue
 		}
-	}
-
-	if len(objectInput) == 0 {
-		return nil, nil
 	}
 
 	// This is the work around put in place to have support for complex objects considering terraform sdk limitation to use
@@ -398,10 +407,9 @@ func getTerraformConfigObject(rawConfig cty.Value) interface{} {
 		if number.IsInt() {
 			intVal, _ := number.Int64()
 			return int(intVal)
-		} else {
-			floatVal, _ := number.Float64()
-			return floatVal
 		}
+		floatVal, _ := number.Float64()
+		return floatVal
 	}
 
 	if objectType.Equals(cty.Bool) {

@@ -610,7 +610,7 @@ func TestUpdateStateWithPayloadDataAndOptions(t *testing.T) {
 			}
 			err := updateStateWithPayloadDataAndOptions(r.openAPIResource, remoteData, resourceData, true)
 			Convey("Then the err returned should match the expected one", func() {
-				So(err.Error(), ShouldEqual, "wrong_property: '': source data must be an array or slice, got string")
+				So(err.Error(), ShouldEqual, "invalid value 'someValueNotMatchingTheType' for property 'wrong_property' of type 'object'")
 			})
 		})
 	})
@@ -630,7 +630,8 @@ func TestUpdateStateWithPayloadDataAndOptions(t *testing.T) {
 			remoteData := map[string]interface{}{
 				"not_well_configured_property": []interface{}{"something"},
 			}
-			err := updateStateWithPayloadDataAndOptions(r, remoteData, nil, true)
+			_, resourceData := testCreateResourceFactory(t)
+			err := updateStateWithPayloadDataAndOptions(r, remoteData, resourceData, true)
 			Convey("Then the err returned should match the expected one", func() {
 				So(err.Error(), ShouldEqual, "property 'not_well_configured_property' is supposed to be an array objects")
 			})

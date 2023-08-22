@@ -759,6 +759,76 @@ func TestAcc_ErrorOnUpdateDoesNotUpdateState(t *testing.T) {
 	})
 }
 
+// Optional properties should be saved to state on state update
+func TestAcc_OptionalPropertiesReflectedOnStateUpdate(t *testing.T) {
+	swagger := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/openapi.yaml")
+
+	// stage 1: 1 resource creation containing optional properties, including nested ones under a list property
+	// stage 2: modify the optional property in tf config, extend the list property
+	responseStage1 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/stage1_response.json")
+	responseStage2 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/stage2_response.json")
+
+	resourceUpdated := false
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method == http.MethodPut {
+			resourceUpdated = true
+		}
+		w.WriteHeader(http.StatusOK)
+		if resourceUpdated {
+			w.Write([]byte(responseStage2))
+		} else {
+			w.Write([]byte(responseStage1))
+		}
+	}))
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	tfFileContentsStage1 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/test_stage_1.tf")
+	tfFileContentsStage2 := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/test_stage_2.tf")
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		ProviderFactories:         testAccProviders(provider),
+		PreCheck:                  func() { testAccPreCheck(t, swaggerServer.URL) },
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				Config: tfFileContentsStage1,
+			},
+			{
+				Config: tfFileContentsStage2,
+				Check: resource.ComposeTestCheckFunc(
+					// check resource attributes
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "id", "id_value"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "main_optional_prop", "main_optional_value_modified"),
+					// order of elements in list property must follow order in tf config
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.0.sub_readonly_prop", "sub_readonly_value_2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.0.sub_optional_prop", "sub_optional_value_2"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.1.sub_readonly_prop", "sub_readonly_value_1"),
+					resource.TestCheckResourceAttr(
+						openAPIResourceStateCDN, "list_prop.1.sub_optional_prop", "sub_optional_value_1"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCDN_POSTRequestSchemaContainsInputsAndResponseSchemaContainsOutputs(t *testing.T) {
 	expectedID := "some_id"
 	expectedLabel := "my_label"

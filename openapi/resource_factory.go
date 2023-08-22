@@ -570,7 +570,7 @@ func (r resourceFactory) createPayloadFromTerraformConfig(resourceLocalData *sch
 			log.Printf("[DEBUG] [resource='%s'] property payload [propertyName: %s; propertyValue: %+v]", r.openAPIResource.GetResourceName(), propertyName, input[propertyName])
 		}
 	}
-	log.Printf("[DEBUG] [resource='%s'] createPayloadFromLocalStateData: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(input))
+	log.Printf("[DEBUG] [resource='%s'] createPayloadFromTerraformConfig: %s", r.openAPIResource.GetResourceName(), sPrettyPrint(input))
 	return input
 }
 
