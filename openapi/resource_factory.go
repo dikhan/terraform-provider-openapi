@@ -148,6 +148,10 @@ func (r resourceFactory) readWithOptions(data *schema.ResourceData, i interface{
 	if err != nil {
 		if openapiErr, ok := err.(openapierr.Error); ok {
 			if openapierr.NotFound == openapiErr.Code() && !handleNotFoundErr {
+				// terraform refresh needs to accept 404 response as resource deleted
+				// so that manually deleted resource can be detected and restored by terraform
+				// emptying resource ID means resource removal from state
+				data.SetId("")
 				return nil
 			}
 		}

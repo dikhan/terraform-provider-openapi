@@ -759,6 +759,78 @@ func TestAcc_ErrorOnUpdateDoesNotUpdateState(t *testing.T) {
 	})
 }
 
+// terraform refresh must be able to empty resource in state when getting 404 Not Found response
+// without this, terraform is unable to detect deleted resources and restore them
+func TestAcc_NotFoundErrorOnResourceReadShouldRemoveResourceState(t *testing.T) {
+	// re-use data files of other test as this test only requires a single stage
+	swagger := getFileContents(t, "data/gray_box_test_data/update-error-no-state-change/openapi.yaml")
+	testResponseJSONStr := getFileContents(t, "data/gray_box_test_data/update-error-no-state-change/test_response.json")
+	tfConfig := getFileContents(t, "data/gray_box_test_data/update-error-no-state-change/test_stage_1.tf")
+
+	// instructs returning 404 response for GET request
+	returnResourceNotFound := false
+
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(testResponseJSONStr))
+			return
+		}
+
+		if returnResourceNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error":"404 Not Found"}`))
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(testResponseJSONStr))
+		}
+	}))
+
+	apiHost := apiServer.URL[7:]
+	swaggerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaggerReturned := fmt.Sprintf(swagger, apiHost)
+		w.Write([]byte(swaggerReturned))
+	}))
+
+	p := openapi.ProviderOpenAPI{ProviderName: providerName}
+	provider, err := p.CreateSchemaProviderFromServiceConfiguration(&openapi.ServiceConfigStub{SwaggerURL: swaggerServer.URL})
+	assert.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:                true,
+		ProviderFactories:         testAccProviders(provider),
+		PreCheck:                  func() { testAccPreCheck(t, swaggerServer.URL) },
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			{
+				// regular tf flow and verifies resource in state
+				Config: tfConfig,
+				Check:
+				// check resource attributes
+				resource.TestCheckResourceAttr(openAPIResourceStateCDN, "id", "someid"),
+			},
+			{
+				Config: tfConfig,
+				PreConfig: func() {
+					returnResourceNotFound = true
+				},
+				// test tf plan only which does a state refresh
+				// expect tf detects state change and produce plan to restore manually deleted resource
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				Check:
+				// check resource absence in state
+				resource.TestCheckNoResourceAttr(openAPIResourceStateCDN, "id"),
+			},
+		},
+	})
+}
+
 // Optional properties should be saved to state on state update
 func TestAcc_OptionalPropertiesReflectedOnStateUpdate(t *testing.T) {
 	swagger := getFileContents(t, "data/gray_box_test_data/update-state-containing-optional-properties/openapi.yaml")
