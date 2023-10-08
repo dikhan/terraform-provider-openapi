@@ -69,14 +69,14 @@ resource "%s" "my_cdn" {
 }
 
 func TestAccProviderConfiguration_PluginExternalFile_SchemaProperty_DefaultValue(t *testing.T) {
-	testPluginConfig := fmt.Sprintf(`version: '1'
+	testPluginConfig := `version: '1'
 services:
   openapi:
     swagger-url: https://localhost:8443/swagger.yaml
     insecure_skip_verify: true
     schema_configuration:
     - schema_property_name: "apikey_auth"
-      default_value: "apiKeyValue"`)
+      default_value: "apiKeyValue"`
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	resource.Test(t, resource.TestCase{
@@ -254,14 +254,14 @@ services:
 }
 
 func TestAccProviderConfiguration_PluginExternalFile_SchemaProperty_ExternalConfiguration_With_Non_Successful_Command(t *testing.T) {
-	testPluginConfig := fmt.Sprintf(`version: '1'
+	testPluginConfig := `version: '1'
 services:
   openapi:
     swagger-url: https://localhost:8443/swagger.yaml
     insecure_skip_verify: true
     schema_configuration:
     - schema_property_name: "apikey_auth"
-      cmd: ["cat", "nonExistingFile"]`)
+      cmd: ["cat", "nonExistingFile"]`
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	initPluginWithExternalConfigFile(file.Name())
@@ -273,7 +273,7 @@ services:
 }
 
 func TestAccProviderConfiguration_PluginExternalFile_SchemaProperty_ExternalConfiguration_With_Command_With_Timeout(t *testing.T) {
-	testPluginConfig := fmt.Sprintf(`version: '1'
+	testPluginConfig := `version: '1'
 services:
  openapi:
    swagger-url: https://localhost:8443/swagger.yaml
@@ -281,7 +281,7 @@ services:
    schema_configuration:
    - schema_property_name: "apikey_auth"
      cmd: ["sleep", "2"]
-     cmd_timeout: 1`)
+     cmd_timeout: 1`
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	initPluginWithExternalConfigFile(file.Name())
@@ -292,7 +292,7 @@ services:
 }
 
 func TestAccProviderConfiguration_PluginExternalFile_SchemaProperty_ExternalConfiguration_FileNotExists(t *testing.T) {
-	testPluginConfig := fmt.Sprintf(`version: '1'
+	testPluginConfig := `version: '1'
 services:
   openapi:
     swagger-url: https://localhost:8443/swagger.yaml
@@ -303,7 +303,7 @@ services:
       schema_property_external_configuration:
         content_type: json
         key_name: $.apikey_auth
-        file: /path_to_non_existing_file.json`)
+        file: /path_to_non_existing_file.json`
 	file := createPluginConfigFile(testPluginConfig)
 	defer os.Remove(file.Name())
 	initPluginWithExternalConfigFile(file.Name())

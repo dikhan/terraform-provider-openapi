@@ -1651,7 +1651,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 	})
 
 	Convey("Given a swagger doc with a circular ref (ref points to itself)", t, func() {
-		var swaggerJSON = fmt.Sprintf(`{
+		var swaggerJSON = `{
    "swagger":"2.0",
    "paths":{
       "/v1/cdns":{
@@ -1675,7 +1675,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
          "$ref":"#/definitions/ContentDeliveryNetwork"
       }
    }
-}`)
+}`
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
@@ -1697,7 +1697,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 	})
 
 	Convey("Given a swagger doc with a ref to a definition that does not exists", t, func() {
-		var swaggerJSON = fmt.Sprintf(`{
+		var swaggerJSON = `{
    "swagger":"2.0",
    "paths":{
       "/v1/cdns":{
@@ -1716,7 +1716,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
          }
       }
    }
-}`)
+}`
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
@@ -1729,7 +1729,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
 	})
 
 	Convey("Given a swagger doc with a ref to a definition is wrongly formatted (no empty string)", t, func() {
-		var swaggerJSON = fmt.Sprintf(`{
+		var swaggerJSON = `{
    "swagger":"2.0",
    "paths":{
       "/v1/cdns":{
@@ -1748,7 +1748,7 @@ func TestNewSpecAnalyserV2(t *testing.T) {
          }
       }
    }
-}`)
+}`
 		swaggerFile := initAPISpecFile(swaggerJSON)
 		defer os.Remove(swaggerFile.Name())
 		Convey("When newSpecAnalyserV2 method is called", func() {
