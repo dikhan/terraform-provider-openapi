@@ -76,14 +76,14 @@ definitions:
 	})
 	assert.NoError(t, err)
 
-	tfFileContents := fmt.Sprintf(`
+	tfFileContents := `
 provider "openapi" {
   required_header_example = ""
 }
 
 resource "openapi_cdns" "my_cdn" {
   label = "some label"
-}`)
+}`
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required header 'required_header_example' is missing the value. Please make sure the property 'required_header_example' is configured with a value in the provider's terraform configuration.*")
 	resource.Test(t, resource.TestCase{
@@ -165,13 +165,13 @@ securityDefinitions:
 	})
 	assert.NoError(t, err)
 
-	tfFileContents := fmt.Sprintf(`
+	tfFileContents := `
 provider "openapi" {
   some_not_global_sec_def = ""
 }
 resource "openapi_cdns" "my_cdn" {
   label = "some label"
-}`)
+}`
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required security definition 'some_not_global_sec_def' is missing the value. Please make sure the property 'some_not_global_sec_def' is configured with a value in the provider's terraform configuration.*")
 	resource.Test(t, resource.TestCase{
@@ -253,13 +253,13 @@ securityDefinitions:
 	})
 	assert.NoError(t, err)
 
-	tfFileContents := fmt.Sprintf(`
+	tfFileContents := `
 provider "openapi" {
   some_not_global_sec_def = ""
 }
 resource "openapi_cdns" "my_cdn" {
   label = "some label"
-}`)
+}`
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required security definition 'some_not_global_sec_def' is missing the value. Please make sure the property 'some_not_global_sec_def' is configured with a value in the provider's terraform configuration.*")
 	resource.Test(t, resource.TestCase{
@@ -342,13 +342,13 @@ securityDefinitions:
 	})
 	assert.NoError(t, err)
 
-	tfFileContents := fmt.Sprintf(`
+	tfFileContents := `
 provider "openapi" {
   some_not_global_sec_def = ""
 }
 resource "openapi_cdns" "my_cdn" {
   label = "some label"
-}`)
+}`
 
 	expectedValidationError, _ := regexp.Compile(".*failed to configure the API request for POST http://127.0.0.1:[\\d]+/cdns: required security definition 'some_not_global_sec_def' is missing the value. Please make sure the property 'some_not_global_sec_def' is configured with a value in the provider's terraform configuration.*")
 	resource.Test(t, resource.TestCase{
@@ -431,7 +431,7 @@ definitions:
 	})
 	assert.NoError(t, err)
 
-	tfFileContents := fmt.Sprintf(`resource "openapi_deploykey_v1" "my_deploykeyv1" {}`)
+	tfFileContents := `resource "openapi_deploykey_v1" "my_deploykeyv1" {}`
 
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:        true,
@@ -519,7 +519,7 @@ definitions:
 	})
 	assert.NoError(t, err)
 
-	tfFileContents := fmt.Sprintf(`resource "openapi_deploykey_v1" "my_deploykeyv1" {}`)
+	tfFileContents := `resource "openapi_deploykey_v1" "my_deploykeyv1" {}`
 
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:        true,

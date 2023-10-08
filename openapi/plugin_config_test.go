@@ -94,7 +94,7 @@ func TestGetServiceProviderConfiguration(t *testing.T) {
 		os.Unsetenv(otfVarNameUc)
 	})
 
-	Convey(fmt.Sprintf("Given a PluginConfiguration for 'test' provider and a OTF_VAR_test_SWAGGER_URL env variable is not set"), t, func() {
+	Convey("Given a PluginConfiguration for 'test' provider and a OTF_VAR_test_SWAGGER_URL env variable is not set", t, func() {
 		pluginConfiguration, _ := NewPluginConfiguration(providerName)
 		Convey("When getServiceConfiguration is called", func() {
 			_, err := pluginConfiguration.getServiceConfiguration()
@@ -215,10 +215,10 @@ services:
 	})
 
 	Convey("Given a PluginConfiguration for 'test' provider and a plugin configuration that DOES NOT contain a service called 'test'", t, func() {
-		pluginConfig := fmt.Sprintf(`version: '1'
+		pluginConfig := `version: '1'
 services:
     some-other-service:
-        swagger-url: http://some-other-service-api/swagger.yaml`)
+        swagger-url: http://some-other-service-api/swagger.yaml`
 		configReader := strings.NewReader(pluginConfig)
 		pluginConfiguration := PluginConfiguration{
 			ProviderName:  providerName,

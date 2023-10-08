@@ -154,7 +154,7 @@ services:
 		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(`
+				Config: `
 provider "openapi" {
   some_token = "token_value"
   some_header = "header_value" 
@@ -172,7 +172,7 @@ data "openapi_cdns_v1" "my_data_cdn" {
 
 data "openapi_cdns_v1_instance" "my_cdn" {
   id = "someID"
-}`),
+}`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1.my_cdn", "label", "some_label"),
@@ -328,7 +328,7 @@ services:
 		PreCheck:          func() { testAccPreCheck(t, swaggerServer.URL) },
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(`resource "openapi_cdns_v1" "my_cdn" { label = "some_label"}`),
+				Config: `resource "openapi_cdns_v1" "my_cdn" { label = "some_label"}`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"openapi_cdns_v1.my_cdn", "label", "some_label"),

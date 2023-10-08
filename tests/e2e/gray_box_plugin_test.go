@@ -117,10 +117,10 @@ definitions:
 	})
 	assert.NoError(t, err)
 
-	tfFileContents := fmt.Sprintf(`
+	tfFileContents := `
 resource "openapi_cdn_v1" "my_cdn_v1" {
 	label = "my_label"
-}`)
+}`
 
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:        true,
