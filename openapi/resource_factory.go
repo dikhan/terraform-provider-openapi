@@ -224,7 +224,8 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.GetResourceName(), resourcePath)
 	}
 
-	requestPayload := r.createPayloadFromTerraformConfig(data)
+	//requestPayload := r.createPayloadFromTerraformConfig(data)
+	requestPayload := r.createPayloadFromLocalStateData(data)
 
 	if err := r.checkImmutableFields(data, providerClient, parentsIDs...); err != nil {
 		return err
