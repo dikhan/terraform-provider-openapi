@@ -554,6 +554,7 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 
 // Similar to createPayloadFromLocalStateData but uses the current terraform configuration to create the request payload
 func (r resourceFactory) createPayloadFromTerraformConfig(resourceLocalData *schema.ResourceData) map[string]interface{} {
+	log.Printf("Info: resourceLocalData = %v\n", resourceLocalData.GetRawConfig())
 	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
 
 	input := map[string]interface{}{}
