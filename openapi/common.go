@@ -368,6 +368,7 @@ func setStateID(openAPIres SpecResource, resourceLocalData *schema.ResourceData,
 // behaves unexpected, like the problem of computed properties within lists not "moving" as expected
 // when the ordering changes
 func getTerraformConfigObject(rawConfig cty.Value) interface{} {
+	log.Printf("Info: rawConfig = %v\n", rawConfig)
 	objectType := rawConfig.Type()
 	if objectType.IsMapType() || objectType.IsObjectType() {
 		output := map[string]interface{}{}
