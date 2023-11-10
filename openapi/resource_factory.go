@@ -224,8 +224,7 @@ func (r resourceFactory) update(data *schema.ResourceData, i interface{}) error 
 		return fmt.Errorf("[resource='%s'] resource does not support PUT operation, check the swagger file exposed on '%s'", r.openAPIResource.GetResourceName(), resourcePath)
 	}
 
-	//requestPayload := r.createPayloadFromTerraformConfig(data)
-	requestPayload := r.createPayloadFromLocalStateData(data)
+	requestPayload := r.createPayloadFromTerraformConfig(data)
 
 	if err := r.checkImmutableFields(data, providerClient, parentsIDs...); err != nil {
 		return err
@@ -555,7 +554,6 @@ func (r resourceFactory) createPayloadFromLocalStateData(resourceLocalData *sche
 
 // Similar to createPayloadFromLocalStateData but uses the current terraform configuration to create the request payload
 func (r resourceFactory) createPayloadFromTerraformConfig(resourceLocalData *schema.ResourceData) map[string]interface{} {
-	log.Printf("Info: resourceLocalData = %v\n", resourceLocalData.GetRawConfig())
 	terraformConfigObject := getTerraformConfigObject(resourceLocalData.GetRawConfig()).(map[string]interface{})
 
 	input := map[string]interface{}{}
