@@ -482,6 +482,7 @@ func (r resourceFactory) validateImmutableProperty(property *SpecSchemaDefinitio
 					localObj := localListObj.(map[string]interface{})
 					remoteObj := remoteListObj.(map[string]interface{})
 					for _, objectProp := range property.SpecSchemaDefinition.Properties {
+						log.Printf("[DEBUG] [resource='%s'] wenbo schemaDefinitionPropertyCheckTerraform: %s", objectProp.GetTerraformCompliantPropertyName())
 						err := r.validateImmutableProperty(objectProp, remoteObj[objectProp.Name], localObj[objectProp.GetTerraformCompliantPropertyName()], property.Immutable)
 						if err != nil {
 							return fmt.Errorf("user attempted to update an immutable list of objects ('%s'): [user input: %s; actual: %s]", property.Name, localData, remoteData)
@@ -682,5 +683,6 @@ func (r resourceFactory) getStatusValueFromPayload(payload map[string]interface{
 
 // getResourceDataOK returns the data for the given schemaDefinitionPropertyName using the terraform compliant property name
 func (r resourceFactory) getResourceDataOKExists(schemaDefinitionProperty SpecSchemaDefinitionProperty, resourceLocalData *schema.ResourceData) (interface{}, bool) {
+	log.Printf("[DEBUG] [resource='%s'] wenbo schemaDefinitionPropertyCheckDataOK: %s", schemaDefinitionProperty.GetTerraformCompliantPropertyName())
 	return resourceLocalData.GetOkExists(schemaDefinitionProperty.GetTerraformCompliantPropertyName())
 }
